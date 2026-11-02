@@ -1,0 +1,139 @@
+{
+  "schema_version": "luminous.lnf-multipath-scheduling-profile.v1",
+  "profile_id": "lnf-multipath-session-scheduling-v1",
+  "status": "draft_targets_not_results",
+  "reviewed_on": "2026-11-02",
+  "objective": "Compare deterministic single-path and multipath session scheduling over the same broker-admitted path observations and useful-task workload.",
+  "ownership_boundary": {
+    "broker_owns_path_eligibility": true,
+    "path_manager_owns_subflow_and_address_lifecycle": true,
+    "scheduler_owns_packet_or_byte_allocation_only": true,
+    "application_owns_task_success_and_deadline": true,
+    "no_packet_content_inspection": true,
+    "no_privileged_network_actuation": true
+  },
+  "units": {
+    "bandwidth": "bits_per_second",
+    "rtt": "microseconds",
+    "jitter": "microseconds",
+    "loss": "parts_per_million",
+    "cost_rate": "integer_microcurrency_per_MiB",
+    "energy_rate": "microwatt_hours_per_MiB",
+    "data_allowance": "bytes",
+    "reorder_buffer": "bytes"
+  },
+  "baseline_strategies": [
+    "best_rtt_single_path",
+    "lowest_cost_single_path",
+    "capacity_weighted_aggregate",
+    "linux_mptcp_default_scheduler_exact_kernel",
+    "approved_multipath_quic_stack_when_available",
+    "lnf_intent_aware_constrained"
+  ],
+  "transport_profiles": [
+    {
+      "id": "mptcp-rfc8684",
+      "status": "standards_baseline",
+      "pin_required": true
+    },
+    {
+      "id": "multipath-quic",
+      "status": "iesg_approved_proposed_standard_rfc_editor_queue_as_of_2026-11-02",
+      "document": "draft-ietf-quic-multipath-21",
+      "pin_required": true,
+      "peer_support_required": true,
+      "scheduler_not_defined_by_transport_document": true
+    }
+  ],
+  "scenario_ids": [
+    "MPATH-00",
+    "MPATH-01",
+    "MPATH-02",
+    "MPATH-03",
+    "MPATH-04",
+    "MPATH-05",
+    "MPATH-06",
+    "MPATH-07",
+    "MPATH-08",
+    "MPATH-09",
+    "MPATH-10",
+    "MPATH-11",
+    "MPATH-12",
+    "MPATH-13",
+    "MPATH-14",
+    "MPATH-15",
+    "MPATH-16",
+    "MPATH-17"
+  ],
+  "benchmarks": [
+    {
+      "id": "MPATH_HARD_ELIGIBILITY_001",
+      "metric": "scheduled_bytes_on_broker_ineligible_paths",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_CAP_COMPLIANCE_001",
+      "metric": "cost_data_energy_or_trust_cap_violations",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_DETERMINISM_001",
+      "metric": "identical_schedule_decisions_for_identical_inputs_and_version",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_USEFUL_TASK_001",
+      "metric": "deadline_bounded_useful_task_completion_vs_matched_baselines",
+      "operator": "baseline_first",
+      "target": null,
+      "target_status": "baseline_first"
+    },
+    {
+      "id": "MPATH_REORDER_MEMORY_001",
+      "metric": "receiver_reorder_buffer_high_water_bytes",
+      "operator": "within_declared_buffer_limit",
+      "target": null,
+      "target_status": "baseline_first"
+    },
+    {
+      "id": "MPATH_PARETO_001",
+      "metric": "cost_energy_tail_latency_goodput_fairness_pareto_frontier",
+      "operator": "baseline_first",
+      "target": null,
+      "target_status": "baseline_first"
+    }
+  ],
+  "required_metrics": [
+    "useful_task_completion_probability_by_deadline",
+    "flow_completion_time_p50_p95_p99",
+    "goodput_bytes_per_second",
+    "receiver_reorder_exposure_bytes_and_byte_seconds",
+    "duplicate_or_redundant_transmission_bytes",
+    "per_path_utilization_and_idle_capacity",
+    "cost_per_successful_task",
+    "energy_per_successful_task",
+    "jain_fairness_under_shared_bottlenecks",
+    "path_switch_count_and_oscillation_rate",
+    "cpu_and_memory_high_water_marks"
+  ],
+  "evidence_classes": [
+    "deterministic_model",
+    "network_namespace_or_vm_emulation",
+    "hardware_bench",
+    "field_observed"
+  ],
+  "explicit_non_claims": [
+    "No claim that theoretical path bandwidths sum to achieved application goodput",
+    "No claim that gateway failover is simultaneous subflow scheduling",
+    "No claim that Multipath QUIC is an RFC until publication is confirmed",
+    "No claim that a modelled schedule is an observed transport packet schedule",
+    "No claim of SOTA superiority before matched pinned transport runs",
+    "No claim of production readiness or network actuation"
+  ]
+}
