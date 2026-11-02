@@ -1563,7 +1563,7 @@ mod tests {
     #[test]
     fn runtime_measurement_must_cover_all_agent_activity() {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
-        attestations[0].measurement_start_ms = 42;
+        attestations[0].measurement_start_ms = 95;
         assert_eq!(
             validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::MeasurementDoesNotCoverTrial(
@@ -1643,10 +1643,13 @@ mod tests {
             Err(RuntimeAttestationError::DuplicateObserverSequence)
         );
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        let challenges = challenge_receipts(&attestations);
         attestations[0].receipt_sequence = 10;
         assert_eq!(
-            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
-            Err(RuntimeAttestationError::ChallengeReceiptSequenceNotContiguous)
+            validate_runtime_attestations(
+                &manifest, &freeze, &ledger, &scenarios, &challenges, &attestations
+            ),
+            Err(RuntimeAttestationError::ObserverSequenceNotContiguous)
         );
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].receipt_sequence = 4;
