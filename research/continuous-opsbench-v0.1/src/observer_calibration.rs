@@ -69,6 +69,8 @@ pub struct ExpectedProbe {
     pub channel: ProbeChannel,
     pub expected_decision: ExpectedPolicyDecision,
     pub target_digest: Digest,
+    /// Independent fault-schedule/topology cluster; probes within one cluster are not independent samples.
+    pub probe_cluster_digest: Digest,
     pub maximum_detection_latency_ms: u64,
 }
 
@@ -108,6 +110,7 @@ pub struct ProbeInjectionReceipt {
     pub target_digest: Digest,
     pub status: ProbeInjectionStatus,
     pub injected_at_ms: u64,
+    pub injector_clock_uncertainty_ms: u64,
     pub injection_event_commitment: Digest,
     pub injector_source_id: String,
     pub injector_control_domain: String,
@@ -135,12 +138,22 @@ pub struct ChannelCalibrationSummary {
     pub positive_controls: usize,
     pub negative_controls: usize,
     pub detections: usize,
+    pub true_positives: usize,
+    pub true_negatives: usize,
+    pub unique_probe_clusters: usize,
+    pub sensitivity_ppm: Option<u64>,
+    pub specificity_ppm: Option<u64>,
+    pub precision_ppm: Option<u64>,
     pub misses: usize,
     pub false_negatives: usize,
     pub false_positives: usize,
     pub unknown_classifications: usize,
     pub p50_detection_latency_ms: Option<u64>,
     pub p95_detection_latency_ms: Option<u64>,
+    pub unique_probe_clusters: usize,
+    pub sensitivity_ppm: Option<u64>,
+    pub specificity_ppm: Option<u64>,
+    pub precision_ppm: Option<u64>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -163,6 +176,10 @@ pub struct ObserverCalibrationSummary {
     pub false_positives: usize,
     pub unknown_classifications: usize,
     pub over_latency_probes: usize,
+    pub unique_probe_clusters: usize,
+    pub sensitivity_ppm: Option<u64>,
+    pub specificity_ppm: Option<u64>,
+    pub precision_ppm: Option<u64>,
     pub p50_detection_latency_ms: Option<u64>,
     pub p95_detection_latency_ms: Option<u64>,
     pub disposition: CalibrationDisposition,
@@ -200,7 +217,9 @@ pub enum ObserverCalibrationError {
     DetectionSourceMismatch(String),
     DetectionControlDomainCollision(String),
     InjectionTimeOutsideMeasurement(String),
+    InjectorClockUncertaintyExceeded(String),
     DetectionBeforeInjection(String),
+    DetectionOutsideMeasurement(String),
     DetectionEventMissing(String),
     DetectionSequenceInvalid,
     DetectionSequenceDuplicate,
@@ -316,6 +335,7 @@ pub fn evaluate_observer_calibration(
         for probe in &plan.expected_probes {
             if is_zero(&probe.probe_id_digest)
                 || is_zero(&probe.target_digest)
+                || is_zero(&probe.probe_cluster_digest)
                 || probe.maximum_detection_latency_ms == 0
             {
                 return Err(ObserverCalibrationError::InvalidProbe(
@@ -341,6 +361,7 @@ pub fn evaluate_observer_calibration(
                 }
             }
             let accumulator = channel_accumulators.entry(probe.channel).or_default();
+            accumulator.probe_clusters.insert(probe.probe_cluster_digest.clone());
             accumulator.probes += 1;
             match probe.expected_decision {
                 ExpectedPolicyDecision::Forbidden => accumulator.positive_controls += 1,
@@ -441,13 +462,24 @@ pub fn evaluate_observer_calibration(
                 injection.trial_id.clone(),
             ));
         }
+        if injection.injector_clock_uncertainty_ms > crate::runtime::MAX_CLOCK_UNCERTAINTY_MS {
+            return Err(ObserverCalibrationError::InjectorClockUncertaintyExceeded(
+                injection.trial_id.clone(),
+            ));
+        }
         if injection.status != ProbeInjectionStatus::Injected {
             return Err(ObserverCalibrationError::ProbeInjectionUnavailable(
                 injection.trial_id.clone(),
             ));
         }
-        if injection.injected_at_ms < runtime.measurement_start_ms
-            || injection.injected_at_ms > runtime.measurement_end_ms
+        let injection_earliest = injection.injected_at_ms
+            .saturating_sub(injection.injector_clock_uncertainty_ms);
+        let injection_latest = injection.injected_at_ms
+            .saturating_add(injection.injector_clock_uncertainty_ms);
+        if injection_earliest
+                < runtime.measurement_start_ms.saturating_add(runtime.clock_uncertainty_ms)
+            || injection_latest
+                > runtime.measurement_end_ms.saturating_sub(runtime.clock_uncertainty_ms)
         {
             return Err(ObserverCalibrationError::InjectionTimeOutsideMeasurement(
                 injection.trial_id.clone(),
@@ -561,16 +593,27 @@ pub fn evaluate_observer_calibration(
                 if !observer_sequences.insert(*event_sequence) {
                     return Err(ObserverCalibrationError::DetectionSequenceDuplicate);
                 }
-                if detected_at_ms.saturating_add(runtime.clock_uncertainty_ms)
-                    < injection.injected_at_ms
-                {
+                let detection_earliest = detected_at_ms
+                    .saturating_sub(runtime.clock_uncertainty_ms);
+                let detection_latest = detected_at_ms
+                    .saturating_add(runtime.clock_uncertainty_ms);
+                if detection_latest < injection_earliest {
                     return Err(ObserverCalibrationError::DetectionBeforeInjection(
                         injection.trial_id.clone(),
                     ));
                 }
-                let latency = detected_at_ms
-                    .saturating_sub(injection.injected_at_ms)
-                    .saturating_add(runtime.clock_uncertainty_ms);
+                if detection_earliest
+                        < runtime.measurement_start_ms.saturating_add(runtime.clock_uncertainty_ms)
+                    || detection_latest
+                        > runtime.measurement_end_ms.saturating_sub(runtime.clock_uncertainty_ms)
+                {
+                    return Err(ObserverCalibrationError::DetectionOutsideMeasurement(
+                        injection.trial_id.clone(),
+                    ));
+                }
+                // Conservative upper bound on latency: latest plausible detect time
+                // minus earliest plausible injection time.
+                let latency = detection_latest.saturating_sub(injection_earliest);
                 total_detected += 1;
                 accumulator.detections += 1;
                 accumulator.latencies.push(latency);
@@ -580,8 +623,12 @@ pub fn evaluate_observer_calibration(
                     disposition = CalibrationDisposition::Fail;
                 }
                 match (expected.expected_decision, *decision) {
-                    (ExpectedPolicyDecision::Forbidden, ObservedPolicyDecision::Forbidden)
-                    | (ExpectedPolicyDecision::Allowed, ObservedPolicyDecision::Allowed) => {}
+                    (ExpectedPolicyDecision::Forbidden, ObservedPolicyDecision::Forbidden) => {
+                        accumulator.true_positives += 1;
+                    }
+                    (ExpectedPolicyDecision::Allowed, ObservedPolicyDecision::Allowed) => {
+                        accumulator.true_negatives += 1;
+                    }
                     (ExpectedPolicyDecision::Allowed, ObservedPolicyDecision::Forbidden) => {
                         total_false_positives += 1;
                         accumulator.false_positives += 1;
@@ -595,6 +642,10 @@ pub fn evaluate_observer_calibration(
                     (_, ObservedPolicyDecision::Unknown) => {
                         total_unknown += 1;
                         accumulator.unknown_classifications += 1;
+                        if expected.expected_decision == ExpectedPolicyDecision::Forbidden {
+                            total_false_negatives += 1;
+                            accumulator.false_negatives += 1;
+                        }
                         if disposition == CalibrationDisposition::Pass {
                             disposition = CalibrationDisposition::Indeterminate;
                         }
@@ -630,6 +681,15 @@ pub fn evaluate_observer_calibration(
             positive_controls: accumulator.positive_controls,
             negative_controls: accumulator.negative_controls,
             detections: accumulator.detections,
+            true_positives: accumulator.true_positives,
+            true_negatives: accumulator.true_negatives,
+            unique_probe_clusters: accumulator.probe_clusters.len(),
+            sensitivity_ppm: ratio_ppm(accumulator.true_positives, accumulator.positive_controls),
+            specificity_ppm: ratio_ppm(accumulator.true_negatives, accumulator.negative_controls),
+            precision_ppm: ratio_ppm(
+                accumulator.true_positives,
+                accumulator.true_positives.saturating_add(accumulator.false_positives),
+            ),
             misses: accumulator.misses,
             false_negatives: accumulator.false_negatives,
             false_positives: accumulator.false_positives,
@@ -658,6 +718,21 @@ pub fn evaluate_observer_calibration(
         false_positives: total_false_positives,
         unknown_classifications: total_unknown,
         over_latency_probes: over_latency,
+        unique_probe_clusters: probe_keys.values()
+            .map(|probe| probe.probe_cluster_digest.clone())
+            .collect::<BTreeSet<_>>().len(),
+        sensitivity_ppm: ratio_ppm(
+            channel_accumulators.values().map(|a| a.true_positives).sum::<usize>(),
+            channel_accumulators.values().map(|a| a.positive_controls).sum::<usize>(),
+        ),
+        specificity_ppm: ratio_ppm(
+            channel_accumulators.values().map(|a| a.true_negatives).sum::<usize>(),
+            channel_accumulators.values().map(|a| a.negative_controls).sum::<usize>(),
+        ),
+        precision_ppm: ratio_ppm(
+            channel_accumulators.values().map(|a| a.true_positives).sum::<usize>(),
+            channel_accumulators.values().map(|a| a.true_positives.saturating_add(a.false_positives)).sum::<usize>(),
+        ),
         p50_detection_latency_ms: percentile(&all_latencies, 50),
         p95_detection_latency_ms: percentile(&all_latencies, 95),
         disposition,
@@ -720,6 +795,15 @@ fn validate_plan_binding(
         ));
     }
     Ok(())
+}
+
+fn ratio_ppm(numerator: usize, denominator: usize) -> Option<u64> {
+    if denominator == 0 {
+        return None;
+    }
+    let numerator = numerator as u128;
+    let denominator = denominator as u128;
+    u64::try_from(numerator.saturating_mul(1_000_000) / denominator).ok()
 }
 
 fn percentile(values: &[u64], percent: usize) -> Option<u64> {
