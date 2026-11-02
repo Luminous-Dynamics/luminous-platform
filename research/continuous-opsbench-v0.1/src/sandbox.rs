@@ -786,6 +786,8 @@ mod tests {
             state_isolation_policy_digest: manifest.state_isolation_policy_digest.clone(),
             artifact_access_policy_digest: manifest.artifact_access_policy_digest.clone(),
             network_egress_policy_digest: manifest.network_egress_policy_digest.clone(),
+            runtime_challenge_authority_id: manifest.runtime_challenge_authority_id.clone(),
+            runtime_challenge_authority_control_domain: manifest.runtime_challenge_authority_control_domain.clone(),
             runtime_observer_source_id: manifest.runtime_observer_source_id.clone(),
             runtime_observer_control_domain: manifest.runtime_observer_control_domain.clone(),
             runtime_observer_adapter_digest: manifest.runtime_observer_adapter_digest.clone(),
