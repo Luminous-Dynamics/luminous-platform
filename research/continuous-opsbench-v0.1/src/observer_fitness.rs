@@ -975,21 +975,21 @@ pub(crate) mod tests {
             injection.marker_digest = fresh;
             injection.calibration_runtime_digest = d(227);
             injection.calibration_namespace_digest = d(228);
-            injection.issued_at_ms = 141;
-            injection.executed_at_ms = 142;
-            injection.completed_at_ms = 143;
+            injection.issued_at_ms = 161;
+            injection.executed_at_ms = 162;
+            injection.completed_at_ms = 163;
         }
         for observation in &mut post_run_batch.observations {
             observation.batch_id = "fitness-batch-post".into();
             observation.marker_digest = marker_map[&observation.marker_digest].clone();
             observation.calibration_runtime_digest = d(227);
-            observation.observed_at_ms = 144;
+            observation.observed_at_ms = 164;
         }
         for loss in &mut post_run_batch.loss_observations {
             loss.batch_id = "fitness-batch-post".into();
             loss.marker_digest = marker_map[&loss.marker_digest].clone();
             loss.calibration_runtime_digest = d(227);
-            loss.observed_at_ms = 144;
+            loss.observed_at_ms = 164;
         }
         post_run_batch.receipt.batch_id = "fitness-batch-post".into();
         post_run_batch.receipt.receipt_digest = d(225);
