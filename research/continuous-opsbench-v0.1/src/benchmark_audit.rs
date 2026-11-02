@@ -17,6 +17,9 @@ pub const BENCHMARK_AUDIT_VERSION: u16 = 1;
 pub const REQUIRED_COMPONENTS: usize = 4;
 pub const MIN_KNOWN_ANSWER_CONTROLS: usize = 40;
 pub const MIN_KNOWN_ANSWER_CONTROLS_PER_COMPONENT: usize = 5;
+pub const MIN_POSITIVE_CONTROLS_PER_COMPONENT: usize = 2;
+pub const MIN_NEGATIVE_CONTROLS_PER_COMPONENT: usize = 2;
+pub const MIN_EXPECTED_REJECTION_MUTATIONS_PER_COMPONENT: usize = 5;
 pub const MIN_POSITIVE_CONTROLS: usize = 10;
 pub const MIN_NEGATIVE_CONTROLS: usize = 10;
 pub const MIN_MUTATION_CONTROLS: usize = 60;
@@ -225,13 +228,14 @@ pub struct ComponentAuditResult {
     pub negative_controls: usize,
     pub false_positives: usize,
     pub false_negatives: usize,
-    pub false_positive_rate_ppm: u64,
-    pub false_negative_rate_ppm: u64,
+    pub false_positive_rate_ppm: Option<u64>,
+    pub false_negative_rate_ppm: Option<u64>,
     pub mutation_controls: usize,
     pub expected_rejection_controls: usize,
+    pub expected_non_rejection_controls: usize,
     pub missed_mutations: usize,
     pub unexpected_rejections: usize,
-    pub mutation_miss_rate_ppm: u64,
+    pub mutation_miss_rate_ppm: Option<u64>,
     pub reset_repetitions: usize,
 }
 
@@ -470,6 +474,8 @@ pub fn validate_benchmark_component_audit(
         result.mutation_controls += 1;
         if mutation.expected_rejection {
             result.expected_rejection_controls += 1;
+        } else {
+            result.expected_non_rejection_controls += 1;
         }
         if mutation.expected_rejection && !mutation.observed_rejection {
             result.missed_mutations += 1;
@@ -486,14 +492,20 @@ pub fn validate_benchmark_component_audit(
     for (component, result) in &mut component_results {
         if result.disposition == AuditDisposition::Pass
             && (result.known_answer_controls < cohort.minimum_controls_per_component
-                || result.mutation_controls < cohort.minimum_mutations_per_component)
+                || result.positive_controls < MIN_POSITIVE_CONTROLS_PER_COMPONENT
+                || result.negative_controls < MIN_NEGATIVE_CONTROLS_PER_COMPONENT
+                || result.mutation_controls < cohort.minimum_mutations_per_component
+                || result.expected_rejection_controls < MIN_EXPECTED_REJECTION_MUTATIONS_PER_COMPONENT
+                || result.expected_non_rejection_controls == 0)
         {
             result.disposition = AuditDisposition::Indeterminate;
         }
-        result.false_positive_rate_ppm = rate_ppm(result.false_positives, result.negative_controls);
-        result.false_negative_rate_ppm = rate_ppm(result.false_negatives, result.positive_controls);
-        result.mutation_miss_rate_ppm =
-            rate_ppm(result.missed_mutations, result.expected_rejection_controls);
+        result.false_positive_rate_ppm = (result.negative_controls > 0)
+            .then(|| rate_ppm(result.false_positives, result.negative_controls));
+        result.false_negative_rate_ppm = (result.positive_controls > 0)
+            .then(|| rate_ppm(result.false_negatives, result.positive_controls));
+        result.mutation_miss_rate_ppm = (result.expected_rejection_controls > 0)
+            .then(|| rate_ppm(result.missed_mutations, result.expected_rejection_controls));
         if *component == BenchmarkComponent::EnvironmentTools
             && result.reset_repetitions < cohort.environment.minimum_reset_repetitions
         {
