@@ -148,9 +148,7 @@ fn estimated_cost(bytes: u64, rate_per_mib: u64) -> Option<u64> {
 
 fn effective_capacity(path: &PathObservation) -> u64 {
     let surviving = PARTS_PER_MILLION - u128::from(path.loss_ppm);
-    as_u64(
-        (u128::from(path.capacity_bps) * surviving / PARTS_PER_MILLION).max(1),
-    )
+    as_u64((u128::from(path.capacity_bps) * surviving / PARTS_PER_MILLION).max(1))
 }
 
 fn transfer_time_us(bytes: u64, capacity_bps: u64) -> u64 {
@@ -235,10 +233,7 @@ fn validate_path_set(paths: &[PathObservation]) -> Result<(), ScheduleError> {
     Ok(())
 }
 
-fn single_candidate(
-    request: &ScheduleRequest,
-    path: &PathObservation,
-) -> Option<Candidate> {
+fn single_candidate(request: &ScheduleRequest, path: &PathObservation) -> Option<Candidate> {
     if path.data_remaining_bytes < request.bytes {
         return None;
     }
@@ -248,7 +243,10 @@ fn single_candidate(
         return None;
     }
     let finish = finish_time_us(request.bytes, path);
-    if request.deadline_us.is_some_and(|deadline| finish > deadline) {
+    if request
+        .deadline_us
+        .is_some_and(|deadline| finish > deadline)
+    {
         return None;
     }
 
@@ -275,7 +273,9 @@ fn single_candidate(
 fn candidate_within_budgets(request: &ScheduleRequest, candidate: &Candidate) -> bool {
     candidate.cost_micros <= request.max_cost_micros
         && candidate.energy_uwh <= request.max_energy_uwh
-        && request.deadline_us.is_none_or(|deadline| candidate.finish_us <= deadline)
+        && request
+            .deadline_us
+            .is_none_or(|deadline| candidate.finish_us <= deadline)
         && (!request.ordered_delivery
             || candidate.reorder_exposure_bytes <= request.reorder_buffer_limit_bytes)
 }
@@ -309,8 +309,7 @@ fn aggregate_candidate(
         .iter()
         .map(|path| {
             let proportional = as_u64(
-                u128::from(request.bytes) * u128::from(effective_capacity(path))
-                    / total_capacity,
+                u128::from(request.bytes) * u128::from(effective_capacity(path)) / total_capacity,
             );
             let bytes = proportional.min(path.data_remaining_bytes).min(remaining);
             remaining -= bytes;
@@ -395,14 +394,15 @@ fn best_single_by_finish(candidates: &[Candidate]) -> Option<Candidate> {
         left.finish_us
             .cmp(&right.finish_us)
             .then_with(|| left.cost_micros.cmp(&right.cost_micros))
-            .then_with(|| left.allocations[0].path_id.cmp(&right.allocations[0].path_id))
+            .then_with(|| {
+                left.allocations[0]
+                    .path_id
+                    .cmp(&right.allocations[0].path_id)
+            })
     })
 }
 
-fn best_single_by_rtt(
-    candidates: &[Candidate],
-    paths: &[&PathObservation],
-) -> Option<Candidate> {
+fn best_single_by_rtt(candidates: &[Candidate], paths: &[&PathObservation]) -> Option<Candidate> {
     candidates
         .iter()
         .min_by(|left, right| {
@@ -580,13 +580,7 @@ pub fn evaluate(
 mod tests {
     use super::*;
 
-    fn path(
-        id: &str,
-        rtt_us: u64,
-        capacity_bps: u64,
-        cost: u64,
-        risk: &str,
-    ) -> PathObservation {
+    fn path(id: &str, rtt_us: u64, capacity_bps: u64, cost: u64, risk: &str) -> PathObservation {
         PathObservation {
             id: id.to_owned(),
             broker_eligible: true,
@@ -636,7 +630,14 @@ mod tests {
         .expect("valid inputs");
         assert_eq!(result.mode, DecisionMode::Multipath);
         assert_eq!(result.allocations.len(), 2);
-        assert_eq!(result.allocations.iter().map(|item| item.bytes).sum::<u64>(), request().bytes);
+        assert_eq!(
+            result
+                .allocations
+                .iter()
+                .map(|item| item.bytes)
+                .sum::<u64>(),
+            request().bytes
+        );
     }
 
     #[test]
@@ -645,11 +646,19 @@ mod tests {
         ineligible.broker_eligible = false;
         let result = evaluate(
             &request(),
-            &[ineligible, path("allowed", 20_000, 10_000_000, 50, "allowed")],
+            &[
+                ineligible,
+                path("allowed", 20_000, 10_000_000, 50, "allowed"),
+            ],
             Strategy::AggregateCapacity,
         )
         .expect("valid inputs");
-        assert!(result.allocations.iter().all(|item| item.path_id != "blocked"));
+        assert!(
+            result
+                .allocations
+                .iter()
+                .all(|item| item.path_id != "blocked")
+        );
         assert_eq!(result.exclusions[0].reason, "broker_ineligible");
     }
 
@@ -689,12 +698,8 @@ mod tests {
         stale.telemetry_fresh = false;
         let mut untrusted = path("untrusted", 1, 50_000_000, 1, "b");
         untrusted.trust_level = 0;
-        let result = evaluate(
-            &request(),
-            &[stale, untrusted],
-            Strategy::BestRtt,
-        )
-        .expect("valid inputs");
+        let result =
+            evaluate(&request(), &[stale, untrusted], Strategy::BestRtt).expect("valid inputs");
         assert_eq!(result.mode, DecisionMode::NoRoute);
         assert_eq!(result.exclusions.len(), 2);
     }
@@ -706,8 +711,12 @@ mod tests {
             path("a", 10_000, 20_000_000, 15, "a"),
         ];
         let first = evaluate(&request(), &paths, Strategy::IntentAware).expect("valid inputs");
-        let second = evaluate(&request(), &paths.into_iter().rev().collect::<Vec<_>>(), Strategy::IntentAware)
-            .expect("valid inputs");
+        let second = evaluate(
+            &request(),
+            &paths.into_iter().rev().collect::<Vec<_>>(),
+            Strategy::IntentAware,
+        )
+        .expect("valid inputs");
         assert_eq!(first, second);
     }
 
