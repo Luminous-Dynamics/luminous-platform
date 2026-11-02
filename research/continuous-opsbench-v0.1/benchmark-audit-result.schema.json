@@ -105,7 +105,8 @@
         "expected_rejection_controls",
         "unexpected_rejections",
         "mutation_miss_rate_ppm",
-        "expected_non_rejection_controls"
+        "expected_non_rejection_controls",
+        "mutation_overreject_rate_ppm"
       ],
       "properties": {
         "component": {
@@ -181,6 +182,14 @@
         "expected_non_rejection_controls": {
           "type": "integer",
           "minimum": 0
+        },
+        "mutation_overreject_rate_ppm": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1000000
         }
       }
     }
