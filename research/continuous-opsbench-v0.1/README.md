@@ -72,3 +72,10 @@ This is still structural validation. The typed source-evidence adapter must auth
 The additive validator in `src/runtime.rs` joins one runtime observer attestation to every planned Candidate/Baseline arm using the raw-event-derived sealed ledger. It checks challenge freshness (24-hour maximum TTL), observer and challenge authority separation, run-scoped contiguous sequences, clock-uncertainty-aware measurement coverage, non-aliasing runtime/namespace identities, complete telemetry, and hard denials for oracle/artifact reads, disallowed egress and cross-trial state. See `RUNTIME_ENFORCEMENT_V0_1.md` and `runtime-trial-attestation.schema.json`.
 
 Only `validate_runtime_attestations_from_events` is public as the certification entry point. The lower-level summary composition is private. Signatures, durable cross-run replay protection, challenge issuance, allowlist event verification and actual kernel/hypervisor enforcement remain external obligations.
+
+
+### Independent observer calibration v0.1
+
+The additive evaluator in `src/observer_calibration.rs` compares evaluator-private expected positive/negative probes with independent injection and runtime-observer detection receipts. It computes per-channel and run-level sensitivity, specificity, precision, misses, false positives/negatives, unknown classifications, conservative latency bounds using both clocks, and unique independent probe-cluster counts. It requires a positive and negative known-answer control for every included channel/arm. See `OBSERVER_CALIBRATION_V0_1.md` and `observer-calibration-bundle.schema.json`.
+
+The expected plan is private to the evaluator/injector boundary; it is not delivered to the agent. The typed evidence adapter must authenticate challenge, injection and detection publishers and consume replay state. This structural evaluator does not prove that a kernel/hypervisor cannot suppress an event or that real instrumentation covers every path.
