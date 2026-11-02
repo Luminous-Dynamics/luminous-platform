@@ -1117,8 +1117,8 @@ mod tests {
                 mutation.push(MutationControl {
                     mutation_id: format!("{component:?}-mutation-{i}"),
                     component,
-                    expected_rejection: true,
-                    observed_rejection: true,
+                    expected_rejection: i < 10,
+                    observed_rejection: i < 10,
                 });
             }
         }
@@ -1176,7 +1176,7 @@ mod tests {
             .find(|component| component.component == BenchmarkComponent::UserTask).unwrap();
         assert_eq!(user.false_positive_rate_ppm, Some(200_000));
         assert_eq!(user.false_negative_rate_ppm, Some(200_000));
-        assert_eq!(user.mutation_miss_rate_ppm, Some(66_666));
+        assert_eq!(user.mutation_miss_rate_ppm, Some(100_000));
         assert_eq!(user.expected_rejection_controls, 15);
     }
 
