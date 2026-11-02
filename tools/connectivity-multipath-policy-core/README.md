@@ -27,7 +27,7 @@ All arithmetic is integer-only:
 - cost: caller-declared integer microcurrency per MiB;
 - energy: microwatt-hours per MiB.
 
-Cost currency identity and exchange-rate provenance remain caller-owned. Never compare two rates in different currencies. The upstream broker enforces eligibility; this core enforces the task's stated numeric ceilings using the supplied units.
+Every path carries an explicit uppercase three-letter cost currency code, and the request declares the expected code. Mismatches are excluded before ranking; malformed request codes are rejected. The caller remains responsible for using a valid ISO-4217 code and supplying current exchange-rate provenance when converting quotes. Never compare two rates in different currencies. The upstream broker enforces eligibility; this core enforces the task's stated numeric ceilings using the supplied units.
 
 ## Strategies
 
