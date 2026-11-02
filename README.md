@@ -123,6 +123,8 @@ You can also pin [Nixward](https://github.com/Luminous-Dynamics/nixward) or [Sov
 
 The platform should be evaluated on operational outcomes, not feature count alone.
 
+Cross-project benchmark methodology is maintained in the [Luminous Dynamics benchmark programme](https://github.com/Luminous-Dynamics/.github/blob/main/benchmarks/README.md). An experimental [Luminous Evidence Result Profile](https://github.com/Luminous-Dynamics/.github/tree/main/standards/evidence/v0.1) describes how a result can record its subject, inputs, execution context, checks, uncertainty, and limitations inside an established attestation envelope. The profile is a draft and does not replace in-toto, SLSA, or component-specific qualification requirements.
+
 | Area | Evidence to collect |
 |---|---|
 | Change safety | Unauthorized-action negative controls; policy-denial behavior; no silent actuation |
