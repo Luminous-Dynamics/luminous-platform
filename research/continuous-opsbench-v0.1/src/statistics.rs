@@ -17,6 +17,10 @@ pub const MAX_BOOTSTRAP_REPLICATES: u32 = 100_000;
 pub const MAX_INDEPENDENT_CLUSTERS: usize = 100_000;
 pub const MAX_EXACT_RARE_EVENT_COUNT: u64 = 100_000;
 pub const MAX_EXACT_RARE_TRIALS: u64 = 1_000_000_000;
+/// Confirmatory superiority claims require at least this many independent clusters.
+pub const MIN_CONFIRMATORY_CLUSTERS: usize = 500;
+/// Confirmatory runs use at least 10,000 paired-cluster bootstrap replicates.
+pub const MIN_CONFIRMATORY_BOOTSTRAP_REPLICATES: u32 = 10_000;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ArmOutcomeCounts {
@@ -43,8 +47,16 @@ pub struct PairedCluster {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum InferenceClaimMode {
+    Exploratory,
+    Confirmatory,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct InferencePlan {
     pub schema: String,
+    pub claim_mode: InferenceClaimMode,
     pub algorithm_version: String,
     /// Seed is committed by the external freeze/evidence authority; this module
     /// uses the first 64 bits as a deterministic resampling seed.
@@ -61,6 +73,7 @@ pub struct InferencePlan {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SuperiorityVerdict {
+    ExploratoryOnly,
     SuperiorityEstablished,
     NotEstablished,
     IndeterminateCoverageExceeded,
@@ -137,6 +150,8 @@ pub enum InferenceError {
     ExactRareEventWorkLimitExceeded,
     InvalidRareEventConfidence,
     InvalidRareEventRiskCeiling,
+    ConfirmatoryClusterFloorNotMet,
+    ConfirmatoryBootstrapFloorNotMet,
 }
 
 #[derive(Clone, Copy)]
@@ -358,6 +373,8 @@ pub fn evaluate_paired_clusters(
         > plan.maximum_indeterminate_rate_ppm as i64
     {
         SuperiorityVerdict::IndeterminateCoverageExceeded
+    } else if plan.claim_mode == InferenceClaimMode::Exploratory {
+        SuperiorityVerdict::ExploratoryOnly
     } else if effect_lower_ci.lower_ppm > plan.minimum_meaningful_effect_ppm {
         SuperiorityVerdict::SuperiorityEstablished
     } else {
@@ -399,6 +416,16 @@ fn validate_plan(plan: &InferencePlan) -> Result<(), InferenceError> {
         || plan.minimum_independent_clusters > MAX_INDEPENDENT_CLUSTERS
     {
         return Err(InferenceError::InsufficientIndependentClusters);
+    }
+    if plan.claim_mode == InferenceClaimMode::Confirmatory
+        && plan.minimum_independent_clusters < MIN_CONFIRMATORY_CLUSTERS
+    {
+        return Err(InferenceError::ConfirmatoryClusterFloorNotMet);
+    }
+    if plan.claim_mode == InferenceClaimMode::Confirmatory
+        && plan.bootstrap_replicates < MIN_CONFIRMATORY_BOOTSTRAP_REPLICATES
+    {
+        return Err(InferenceError::ConfirmatoryBootstrapFloorNotMet);
     }
     if !(MIN_BOOTSTRAP_REPLICATES..=MAX_BOOTSTRAP_REPLICATES)
         .contains(&plan.bootstrap_replicates)
@@ -524,7 +551,7 @@ pub fn clopper_pearson_upper(
     }
     let alpha = (10_000 - confidence_level_bps) as f64 / 10_000.0;
     if events == 0 {
-        return Ok(1.0 - alpha.powf(1.0 / trials as f64));
+        return Ok(-((alpha.ln() / trials as f64).exp_m1()));
     }
 
     let mut lower = 0.0;
@@ -589,7 +616,7 @@ pub fn zero_event_sample_size(
     }
     let alpha = (10_000 - confidence_level_bps) as f64 / 10_000.0;
     let risk = maximum_risk_ppm as f64 / 1_000_000.0;
-    Ok((alpha.ln() / (1.0 - risk).ln()).ceil() as u64)
+    Ok((alpha.ln() / (-risk).ln_1p()).ceil() as u64)
 }
 
 #[cfg(test)]
@@ -630,6 +657,7 @@ mod tests {
     fn plan(seed: u8, clusters: usize) -> InferencePlan {
         InferencePlan {
             schema: INFERENCE_SCHEMA.into(),
+            claim_mode: InferenceClaimMode::Exploratory,
             algorithm_version: BOOTSTRAP_ALGORITHM.into(),
             bootstrap_seed_commitment: digest(seed),
             minimum_independent_clusters: clusters,
@@ -662,7 +690,27 @@ mod tests {
         assert_eq!(result.baseline.verified_rate_ci.lower_ppm, 500_000);
         assert_eq!(result.paired_effect.conservative_effect_lower_mean_ppm, 200_000);
         assert_eq!(result.paired_effect.conservative_effect_upper_mean_ppm, 400_000);
+        assert_eq!(result.verdict, SuperiorityVerdict::ExploratoryOnly);
+    }
+
+    #[test]
+    fn confirmatory_superiority_requires_five_hundred_clusters_and_ten_thousand_replicates() {
+        let clusters: Vec<PairedCluster> = (0..MIN_CONFIRMATORY_CLUSTERS)
+            .map(|index| cluster(&format!("confirmatory-{index:04}"), counts(8, 1, 1), counts(5, 4, 1)))
+            .collect();
+        let mut configured = plan(89, MIN_CONFIRMATORY_CLUSTERS);
+        configured.claim_mode = InferenceClaimMode::Confirmatory;
+        configured.bootstrap_replicates = MIN_CONFIRMATORY_BOOTSTRAP_REPLICATES;
+        let result = evaluate_paired_clusters(&configured, &clusters).unwrap();
         assert_eq!(result.verdict, SuperiorityVerdict::SuperiorityEstablished);
+        assert_eq!(result.independent_clusters, MIN_CONFIRMATORY_CLUSTERS);
+        assert_eq!(result.bootstrap_replicates, MIN_CONFIRMATORY_BOOTSTRAP_REPLICATES);
+
+        configured.minimum_independent_clusters = MIN_CONFIRMATORY_CLUSTERS - 1;
+        assert_eq!(evaluate_paired_clusters(&configured, &clusters), Err(InferenceError::ConfirmatoryClusterFloorNotMet));
+        configured.minimum_independent_clusters = MIN_CONFIRMATORY_CLUSTERS;
+        configured.bootstrap_replicates = MIN_CONFIRMATORY_BOOTSTRAP_REPLICATES - 1;
+        assert_eq!(evaluate_paired_clusters(&configured, &clusters), Err(InferenceError::ConfirmatoryBootstrapFloorNotMet));
     }
 
     #[test]
