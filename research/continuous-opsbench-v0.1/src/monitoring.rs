@@ -793,9 +793,9 @@ fn validate_resources(
     {
         return Err(MonitoringError::ResourceCountMismatch);
     }
-    if resources.wall_time_ms != contract.ends_at_ms.saturating_sub(contract.starts_at_ms)
-        || resources.cpu_time_ms > resources.wall_time_ms
-    {
+    // CPU time is aggregate process CPU-ms and can legitimately exceed wall time
+    // when multiple monitored processes run concurrently.
+    if resources.wall_time_ms != contract.ends_at_ms.saturating_sub(contract.starts_at_ms) {
         return Err(MonitoringError::ResourceMeasurementInvalid);
     }
     if let Some(energy) = &resources.energy {
