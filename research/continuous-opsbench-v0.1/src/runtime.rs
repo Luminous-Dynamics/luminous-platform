@@ -1726,6 +1726,7 @@ mod tests {
             &scenarios,
             &[],
             &events,
+            &observer_fitness_bundle(&manifest, &freeze),
             &challenges,
             &attestations,
         ).unwrap();
@@ -1743,7 +1744,7 @@ mod tests {
         let challenges = challenge_receipts(&attestations);
         assert!(matches!(
             validate_runtime_attestations_from_events(
-                &manifest, &freeze, &scenarios, &[], &events, &challenges, &attestations
+                &manifest, &freeze, &scenarios, &[], &events, &observer_fitness_bundle(&manifest, &freeze), &challenges, &attestations
             ),
             Err(RuntimeAttestationError::TrialLedgerInvalid(_))
         ));
@@ -1755,7 +1756,7 @@ mod tests {
         let events = complete_trial_events(&manifest, &scenarios);
         let challenges = challenge_receipts(&attestations);
         let result = validate_runtime_attestations_from_events(
-            &manifest, &freeze, &scenarios, &[], &events, &challenges, &attestations
+            &manifest, &freeze, &scenarios, &[], &events, &observer_fitness_bundle(&manifest, &freeze), &challenges, &attestations
         ).unwrap();
         assert_eq!(result.complete_attestations, manifest.trials.len() * 2);
     }
@@ -1827,7 +1828,7 @@ mod tests {
         let mut challenges = challenge_receipts(&attestations);
         challenges.pop();
         assert!(matches!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &challenges, &attestations),
+            validate_with_challenges(&manifest, &freeze, &ledger, &scenarios, &challenges, &attestations),
             Err(RuntimeAttestationError::ChallengeReceiptMissing(_, _))
         ));
     }
@@ -1838,7 +1839,7 @@ mod tests {
         let challenges = challenge_receipts(&attestations);
         attestations[0].challenge_receipt_digest = digest(99);
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &challenges, &attestations),
+            validate_with_challenges(&manifest, &freeze, &ledger, &scenarios, &challenges, &attestations),
             Err(RuntimeAttestationError::ChallengeReceiptBindingMismatch(
                 "trial-a".into(), EvaluationArm::Candidate
             ))
@@ -1851,14 +1852,14 @@ mod tests {
         let mut challenges = challenge_receipts(&attestations);
         challenges[0].challenge_authority_control_domain = manifest.agent.control_domain.clone();
         assert!(matches!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &challenges, &attestations),
+            validate_with_challenges(&manifest, &freeze, &ledger, &scenarios, &challenges, &attestations),
             Err(RuntimeAttestationError::ChallengeReceiptBindingMismatch(_, _))
                 | Err(RuntimeAttestationError::ChallengeReceiptAuthorityMismatch)
         ));
         let (manifest, freeze, ledger, scenarios, attestations) = fixture();
         let mut challenges = challenge_receipts(&attestations);
         challenges[0].arm = EvaluationArm::Baseline;
-        assert!(validate_runtime_attestations(
+        assert!(validate_with_challenges(
             &manifest, &freeze, &ledger, &scenarios, &challenges, &attestations
         ).is_err());
     }
@@ -1869,7 +1870,7 @@ mod tests {
         let mut challenges = challenge_receipts(&attestations);
         challenges[1].sequence = challenges[0].sequence;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &challenges, &attestations),
+            validate_with_challenges(&manifest, &freeze, &ledger, &scenarios, &challenges, &attestations),
             Err(RuntimeAttestationError::DuplicateObserverSequence)
         );
     }
@@ -1880,14 +1881,14 @@ mod tests {
         let mut challenges = challenge_receipts(&attestations);
         challenges[0].receipt_digest = digest(0);
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &challenges, &attestations),
+            validate_with_challenges(&manifest, &freeze, &ledger, &scenarios, &challenges, &attestations),
             Err(RuntimeAttestationError::ChallengeReceiptDigestInvalid)
         );
         let (manifest, freeze, ledger, scenarios, attestations) = fixture();
         let mut challenges = challenge_receipts(&attestations);
         challenges[1].receipt_digest = challenges[0].receipt_digest.clone();
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &challenges, &attestations),
+            validate_with_challenges(&manifest, &freeze, &ledger, &scenarios, &challenges, &attestations),
             Err(RuntimeAttestationError::ChallengeReceiptDigestInvalid)
         );
     }
@@ -2041,7 +2042,7 @@ mod tests {
         let challenges = challenge_receipts(&attestations);
         attestations[0].receipt_sequence = 10;
         assert_eq!(
-            validate_runtime_attestations(
+            validate_with_challenges(
                 &manifest, &freeze, &ledger, &scenarios, &challenges, &attestations
             ),
             Err(RuntimeAttestationError::ObserverSequenceNotContiguous)
