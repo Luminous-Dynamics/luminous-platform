@@ -190,23 +190,16 @@ pub struct RuntimeAttestationSummary {
     pub runtime_observer_adapter_digest: Digest,
     pub runtime_challenge_authority_id: String,
     pub runtime_challenge_authority_control_domain: String,
-    pub runtime_kernel_profile_digest: Digest,
-    pub observer_fitness_plan_digest: Digest,
-    pub pre_run_fitness_receipt_digest: Digest,
-    pub post_run_fitness_receipt_digest: Digest,
-    pub positive_fitness_controls: usize,
-    pub negative_fitness_controls: usize,
-    pub loss_fitness_controls: usize,
     pub evidence: Vec<RuntimeTrialEvidence>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct ObserverFitnessPair {
     pre_run: ObserverFitnessBatchSummary,
     post_run: ObserverFitnessBatchSummary,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum RuntimeAttestationError {
     UnsupportedSchema(String),
     LedgerManifestMismatch,
