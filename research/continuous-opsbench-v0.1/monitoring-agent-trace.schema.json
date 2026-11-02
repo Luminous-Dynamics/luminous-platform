@@ -1,0 +1,420 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-monitoring-agent-trace-v0.1.json",
+  "title": "Continuous OpsBench agent-visible monitoring trace and resource evidence v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "observations",
+    "wait_decisions",
+    "actions",
+    "resources",
+    "evidence"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "continuous-opsbench-monitoring-agent-trace-v0.1"
+    },
+    "observations": {
+      "type": "array",
+      "maxItems": 1000000,
+      "items": {
+        "$ref": "#/$defs/observation"
+      }
+    },
+    "wait_decisions": {
+      "type": "array",
+      "maxItems": 1000000,
+      "items": {
+        "$ref": "#/$defs/wait"
+      }
+    },
+    "actions": {
+      "type": "array",
+      "maxItems": 1000000,
+      "items": {
+        "$ref": "#/$defs/action"
+      }
+    },
+    "resources": {
+      "$ref": "#/$defs/resources"
+    },
+    "evidence": {
+      "$ref": "#/$defs/evidence"
+    }
+  },
+  "$defs": {
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario_id",
+        "task_id",
+        "observation_id",
+        "sequence",
+        "observed_at_ms",
+        "condition_digest",
+        "condition",
+        "is_baseline_capture",
+        "state_snapshot_digest",
+        "observer_source_id",
+        "observer_control_domain",
+        "complete"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "task_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "observation_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "observed_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "condition_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "condition": {
+          "enum": [
+            "absent",
+            "present",
+            "unknown"
+          ]
+        },
+        "is_baseline_capture": {
+          "type": "boolean"
+        },
+        "state_snapshot_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "observer_source_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "observer_control_domain": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "complete": {
+          "type": "boolean"
+        }
+      }
+    },
+    "wait": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario_id",
+        "task_id",
+        "decision_id",
+        "sequence",
+        "strategy",
+        "decided_at_ms",
+        "requested_wait_ms",
+        "actual_wait_ms",
+        "wake_cause",
+        "resulting_observation_id",
+        "event_stream_complete"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "task_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "decision_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "strategy": {
+          "enum": [
+            "event_driven",
+            "bounded_polling",
+            "fixed_sleep",
+            "exponential_backoff"
+          ]
+        },
+        "decided_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "requested_wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "actual_wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wake_cause": {
+          "enum": [
+            "signal",
+            "timeout",
+            "external_interrupt",
+            "cancelled",
+            "unknown"
+          ]
+        },
+        "resulting_observation_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 256
+        },
+        "event_stream_complete": {
+          "type": "boolean"
+        }
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario_id",
+        "task_id",
+        "action_id",
+        "trigger_observation_id",
+        "action_digest",
+        "attempted_at_ms",
+        "completed_at_ms",
+        "gate_authorized",
+        "participant_committed",
+        "participant_effect_cursor"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "task_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "action_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "trigger_observation_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 256
+        },
+        "action_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "attempted_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "completed_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "gate_authorized": {
+          "type": "boolean"
+        },
+        "participant_committed": {
+          "type": "boolean"
+        },
+        "participant_effect_cursor": {
+          "type": "string",
+          "maxLength": 1024
+        }
+      }
+    },
+    "energy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "energy_microjoules",
+        "device_identity_digest",
+        "calibration_profile_digest",
+        "sample_started_at_ms",
+        "sample_ended_at_ms",
+        "uncertainty_ppm",
+        "hardware_source_id"
+      ],
+      "properties": {
+        "energy_microjoules": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "device_identity_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "calibration_profile_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "sample_started_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sample_ended_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "uncertainty_ppm": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "hardware_source_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model_tokens",
+        "tool_calls",
+        "observation_calls",
+        "polling_calls",
+        "event_wait_calls",
+        "api_cost_microusd",
+        "cpu_time_ms",
+        "wall_time_ms",
+        "energy"
+      ],
+      "properties": {
+        "model_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tool_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "observation_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "polling_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "event_wait_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "api_cost_microusd": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cpu_time_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wall_time_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "energy": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/energy"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coverage",
+        "sequence_gap_count",
+        "dropped_event_count",
+        "telemetry_source_id",
+        "telemetry_control_domain",
+        "issued_at_ms",
+        "clock_uncertainty_ms",
+        "resource_measurements_complete"
+      ],
+      "properties": {
+        "coverage": {
+          "enum": [
+            "complete",
+            "partial",
+            "unknown",
+            "tampered"
+          ]
+        },
+        "sequence_gap_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dropped_event_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "telemetry_source_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "telemetry_control_domain": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "issued_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "clock_uncertainty_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "resource_measurements_complete": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}
