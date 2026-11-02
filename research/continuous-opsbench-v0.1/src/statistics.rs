@@ -325,7 +325,7 @@ pub fn evaluate_paired_clusters(
         .sum::<f64>() * scale;
 
     let verdict = if maximum_indeterminate
-        > plan.maximum_indeterminate_rate_ppm as i64
+        > plan.maximum_indeterminate_rate_ppm as f64
     {
         SuperiorityVerdict::IndeterminateCoverageExceeded
     } else if effect_lower_ci.lower_ppm > plan.minimum_meaningful_effect_ppm {
@@ -349,8 +349,8 @@ pub fn evaluate_paired_clusters(
             conservative_effect_lower_ci: effect_lower_ci,
             conservative_effect_upper_ci: effect_upper_ci,
         },
-        mean_candidate_indeterminate_rate_ppm: candidate_indeterminate_mean,
-        mean_baseline_indeterminate_rate_ppm: baseline_indeterminate_mean,
+        mean_candidate_indeterminate_rate_ppm: candidate_indeterminate_mean.round() as i64,
+        mean_baseline_indeterminate_rate_ppm: baseline_indeterminate_mean.round() as i64,
         maximum_mean_arm_indeterminate_rate_ppm: maximum_indeterminate.round() as i64,
         minimum_meaningful_effect_ppm: plan.minimum_meaningful_effect_ppm,
         maximum_indeterminate_rate_ppm: plan.maximum_indeterminate_rate_ppm,
