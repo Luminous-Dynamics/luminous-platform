@@ -1404,7 +1404,7 @@ mod tests {
             challenge_receipt_digest: digest(70u8.saturating_add(sequence as u8)),
             challenge_authority_id: manifest.runtime_challenge_authority_id.clone(),
             challenge_authority_control_domain: manifest.runtime_challenge_authority_control_domain.clone(),
-            challenge_issued_at_ms: 25,
+            challenge_issued_at_ms: 35,
             challenge_expires_at_ms: measurement_end_ms + 100,
             receipt_sequence: sequence,
             issued_at_ms: measurement_end_ms + 1,
