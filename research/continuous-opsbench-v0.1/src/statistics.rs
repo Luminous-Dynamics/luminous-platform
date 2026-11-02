@@ -46,7 +46,6 @@ pub struct PairedCluster {
     pub baseline: ArmClusterRecord,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum InferenceClaimMode {
     Exploratory,
