@@ -325,7 +325,7 @@ pub trait CandidateActCanonicalizer {
 /// Act-bound, single-use authorization. The participant finality sink MUST independently
 /// verify its signature and all bindings and atomically consume handle_id/nonce with the effect.
 /// Public fields are wire claims; this struct alone is not proof of signature validity.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ExecutionHandle {
     pub handle_id: String,
     pub handle_digest: Digest,
@@ -911,6 +911,8 @@ fn map_state(state: ParticipantState) -> AttemptStatus {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::{Arc, Mutex};
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
     #[derive(Clone)]
     struct FakeParticipant {
@@ -919,6 +921,10 @@ mod tests {
         logical_action: LogicalActionEvidence,
         query_updates_logical_action: bool,
         submit_calls: usize,
+        finality_supported: bool,
+        finality_submit_calls: usize,
+        used_finality_handles: Arc<Mutex<HashSet<Digest>>>,
+        finality_commit_count: Arc<AtomicUsize>,
     }
 
     impl ParticipantPort for FakeParticipant {
@@ -946,6 +952,90 @@ mod tests {
             self.logical_action.latest_attempt = Some(observed);
             result
         }
+        fn submit_with_finality(
+            &mut self,
+            r: &DispatchRequest,
+            handle: &ExecutionHandle,
+            now_ms: u64,
+        ) -> Result<ParticipantEvidence, ParticipantError> {
+            if !self.finality_supported {
+                return Err(ParticipantError::FinalityUnsupported);
+            }
+            let reconstructed = CandidateAct {
+                request: r.clone(),
+                runtime_evidence_digest: handle.runtime_evidence_digest.clone(),
+                challenge_receipt_digest: handle.challenge_receipt_digest.clone(),
+                challenge_nonce_digest: handle.challenge_nonce_digest.clone(),
+            };
+            let act_digest = TestCanonicalizer.canonical_digest(&reconstructed)
+                .map_err(|_| ParticipantError::FinalityRejected)?;
+            let exact = handle.handle_digest != Digest::ZERO
+                && handle.signature.len() >= 32
+                && handle.act_digest == act_digest
+                && handle.audience == r.participant_id
+                && handle.finality_sink_id == r.participant_id
+                && handle.tenant_id == r.tenant_id
+                && handle.principal_id == r.principal_id
+                && handle.participant_id == r.participant_id
+                && handle.plan_digest == r.plan_digest
+                && handle.evaluation_run_id == r.evaluation_run_id
+                && handle.evaluation_trial_id == r.evaluation_trial_id
+                && handle.evaluation_arm_id == r.evaluation_arm_id
+                && handle.step_id == r.step_id
+                && handle.tool_id == r.tool_id
+                && handle.operation_id == r.operation_id
+                && handle.grant_id == r.grant_id
+                && handle.grant_issuer == r.grant_issuer
+                && handle.grant_scope == r.grant_scope
+                && handle.manifest_version == r.manifest_version
+                && handle.manifest_digest == r.manifest_digest
+                && handle.toolchain_id == r.toolchain_id
+                && handle.toolchain_digest == r.toolchain_digest
+                && handle.policy_version == r.policy_version
+                && handle.policy_digest == r.policy_digest
+                && handle.environment == r.environment
+                && handle.risk_level == r.risk_level
+                && handle.effect_class == r.effect_class
+                && handle.target_digest == r.target_digest
+                && handle.request_digest == r.request_digest
+                && handle.attempt_id == r.attempt_id
+                && handle.idempotency_key == r.idempotency_key
+                && handle.issued_at_ms <= now_ms
+                && now_ms < handle.expires_at_ms
+                && handle.expires_at_ms <= r.grant_expires_at_ms;
+            if !exact {
+                return Err(ParticipantError::FinalityRejected);
+            }
+            {
+                let mut used = self.used_finality_handles.lock()
+                    .map_err(|_| ParticipantError::TransportOrOutcomeUnknown)?;
+                if !used.insert(handle.handle_digest.clone()) {
+                    return Err(ParticipantError::FinalityRejected);
+                }
+            }
+            self.finality_submit_calls += 1;
+            self.submit_calls += 1;
+            self.finality_commit_count.fetch_add(1, Ordering::SeqCst);
+            let result = self.submit_result.clone();
+            let mut observed = match &result {
+                Ok(e) => e.clone(),
+                Err(_) => ParticipantEvidence {
+                    participant_id: r.participant_id.clone(),
+                    tenant_id: r.tenant_id.clone(),
+                    idempotency_key: r.idempotency_key.clone(),
+                    attempt_id: r.attempt_id.clone(),
+                    request_digest: r.request_digest.clone(),
+                    ledger_cursor: "ledger:finality-unknown".into(),
+                    state: ParticipantState::Unknown,
+                    finality_handle_digest: Some(handle.handle_digest.clone()),
+                },
+            };
+            observed.finality_handle_digest = Some(handle.handle_digest.clone());
+            self.logical_action.ledger_cursor = observed.ledger_cursor.clone();
+            self.logical_action.latest_attempt = Some(observed.clone());
+            result.map(|_| observed)
+        }
+
         fn query_same_attempt(&mut self, _tenant: &str, _key: &str, _a: &str, _d: &Digest)
             -> Result<ParticipantEvidence, ParticipantError> {
             let result = self.query_result.clone();
@@ -1027,6 +1117,10 @@ mod tests {
                 ledger_cursor: "ledger:0".into(), latest_attempt: None },
             query_updates_logical_action: true,
             submit_calls: 0,
+            finality_supported: false,
+            finality_submit_calls: 0,
+            used_finality_handles: Arc::new(Mutex::new(HashSet::new())),
+            finality_commit_count: Arc::new(AtomicUsize::new(0)),
         };
         (EffectBroker::new(registry, participant), proposal, grant, context)
     }
