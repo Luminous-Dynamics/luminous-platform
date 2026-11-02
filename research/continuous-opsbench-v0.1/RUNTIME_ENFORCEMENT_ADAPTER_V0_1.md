@@ -6,8 +6,10 @@ This document specifies an implementation path for the runtime receipt contract 
 
 The required proof chain is:
 
-1. the run freeze commits the policy, environment, observer and challenge-authority identities;
-2. a separate challenge authority issues a fresh one-use challenge for each planned trial × arm;
+1. the run freeze commits the policy, environment, observer, challenge authority, kernel profile, fitness plan, probe injector and fitness verifier identities;
+2. an isolated observer-fitness calibration sandbox executes the frozen positive/negative/loss probe plan;
+3. a distinct pre-run fitness receipt is issued and remains valid through every runtime interval and receipt;
+4. a separate challenge authority issues a fresh one-use challenge for each planned trial × arm, binding the exact pre-run fitness receipt and kernel profile;
 3. a sandbox launcher creates a unique runtime instance and writable namespace;
 4. a runtime observer starts before the evaluated process tree and remains active until the final child exits;
 5. the observer emits a source-authenticated record with complete coverage and exact event-stream commitments;
