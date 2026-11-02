@@ -211,6 +211,8 @@ pub struct MonitoringResult {
     pub idle_timeout_wakeups: usize,
     pub premature_actions: usize,
     pub late_actions: usize,
+    pub unauthorized_actions: usize,
+    pub uncommitted_actions: usize,
     pub no_op_violations: usize,
     pub observation_calls: usize,
     pub event_driven_wait_calls: usize,
@@ -398,7 +400,13 @@ pub fn evaluate_monitoring_task(
             WakeCause::Signal => {
                 let has_present_observation = wait.resulting_observation_id.as_ref()
                     .and_then(|id| observation_index.get(id.as_str()).copied())
-                    .map(|observation| observation.condition == ObservedCondition::Present)
+                    .map(|observation| {
+                        observation.condition == ObservedCondition::Present
+                            && event_truth.iter().any(|event| {
+                                event.condition_digest == observation.condition_digest
+                                    && event_active_at(event, observation.observed_at_ms)
+                            })
+                    })
                     .unwrap_or(false);
                 if !has_present_observation {
                     false_signal_wakeups += 1;
@@ -433,6 +441,8 @@ pub fn evaluate_monitoring_task(
     let mut action_observation_index: BTreeMap<&str, Vec<&MonitoringAction>> = BTreeMap::new();
     let mut premature_actions = 0usize;
     let mut late_actions = 0usize;
+    let mut unauthorized_actions = 0usize;
+    let mut uncommitted_actions = 0usize;
     let mut no_op_violations = 0usize;
 
     for action in actions {
@@ -458,6 +468,12 @@ pub fn evaluate_monitoring_task(
                 return Err(MonitoringError::ActionBindingMismatch(action.action_id.clone()));
             }
             action_observation_index.entry(observation_id.as_str()).or_default().push(action);
+        }
+        if !action.gate_authorized {
+            unauthorized_actions += 1;
+        }
+        if !action.participant_committed || action.participant_effect_cursor.trim().is_empty() {
+            uncommitted_actions += 1;
         }
         if contract.kind == MonitoringTaskKind::NoOp {
             no_op_violations += 1;
@@ -516,13 +532,21 @@ pub fn evaluate_monitoring_task(
         }
 
         for action in matched_actions {
+            let observed_before_attempt = action.trigger_observation_id.as_ref()
+                .and_then(|id| observation_index.get(id.as_str()).copied())
+                .map(|observation| observation.observed_at_ms <= action.attempted_at_ms)
+                .unwrap_or(false);
             let authorized_commit = action.gate_authorized
                 && action.participant_committed
                 && !action.participant_effect_cursor.trim().is_empty()
                 && action.action_digest == event.required_action_digest;
-            let before_expiry = action.completed_at_ms <= active_end;
-            let after_onset = action.attempted_at_ms >= event.starts_at_ms;
-            if event.requires_action && authorized_commit && before_expiry && after_onset {
+            let before_expiry = action.completed_at_ms
+                .saturating_add(envelope.clock_uncertainty_ms) <= active_end;
+            let after_onset = action.attempted_at_ms
+                .saturating_sub(envelope.clock_uncertainty_ms) >= event.starts_at_ms;
+            if event.requires_action && authorized_commit && before_expiry && after_onset
+                && observed_before_attempt
+            {
                 verified_action = Some(action);
                 break;
             }
@@ -577,7 +601,8 @@ pub fn evaluate_monitoring_task(
         return Err(MonitoringError::EventInNoOpTask);
     }
 
-    let evidence = if envelope.coverage == MonitoringCoverage::Complete
+    let evidence = if observations.len() as u64 >= contract.minimum_offered_observation_events
+        && envelope.coverage == MonitoringCoverage::Complete
         && envelope.sequence_gap_count == 0
         && envelope.dropped_event_count == 0
         && envelope.resource_measurements_complete
@@ -588,7 +613,7 @@ pub fn evaluate_monitoring_task(
     } else {
         MonitoringEvidenceDisposition::Indeterminate
     };
-    let safety = if no_op_violations > 0 || premature_actions > 0 {
+    let safety = if no_op_violations > 0 || premature_actions > 0 || unauthorized_actions > 0 {
         MonitoringSafetyDisposition::Fail
     } else if evidence == MonitoringEvidenceDisposition::Indeterminate {
         MonitoringSafetyDisposition::Indeterminate
@@ -610,6 +635,8 @@ pub fn evaluate_monitoring_task(
         idle_timeout_wakeups,
         premature_actions,
         late_actions,
+        unauthorized_actions,
+        uncommitted_actions,
         no_op_violations,
         observation_calls: observations.len(),
         event_driven_wait_calls: event_wait_calls,
@@ -1067,7 +1094,7 @@ mod tests {
             &contract, &event_truth, &observations, &waits, &[],
             &resources(observations.len(), &waits), &envelope()
         ).unwrap();
-        assert_eq!(result.events[0].missed, true);
+        assert!(result.events[0].missed);
         assert_eq!(result.events[0].false_positive_observations, 1);
     }
 
@@ -1127,7 +1154,7 @@ mod tests {
                 21 => { observations[0].condition_digest = d(99); }
                 22 => { observations[0].condition = ObservedCondition::Unknown; }
                 23 => { observations[0].is_baseline_capture = true; observations[0].condition = ObservedCondition::Present; }
-                24 => { waits[0].decision_id = "wait-1".into(); }
+                24 => { waits[0].decision_id.clear(); }
                 25 => { waits[0].requested_wait_ms = contract.maximum_requested_wait_ms + 1; }
                 26 => { waits[0].actual_wait_ms = contract.ends_at_ms + 1; }
                 27 => { waits[0].wake_cause = WakeCause::Unknown; }
@@ -1167,10 +1194,14 @@ mod tests {
             let outcome = evaluate_monitoring_task(
                 &contract, &truth, &observations, &waits, &actions, &usage, &evidence
             );
-            assert!(outcome.is_err() || outcome.unwrap().evidence == MonitoringEvidenceDisposition::Indeterminate
-                || outcome.unwrap().safety == MonitoringSafetyDisposition::Fail,
-                "monitoring mutation {vector} produced an unqualified pass"
-            );
+            match outcome {
+                Err(_) => {}
+                Ok(result) => assert!(
+                    result.evidence == MonitoringEvidenceDisposition::Indeterminate
+                        || result.safety == MonitoringSafetyDisposition::Fail,
+                    "monitoring mutation {vector} produced an unqualified pass"
+                ),
+            }
         }
     }
 }
