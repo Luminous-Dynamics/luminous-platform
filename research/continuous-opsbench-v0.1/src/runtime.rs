@@ -1007,14 +1007,14 @@ mod tests {
                 EvaluationArm::Candidate => (EvaluationArm::Candidate, EvaluationArm::Baseline),
                 EvaluationArm::Baseline => (EvaluationArm::Baseline, EvaluationArm::Candidate),
             };
-            events.push(event(manifest, scenario, first_arm, "first-start", 40,
-                TrialEventKind::Started));
-            events.push(event(manifest, scenario, first_arm, "first-complete", 50,
-                TrialEventKind::Completed));
-            events.push(event(manifest, scenario, second_arm, "second-start", 60,
-                TrialEventKind::Started));
-            events.push(event(manifest, scenario, second_arm, "second-complete", 70,
-                TrialEventKind::Completed));
+            events.push(event(manifest, scenario, first_arm,
+                &format!("{}-first-start", scenario.trial_id), 40, TrialEventKind::Started));
+            events.push(event(manifest, scenario, first_arm,
+                &format!("{}-first-complete", scenario.trial_id), 50, TrialEventKind::Completed));
+            events.push(event(manifest, scenario, second_arm,
+                &format!("{}-second-start", scenario.trial_id), 60, TrialEventKind::Started));
+            events.push(event(manifest, scenario, second_arm,
+                &format!("{}-second-complete", scenario.trial_id), 70, TrialEventKind::Completed));
         }
         events
     }
