@@ -1000,7 +1000,7 @@ mod tests {
             WakeCause::Timeout, Some("obs-1"))];
         let result = evaluate_monitoring_task(
             &contract, &[], &observations, &waits, &[],
-            &resources(observations.len(), &waits, 1), &envelope()
+            &resources(observations.len(), &waits, 0), &envelope()
         ).unwrap();
         assert_eq!(result.expected_events, 0);
         assert_eq!(result.no_op_violations, 0);
@@ -1046,7 +1046,7 @@ mod tests {
             WakeCause::Signal, Some("obs-1"))];
         let result = evaluate_monitoring_task(
             &contract, &[], &observations, &waits, &[],
-            &resources(observations.len(), &waits, 1), &envelope()
+            &resources(observations.len(), &waits, 0), &envelope()
         ).unwrap();
         assert_eq!(result.false_signal_wakeups, 1);
         assert_eq!(result.false_positive_observations, 0);
@@ -1062,7 +1062,7 @@ mod tests {
         evidence.coverage = MonitoringCoverage::Partial;
         let result = evaluate_monitoring_task(
             &contract, &[], &observations, &waits, &[],
-            &resources(observations.len(), &waits, 1), &evidence
+            &resources(observations.len(), &waits, 0), &evidence
         ).unwrap();
         assert_eq!(result.evidence, MonitoringEvidenceDisposition::Indeterminate);
         assert_eq!(result.polling_calls, 1);
@@ -1078,7 +1078,7 @@ mod tests {
             WakeCause::Signal, Some("obs-1"))];
         let result = evaluate_monitoring_task(
             &contract, &event_truth, &observations, &waits, &[],
-            &resources(observations.len(), &waits, 1), &envelope()
+            &resources(observations.len(), &waits, 0), &envelope()
         ).unwrap();
         assert_eq!(result.detected_events, 0);
         assert_eq!(result.missed_events, 1);
@@ -1122,7 +1122,7 @@ mod tests {
             WakeCause::Signal, Some("obs-1"))];
         let result = evaluate_monitoring_task(
             &contract, &event_truth, &observations, &waits, &[],
-            &resources(observations.len(), &waits, 1), &envelope()
+            &resources(observations.len(), &waits, 0), &envelope()
         ).unwrap();
         assert!(result.events[0].missed);
         assert_eq!(result.events[0].false_positive_observations, 1);
@@ -1133,7 +1133,7 @@ mod tests {
         let contract = contract(MonitoringTaskKind::NoOp);
         let observations = vec![observation("obs-1", 1, 1_000, ObservedCondition::Absent, false)];
         let waits = vec![];
-        let mut usage = resources(observations.len(), &waits, 1);
+        let mut usage = resources(observations.len(), &waits, 0);
         usage.energy = Some(PhysicalEnergyMeasurement {
             energy_microjoules: 1_000,
             device_identity_digest: d(10),
@@ -1157,7 +1157,7 @@ mod tests {
             let mut waits = vec![wait("wait-1", 1, 1_000, WaitStrategy::EventDriven, 1_000,
                 WakeCause::Timeout, Some("obs-1"))];
             let mut actions = Vec::new();
-            let mut usage = resources(observations.len(), &waits, 1);
+            let mut usage = resources(observations.len(), &waits, 0);
             let mut evidence = envelope();
             match vector {
                 0 => { contract.schema.push_str("-bad"); }
