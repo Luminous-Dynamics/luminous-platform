@@ -31,7 +31,7 @@ pub enum ArtifactDelivery { Embedded, CommitmentOnly, Unavailable, ExternalRefer
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ClaimStatus { Pass, Fail, Indeterminate }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ClaimKind {
     Authorization,
     ParticipantEffect,
@@ -511,13 +511,19 @@ fn validate_artifacts(
         if !source_sequences.insert((artifact.source_id.as_str(), artifact.sequence)) {
             return Err(BundleError::DuplicatePublisherSequence(artifact.source_id.clone(), artifact.sequence));
         }
+        if bundle.run_domains.iter().any(|domain| domain.control_domain == artifact.control_domain) {
+            return Err(BundleError::PublisherControlDomainCollision(artifact.artifact_id.clone()));
+        }
         let publisher = trust.trusted_publishers.iter().find(|publisher| {
             publisher.publisher_id == artifact.publisher_id
-                && publisher.key_id == artifact.publisher_key_id
-                && publisher.key_digest == artifact.publisher_key_digest
                 && publisher.control_domain == artifact.control_domain
                 && publisher.source_id == artifact.source_id
         }).ok_or_else(|| BundleError::TrustedPublisherMissing(artifact.artifact_id.clone()))?;
+        if publisher.key_id != artifact.publisher_key_id
+            || publisher.key_digest != artifact.publisher_key_digest
+        {
+            return Err(BundleError::PublisherKeyMismatch(artifact.artifact_id.clone()));
+        }
         if artifact.issued_at_ms < publisher.valid_from_ms
             || artifact.issued_at_ms > publisher.valid_until_ms
             || bundle.created_at_ms > publisher.valid_until_ms
