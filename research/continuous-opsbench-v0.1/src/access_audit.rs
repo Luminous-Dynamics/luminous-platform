@@ -205,6 +205,9 @@ pub fn validate_access_audit(
     let mut coverage_index: BTreeMap<(&str, EvaluationArm), &AccessAuditCoverage> =
         BTreeMap::new();
     for receipt in coverage {
+        if !manifest.trials.iter().any(|trial| trial.trial_id == receipt.trial_id) {
+            return Err(AccessAuditError::UnplannedCoverage(receipt.trial_id.clone(), receipt.arm));
+        }
         if receipt.schema != ACCESS_AUDIT_SCHEMA {
             return Err(AccessAuditError::UnsupportedSchema(
                 receipt.trial_id.clone(),
@@ -222,6 +225,9 @@ pub fn validate_access_audit(
     let mut events_by_arm: BTreeMap<(&str, EvaluationArm), Vec<&AccessAuditEvent>> =
         BTreeMap::new();
     for event in access_events {
+        if !manifest.trials.iter().any(|trial| trial.trial_id == event.trial_id) {
+            return Err(AccessAuditError::EventOutsidePlan(event.trial_id.clone(), event.arm));
+        }
         events_by_arm.entry((event.trial_id.as_str(), event.arm)).or_default().push(event);
     }
 
@@ -434,8 +440,9 @@ fn validate_coverage_binding(
         || receipt.trial_id != runtime.trial_id
         || receipt.arm != runtime.arm
         || receipt.manifest_commitment != freeze.manifest_commitment
-        || receipt.policy_digest != manifest.artifact_access_policy_digest
-            && receipt.policy_digest != manifest.network_egress_policy_digest
+        || receipt.state_isolation_policy_digest != manifest.state_isolation_policy_digest
+        || receipt.artifact_access_policy_digest != manifest.artifact_access_policy_digest
+        || receipt.network_egress_policy_digest != manifest.network_egress_policy_digest
         || is_zero(&receipt.monitor_session_digest)
         || is_zero(&receipt.event_stream_commitment)
     {
