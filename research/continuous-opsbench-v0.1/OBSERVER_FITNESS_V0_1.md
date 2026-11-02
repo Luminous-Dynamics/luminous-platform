@@ -53,7 +53,7 @@ The calibration runtime and writable namespace must be nonzero and distinct, and
 
 ## Required pre-run and post-run qualification
 
-A certification run now requires **at least two independently valid fitness batches**.
+A certification run now requires **exactly two independently valid fitness batches**: one pre-run qualification and one post-run requalification. Extra batches are not silently ignored or substituted.
 
 ### Pre-run qualification
 
