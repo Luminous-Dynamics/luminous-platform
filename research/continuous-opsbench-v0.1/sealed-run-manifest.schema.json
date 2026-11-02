@@ -206,7 +206,14 @@
         "runtime_observer_control_domain",
         "runtime_observer_adapter_digest",
         "runtime_challenge_authority_id",
-        "runtime_challenge_authority_control_domain"
+        "runtime_challenge_authority_control_domain",
+        "sandbox_tier",
+        "sandbox_profile_digest",
+        "supervisor_id",
+        "supervisor_source_id",
+        "supervisor_control_domain",
+        "supervisor_adapter_digest",
+        "supervisor_key_class"
       ],
       "properties": {
         "schema": {
@@ -303,6 +310,35 @@
         },
         "runtime_challenge_authority_control_domain": {
           "$ref": "#/$defs/id"
+        },
+        "sandbox_tier": {
+          "enum": [
+            "research",
+            "process",
+            "container",
+            "micro_vm"
+          ]
+        },
+        "sandbox_profile_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "supervisor_id": {
+          "$ref": "#/$defs/id"
+        },
+        "supervisor_source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "supervisor_control_domain": {
+          "$ref": "#/$defs/id"
+        },
+        "supervisor_adapter_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "supervisor_key_class": {
+          "enum": [
+            "software_test_only",
+            "hardware_protected"
+          ]
         }
       }
     },
@@ -329,7 +365,14 @@
         "runtime_observer_control_domain",
         "runtime_observer_adapter_digest",
         "runtime_challenge_authority_id",
-        "runtime_challenge_authority_control_domain"
+        "runtime_challenge_authority_control_domain",
+        "sandbox_tier",
+        "sandbox_profile_digest",
+        "supervisor_id",
+        "supervisor_source_id",
+        "supervisor_control_domain",
+        "supervisor_adapter_digest",
+        "supervisor_key_class"
       ],
       "properties": {
         "run_id": {
@@ -393,6 +436,35 @@
         },
         "runtime_challenge_authority_control_domain": {
           "$ref": "#/$defs/id"
+        },
+        "sandbox_tier": {
+          "enum": [
+            "research",
+            "process",
+            "container",
+            "micro_vm"
+          ]
+        },
+        "sandbox_profile_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "supervisor_id": {
+          "$ref": "#/$defs/id"
+        },
+        "supervisor_source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "supervisor_control_domain": {
+          "$ref": "#/$defs/id"
+        },
+        "supervisor_adapter_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "supervisor_key_class": {
+          "enum": [
+            "software_test_only",
+            "hardware_protected"
+          ]
         }
       }
     }
