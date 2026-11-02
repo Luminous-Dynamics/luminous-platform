@@ -6,8 +6,10 @@ on:
       - "tools/connectivity-policy-core/**"
       - "tools/connectivity-benchmark-profile-validator/**"
       - "profiles/connectivity-broker-benchmark-profile-v1.json"
+      - "profiles/lnf-e2e-run-manifest-v1.json"
       - "schemas/connectivity-broker-benchmark-profile-v1.schema.json"
       - "schemas/connectivity-measurement-receipt-v1.schema.json"
+      - "schemas/lnf-e2e-run-manifest-v1.schema.json"
       - "docs/CONNECTIVITY_OUTCOME_BENCHMARKS_V1.md"
       - ".github/workflows/connectivity-broker-contracts.yml"
   push:
@@ -16,8 +18,10 @@ on:
       - "tools/connectivity-policy-core/**"
       - "tools/connectivity-benchmark-profile-validator/**"
       - "profiles/connectivity-broker-benchmark-profile-v1.json"
+      - "profiles/lnf-e2e-run-manifest-v1.json"
       - "schemas/connectivity-broker-benchmark-profile-v1.schema.json"
       - "schemas/connectivity-measurement-receipt-v1.schema.json"
+      - "schemas/lnf-e2e-run-manifest-v1.schema.json"
       - "docs/CONNECTIVITY_OUTCOME_BENCHMARKS_V1.md"
       - ".github/workflows/connectivity-broker-contracts.yml"
 
@@ -65,3 +69,16 @@ jobs:
           --
           schemas/connectivity-broker-benchmark-profile-v1.schema.json
           profiles/connectivity-broker-benchmark-profile-v1.json
+
+      - name: Check formatting for validator targets
+        run: cargo fmt --manifest-path tools/connectivity-benchmark-profile-validator/Cargo.toml -- --check
+
+      - name: Validate LNF end-to-end run manifest and exact source pins
+        run: >-
+          cargo run
+          --manifest-path tools/connectivity-benchmark-profile-validator/Cargo.toml
+          --bin lnf-run-manifest-verify
+          --
+          schemas/lnf-e2e-run-manifest-v1.schema.json
+          profiles/lnf-e2e-run-manifest-v1.json
+          .
