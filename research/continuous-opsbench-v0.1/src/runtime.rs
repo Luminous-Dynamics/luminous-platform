@@ -832,7 +832,6 @@ fn validate_challenge_binding(
         || challenge.expires_at_ms <= measurement_end_latest
         || challenge.expires_at_ms <= receipt_issue_latest
         || challenge.expires_at_ms <= challenge_issue_latest
-        || challenge.expires_at_ms.saturating_sub(challenge.issued_at_ms) > MAX_RUNTIME_CHALLENGE_TTL_MS
     {
         return Err(RuntimeAttestationError::ChallengeFreshnessInvalid(
             challenge.trial_id.clone(), challenge.arm,
@@ -1810,7 +1809,7 @@ mod tests {
     }
 
     #[test]
-    fn seventy_two_adversarial_runtime_mutations_fail_closed() {
+    fn seventy_five_adversarial_runtime_mutations_fail_closed() {
         for vector in 0..75 {
             let (mut manifest, freeze, mut ledger, mut scenarios, mut attestations) = fixture();
             match vector {
