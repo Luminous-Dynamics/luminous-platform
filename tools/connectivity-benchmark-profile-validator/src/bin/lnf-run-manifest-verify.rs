@@ -346,12 +346,15 @@ fn validate_exact_ids(
     };
     let mut actual = BTreeSet::new();
     for item in items {
-        match item.as_str() {
+        let id = item
+            .as_str()
+            .or_else(|| item.get("id").and_then(Value::as_str));
+        match id {
             Some(id) if !actual.insert(id.to_owned()) => {
                 errors.push(format!("{field} contains duplicate ID {id}"));
             }
-            Some(id) => {}
-            None => errors.push(format!("{field} IDs must be strings")),
+            Some(_) => {}
+            None => errors.push(format!("{field} entries must be strings or objects with string IDs")),
         }
     }
     let expected: BTreeSet<String> = required.iter().map(|id| (*id).to_owned()).collect();
