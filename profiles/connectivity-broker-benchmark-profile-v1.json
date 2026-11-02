@@ -1,0 +1,312 @@
+{
+  "schema_version": "luminous.connectivity-broker-benchmark-profile.v1",
+  "profile_id": "provider-neutral-connectivity-broker-v1",
+  "status": "draft_targets_not_results",
+  "reviewed_at": "2026-10-18",
+  "authority": {
+    "issue": "https://github.com/Luminous-Dynamics/luminous-platform/issues/63",
+    "design_document": "docs/PROVIDER_NEUTRAL_CONNECTIVITY_BROKER_AND_COMMS_ROADMAP_V1.md",
+    "decision_core": "tools/connectivity-policy-core/"
+  },
+  "comparison_contract": {
+    "baseline_must_be_named": true,
+    "matched_quality_security_and_geographic_scope_required": true,
+    "include_hardware_energy_transit_paid_labor_support_and_taxes_where_applicable": true,
+    "show_failed_trials_and_denominators": true,
+    "simulation_must_not_be_reported_as_field_evidence": true,
+    "cost_currency_must_be_explicit": true,
+    "source_and_test_revisions_must_be_immutable": true
+  },
+  "benchmarks": [
+    {
+      "id": "POLICY_HARD_CONSTRAINTS_001",
+      "domain": "decision_core",
+      "metric": "hard_constraint_violations",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target",
+      "evidence_classes": [
+        "unit_contract_tested"
+      ],
+      "negative_cases": [
+        "cost_above_cap",
+        "unknown_cost_under_cap",
+        "wrong_currency_under_cap",
+        "untrusted_sensitive_path",
+        "unauthorized_adapter",
+        "stale_observation",
+        "required_throughput_not_met",
+        "required_latency_not_met",
+        "required_data_allowance_unknown",
+        "internet_unavailable_for_internet_intent"
+      ]
+    },
+    {
+      "id": "POLICY_EXPLANATION_001",
+      "domain": "decision_core",
+      "metric": "decisions_with_selected_path_or_explicit_no_route_and_per_candidate_reasons",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target",
+      "evidence_classes": [
+        "unit_contract_tested"
+      ],
+      "notes": "Ratio target is 1.0; every candidate must have a deterministic rank or exclusion reasons."
+    },
+    {
+      "id": "POLICY_REPLAY_001",
+      "domain": "decision_core",
+      "metric": "same_inputs_producing_identical_decision_structure",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target",
+      "evidence_classes": [
+        "unit_contract_tested"
+      ],
+      "notes": "Canonical byte-level replay additionally requires a versioned serialization/canonicalization contract."
+    },
+    {
+      "id": "POLICY_DATA_MINIMIZATION_001",
+      "domain": "decision_core",
+      "metric": "decisions_requiring_packet_or_message_content_or_browsing_history",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target",
+      "evidence_classes": [
+        "static_checked",
+        "unit_contract_tested"
+      ],
+      "notes": "Intent must be explicitly provided; do not infer it by content inspection."
+    },
+    {
+      "id": "COST_PER_USEFUL_TASK_001",
+      "domain": "economics",
+      "metric": "fully_burdened_cost_per_successful_task_reduction_vs_matched_baseline",
+      "operator": ">=",
+      "target": 0.3,
+      "target_status": "proposed_target",
+      "evidence_classes": [
+        "field_observed",
+        "independently_reviewed_qualified"
+      ],
+      "notes": "Target at least 30% lower cost without relaxing the same declared quality/security contract. Use real charges, amortized hardware, energy, paid labor, support and tax; report donated resources separately."
+    },
+    {
+      "id": "GATEWAY_FAILOVER_001",
+      "domain": "multi_wan_gateway",
+      "metric": "primary_link_failure_trials_restoring_new_eligible_sessions_within_seconds",
+      "operator": "within_threshold_success_ratio",
+      "target": {
+        "threshold_seconds": 30,
+        "successful_fraction": 0.99,
+        "minimum_trials": 100
+      },
+      "target_status": "proposed_target",
+      "evidence_classes": [
+        "bench_measured",
+        "field_observed"
+      ],
+      "negative_cases": [
+        "physical_link_down",
+        "link_up_no_upstream",
+        "dns_failure",
+        "primary_recovers",
+        "gateway_reboot"
+      ],
+      "notes": "Existing sessions may reset; report that separately. Failover does not equal bandwidth bonding."
+    },
+    {
+      "id": "LOCAL_CONTINUITY_001",
+      "domain": "local_first",
+      "metric": "hours_essential_local_services_work_with_all_wan_links_disconnected",
+      "operator": ">=",
+      "target": 24,
+      "target_status": "proposed_target",
+      "evidence_classes": [
+        "bench_measured",
+        "field_observed"
+      ],
+      "notes": "Assumes local node, LAN and power remain available; test both cable removal and upstream blackholing."
+    },
+    {
+      "id": "SERVICE_AVAILABILITY_001",
+      "domain": "service_quality",
+      "metric": "monthly_service_availability",
+      "operator": ">=",
+      "target": 0.995,
+      "target_status": "proposed_target",
+      "evidence_classes": [
+        "field_observed"
+      ],
+      "dimensions": [
+        "local_services",
+        "lan",
+        "each_wan",
+        "global_internet"
+      ]
+    },
+    {
+      "id": "WIFI_ROAMING_BASELINE_001",
+      "domain": "wifi_roaming",
+      "metric": "arrival_to_usable_authenticated_ip_connectivity",
+      "operator": "baseline_then_set_target",
+      "target": null,
+      "target_status": "baseline_first",
+      "evidence_classes": [
+        "bench_measured",
+        "field_observed"
+      ],
+      "dimensions": [
+        "median_ms",
+        "p95_ms",
+        "authentication_failure_fraction",
+        "privacy",
+        "user_cost",
+        "device_model",
+        "federation"
+      ],
+      "notes": "Requires actual Passpoint/OpenRoaming federation credentials and compatible AP/client devices."
+    },
+    {
+      "id": "VOICE_VIDEO_RESILIENCE_001",
+      "domain": "voice_video",
+      "metric": "connection_quality_and_interruption_under_link_failure",
+      "operator": "baseline_then_set_target",
+      "target": null,
+      "target_status": "baseline_first",
+      "evidence_classes": [
+        "bench_measured",
+        "field_observed"
+      ],
+      "dimensions": [
+        "call_setup_success_fraction",
+        "p95_call_setup_ms",
+        "interruption_ms",
+        "packet_loss_fraction",
+        "jitter_ms",
+        "codec",
+        "route_cost_per_minute"
+      ],
+      "notes": "Separate new-call failover from mid-call continuity; report MOS only with a defined valid measurement method."
+    },
+    {
+      "id": "STORE_FORWARD_001",
+      "domain": "resilient_messaging",
+      "metric": "unexpired_test_messages_delivered_after_connectivity_returns",
+      "operator": ">=",
+      "target": 0.99,
+      "target_status": "proposed_target",
+      "evidence_classes": [
+        "unit_contract_tested",
+        "bench_measured",
+        "field_observed"
+      ],
+      "negative_cases": [
+        "partition",
+        "reconnect",
+        "node_reboot",
+        "duplicate_delivery",
+        "expired_message",
+        "invalid_signature"
+      ],
+      "notes": "Report p50/p95 delivery delay; this is not a real-time emergency-telephony guarantee."
+    },
+    {
+      "id": "ENERGY_PER_USEFUL_TASK_001",
+      "domain": "energy",
+      "metric": "whole_site_energy_per_completed_useful_task",
+      "operator": "baseline_then_minimize",
+      "target": null,
+      "target_status": "baseline_first",
+      "evidence_classes": [
+        "bench_measured",
+        "field_observed"
+      ],
+      "dimensions": [
+        "Wh_per_day",
+        "idle_W",
+        "typical_W",
+        "peak_W",
+        "Wh_per_task",
+        "backup_duration_hours"
+      ],
+      "notes": "Include gateway, access point, local services, WAN terminal, conversion and backup-power losses."
+    },
+    {
+      "id": "CRITICAL_ARTIFACT_TRACEABILITY_001",
+      "domain": "open_hardware",
+      "metric": "critical_components_with_revision_license_firmware_and_bom_status_recorded",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target",
+      "evidence_classes": [
+        "static_checked",
+        "independently_reviewed_qualified"
+      ],
+      "notes": "All critical artifacts must have known status; unknown does not mean open or qualified."
+    },
+    {
+      "id": "PRIVATE_CELLULAR_QUALIFICATION_001",
+      "domain": "private_lte_5g",
+      "metric": "measured_coverage_capacity_mobility_and_recovery_for_named_authorized_profile",
+      "operator": "baseline_then_set_target",
+      "target": null,
+      "target_status": "blocked_on_authorization_and_profile",
+      "evidence_classes": [
+        "bench_measured",
+        "field_observed"
+      ],
+      "notes": "Open5GS/srsRAN/Magma code does not confer spectrum or telecom authorization."
+    },
+    {
+      "id": "ESIM_PORTABILITY_001",
+      "domain": "cellular_esim",
+      "metric": "successful_authorized_profile_activation_and_rollback_by_supported_device_provider_country",
+      "operator": "baseline_then_set_target",
+      "target": null,
+      "target_status": "blocked_on_provider_agreement_and_entitlement",
+      "evidence_classes": [
+        "bench_measured",
+        "field_observed"
+      ],
+      "dimensions": [
+        "device",
+        "os_version",
+        "provider",
+        "country",
+        "provisioning_standard",
+        "activation_time",
+        "failure_recovery"
+      ],
+      "notes": "No claim of arbitrary SIM switching or universal profile availability."
+    },
+    {
+      "id": "SATELLITE_PHONE_SERVICE_001",
+      "domain": "direct_to_phone_satellite",
+      "metric": "supported_device_country_service_and_sky_visibility_success_rate",
+      "operator": "baseline_then_set_target",
+      "target": null,
+      "target_status": "blocked_on_provider_device_and_country_support",
+      "evidence_classes": [
+        "field_observed"
+      ],
+      "notes": "Do not assume emergency satellite service or a direct-to-phone link is available in South Africa or on every handset."
+    }
+  ],
+  "explicit_non_claims": [
+    "No claim of Google Fi coverage parity",
+    "No claim of operator or eSIM provisioning access without an agreement",
+    "No claim of authorized service resale",
+    "No claim that simulation proves field performance",
+    "No claim of satellite phone support without exact device/service/country evidence",
+    "No claim that a successful policy decision itself changed a live route"
+  ],
+  "next_required_artifacts": [
+    "Strict JSON Schema for this profile",
+    "Independent Rust validator with negative mutation controls",
+    "Rust-enabled cargo test, cargo clippy, reviewed Cargo.lock and exact commit evidence",
+    "Pinned provider-neutral lab fixture set",
+    "OpenWrt adapter acceptance profile",
+    "Provider/device/country matrix for any eSIM or satellite claim"
+  ]
+}

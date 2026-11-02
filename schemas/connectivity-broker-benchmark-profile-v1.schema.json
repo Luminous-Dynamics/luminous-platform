@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/connectivity-broker-benchmark-profile-v1.schema.json",
+  "title": "Luminous Connectivity Broker Benchmark Profile v1",
+  "description": "Strict structural contract for proposed connectivity benchmarks. Passing validation does not prove measurements, production readiness, carrier access, or deployment authorization.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "status",
+    "reviewed_at",
+    "authority",
+    "comparison_contract",
+    "benchmarks",
+    "explicit_non_claims",
+    "next_required_artifacts"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.connectivity-broker-benchmark-profile.v1"
+    },
+    "profile_id": {
+      "const": "provider-neutral-connectivity-broker-v1"
+    },
+    "status": {
+      "const": "draft_targets_not_results"
+    },
+    "reviewed_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["issue", "design_document", "decision_core"],
+      "properties": {
+        "issue": { "type": "string", "format": "uri" },
+        "design_document": { "type": "string", "minLength": 1 },
+        "decision_core": { "type": "string", "minLength": 1 }
+      }
+    },
+    "comparison_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baseline_must_be_named",
+        "matched_quality_security_and_geographic_scope_required",
+        "include_hardware_energy_transit_paid_labor_support_and_taxes_where_applicable",
+        "show_failed_trials_and_denominators",
+        "simulation_must_not_be_reported_as_field_evidence",
+        "cost_currency_must_be_explicit",
+        "source_and_test_revisions_must_be_immutable"
+      ],
+      "properties": {
+        "baseline_must_be_named": { "const": true },
+        "matched_quality_security_and_geographic_scope_required": { "const": true },
+        "include_hardware_energy_transit_paid_labor_support_and_taxes_where_applicable": { "const": true },
+        "show_failed_trials_and_denominators": { "const": true },
+        "simulation_must_not_be_reported_as_field_evidence": { "const": true },
+        "cost_currency_must_be_explicit": { "const": true },
+        "source_and_test_revisions_must_be_immutable": { "const": true }
+      }
+    },
+    "benchmarks": {
+      "type": "array",
+      "minItems": 16,
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "domain",
+          "metric",
+          "operator",
+          "target",
+          "target_status",
+          "evidence_classes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]{2,79}$"
+          },
+          "domain": { "type": "string", "minLength": 1 },
+          "metric": { "type": "string", "minLength": 1 },
+          "operator": {
+            "enum": [
+              "==",
+              ">=",
+              "within_threshold_success_ratio",
+              "baseline_then_set_target",
+              "baseline_then_minimize"
+            ]
+          },
+          "target": {
+            "oneOf": [
+              { "type": "number" },
+              { "type": "object", "minProperties": 1 },
+              { "type": "null" }
+            ]
+          },
+          "target_status": {
+            "enum": [
+              "proposed_target",
+              "baseline_first",
+              "blocked_on_authorization_and_profile",
+              "blocked_on_provider_agreement_and_entitlement",
+              "blocked_on_provider_device_and_country_support"
+            ]
+          },
+          "evidence_classes": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "unit_contract_tested",
+                "static_checked",
+                "bench_measured",
+                "field_observed",
+                "independently_reviewed_qualified"
+              ]
+            }
+          },
+          "negative_cases": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "dimensions": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "explicit_non_claims": {
+      "type": "array",
+      "minItems": 6,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 },
+      "allOf": [
+        { "contains": { "const": "No claim of Google Fi coverage parity" } },
+        { "contains": { "const": "No claim of operator or eSIM provisioning access without an agreement" } },
+        { "contains": { "const": "No claim of authorized service resale" } },
+        { "contains": { "const": "No claim that simulation proves field performance" } },
+        { "contains": { "const": "No claim of satellite phone support without exact device/service/country evidence" } },
+        { "contains": { "const": "No claim that a successful policy decision itself changed a live route" } }
+      ]
+    },
+    "next_required_artifacts": {
+      "type": "array",
+      "minItems": 6,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 },
+      "allOf": [
+        { "contains": { "const": "Strict JSON Schema for this profile" } },
+        { "contains": { "const": "Independent Rust validator with negative mutation controls" } },
+        { "contains": { "const": "Rust-enabled cargo test, cargo clippy, reviewed Cargo.lock and exact commit evidence" } },
+        { "contains": { "const": "Pinned provider-neutral lab fixture set" } },
+        { "contains": { "const": "OpenWrt adapter acceptance profile" } },
+        { "contains": { "const": "Provider/device/country matrix for any eSIM or satellite claim" } }
+      ]
+    }
+  }
+}
