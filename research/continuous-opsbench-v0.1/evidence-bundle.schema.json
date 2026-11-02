@@ -1,0 +1,465 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-evidence-bundle-v0.1.json",
+  "title": "Continuous OpsBench portable offline evidence bundle v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "bundle_id",
+    "run_id",
+    "lane",
+    "disclosure",
+    "verification_mode",
+    "created_at_ms",
+    "manifest_commitment",
+    "candidate_identity_digest",
+    "baseline_identity_digest",
+    "evaluator_digest",
+    "verifier_id",
+    "verifier_digest",
+    "trust_policy_digest",
+    "run_domains",
+    "planned_arm_subjects",
+    "artifacts",
+    "claims",
+    "restricted_distribution_policy_digest"
+  ],
+  "properties": {
+    "schema": {
+      "const": "continuous-opsbench-evidence-bundle-v0.1"
+    },
+    "version": {
+      "const": 1
+    },
+    "bundle_id": {
+      "$ref": "#/$defs/id"
+    },
+    "run_id": {
+      "$ref": "#/$defs/id"
+    },
+    "lane": {
+      "enum": [
+        "open_development",
+        "sealed_certification",
+        "retired_reproducibility"
+      ]
+    },
+    "disclosure": {
+      "enum": [
+        "public",
+        "restricted"
+      ]
+    },
+    "verification_mode": {
+      "const": "offline"
+    },
+    "created_at_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "manifest_commitment": {
+      "$ref": "#/$defs/sha256"
+    },
+    "candidate_identity_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "baseline_identity_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "evaluator_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "verifier_id": {
+      "$ref": "#/$defs/id"
+    },
+    "verifier_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "trust_policy_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "run_domains": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {
+        "$ref": "#/$defs/run_domain"
+      }
+    },
+    "planned_arm_subjects": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 200000,
+      "items": {
+        "$ref": "#/$defs/planned_subject"
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200000,
+      "items": {
+        "$ref": "#/$defs/artifact"
+      }
+    },
+    "claims": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/claim"
+      }
+    },
+    "restricted_distribution_policy_digest": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[^\\u0000-\\u001F\\u007F]+$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "run_domain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "identity_id",
+        "control_domain",
+        "identity_digest"
+      ],
+      "properties": {
+        "role": {
+          "enum": [
+            "candidate",
+            "baseline",
+            "evaluator",
+            "freeze_authority",
+            "evidence_source",
+            "runtime_observer",
+            "runtime_challenge_authority",
+            "verifier"
+          ]
+        },
+        "identity_id": {
+          "$ref": "#/$defs/id"
+        },
+        "control_domain": {
+          "$ref": "#/$defs/id"
+        },
+        "identity_digest": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "planned_subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trial_id",
+        "cluster_id",
+        "arm"
+      ],
+      "properties": {
+        "trial_id": {
+          "$ref": "#/$defs/id"
+        },
+        "cluster_id": {
+          "$ref": "#/$defs/id"
+        },
+        "arm": {
+          "enum": [
+            "candidate",
+            "baseline"
+          ]
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_id",
+        "content_digest",
+        "byte_length",
+        "media_type",
+        "archive_path",
+        "publisher_id",
+        "publisher_key_id",
+        "publisher_key_digest",
+        "control_domain",
+        "source_id",
+        "sequence",
+        "issued_at_ms",
+        "sensitivity",
+        "delivery",
+        "required",
+        "retired_at_ms"
+      ],
+      "properties": {
+        "artifact_id": {
+          "$ref": "#/$defs/id"
+        },
+        "content_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "media_type": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9.+-]+/[A-Za-z0-9.+-]+$"
+        },
+        "archive_path": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1024
+        },
+        "publisher_id": {
+          "$ref": "#/$defs/id"
+        },
+        "publisher_key_id": {
+          "$ref": "#/$defs/id"
+        },
+        "publisher_key_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "control_domain": {
+          "$ref": "#/$defs/id"
+        },
+        "source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "issued_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sensitivity": {
+          "enum": [
+            "public",
+            "operational_evidence",
+            "active_sealed_payload",
+            "private_oracle",
+            "retired_reveal",
+            "restricted_private"
+          ]
+        },
+        "delivery": {
+          "enum": [
+            "embedded",
+            "commitment_only",
+            "unavailable",
+            "external_reference"
+          ]
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "retired_at_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "delivery": {
+                "const": "embedded"
+              }
+            },
+            "required": [
+              "delivery"
+            ]
+          },
+          "then": {
+            "properties": {
+              "archive_path": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "delivery": {
+                "enum": [
+                  "commitment_only",
+                  "unavailable"
+                ]
+              }
+            },
+            "required": [
+              "delivery"
+            ]
+          },
+          "then": {
+            "properties": {
+              "archive_path": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "claim_subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "manifest_commitment",
+        "trial_id",
+        "arm",
+        "scope_id"
+      ],
+      "properties": {
+        "run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "manifest_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "trial_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 256
+        },
+        "arm": {
+          "enum": [
+            "candidate",
+            "baseline",
+            null
+          ]
+        },
+        "scope_id": {
+          "$ref": "#/$defs/id"
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "trial_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "arm": {
+              "enum": [
+                "candidate",
+                "baseline"
+              ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "trial_id": {
+              "type": "null"
+            },
+            "arm": {
+              "type": "null"
+            }
+          }
+        }
+      ]
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_id",
+        "kind",
+        "status",
+        "subject",
+        "evidence_artifact_ids",
+        "depends_on_claim_ids",
+        "assumptions",
+        "claim_ceiling"
+      ],
+      "properties": {
+        "claim_id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "authorization",
+            "participant_effect",
+            "service_outcome",
+            "request_impact",
+            "safety",
+            "calibration",
+            "privacy",
+            "runtime_enforcement",
+            "sandbox_tier",
+            "resource_energy",
+            "statistical_comparison",
+            "sealed_commitment"
+          ]
+        },
+        "status": {
+          "enum": [
+            "pass",
+            "fail",
+            "indeterminate"
+          ]
+        },
+        "subject": {
+          "$ref": "#/$defs/claim_subject"
+        },
+        "evidence_artifact_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "depends_on_claim_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 2048
+          }
+        },
+        "claim_ceiling": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      }
+    }
+  }
+}
