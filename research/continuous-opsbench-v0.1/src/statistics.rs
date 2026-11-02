@@ -109,6 +109,7 @@ pub struct PairedEffectSummary {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct InferenceResult {
     pub schema: String,
+    pub claim_mode: InferenceClaimMode,
     pub algorithm_version: String,
     pub bootstrap_seed_commitment: Digest,
     pub independent_clusters: usize,
@@ -382,6 +383,7 @@ pub fn evaluate_paired_clusters(
 
     Ok(InferenceResult {
         schema: INFERENCE_SCHEMA.into(),
+        claim_mode: plan.claim_mode,
         algorithm_version: plan.algorithm_version.clone(),
         bootstrap_seed_commitment: plan.bootstrap_seed_commitment.clone(),
         independent_clusters: cluster_count,
