@@ -220,7 +220,7 @@ fn validate_request(request: &ScheduleRequest) -> Result<(), ScheduleError> {
         return Err(ScheduleError::InvalidGainThreshold);
     }
     if request.cost_currency.len() != 3
-        || !request.cost_currency.as_bytes().iter().all(u8::is_ascii_uppercase)
+        || !request.cost_currency.as_bytes().iter().all(|byte| byte.is_ascii_uppercase())
     {
         return Err(ScheduleError::InvalidCurrencyCode);
     }
