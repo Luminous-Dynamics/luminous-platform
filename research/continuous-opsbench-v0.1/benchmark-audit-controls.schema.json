@@ -1,0 +1,427 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-benchmark-audit-controls-v0.1.json",
+  "title": "Continuous OpsBench benchmark audit controls v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "known_answers",
+    "mutations",
+    "interactions",
+    "metamorphic_controls"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "continuous-opsbench-benchmark-audit-controls-v0.1"
+    },
+    "known_answers": {
+      "type": "array",
+      "minItems": 40,
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/known_answer"
+      }
+    },
+    "mutations": {
+      "type": "array",
+      "minItems": 60,
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/mutation"
+      }
+    },
+    "interactions": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/interaction"
+      }
+    },
+    "metamorphic_controls": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/metamorphic"
+      }
+    }
+  },
+  "$defs": {
+    "component": {
+      "enum": [
+        "user_task",
+        "environment_tools",
+        "ground_truth",
+        "evaluation"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "known_answer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "control_id",
+        "component",
+        "class",
+        "expected_acceptance",
+        "observed_acceptance"
+      ],
+      "properties": {
+        "control_id": {
+          "$ref": "#/$defs/id"
+        },
+        "component": {
+          "$ref": "#/$defs/component"
+        },
+        "class": {
+          "enum": [
+            "positive",
+            "negative"
+          ]
+        },
+        "expected_acceptance": {
+          "type": "boolean"
+        },
+        "observed_acceptance": {
+          "type": "boolean"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "class": {
+                "const": "positive"
+              }
+            },
+            "required": [
+              "class"
+            ]
+          },
+          "then": {
+            "properties": {
+              "expected_acceptance": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "class": {
+                "const": "negative"
+              }
+            },
+            "required": [
+              "class"
+            ]
+          },
+          "then": {
+            "properties": {
+              "expected_acceptance": {
+                "const": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "mutation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mutation_id",
+        "component",
+        "expected_rejection",
+        "observed_rejection"
+      ],
+      "properties": {
+        "mutation_id": {
+          "$ref": "#/$defs/id"
+        },
+        "component": {
+          "$ref": "#/$defs/component"
+        },
+        "expected_rejection": {
+          "type": "boolean"
+        },
+        "observed_rejection": {
+          "type": "boolean"
+        }
+      }
+    },
+    "interaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "control_id",
+        "pair",
+        "expected_acceptance",
+        "observed_acceptance"
+      ],
+      "properties": {
+        "control_id": {
+          "$ref": "#/$defs/id"
+        },
+        "pair": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "user_task"
+                },
+                "second": {
+                  "const": "environment_tools"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "environment_tools"
+                },
+                "second": {
+                  "const": "user_task"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "user_task"
+                },
+                "second": {
+                  "const": "ground_truth"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "ground_truth"
+                },
+                "second": {
+                  "const": "user_task"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "user_task"
+                },
+                "second": {
+                  "const": "evaluation"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "evaluation"
+                },
+                "second": {
+                  "const": "user_task"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "environment_tools"
+                },
+                "second": {
+                  "const": "ground_truth"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "ground_truth"
+                },
+                "second": {
+                  "const": "environment_tools"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "environment_tools"
+                },
+                "second": {
+                  "const": "evaluation"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "evaluation"
+                },
+                "second": {
+                  "const": "environment_tools"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "ground_truth"
+                },
+                "second": {
+                  "const": "evaluation"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "evaluation"
+                },
+                "second": {
+                  "const": "ground_truth"
+                }
+              }
+            }
+          ]
+        },
+        "expected_acceptance": {
+          "type": "boolean"
+        },
+        "observed_acceptance": {
+          "type": "boolean"
+        }
+      }
+    },
+    "metamorphic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "control_id",
+        "task_id",
+        "base_instruction_digest",
+        "variant_instruction_digest",
+        "shared_precondition_digest",
+        "shared_postcondition_digest",
+        "equivalence_contract_digest",
+        "expected_semantic_equivalence",
+        "observed_semantic_equivalence"
+      ],
+      "properties": {
+        "control_id": {
+          "$ref": "#/$defs/id"
+        },
+        "task_id": {
+          "$ref": "#/$defs/id"
+        },
+        "base_instruction_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "variant_instruction_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "shared_precondition_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "shared_postcondition_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "equivalence_contract_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "expected_semantic_equivalence": {
+          "type": "boolean"
+        },
+        "observed_semantic_equivalence": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

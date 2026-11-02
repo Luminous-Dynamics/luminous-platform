@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-benchmark-audit-result-v0.1.json",
+  "title": "Continuous OpsBench benchmark audit result v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "cohort_id",
+    "run_id",
+    "lane",
+    "manifest_commitment",
+    "components",
+    "interaction_controls",
+    "failed_interaction_controls",
+    "claim_admissible",
+    "metamorphic_controls",
+    "failed_metamorphic_controls"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "continuous-opsbench-benchmark-audit-result-v0.1"
+    },
+    "cohort_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "lane": {
+      "enum": [
+        "open_development",
+        "sealed_certification",
+        "retired_reproducibility"
+      ]
+    },
+    "manifest_commitment": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "components": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "$ref": "#/$defs/component_result"
+      }
+    },
+    "interaction_controls": {
+      "type": "integer",
+      "minimum": 6
+    },
+    "failed_interaction_controls": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "claim_admissible": {
+      "type": "boolean"
+    },
+    "metamorphic_controls": {
+      "type": "integer",
+      "minimum": 10
+    },
+    "failed_metamorphic_controls": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "$defs": {
+    "component": {
+      "enum": [
+        "user_task",
+        "environment_tools",
+        "ground_truth",
+        "evaluation"
+      ]
+    },
+    "disposition": {
+      "enum": [
+        "pass",
+        "fail",
+        "indeterminate"
+      ]
+    },
+    "component_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "component",
+        "disposition",
+        "known_answer_controls",
+        "positive_controls",
+        "negative_controls",
+        "false_positives",
+        "false_negatives",
+        "mutation_controls",
+        "missed_mutations",
+        "reset_repetitions",
+        "false_positive_rate_ppm",
+        "false_negative_rate_ppm",
+        "expected_rejection_controls",
+        "unexpected_rejections",
+        "mutation_miss_rate_ppm",
+        "expected_non_rejection_controls"
+      ],
+      "properties": {
+        "component": {
+          "$ref": "#/$defs/component"
+        },
+        "disposition": {
+          "$ref": "#/$defs/disposition"
+        },
+        "known_answer_controls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "positive_controls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "negative_controls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "false_positives": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "false_negatives": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mutation_controls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "missed_mutations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reset_repetitions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "false_positive_rate_ppm": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "false_negative_rate_ppm": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "expected_rejection_controls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unexpected_rejections": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mutation_miss_rate_ppm": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "expected_non_rejection_controls": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

@@ -65,3 +65,19 @@ The validator is structural only. The typed source-evidence adapter must authent
 The runtime validator in `src/runtime.rs` requires complete per-arm process, mount, filesystem, egress and event-stream commitments, and a unique one-use challenge nonce issued after the run freeze. It binds the runtime observer and challenge authority to distinct frozen trust domains. See `RUNTIME_ENFORCEMENT_V0_1.md` and `runtime-trial-attestation.schema.json`.
 
 This is still structural validation. The typed source-evidence adapter must authenticate challenge and receipt publishers, validate the subject and freshness, and consume nonces through durable anti-replay state. The runtime adapter must independently prove telemetry coverage and enforcement; a receipt field cannot prove that a hook remained attached or that a compromised kernel did not suppress events.
+
+
+### Component-level benchmark validity audit v0.1
+
+The new `src/benchmark_audit.rs` module audits four independently versioned components before a benchmark claim can be admitted: User/Task, Environment/Tools, Ground Truth and Evaluation/Scorer. It binds the task-set digest, environment image, oracle program and evaluator binary to their component records, validates repeatable resets and predicate traceability, and records positive/negative known-answer, mutation and all six pairwise interaction controls. The result is a four-component Pass/Fail/Indeterminate vector; no scalar benchmark-validity score is produced. See `BENCHMARK_VALIDITY_AUDIT_V0_1.md` and the three `benchmark-*-*.schema.json` schemas.
+
+Minimum corpus: 40 known-answer controls (at least 10 positive, 10 negative and 5 per component), 60 mutations (10 per component), and all six component-pair interactions. These are proposed audit thresholds, not empirical claims. Signatures, publisher identity and replay are verified by the existing typed evidence adapter.
+
+
+### Component-level benchmark validity and scorer audit v0.1
+
+The `src/benchmark_audit.rs` module audits four independently versioned components before a benchmark claim can be admitted: User/Task, Environment/Tools, Ground Truth and Evaluation/Scorer. It binds the task-set digest, environment image, oracle program and evaluator binary to their component records, validates repeatable resets and predicate traceability, and records positive/negative known-answer, mutation, metamorphic task-equivalence, and all six pairwise interaction controls.
+
+The output is a four-component Pass/Fail/Indeterminate vector. It reports per-component false-positive, false-negative and mutation-miss rates; each rate is null when its denominator is unavailable. It does not emit a scalar benchmark-validity score. See `BENCHMARK_VALIDITY_AUDIT_V0_1.md`, `benchmark-cohort-contract.schema.json`, `benchmark-audit-controls.schema.json` and `benchmark-audit-result.schema.json`.
+
+Minimum controls: 40 known-answer controls (at least 10 positive, 10 negative, and 5 per component; each component also needs at least 2 positive and 2 negative), 60 mutations (at least 10 per component, including both expected-reject and expected-accept controls), 10 metamorphic task-equivalence controls, and all six component-pair interactions.
