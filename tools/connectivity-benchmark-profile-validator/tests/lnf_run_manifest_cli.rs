@@ -27,12 +27,12 @@ impl Fixture {
         let manifest = root.join("manifest.json");
         fs::write(
             &schema,
-            include_str!("../../../../schemas/lnf-e2e-run-manifest-v1.schema.json"),
+            include_str!("../../../schemas/lnf-e2e-run-manifest-v1.schema.json"),
         )
         .expect("write manifest schema");
         fs::write(
             &manifest,
-            include_str!("../../../../profiles/lnf-e2e-run-manifest-v1.json"),
+            include_str!("../../../profiles/lnf-e2e-run-manifest-v1.json"),
         )
         .expect("write manifest fixture");
 
@@ -89,7 +89,7 @@ fn cli_accepts_exact_pins_and_rejects_claim_promotion() {
     assert_eq!(report["measurement_truth_conveyed"], json!(false));
 
     let mut promoted: Value = serde_json::from_slice(
-        include_str!("../../../../profiles/lnf-e2e-run-manifest-v1.json").as_bytes(),
+        include_str!("../../../profiles/lnf-e2e-run-manifest-v1.json").as_bytes(),
     )
     .expect("checked-in manifest parses");
     promoted["claim_ceiling"]["field_observed"] = json!(true);
