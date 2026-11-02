@@ -1828,6 +1828,7 @@ mod tests {
                     || r.metrics.false_actions > 0
                     || r.metrics.false_positive_observations > 0
                     || r.metrics.false_wakeups > 0
+                    || r.metrics.late_wakeups > 0
                     || !r.evidence_complete
                     || !r.metrics.resource_evidence_complete
             }), "adversarial monitoring vector {vector} was accepted without consequence");
