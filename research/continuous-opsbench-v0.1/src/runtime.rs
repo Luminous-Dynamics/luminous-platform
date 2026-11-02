@@ -1014,6 +1014,8 @@ mod tests {
             observer_source_id: receipt.observer_source_id.clone(),
             observer_control_domain: receipt.observer_control_domain.clone(),
             observer_adapter_digest: receipt.observer_adapter_digest.clone(),
+            runtime_kernel_profile_digest: receipt.runtime_kernel_profile_digest.clone(),
+            observer_fitness_receipt_digest: receipt.observer_fitness_receipt_digest.clone(),
             challenge_nonce_digest: receipt.challenge_nonce_digest.clone(),
             challenge_authority_id: receipt.challenge_authority_id.clone(),
             challenge_authority_control_domain: receipt.challenge_authority_control_domain.clone(),
@@ -1036,7 +1038,12 @@ mod tests {
         attestations: &[RuntimeTrialAttestation],
     ) -> Result<RuntimeAttestationSummary, RuntimeAttestationError> {
         let challenges = challenge_receipts(attestations);
-        validate_runtime_attestations(manifest, freeze, ledger, scenarios, &challenges, attestations)
+        let fitness_bundle = crate::observer_fitness::tests::fixture(manifest, freeze);
+        let fitness_summary = validate_observer_fitness_bundle(manifest, freeze, &fitness_bundle)
+            .map_err(RuntimeAttestationError::ObserverFitnessInvalid)?;
+        validate_runtime_attestations(
+            manifest, freeze, ledger, scenarios, &fitness_summary, &challenges, attestations
+        )
     }
     fn fixture() -> (
         RunManifest,
@@ -1055,6 +1062,8 @@ mod tests {
         let artifact_policy_digest = digest(8);
         let egress_policy_digest = digest(9);
         let adapter_digest = digest(10);
+        let runtime_kernel_profile_digest = digest(29);
+        let observer_fitness_plan_digest = digest(30);
         let manifest_commitment = digest(11);
 
         let agent = FrozenAgentIdentity {
@@ -1118,6 +1127,12 @@ mod tests {
             runtime_observer_adapter_digest: adapter_digest.clone(),
             runtime_challenge_authority_id: "challenge-authority".into(),
             runtime_challenge_authority_control_domain: "challenge-domain".into(),
+            runtime_kernel_profile_digest: runtime_kernel_profile_digest.clone(),
+            observer_fitness_plan_digest: observer_fitness_plan_digest.clone(),
+            observer_probe_injector_id: "probe-injector".into(),
+            observer_probe_injector_control_domain: "probe-domain".into(),
+            observer_fitness_verifier_id: "fitness-verifier".into(),
+            observer_fitness_verifier_control_domain: "fitness-domain".into(),
             agent_identity_digest: agent_digest.clone(),
             baseline_identity_digest: baseline_digest.clone(),
             agent,
@@ -1149,6 +1164,12 @@ mod tests {
             runtime_observer_adapter_digest: manifest.runtime_observer_adapter_digest.clone(),
             runtime_challenge_authority_id: manifest.runtime_challenge_authority_id.clone(),
             runtime_challenge_authority_control_domain: manifest.runtime_challenge_authority_control_domain.clone(),
+            runtime_kernel_profile_digest: manifest.runtime_kernel_profile_digest.clone(),
+            observer_fitness_plan_digest: manifest.observer_fitness_plan_digest.clone(),
+            observer_probe_injector_id: manifest.observer_probe_injector_id.clone(),
+            observer_probe_injector_control_domain: manifest.observer_probe_injector_control_domain.clone(),
+            observer_fitness_verifier_id: manifest.observer_fitness_verifier_id.clone(),
+            observer_fitness_verifier_control_domain: manifest.observer_fitness_verifier_control_domain.clone(),
             publisher_id: manifest.freeze_authority_id.clone(),
             publisher_control_domain: manifest.freeze_authority_control_domain.clone(),
         };
@@ -1237,6 +1258,12 @@ mod tests {
             runtime_observer_adapter_digest: adapter_digest.clone(),
             runtime_challenge_authority_id: manifest.runtime_challenge_authority_id.clone(),
             runtime_challenge_authority_control_domain: manifest.runtime_challenge_authority_control_domain.clone(),
+            runtime_kernel_profile_digest: manifest.runtime_kernel_profile_digest.clone(),
+            observer_fitness_plan_digest: manifest.observer_fitness_plan_digest.clone(),
+            observer_probe_injector_id: manifest.observer_probe_injector_id.clone(),
+            observer_probe_injector_control_domain: manifest.observer_probe_injector_control_domain.clone(),
+            observer_fitness_verifier_id: manifest.observer_fitness_verifier_id.clone(),
+            observer_fitness_verifier_control_domain: manifest.observer_fitness_verifier_control_domain.clone(),
             trials: ledger_trials,
         };
         let attestations = vec![
@@ -1281,6 +1308,8 @@ mod tests {
             observer_source_id: manifest.runtime_observer_source_id.clone(),
             observer_control_domain: manifest.runtime_observer_control_domain.clone(),
             observer_adapter_digest: manifest.runtime_observer_adapter_digest.clone(),
+            runtime_kernel_profile_digest: manifest.runtime_kernel_profile_digest.clone(),
+            observer_fitness_receipt_digest: digest(220),
             challenge_nonce_digest: digest(60u8.saturating_add(sequence as u8)),
             challenge_receipt_digest: digest(70u8.saturating_add(sequence as u8)),
             challenge_authority_id: manifest.runtime_challenge_authority_id.clone(),
