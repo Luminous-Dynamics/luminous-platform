@@ -955,14 +955,56 @@ pub(crate) mod tests {
             observation_bundle_digest: d(223),
             loss_bundle_digest: d(224),
         };
+        let pre_run_batch = ObserverFitnessBatch {
+            receipt,
+            injections,
+            observations,
+            loss_observations,
+        };
+
+        // Post-run requalification uses fresh markers, a distinct calibration
+        // sandbox, nonce and receipt digest. Its measurement is after the
+        // synthetic runtime workload used by the runtime-join tests.
+        let mut post_run_batch = pre_run_batch.clone();
+        let mut marker_map = BTreeMap::new();
+        for (index, injection) in post_run_batch.injections.iter_mut().enumerate() {
+            let previous = injection.marker_digest.clone();
+            let fresh = d(60 + index as u8);
+            marker_map.insert(previous, fresh.clone());
+            injection.batch_id = "fitness-batch-post".into();
+            injection.marker_digest = fresh;
+            injection.calibration_runtime_digest = d(227);
+            injection.calibration_namespace_digest = d(228);
+            injection.issued_at_ms = 101;
+            injection.executed_at_ms = 102;
+            injection.completed_at_ms = 103;
+        }
+        for observation in &mut post_run_batch.observations {
+            observation.batch_id = "fitness-batch-post".into();
+            observation.marker_digest = marker_map[&observation.marker_digest].clone();
+            observation.calibration_runtime_digest = d(227);
+            observation.observed_at_ms = 104;
+        }
+        for loss in &mut post_run_batch.loss_observations {
+            loss.batch_id = "fitness-batch-post".into();
+            loss.marker_digest = marker_map[&loss.marker_digest].clone();
+            loss.calibration_runtime_digest = d(227);
+            loss.observed_at_ms = 104;
+        }
+        post_run_batch.receipt.batch_id = "fitness-batch-post".into();
+        post_run_batch.receipt.receipt_digest = d(225);
+        post_run_batch.receipt.batch_nonce_digest = d(226);
+        post_run_batch.receipt.calibration_runtime_digest = d(227);
+        post_run_batch.receipt.calibration_namespace_digest = d(228);
+        post_run_batch.receipt.measurement_start_ms = 100;
+        post_run_batch.receipt.measurement_end_ms = 105;
+        post_run_batch.receipt.issued_at_ms = 110;
+        post_run_batch.receipt.valid_from_ms = 110;
+        post_run_batch.receipt.expires_at_ms = 3_600_110;
+
         ObserverFitnessBundle {
             plan,
-            batches: vec![ObserverFitnessBatch {
-                receipt,
-                injections,
-                observations,
-                loss_observations,
-            }],
+            batches: vec![pre_run_batch, post_run_batch],
         }
     }
 
@@ -971,10 +1013,10 @@ pub(crate) mod tests {
         let (manifest, freeze) = crate::sealed::tests::runtime_manifest_fixture();
         let bundle = fixture(&manifest, &freeze);
         let result = validate_observer_fitness_bundle(&manifest, &freeze, &bundle).unwrap();
-        assert_eq!(result.total_positive_controls, 9);
-        assert_eq!(result.total_negative_controls, 9);
-        assert_eq!(result.total_loss_controls, 1);
-        assert_eq!(result.batches.len(), 1);
+        assert_eq!(result.total_positive_controls, 18);
+        assert_eq!(result.total_negative_controls, 18);
+        assert_eq!(result.total_loss_controls, 2);
+        assert_eq!(result.batches.len(), 2);
     }
 
     #[test]
