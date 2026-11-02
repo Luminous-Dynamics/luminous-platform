@@ -1019,8 +1019,10 @@ mod tests {
         ).unwrap();
         assert!(result.claim_admissible);
         assert_eq!(result.components.len(), REQUIRED_COMPONENTS);
-        assert_eq!(result.components.iter()
-            .all(|component| component.disposition == AuditDisposition::Pass), true);
+        assert!(
+            result.components.iter()
+                .all(|component| component.disposition == AuditDisposition::Pass)
+        );
     }
 
     #[test]
