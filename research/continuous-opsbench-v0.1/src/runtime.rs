@@ -49,8 +49,6 @@ pub struct RuntimeChallengeReceipt {
     pub observer_adapter_digest: Digest,
     pub runtime_kernel_profile_digest: Digest,
     pub observer_fitness_receipt_digest: Digest,
-    pub runtime_kernel_profile_digest: Digest,
-    pub observer_fitness_receipt_digest: Digest,
     pub challenge_nonce_digest: Digest,
     /// Digest of the separately authenticated challenge-authority receipt.
     pub challenge_authority_id: String,
@@ -92,9 +90,7 @@ pub struct RuntimeTrialAttestation {
     pub observer_adapter_digest: Digest,
     pub runtime_kernel_profile_digest: Digest,
     pub observer_fitness_receipt_digest: Digest,
-    pub runtime_kernel_profile_digest: Digest,
     /// Fitness receipt proving this exact observer profile passed known-answer controls.
-    pub observer_fitness_receipt_digest: Digest,
     /// Fresh nonce issued by the frozen runtime challenge authority.
     pub challenge_nonce_digest: Digest,
     /// Digest of the separately authenticated challenge-authority receipt.
@@ -137,7 +133,6 @@ pub struct RuntimeTrialEvidence {
     pub writable_state_namespace_digest: Digest,
     pub challenge_nonce_digest: Digest,
     pub challenge_receipt_digest: Digest,
-    pub observer_fitness_receipt_digest: Digest,
     pub observer_fitness_receipt_digest: Digest,
     pub challenge_issued_at_ms: u64,
     pub challenge_expires_at_ms: u64,
