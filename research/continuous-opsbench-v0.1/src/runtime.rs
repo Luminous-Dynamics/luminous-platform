@@ -281,10 +281,10 @@ fn validate_runtime_attestations(
     {
         return Err(RuntimeAttestationError::LedgerManifestMismatch);
     }
-    let mut fitness_index: BTreeMap<&Digest, &ObserverFitnessBatchSummary> = BTreeMap::new();
+    let mut fitness_index: BTreeMap<Digest, &ObserverFitnessBatchSummary> = BTreeMap::new();
     let mut calibration_identities = BTreeSet::new();
     for fitness in &fitness_summary.batches {
-        if fitness_index.insert(&fitness.receipt_digest, fitness).is_some() {
+        if fitness_index.insert(fitness.receipt_digest.clone(), fitness).is_some() {
             return Err(RuntimeAttestationError::ObserverFitnessInvalid(
                 ObserverFitnessError::ZeroOrDuplicateDigest,
             ));
