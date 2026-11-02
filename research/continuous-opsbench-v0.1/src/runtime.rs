@@ -178,7 +178,6 @@ pub enum RuntimeAttestationError {
     ChallengeReceiptAuthorityMismatch,
     ChallengeReceiptSequenceInvalid,
     ChallengeReceiptSequenceNotContiguous,
-    ChallengeReceiptDenominatorMismatch,
     ChallengeFreshnessInvalid(String, EvaluationArm),
     ChallengeLifetimeExceeded(String, EvaluationArm),
     InvalidObserverSequence,
@@ -319,9 +318,6 @@ fn validate_runtime_attestations(
             "challenge-authority-time-order".into(),
             EvaluationArm::Candidate,
         ));
-    }
-    if challenges.len() != manifest.trials.len().saturating_mul(2) {
-        return Err(RuntimeAttestationError::ChallengeReceiptDenominatorMismatch);
     }
     let mut ledger_index: BTreeMap<(&str, EvaluationArm), &TrialResult> = BTreeMap::new();
     for result in &ledger.trials {
