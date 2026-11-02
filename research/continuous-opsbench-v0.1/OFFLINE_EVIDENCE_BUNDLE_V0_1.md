@@ -108,3 +108,7 @@ Architecture remains unchanged: Platform Saga coordinates episodes; the broker g
 
 The Restricted bundle mode also requires a nonzero restricted-distribution policy digest pinned in the bundle and repeated in the verification receipt. This digest must resolve through an independently authenticated authorization policy outside the bundle verifier. A Restricted label alone does not authorize disclosure.
 
+
+
+Claim kinds are checked against artifact sensitivity classes: ordinary operational claims (effects, service outcomes, request impact, safety, calibration, privacy, runtime, sandbox, resource and statistical comparison) require OperationalEvidence artifacts. SealedCommitment claims must cite active sealed/private-oracle commitments or retired reveals. This catches a structurally valid reference that is semantically the wrong evidence class; publisher-role authentication remains external.
+
