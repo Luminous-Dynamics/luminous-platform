@@ -13,7 +13,9 @@
     "components",
     "interaction_controls",
     "failed_interaction_controls",
-    "claim_admissible"
+    "claim_admissible",
+    "metamorphic_controls",
+    "failed_metamorphic_controls"
   ],
   "properties": {
     "schema_version": {
@@ -58,6 +60,14 @@
     },
     "claim_admissible": {
       "type": "boolean"
+    },
+    "metamorphic_controls": {
+      "type": "integer",
+      "minimum": 10
+    },
+    "failed_metamorphic_controls": {
+      "type": "integer",
+      "minimum": 0
     }
   },
   "$defs": {
@@ -89,7 +99,12 @@
         "false_negatives",
         "mutation_controls",
         "missed_mutations",
-        "reset_repetitions"
+        "reset_repetitions",
+        "false_positive_rate_ppm",
+        "false_negative_rate_ppm",
+        "expected_rejection_controls",
+        "unexpected_rejections",
+        "mutation_miss_rate_ppm"
       ],
       "properties": {
         "component": {
@@ -129,6 +144,29 @@
         "reset_repetitions": {
           "type": "integer",
           "minimum": 0
+        },
+        "false_positive_rate_ppm": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "false_negative_rate_ppm": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "expected_rejection_controls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unexpected_rejections": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mutation_miss_rate_ppm": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
         }
       }
     }
