@@ -244,7 +244,9 @@ fn validate_source_pins(manifest: &Value, repo_root: &Path) -> Vec<String> {
             ("verification_method", pin.verification),
         ] {
             if binding.get(field).and_then(Value::as_str) != Some(expected) {
-                errors.push(format!("source_bindings/{id}/{field} does not match the pinned value"));
+                errors.push(format!(
+                    "source_bindings/{id}/{field} does not match the pinned value"
+                ));
             }
         }
 
@@ -308,7 +310,9 @@ fn validate_benchmarks(manifest: &Value, profile: &Value) -> Vec<String> {
                     errors.push(format!("selected benchmark {id} is duplicated"));
                 }
                 if !profile_ids.contains(id) {
-                    errors.push(format!("selected_benchmarks/{id}: benchmark is absent from the pinned profile"));
+                    errors.push(format!(
+                        "selected_benchmarks/{id}: benchmark is absent from the pinned profile"
+                    ));
                 }
             }
             None => errors.push("selected benchmark IDs must be strings".to_owned()),
@@ -346,7 +350,9 @@ fn validate_exact_ids(
                 errors.push(format!("{field} contains duplicate ID {id}"));
             }
             Some(_) => {}
-            None => errors.push(format!("{field} entries must be strings or objects with string IDs")),
+            None => errors.push(format!(
+                "{field} entries must be strings or objects with string IDs"
+            )),
         }
     }
     let expected: BTreeSet<String> = required.iter().map(|id| (*id).to_owned()).collect();
@@ -497,7 +503,9 @@ fn validate_execution_profile(manifest: &Value) -> Vec<String> {
         .and_then(Value::as_bool)
         != Some(true)
     {
-        errors.push("execution_profile must preserve the simulation/field evidence boundary".to_owned());
+        errors.push(
+            "execution_profile must preserve the simulation/field evidence boundary".to_owned(),
+        );
     }
     errors
 }
@@ -621,7 +629,10 @@ fn main() {
         "source_bindings": SOURCE_PINS.len(),
         "local_git_blob_sources_verified": source_blob_verified,
         "external_pins_materialized": false,
-        "scenario_count": manifest.get("scenario_ids").and_then(Value::as_array).map_or(0, Vec::len),
+        "scenario_count": manifest
+            .get("scenario_ids")
+            .and_then(Value::as_array)
+            .map_or(0, Vec::len),
         "valid": valid,
         "validation_scope": "draft_manifest_schema_plus_exact_source_pins_plus_campaign_invariants",
         "execution_conducted": false,
@@ -683,7 +694,8 @@ mod tests {
     #[test]
     fn broker_source_commit_drift_is_rejected() {
         let (schema, mut manifest, profile, root) = fixtures();
-        manifest["source_bindings"][0]["commit_sha"] = json!("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        manifest["source_bindings"][0]["commit_sha"] =
+            json!("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
         let errors = validate_manifest(&schema, &manifest, &profile, &root);
         assert!(errors.iter().any(|error| error.contains("commit_sha")));
     }
