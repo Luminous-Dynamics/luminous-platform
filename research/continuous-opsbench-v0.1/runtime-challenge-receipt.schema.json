@@ -130,15 +130,18 @@
     },
     "sequence": {
       "type": "integer",
-      "minimum": 1
+      "minimum": 1,
+      "description": "Run-scoped challenge-authority sequence, unique and exactly contiguous from 1 across all planned trial/arm pairs."
     },
     "issued_at_ms": {
       "type": "integer",
-      "minimum": 0
+      "minimum": 0,
+      "description": "Must be strictly after run freeze and scenario receipt issuance, and sufficiently before measurement start after accounting for both challenge-authority and runtime-observer clock uncertainty."
     },
     "expires_at_ms": {
       "type": "integer",
-      "minimum": 1
+      "minimum": 1,
+      "description": "Must be later than the latest plausible runtime measurement and receipt issue times after combining challenge-authority and runtime-observer clock uncertainty; max lifetime from issued_at_ms is 86,400,000 ms."
     },
     "clock_uncertainty_ms": {
       "type": "integer",
