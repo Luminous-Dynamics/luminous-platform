@@ -606,7 +606,6 @@ pub fn evaluate_monitoring_trial(
             }
             if action.authorized
                 && action_matches_event
-                && !event_premature_action
                 && dispatched >= detected_at.unwrap_or(event.onset_at_ms)
                 && committed_at < expiry
             {
@@ -1480,6 +1479,73 @@ mod tests {
         assert_eq!(r.metrics.detected_events,0);
         assert_eq!(r.events[0].late_detection,true);
         assert_eq!(r.metrics.false_positive_observations,1);
+    }
+
+    #[test]
+    fn one_premature_action_does_not_erase_a_later_correct_action() {
+        let c = contract(EvaluationArm::Candidate, MonitoringTaskKind::UrgentEphemeral);
+        let e = vec![event(1_000, Some(2_000))];
+        let o = vec![observation(EvaluationArm::Candidate, "obs", 1, 1_050, true,
+            ObservationPurpose::ConditionCheck, None)];
+        let mut early = action(EvaluationArm::Candidate, "early", 900, 950);
+        early.attempted_at_ms = 900;
+        early.dispatched_at_ms = Some(900);
+        early.committed_at_ms = Some(950);
+        let correct = action(EvaluationArm::Candidate, "correct", 1_100, 1_200);
+        let r = evaluate_monitoring_trial(&c, &e, &o, &[], &[early, correct], &resources()).unwrap();
+        assert_eq!(r.metrics.premature_actions, 1);
+        assert_eq!(r.metrics.correct_actions, 1);
+        assert_eq!(r.metrics.false_actions, 1);
+    }
+
+    #[test]
+    fn sequential_same_condition_events_receive_one_temporally_matched_action_each() {
+        let c = contract(EvaluationArm::Candidate, MonitoringTaskKind::NoisyAmbiguous);
+        let e = vec![
+            event(1_000, Some(1_500)),
+            EventTruth { event_id:"hidden-event-b".into(), condition_digest:d(2),
+                onset_at_ms:2_000, expires_at_ms:Some(2_500),
+                expected_action_class:"notify-and-acknowledge".into(), target_digest:d(3) },
+        ];
+        let o = vec![
+            observation(EvaluationArm::Candidate,"o1",1,1_050,true,ObservationPurpose::ConditionCheck,None),
+            observation(EvaluationArm::Candidate,"o2",2,2_050,true,ObservationPurpose::ConditionCheck,None),
+        ];
+        let a = vec![
+            action(EvaluationArm::Candidate,"a1",1_100,1_200),
+            action(EvaluationArm::Candidate,"a2",2_100,2_200),
+        ];
+        let r = evaluate_monitoring_trial(&c,&e,&o,&[],&a,&resources()).unwrap();
+        assert_eq!(r.metrics.correct_actions,2);
+        assert_eq!(r.metrics.false_actions,0);
+    }
+
+    #[test]
+    fn event_aware_wait_is_measurably_less_expensive_than_fixed_polling_in_paired_fixture() {
+        let candidate = contract(EvaluationArm::Candidate, MonitoringTaskKind::UrgentEphemeral);
+        let baseline = contract(EvaluationArm::Baseline, MonitoringTaskKind::UrgentEphemeral);
+        let events = vec![event(2_000,Some(2_500))];
+        let co = vec![observation(EvaluationArm::Candidate,"co",2,2_100,true,ObservationPurpose::ConditionCheck,None)];
+        let cw = vec![wait(EvaluationArm::Candidate,"cw",1,1_900,2_100,WaitStrategy::ConditionWait,WaitOutcome::ConditionSatisfied,Some(d(2)))];
+        let ca = vec![action(EvaluationArm::Candidate,"ca",2_150,2_200)];
+        let mut bo = Vec::new();
+        let mut bw = Vec::new();
+        let mut seq=1;
+        for t in [500u64,1_000,1_500,2_000,2_100] {
+            bw.push(wait(EvaluationArm::Baseline,&format!("bw-{t}"),seq,t-100,t,WaitStrategy::FixedSleep,WaitOutcome::Timeout,Some(d(2))));
+            seq+=1;
+        }
+        bo.push(observation(EvaluationArm::Baseline,"bo",seq,2_100,true,ObservationPurpose::ConditionCheck,None));
+        let ba = vec![action(EvaluationArm::Baseline,"ba",2_150,2_200)];
+        let mut cr=resources(); cr.model_api_cost_micro_usd=Some(300);
+        let mut br=resources(); br.model_api_cost_micro_usd=Some(900);
+        let cp=MonitoringTrialInput{contract:&candidate,events:&events,observations:&co,waits:&cw,actions:&ca,resources:&cr};
+        let bp=MonitoringTrialInput{contract:&baseline,events:&events,observations:&bo,waits:&bw,actions:&ba,resources:&br};
+        let r=evaluate_monitoring_pair(&cp,&bp).unwrap();
+        assert_eq!(r.candidate.metrics.correct_actions,1);
+        assert_eq!(r.baseline.metrics.correct_actions,1);
+        assert!(r.candidate.metrics.wait_calls < r.baseline.metrics.wait_calls);
+        assert!(r.candidate.metrics.total_model_api_cost_micro_usd < r.baseline.metrics.total_model_api_cost_micro_usd);
     }
 
     #[test]
