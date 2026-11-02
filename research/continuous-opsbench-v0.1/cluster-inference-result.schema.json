@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-cluster-inference-result-v0.1.json",
+  "title": "Continuous OpsBench paired cluster inference result v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "algorithm_version",
+    "bootstrap_seed_commitment",
+    "independent_clusters",
+    "bootstrap_replicates",
+    "confidence_level_bps",
+    "candidate",
+    "baseline",
+    "paired_effect",
+    "mean_candidate_indeterminate_rate_ppm",
+    "mean_baseline_indeterminate_rate_ppm",
+    "maximum_upper_confidence_arm_indeterminate_rate_ppm",
+    "minimum_meaningful_effect_ppm",
+    "maximum_indeterminate_rate_ppm",
+    "verdict"
+  ],
+  "properties": {
+    "schema": {
+      "const": "continuous-opsbench-cluster-inference-v0.1"
+    },
+    "algorithm_version": {
+      "const": "splitmix64-paired-cluster-bootstrap-v1"
+    },
+    "bootstrap_seed_commitment": {
+      "$ref": "#/$defs/sha256"
+    },
+    "independent_clusters": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 100000
+    },
+    "bootstrap_replicates": {
+      "type": "integer",
+      "minimum": 1000,
+      "maximum": 100000
+    },
+    "confidence_level_bps": {
+      "type": "integer",
+      "minimum": 5000,
+      "maximum": 9999
+    },
+    "candidate": {
+      "$ref": "#/$defs/arm_summary"
+    },
+    "baseline": {
+      "$ref": "#/$defs/arm_summary"
+    },
+    "paired_effect": {
+      "$ref": "#/$defs/paired_effect"
+    },
+    "mean_candidate_indeterminate_rate_ppm": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "mean_baseline_indeterminate_rate_ppm": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "maximum_upper_confidence_arm_indeterminate_rate_ppm": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "minimum_meaningful_effect_ppm": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    "maximum_indeterminate_rate_ppm": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "verdict": {
+      "enum": [
+        "superiority_established",
+        "not_established",
+        "indeterminate_coverage_exceeded"
+      ]
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "interval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lower_ppm",
+        "upper_ppm"
+      ],
+      "properties": {
+        "lower_ppm": {
+          "type": "integer",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "upper_ppm": {
+          "type": "integer",
+          "minimum": -1000000,
+          "maximum": 1000000
+        }
+      }
+    },
+    "arm_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "verified_rate_ci",
+        "maximum_possible_rate_ci",
+        "indeterminate_rate_ci"
+      ],
+      "properties": {
+        "verified_rate_ci": {
+          "$ref": "#/$defs/interval"
+        },
+        "maximum_possible_rate_ci": {
+          "$ref": "#/$defs/interval"
+        },
+        "indeterminate_rate_ci": {
+          "$ref": "#/$defs/interval"
+        }
+      }
+    },
+    "paired_effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "conservative_effect_lower_mean_ppm",
+        "conservative_effect_upper_mean_ppm",
+        "conservative_effect_lower_ci",
+        "conservative_effect_upper_ci"
+      ],
+      "properties": {
+        "conservative_effect_lower_mean_ppm": {
+          "type": "integer",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "conservative_effect_upper_mean_ppm": {
+          "type": "integer",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "conservative_effect_lower_ci": {
+          "$ref": "#/$defs/interval"
+        },
+        "conservative_effect_upper_ci": {
+          "$ref": "#/$defs/interval"
+        }
+      }
+    }
+  }
+}
