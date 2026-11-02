@@ -196,6 +196,19 @@ impl ComponentPair {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TaskMetamorphicControl {
+    pub control_id: String,
+    pub task_id: String,
+    pub base_instruction_digest: Digest,
+    pub variant_instruction_digest: Digest,
+    pub shared_precondition_digest: Digest,
+    pub shared_postcondition_digest: Digest,
+    pub equivalence_contract_digest: Digest,
+    pub expected_semantic_equivalence: bool,
+    pub observed_semantic_equivalence: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct InteractionControl {
     pub control_id: String,
     pub pair: ComponentPair,
@@ -212,8 +225,13 @@ pub struct ComponentAuditResult {
     pub negative_controls: usize,
     pub false_positives: usize,
     pub false_negatives: usize,
+    pub false_positive_rate_ppm: u64,
+    pub false_negative_rate_ppm: u64,
     pub mutation_controls: usize,
+    pub expected_rejection_controls: usize,
     pub missed_mutations: usize,
+    pub unexpected_rejections: usize,
+    pub mutation_miss_rate_ppm: u64,
     pub reset_repetitions: usize,
 }
 
@@ -226,6 +244,8 @@ pub struct BenchmarkAuditResult {
     pub components: Vec<ComponentAuditResult>,
     pub interaction_controls: usize,
     pub failed_interaction_controls: usize,
+    pub metamorphic_controls: usize,
+    pub failed_metamorphic_controls: usize,
     /// No scalar quality score is emitted. A claim is admissible only when all
     /// component and cross-component controls pass.
     pub claim_admissible: bool,
@@ -269,6 +289,10 @@ pub enum BenchmarkAuditError {
     MutationControlFailure(String),
     InsufficientInteractionControls,
     DuplicateInteractionControl(String),
+    InsufficientMetamorphicControls,
+    DuplicateMetamorphicControl(String),
+    MetamorphicControlBindingMismatch(String),
+    MetamorphicControlFailure(String),
     InvalidInteractionPair(String),
     InteractionControlFailure(String),
     ArithmeticOverflow,
@@ -281,6 +305,7 @@ pub fn validate_benchmark_component_audit(
     known_answers: &[KnownAnswerControl],
     mutations: &[MutationControl],
     interactions: &[InteractionControl],
+    metamorphic_controls: &[TaskMetamorphicControl],
 ) -> Result<BenchmarkAuditResult, BenchmarkAuditError> {
     validate_manifest(manifest)
         .map_err(|_| BenchmarkAuditError::ManifestBindingMismatch)?;
@@ -443,10 +468,14 @@ pub fn validate_benchmark_component_audit(
         }
         let result = component_results.get_mut(&mutation.component).unwrap();
         result.mutation_controls += 1;
+        if mutation.expected_rejection {
+            result.expected_rejection_controls += 1;
+        }
         if mutation.expected_rejection && !mutation.observed_rejection {
             result.missed_mutations += 1;
             result.disposition = AuditDisposition::Fail;
         } else if !mutation.expected_rejection && mutation.observed_rejection {
+            result.unexpected_rejections += 1;
             result.disposition = AuditDisposition::Fail;
         }
     }
@@ -461,11 +490,57 @@ pub fn validate_benchmark_component_audit(
         {
             result.disposition = AuditDisposition::Indeterminate;
         }
+        result.false_positive_rate_ppm = rate_ppm(result.false_positives, result.negative_controls);
+        result.false_negative_rate_ppm = rate_ppm(result.false_negatives, result.positive_controls);
+        result.mutation_miss_rate_ppm =
+            rate_ppm(result.missed_mutations, result.expected_rejection_controls);
         if *component == BenchmarkComponent::EnvironmentTools
             && result.reset_repetitions < cohort.environment.minimum_reset_repetitions
         {
             result.disposition = AuditDisposition::Indeterminate;
         }
+    }
+
+    let mut metamorphic_ids = BTreeSet::new();
+    let task_index: BTreeMap<&str, &UserTaskContract> =
+        cohort.tasks.iter().map(|task| (task.task_id.as_str(), task)).collect();
+    let mut failed_metamorphic_controls = 0usize;
+    for control in metamorphic_controls {
+        if !valid_id(&control.control_id)
+            || !metamorphic_ids.insert(control.control_id.as_str())
+        {
+            return Err(BenchmarkAuditError::DuplicateMetamorphicControl(
+                control.control_id.clone(),
+            ));
+        }
+        let task = task_index.get(control.task_id.as_str())
+            .ok_or_else(|| BenchmarkAuditError::MetamorphicControlBindingMismatch(
+                control.control_id.clone(),
+            ))?;
+        if is_zero(&control.base_instruction_digest)
+            || is_zero(&control.variant_instruction_digest)
+            || control.base_instruction_digest == control.variant_instruction_digest
+            || control.base_instruction_digest != task.instruction_digest
+            || is_zero(&control.shared_precondition_digest)
+            || control.shared_precondition_digest != task.precondition_digest
+            || is_zero(&control.shared_postcondition_digest)
+            || control.shared_postcondition_digest != task.postcondition_digest
+            || is_zero(&control.equivalence_contract_digest)
+        {
+            return Err(BenchmarkAuditError::MetamorphicControlBindingMismatch(
+                control.control_id.clone(),
+            ));
+        }
+        if control.expected_semantic_equivalence != control.observed_semantic_equivalence {
+            failed_metamorphic_controls += 1;
+            component_results.get_mut(&BenchmarkComponent::UserTask).unwrap().disposition =
+                AuditDisposition::Fail;
+            component_results.get_mut(&BenchmarkComponent::Evaluation).unwrap().disposition =
+                AuditDisposition::Fail;
+        }
+    }
+    if metamorphic_controls.len() < 10 {
+        return Err(BenchmarkAuditError::InsufficientMetamorphicControls);
     }
 
     let mut interaction_pairs = BTreeSet::new();
@@ -514,6 +589,7 @@ pub fn validate_benchmark_component_audit(
         .map(|component| component_results[component].clone())
         .collect();
     let claim_admissible = failed_interaction_controls == 0
+        && failed_metamorphic_controls == 0
         && components
             .iter()
             .all(|component| component.disposition == AuditDisposition::Pass);
@@ -526,6 +602,8 @@ pub fn validate_benchmark_component_audit(
         components,
         interaction_controls: interactions.len(),
         failed_interaction_controls,
+        metamorphic_controls: metamorphic_controls.len(),
+        failed_metamorphic_controls,
         claim_admissible,
     })
 }
@@ -751,6 +829,17 @@ fn valid_id(value: &str) -> bool {
     !value.trim().is_empty()
         && value.len() <= 256
         && !value.chars().any(char::is_control)
+}
+
+fn rate_ppm(numerator: usize, denominator: usize) -> u64 {
+    if denominator == 0 {
+        return 0;
+    }
+    ((numerator as u128).saturating_mul(1_000_000) / denominator as u128) as u64
+}
+
+fn is_zero(digest: &Digest) -> bool {
+    digest_is_zero(digest)
 }
 
 fn digest_is_zero(digest: &Digest) -> bool {
