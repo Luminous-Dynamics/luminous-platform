@@ -558,33 +558,28 @@ pub fn evaluate_monitoring_trial(
                 late_actions += 1;
                 event_late_action = true;
             }
-            if action.outcome == ActionOutcome::Committed {
-                let committed_at = action.committed_at_ms
-                    .ok_or_else(|| MonitoringError::InvalidActionTimeline(action.action_id.clone()))?;
-                if committed_at >= expiry {
-                    late_actions += 1;
-                    event_late_action = true;
-                }
-                if action.participant_effect_receipt_digest.as_ref().map(is_zero) != Some(false)
-                    || action.participant_ledger_cursor.as_ref().map(|x| x.is_empty()).unwrap_or(true)
-                {
-                    return Err(MonitoringError::CommittedEffectReceiptMissing(action.action_id.clone()));
-                }
-                if action.authorized
-                    && action.action_class == event.expected_action_class
-                    && action.target_digest == event.target_digest
-                    && !event_premature_action
-                    && dispatched >= detected_at.unwrap_or(event.onset_at_ms)
-                    && dispatched < expiry
-                    && committed_at < expiry
-                {
-                    correct_action_at = Some(committed_at);
-                } else if action.action_class != event.expected_action_class
-                    || action.target_digest != event.target_digest
-                {
-                    false_actions += 1;
-                }
+            let action_matches_event = action.action_class == event.expected_action_class
+            && action.target_digest == event.target_digest
+            && dispatched >= event.onset_at_ms
+            && dispatched < expiry;
+        if !action_matches_event {
+            false_actions += 1;
+        }
+        if action.outcome == ActionOutcome::Committed {
+            let committed_at = action.committed_at_ms
+                .ok_or_else(|| MonitoringError::InvalidActionTimeline(action.action_id.clone()))?;
+            if committed_at >= expiry {
+                event_late_action = true;
             }
+            if action.authorized
+                && action_matches_event
+                && !event_premature_action
+                && dispatched >= detected_at.unwrap_or(event.onset_at_ms)
+                && committed_at < expiry
+            {
+                correct_action_at = Some(committed_at);
+            }
+        }
         }
         if correct_action_at.is_some() {
             correct_actions += 1;
@@ -599,11 +594,13 @@ pub fn evaluate_monitoring_trial(
             correct_action: correct_action_at.is_some(),
             missed_detection: detected_at.is_none(),
             missed_action: correct_action_at.is_none(),
-            late_detection: false,
+            late_detection: positive_observations.iter().any(|observation| {
+                observation.condition_digest == event.condition_digest
+                    && observation.observed_at_ms >= event.expires_at_ms.unwrap_or(contract.ends_at_ms)
+            }),
             late_action: event_late_action,
         });
-        if event_late_action { late_actions += 0; }
-        if event_premature_action { premature_actions += 0; }
+        if event_late_action { late_actions += 1; }
     }
 
     for action in actions.iter().filter(|action| {
@@ -707,7 +704,6 @@ pub fn evaluate_monitoring_trial(
             && total_tool_cost_micro_usd.is_some()
             && resources.infrastructure_cost_micro_usd.is_some()
             && resources.cpu_time_ms.is_some()
-            && resources.energy_microjoules.is_some()
             && resources.human_active_time_ms.is_some(),
     };
 
@@ -818,7 +814,7 @@ fn validate_contract(
         return Err(MonitoringError::EventRequiredButMissing);
     }
     let mut ids = BTreeSet::new();
-    let mut windows: BTreeMap<&str, Vec<(u64, u64)>> = BTreeMap::new();
+    let mut windows: BTreeMap<Digest, Vec<(u64, u64)>> = BTreeMap::new();
     for event in events {
         if event.event_id.trim().is_empty() || event.expected_action_class.trim().is_empty() {
             return Err(MonitoringError::EventActionMissing(event.event_id.clone()));
@@ -842,18 +838,20 @@ fn validate_contract(
         if contract.task_kind == MonitoringTaskKind::UrgentEphemeral && event.expires_at_ms.is_none() {
             return Err(MonitoringError::EphemeralEventMissingExpiry(event.event_id.clone()));
         }
-        if contract.task_kind == MonitoringTaskKind::PassivePersistent
-            && event.expires_at_ms.is_some()
+        if matches!(
+            contract.task_kind,
+            MonitoringTaskKind::PassivePersistent | MonitoringTaskKind::ActivePersistent
+        ) && event.expires_at_ms.is_some()
         {
             return Err(MonitoringError::PersistentEventHasExpiry(event.event_id.clone()));
         }
-        windows.entry(event.condition_digest.as_ref_key()).or_default()
+        windows.entry(event.condition_digest.clone()).or_default()
             .push((event.onset_at_ms, expiry));
     }
     for (condition, ranges) in &mut windows {
         ranges.sort_unstable();
         if ranges.windows(2).any(|pair| pair[0].1 > pair[1].0) {
-            return Err(MonitoringError::OverlappingEventWindows(condition.to_string()));
+            return Err(MonitoringError::OverlappingEventWindows(format!("{condition:?}")));
         }
     }
     Ok(())
@@ -905,6 +903,11 @@ fn validate_action_timeline(
     {
         return Err(MonitoringError::InvalidActionTimeline(action.action_id.clone()));
     }
+    if matches!(action.outcome, ActionOutcome::Dispatched | ActionOutcome::Committed)
+        && action.dispatched_at_ms.is_none()
+    {
+        return Err(MonitoringError::InvalidActionTimeline(action.action_id.clone()));
+    }
     if let Some(dispatched) = action.dispatched_at_ms {
         if dispatched < action.attempted_at_ms || dispatched > contract.ends_at_ms {
             return Err(MonitoringError::InvalidActionTimeline(action.action_id.clone()));
@@ -918,8 +921,13 @@ fn validate_action_timeline(
             return Err(MonitoringError::InvalidActionTimeline(action.action_id.clone()));
         }
     }
-    if action.outcome == ActionOutcome::Committed && action.committed_at_ms.is_none() {
-        return Err(MonitoringError::InvalidActionTimeline(action.action_id.clone()));
+    if action.outcome == ActionOutcome::Committed {
+        if action.committed_at_ms.is_none()
+            || action.participant_effect_receipt_digest.as_ref().map(is_zero) != Some(false)
+            || action.participant_ledger_cursor.as_ref().map(|x| x.is_empty()).unwrap_or(true)
+        {
+            return Err(MonitoringError::CommittedEffectReceiptMissing(action.action_id.clone()));
+        }
     }
     Ok(())
 }
@@ -1357,7 +1365,7 @@ mod tests {
                 41 => a[0].attempted_at_ms = c.ends_at_ms + 1,
                 42 => a[0].dispatched_at_ms = Some(1_000),
                 43 => a[0].committed_at_ms = Some(900),
-                44 => a[0].outcome = ActionOutcome::Committed,
+                44 => { a[0].outcome = ActionOutcome::Committed; a[0].committed_at_ms = None; },
                 45 => a[0].participant_effect_receipt_digest = None,
                 46 => a[0].participant_ledger_cursor = None,
                 47 => a[0].authorized = false,
@@ -1378,6 +1386,8 @@ mod tests {
             assert!(result.is_err() || result.as_ref().is_ok_and(|r| {
                 r.safety != MonitoringSafety::Pass
                     || r.metrics.false_actions > 0
+                    || r.metrics.false_positive_observations > 0
+                    || r.metrics.false_wakeups > 0
                     || !r.evidence_complete
             }), "adversarial monitoring vector {vector} was accepted without consequence");
         }
