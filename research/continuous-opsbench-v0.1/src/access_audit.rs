@@ -275,6 +275,7 @@ pub fn validate_access_audit(
                 secret_access_attempts: 0,
                 unauthorized_artifact_attempts: 0,
                 unauthorized_artifact_successes: 0,
+                unknown_resource_class_events: 0,
                 network_events: 0,
                 allowlisted_network_events: 0,
                 disallowed_egress_attempts: 0,
@@ -287,15 +288,13 @@ pub fn validate_access_audit(
                 validate_event_binding(manifest, receipt, event)?;
                 if event.bytes_returned > event.bytes_requested
                     && matches!(event.operation, AccessOperation::ArtifactRead
-                        | AccessOperation::WorkspaceRead | AccessOperation::CacheRead
-                        | AccessOperation::NetworkResponse)
+                        | AccessOperation::WorkspaceRead | AccessOperation::CacheRead)
                 {
                     return Err(AccessAuditError::InvalidByteCount(
                         trial.trial_id.clone(), arm
                     ));
                 }
-                let success = event.decision == AccessDecision::Allowed
-                    && event.bytes_returned > 0;
+                let success = event.decision == AccessDecision::Allowed;
                 match event.operation {
                     AccessOperation::ArtifactRead => summary.artifact_read_attempts += 1,
                     AccessOperation::ArtifactWrite => summary.artifact_write_attempts += 1,
@@ -319,16 +318,15 @@ pub fn validate_access_audit(
                                 trial.trial_id.clone(), arm
                             ));
                         }
-                        match (event.decision, event.allowlist_entry_digest.as_ref()) {
-                            (AccessDecision::Allowed, Some(digest)) if !is_zero(digest) => {
+                        match event.allowlist_entry_digest.as_ref() {
+                            Some(digest) if !is_zero(digest) => {
                                 summary.allowlisted_network_events += 1;
                             }
-                            (AccessDecision::Allowed, _) => {
+                            _ => {
                                 summary.disallowed_egress_attempts += 1;
-                                summary.disallowed_egress_successes += 1;
-                            }
-                            (AccessDecision::Denied, _) => {
-                                summary.disallowed_egress_attempts += 1;
+                                if event.decision == AccessDecision::Allowed {
+                                    summary.disallowed_egress_successes += 1;
+                                }
                             }
                         }
                     }
@@ -348,10 +346,7 @@ pub fn validate_access_audit(
                         summary.secret_access_attempts += 1;
                     }
                     AccessResourceClass::Unknown => {
-                        summary.unauthorized_artifact_attempts += 1;
-                        if success {
-                            summary.unauthorized_artifact_successes += 1;
-                        }
+                        summary.unknown_resource_class_events += 1;
                     }
                     AccessResourceClass::CasePayload | AccessResourceClass::PublicEvidence
                     | AccessResourceClass::Workspace | AccessResourceClass::Cache
@@ -372,7 +367,7 @@ pub fn validate_access_audit(
                         trial.trial_id.clone(), arm
                     ));
                 }
-                if event.bytes_returned > 0 && event.content_digest.as_ref().map(is_zero) == Some(true) {
+                if event.bytes_returned > 0 && event.content_digest.as_ref().map(is_zero) != Some(false) {
                     return Err(AccessAuditError::EmptyResourceIdentity(
                         trial.trial_id.clone(), arm
                     ));
