@@ -46,6 +46,9 @@ jobs:
       - name: Test generic profile schema verifier
         run: cargo test --manifest-path tools/connectivity-benchmark-profile-validator/Cargo.toml --bin json-schema-verify
 
+      - name: Lint generic profile schema verifier with warnings denied
+        run: cargo clippy --manifest-path tools/connectivity-benchmark-profile-validator/Cargo.toml --bin json-schema-verify -- -D warnings
+
       - name: Validate multipath benchmark profile
         run: >-
           cargo run
