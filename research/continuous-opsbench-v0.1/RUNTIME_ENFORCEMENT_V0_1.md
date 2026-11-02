@@ -20,7 +20,7 @@ Every runtime attestation carries:
 
 The structural contract requires the challenge to be issued after the run freeze, before runtime measurement starts, and to remain valid through measurement completion and receipt issuance. Nonce digests must be unique across all arm trials in the run. This rejects stale replay and nonce reuse at the structural layer.
 
-The source-evidence adapter must authenticate the challenge authority, verify the challenge signature and subject binding, and enforce one-use nonce consumption through the existing durable replay guard (#191 / issue #190). A self-reported nonce is not cryptographic freshness evidence by itself.
+The source-evidence adapter must authenticate the challenge authority, verify the challenge signature and exact run/trial/arm/observer/policy subject binding, and enforce one-use nonce consumption through the existing durable replay guard (#191 / issue #190). A self-reported nonce is not cryptographic freshness evidence by itself.
 
 ## Runtime observation requirements
 
@@ -43,7 +43,9 @@ Exactly one nonzero runtime-instance digest and one nonzero writable-state-names
 
 ## Join and denominator rules
 
-The validator first rechecks the frozen manifest, freeze receipt and scenario bindings; then it independently recomputes candidate/baseline trial summary counts, declared attempts, cluster count and time-line shape from the trial-result records. It does not trust caller-supplied aggregate counts.
+The preferred `validate_runtime_attestations_from_events` entry point derives the sealed candidate/baseline trial ledger directly from the raw authenticated trial-event stream via `validate_run_ledger_with_reveals`, then joins the runtime attestations to that derived ledger. This is the certification path: it avoids treating a caller-constructed summary as primary evidence. The lower-level composition function remains available, but its supplied ledger must be the exact output of the sealed event validator.
+
+The validator rechecks the frozen manifest, freeze receipt and scenario bindings; it independently recomputes candidate/baseline trial summary counts, declared attempts, cluster count and timeline shape. It does not trust caller-supplied aggregate counts.
 
 For every planned scenario and arm:
 - exactly one trial result and exactly one runtime attestation must exist;
@@ -80,3 +82,10 @@ The design follows the emerging continuous-attestation direction: trust at launc
 - Independent workload/service observers own business outcomes.
 - Nixward remains the sole host transaction/interlock/journal/recovery authority.
 - The runtime observer is a measurement source, not another policy engine, participant ledger or journal.
+
+
+## Exact-head conformance
+
+The runtime validator has positive clean-run controls and negative controls for forged ledger summaries, missing/duplicated arm receipts, challenge reuse/expiry/authority substitution, observer/control-domain substitution, exact manifest/policy binding, unique runtime and namespace identity, measurement coverage including clock uncertainty, sequence start/order/contiguity, partial/unknown/tampered coverage, oracle/artifact access, forbidden egress, state carry-over and missing scenarios. The source-event certification entry point is tested independently of the supplied-summary composition path.
+
+The 60-vector runtime mutation matrix is deterministic and synthetic. A green CI run proves the encoded structural conformance tests, not a real sandbox security guarantee.
