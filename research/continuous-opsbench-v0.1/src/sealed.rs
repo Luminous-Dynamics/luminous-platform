@@ -89,6 +89,14 @@ pub struct RunManifest {
     /// Independent verifier that issues one-use, post-freeze runtime challenges.
     pub runtime_challenge_authority_id: String,
     pub runtime_challenge_authority_control_domain: String,
+    /// Exact kernel/config/BTF profile used by the runtime observer.
+    pub runtime_kernel_profile_digest: Digest,
+    /// Frozen known-answer observer-fitness probe plan.
+    pub observer_fitness_plan_digest: Digest,
+    pub observer_probe_injector_id: String,
+    pub observer_probe_injector_control_domain: String,
+    pub observer_fitness_verifier_id: String,
+    pub observer_fitness_verifier_control_domain: String,
     pub agent_identity_digest: Digest,
     pub baseline_identity_digest: Digest,
     pub agent: FrozenAgentIdentity,
@@ -122,6 +130,12 @@ pub struct FreezeReceipt {
     pub runtime_observer_adapter_digest: Digest,
     pub runtime_challenge_authority_id: String,
     pub runtime_challenge_authority_control_domain: String,
+    pub runtime_kernel_profile_digest: Digest,
+    pub observer_fitness_plan_digest: Digest,
+    pub observer_probe_injector_id: String,
+    pub observer_probe_injector_control_domain: String,
+    pub observer_fitness_verifier_id: String,
+    pub observer_fitness_verifier_control_domain: String,
     pub publisher_id: String,
     pub publisher_control_domain: String,
 }
@@ -255,6 +269,12 @@ pub struct RunLedgerSummary {
     pub runtime_observer_adapter_digest: Digest,
     pub runtime_challenge_authority_id: String,
     pub runtime_challenge_authority_control_domain: String,
+    pub runtime_kernel_profile_digest: Digest,
+    pub observer_fitness_plan_digest: Digest,
+    pub observer_probe_injector_id: String,
+    pub observer_probe_injector_control_domain: String,
+    pub observer_fitness_verifier_id: String,
+    pub observer_fitness_verifier_control_domain: String,
     pub trials: Vec<TrialResult>,
 }
 
@@ -503,6 +523,12 @@ pub fn validate_run_ledger_with_reveals(
         runtime_observer_adapter_digest: manifest.runtime_observer_adapter_digest.clone(),
         runtime_challenge_authority_id: manifest.runtime_challenge_authority_id.clone(),
         runtime_challenge_authority_control_domain: manifest.runtime_challenge_authority_control_domain.clone(),
+        runtime_kernel_profile_digest: manifest.runtime_kernel_profile_digest.clone(),
+        observer_fitness_plan_digest: manifest.observer_fitness_plan_digest.clone(),
+        observer_probe_injector_id: manifest.observer_probe_injector_id.clone(),
+        observer_probe_injector_control_domain: manifest.observer_probe_injector_control_domain.clone(),
+        observer_fitness_verifier_id: manifest.observer_fitness_verifier_id.clone(),
+        observer_fitness_verifier_control_domain: manifest.observer_fitness_verifier_control_domain.clone(),
         trials: results,
     })
 }
@@ -534,6 +560,14 @@ pub(crate) fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunE
         (manifest.runtime_observer_control_domain.as_str(), "runtime_observer_control_domain"),
         (manifest.runtime_challenge_authority_id.as_str(), "runtime_challenge_authority_id"),
         (manifest.runtime_challenge_authority_control_domain.as_str(), "runtime_challenge_authority_control_domain"),
+        (manifest.observer_probe_injector_id.as_str(), "observer_probe_injector_id"),
+        (manifest.observer_probe_injector_control_domain.as_str(), "observer_probe_injector_control_domain"),
+        (manifest.observer_fitness_verifier_id.as_str(), "observer_fitness_verifier_id"),
+        (manifest.observer_fitness_verifier_control_domain.as_str(), "observer_fitness_verifier_control_domain"),
+        (manifest.observer_probe_injector_id.as_str(), "observer_probe_injector_id"),
+        (manifest.observer_probe_injector_control_domain.as_str(), "observer_probe_injector_control_domain"),
+        (manifest.observer_fitness_verifier_id.as_str(), "observer_fitness_verifier_id"),
+        (manifest.observer_fitness_verifier_control_domain.as_str(), "observer_fitness_verifier_control_domain"),
     ] {
         if !valid_record_id(value) { return Err(SealedRunError::EmptyIdentity(name)); }
     }
@@ -572,6 +606,26 @@ pub(crate) fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunE
         || manifest.runtime_challenge_authority_control_domain == manifest.evidence_control_domain
         || manifest.runtime_challenge_authority_control_domain == manifest.runtime_observer_control_domain
         || manifest.runtime_challenge_authority_id == manifest.runtime_observer_source_id
+        || manifest.observer_probe_injector_control_domain == manifest.agent.control_domain
+        || manifest.observer_probe_injector_control_domain == manifest.baseline.control_domain
+        || manifest.observer_probe_injector_control_domain == manifest.freeze_authority_control_domain
+        || manifest.observer_probe_injector_control_domain == manifest.evaluator_control_domain
+        || manifest.observer_probe_injector_control_domain == manifest.evidence_control_domain
+        || manifest.observer_probe_injector_control_domain == manifest.runtime_observer_control_domain
+        || manifest.observer_probe_injector_control_domain == manifest.runtime_challenge_authority_control_domain
+        || manifest.observer_probe_injector_control_domain == manifest.observer_fitness_verifier_control_domain
+        || manifest.observer_fitness_verifier_control_domain == manifest.agent.control_domain
+        || manifest.observer_fitness_verifier_control_domain == manifest.baseline.control_domain
+        || manifest.observer_fitness_verifier_control_domain == manifest.freeze_authority_control_domain
+        || manifest.observer_fitness_verifier_control_domain == manifest.evaluator_control_domain
+        || manifest.observer_fitness_verifier_control_domain == manifest.evidence_control_domain
+        || manifest.observer_fitness_verifier_control_domain == manifest.runtime_observer_control_domain
+        || manifest.observer_fitness_verifier_control_domain == manifest.runtime_challenge_authority_control_domain
+        || manifest.observer_probe_injector_id == manifest.observer_fitness_verifier_id
+        || manifest.observer_probe_injector_id == manifest.runtime_observer_source_id
+        || manifest.observer_fitness_verifier_id == manifest.runtime_observer_source_id
+        || digest_is_zero(&manifest.runtime_kernel_profile_digest)
+        || digest_is_zero(&manifest.observer_fitness_plan_digest)
         || digest_is_zero(&manifest.runtime_observer_adapter_digest)
         || digest_is_zero(&manifest.evaluator_digest)
         || digest_is_zero(&manifest.execution_environment_digest)
@@ -625,6 +679,12 @@ pub(crate) fn validate_freeze_receipt(
         || receipt.runtime_observer_adapter_digest != manifest.runtime_observer_adapter_digest
         || receipt.runtime_challenge_authority_id != manifest.runtime_challenge_authority_id
         || receipt.runtime_challenge_authority_control_domain != manifest.runtime_challenge_authority_control_domain
+        || receipt.runtime_kernel_profile_digest != manifest.runtime_kernel_profile_digest
+        || receipt.observer_fitness_plan_digest != manifest.observer_fitness_plan_digest
+        || receipt.observer_probe_injector_id != manifest.observer_probe_injector_id
+        || receipt.observer_probe_injector_control_domain != manifest.observer_probe_injector_control_domain
+        || receipt.observer_fitness_verifier_id != manifest.observer_fitness_verifier_id
+        || receipt.observer_fitness_verifier_control_domain != manifest.observer_fitness_verifier_control_domain
         || receipt.publisher_id != manifest.freeze_authority_id
         || receipt.publisher_control_domain != manifest.freeze_authority_control_domain
     {
@@ -954,6 +1014,8 @@ mod tests {
         let artifact_access_policy_digest = Digest::from_byte(20);
         let network_egress_policy_digest = Digest::from_byte(25);
         let runtime_observer_adapter_digest = Digest::from_byte(26);
+        let runtime_kernel_profile_digest = Digest::from_byte(27);
+        let observer_fitness_plan_digest = Digest::from_byte(28);
         let manifest = RunManifest {
             schema: SEALED_RUN_SCHEMA.into(),
             version: SEALED_RUN_VERSION,
@@ -973,6 +1035,12 @@ mod tests {
             runtime_observer_adapter_digest: runtime_observer_adapter_digest.clone(),
             runtime_challenge_authority_id: "challenge-authority".into(),
             runtime_challenge_authority_control_domain: "challenge-domain".into(),
+            runtime_kernel_profile_digest: runtime_kernel_profile_digest.clone(),
+            observer_fitness_plan_digest: observer_fitness_plan_digest.clone(),
+            observer_probe_injector_id: "probe-injector".into(),
+            observer_probe_injector_control_domain: "probe-domain".into(),
+            observer_fitness_verifier_id: "fitness-verifier".into(),
+            observer_fitness_verifier_control_domain: "fitness-domain".into(),
             agent_identity_digest: agent_identity_digest.clone(),
             baseline_identity_digest: baseline_identity_digest.clone(),
             agent: FrozenAgentIdentity {
@@ -1033,10 +1101,21 @@ mod tests {
             runtime_observer_adapter_digest,
             runtime_challenge_authority_id: "challenge-authority".into(),
             runtime_challenge_authority_control_domain: "challenge-domain".into(),
+            runtime_kernel_profile_digest,
+            observer_fitness_plan_digest,
+            observer_probe_injector_id: "probe-injector".into(),
+            observer_probe_injector_control_domain: "probe-domain".into(),
+            observer_fitness_verifier_id: "fitness-verifier".into(),
+            observer_fitness_verifier_control_domain: "fitness-domain".into(),
             publisher_id: "freeze-authority".into(),
             publisher_control_domain: "authority-domain".into(),
         };
         (manifest, commitment, freeze)
+    }
+
+    pub(crate) fn runtime_manifest_fixture() -> (RunManifest, FreezeReceipt) {
+        let (manifest, _commitment, freeze) = manifest(EvaluationLane::SealedCertification);
+        (manifest, freeze)
     }
 
     fn scenario(manifest: &RunManifest, commitment: &Digest, trial_id: &str) -> ScenarioReceipt {
