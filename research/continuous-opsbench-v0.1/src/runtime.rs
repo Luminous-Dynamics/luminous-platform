@@ -11,6 +11,10 @@ use crate::sealed::{
     RunLedgerSummary, RunManifest, ScenarioReceipt, ScenarioReveal, SealedRunError,
     TrialDisposition, TrialEvent, TrialResult,
 };
+use crate::observer_fitness::{
+    validate_observer_fitness_bundle, ObserverFitnessBatchSummary, ObserverFitnessBundle,
+    ObserverFitnessError, ObserverFitnessSummary,
+};
 use crate::Digest;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -38,6 +42,9 @@ pub struct RuntimeChallengeReceipt {
     pub state_isolation_policy_digest: Digest,
     pub artifact_access_policy_digest: Digest,
     pub network_egress_policy_digest: Digest,
+    pub runtime_kernel_profile_digest: Digest,
+    /// Digest of the independently qualified pre-run observer-fitness receipt.
+    pub observer_fitness_receipt_digest: Digest,
     pub runtime_instance_digest: Digest,
     pub writable_state_namespace_digest: Digest,
     pub observer_source_id: String,
@@ -104,6 +111,9 @@ pub struct RuntimeTrialAttestation {
     pub state_isolation_policy_digest: Digest,
     pub artifact_access_policy_digest: Digest,
     pub network_egress_policy_digest: Digest,
+    pub runtime_kernel_profile_digest: Digest,
+    /// Digest of the pre-run observer-fitness receipt used to admit this run.
+    pub observer_fitness_receipt_digest: Digest,
     pub runtime_instance_digest: Digest,
     pub writable_state_namespace_digest: Digest,
     pub observer_source_id: String,
@@ -153,6 +163,7 @@ pub struct RuntimeTrialEvidence {
     pub writable_state_namespace_digest: Digest,
     pub challenge_nonce_digest: Digest,
     pub challenge_receipt_digest: Digest,
+    pub observer_fitness_receipt_digest: Digest,
     pub challenge_issued_at_ms: u64,
     pub challenge_expires_at_ms: u64,
     pub receipt_sequence: u64,
@@ -172,6 +183,13 @@ pub struct RuntimeAttestationSummary {
     pub runtime_observer_adapter_digest: Digest,
     pub runtime_challenge_authority_id: String,
     pub runtime_challenge_authority_control_domain: String,
+    pub runtime_kernel_profile_digest: Digest,
+    pub observer_fitness_plan_digest: Digest,
+    pub pre_run_fitness_receipt_digest: Digest,
+    pub post_run_fitness_receipt_digest: Digest,
+    pub positive_fitness_controls: usize,
+    pub negative_fitness_controls: usize,
+    pub loss_fitness_controls: usize,
     pub evidence: Vec<RuntimeTrialEvidence>,
 }
 
@@ -197,6 +215,11 @@ pub enum RuntimeAttestationError {
     AttestationBindingMismatch(String, EvaluationArm),
     ObserverIdentityMismatch,
     ObserverControlDomainCollision,
+    ObserverFitnessInvalid(ObserverFitnessError),
+    ObserverFitnessBatchCountInvalid,
+    ObserverFitnessPreRunQualificationInvalid,
+    ObserverFitnessPostRunQualificationInvalid,
+    ObserverFitnessReferenceMismatch(String, EvaluationArm),
     ChallengeAuthorityMismatch,
     ChallengeNonceInvalid,
     ChallengeNonceCollision,
@@ -252,6 +275,7 @@ pub fn validate_runtime_attestations_from_events(
     scenarios: &[ScenarioReceipt],
     reveals: &[ScenarioReveal],
     trial_events: &[TrialEvent],
+    observer_fitness: &ObserverFitnessBundle,
     challenges: &[RuntimeChallengeReceipt],
     attestations: &[RuntimeTrialAttestation],
 ) -> Result<RuntimeAttestationSummary, RuntimeAttestationError> {
@@ -264,7 +288,11 @@ pub fn validate_runtime_attestations_from_events(
         trial_events,
     )
     .map_err(RuntimeAttestationError::TrialLedgerInvalid)?;
-    validate_runtime_attestations(manifest, freeze, &ledger, scenarios, challenges, attestations)
+    let fitness_summary = validate_observer_fitness_bundle(manifest, freeze, observer_fitness)
+        .map_err(RuntimeAttestationError::ObserverFitnessInvalid)?;
+    validate_runtime_attestations(
+        manifest, freeze, &ledger, scenarios, &fitness_summary, challenges, attestations,
+    )
 }
 
 fn validate_runtime_attestations(
@@ -272,6 +300,7 @@ fn validate_runtime_attestations(
     freeze: &FreezeReceipt,
     ledger: &RunLedgerSummary,
     scenarios: &[ScenarioReceipt],
+    fitness_summary: &ObserverFitnessSummary,
     challenges: &[RuntimeChallengeReceipt],
     attestations: &[RuntimeTrialAttestation],
 ) -> Result<RuntimeAttestationSummary, RuntimeAttestationError> {
@@ -283,6 +312,7 @@ fn validate_runtime_attestations(
         return Err(RuntimeAttestationError::LedgerManifestMismatch);
     }
     validate_ledger_binding(manifest, ledger)?;
+    let fitness_pair = validate_observer_fitness_timeline(manifest, fitness_summary, attestations)?;
 
     let mut scenario_index: BTreeMap<&str, &ScenarioReceipt> = BTreeMap::new();
     for scenario in scenarios {
@@ -428,6 +458,7 @@ fn validate_runtime_attestations(
             manifest,
             &ledger.manifest_commitment,
             scenario,
+            &fitness_pair.pre_run.receipt_digest,
             receipt,
         )?;
         let challenge = challenge_index
@@ -440,6 +471,7 @@ fn validate_runtime_attestations(
             manifest,
             &ledger.manifest_commitment,
             scenario,
+            &fitness_pair.pre_run.receipt_digest,
             challenge,
             receipt,
         )?;
@@ -605,8 +637,10 @@ fn validate_runtime_attestations(
             arm: receipt.arm,
             runtime_instance_digest: receipt.runtime_instance_digest.clone(),
             writable_state_namespace_digest: receipt.writable_state_namespace_digest.clone(),
+            observer_fitness_receipt_digest: receipt.observer_fitness_receipt_digest.clone(),
             challenge_nonce_digest: receipt.challenge_nonce_digest.clone(),
             challenge_receipt_digest: receipt.challenge_receipt_digest.clone(),
+            observer_fitness_receipt_digest: receipt.observer_fitness_receipt_digest.clone(),
             challenge_issued_at_ms: receipt.challenge_issued_at_ms,
             challenge_expires_at_ms: receipt.challenge_expires_at_ms,
             receipt_sequence: receipt.receipt_sequence,
@@ -664,6 +698,13 @@ fn validate_runtime_attestations(
         runtime_observer_adapter_digest: manifest.runtime_observer_adapter_digest.clone(),
         runtime_challenge_authority_id: manifest.runtime_challenge_authority_id.clone(),
         runtime_challenge_authority_control_domain: manifest.runtime_challenge_authority_control_domain.clone(),
+        runtime_kernel_profile_digest: manifest.runtime_kernel_profile_digest.clone(),
+        observer_fitness_plan_digest: manifest.observer_fitness_plan_digest.clone(),
+        pre_run_fitness_receipt_digest: fitness_pair.pre_run.receipt_digest.clone(),
+        post_run_fitness_receipt_digest: fitness_pair.post_run.receipt_digest.clone(),
+        positive_fitness_controls: fitness_summary.total_positive_controls,
+        negative_fitness_controls: fitness_summary.total_negative_controls,
+        loss_fitness_controls: fitness_summary.total_loss_controls,
         evidence,
     })
 }
@@ -804,6 +845,7 @@ fn validate_challenge_binding(
     manifest: &RunManifest,
     expected_manifest_commitment: &Digest,
     scenario: &ScenarioReceipt,
+    pre_run_fitness_receipt_digest: &Digest,
     challenge: &RuntimeChallengeReceipt,
     attestation: &RuntimeTrialAttestation,
 ) -> Result<(), RuntimeAttestationError> {
@@ -845,6 +887,9 @@ fn validate_challenge_binding(
         || challenge.runtime_instance_digest != attestation.runtime_instance_digest
         || challenge.writable_state_namespace_digest != attestation.writable_state_namespace_digest
         || challenge.observer_adapter_digest != manifest.runtime_observer_adapter_digest
+        || challenge.runtime_kernel_profile_digest != manifest.runtime_kernel_profile_digest
+        || challenge.observer_fitness_receipt_digest != *pre_run_fitness_receipt_digest
+        || challenge.observer_fitness_receipt_digest != attestation.observer_fitness_receipt_digest
         || challenge.observer_source_id != manifest.runtime_observer_source_id
         || challenge.observer_control_domain != manifest.runtime_observer_control_domain
         || challenge.receipt_digest != attestation.challenge_receipt_digest
@@ -904,6 +949,7 @@ fn validate_receipt_binding(
     manifest: &RunManifest,
     expected_manifest_commitment: &Digest,
     scenario: &ScenarioReceipt,
+    pre_run_fitness_receipt_digest: &Digest,
     receipt: &RuntimeTrialAttestation,
 ) -> Result<(), RuntimeAttestationError> {
     let expected_identity = match receipt.arm {
@@ -923,6 +969,8 @@ fn validate_receipt_binding(
         || receipt.artifact_access_policy_digest != manifest.artifact_access_policy_digest
         || receipt.network_egress_policy_digest != manifest.network_egress_policy_digest
         || receipt.observer_adapter_digest != manifest.runtime_observer_adapter_digest
+        || receipt.runtime_kernel_profile_digest != manifest.runtime_kernel_profile_digest
+        || receipt.observer_fitness_receipt_digest != *pre_run_fitness_receipt_digest
     {
         return Err(RuntimeAttestationError::AttestationBindingMismatch(
             receipt.trial_id.clone(),
