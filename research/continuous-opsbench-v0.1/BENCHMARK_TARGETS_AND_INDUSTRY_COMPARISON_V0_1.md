@@ -11,25 +11,34 @@ The external figures below provide context, not a combined leaderboard. Their ta
 | Reference | Published result or scope | What it measures | Why its score is not directly comparable |
 |---|---|---|---|
 | SRE-Marathon (2026) | Three applications; roughly 60 faults per run; best of 10 methods reached 41.3/100 | Long-horizon continuous SRE with overlapping faults, cumulative alerts, persistent workspace and code/config changes | Its Marathon-Score credits ordered fault progress; do not map that score onto our unique request-impact or safety metrics. |
-| SREGym-Lite | Public leaderboard lists top E2E submissions at 100% on the curated 17-fault Lite cohort | Diagnosis plus mitigation on the same run; E2E, time-to-diagnose, time-to-mitigate, tokens | This is a small curated cohort with apparent ceiling saturation. We should reproduce it as a smoke/regression track, not use it as the sole generalization claim. |
-| ITBench (ICML 2025) | Published SRE scenario resolution result of 11.4% in its evaluated setup; 102 real-world scenarios in the PMLR paper | SRE, CISO and FinOps automation tasks | Broader operational task mix and a different resolution oracle; compare only under the benchmark's exact task and scoring rules. |
-| PagerDuty SRE Agent report (2026) | 17 scenarios; the report describes a single trial per agent in its latest sweep and calls for statistical rigor, more scenarios and compound faults | Fault localization, diagnosis, mitigation recommendation, evidence grounding and explanation quality | The published aggregate is a judged quality score, not sustained independently verified service recovery after real committed action. |
-| Agentic leaderboard auditing (2026) | A measurement-first audit found that provenance gaps, retrieval leakage and unvalidated scorers can make leaderboard conclusions inconclusive | Contamination channels, matched controls and scorer validation | Demonstrates that the evaluation pipeline itself must be measured, not merely trusted. |
-| Search-time contamination (2026) | Search-time benchmark leakage was observed across public agent benchmarks, with up to 4% reported inflation in the examined setting | Benchmark metadata, question-context and explicit-answer retrieval during inference | Relevant to web-enabled agents: public test material may become an unintended tool input. |
+| SREGym-Lite | The current public leaderboard has top E2E submissions at 100% on the 17-fault Lite cohort; it reports diagnosis, mitigation, E2E, time and tokens | Live Kubernetes diagnosis + mitigation; third-party results on the same run are labeled as verified by maintainers | A small cohort is saturated at the top. Reproduce it as a compatibility track, not the primary generalization claim. The separate SREGym-0508 cohort contains 90 faults. |
+| SRE-Marathon (2026) | Across three apps and roughly 60 faults per run, best of 10 methods reached 41.3/100 | Long-horizon operations with overlapping faults, cumulative alerts, persistent workspace and code/config changes | Strong continuous benchmark comparator; its ordered-progress score is not our independently verified service-outcome estimand. |
+| ITBench (ICML 2025) | Published SRE resolution result of 11.4% in its evaluated setup; 102 real-world scenarios in the PMLR paper | SRE, CISO and FinOps automation tasks | Broader operational task mix and a different resolution oracle; compare only under the benchmark's exact task and scoring rules. |
+| SentinelBench (2026) | 100 tasks across 10 synthetic web environments; task completion, reaction time and resource use | Long-running monitoring, passive/active tasks, external state changes and no-operation controls | Not an SRE benchmark, but directly relevant to event-aware waiting, alert monitoring and resource-efficient sustained attention. |
+| Agent reliability profile (ICML 2026) | 15 models evaluated with 12 metrics spanning consistency, robustness, predictability and safety | Pass consistency, perturbation robustness, calibration/predictability, and harm/compliance | Complements task accuracy; use as a reliability-profile template rather than copying a single aggregate. |
+| CI-Work (ACL Industry 2026) | Reported privacy violations 15.8–50.9% and leakage up to 26.7% in its evaluated enterprise workflows | Whether agents communicate essential content while withholding sensitive context | A direct contextual-integrity comparator for the privacy track; do not average its leakage rate with operational success. |
+| Capable but Careless (EMNLP 2026) | 11 of 15 tested computer-use agents leaked in more than half of scenarios; reported average leakage 67.9% | Cross-app contextual disclosure, task ambiguity and recipient alignment | Useful adjacent test for computer-use agents; not an SRE score. |
+| AgentSuite / COBA (ICML 2026) | Proposes component-based benchmark auditing across User, Environment, Ground Truth and Evaluation | Detecting benchmark validity defects and scorer/task/environment artifacts | Adopt a similar component audit before certifying an OpsBench cohort. |
+| Agentic leaderboard auditing and search-time contamination (2026) | Search-time contamination was observed across seven public benchmarks, with up to 4% reported inflation in the examined setting | Retrieval leakage, provenance, holdout contamination and grader validity | Public cases can become test-time tool inputs. Active certification must use sealed cases and publish retrieval/trajectory provenance. |
 
 Primary references:
 - SRE-Marathon: https://arxiv.org/abs/2609.33023
-- SREGym leaderboard: https://www.sregym.com/leaderboard
+- SREGym leaderboard and 17-fault cohort: https://www.sregym.com/leaderboard and https://www.sregym.com/problems/cohorts/sregym-lite
+- SREGym 90-fault cohort: https://www.sregym.com/problems/cohorts/sregym-0508
 - ITBench PMLR paper: https://proceedings.mlr.press/v267/jha25a.html
-- PagerDuty report: https://www.pagerduty.com/resources/ai/learn/sre-agent-benchmark-report/
-- Measurement-first leaderboard audit: https://arxiv.org/abs/2610.05830
+- SentinelBench (100 tasks / 10 environments): https://www.microsoft.com/en-us/research/publication/sentinelbench-a-benchmark-for-long-running-monitoring-agents/
+- Agent reliability profile (12 metrics / four dimensions): https://proceedings.mlr.press/v306/rabanser26a.html
+- CI-Work: https://aclanthology.org/2026.acl-industry.103/
+- Capable but Careless: https://aclanthology.org/2026.emnlp-main.55/
+- AgentSuite / COBA: https://proceedings.mlr.press/v306/suh26a.html
 - Search-time contamination: https://aclanthology.org/2026.findings-emnlp.760/
+- Princeton agent-evaluation best practices: https://sage.cs.princeton.edu/trends/
 
 ## Paradigm shift
 
 Move from **“agent solved an incident”** to **“the frozen operational system produced an independently verified, safe and sustained service outcome.”**
 
-This has seven consequences:
+This has eight consequences:
 
 1. **Causal evidence, not agent narration.** A diagnosis is a hypothesis; a tool transcript is an attempt; a participant-owned effect receipt is evidence of an external effect; an independent service observer is evidence of the outcome. These must not collapse into one self-reported success flag.
 2. **Continuous operation, not single-fault episodes.** Test simultaneous faults, changing deployments/configuration, delayed symptoms, incident interactions, and post-repair recurrence.
@@ -38,6 +47,7 @@ This has seven consequences:
 5. **Sealed certification, open reproduction.** Public tests accelerate development; sealed cases protect certification; retired cases preserve later reproducibility.
 6. **Assurance frontier, not a compensatory score.** Safety, evidence completeness, recovery, service impact, calibration, latency, cost and human effort are separate dimensions. An unauthorized committed effect cannot be compensated by faster remediation.
 7. **The evaluator is also evaluated.** Commitments, source authenticity, replay resistance, scorer sensitivity/specificity, observer completeness, and retrieval controls need their own adversarial tests and known-answer controls.
+8. **Waiting is a first-class behavior.** Continuous agents should be scored for detecting exogenous state changes, choosing when to re-observe, no-op restraint, alert fatigue, time-to-reaction and resource use. Repeated polling must not be treated as productive activity.
 
 ## Metric contract
 
@@ -86,6 +96,28 @@ Approximate examples:
 - 0 / 3,000 independent clusters: upper bound about 0.10%.
 
 These are illustrative bounds only. Independence and representativeness assumptions must be justified. Repeated requests, attempts, windows or seeds nested inside one scenario cluster do not increase the independent-cluster denominator.
+
+## Monitoring and waiting track
+
+Adopt a SentinelBench-inspired, but operations-specific, set of tasks alongside the SRE continuous track:
+- passive wait-for-signal tasks (do not act before the event);
+- active monitoring tasks (periodically inspect a source to reveal new information);
+- relative-baseline tasks (remember a metric's initial value);
+- no-op tasks where the event never occurs;
+- urgent ephemeral tasks where delayed reaction causes real loss;
+- alert-churn and noisy-signal tasks with false positives and correlated events.
+
+Measure event-detection recall/precision, time-to-detection, time-to-correct-action, false wakeups, polling/tool-call count, tokens, energy where available, cost per correctly handled event, missed-event rate, and no-op violation rate. The benchmark should vary event-time distribution and observation affordances. It must include observer-known event timelines so that delayed detection is distinguishable from an event that never occurred.
+
+## Benchmark component audit (before an agent run)
+
+Every benchmark cohort should have a validity dossier covering four components:
+- **User/task contract:** ambiguity, instruction consistency, required/forbidden outcomes, and task-to-oracle traceability.
+- **Environment/tools:** deterministic reset, versioned state, tool semantics, permissions, fault injectors, and environment drift.
+- **Ground truth:** oracle provenance, label completeness, independent positive/negative known-answer cases, and ambiguity policy.
+- **Evaluation:** exact code/digest, metric semantics, failure handling, statistical plan, and scorer mutation tests.
+
+Inject controlled defects into each component and verify that the audit rejects or flags them. This adopts the component-level idea from AgentSuite/COBA; it does not claim their pipeline has been implemented here.
 
 ## Confirmatory experimental protocol
 
