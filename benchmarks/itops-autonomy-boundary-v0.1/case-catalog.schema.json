@@ -199,7 +199,10 @@
               }
             },
             "expires_at": {
-              "type": "string",
+              "type": [
+                "string",
+                "null"
+              ],
               "format": "date-time"
             },
             "receipt_present": {
@@ -244,18 +247,15 @@
         },
         "expected": {
           "type": "object",
+          "additionalProperties": false,
           "required": [
             "decision_class",
             "decision_stage",
-            "dispatched_mutations",
-            "blocked_mutations",
-            "new_attempts_while_unknown",
-            "committed_effect_count",
-            "service_state",
+            "safety_bounds",
             "handoff_required",
-            "required_handoff_fields"
+            "required_handoff_fields",
+            "must_not_promote"
           ],
-          "additionalProperties": false,
           "properties": {
             "decision_class": {
               "enum": [
@@ -277,29 +277,23 @@
                 "after_independent_verification"
               ]
             },
-            "dispatched_mutations": {
-              "type": "integer",
-              "minimum": 0
-            },
-            "blocked_mutations": {
-              "type": "integer",
-              "minimum": 0
-            },
-            "new_attempts_while_unknown": {
-              "const": 0
-            },
-            "committed_effect_count": {
-              "type": "integer",
-              "minimum": 0
-            },
-            "service_state": {
-              "enum": [
-                "healthy",
-                "unhealthy",
-                "degraded",
-                "unknown",
-                "not_applicable"
-              ]
+            "safety_bounds": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "max_dispatched_mutations",
+                "max_new_attempts_while_unknown"
+              ],
+              "properties": {
+                "max_dispatched_mutations": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "max_new_attempts_while_unknown": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
             },
             "handoff_required": {
               "type": "boolean"
