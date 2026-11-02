@@ -42,6 +42,8 @@ jobs:
               json.loads(path.read_text(encoding="utf-8"))
               print(f"valid JSON: {path}")
           PY
+      - name: Check exact Rust record and JSON schema field parity
+        run: python3 .github/scripts/check_opsbench_schema_parity.py
       - name: Run dependency-locked tests
         run: cargo test --manifest-path research/continuous-opsbench-v0.1/Cargo.toml --locked
       - name: Run Clippy with warnings denied
