@@ -147,6 +147,7 @@
     "external_scheduler_modules_must_not_be_mislabeled_in_tree": true,
     "default_scheduler_must_be_identified_from_exact_kernel_source": true,
     "redundant_transmission_is_separate_reliability_energy_control": true,
-    "same_workload_and_path_trace_required": true
+    "same_workload_and_path_trace_required": true,
+    "same_cost_currency_required": true
   }
 }
