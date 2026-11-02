@@ -17,7 +17,7 @@ impl Digest {
     pub fn from_byte(byte: u8) -> Self { Self([byte; 32]) }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum EffectClass { ReadOnly, BoundedMutation, IrreversibleMutation, Unknown }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -253,7 +253,7 @@ pub trait ParticipantPort {
         attempt_id: &str, request_digest: &Digest) -> Result<ParticipantEvidence, ParticipantError>;
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct DispatchRequest {
     pub participant_id: String,
     pub tenant_id: String,
@@ -314,6 +314,9 @@ pub struct CandidateAct {
     pub runtime_evidence_digest: Digest,
     pub challenge_receipt_digest: Digest,
     pub challenge_nonce_digest: Digest,
+    pub finality_verifier_id: String,
+    pub finality_verifier_control_domain: String,
+    pub maximum_handle_ttl_ms: u64,
 }
 
 /// Adapter for deterministic canonicalization (for example deterministic CBOR + SHA-256).
@@ -572,6 +575,9 @@ impl<P: ParticipantPort> EffectBroker<P> {
             runtime_evidence_digest: runtime_evidence.evidence_bundle_digest.clone(),
             challenge_receipt_digest: runtime_evidence.challenge_receipt_digest.clone(),
             challenge_nonce_digest: runtime_evidence.challenge_nonce_digest.clone(),
+            finality_verifier_id: manifest.finality_verifier_id.clone(),
+            finality_verifier_control_domain: manifest.finality_verifier_control_domain.clone(),
+            maximum_handle_ttl_ms: manifest.max_finality_handle_ttl_ms,
         };
         let act_digest = match canonicalizer.canonical_digest(&candidate_act) {
             Ok(value) if value != Digest::ZERO => value,
