@@ -52,30 +52,14 @@ See [BENCHMARK_TARGETS_AND_INDUSTRY_COMPARISON_V0_1.md](BENCHMARK_TARGETS_AND_IN
 
 The run freeze also pins the state-isolation, artifact-access and network-egress policy digests. These describe per-trial writable state/cache boundaries, agent separation from private oracle artifacts, and default-deny or allowlisted outbound retrieval. The structural validator verifies digest presence/binding only; a separate runtime observer must attest enforcement.
 
+## Independent runtime enforcement and challenge receipts
 
-### Independent runtime enforcement receipts
+The additive runtime verifier requires one independent observer attestation and one separately authenticated, one-use challenge-authority receipt for every planned Candidate/Baseline arm. It binds the run/scenario/system identities, environment and policy digests, unique runtime and writable namespace IDs, observer adapter/source, challenge nonce/receipt digest and validity interval. It derives the sealed ledger from raw trial events, independently validates arm/cluster/attempt denominators, and rejects missing/duplicate challenge or attestation records, sequence gaps, coverage loss, oracle reads, prohibited artifact access, disallowed egress, cross-trial state and shared writable namespaces.
 
-The new `src/runtime.rs` validator requires one independent runtime attestation per planned (scenario, Candidate/Baseline) pair. Each receipt binds the exact arm identity, scenario, manifest, environment, resource budget and state/artifact/egress policy digests; it must cover the complete agent interval with complete telemetry. Oracle reads, unauthorized artifact reads, disallowed egress, writable-state sharing, cross-trial state observations, telemetry gaps and missing/duplicate receipts are rejected. See `runtime-trial-attestation.schema.json` and `RUNTIME_ENFORCEMENT_V0_1.md`.
+See [RUNTIME_ENFORCEMENT_V0_1.md](RUNTIME_ENFORCEMENT_V0_1.md), [RUNTIME_ENFORCEMENT_ADAPTER_V0_1.md](RUNTIME_ENFORCEMENT_ADAPTER_V0_1.md), [runtime-trial-attestation.schema.json](runtime-trial-attestation.schema.json), and [runtime-challenge-receipt.schema.json](runtime-challenge-receipt.schema.json).
 
-The validator is structural only. The typed source-evidence adapter must authenticate observer receipts and replay sequences; a real runtime observer/sandbox adapter must prove actual enforcement. This does not qualify kernel/hypervisor isolation or production safety.
+This remains structural validation. Challenge and observer signatures, durable cross-run anti-replay, allowlist event verification, actual kernel/hypervisor enforcement, and access telemetry completeness remain external adapter obligations.
 
+## Observer fitness
 
-### Independent runtime enforcement receipts
-
-The runtime validator in `src/runtime.rs` requires complete per-arm process, mount, filesystem, egress and event-stream commitments, and a unique one-use challenge nonce issued after the run freeze. It binds the runtime observer and challenge authority to distinct frozen trust domains. See `RUNTIME_ENFORCEMENT_V0_1.md` and `runtime-trial-attestation.schema.json`.
-
-This is still structural validation. The typed source-evidence adapter must authenticate challenge and receipt publishers, validate the subject and freshness, and consume nonces through durable anti-replay state. The runtime adapter must independently prove telemetry coverage and enforcement; a receipt field cannot prove that a hook remained attached or that a compromised kernel did not suppress events.
-
-
-### Independent runtime enforcement receipts v0.1
-
-The additive validator in `src/runtime.rs` joins one runtime observer attestation to every planned Candidate/Baseline arm using the raw-event-derived sealed ledger. It checks challenge freshness (24-hour maximum TTL), observer and challenge authority separation, run-scoped contiguous sequences, clock-uncertainty-aware measurement coverage, non-aliasing runtime/namespace identities, complete telemetry, and hard denials for oracle/artifact reads, disallowed egress and cross-trial state. See `RUNTIME_ENFORCEMENT_V0_1.md` and `runtime-trial-attestation.schema.json`.
-
-Only `validate_runtime_attestations_from_events` is public as the certification entry point. The lower-level summary composition is private. Signatures, durable cross-run replay protection, challenge issuance, allowlist event verification and actual kernel/hypervisor enforcement remain external obligations.
-
-
-### Independent runtime enforcement receipts v0.1
-
-The additive `src/runtime.rs` verifier joins one host-side runtime attestation and one separately authenticated, one-use challenge-authority receipt to every planned `(trial, Candidate/Baseline)` pair. It binds the run/scenario/system identities, execution environment and policy digests, unique runtime and writable namespace IDs, observer adapter/source, challenge nonce/receipt digest and issue/expiry interval. Missing or duplicated challenge/attestation records, sequence gaps, coverage loss, oracle reads, prohibited artifact access, disallowed egress, cross-trial state and shared writable namespaces fail closed.
-
-See `runtime-trial-attestation.schema.json`, `runtime-challenge-receipt.schema.json`, and `RUNTIME_ENFORCEMENT_ADAPTER_V0_1.md`. This is structural validation only; challenge and observer signatures, canonical artifact hashes, durable anti-replay, kernel/hypervisor enforcement, access telemetry completeness and actual runtime integration remain external requirements.
+[Issue #205](https://github.com/Luminous-Dynamics/luminous-platform/issues/205) extends this work with blinded positive/negative known-answer probes, event-loss injection, per-sensor false-negative and latency measurements, and expiry on kernel/runtime/adapter/policy changes. A "complete" coverage claim must be qualified against the exact pinned instrumentation profile; missing sensors or silent drops are indeterminate, never zero accesses.
