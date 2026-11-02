@@ -847,6 +847,12 @@ pub(crate) fn validate_ledger_binding(
         || ledger.runtime_observer_adapter_digest != manifest.runtime_observer_adapter_digest
         || ledger.runtime_challenge_authority_id != manifest.runtime_challenge_authority_id
         || ledger.runtime_challenge_authority_control_domain != manifest.runtime_challenge_authority_control_domain
+        || ledger.runtime_kernel_profile_digest != manifest.runtime_kernel_profile_digest
+        || ledger.observer_fitness_plan_digest != manifest.observer_fitness_plan_digest
+        || ledger.observer_probe_injector_id != manifest.observer_probe_injector_id
+        || ledger.observer_probe_injector_control_domain != manifest.observer_probe_injector_control_domain
+        || ledger.observer_fitness_verifier_id != manifest.observer_fitness_verifier_id
+        || ledger.observer_fitness_verifier_control_domain != manifest.observer_fitness_verifier_control_domain
         || ledger.planned_trials != manifest.trials.len()
         || ledger.planned_arm_trials != manifest.trials.len().saturating_mul(2)
         || ledger.trials.len() != manifest.trials.len().saturating_mul(2)
@@ -1307,6 +1313,20 @@ mod tests {
         validate_observer_fitness_bundle(manifest, freeze, &bundle).unwrap()
     }
 
+    fn validate_with_challenges(
+        manifest: &RunManifest,
+        freeze: &FreezeReceipt,
+        ledger: &RunLedgerSummary,
+        scenarios: &[ScenarioReceipt],
+        challenges: &[RuntimeChallengeReceipt],
+        attestations: &[RuntimeTrialAttestation],
+    ) -> Result<RuntimeAttestationSummary, RuntimeAttestationError> {
+        let fitness_summary = observer_fitness_summary(manifest, freeze);
+        validate_runtime_attestations(
+            manifest, freeze, ledger, scenarios, &fitness_summary, challenges, attestations,
+        )
+    }
+
     fn validate_fixture(
         manifest: &RunManifest,
         freeze: &FreezeReceipt,
@@ -1315,7 +1335,7 @@ mod tests {
         attestations: &[RuntimeTrialAttestation],
     ) -> Result<RuntimeAttestationSummary, RuntimeAttestationError> {
         let challenges = challenge_receipts(attestations);
-        validate_runtime_attestations(manifest, freeze, ledger, scenarios, &challenges, attestations)
+        validate_with_challenges(manifest, freeze, ledger, scenarios, &challenges, attestations)
     }
     fn fixture() -> (
         RunManifest,
