@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-runtime-challenge-v0.1.json",
+  "title": "Continuous OpsBench one-use runtime challenge receipt v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "receipt_digest",
+    "run_id",
+    "trial_id",
+    "arm",
+    "arm_identity_digest",
+    "scenario_commitment",
+    "manifest_commitment",
+    "evaluator_digest",
+    "execution_environment_digest",
+    "resource_budget_digest",
+    "state_isolation_policy_digest",
+    "artifact_access_policy_digest",
+    "network_egress_policy_digest",
+    "runtime_instance_digest",
+    "writable_state_namespace_digest",
+    "observer_source_id",
+    "observer_control_domain",
+    "observer_adapter_digest",
+    "challenge_nonce_digest",
+    "challenge_authority_id",
+    "challenge_authority_control_domain",
+    "sequence",
+    "issued_at_ms",
+    "expires_at_ms",
+    "clock_uncertainty_ms"
+  ],
+  "properties": {
+    "schema": {
+      "const": "continuous-opsbench-runtime-challenge-v0.1"
+    },
+    "receipt_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "trial_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "arm": {
+      "enum": [
+        "candidate",
+        "baseline"
+      ]
+    },
+    "arm_identity_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "scenario_commitment": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "manifest_commitment": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "evaluator_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "execution_environment_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "resource_budget_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "state_isolation_policy_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "artifact_access_policy_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "network_egress_policy_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "runtime_instance_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "writable_state_namespace_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "observer_source_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "observer_control_domain": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "observer_adapter_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "challenge_nonce_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "challenge_authority_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "challenge_authority_control_domain": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "issued_at_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "expires_at_ms": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "clock_uncertainty_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000
+    }
+  }
+}
