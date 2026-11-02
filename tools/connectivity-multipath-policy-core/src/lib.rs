@@ -727,6 +727,7 @@ mod tests {
     fn best_rtt_baseline_selects_minimum_rtt_not_fastest_completion() {
         let mut req = request();
         req.deadline_us = None;
+        req.allow_multipath = false;
         let paths = vec![
             path("low-rtt-slow-capacity", 1_000, 1_000_000, 10, "a"),
             path("high-rtt-high-capacity", 100_000, 100_000_000, 10, "b"),
