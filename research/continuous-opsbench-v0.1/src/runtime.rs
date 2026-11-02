@@ -269,6 +269,47 @@ fn validate_runtime_attestations(
         }
     }
 
+    let mut challenge_index: BTreeMap<(&str, EvaluationArm), &RuntimeChallengeReceipt> =
+        BTreeMap::new();
+    let mut challenge_nonces = BTreeSet::new();
+    let mut challenge_digests = BTreeSet::new();
+    let mut challenge_sequences = Vec::with_capacity(challenges.len());
+    for challenge in challenges {
+        if challenge.schema != RUNTIME_CHALLENGE_SCHEMA {
+            return Err(RuntimeAttestationError::ChallengeReceiptUnsupportedSchema);
+        }
+        if !manifest.trials.iter().any(|trial| trial.trial_id == challenge.trial_id) {
+            return Err(RuntimeAttestationError::ChallengeReceiptUnplanned(
+                challenge.trial_id.clone(), challenge.arm,
+            ));
+        }
+        if challenge_index.insert((challenge.trial_id.as_str(), challenge.arm), challenge).is_some() {
+            return Err(RuntimeAttestationError::ChallengeReceiptDuplicate(
+                challenge.trial_id.clone(), challenge.arm,
+            ));
+        }
+        if is_zero(&challenge.receipt_digest) || !challenge_digests.insert(challenge.receipt_digest.clone()) {
+            return Err(RuntimeAttestationError::ChallengeReceiptDigestInvalid);
+        }
+        if is_zero(&challenge.challenge_nonce_digest) || !challenge_nonces.insert(challenge.challenge_nonce_digest.clone()) {
+            return Err(RuntimeAttestationError::ChallengeNonceCollision);
+        }
+        if challenge.sequence == 0 {
+            return Err(RuntimeAttestationError::ChallengeReceiptSequenceInvalid);
+        }
+        challenge_sequences.push((challenge.sequence, challenge.issued_at_ms));
+    }
+    challenge_sequences.sort_unstable_by_key(|entry| entry.0);
+    if challenge_sequences.first().map(|entry| entry.0) != Some(1)
+        || challenge_sequences.windows(2).any(|pair| pair[1].0 != pair[0].0.saturating_add(1))
+    {
+        return Err(RuntimeAttestationError::ChallengeReceiptSequenceNotContiguous);
+    }
+    if challenges.len() != manifest.trials.len().saturating_mul(2) {
+        return Err(RuntimeAttestationError::ChallengeReceiptMissing(
+            "challenge-denominator".into(), EvaluationArm::Candidate,
+        ));
+    }
     let mut ledger_index: BTreeMap<(&str, EvaluationArm), &TrialResult> = BTreeMap::new();
     for result in &ledger.trials {
         if ledger_index
@@ -331,6 +372,19 @@ fn validate_runtime_attestations(
             manifest,
             &ledger.manifest_commitment,
             scenario,
+            receipt,
+        )?;
+        let challenge = challenge_index
+            .get(&(receipt.trial_id.as_str(), receipt.arm))
+            .copied()
+            .ok_or_else(|| RuntimeAttestationError::ChallengeReceiptMissing(
+                receipt.trial_id.clone(), receipt.arm,
+            ))?;
+        validate_challenge_binding(
+            manifest,
+            &ledger.manifest_commitment,
+            scenario,
+            challenge,
             receipt,
         )?;
         if receipt.clock_uncertainty_ms > MAX_CLOCK_UNCERTAINTY_MS {
@@ -666,6 +720,85 @@ pub(crate) fn validate_ledger_binding(
         || candidate.invalidated_trials + baseline.invalidated_trials != ledger.invalidated_trials
     {
         return Err(RuntimeAttestationError::LedgerTrialSummaryMismatch);
+    }
+    Ok(())
+}
+
+fn validate_challenge_binding(
+    manifest: &RunManifest,
+    expected_manifest_commitment: &Digest,
+    scenario: &ScenarioReceipt,
+    challenge: &RuntimeChallengeReceipt,
+    attestation: &RuntimeTrialAttestation,
+) -> Result<(), RuntimeAttestationError> {
+    let expected_identity = match challenge.arm {
+        EvaluationArm::Candidate => &manifest.agent_identity_digest,
+        EvaluationArm::Baseline => &manifest.baseline_identity_digest,
+    };
+    if challenge.run_id != manifest.run_id
+        || challenge.trial_id != scenario.trial_id
+        || challenge.arm != attestation.arm
+        || challenge.arm_identity_digest != *expected_identity
+        || challenge.scenario_commitment != scenario.case_payload_commitment
+        || challenge.manifest_commitment != *expected_manifest_commitment
+        || challenge.evaluator_digest != manifest.evaluator_digest
+        || challenge.execution_environment_digest != manifest.execution_environment_digest
+        || challenge.resource_budget_digest != manifest.resource_budget_digest
+        || challenge.state_isolation_policy_digest != manifest.state_isolation_policy_digest
+        || challenge.artifact_access_policy_digest != manifest.artifact_access_policy_digest
+        || challenge.network_egress_policy_digest != manifest.network_egress_policy_digest
+        || challenge.runtime_instance_digest != attestation.runtime_instance_digest
+        || challenge.writable_state_namespace_digest != attestation.writable_state_namespace_digest
+        || challenge.observer_adapter_digest != manifest.runtime_observer_adapter_digest
+        || challenge.observer_source_id != manifest.runtime_observer_source_id
+        || challenge.observer_control_domain != manifest.runtime_observer_control_domain
+        || challenge.challenge_authority_id != manifest.runtime_challenge_authority_id
+        || challenge.challenge_authority_control_domain != manifest.runtime_challenge_authority_control_domain
+        || challenge.receipt_digest != attestation.challenge_receipt_digest
+        || challenge.challenge_nonce_digest != attestation.challenge_nonce_digest
+        || challenge.issued_at_ms != attestation.challenge_issued_at_ms
+        || challenge.expires_at_ms != attestation.challenge_expires_at_ms
+        || challenge.challenge_authority_id.trim().is_empty()
+        || challenge.challenge_authority_control_domain.trim().is_empty()
+        || challenge.observer_source_id.trim().is_empty()
+        || challenge.observer_control_domain.trim().is_empty()
+        || challenge.clock_uncertainty_ms > MAX_CLOCK_UNCERTAINTY_MS
+    {
+        return Err(RuntimeAttestationError::ChallengeReceiptBindingMismatch(
+            challenge.trial_id.clone(), challenge.arm,
+        ));
+    }
+    if challenge.challenge_authority_id != manifest.runtime_challenge_authority_id
+        || challenge.challenge_authority_control_domain != manifest.runtime_challenge_authority_control_domain
+        || challenge.challenge_authority_control_domain == challenge.observer_control_domain
+        || challenge.challenge_authority_control_domain == manifest.agent.control_domain
+        || challenge.challenge_authority_control_domain == manifest.baseline.control_domain
+        || challenge.challenge_authority_control_domain == manifest.evaluator_control_domain
+        || challenge.challenge_authority_control_domain == manifest.freeze_authority_control_domain
+        || challenge.challenge_authority_control_domain == manifest.evidence_control_domain
+    {
+        return Err(RuntimeAttestationError::ChallengeReceiptAuthorityMismatch);
+    }
+    if is_zero(&challenge.runtime_instance_digest)
+        || is_zero(&challenge.writable_state_namespace_digest)
+        || is_zero(&challenge.challenge_nonce_digest)
+        || challenge.runtime_instance_digest == challenge.writable_state_namespace_digest
+    {
+        return Err(RuntimeAttestationError::ChallengeReceiptBindingMismatch(
+            challenge.trial_id.clone(), challenge.arm,
+        ));
+    }
+    if challenge.issued_at_ms <= manifest.frozen_at_ms
+        || challenge.issued_at_ms >= attestation.measurement_start_ms
+        || challenge.expires_at_ms <= attestation.measurement_end_ms
+        || challenge.expires_at_ms <= attestation.issued_at_ms
+        || challenge.expires_at_ms <= attestation.issued_at_ms.saturating_add(attestation.clock_uncertainty_ms)
+        || challenge.expires_at_ms <= challenge.issued_at_ms.saturating_add(challenge.clock_uncertainty_ms)
+        || challenge.expires_at_ms.saturating_sub(challenge.issued_at_ms) > MAX_RUNTIME_CHALLENGE_TTL_MS
+    {
+        return Err(RuntimeAttestationError::ChallengeFreshnessInvalid(
+            challenge.trial_id.clone(), challenge.arm,
+        ));
     }
     Ok(())
 }
