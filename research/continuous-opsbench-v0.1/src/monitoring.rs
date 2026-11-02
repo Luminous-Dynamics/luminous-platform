@@ -514,6 +514,23 @@ pub fn evaluate_monitoring_trial(
         }
     }
 
+    let mut action_ids = BTreeSet::new();
+    let mut assigned_actions: Vec<Vec<&ActionEvidence>> =
+        (0..events.len()).map(|_| Vec::new()).collect();
+    let mut unassigned_actions: Vec<&ActionEvidence> = Vec::new();
+    for action in actions {
+        validate_action_timeline(contract, action)?;
+        if !action_ids.insert(action.action_id.as_str()) {
+            return Err(MonitoringError::DuplicateAction(action.action_id.clone()));
+        }
+        match select_event_for_action(events, &action.condition_digest,
+            action.dispatched_at_ms.unwrap_or(action.attempted_at_ms))
+        {
+            Some(index) => assigned_actions[index].push(action),
+            None => unassigned_actions.push(action),
+        }
+    }
+
     let mut event_results = Vec::with_capacity(events.len());
     let mut detected_events = 0usize;
     let mut missed_detections = 0usize;
@@ -528,7 +545,7 @@ pub fn evaluate_monitoring_trial(
     let mut unauthorized_committed_effects = 0usize;
     let mut unknown_effect_outcomes = 0usize;
 
-    for event in events {
+    for (event_index, event) in events.iter().enumerate() {
         let detected_at = positive_observations.iter()
             .filter(|o| o.condition_digest == event.condition_digest
                 && event_active_at(event, o.observed_at_ms))
@@ -542,17 +559,10 @@ pub fn evaluate_monitoring_trial(
             missed_detections += 1;
         }
 
-        let matching_actions: Vec<&ActionEvidence> = actions.iter()
-            .filter(|action| action.condition_digest == event.condition_digest)
-            .collect();
         let mut correct_action_at = None;
         let mut event_late_action = false;
         let mut event_premature_action = false;
-        for action in matching_actions {
-            validate_action_timeline(contract, action)?;
-            if !action_ids.insert(action.action_id.as_str()) {
-                return Err(MonitoringError::DuplicateAction(action.action_id.clone()));
-            }
+        for action in assigned_actions[event_index].iter().copied() {
             if !action.authorized {
                 unauthorized_attempts += 1;
             }
@@ -626,13 +636,7 @@ pub fn evaluate_monitoring_trial(
 
     }
 
-    for action in actions.iter().filter(|action| {
-        !events.iter().any(|event| event.condition_digest == action.condition_digest)
-    }) {
-        validate_action_timeline(contract, action)?;
-        if !action_ids.insert(action.action_id.as_str()) {
-            return Err(MonitoringError::DuplicateAction(action.action_id.clone()));
-        }
+    for action in unassigned_actions {
         if !action.authorized { unauthorized_attempts += 1; }
         if action.outcome == ActionOutcome::Unknown {
             unknown_effect_outcomes += 1;
@@ -812,6 +816,48 @@ pub fn evaluate_monitoring_pair(
         candidate: candidate_result,
         baseline: baseline_result,
     })
+}
+
+fn select_event_for_action(
+    events: &[EventTruth],
+    condition_digest: &Digest,
+    action_at_ms: u64,
+) -> Option<usize> {
+    let mut matching: Vec<(usize, &EventTruth)> = events.iter().enumerate()
+        .filter(|(_, event)| &event.condition_digest == condition_digest)
+        .collect();
+    matching.sort_unstable_by_key(|(_, event)| event.onset_at_ms);
+    if matching.is_empty() {
+        return None;
+    }
+    if let Some((index, _)) = matching.iter().find(|(_, event)| {
+        event_active_at(event, action_at_ms)
+    }) {
+        return Some(*index);
+    }
+    let first = matching.first().unwrap();
+    if action_at_ms < first.1.onset_at_ms {
+        return Some(first.0);
+    }
+    let last = matching.last().unwrap();
+    let last_expiry = last.1.expires_at_ms.unwrap_or(u64::MAX);
+    if action_at_ms >= last_expiry {
+        return Some(last.0);
+    }
+    for pair in matching.windows(2) {
+        let previous_expiry = pair[0].1.expires_at_ms.unwrap_or(u64::MAX);
+        let next_onset = pair[1].1.onset_at_ms;
+        if action_at_ms >= previous_expiry && action_at_ms < next_onset {
+            let distance_after_previous = action_at_ms - previous_expiry;
+            let distance_before_next = next_onset - action_at_ms;
+            return Some(if distance_after_previous <= distance_before_next {
+                pair[0].0
+            } else {
+                pair[1].0
+            });
+        }
+    }
+    Some(last.0)
 }
 
 fn validate_contract(
