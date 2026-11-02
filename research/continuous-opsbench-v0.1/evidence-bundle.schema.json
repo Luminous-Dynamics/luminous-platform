@@ -23,7 +23,8 @@
     "run_domains",
     "planned_arm_subjects",
     "artifacts",
-    "claims"
+    "claims",
+    "restricted_distribution_policy_digest"
   ],
   "properties": {
     "schema": {
@@ -110,6 +111,13 @@
       "items": {
         "$ref": "#/$defs/claim"
       }
+    },
+    "restricted_distribution_policy_digest": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
     }
   },
   "$defs": {
