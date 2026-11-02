@@ -6,9 +6,10 @@
 //! before they are passed here.
 
 use crate::sealed::{
-    validate_freeze_receipt, validate_manifest, validate_scenario, ArmRunSummary,
-    EvaluationArm, FreezeReceipt,
-    RunLedgerSummary, RunManifest, ScenarioReceipt, TrialDisposition, TrialResult,
+    validate_freeze_receipt, validate_manifest, validate_scenario,
+    validate_run_ledger_with_reveals, ArmRunSummary, EvaluationArm, FreezeReceipt,
+    RunLedgerSummary, RunManifest, ScenarioReceipt, ScenarioReveal, SealedRunError,
+    TrialDisposition, TrialEvent, TrialEventKind, TrialResult,
 };
 use crate::Digest;
 use std::collections::{BTreeMap, BTreeSet};
@@ -109,6 +110,7 @@ pub struct RuntimeAttestationSummary {
 pub enum RuntimeAttestationError {
     UnsupportedSchema(String),
     LedgerManifestMismatch,
+    TrialLedgerInvalid(SealedRunError),
     LedgerTrialDenominatorMismatch,
     LedgerTrialDuplicate(String, EvaluationArm),
     LedgerTrialMissing(String, EvaluationArm),
@@ -149,6 +151,30 @@ pub enum RuntimeAttestationError {
     ObserverSequenceOrderInvalid,
     ObserverSequenceNotContiguous,
     ArithmeticOverflow,
+}
+
+/// Preferred entry point for certification: derives the ledger from the raw
+/// source event stream rather than accepting a caller-constructed summary.
+/// The typed source-evidence adapter must authenticate freeze, scenario, reveal
+/// and trial-event statements before they are passed to this function.
+pub fn validate_runtime_attestations_from_events(
+    manifest: &RunManifest,
+    freeze: &FreezeReceipt,
+    scenarios: &[ScenarioReceipt],
+    reveals: &[ScenarioReveal],
+    trial_events: &[TrialEvent],
+    attestations: &[RuntimeTrialAttestation],
+) -> Result<RuntimeAttestationSummary, RuntimeAttestationError> {
+    let ledger = validate_run_ledger_with_reveals(
+        manifest,
+        &freeze.manifest_commitment,
+        freeze,
+        scenarios,
+        reveals,
+        trial_events,
+    )
+    .map_err(RuntimeAttestationError::TrialLedgerInvalid)?;
+    validate_runtime_attestations(manifest, freeze, &ledger, scenarios, attestations)
 }
 
 pub fn validate_runtime_attestations(
