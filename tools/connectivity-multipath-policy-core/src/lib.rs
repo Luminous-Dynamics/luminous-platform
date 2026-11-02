@@ -117,7 +117,7 @@ pub enum ScheduleError {
     InvalidGainThreshold,
     InvalidPathId,
     DuplicatePathId,
-    MissingRiskGroup,
+    TooManyPaths,
 }
 
 #[derive(Clone, Debug)]
@@ -168,6 +168,7 @@ fn transfer_time_us(bytes: u64, capacity_bps: u64) -> u64 {
 
 fn finish_time_us(bytes: u64, path: &PathObservation) -> u64 {
     path.rtt_us
+        .saturating_add(path.jitter_us)
         .saturating_add(transfer_time_us(bytes, effective_capacity(path)))
 }
 
@@ -219,6 +220,9 @@ fn validate_request(request: &ScheduleRequest) -> Result<(), ScheduleError> {
 }
 
 fn validate_path_set(paths: &[PathObservation]) -> Result<(), ScheduleError> {
+    if paths.len() > 64 {
+        return Err(ScheduleError::TooManyPaths);
+    }
     let mut seen = BTreeSet::new();
     for path in paths {
         if path.id.trim().is_empty() {
@@ -333,7 +337,7 @@ fn aggregate_candidate(
         }
         let path = selected
             .iter()
-            .find(|path| path.id == allocation.path_id)?;
+            .find(|path| path.id.as_str() == allocation.path_id.as_str())?;
         let spare = path.data_remaining_bytes.saturating_sub(allocation.bytes);
         let add = spare.min(remaining);
         allocation.bytes = allocation.bytes.saturating_add(add);
@@ -532,7 +536,7 @@ pub fn evaluate(
                 let candidate = match request.intent {
                     TrafficIntent::Interactive => best_single,
                     TrafficIntent::BulkTransfer => best_single.or(multi),
-                    TrafficIntent::Messaging | TrafficIntent::CostSensitive => cheapest_single,
+                    TrafficIntent::Messaging | TrafficIntent::CostSensitive => cheapest_single.or(multi),
                 };
                 (
                     candidate,
