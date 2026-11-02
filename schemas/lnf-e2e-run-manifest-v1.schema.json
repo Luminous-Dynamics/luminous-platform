@@ -1,0 +1,316 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/lnf-e2e-run-manifest-v1.schema.json",
+  "title": "Luminous Network Fabric End-to-End Run Manifest v1",
+  "description": "Strict contract for a planned, isolated LNF broker/gateway/local-first/DTN experiment. Validation establishes plan structure and pinned source references only, never execution or measurement truth.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "status",
+    "run_id",
+    "run_generation",
+    "created_on",
+    "source_bindings",
+    "selected_benchmarks",
+    "topology",
+    "workloads",
+    "scenario_ids",
+    "comparison_arms",
+    "execution_profile",
+    "claim_ceiling"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.lnf-e2e-run-manifest.v1"
+    },
+    "profile_id": {
+      "const": "lnf-edge-dtn-e2e-v1"
+    },
+    "status": {
+      "const": "design_fixture_only"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^fixture-[a-z0-9-]{8,96}$"
+    },
+    "run_generation": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    "created_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "source_bindings": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "$ref": "#/$defs/sourceBinding"
+      }
+    },
+    "selected_benchmarks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "POLICY_HARD_CONSTRAINTS_001",
+          "POLICY_EXPLANATION_001",
+          "POLICY_REPLAY_001",
+          "POLICY_DATA_MINIMIZATION_001",
+          "COST_PER_USEFUL_TASK_001",
+          "GATEWAY_FAILOVER_001",
+          "LOCAL_CONTINUITY_001",
+          "SERVICE_AVAILABILITY_001",
+          "WIFI_ROAMING_BASELINE_001",
+          "VOICE_VIDEO_RESILIENCE_001",
+          "STORE_FORWARD_001",
+          "ENERGY_PER_USEFUL_TASK_001",
+          "CRITICAL_ARTIFACT_TRACEABILITY_001",
+          "PRIVATE_CELLULAR_QUALIFICATION_001",
+          "ESIM_PORTABILITY_001",
+          "SATELLITE_PHONE_SERVICE_001"
+        ]
+      }
+    },
+    "topology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodes", "links", "semantic_identity_is_separate_from_runtime_identity"],
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": { "$ref": "#/$defs/node" }
+        },
+        "links": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": { "$ref": "#/$defs/link" }
+        },
+        "semantic_identity_is_separate_from_runtime_identity": {
+          "const": true
+        }
+      }
+    },
+    "workloads": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "$ref": "#/$defs/workload" }
+    },
+    "scenario_ids": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "E2E-00",
+          "E2E-01",
+          "E2E-02",
+          "E2E-03",
+          "E2E-04",
+          "E2E-05",
+          "E2E-06",
+          "E2E-07",
+          "E2E-08",
+          "E2E-09",
+          "E2E-10",
+          "E2E-11"
+        ]
+      }
+    },
+    "comparison_arms": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 5,
+      "items": { "$ref": "#/$defs/comparisonArm" }
+    },
+    "execution_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "execution_class",
+        "external_network_access",
+        "production_routes_present",
+        "public_rf_transmission",
+        "real_subscriber_data",
+        "provider_credentials",
+        "simulation_is_not_field_evidence"
+      ],
+      "properties": {
+        "execution_class": {
+          "enum": ["network_namespace_or_vm_emulation", "containerlab_or_vm_emulation"]
+        },
+        "external_network_access": { "const": false },
+        "production_routes_present": { "const": false },
+        "public_rf_transmission": { "const": false },
+        "real_subscriber_data": { "const": false },
+        "provider_credentials": { "const": false },
+        "simulation_is_not_field_evidence": { "const": true }
+      }
+    },
+    "claim_ceiling": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "execution_conducted",
+        "measurement_truth_established",
+        "hardware_qualified",
+        "field_observed",
+        "production_ready",
+        "deployment_authorized",
+        "carrier_equivalence_established"
+      ],
+      "properties": {
+        "execution_conducted": { "const": false },
+        "measurement_truth_established": { "const": false },
+        "hardware_qualified": { "const": false },
+        "field_observed": { "const": false },
+        "production_ready": { "const": false },
+        "deployment_authorized": { "const": false },
+        "carrier_equivalence_established": { "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "sourceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "repository",
+        "path",
+        "commit_sha",
+        "git_blob_sha",
+        "role",
+        "source_state",
+        "verification_method"
+      ],
+      "properties": {
+        "id": {
+          "enum": [
+            "broker-profile",
+            "broker-profile-schema",
+            "measurement-receipt-schema",
+            "mycelix-f0-topology"
+          ]
+        },
+        "repository": {
+          "enum": [
+            "Luminous-Dynamics/luminous-platform",
+            "Luminous-Dynamics/mycelix"
+          ]
+        },
+        "path": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "commit_sha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "git_blob_sha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "role": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "source_state": { "const": "draft_pr" },
+        "verification_method": {
+          "enum": [
+            "local_git_blob_at_pinned_commit",
+            "remote_git_blob_pinned_not_materialized"
+          ]
+        }
+      }
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "role", "provenance", "runtime_id_policy"],
+      "properties": {
+        "id": {
+          "enum": ["client", "gateway", "local_service", "dtn_sender", "dtn_receiver", "observer"]
+        },
+        "role": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "provenance": { "const": "synthetic" },
+        "runtime_id_policy": { "const": "ephemeral_locator_not_semantic_identity" }
+      }
+    },
+    "link": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source",
+        "destination",
+        "network_class",
+        "impairment_profile",
+        "failure_domain",
+        "physical_technology_claimed"
+      ],
+      "properties": {
+        "id": {
+          "enum": ["lan-client-gateway", "wan-a", "wan-b", "dtn-delay-path"]
+        },
+        "source": { "type": "string", "minLength": 1 },
+        "destination": { "type": "string", "minLength": 1 },
+        "network_class": { "enum": ["local_virtual", "virtual_wan_impairment", "virtual_dtn_contact"] },
+        "impairment_profile": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "failure_domain": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "physical_technology_claimed": { "const": false }
+      }
+    },
+    "workload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "intent", "path_semantics", "success_condition", "raw_payload_capture"],
+      "properties": {
+        "id": {
+          "enum": ["local-cache-read", "remote-resource-fetch", "durable-message"]
+        },
+        "intent": {
+          "enum": [
+            "LocalOnly",
+            "RealtimeInteractive",
+            "Messaging",
+            "GeneralBrowsing",
+            "BackgroundSync",
+            "BulkTransfer",
+            "SensitiveData"
+          ]
+        },
+        "path_semantics": {
+          "enum": ["local_only", "live_only", "durable_store_forward"]
+        },
+        "success_condition": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "raw_payload_capture": { "const": false }
+      }
+    },
+    "comparisonArm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "role", "status", "same_workload_required"],
+      "properties": {
+        "id": {
+          "enum": [
+            "baseline-openwrt-mwan3",
+            "lnf-broker-same-gateway",
+            "local-only-no-wan",
+            "dtn-selected-implementation",
+            "ion-dtn-independent-reference"
+          ]
+        },
+        "role": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "status": {
+          "enum": [
+            "planned_unpinned",
+            "planned",
+            "blocked_pending_bpsac_audit",
+            "conditional_interoperability_comparator"
+          ]
+        },
+        "same_workload_required": { "const": true }
+      }
+    }
+  }
+}
