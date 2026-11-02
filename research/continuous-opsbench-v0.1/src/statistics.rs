@@ -102,7 +102,7 @@ pub struct InferenceResult {
     pub paired_effect: PairedEffectSummary,
     pub mean_candidate_indeterminate_rate_ppm: i64,
     pub mean_baseline_indeterminate_rate_ppm: i64,
-    pub maximum_observed_arm_indeterminate_rate_ppm: i64,
+    pub maximum_mean_arm_indeterminate_rate_ppm: i64,
     pub minimum_meaningful_effect_ppm: i64,
     pub maximum_indeterminate_rate_ppm: u32,
     pub verdict: SuperiorityVerdict,
@@ -197,13 +197,6 @@ pub fn evaluate_paired_clusters(
             if digest_is_zero(digest) {
                 return Err(InferenceError::ZeroRequiredDigest(name.into()));
             }
-        }
-        if cluster.fault_schedule_digest != cluster.fault_schedule_digest
-            || cluster.topology_digest != cluster.topology_digest
-        {
-            return Err(InferenceError::CandidateBaselineScheduleMismatch(
-                cluster.cluster_id.clone(),
-            ));
         }
         validate_arm_counts(
             &cluster.cluster_id,
@@ -315,12 +308,21 @@ pub fn evaluate_paired_clusters(
     let effect_lower_ci = percentile_interval(&mut effect_lower_samples, tail);
     let effect_upper_ci = percentile_interval(&mut effect_upper_samples, tail);
 
-    let candidate_indeterminate_mean =
-        mean_ci_midpoint(&candidate.indeterminate_rate_ci);
-    let baseline_indeterminate_mean =
-        mean_ci_midpoint(&baseline.indeterminate_rate_ci);
+    let scale = 1_000_000.0 / cluster_count as f64;
+    let candidate_indeterminate_mean = rates.iter()
+        .map(|sample| sample.candidate_indeterminate)
+        .sum::<f64>() * scale;
+    let baseline_indeterminate_mean = rates.iter()
+        .map(|sample| sample.baseline_indeterminate)
+        .sum::<f64>() * scale;
     let maximum_indeterminate = candidate_indeterminate_mean
         .max(baseline_indeterminate_mean);
+    let effect_lower_mean = rates.iter()
+        .map(|sample| sample.candidate_lower - sample.baseline_upper)
+        .sum::<f64>() * scale;
+    let effect_upper_mean = rates.iter()
+        .map(|sample| sample.candidate_upper - sample.baseline_lower)
+        .sum::<f64>() * scale;
 
     let verdict = if maximum_indeterminate
         > plan.maximum_indeterminate_rate_ppm as i64
@@ -342,14 +344,14 @@ pub fn evaluate_paired_clusters(
         candidate,
         baseline,
         paired_effect: PairedEffectSummary {
-            conservative_effect_lower_mean_ppm: effect_lower_ci.lower_ppm,
-            conservative_effect_upper_mean_ppm: effect_upper_ci.upper_ppm,
+            conservative_effect_lower_mean_ppm: effect_lower_mean.round() as i64,
+            conservative_effect_upper_mean_ppm: effect_upper_mean.round() as i64,
             conservative_effect_lower_ci: effect_lower_ci,
             conservative_effect_upper_ci: effect_upper_ci,
         },
         mean_candidate_indeterminate_rate_ppm: candidate_indeterminate_mean,
         mean_baseline_indeterminate_rate_ppm: baseline_indeterminate_mean,
-        maximum_observed_arm_indeterminate_rate_ppm: maximum_indeterminate,
+        maximum_mean_arm_indeterminate_rate_ppm: maximum_indeterminate.round() as i64,
         minimum_meaningful_effect_ppm: plan.minimum_meaningful_effect_ppm,
         maximum_indeterminate_rate_ppm: plan.maximum_indeterminate_rate_ppm,
         verdict,
@@ -425,10 +427,6 @@ fn percentile_interval(samples: &mut [f64], tail_probability: f64) -> PpmInterva
 fn nearest_rank_index(length: usize, probability: f64) -> usize {
     let rank = (probability * length as f64).ceil() as usize;
     rank.saturating_sub(1).min(length.saturating_sub(1))
-}
-
-fn mean_ci_midpoint(interval: &PpmInterval) -> i64 {
-    (interval.lower_ppm + interval.upper_ppm) / 2
 }
 
 fn seed_from_digest(digest: &Digest) -> u64 {
@@ -527,8 +525,8 @@ fn binomial_lower_tail(trials: u64, events: u64, probability: f64) -> f64 {
     for event_index in 0..=events {
         log_sum = log_add_exp(log_sum, log_term);
         if event_index < events {
-            log_term += (trials - event_index) as f64 .ln()
-                - (event_index + 1) as f64 .ln()
+            log_term += ((trials - event_index) as f64).ln()
+                - ((event_index + 1) as f64).ln()
                 + log_p
                 - log_q;
         }
@@ -739,8 +737,8 @@ mod tests {
             let mut clusters = clean_pairs();
             let mut configured = plan(100, 8);
             match vector {
-                0 => clusters.pop(),
-                1 => clusters.push(clusters[0].clone()),
+                0 => { clusters.pop(); }
+                1 => { let extra = clusters[0].clone(); clusters.push(extra); }
                 2 => clusters[0].cluster_id.clear(),
                 3 => clusters[0].fault_schedule_digest = digest(0),
                 4 => clusters[0].topology_digest = digest(0),
