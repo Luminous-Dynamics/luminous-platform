@@ -1188,6 +1188,8 @@ mod tests {
         assert_eq!(user.false_negative_rate_ppm, Some(200_000));
         assert_eq!(user.mutation_miss_rate_ppm, Some(100_000));
         assert_eq!(user.mutation_overreject_rate_ppm, Some(200_000));
+        assert_eq!(user.missed_mutations, 1);
+        assert_eq!(user.unexpected_rejections, 1);
         assert_eq!(user.expected_rejection_controls, 10);
         assert_eq!(user.expected_non_rejection_controls, 5);
     }
