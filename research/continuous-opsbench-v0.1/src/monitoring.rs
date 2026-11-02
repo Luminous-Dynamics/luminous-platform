@@ -398,7 +398,6 @@ pub fn evaluate_monitoring_trial(
             return Err(MonitoringError::ClockUncertaintyExceeded(observation.observation_id.clone()));
         }
         if !observation.complete {
-            complete = false;
             return Err(MonitoringError::IncompleteObservation(observation.observation_id.clone()));
         }
         if is_zero(&observation.condition_digest) || is_zero(&observation.observed_value_digest) {
@@ -652,10 +651,12 @@ pub fn evaluate_monitoring_trial(
             correct_action: correct_action_at.is_some(),
             missed_detection: detected_at.is_none(),
             missed_action: correct_action_at.is_none(),
-            late_detection: positive_observations.iter().any(|observation| {
-                observation.condition_digest == event.condition_digest
-                    && observation.observed_at_ms >= event.expires_at_ms.unwrap_or(contract.ends_at_ms)
-            }),
+            late_detection: event.expires_at_ms.map(|expiry| {
+                positive_observations.iter().any(|observation| {
+                    observation.condition_digest == event.condition_digest
+                        && observation.observed_at_ms >= expiry
+                })
+            }).unwrap_or(false),
             late_action: event_late_action,
         });
 
@@ -692,7 +693,16 @@ pub fn evaluate_monitoring_trial(
     }).count();
 
     let no_op_success = if contract.task_kind == MonitoringTaskKind::NoOp {
-        Some(actions.is_empty() && false_wakeups == 0 && false_positive_observations == 0)
+        let violation = !actions.is_empty()
+            || false_wakeups > 0
+            || false_positive_observations > 0;
+        if violation {
+            Some(false)
+        } else if complete {
+            Some(true)
+        } else {
+            None
+        }
     } else {
         None
     };
