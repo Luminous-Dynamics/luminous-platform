@@ -5,6 +5,7 @@
 //! It does not run agents or infrastructure and does not authenticate publishers.
 
 pub mod impact;
+pub mod sealed;
 
 use std::collections::{BTreeMap, BTreeSet};
 
