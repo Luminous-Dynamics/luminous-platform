@@ -533,7 +533,7 @@ pub fn validate_run_ledger_with_reveals(
     })
 }
 
-pub(crate) fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunError> {
+pub(crate) pub(crate) fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunError> {
     if manifest.schema != SEALED_RUN_SCHEMA || manifest.version != SEALED_RUN_VERSION {
         return Err(SealedRunError::UnsupportedSchema);
     }
@@ -654,7 +654,7 @@ pub(crate) fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunE
     Ok(())
 }
 
-pub(crate) fn validate_freeze_receipt(
+pub(crate) pub(crate) fn validate_freeze_receipt(
     manifest: &RunManifest,
     expected_commitment: &Digest,
     receipt: &FreezeReceipt,
