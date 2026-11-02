@@ -399,20 +399,29 @@ fn best_single_by_finish(candidates: &[Candidate]) -> Option<Candidate> {
     })
 }
 
-fn best_single_by_rtt<'a>(
-    candidates: &'a [Candidate],
-    paths: &'a [PathObservation],
+fn best_single_by_rtt(
+    candidates: &[Candidate],
+    paths: &[&PathObservation],
 ) -> Option<Candidate> {
-    candidates.iter().min_by(|left, right| {
-        let left_id = &left.allocations[0].path_id;
-        let right_id = &right.allocations[0].path_id;
-        let left_rtt = paths.iter().find(|path| &path.id == left_id)?.rtt_us;
-        let right_rtt = paths.iter().find(|path| &path.id == right_id)?.rtt_us;
-        left_rtt
-            .cmp(&right_rtt)
-            .then_with(|| left.cost_micros.cmp(&right.cost_micros))
-            .then_with(|| left_id.cmp(right_id))
-    }).cloned()
+    candidates
+        .iter()
+        .min_by(|left, right| {
+            let left_id = &left.allocations[0].path_id;
+            let right_id = &right.allocations[0].path_id;
+            let left_rtt = paths
+                .iter()
+                .find(|path| path.id.as_str() == left_id.as_str())
+                .map_or(u64::MAX, |path| path.rtt_us);
+            let right_rtt = paths
+                .iter()
+                .find(|path| path.id.as_str() == right_id.as_str())
+                .map_or(u64::MAX, |path| path.rtt_us);
+            left_rtt
+                .cmp(&right_rtt)
+                .then_with(|| left.cost_micros.cmp(&right.cost_micros))
+                .then_with(|| left_id.cmp(right_id))
+        })
+        .cloned()
 }
 
 fn best_single_by_cost(candidates: &[Candidate]) -> Option<Candidate> {
@@ -505,7 +514,7 @@ pub fn evaluate(
         .filter(|candidate| candidate_within_budgets(request, candidate))
         .collect();
     let best_single = best_single_by_finish(&singles);
-    let best_rtt_single = best_single_by_rtt(&singles, &eligible.iter().copied().cloned().cloned().collect::<Vec<_>>());
+    let best_rtt_single = best_single_by_rtt(&singles, &eligible);
     let cheapest_single = best_single_by_cost(&singles);
     let multi = aggregate_candidate(request, &eligible)
         .filter(|candidate| candidate_within_budgets(request, candidate));
@@ -712,6 +721,36 @@ mod tests {
             evaluate(&request(), &paths, Strategy::BestRtt).unwrap_err(),
             ScheduleError::DuplicatePathId
         );
+    }
+
+    #[test]
+    fn best_rtt_baseline_selects_minimum_rtt_not_fastest_completion() {
+        let mut req = request();
+        req.deadline_us = None;
+        let paths = vec![
+            path("low-rtt-slow-capacity", 1_000, 1_000_000, 10, "a"),
+            path("high-rtt-high-capacity", 100_000, 100_000_000, 10, "b"),
+        ];
+        let result = evaluate(&req, &paths, Strategy::BestRtt).expect("valid inputs");
+        assert_eq!(result.mode, DecisionMode::SinglePath);
+        assert_eq!(result.allocations[0].path_id, "low-rtt-slow-capacity");
+
+        let fastest = evaluate(&req, &paths, Strategy::IntentAware).expect("valid inputs");
+        assert_eq!(fastest.allocations[0].path_id, "high-rtt-high-capacity");
+    }
+
+    #[test]
+    fn aggregate_cost_overflow_fails_closed() {
+        let mut req = request();
+        req.max_cost_micros = u64::MAX;
+        let paths = vec![
+            path("a", 10_000, 40_000_000, u64::MAX, "a"),
+            path("b", 10_000, 40_000_000, u64::MAX, "b"),
+        ];
+        let result = evaluate(&req, &paths, Strategy::AggregateCapacity)
+            .expect("valid inputs produce a no-route disposition");
+        assert_eq!(result.mode, DecisionMode::NoRoute);
+        assert!(result.allocations.is_empty());
     }
 
     #[test]
