@@ -399,8 +399,14 @@ pub fn validate_benchmark_component_audit(
                         negative_controls: 0,
                         false_positives: 0,
                         false_negatives: 0,
+                        false_positive_rate_ppm: None,
+                        false_negative_rate_ppm: None,
                         mutation_controls: 0,
+                        expected_rejection_controls: 0,
+                        expected_non_rejection_controls: 0,
                         missed_mutations: 0,
+                        unexpected_rejections: 0,
+                        mutation_miss_rate_ppm: None,
                         reset_repetitions: if component == BenchmarkComponent::EnvironmentTools {
                             reset_repetitions
                         } else {
@@ -892,7 +898,6 @@ mod tests {
         let artifact_policy_digest = d(8);
         let egress_policy_digest = d(9);
         let runtime_observer_digest = d(10);
-        let challenge_digest = d(11);
         let manifest_commitment = d(12);
         let agent = FrozenAgentIdentity {
             agent_id: "candidate".into(),
@@ -1264,7 +1269,7 @@ mod tests {
 
     #[test]
     fn all_six_component_pairs_require_interaction_controls() {
-        let (manifest, freeze, cohort, known, mutations, mut interactions, metamorphic) = fixture();
+        let (manifest, freeze, cohort, known, mutations, mut interactions, mut metamorphic) = fixture();
         interactions.pop();
         assert_eq!(
             validate_benchmark_component_audit(
