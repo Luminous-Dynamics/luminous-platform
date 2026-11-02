@@ -9,7 +9,7 @@ use crate::sealed::{
     validate_freeze_receipt, validate_manifest, validate_scenario,
     validate_run_ledger_with_reveals, ArmRunSummary, EvaluationArm, FreezeReceipt,
     RunLedgerSummary, RunManifest, ScenarioReceipt, ScenarioReveal, SealedRunError,
-    TrialDisposition, TrialEvent, TrialEventKind, TrialResult,
+    TrialDisposition, TrialEvent, TrialResult,
 };
 use crate::Digest;
 use std::collections::{BTreeMap, BTreeSet};
@@ -687,7 +687,7 @@ fn is_zero(digest: &Digest) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sealed::{BaselineIdentity, EvaluationLane, FrozenAgentIdentity};
+    use crate::sealed::{BaselineIdentity, EvaluationLane, FrozenAgentIdentity, TrialEventKind};
 
     fn digest(byte: u8) -> Digest {
         Digest::from_byte(byte)
@@ -1021,7 +1021,7 @@ mod tests {
 
     #[test]
     fn complete_clean_runtime_receipts_cover_every_arm_and_trial() {
-        let (manifest, freeze, ledger, scenarios, attestations) = fixture();
+        let (manifest, freeze, _ledger, scenarios, attestations) = fixture();
         let events = complete_trial_events(&manifest, &scenarios);
         let result = validate_runtime_attestations_from_events(
             &manifest,
