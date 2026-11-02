@@ -862,6 +862,7 @@ mod tests {
         Vec<KnownAnswerControl>,
         Vec<MutationControl>,
         Vec<InteractionControl>,
+        Vec<TaskMetamorphicControl>,
     ) {
         let agent_identity_digest = d(1);
         let baseline_identity_digest = d(2);
@@ -1116,12 +1117,23 @@ mod tests {
             expected_acceptance: true,
             observed_acceptance: true,
         }).collect();
-        (manifest, freeze, cohort, known, mutation, interactions)
+        let metamorphic = (0..10).map(|index| TaskMetamorphicControl {
+            control_id: format!("metamorphic-{index}"),
+            task_id: "task-a".into(),
+            base_instruction_digest: d(42),
+            variant_instruction_digest: d(70 + index as u8),
+            shared_precondition_digest: d(43),
+            shared_postcondition_digest: d(44),
+            equivalence_contract_digest: d(80 + index as u8),
+            expected_semantic_equivalence: true,
+            observed_semantic_equivalence: true,
+        }).collect();
+        (manifest, freeze, cohort, known, mutation, interactions, metamorphic)
     }
 
     #[test]
     fn fully_valid_cohort_produces_component_vector_without_scalar_score() {
-        let (manifest, freeze, cohort, known, mutations, interactions) = fixture();
+        let (manifest, freeze, cohort, known, mutations, interactions, metamorphic) = fixture();
         let result = validate_benchmark_component_audit(
             &manifest, &freeze, &cohort, &known, &mutations, &interactions
         ).unwrap();
@@ -1134,8 +1146,25 @@ mod tests {
     }
 
     #[test]
+    fn component_rates_report_false_positive_false_negative_and_mutation_miss_separately() {
+        let (manifest, freeze, cohort, mut known, mut mutations, interactions, metamorphic) = fixture();
+        known[0].observed_acceptance = false;
+        known[5].observed_acceptance = true;
+        mutations[0].observed_rejection = false;
+        let result = validate_benchmark_component_audit(
+            &manifest, &freeze, &cohort, &known, &mutations, &interactions, &metamorphic
+        ).unwrap();
+        let user = result.components.iter()
+            .find(|component| component.component == BenchmarkComponent::UserTask).unwrap();
+        assert_eq!(user.false_positive_rate_ppm, 200_000);
+        assert_eq!(user.false_negative_rate_ppm, 200_000);
+        assert_eq!(user.mutation_miss_rate_ppm, 66_666);
+        assert_eq!(user.expected_rejection_controls, 15);
+    }
+
+    #[test]
     fn known_answer_false_positive_and_false_negative_block_claim() {
-        let (manifest, freeze, cohort, mut known, mutations, interactions) = fixture();
+        let (manifest, freeze, cohort, mut known, mutations, interactions, metamorphic) = fixture();
         known[0].observed_acceptance = false;
         known[5].observed_acceptance = true;
         let result = validate_benchmark_component_audit(
@@ -1150,12 +1179,26 @@ mod tests {
     }
 
     #[test]
+    fn equivalent_task_variants_must_preserve_the_scored_semantics() {
+        let (manifest, freeze, cohort, known, mutations, interactions, mut metamorphic) = fixture();
+        metamorphic[0].observed_semantic_equivalence = false;
+        let result = validate_benchmark_component_audit(
+            &manifest, &freeze, &cohort, &known, &mutations, &interactions, &metamorphic
+        ).unwrap();
+        assert!(!result.claim_admissible);
+        assert_eq!(result.failed_metamorphic_controls, 1);
+        assert_eq!(result.components.iter()
+            .find(|component| component.component == BenchmarkComponent::UserTask)
+            .unwrap().disposition, AuditDisposition::Fail);
+    }
+
+    #[test]
     fn missing_component_is_rejected_instead_of_defaulting_to_pass() {
-        let (manifest, freeze, mut cohort, known, mutations, interactions) = fixture();
+        let (manifest, freeze, mut cohort, known, mutations, interactions, metamorphic) = fixture();
         cohort.components.pop();
         assert_eq!(
             validate_benchmark_component_audit(
-                &manifest, &freeze, &cohort, &known, &mutations, &interactions
+                &manifest, &freeze, &cohort, &known, &mutations, &interactions, &metamorphic
             ),
             Err(BenchmarkAuditError::MissingComponent(BenchmarkComponent::Evaluation))
         );
@@ -1163,7 +1206,7 @@ mod tests {
 
     #[test]
     fn reset_drift_or_inactive_fault_injector_invalidates_environment_component() {
-        let (manifest, freeze, mut cohort, known, mutations, interactions) = fixture();
+        let (manifest, freeze, mut cohort, known, mutations, interactions, metamorphic) = fixture();
         cohort.environment.reset_receipts[1].observed_initial_state_digest = d(99);
         assert_eq!(
             validate_benchmark_component_audit(
@@ -1171,7 +1214,7 @@ mod tests {
             ),
             Err(BenchmarkAuditError::ResetStateMismatch("reset-1".into()))
         );
-        let (manifest, freeze, mut cohort, known, mutations, interactions) = fixture();
+        let (manifest, freeze, mut cohort, known, mutations, interactions, metamorphic) = fixture();
         cohort.environment.reset_receipts[1].fault_activation_control_passed = false;
         assert_eq!(
             validate_benchmark_component_audit(
@@ -1183,7 +1226,7 @@ mod tests {
 
     #[test]
     fn task_requirements_must_map_to_oracle_predicates_without_overlap() {
-        let (manifest, freeze, mut cohort, known, mutations, interactions) = fixture();
+        let (manifest, freeze, mut cohort, known, mutations, interactions, metamorphic) = fixture();
         cohort.tasks[0].required_predicate_ids.push("not-in-oracle".into());
         assert_eq!(
             validate_benchmark_component_audit(
@@ -1191,7 +1234,7 @@ mod tests {
             ),
             Err(BenchmarkAuditError::TaskPredicateNotInOracle("task-a".into()))
         );
-        let (manifest, freeze, mut cohort, known, mutations, interactions) = fixture();
+        let (manifest, freeze, mut cohort, known, mutations, interactions, metamorphic) = fixture();
         cohort.tasks[0].prohibited_predicate_ids.push("service-healthy".into());
         assert_eq!(
             validate_benchmark_component_audit(
@@ -1203,7 +1246,7 @@ mod tests {
 
     #[test]
     fn all_six_component_pairs_require_interaction_controls() {
-        let (manifest, freeze, cohort, known, mutations, mut interactions) = fixture();
+        let (manifest, freeze, cohort, known, mutations, mut interactions, metamorphic) = fixture();
         interactions.pop();
         assert_eq!(
             validate_benchmark_component_audit(
@@ -1215,7 +1258,7 @@ mod tests {
 
     #[test]
     fn oracle_and_evaluator_must_not_share_a_control_domain() {
-        let (manifest, freeze, mut cohort, known, mutations, interactions) = fixture();
+        let (manifest, freeze, mut cohort, known, mutations, interactions, metamorphic) = fixture();
         cohort.ground_truth.oracle_control_domain = "evaluator-domain".into();
         assert_eq!(
             validate_benchmark_component_audit(
@@ -1227,8 +1270,8 @@ mod tests {
 
     #[test]
     fn ninety_adversarial_mutations_fail_closed() {
-        for vector in 0..90 {
-            let (manifest, freeze, mut cohort, mut known, mut mutations, mut interactions) = fixture();
+        for vector in 0..95 {
+            let (manifest, freeze, mut cohort, mut known, mut mutations, mut interactions, metamorphic) = fixture();
             match vector {
                 0 => { cohort.schema.push_str("-invalid"); }
                 1 => { cohort.version = 2; }
@@ -1319,7 +1362,12 @@ mod tests {
                 86 => { known[0].control_id.clear(); }
                 87 => { mutations[0].mutation_id.clear(); }
                 88 => { interactions[0].control_id.clear(); }
-                _ => { cohort.cohort_version.clear(); }
+                89 => { cohort.cohort_version.clear(); }
+                90 => { metamorphic[0].task_id = "unknown-task".into(); }
+                91 => { metamorphic[0].variant_instruction_digest = metamorphic[0].base_instruction_digest.clone(); }
+                92 => { metamorphic[0].shared_postcondition_digest = d(99); }
+                93 => { metamorphic[0].observed_semantic_equivalence = false; }
+                _ => { metamorphic[0].control_id = metamorphic[1].control_id.clone(); }
             }
             match validate_benchmark_component_audit(
                 &manifest, &freeze, &cohort, &known, &mutations, &interactions
