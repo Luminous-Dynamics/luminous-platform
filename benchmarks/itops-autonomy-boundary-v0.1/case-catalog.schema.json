@@ -1,0 +1,377 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/benchmarks/itops-autonomy-boundary-v0.1/case-catalog.schema.json",
+  "title": "ITOPS Autonomy Boundary Scenario Catalog v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "benchmark_id",
+    "version",
+    "status",
+    "environment_profile",
+    "cases"
+  ],
+  "properties": {
+    "benchmark_id": {
+      "const": "luminous-itops-autonomy-boundary"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "candidate_not_frozen"
+    },
+    "environment_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "execution_boundary",
+        "tenant_isolation",
+        "credentials",
+        "oracle_separation",
+        "network"
+      ],
+      "properties": {
+        "execution_boundary": {
+          "const": "disposable_synthetic_environment_only"
+        },
+        "tenant_isolation": {
+          "const": "per_episode_isolated"
+        },
+        "credentials": {
+          "const": "ephemeral_least_privilege_test_grants_only"
+        },
+        "oracle_separation": {
+          "const": "participant_and_observer_outside_agent_process"
+        },
+        "network": {
+          "const": "no_production_network_routes"
+        }
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 20,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    }
+  },
+  "$defs": {
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "case_id",
+        "family",
+        "title",
+        "task_prompt",
+        "initial_state",
+        "authority",
+        "tool_surface",
+        "injected_conditions",
+        "expected",
+        "oracle_contract",
+        "must_not_claim"
+      ],
+      "properties": {
+        "case_id": {
+          "enum": [
+            "INC-001",
+            "INC-002",
+            "INC-003",
+            "CHG-001",
+            "CHG-002",
+            "CHG-003",
+            "PATCH-001",
+            "BACKUP-001",
+            "IAM-001",
+            "IAM-002",
+            "NET-001",
+            "DNS-001",
+            "CERT-001",
+            "DB-001",
+            "QUEUE-001",
+            "ALERT-001",
+            "TENANT-001",
+            "PROMPT-001",
+            "CONN-001",
+            "SLA-001"
+          ]
+        },
+        "family": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "task_prompt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "initial_state": {
+          "type": "object",
+          "required": [
+            "summary",
+            "target_state",
+            "observer_state"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "summary": {
+              "type": "string"
+            },
+            "target_state": {
+              "enum": [
+                "healthy",
+                "unhealthy",
+                "degraded",
+                "unknown",
+                "not_applicable"
+              ]
+            },
+            "observer_state": {
+              "enum": [
+                "healthy",
+                "unhealthy",
+                "degraded",
+                "unknown",
+                "stale",
+                "not_applicable"
+              ]
+            },
+            "prior_attempt_state": {
+              "enum": [
+                "none",
+                "never_accepted",
+                "accepted_pending",
+                "effect_committed",
+                "outcome_unknown",
+                "rejected",
+                "conflicting"
+              ]
+            },
+            "notes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "authority": {
+          "type": "object",
+          "required": [
+            "grant_state",
+            "tenant_binding",
+            "target_binding",
+            "operation_scope",
+            "expires_at",
+            "receipt_present"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "grant_state": {
+              "enum": [
+                "missing",
+                "valid",
+                "expired",
+                "revoked",
+                "wrong_tenant",
+                "wrong_target",
+                "wrong_operation",
+                "stale_policy",
+                "unknown"
+              ]
+            },
+            "tenant_binding": {
+              "type": "string"
+            },
+            "target_binding": {
+              "type": "string"
+            },
+            "operation_scope": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "expires_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "receipt_present": {
+              "type": "boolean"
+            }
+          }
+        },
+        "tool_surface": {
+          "type": "object",
+          "required": [
+            "allowed_read_only",
+            "mutation_candidates",
+            "blocked_operations"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "allowed_read_only": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "mutation_candidates": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "blocked_operations": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "injected_conditions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expected": {
+          "type": "object",
+          "required": [
+            "decision_class",
+            "decision_stage",
+            "dispatched_mutations",
+            "blocked_mutations",
+            "new_attempts_while_unknown",
+            "committed_effect_count",
+            "service_state",
+            "handoff_required",
+            "required_handoff_fields"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "decision_class": {
+              "enum": [
+                "ACT",
+                "CLARIFY",
+                "REQUEST_AUTHORITY",
+                "RECONCILE",
+                "ESCALATE",
+                "HALT"
+              ]
+            },
+            "decision_stage": {
+              "enum": [
+                "before_tools",
+                "after_read_only_tools",
+                "before_dispatch",
+                "after_dispatch",
+                "after_unknown_effect",
+                "after_independent_verification"
+              ]
+            },
+            "dispatched_mutations": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "blocked_mutations": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "new_attempts_while_unknown": {
+              "const": 0
+            },
+            "committed_effect_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "service_state": {
+              "enum": [
+                "healthy",
+                "unhealthy",
+                "degraded",
+                "unknown",
+                "not_applicable"
+              ]
+            },
+            "handoff_required": {
+              "type": "boolean"
+            },
+            "required_handoff_fields": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "episode_ref",
+                  "target_commitment",
+                  "user_intent",
+                  "exact_plan_and_request_digest",
+                  "attempt_and_idempotency_refs",
+                  "last_known_participant_state",
+                  "observation_source_and_freshness",
+                  "actions_already_taken_and_effect_uncertainty",
+                  "receipt_and_evidence_digests",
+                  "safe_next_action_and_blocked_operation",
+                  "evidence_claim_ceiling",
+                  "human_decision_question"
+                ]
+              }
+            },
+            "must_not_promote": {
+              "type": "boolean"
+            }
+          }
+        },
+        "oracle_contract": {
+          "type": "object",
+          "required": [
+            "participant_effects",
+            "service_observation",
+            "assertions"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "participant_effects": {
+              "enum": [
+                "zero",
+                "exactly_one",
+                "at_most_one",
+                "unknown_until_reconcile"
+              ]
+            },
+            "service_observation": {
+              "enum": [
+                "healthy",
+                "unhealthy",
+                "degraded",
+                "unknown",
+                "not_applicable"
+              ]
+            },
+            "assertions": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "must_not_claim": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
