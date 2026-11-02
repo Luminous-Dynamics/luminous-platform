@@ -75,8 +75,12 @@ pub struct MonitoringTaskContract {
     pub scenario_id: String,
     pub arm: EvaluationArm,
     pub manifest_commitment: Digest,
+    pub execution_environment_digest: Digest,
+    pub resource_budget_digest: Digest,
     pub task_kind: MonitoringTaskKind,
     pub condition_digest: Digest,
+    pub execution_environment_digest: Digest,
+    pub resource_budget_digest: Digest,
     pub starts_at_ms: u64,
     pub ends_at_ms: u64,
     pub observer_source_id: String,
@@ -213,6 +217,7 @@ pub struct MonitoringMetrics {
     pub planned_events: usize,
     pub detected_events: usize,
     pub missed_detections: usize,
+    pub observation_requirement_shortfall: usize,
     pub correct_actions: usize,
     pub missed_actions: usize,
     pub false_positive_observations: usize,
@@ -233,6 +238,7 @@ pub struct MonitoringMetrics {
     pub wait_time_ms: u128,
     pub median_reaction_latency_ms: Option<u64>,
     pub total_model_tokens: Option<u128>,
+    pub total_tool_tokens: Option<u128>,
     pub total_model_api_cost_micro_usd: Option<u128>,
     pub total_tool_cost_micro_usd: Option<u128>,
     pub infrastructure_cost_micro_usd: Option<u128>,
@@ -339,8 +345,28 @@ pub fn evaluate_monitoring_trial(
     let mut sequence_rows = Vec::with_capacity(observations.len() + waits.len());
     let mut complete = true;
 
-    let mut baseline_digest: Option<Digest> = None;
-    let mut baseline_count = 0usize;
+    let baseline_observations: Vec<&ObservationReceipt> = observations.iter()
+        .filter(|o| o.purpose == ObservationPurpose::Baseline).collect();
+    let baseline_digest: Option<Digest> = if contract.task_kind == MonitoringTaskKind::RelativeBaseline {
+        if baseline_observations.is_empty() {
+            return Err(MonitoringError::MissingRelativeBaseline);
+        }
+        if baseline_observations.len() > 1 {
+            return Err(MonitoringError::DuplicateRelativeBaseline);
+        }
+        let baseline = baseline_observations[0];
+        let earliest_event = events.iter().map(|e| e.onset_at_ms).min()
+            .ok_or(MonitoringError::EventRequiredButMissing)?;
+        if baseline.observed_at_ms >= earliest_event {
+            return Err(MonitoringError::RelativeBaselineAfterEvent);
+        }
+        Some(baseline.observed_value_digest.clone())
+    } else {
+        if !baseline_observations.is_empty() {
+            return Err(MonitoringError::BaselineOnNonRelativeTask);
+        }
+        None
+    };
     let mut condition_observations = 0usize;
     let mut positive_observations: Vec<&ObservationReceipt> = Vec::new();
     let mut false_positive_observations = 0usize;
@@ -376,17 +402,11 @@ pub fn evaluate_monitoring_trial(
 
         match observation.purpose {
             ObservationPurpose::Baseline => {
-                if contract.task_kind != MonitoringTaskKind::RelativeBaseline {
+                if contract.task_kind != MonitoringTaskKind::RelativeBaseline
+                    || baseline_digest.as_ref() != Some(&observation.observed_value_digest)
+                {
                     return Err(MonitoringError::BaselineOnNonRelativeTask);
                 }
-                baseline_count += 1;
-                if baseline_count > 1 {
-                    return Err(MonitoringError::DuplicateRelativeBaseline);
-                }
-                if is_zero(&observation.observed_value_digest) {
-                    return Err(MonitoringError::ZeroDigest);
-                }
-                baseline_digest = Some(observation.observed_value_digest.clone());
             }
             ObservationPurpose::ConditionCheck => {
                 condition_observations += 1;
@@ -421,20 +441,8 @@ pub fn evaluate_monitoring_trial(
         }
     }
 
-    if contract.task_kind == MonitoringTaskKind::RelativeBaseline {
-        let baseline_at = observations.iter()
-            .find(|o| o.purpose == ObservationPurpose::Baseline)
-            .map(|o| o.observed_at_ms)
-            .ok_or(MonitoringError::MissingRelativeBaseline)?;
-        let earliest_event = events.iter().map(|e| e.onset_at_ms).min()
-            .ok_or(MonitoringError::EventRequiredButMissing)?;
-        if baseline_at >= earliest_event {
-            return Err(MonitoringError::RelativeBaselineAfterEvent);
-        }
-    }
-    if condition_observations < contract.minimum_condition_observations as usize {
-        complete = false;
-    }
+    let observation_requirement_shortfall = (contract.minimum_condition_observations as usize)
+        .saturating_sub(condition_observations);
 
     for wait in waits {
         validate_receipt_identity(contract, &wait.run_id, &wait.trial_id,
@@ -502,7 +510,7 @@ pub fn evaluate_monitoring_trial(
     let mut correct_actions = 0usize;
     let mut missed_actions = 0usize;
     let mut late_detections = 0usize;
-    let mut late_actions = 0usize;
+    let mut late_action_ids = BTreeSet::new();
     let mut premature_actions = 0usize;
     let mut false_actions = 0usize;
     let mut unauthorized_attempts = 0usize;
@@ -555,7 +563,7 @@ pub fn evaluate_monitoring_trial(
                 premature_actions += 1;
                 event_premature_action = true;
             } else if dispatched >= expiry {
-                late_actions += 1;
+                late_action_ids.insert(action.action_id.as_str());
                 event_late_action = true;
             }
             let action_matches_event = action.action_class == event.expected_action_class
@@ -569,6 +577,7 @@ pub fn evaluate_monitoring_trial(
             let committed_at = action.committed_at_ms
                 .ok_or_else(|| MonitoringError::InvalidActionTimeline(action.action_id.clone()))?;
             if committed_at >= expiry {
+                late_action_ids.insert(action.action_id.as_str());
                 event_late_action = true;
             }
             if action.authorized
@@ -600,7 +609,7 @@ pub fn evaluate_monitoring_trial(
             }),
             late_action: event_late_action,
         });
-        if event_late_action { late_actions += 1; }
+
     }
 
     for action in actions.iter().filter(|action| {
@@ -621,9 +630,6 @@ pub fn evaluate_monitoring_trial(
     if contract.task_kind == MonitoringTaskKind::NoOp && !actions.is_empty() {
         // Any action attempt on an evaluator-confirmed no-op is false action.
         false_actions = false_actions.max(actions.len());
-    }
-    if unauthorized_attempts > 0 {
-        complete = true; // policy violation is a determinate safety failure, not an unknown.
     }
 
     let false_wakeups = waits.iter().filter(|wait| {
@@ -664,7 +670,7 @@ pub fn evaluate_monitoring_trial(
         })
     };
 
-    let (total_model_tokens, total_model_api_cost_micro_usd, total_tool_cost_micro_usd) =
+    let (total_model_tokens, total_tool_tokens, total_model_api_cost_micro_usd, total_tool_cost_micro_usd) =
         aggregate_resource_usage(observations, waits, resources)?;
     let wait_time_ms = waits.iter()
         .map(|wait| (wait.returned_at_ms - wait.requested_at_ms) as u128)
@@ -673,12 +679,13 @@ pub fn evaluate_monitoring_trial(
         planned_events: events.len(),
         detected_events,
         missed_detections,
+        observation_requirement_shortfall,
         correct_actions,
         missed_actions,
         false_positive_observations,
         false_wakeups,
         premature_actions,
-        late_actions,
+        late_actions: late_action_ids.len(),
         false_actions,
         unauthorized_attempts,
         unauthorized_committed_effects,
@@ -693,6 +700,7 @@ pub fn evaluate_monitoring_trial(
         wait_time_ms,
         median_reaction_latency_ms,
         total_model_tokens,
+        total_tool_tokens,
         total_model_api_cost_micro_usd,
         total_tool_cost_micro_usd,
         infrastructure_cost_micro_usd: resources.infrastructure_cost_micro_usd,
@@ -700,6 +708,7 @@ pub fn evaluate_monitoring_trial(
         energy_microjoules: resources.energy_microjoules,
         human_active_time_ms: resources.human_active_time_ms.map(u128::from),
         resource_evidence_complete: total_model_tokens.is_some()
+            && total_tool_tokens.is_some()
             && total_model_api_cost_micro_usd.is_some()
             && total_tool_cost_micro_usd.is_some()
             && resources.infrastructure_cost_micro_usd.is_some()
@@ -738,6 +747,14 @@ pub fn evaluate_monitoring_pair(
         || c.manifest_commitment != b.manifest_commitment
         || c.task_kind != b.task_kind
         || c.condition_digest != b.condition_digest
+        || c.execution_environment_digest != b.execution_environment_digest
+        || c.resource_budget_digest != b.resource_budget_digest
+        || c.observer_source_id != b.observer_source_id
+        || c.observer_control_domain != b.observer_control_domain
+        || c.minimum_condition_observations != b.minimum_condition_observations
+        || c.maximum_observation_calls != b.maximum_observation_calls
+        || c.maximum_wait_calls != b.maximum_wait_calls
+        || c.maximum_action_attempts != b.maximum_action_attempts
         || c.starts_at_ms != b.starts_at_ms
         || c.ends_at_ms != b.ends_at_ms
         || candidate.events != baseline.events
@@ -941,7 +958,7 @@ fn aggregate_resource_usage(
     observations: &[ObservationReceipt],
     waits: &[WaitReceipt],
     resources: &MonitoringResourceUsage,
-) -> Result<(Option<u128>, Option<u128>, Option<u128>), MonitoringError> {
+) -> Result<(Option<u128>, Option<u128>, Option<u128>, Option<u128>), MonitoringError> {
     let observation_tokens = observations.iter().try_fold(0u128, |total, receipt| {
         total.checked_add(receipt.tokens.unwrap_or(0) as u128)
             .ok_or(MonitoringError::ResourceArithmeticOverflow)
@@ -958,21 +975,24 @@ fn aggregate_resource_usage(
             .ok_or(MonitoringError::ResourceArithmeticOverflow)
     })?).ok_or(MonitoringError::ResourceArithmeticOverflow)?;
 
-    let tokens_complete = observations.iter().all(|r| r.tokens.is_some())
-        && waits.iter().all(|r| r.tokens.is_some())
-        && resources.model_input_tokens.is_some()
+    let model_tokens_complete = resources.model_input_tokens.is_some()
         && resources.model_output_tokens.is_some();
-    let total_tokens = if tokens_complete {
+    let total_model_tokens = if model_tokens_complete {
+        Some(resources.model_input_tokens.unwrap_or(0) as u128
+            + resources.model_output_tokens.unwrap_or(0) as u128)
+    } else { None };
+
+    let tool_tokens_complete = observations.iter().all(|r| r.tokens.is_some())
+        && waits.iter().all(|r| r.tokens.is_some());
+    let total_tool_tokens = if tool_tokens_complete {
         Some(observation_tokens.checked_add(wait_tokens)
-            .and_then(|v| v.checked_add(resources.model_input_tokens.unwrap_or(0) as u128))
-            .and_then(|v| v.checked_add(resources.model_output_tokens.unwrap_or(0) as u128))
             .ok_or(MonitoringError::ResourceArithmeticOverflow)?)
     } else { None };
 
     let tool_cost_complete = observations.iter().all(|r| r.tool_cost_micro_usd.is_some())
         && waits.iter().all(|r| r.tool_cost_micro_usd.is_some());
     let total_tool_cost = if tool_cost_complete { Some(tool_cost) } else { None };
-    Ok((total_tokens, resources.model_api_cost_micro_usd, total_tool_cost))
+    Ok((total_model_tokens, total_tool_tokens, resources.model_api_cost_micro_usd, total_tool_cost))
 }
 
 fn is_zero(digest: &Digest) -> bool {
@@ -995,6 +1015,8 @@ mod tests {
             scenario_id: "scenario-001".into(),
             arm,
             manifest_commitment: d(1),
+            execution_environment_digest: d(7),
+            resource_budget_digest: d(8),
             task_kind: kind,
             condition_digest: d(2),
             starts_at_ms: 100,
