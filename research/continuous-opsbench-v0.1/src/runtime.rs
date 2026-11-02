@@ -1271,12 +1271,14 @@ mod tests {
     fn complete_clean_runtime_receipts_cover_every_arm_and_trial() {
         let (manifest, freeze, _ledger, scenarios, attestations) = fixture();
         let events = complete_trial_events(&manifest, &scenarios);
+        let challenges = challenge_receipts(&attestations);
         let result = validate_runtime_attestations_from_events(
             &manifest,
             &freeze,
             &scenarios,
             &[],
             &events,
+            &challenges,
             &attestations,
         ).unwrap();
         assert_eq!(result.planned_arm_trials, 4);
@@ -1290,9 +1292,10 @@ mod tests {
         let (manifest, freeze, _ledger, scenarios, attestations) = fixture();
         let mut events = complete_trial_events(&manifest, &scenarios);
         events[0].arm_identity_digest = digest(99);
+        let challenges = challenge_receipts(&attestations);
         assert!(matches!(
             validate_runtime_attestations_from_events(
-                &manifest, &freeze, &scenarios, &[], &events, &attestations
+                &manifest, &freeze, &scenarios, &[], &events, &challenges, &attestations
             ),
             Err(RuntimeAttestationError::TrialLedgerInvalid(_))
         ));
@@ -1302,8 +1305,9 @@ mod tests {
     fn preferred_entrypoint_does_not_accept_caller_supplied_ledger_summary() {
         let (manifest, freeze, _ledger, scenarios, attestations) = fixture();
         let events = complete_trial_events(&manifest, &scenarios);
+        let challenges = challenge_receipts(&attestations);
         let result = validate_runtime_attestations_from_events(
-            &manifest, &freeze, &scenarios, &[], &events, &attestations
+            &manifest, &freeze, &scenarios, &[], &events, &challenges, &attestations
         ).unwrap();
         assert_eq!(result.complete_attestations, manifest.trials.len() * 2);
     }
