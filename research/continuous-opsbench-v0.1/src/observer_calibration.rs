@@ -1234,8 +1234,9 @@ mod tests {
 
     #[test]
     fn calibration_challenge_ttl_is_bounded() {
-        let (m, f, s, e, r, mut p, i, d) = fixture();
+        let (m, f, s, e, mut r, mut p, i, d) = fixture();
         p[0].expires_at_ms = p[0].issued_at_ms + MAX_CALIBRATION_CHALLENGE_TTL_MS + 1;
+        r[0].challenge_expires_at_ms = p[0].expires_at_ms + 100;
         assert_eq!(
             evaluate_observer_calibration(&m, &f, &s, &[], &e, &r, &p, &i, &d),
             Err(ObserverCalibrationError::InvalidPlanInterval("trial-1".into()))
@@ -1244,8 +1245,9 @@ mod tests {
 
     #[test]
     fn conservative_latency_includes_both_independent_clock_uncertainties() {
-        let (m, f, s, e, r, p, mut injections, mut detections) = fixture();
-        injections[0].injector_clock_uncertainty_ms = 50;
+        let (m, f, s, e, r, mut p, mut injections, detections) = fixture();
+        p[0].expected_probes[0].maximum_detection_latency_ms = 7;
+        injections[0].injector_clock_uncertainty_ms = 2;
         if let ProbeObservation::Detected { detected_at_ms, .. } = &mut detections[0].observation {
             *detected_at_ms = injections[0].injected_at_ms + 1_900;
         }
