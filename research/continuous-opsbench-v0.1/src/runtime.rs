@@ -427,6 +427,7 @@ fn validate_runtime_attestations(
             .checked_add(combined_uncertainty)
             .ok_or(RuntimeAttestationError::ArithmeticOverflow)?;
         if receipt.challenge_issued_at_ms <= manifest.frozen_at_ms
+            || receipt.challenge_issued_at_ms <= scenario.issued_at_ms
             || receipt.challenge_expires_at_ms <= measurement_end_latest
             || receipt.challenge_expires_at_ms <= receipt_issue_latest
         {
@@ -826,6 +827,7 @@ fn validate_challenge_binding(
         .checked_add(combined_uncertainty)
         .ok_or(RuntimeAttestationError::ArithmeticOverflow)?;
     if challenge.issued_at_ms <= manifest.frozen_at_ms
+        || challenge.issued_at_ms <= scenario.issued_at_ms
         || challenge_issue_latest >= measurement_start_earliest
         || challenge.expires_at_ms <= measurement_end_latest
         || challenge.expires_at_ms <= receipt_issue_latest
@@ -1548,7 +1550,7 @@ mod tests {
     #[test]
     fn runtime_measurement_must_cover_all_agent_activity() {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
-        attestations[0].measurement_start_ms = 41;
+        attestations[0].measurement_start_ms = 71;
         assert_eq!(
             validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::MeasurementDoesNotCoverTrial(
@@ -1747,7 +1749,7 @@ mod tests {
 
     #[test]
     fn seventy_two_adversarial_runtime_mutations_fail_closed() {
-        for vector in 0..72 {
+        for vector in 0..75 {
             let (mut manifest, freeze, mut ledger, mut scenarios, mut attestations) = fixture();
             match vector {
                 0 => attestations[0].schema.push_str("-unknown"),
@@ -1821,7 +1823,10 @@ mod tests {
                 68 => ledger.runtime_challenge_authority_id = "substituted-authority".into(),
                 69 => { attestations[0].receipt_sequence = 4; attestations[3].receipt_sequence = 1; },
                 70 => attestations[0].measurement_start_ms = 39,
-                _ => attestations[0].clock_uncertainty_ms = MAX_CLOCK_UNCERTAINTY_MS + 1,
+                71 => attestations[0].clock_uncertainty_ms = MAX_CLOCK_UNCERTAINTY_MS + 1,
+                72 => attestations[0].oracle_read_successes = 1,
+                73 => attestations[0].unauthorized_artifact_read_successes = 1,
+                _ => attestations[0].disallowed_egress_successes = 1,
             }
             assert!(
                 validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations).is_err(),
