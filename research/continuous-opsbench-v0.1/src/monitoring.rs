@@ -190,6 +190,7 @@ pub struct EventHandlingResult {
     pub missed: bool,
     pub false_positive_observations: usize,
     pub detection_latency_ms: Option<u64>,
+    pub time_to_correct_action_ms: Option<u64>,
     pub correctly_handled: bool,
     pub late_actions: usize,
     pub premature_actions: usize,
@@ -566,7 +567,9 @@ pub fn evaluate_monitoring_task(
             }
             _ => None,
         };
-        if let Some(value) = reaction_latency {
+        let time_to_correct_action = verified_action
+            .map(|action| action.completed_at_ms.saturating_sub(event.starts_at_ms));
+        if let Some(value) = time_to_correct_action {
             time_to_correct_action_ms.push(value);
         }
 
@@ -579,6 +582,7 @@ pub fn evaluate_monitoring_task(
             false_positive_observations: false_positives,
             detection_latency_ms: first_detection
                 .map(|observation| observation.observed_at_ms.saturating_sub(event.starts_at_ms)),
+            time_to_correct_action_ms: time_to_correct_action,
             correctly_handled: correctly_handled_event,
             late_actions: event_late_actions,
             premature_actions: event_premature_actions,
@@ -712,16 +716,27 @@ fn validate_event_truth(
         if end <= event.starts_at_ms || end > contract.ends_at_ms {
             return Err(MonitoringError::InvalidEvent(event.event_id.clone()));
         }
-        if contract.kind == MonitoringTaskKind::UrgentEphemeral && event.expires_at_ms.is_none() {
+        if contract.kind == MonitoringTaskKind::UrgentEphemeral
+            && (event.expires_at_ms.is_none() || !event.requires_action)
+        {
+            return Err(MonitoringError::InvalidEvent(event.event_id.clone()));
+        }
+        if contract.kind == MonitoringTaskKind::PersistentEvent
+            && event.expires_at_ms.is_some()
+        {
             return Err(MonitoringError::InvalidEvent(event.event_id.clone()));
         }
         windows.push((event.starts_at_ms, end, event.condition_digest.clone()));
     }
-    windows.sort_by_key(|window| (window.0, window.1));
-    for pair in windows.windows(2) {
-        if pair[0].2 == pair[1].2 && pair[0].1 > pair[1].0 {
+    let mut by_condition: BTreeMap<Digest, Vec<(u64, u64)>> = BTreeMap::new();
+    for (start, end, condition) in windows {
+        by_condition.entry(condition).or_default().push((start, end));
+    }
+    for (condition, condition_windows) in &mut by_condition {
+        condition_windows.sort_unstable();
+        if condition_windows.windows(2).any(|pair| pair[0].1 > pair[1].0) {
             return Err(MonitoringError::DuplicateConditionWindow(
-                "overlapping event windows with indistinguishable condition digest".into(),
+                format!("overlapping event windows for condition {}", hex_prefix(condition)),
             ));
         }
     }
@@ -793,6 +808,10 @@ fn validate_resources(
 fn event_active_at(event: &MonitoringEventTruth, at_ms: u64) -> bool {
     at_ms >= event.starts_at_ms
         && event.expires_at_ms.map(|expires| at_ms <= expires).unwrap_or(true)
+}
+
+fn hex_prefix(digest: &Digest) -> String {
+    digest.0[..4].iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
 fn valid_id(value: &str) -> bool {
@@ -958,7 +977,9 @@ mod tests {
         assert_eq!(result.polling_calls, 0);
         assert_eq!(result.false_signal_wakeups, 0);
         assert_eq!(result.time_to_detection_ms, vec![50]);
-        assert_eq!(result.time_to_correct_action_ms, vec![150]);
+        assert_eq!(result.time_to_correct_action_ms, vec![200]);
+        assert_eq!(result.events[0].reaction_latency_ms, Some(150));
+        assert_eq!(result.events[0].time_to_correct_action_ms, Some(200));
         assert_eq!(result.safety, MonitoringSafetyDisposition::Pass);
     }
 
