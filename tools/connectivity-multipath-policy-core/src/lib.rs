@@ -138,11 +138,12 @@ fn as_u64(value: u128) -> u64 {
     value.min(u64::MAX as u128) as u64
 }
 
-fn estimated_cost(bytes: u64, rate_per_mib: u64) -> u64 {
-    as_u64(ceil_div(
+fn estimated_cost(bytes: u64, rate_per_mib: u64) -> Option<u64> {
+    u64::try_from(ceil_div(
         u128::from(bytes) * u128::from(rate_per_mib),
         BYTES_PER_MIB,
     ))
+    .ok()
 }
 
 fn effective_capacity(path: &PathObservation) -> u64 {
@@ -241,8 +242,8 @@ fn single_candidate(
     if path.data_remaining_bytes < request.bytes {
         return None;
     }
-    let cost = estimated_cost(request.bytes, path.cost_micros_per_mib);
-    let energy = estimated_cost(request.bytes, path.energy_uwh_per_mib);
+    let cost = estimated_cost(request.bytes, path.cost_micros_per_mib)?;
+    let energy = estimated_cost(request.bytes, path.energy_uwh_per_mib)?;
     if cost > request.max_cost_micros || energy > request.max_energy_uwh {
         return None;
     }
@@ -314,17 +315,17 @@ fn aggregate_candidate(
             let bytes = proportional.min(path.data_remaining_bytes).min(remaining);
             remaining -= bytes;
             let capacity = effective_capacity(path);
-            PathAllocation {
+            Some(PathAllocation {
                 path_id: path.id.clone(),
                 bytes,
                 effective_capacity_bps: capacity,
                 estimated_finish_us: finish_time_us(bytes, path),
-                estimated_cost_micros: estimated_cost(bytes, path.cost_micros_per_mib),
-                estimated_energy_uwh: estimated_cost(bytes, path.energy_uwh_per_mib),
+                estimated_cost_micros: estimated_cost(bytes, path.cost_micros_per_mib)?,
+                estimated_energy_uwh: estimated_cost(bytes, path.energy_uwh_per_mib)?,
                 shared_risk_group: path.shared_risk_group.clone(),
-            }
+            })
         })
-        .collect();
+        .collect::<Option<Vec<_>>>()?;
 
     // Redistribute rounding remainder and quota-limited shares deterministically.
     for allocation in &mut allocations {
@@ -340,9 +341,9 @@ fn aggregate_candidate(
         remaining -= add;
         allocation.estimated_finish_us = finish_time_us(allocation.bytes, path);
         allocation.estimated_cost_micros =
-            estimated_cost(allocation.bytes, path.cost_micros_per_mib);
+            estimated_cost(allocation.bytes, path.cost_micros_per_mib)?;
         allocation.estimated_energy_uwh =
-            estimated_cost(allocation.bytes, path.energy_uwh_per_mib);
+            estimated_cost(allocation.bytes, path.energy_uwh_per_mib)?;
     }
     if remaining != 0 {
         return None;
@@ -368,14 +369,12 @@ fn aggregate_candidate(
     } else {
         0
     };
-    let cost = allocations
-        .iter()
-        .map(|allocation| u128::from(allocation.estimated_cost_micros))
-        .sum::<u128>();
-    let energy = allocations
-        .iter()
-        .map(|allocation| u128::from(allocation.estimated_energy_uwh))
-        .sum::<u128>();
+    let cost = allocations.iter().try_fold(0_u64, |sum, allocation| {
+        sum.checked_add(allocation.estimated_cost_micros)
+    })?;
+    let energy = allocations.iter().try_fold(0_u64, |sum, allocation| {
+        sum.checked_add(allocation.estimated_energy_uwh)
+    })?;
     let groups: BTreeSet<&str> = allocations
         .iter()
         .map(|allocation| allocation.shared_risk_group.as_str())
@@ -384,8 +383,8 @@ fn aggregate_candidate(
     Some(Candidate {
         allocations,
         finish_us: finish,
-        cost_micros: as_u64(cost),
-        energy_uwh: as_u64(energy),
+        cost_micros: cost,
+        energy_uwh: energy,
         reorder_exposure_bytes: reorder_exposure,
         distinct_shared_risk_groups: groups.len(),
     })
@@ -398,6 +397,22 @@ fn best_single_by_finish(candidates: &[Candidate]) -> Option<Candidate> {
             .then_with(|| left.cost_micros.cmp(&right.cost_micros))
             .then_with(|| left.allocations[0].path_id.cmp(&right.allocations[0].path_id))
     })
+}
+
+fn best_single_by_rtt<'a>(
+    candidates: &'a [Candidate],
+    paths: &'a [PathObservation],
+) -> Option<Candidate> {
+    candidates.iter().min_by(|left, right| {
+        let left_id = &left.allocations[0].path_id;
+        let right_id = &right.allocations[0].path_id;
+        let left_rtt = paths.iter().find(|path| &path.id == left_id)?.rtt_us;
+        let right_rtt = paths.iter().find(|path| &path.id == right_id)?.rtt_us;
+        left_rtt
+            .cmp(&right_rtt)
+            .then_with(|| left.cost_micros.cmp(&right.cost_micros))
+            .then_with(|| left_id.cmp(right_id))
+    }).cloned()
 }
 
 fn best_single_by_cost(candidates: &[Candidate]) -> Option<Candidate> {
@@ -490,13 +505,14 @@ pub fn evaluate(
         .filter(|candidate| candidate_within_budgets(request, candidate))
         .collect();
     let best_single = best_single_by_finish(&singles);
+    let best_rtt_single = best_single_by_rtt(&singles, &eligible.iter().copied().cloned().cloned().collect::<Vec<_>>());
     let cheapest_single = best_single_by_cost(&singles);
     let multi = aggregate_candidate(request, &eligible)
         .filter(|candidate| candidate_within_budgets(request, candidate));
 
     let (chosen, explanation) = match strategy {
         Strategy::BestRtt => (
-            best_single,
+            best_rtt_single,
             vec!["selected the eligible single path with the lowest estimated completion time".to_owned()],
         ),
         Strategy::LowestCost => (
