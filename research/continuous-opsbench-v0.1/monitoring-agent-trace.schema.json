@@ -315,7 +315,8 @@
         "api_cost_microusd",
         "cpu_time_ms",
         "wall_time_ms",
-        "energy"
+        "energy",
+        "action_calls"
       ],
       "properties": {
         "model_tokens": {
@@ -359,6 +360,10 @@
               "type": "null"
             }
           ]
+        },
+        "action_calls": {
+          "type": "integer",
+          "minimum": 0
         }
       }
     },
