@@ -188,7 +188,6 @@ pub struct EventHandlingResult {
     pub event_id: String,
     pub detected: bool,
     pub missed: bool,
-    pub false_positive_observations: usize,
     pub detection_latency_ms: Option<u64>,
     pub time_to_correct_action_ms: Option<u64>,
     pub correctly_handled: bool,
@@ -512,13 +511,6 @@ pub fn evaluate_monitoring_task(
             time_to_detection_ms.push(observation.observed_at_ms.saturating_sub(event.starts_at_ms));
         }
 
-        let false_positives = observations.iter().filter(|observation| {
-            observation.condition == ObservedCondition::Present
-                && observation.condition_digest == event.condition_digest
-                && !event_active_at(event, observation.observed_at_ms)
-        }).count();
-        false_positive_observations = false_positive_observations.saturating_add(false_positives);
-
         let mut matched_actions: Vec<&MonitoringAction> = first_detection
             .and_then(|observation| action_observation_index.get(observation.observation_id.as_str()))
             .map(|actions| actions.iter().copied().collect())
@@ -586,7 +578,6 @@ pub fn evaluate_monitoring_task(
             event_id: event.event_id.clone(),
             detected: first_detection.is_some(),
             missed: first_detection.is_none(),
-            false_positive_observations: false_positives,
             detection_latency_ms: first_detection
                 .map(|observation| observation.observed_at_ms.saturating_sub(event.starts_at_ms)),
             time_to_correct_action_ms: time_to_correct_action,
