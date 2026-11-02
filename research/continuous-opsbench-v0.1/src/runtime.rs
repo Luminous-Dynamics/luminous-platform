@@ -2003,6 +2003,100 @@ mod tests {
     }
 
     #[test]
+    fn every_runtime_sensor_requires_one_distinct_coverage_record() {
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].sensor_coverage.pop();
+        assert_eq!(
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::SensorCoverageMissing(
+                "trial-a".into(), EvaluationArm::Candidate, RuntimeSensorRole::RuntimeEventStream
+            ))
+        );
+
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].sensor_coverage[4].role = RuntimeSensorRole::ProcessTree;
+        assert_eq!(
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::SensorCoverageDuplicate(
+                "trial-a".into(), EvaluationArm::Candidate, RuntimeSensorRole::ProcessTree
+            ))
+        );
+    }
+
+    #[test]
+    fn sensor_coverage_must_enclose_the_full_runtime_monitoring_interval() {
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].sensor_coverage[0].coverage_start_ms = 60;
+        assert_eq!(
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::SensorCoverageDoesNotEncloseMeasurement(
+                "trial-a".into(), EvaluationArm::Candidate, RuntimeSensorRole::ProcessTree
+            ))
+        );
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].sensor_coverage[0].coverage_end_ms = 100;
+        assert_eq!(
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::SensorCoverageDoesNotEncloseMeasurement(
+                "trial-a".into(), EvaluationArm::Candidate, RuntimeSensorRole::ProcessTree
+            ))
+        );
+    }
+
+    #[test]
+    fn sensor_sequence_ranges_must_account_for_every_observed_event() {
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].sensor_coverage[0].last_sequence = Some(3);
+        assert_eq!(
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::SensorCoverageSequenceInvalid(
+                "trial-a".into(), EvaluationArm::Candidate, RuntimeSensorRole::ProcessTree
+            ))
+        );
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].sensor_coverage[0].observed_event_count = 0;
+        assert_eq!(
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::SensorCoverageSequenceInvalid(
+                "trial-a".into(), EvaluationArm::Candidate, RuntimeSensorRole::ProcessTree
+            ))
+        );
+    }
+
+    #[test]
+    fn sensor_log_commitment_and_observer_identity_must_match_parent_receipt() {
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].sensor_coverage[0].log_commitment = digest(99);
+        assert_eq!(
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::SensorCoverageBindingMismatch(
+                "trial-a".into(), EvaluationArm::Candidate, RuntimeSensorRole::ProcessTree
+            ))
+        );
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].sensor_coverage[0].observer_source_id = "agent".into();
+        assert_eq!(
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::SensorCoverageBindingMismatch(
+                "trial-a".into(), EvaluationArm::Candidate, RuntimeSensorRole::ProcessTree
+            ))
+        );
+    }
+
+    #[test]
+    fn sensor_instances_cannot_be_reused_across_trial_arms() {
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[1].sensor_coverage[0].sensor_instance_digest =
+            attestations[0].sensor_coverage[0].sensor_instance_digest.clone();
+        assert_eq!(
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::SensorCoverageInstanceCollision(
+                "trial-a".into(), EvaluationArm::Baseline
+            ))
+        );
+    }
+
+    #[test]
     fn seventy_six_adversarial_runtime_mutations_fail_closed() {
         for vector in 0..76 {
             let (mut manifest, freeze, mut ledger, mut scenarios, mut attestations) = fixture();
