@@ -67,6 +67,12 @@ MAPPINGS = [
     ("sealed.rs", "ScenarioReceipt", "sealed-run-evidence.schema.json", ("$defs", "scenario_receipt")),
     ("sealed.rs", "ScenarioReveal", "sealed-run-evidence.schema.json", ("$defs", "scenario_reveal")),
     ("sealed.rs", "TrialEvent", "sealed-run-evidence.schema.json", ("$defs", "trial_event")),
+    ("observer_fitness.rs", "ProbeDefinition", "observer-fitness-plan.schema.json", ("$defs", "probe")),
+    ("observer_fitness.rs", "ObserverFitnessPlan", "observer-fitness-plan.schema.json", ("$defs", "plan")),
+    ("observer_fitness.rs", "ProbeInjectionReceipt", "observer-probe-injection.schema.json", ("$defs", "injection")),
+    ("observer_fitness.rs", "ObservedProbeEvent", "observer-probe-injection.schema.json", ("$defs", "observed_probe_event")),
+    ("observer_fitness.rs", "ObservedProbeLoss", "observer-probe-injection.schema.json", ("$defs", "observed_probe_loss")),
+    ("observer_fitness.rs", "ObserverFitnessReceipt", "observer-fitness-receipt.schema.json", ("$defs", "receipt")),
 ]
 
 
@@ -74,6 +80,7 @@ def main() -> int:
     rust_sources = {
         "runtime.rs": (BASE / "src" / "runtime.rs").read_text(encoding="utf-8"),
         "sealed.rs": (BASE / "src" / "sealed.rs").read_text(encoding="utf-8"),
+        "observer_fitness.rs": (BASE / "src" / "observer_fitness.rs").read_text(encoding="utf-8"),
     }
     schemas: dict[str, dict] = {}
     errors: list[str] = []

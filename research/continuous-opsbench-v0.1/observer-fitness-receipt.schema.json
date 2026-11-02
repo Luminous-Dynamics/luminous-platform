@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-observer-fitness-receipt-v0.1.json",
+  "title": "Continuous OpsBench observer fitness receipt v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "receipts"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "continuous-opsbench-observer-fitness-receipts-v0.1"
+    },
+    "receipts": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/receipt"
+      }
+    }
+  },
+  "$defs": {
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "receipt_digest",
+        "batch_nonce_digest",
+        "batch_id",
+        "run_id",
+        "manifest_commitment",
+        "plan_digest",
+        "runtime_observer_source_id",
+        "runtime_observer_control_domain",
+        "runtime_observer_adapter_digest",
+        "runtime_kernel_profile_digest",
+        "execution_environment_digest",
+        "state_isolation_policy_digest",
+        "artifact_access_policy_digest",
+        "network_egress_policy_digest",
+        "probe_injector_id",
+        "probe_injector_control_domain",
+        "fitness_verifier_id",
+        "fitness_verifier_control_domain",
+        "calibration_runtime_digest",
+        "calibration_namespace_digest",
+        "measurement_start_ms",
+        "measurement_end_ms",
+        "issued_at_ms",
+        "valid_from_ms",
+        "expires_at_ms",
+        "clock_uncertainty_ms",
+        "coverage",
+        "unexplained_drop_count",
+        "unexplained_sequence_gap_count",
+        "injection_bundle_digest",
+        "observation_bundle_digest",
+        "loss_bundle_digest"
+      ],
+      "properties": {
+        "schema": {
+          "const": "continuous-opsbench-observer-fitness-receipt-v0.1"
+        },
+        "receipt_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "batch_nonce_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "batch_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "manifest_commitment": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "plan_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "runtime_observer_source_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "runtime_observer_control_domain": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "runtime_observer_adapter_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "runtime_kernel_profile_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "execution_environment_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "state_isolation_policy_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "artifact_access_policy_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "network_egress_policy_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "probe_injector_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "probe_injector_control_domain": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "fitness_verifier_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "fitness_verifier_control_domain": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "calibration_runtime_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "calibration_namespace_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "measurement_start_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "measurement_end_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "issued_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "valid_from_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expires_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "clock_uncertainty_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "coverage": {
+          "enum": [
+            "complete",
+            "partial",
+            "unknown",
+            "tampered"
+          ]
+        },
+        "unexplained_drop_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unexplained_sequence_gap_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "injection_bundle_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "observation_bundle_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "loss_bundle_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    }
+  }
+}

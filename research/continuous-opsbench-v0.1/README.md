@@ -62,4 +62,9 @@ This remains structural validation. Challenge and observer signatures, durable c
 
 ## Observer fitness
 
-[Issue #205](https://github.com/Luminous-Dynamics/luminous-platform/issues/205) extends this work with blinded positive/negative known-answer probes, event-loss injection, per-sensor false-negative and latency measurements, and expiry on kernel/runtime/adapter/policy changes. A "complete" coverage claim must be qualified against the exact pinned instrumentation profile; missing sensors or silent drops are indeterminate, never zero accesses.
+[OBSERVER_FITNESS_V0_1.md](OBSERVER_FITNESS_V0_1.md) and [issue #205](https://github.com/Luminous-Dynamics/luminous-platform/issues/205) now define and implement blinded positive/negative known-answer probes, event-loss injection, per-surface false-negative/specificity/latency checks, cross-batch nonce and marker uniqueness, and runtime/kernel/policy identity binding.
+
+Certification requires a fresh pre-run qualification that fully covers every runtime measurement interval and a distinct post-run requalification measured after the last runtime observation. Fitness receipts are limited to one-hour validity; missing post-run qualification, mid-run expiry, missing sensors or silent drops are indeterminate/rejected, never zero accesses. The synthetic tests are not real sandbox qualification.
+
+
+The observer-fitness Rust implementation is in `src/observer_fitness.rs`; strict plan, injection/event and receipt schemas are `observer-fitness-plan.schema.json`, `observer-probe-injection.schema.json`, and `observer-fitness-receipt.schema.json`. CI enforces field-set parity for the six immutable observer-fitness records.

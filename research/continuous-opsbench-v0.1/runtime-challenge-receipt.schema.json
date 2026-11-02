@@ -30,7 +30,9 @@
     "sequence",
     "issued_at_ms",
     "expires_at_ms",
-    "clock_uncertainty_ms"
+    "clock_uncertainty_ms",
+    "runtime_kernel_profile_digest",
+    "observer_fitness_receipt_digest"
   ],
   "properties": {
     "schema": {
@@ -130,23 +132,28 @@
     },
     "sequence": {
       "type": "integer",
-      "minimum": 1,
-      "description": "Run-scoped challenge-authority sequence, unique and exactly contiguous from 1 across all planned trial/arm pairs."
+      "minimum": 1
     },
     "issued_at_ms": {
       "type": "integer",
-      "minimum": 0,
-      "description": "Must be strictly after run freeze and scenario receipt issuance, and sufficiently before measurement start after accounting for both challenge-authority and runtime-observer clock uncertainty."
+      "minimum": 0
     },
     "expires_at_ms": {
       "type": "integer",
-      "minimum": 1,
-      "description": "Must be later than the latest plausible runtime measurement and receipt issue times after combining challenge-authority and runtime-observer clock uncertainty; max lifetime from issued_at_ms is 86,400,000 ms."
+      "minimum": 1
     },
     "clock_uncertainty_ms": {
       "type": "integer",
       "minimum": 0,
       "maximum": 1000
+    },
+    "runtime_kernel_profile_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "observer_fitness_receipt_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
     }
   }
 }
