@@ -43,6 +43,8 @@ pub struct RuntimeChallengeReceipt {
     pub observer_source_id: String,
     pub observer_control_domain: String,
     pub observer_adapter_digest: Digest,
+    pub runtime_kernel_profile_digest: Digest,
+    pub observer_fitness_receipt_digest: Digest,
     pub challenge_nonce_digest: Digest,
     /// Digest of the separately authenticated challenge-authority receipt.
     pub challenge_authority_id: String,
@@ -82,6 +84,9 @@ pub struct RuntimeTrialAttestation {
     pub observer_source_id: String,
     pub observer_control_domain: String,
     pub observer_adapter_digest: Digest,
+    pub runtime_kernel_profile_digest: Digest,
+    /// Fitness receipt proving this exact observer profile passed known-answer controls.
+    pub observer_fitness_receipt_digest: Digest,
     /// Fresh nonce issued by the frozen runtime challenge authority.
     pub challenge_nonce_digest: Digest,
     /// Digest of the separately authenticated challenge-authority receipt.
@@ -124,6 +129,7 @@ pub struct RuntimeTrialEvidence {
     pub writable_state_namespace_digest: Digest,
     pub challenge_nonce_digest: Digest,
     pub challenge_receipt_digest: Digest,
+    pub observer_fitness_receipt_digest: Digest,
     pub challenge_issued_at_ms: u64,
     pub challenge_expires_at_ms: u64,
     pub receipt_sequence: u64,
@@ -143,6 +149,10 @@ pub struct RuntimeAttestationSummary {
     pub runtime_observer_adapter_digest: Digest,
     pub runtime_challenge_authority_id: String,
     pub runtime_challenge_authority_control_domain: String,
+    pub fitness_receipts_used: usize,
+    pub total_positive_sensor_controls: usize,
+    pub total_negative_sensor_controls: usize,
+    pub total_loss_sensor_controls: usize,
     pub evidence: Vec<RuntimeTrialEvidence>,
 }
 
