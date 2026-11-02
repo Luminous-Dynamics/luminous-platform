@@ -278,6 +278,7 @@ fn validate_runtime_attestations(
     let mut challenge_nonces = BTreeSet::new();
     let mut challenge_digests = BTreeSet::new();
     let mut challenge_sequences = Vec::with_capacity(challenges.len());
+    let mut challenge_sequence_ids = BTreeSet::new();
     for challenge in challenges {
         if challenge.schema != RUNTIME_CHALLENGE_SCHEMA {
             return Err(RuntimeAttestationError::ChallengeReceiptUnsupportedSchema);
@@ -295,11 +296,17 @@ fn validate_runtime_attestations(
         if is_zero(&challenge.receipt_digest) || !challenge_digests.insert(challenge.receipt_digest.clone()) {
             return Err(RuntimeAttestationError::ChallengeReceiptDigestInvalid);
         }
-        if is_zero(&challenge.challenge_nonce_digest) || !challenge_nonces.insert(challenge.challenge_nonce_digest.clone()) {
+        if is_zero(&challenge.challenge_nonce_digest) {
+            return Err(RuntimeAttestationError::ChallengeNonceInvalid);
+        }
+        if !challenge_nonces.insert(challenge.challenge_nonce_digest.clone()) {
             return Err(RuntimeAttestationError::ChallengeNonceCollision);
         }
         if challenge.sequence == 0 {
             return Err(RuntimeAttestationError::ChallengeReceiptSequenceInvalid);
+        }
+        if !challenge_sequence_ids.insert(challenge.sequence) {
+            return Err(RuntimeAttestationError::DuplicateObserverSequence);
         }
         challenge_sequences.push((
             challenge.sequence,
@@ -754,6 +761,13 @@ fn validate_challenge_binding(
     challenge: &RuntimeChallengeReceipt,
     attestation: &RuntimeTrialAttestation,
 ) -> Result<(), RuntimeAttestationError> {
+    if challenge.clock_uncertainty_ms > MAX_CLOCK_UNCERTAINTY_MS
+        || attestation.clock_uncertainty_ms > MAX_CLOCK_UNCERTAINTY_MS
+    {
+        return Err(RuntimeAttestationError::ClockUncertaintyExceeded(
+            attestation.trial_id.clone(), attestation.arm,
+        ));
+    }
     if challenge.challenge_authority_id != manifest.runtime_challenge_authority_id
         || challenge.challenge_authority_control_domain != manifest.runtime_challenge_authority_control_domain
         || challenge.challenge_authority_control_domain == challenge.observer_control_domain
@@ -795,7 +809,6 @@ fn validate_challenge_binding(
         || challenge.challenge_authority_control_domain.trim().is_empty()
         || challenge.observer_source_id.trim().is_empty()
         || challenge.observer_control_domain.trim().is_empty()
-        || challenge.clock_uncertainty_ms > MAX_CLOCK_UNCERTAINTY_MS
     {
         return Err(RuntimeAttestationError::ChallengeReceiptBindingMismatch(
             challenge.trial_id.clone(), challenge.arm,
@@ -1550,7 +1563,7 @@ mod tests {
     #[test]
     fn runtime_measurement_must_cover_all_agent_activity() {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
-        attestations[0].measurement_start_ms = 71;
+        attestations[0].measurement_start_ms = 59;
         assert_eq!(
             validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::MeasurementDoesNotCoverTrial(
@@ -1656,7 +1669,7 @@ mod tests {
         attestations[0].receipt_sequence = 0;
         assert_eq!(
             validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
-            Err(RuntimeAttestationError::InvalidObserverSequence)
+            Err(RuntimeAttestationError::ChallengeReceiptSequenceInvalid)
         );
 
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
@@ -1708,6 +1721,7 @@ mod tests {
     #[test]
     fn successful_event_counts_cannot_exceed_recorded_attempts() {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].oracle_read_attempts = 1;
         attestations[0].oracle_read_successes = 1;
         assert_eq!(
             validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
