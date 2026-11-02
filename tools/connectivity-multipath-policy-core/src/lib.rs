@@ -131,11 +131,7 @@ struct Candidate {
 }
 
 fn ceil_div(numerator: u128, denominator: u128) -> u128 {
-    if numerator == 0 {
-        0
-    } else {
-        1 + ((numerator - 1) / denominator)
-    }
+    numerator.div_ceil(denominator)
 }
 
 fn as_u64(value: u128) -> u64 {
