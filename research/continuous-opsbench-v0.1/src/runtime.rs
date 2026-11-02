@@ -62,6 +62,33 @@ pub enum RuntimeCoverage {
     Tampered,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum RuntimeSensorRole {
+    ProcessTree,
+    MountNamespace,
+    FilesystemAccess,
+    NetworkEgress,
+    RuntimeEventStream,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RuntimeSensorCoverage {
+    pub role: RuntimeSensorRole,
+    pub sensor_instance_digest: Digest,
+    pub sensor_binary_digest: Digest,
+    pub observer_source_id: String,
+    pub observer_control_domain: String,
+    pub observer_adapter_digest: Digest,
+    pub coverage_start_ms: u64,
+    pub coverage_end_ms: u64,
+    pub first_sequence: Option<u64>,
+    pub last_sequence: Option<u64>,
+    pub observed_event_count: u64,
+    pub sequence_gap_count: u64,
+    pub dropped_event_count: u64,
+    pub log_commitment: Digest,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RuntimeTrialAttestation {
     pub schema: String,
@@ -100,6 +127,8 @@ pub struct RuntimeTrialAttestation {
     pub filesystem_access_log_commitment: Digest,
     pub network_egress_log_commitment: Digest,
     pub runtime_event_stream_commitment: Digest,
+    /// One explicit coverage receipt for each required runtime sensor.
+    pub sensor_coverage: Vec<RuntimeSensorCoverage>,
     pub coverage: RuntimeCoverage,
     pub sequence_gap_count: u64,
     pub dropped_event_count: u64,
@@ -192,6 +221,15 @@ pub enum RuntimeAttestationError {
     ClockUncertaintyExceeded(String, EvaluationArm),
     IncompleteCoverage(String, EvaluationArm, RuntimeCoverage),
     TelemetryGap(String, EvaluationArm),
+    SensorCoverageMissing(String, EvaluationArm, RuntimeSensorRole),
+    SensorCoverageDuplicate(String, EvaluationArm, RuntimeSensorRole),
+    SensorCoverageUnexpected(String, EvaluationArm, RuntimeSensorRole),
+    SensorCoverageBindingMismatch(String, EvaluationArm, RuntimeSensorRole),
+    SensorCoverageIntervalInvalid(String, EvaluationArm, RuntimeSensorRole),
+    SensorCoverageDoesNotEncloseMeasurement(String, EvaluationArm, RuntimeSensorRole),
+    SensorCoverageSequenceInvalid(String, EvaluationArm, RuntimeSensorRole),
+    SensorCoverageInstanceCollision(String, EvaluationArm, RuntimeSensorRole),
+
     OracleAccessObserved(String, EvaluationArm),
     UnauthorizedArtifactAccessObserved(String, EvaluationArm),
     DisallowedEgressObserved(String, EvaluationArm),
@@ -541,6 +579,7 @@ fn validate_runtime_attestations(
         }
 
         validate_log_commitments(receipt)?;
+        validate_sensor_coverage(receipt, result)?;
 
         allowlisted_egress_events = allowlisted_egress_events
             .checked_add(receipt.allowlisted_egress_events as u128)
@@ -932,6 +971,98 @@ fn validate_log_commitments(
             receipt.arm,
         ));
     }
+    Ok(())
+}
+
+fn validate_sensor_coverage(
+    receipt: &RuntimeTrialAttestation,
+    result: &TrialResult,
+) -> Result<(), RuntimeAttestationError> {
+    const EXPECTED: [RuntimeSensorRole; 5] = [
+        RuntimeSensorRole::ProcessTree,
+        RuntimeSensorRole::MountNamespace,
+        RuntimeSensorRole::FilesystemAccess,
+        RuntimeSensorRole::NetworkEgress,
+        RuntimeSensorRole::RuntimeEventStream,
+    ];
+    let mut roles = BTreeSet::new();
+    let mut instances = BTreeSet::new();
+    for sensor in &receipt.sensor_coverage {
+        if !EXPECTED.contains(&sensor.role) {
+            return Err(RuntimeAttestationError::SensorCoverageUnexpected(
+                receipt.trial_id.clone(), receipt.arm, sensor.role,
+            ));
+        }
+        if !roles.insert(sensor.role) {
+            return Err(RuntimeAttestationError::SensorCoverageDuplicate(
+                receipt.trial_id.clone(), receipt.arm, sensor.role,
+            ));
+        }
+        if sensor.observer_source_id != receipt.observer_source_id
+            || sensor.observer_control_domain != receipt.observer_control_domain
+            || sensor.observer_adapter_digest != receipt.observer_adapter_digest
+            || sensor.observer_control_domain == receipt.challenge_authority_control_domain
+            || is_zero(&sensor.sensor_instance_digest)
+            || is_zero(&sensor.sensor_binary_digest)
+            || is_zero(&sensor.log_commitment)
+            || !instances.insert(sensor.sensor_instance_digest.clone())
+        {
+            return Err(RuntimeAttestationError::SensorCoverageBindingMismatch(
+                receipt.trial_id.clone(), receipt.arm, sensor.role,
+            ));
+        }
+        if sensor.coverage_start_ms >= sensor.coverage_end_ms {
+            return Err(RuntimeAttestationError::SensorCoverageIntervalInvalid(
+                receipt.trial_id.clone(), receipt.arm, sensor.role,
+            ));
+        }
+        if sensor.coverage_start_ms.saturating_add(receipt.clock_uncertainty_ms)
+                > receipt.measurement_start_ms
+            || sensor.coverage_end_ms.saturating_sub(receipt.clock_uncertainty_ms)
+                < receipt.measurement_end_ms
+        {
+            return Err(RuntimeAttestationError::SensorCoverageDoesNotEncloseMeasurement(
+                receipt.trial_id.clone(), receipt.arm, sensor.role,
+            ));
+        }
+        if sensor.sequence_gap_count != 0 || sensor.dropped_event_count != 0 {
+            return Err(RuntimeAttestationError::TelemetryGap(
+                receipt.trial_id.clone(), receipt.arm,
+            ));
+        }
+        match (sensor.first_sequence, sensor.last_sequence, sensor.observed_event_count) {
+            (None, None, 0) => {}
+            (Some(first), Some(last), count)
+                if first > 0
+                    && last >= first
+                    && last.saturating_sub(first).saturating_add(1) == count => {}
+            _ => {
+                return Err(RuntimeAttestationError::SensorCoverageSequenceInvalid(
+                    receipt.trial_id.clone(), receipt.arm, sensor.role,
+                ));
+            }
+        }
+        let expected_commitment = match sensor.role {
+            RuntimeSensorRole::ProcessTree => &receipt.process_tree_commitment,
+            RuntimeSensorRole::MountNamespace => &receipt.mount_namespace_commitment,
+            RuntimeSensorRole::FilesystemAccess => &receipt.filesystem_access_log_commitment,
+            RuntimeSensorRole::NetworkEgress => &receipt.network_egress_log_commitment,
+            RuntimeSensorRole::RuntimeEventStream => &receipt.runtime_event_stream_commitment,
+        };
+        if &sensor.log_commitment != expected_commitment {
+            return Err(RuntimeAttestationError::SensorCoverageBindingMismatch(
+                receipt.trial_id.clone(), receipt.arm, sensor.role,
+            ));
+        }
+    }
+    for role in EXPECTED {
+        if !roles.contains(&role) {
+            return Err(RuntimeAttestationError::SensorCoverageMissing(
+                receipt.trial_id.clone(), receipt.arm, role,
+            ));
+        }
+    }
+    let _ = result;
     Ok(())
 }
 
