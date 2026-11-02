@@ -939,6 +939,7 @@ mod tests {
                     idempotency_key: r.idempotency_key.clone(), attempt_id: r.attempt_id.clone(),
                     request_digest: r.request_digest.clone(), ledger_cursor: "ledger:2".into(),
                     state: ParticipantState::Unknown,
+                    finality_handle_digest: None,
                 },
             };
             self.logical_action.ledger_cursor = observed.ledger_cursor.clone();
@@ -961,7 +962,8 @@ mod tests {
     fn evidence(attempt: &str, digest: Digest, state: ParticipantState) -> ParticipantEvidence {
         ParticipantEvidence { participant_id: "participant-a".into(), tenant_id: "tenant-a".into(),
             idempotency_key: "logical-action-1".into(), attempt_id: attempt.into(),
-            request_digest: digest, ledger_cursor: "ledger:1".into(), state }
+            request_digest: digest, ledger_cursor: "ledger:1".into(), state,
+            finality_handle_digest: None }
     }
 
     fn fixture() -> (EffectBroker<FakeParticipant>, MutationProposal, AuthorityGrant, GateContext) {
@@ -969,23 +971,33 @@ mod tests {
             tool_id: "deployment".into(), operation_id: "restart-service".into(),
             semantic_version: "1.0.0".into(), manifest_digest: Digest::from_byte(1),
             toolchain_id: "nix-toolchain-2026-11".into(), toolchain_digest: Digest::from_byte(5),
-            policy_version: "policy-v1".into(), effect_class: EffectClass::BoundedMutation,
+            policy_version: "policy-v1".into(), policy_digest: Digest::from_byte(6),
+            effect_class: EffectClass::BoundedMutation,
             qualified: true, required_scope: "service:restart".into(),
             required_grant_issuer: "authority-v1".into(), participant_id: "participant-a".into(),
             idempotency_supported: true, participant_ledger_supported: true,
             preflight_verifier_id: "preflight-v1".into(), observer_verifier_id: "observer-v1".into(),
+            finality_mode: FinalityMode::GrantOnly,
+            finality_verifier_id: String::new(),
+            finality_verifier_control_domain: String::new(),
+            runtime_observer_source_id: String::new(),
+            runtime_observer_control_domain: String::new(),
+            runtime_observer_adapter_digest: Digest::ZERO,
+            max_finality_handle_ttl_ms: 0,
             max_risk_level: 3, allowed_environments: vec!["test".into()],
         };
         let mut registry = ManifestRegistry::default();
         registry.register(manifest).unwrap();
         let proposal = MutationProposal {
             tenant_id: "tenant-a".into(), principal_id: "operator-a".into(),
-            episode_id: "episode-a".into(), plan_digest: Digest::from_byte(2),
+            episode_id: "episode-a".into(),
+            evaluation_run_id: String::new(), evaluation_trial_id: String::new(),
+            evaluation_arm_id: String::new(), plan_digest: Digest::from_byte(2),
             step_id: "step-1".into(), tool_id: "deployment".into(),
             operation_id: "restart-service".into(), manifest_version: "1.0.0".into(),
             manifest_digest: Digest::from_byte(1), toolchain_id: "nix-toolchain-2026-11".into(),
             toolchain_digest: Digest::from_byte(5), policy_version: "policy-v1".into(),
-            target_digest: Digest::from_byte(3), request_digest: Digest::from_byte(4),
+            policy_digest: Digest::from_byte(6), target_digest: Digest::from_byte(3), request_digest: Digest::from_byte(4),
             grant_id: "grant-1".into(), attempt_id: "attempt-1".into(),
             idempotency_key: "logical-action-1".into(), environment: "test".into(),
             risk_level: 2, decision: AgentDecision::Act,
@@ -994,14 +1006,15 @@ mod tests {
             grant_id: "grant-1".into(), issuer: "authority-v1".into(),
             scope: "service:restart".into(), tenant_id: "tenant-a".into(),
             principal_id: "operator-a".into(), episode_id: "episode-a".into(),
-            plan_digest: Digest::from_byte(2), step_id: "step-1".into(),
+            evaluation_run_id: String::new(), evaluation_trial_id: String::new(),
+            evaluation_arm_id: String::new(), plan_digest: Digest::from_byte(2), step_id: "step-1".into(),
             tool_id: "deployment".into(), operation_id: "restart-service".into(),
             manifest_version: "1.0.0".into(), manifest_digest: Digest::from_byte(1),
             toolchain_id: "nix-toolchain-2026-11".into(), toolchain_digest: Digest::from_byte(5),
             target_digest: Digest::from_byte(3), request_digest: Digest::from_byte(4),
             attempt_id: "attempt-1".into(), idempotency_key: "logical-action-1".into(),
             environment: "test".into(), risk_level: 2, policy_version: "policy-v1".into(),
-            expires_at_ms: 10_000, revoked: false,
+            policy_digest: Digest::from_byte(6), expires_at_ms: 10_000, revoked: false,
         };
         let context = GateContext { now_ms: 1_000, preconditions_satisfied: true,
             observer_available: true, authority_source_available: true,
