@@ -15,6 +15,7 @@
     "units",
     "baseline_strategies",
     "transport_profiles",
+    "baseline_methodology",
     "scenario_ids",
     "benchmarks",
     "required_metrics",
@@ -22,11 +23,23 @@
     "explicit_non_claims"
   ],
   "properties": {
-    "schema_version": { "const": "luminous.lnf-multipath-scheduling-profile.v1" },
-    "profile_id": { "const": "lnf-multipath-session-scheduling-v1" },
-    "status": { "const": "draft_targets_not_results" },
-    "reviewed_on": { "type": "string", "format": "date" },
-    "objective": { "type": "string", "minLength": 1 },
+    "schema_version": {
+      "const": "luminous.lnf-multipath-scheduling-profile.v1"
+    },
+    "profile_id": {
+      "const": "lnf-multipath-session-scheduling-v1"
+    },
+    "status": {
+      "const": "draft_targets_not_results"
+    },
+    "reviewed_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
     "ownership_boundary": {
       "type": "object",
       "additionalProperties": false,
@@ -39,12 +52,24 @@
         "no_privileged_network_actuation"
       ],
       "properties": {
-        "broker_owns_path_eligibility": { "const": true },
-        "path_manager_owns_subflow_and_address_lifecycle": { "const": true },
-        "scheduler_owns_packet_or_byte_allocation_only": { "const": true },
-        "application_owns_task_success_and_deadline": { "const": true },
-        "no_packet_content_inspection": { "const": true },
-        "no_privileged_network_actuation": { "const": true }
+        "broker_owns_path_eligibility": {
+          "const": true
+        },
+        "path_manager_owns_subflow_and_address_lifecycle": {
+          "const": true
+        },
+        "scheduler_owns_packet_or_byte_allocation_only": {
+          "const": true
+        },
+        "application_owns_task_success_and_deadline": {
+          "const": true
+        },
+        "no_packet_content_inspection": {
+          "const": true
+        },
+        "no_privileged_network_actuation": {
+          "const": true
+        }
       }
     },
     "units": {
@@ -61,27 +86,47 @@
         "reorder_buffer"
       ],
       "properties": {
-        "bandwidth": { "const": "bits_per_second" },
-        "rtt": { "const": "microseconds" },
-        "jitter": { "const": "microseconds" },
-        "loss": { "const": "parts_per_million" },
-        "cost_rate": { "const": "integer_microcurrency_per_MiB" },
-        "energy_rate": { "const": "microwatt_hours_per_MiB" },
-        "data_allowance": { "const": "bytes" },
-        "reorder_buffer": { "const": "bytes" }
+        "bandwidth": {
+          "const": "bits_per_second"
+        },
+        "rtt": {
+          "const": "microseconds"
+        },
+        "jitter": {
+          "const": "microseconds"
+        },
+        "loss": {
+          "const": "parts_per_million"
+        },
+        "cost_rate": {
+          "const": "integer_microcurrency_per_MiB"
+        },
+        "energy_rate": {
+          "const": "microwatt_hours_per_MiB"
+        },
+        "data_allowance": {
+          "const": "bytes"
+        },
+        "reorder_buffer": {
+          "const": "bytes"
+        }
       }
     },
     "baseline_strategies": {
       "type": "array",
-      "minItems": 6,
-      "maxItems": 6,
+      "minItems": 10,
+      "maxItems": 10,
       "uniqueItems": true,
       "items": {
         "enum": [
           "best_rtt_single_path",
           "lowest_cost_single_path",
           "capacity_weighted_aggregate",
-          "linux_mptcp_default_scheduler_exact_kernel",
+          "round_robin",
+          "earliest_completion_first_ecf",
+          "blest_reordering_aware",
+          "redundant_retransmission_control",
+          "linux_in_tree_default_scheduler_exact_kernel",
           "approved_multipath_quic_stack_when_available",
           "lnf_intent_aware_constrained"
         ]
@@ -94,14 +139,34 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "status", "pin_required"],
+        "required": [
+          "id",
+          "status",
+          "pin_required"
+        ],
         "properties": {
-          "id": { "enum": ["mptcp-rfc8684", "multipath-quic"] },
-          "status": { "type": "string", "minLength": 1 },
-          "document": { "type": "string" },
-          "pin_required": { "const": true },
-          "peer_support_required": { "type": "boolean" },
-          "scheduler_not_defined_by_transport_document": { "type": "boolean" }
+          "id": {
+            "enum": [
+              "mptcp-rfc8684",
+              "multipath-quic"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1
+          },
+          "document": {
+            "type": "string"
+          },
+          "pin_required": {
+            "const": true
+          },
+          "peer_support_required": {
+            "type": "boolean"
+          },
+          "scheduler_not_defined_by_transport_document": {
+            "type": "boolean"
+          }
         }
       }
     },
@@ -110,7 +175,10 @@
       "minItems": 18,
       "maxItems": 18,
       "uniqueItems": true,
-      "items": { "type": "string", "pattern": "^MPATH-[0-9]{2}$" }
+      "items": {
+        "type": "string",
+        "pattern": "^MPATH-[0-9]{2}$"
+      }
     },
     "benchmarks": {
       "type": "array",
@@ -119,13 +187,41 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "metric", "operator", "target", "target_status"],
+        "required": [
+          "id",
+          "metric",
+          "operator",
+          "target",
+          "target_status"
+        ],
         "properties": {
-          "id": { "type": "string", "pattern": "^MPATH_[A-Z0-9_]{3,80}$" },
-          "metric": { "type": "string", "minLength": 1 },
-          "operator": { "enum": ["==", "baseline_first", "within_declared_buffer_limit"] },
-          "target": { "type": ["number", "null"] },
-          "target_status": { "enum": ["proposed_target", "baseline_first"] }
+          "id": {
+            "type": "string",
+            "pattern": "^MPATH_[A-Z0-9_]{3,80}$"
+          },
+          "metric": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operator": {
+            "enum": [
+              "==",
+              "baseline_first",
+              "within_declared_buffer_limit"
+            ]
+          },
+          "target": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "target_status": {
+            "enum": [
+              "proposed_target",
+              "baseline_first"
+            ]
+          }
         }
       }
     },
@@ -133,7 +229,10 @@
       "type": "array",
       "minItems": 10,
       "uniqueItems": true,
-      "items": { "type": "string", "minLength": 1 }
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
     },
     "evidence_classes": {
       "type": "array",
@@ -154,7 +253,46 @@
       "minItems": 6,
       "maxItems": 6,
       "uniqueItems": true,
-      "items": { "type": "string", "minLength": 1 }
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "baseline_methodology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scheduler_implementation_pinning_required",
+        "congestion_control_pinning_required",
+        "congestion_control_factorial_or_matched_comparison_required",
+        "external_scheduler_modules_must_not_be_mislabeled_in_tree",
+        "default_scheduler_must_be_identified_from_exact_kernel_source",
+        "redundant_transmission_is_separate_reliability_energy_control",
+        "same_workload_and_path_trace_required"
+      ],
+      "properties": {
+        "scheduler_implementation_pinning_required": {
+          "const": true
+        },
+        "congestion_control_pinning_required": {
+          "const": true
+        },
+        "congestion_control_factorial_or_matched_comparison_required": {
+          "const": true
+        },
+        "external_scheduler_modules_must_not_be_mislabeled_in_tree": {
+          "const": true
+        },
+        "default_scheduler_must_be_identified_from_exact_kernel_source": {
+          "const": true
+        },
+        "redundant_transmission_is_separate_reliability_energy_control": {
+          "const": true
+        },
+        "same_workload_and_path_trace_required": {
+          "const": true
+        }
+      }
     }
   }
 }
