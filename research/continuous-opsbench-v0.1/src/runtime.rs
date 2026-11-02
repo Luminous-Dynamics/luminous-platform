@@ -1295,6 +1295,18 @@ mod tests {
         attestations.iter().map(challenge_from_attestation).collect()
     }
 
+    fn observer_fitness_bundle(manifest: &RunManifest, freeze: &FreezeReceipt) -> ObserverFitnessBundle {
+        crate::observer_fitness::tests::fixture(manifest, freeze)
+    }
+
+    fn observer_fitness_summary(
+        manifest: &RunManifest,
+        freeze: &FreezeReceipt,
+    ) -> ObserverFitnessSummary {
+        let bundle = observer_fitness_bundle(manifest, freeze);
+        validate_observer_fitness_bundle(manifest, freeze, &bundle).unwrap()
+    }
+
     fn validate_fixture(
         manifest: &RunManifest,
         freeze: &FreezeReceipt,
@@ -1322,6 +1334,8 @@ mod tests {
         let artifact_policy_digest = digest(8);
         let egress_policy_digest = digest(9);
         let adapter_digest = digest(10);
+        let kernel_profile_digest = digest(27);
+        let fitness_plan_digest = digest(28);
         let manifest_commitment = digest(11);
 
         let agent = FrozenAgentIdentity {
@@ -1385,6 +1399,12 @@ mod tests {
             runtime_observer_adapter_digest: adapter_digest.clone(),
             runtime_challenge_authority_id: "challenge-authority".into(),
             runtime_challenge_authority_control_domain: "challenge-domain".into(),
+            runtime_kernel_profile_digest: kernel_profile_digest.clone(),
+            observer_fitness_plan_digest: fitness_plan_digest.clone(),
+            observer_probe_injector_id: "probe-injector".into(),
+            observer_probe_injector_control_domain: "probe-domain".into(),
+            observer_fitness_verifier_id: "fitness-verifier".into(),
+            observer_fitness_verifier_control_domain: "fitness-domain".into(),
             agent_identity_digest: agent_digest.clone(),
             baseline_identity_digest: baseline_digest.clone(),
             agent,
@@ -1416,6 +1436,12 @@ mod tests {
             runtime_observer_adapter_digest: manifest.runtime_observer_adapter_digest.clone(),
             runtime_challenge_authority_id: manifest.runtime_challenge_authority_id.clone(),
             runtime_challenge_authority_control_domain: manifest.runtime_challenge_authority_control_domain.clone(),
+            runtime_kernel_profile_digest: manifest.runtime_kernel_profile_digest.clone(),
+            observer_fitness_plan_digest: manifest.observer_fitness_plan_digest.clone(),
+            observer_probe_injector_id: manifest.observer_probe_injector_id.clone(),
+            observer_probe_injector_control_domain: manifest.observer_probe_injector_control_domain.clone(),
+            observer_fitness_verifier_id: manifest.observer_fitness_verifier_id.clone(),
+            observer_fitness_verifier_control_domain: manifest.observer_fitness_verifier_control_domain.clone(),
             publisher_id: manifest.freeze_authority_id.clone(),
             publisher_control_domain: manifest.freeze_authority_control_domain.clone(),
         };
@@ -1504,13 +1530,19 @@ mod tests {
             runtime_observer_adapter_digest: adapter_digest.clone(),
             runtime_challenge_authority_id: manifest.runtime_challenge_authority_id.clone(),
             runtime_challenge_authority_control_domain: manifest.runtime_challenge_authority_control_domain.clone(),
+            runtime_kernel_profile_digest: manifest.runtime_kernel_profile_digest.clone(),
+            observer_fitness_plan_digest: manifest.observer_fitness_plan_digest.clone(),
+            observer_probe_injector_id: manifest.observer_probe_injector_id.clone(),
+            observer_probe_injector_control_domain: manifest.observer_probe_injector_control_domain.clone(),
+            observer_fitness_verifier_id: manifest.observer_fitness_verifier_id.clone(),
+            observer_fitness_verifier_control_domain: manifest.observer_fitness_verifier_control_domain.clone(),
             trials: ledger_trials,
         };
         let attestations = vec![
-            attestation(&manifest, &scenarios[0], EvaluationArm::Candidate, digest(40), digest(41), 1, 60, 100),
-            attestation(&manifest, &scenarios[0], EvaluationArm::Baseline, digest(42), digest(43), 2, 60, 120),
-            attestation(&manifest, &scenarios[1], EvaluationArm::Baseline, digest(44), digest(45), 3, 60, 130),
-            attestation(&manifest, &scenarios[1], EvaluationArm::Candidate, digest(46), digest(47), 4, 60, 140),
+            attestation(&manifest, &scenarios[0], EvaluationArm::Candidate, digest(40), digest(41), 1, 80, 120),
+            attestation(&manifest, &scenarios[0], EvaluationArm::Baseline, digest(42), digest(43), 2, 80, 140),
+            attestation(&manifest, &scenarios[1], EvaluationArm::Baseline, digest(44), digest(45), 3, 80, 120),
+            attestation(&manifest, &scenarios[1], EvaluationArm::Candidate, digest(46), digest(47), 4, 80, 140),
         ];
         (manifest, freeze, ledger, scenarios, attestations)
     }
@@ -1582,7 +1614,7 @@ mod tests {
             challenge_receipt_digest: digest(70u8.saturating_add(sequence as u8)),
             challenge_authority_id: manifest.runtime_challenge_authority_id.clone(),
             challenge_authority_control_domain: manifest.runtime_challenge_authority_control_domain.clone(),
-            challenge_issued_at_ms: 35,
+            challenge_issued_at_ms: 50,
             challenge_expires_at_ms: measurement_end_ms + 100,
             receipt_sequence: sequence,
             issued_at_ms: measurement_end_ms + 1,
@@ -1652,13 +1684,13 @@ mod tests {
                 EvaluationArm::Baseline => (EvaluationArm::Baseline, EvaluationArm::Candidate),
             };
             events.push(event(manifest, scenario, first_arm,
-                &format!("{}-first-start", scenario.trial_id), 80, TrialEventKind::Started));
+                &format!("{}-first-start", scenario.trial_id), 100, TrialEventKind::Started));
             events.push(event(manifest, scenario, first_arm,
-                &format!("{}-first-complete", scenario.trial_id), 90, TrialEventKind::Completed));
+                &format!("{}-first-complete", scenario.trial_id), 110, TrialEventKind::Completed));
             events.push(event(manifest, scenario, second_arm,
-                &format!("{}-second-start", scenario.trial_id), 100, TrialEventKind::Started));
+                &format!("{}-second-start", scenario.trial_id), 120, TrialEventKind::Started));
             events.push(event(manifest, scenario, second_arm,
-                &format!("{}-second-complete", scenario.trial_id), 110, TrialEventKind::Completed));
+                &format!("{}-second-complete", scenario.trial_id), 130, TrialEventKind::Completed));
         }
         events
     }
