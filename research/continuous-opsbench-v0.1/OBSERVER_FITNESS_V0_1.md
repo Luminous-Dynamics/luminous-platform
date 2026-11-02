@@ -61,7 +61,7 @@ A certification run now requires **exactly two independently valid fitness batch
 - The pre-run probe measurement completes strictly before the earliest runtime-observer measurement start, after combining fitness-observer and runtime-observer clock uncertainty.
 - The fitness receipt is issued strictly after its own probe measurement ends.
 - Its valid-from/expiry interval must cover each runtime attestation's *entire* measurement interval, including uncertainty.
-- Each runtime attestation references the exact pre-run fitness receipt digest it relies on.
+- Each runtime challenge and each runtime attestation references the exact pre-run fitness receipt digest it relies on, together with the frozen runtime kernel profile digest.
 
 ### Post-run requalification
 
