@@ -1116,4 +1116,131 @@ pub(crate) mod tests {
             Err(ObserverFitnessError::ManifestBindingMismatch)
         );
     }
+    #[test]
+    fn ninety_adversarial_observer_fitness_mutations_fail_closed() {
+        for vector in 0..90 {
+            let (manifest, freeze) = crate::sealed::tests::runtime_manifest_fixture();
+            let mut bundle = fixture(&manifest, &freeze);
+            match vector {
+                0 => bundle.plan.schema.push_str("-unknown"),
+                1 => bundle.plan.plan_id.clear(),
+                2 => bundle.plan.run_id = "other-run".into(),
+                3 => bundle.plan.manifest_commitment = d(0),
+                4 => bundle.plan.plan_digest = d(0),
+                5 => bundle.plan.created_at_ms = manifest.frozen_at_ms + 1,
+                6 => bundle.plan.runtime_observer_source_id = "substituted".into(),
+                7 => bundle.plan.runtime_observer_control_domain = "candidate-domain".into(),
+                8 => bundle.plan.runtime_observer_adapter_digest = d(99),
+                9 => bundle.plan.runtime_kernel_profile_digest = d(0),
+                10 => bundle.plan.execution_environment_digest = d(99),
+                11 => bundle.plan.state_isolation_policy_digest = d(99),
+                12 => bundle.plan.artifact_access_policy_digest = d(99),
+                13 => bundle.plan.network_egress_policy_digest = d(99),
+                14 => bundle.plan.probe_injector_id = "substituted".into(),
+                15 => bundle.plan.probe_injector_control_domain = "candidate-domain".into(),
+                16 => bundle.plan.fitness_verifier_id = "substituted".into(),
+                17 => bundle.plan.fitness_verifier_control_domain = "observer-domain".into(),
+                18 => bundle.plan.probes.clear(),
+                19 => bundle.plan.probes[1].probe_id = bundle.plan.probes[0].probe_id.clone(),
+                20 => bundle.plan.probes.retain(|p| !(p.surface == ProbeSurface::ProcessExec && p.expectation == ProbeExpectation::MustObserve)),
+                21 => bundle.plan.probes.retain(|p| !(p.surface == ProbeSurface::FileRead && p.expectation == ProbeExpectation::MustNotObserve)),
+                22 => bundle.plan.probes.retain(|p| p.expectation != ProbeExpectation::MustDetectLoss),
+                23 => bundle.plan.probes[0].maximum_detection_latency_ms = 0,
+                24 => bundle.plan.probes[0].maximum_detection_latency_ms = FITNESS_MAX_PROBE_LATENCY_MS + 1,
+                25 => { let duplicate = bundle.batches[0].clone(); bundle.batches.push(duplicate); }
+                26 => bundle.batches[0].receipt.schema.push_str("-unknown"),
+                27 => bundle.batches[0].receipt.receipt_digest = d(0),
+                28 => bundle.batches[0].receipt.batch_nonce_digest = d(0),
+                29 => bundle.batches[1].receipt.batch_id = bundle.batches[0].receipt.batch_id.clone(),
+                30 => bundle.batches[0].receipt.calibration_runtime_digest = d(0),
+                31 => bundle.batches[0].receipt.calibration_namespace_digest = d(0),
+                32 => bundle.batches[0].receipt.calibration_namespace_digest = bundle.batches[0].receipt.calibration_runtime_digest.clone(),
+                33 => bundle.batches[1].receipt.calibration_runtime_digest = bundle.batches[0].receipt.calibration_runtime_digest.clone(),
+                34 => bundle.batches[0].receipt.coverage = FitnessCoverage::Partial,
+                35 => bundle.batches[0].receipt.unexplained_drop_count = 1,
+                36 => bundle.batches[0].receipt.unexplained_sequence_gap_count = 1,
+                37 => bundle.batches[0].receipt.clock_uncertainty_ms = FITNESS_MAX_CLOCK_UNCERTAINTY_MS + 1,
+                38 => bundle.batches[0].receipt.measurement_start_ms = bundle.batches[0].receipt.measurement_end_ms,
+                39 => bundle.batches[0].receipt.issued_at_ms = bundle.batches[0].receipt.measurement_end_ms,
+                40 => bundle.batches[0].receipt.valid_from_ms += 1,
+                41 => bundle.batches[0].receipt.expires_at_ms = bundle.batches[0].receipt.valid_from_ms,
+                42 => bundle.batches[0].receipt.expires_at_ms = bundle.batches[0].receipt.valid_from_ms + FITNESS_MAX_RECEIPT_TTL_MS + 1,
+                43 => bundle.batches[0].receipt.injection_bundle_digest = d(0),
+                44 => bundle.batches[0].receipt.observation_bundle_digest = d(0),
+                45 => bundle.batches[0].receipt.loss_bundle_digest = d(0),
+                46 => bundle.batches[0].receipt.run_id = "other-run".into(),
+                47 => bundle.batches[0].receipt.manifest_commitment = d(99),
+                48 => bundle.batches[0].receipt.plan_digest = d(99),
+                49 => bundle.batches[0].receipt.probe_injector_id = "other-injector".into(),
+                50 => bundle.batches[0].receipt.fitness_verifier_id = "other-verifier".into(),
+                51 => { bundle.batches[0].injections.pop(); }
+                52 => { let duplicate = bundle.batches[0].injections[0].clone(); bundle.batches[0].injections.push(duplicate); }
+                53 => bundle.batches[0].injections[0].probe_id = "unplanned-probe".into(),
+                54 => bundle.batches[0].injections[0].surface = ProbeSurface::DnsLookup,
+                55 => bundle.batches[0].injections[0].expectation = ProbeExpectation::MustNotObserve,
+                56 => bundle.batches[0].injections[0].operation = ProbeOperation::NegativeControl,
+                57 => bundle.batches[0].injections[0].issued_at_ms = manifest.frozen_at_ms,
+                58 => bundle.batches[0].injections[0].issued_at_ms = bundle.batches[0].injections[0].executed_at_ms,
+                59 => bundle.batches[0].injections[0].executed_at_ms = bundle.batches[0].injections[0].completed_at_ms + 1,
+                60 => bundle.batches[0].injections[0].executed_at_ms = bundle.batches[0].receipt.measurement_start_ms - 1,
+                61 => bundle.batches[0].injections[0].completed_at_ms = bundle.batches[0].receipt.measurement_end_ms + 1,
+                62 => bundle.batches[0].injections[0].injector_control_domain = "candidate-domain".into(),
+                63 => bundle.batches[0].injections[0].marker_digest = d(0),
+                64 => bundle.batches[0].injections[1].marker_digest = bundle.batches[0].injections[0].marker_digest.clone(),
+                65 => bundle.batches[1].injections[0].marker_digest = bundle.batches[0].injections[0].marker_digest.clone(),
+                66 => bundle.batches[0].injections[0].sequence = 0,
+                67 => bundle.batches[0].injections[1].sequence = bundle.batches[0].injections[0].sequence,
+                68 => bundle.batches[0].observations[0].marker_digest = d(199),
+                69 => bundle.batches[0].observations[0].probe_id = "wrong-probe".into(),
+                70 => bundle.batches[0].observations[0].surface = ProbeSurface::DnsLookup,
+                71 => bundle.batches[0].observations[0].calibration_runtime_digest = d(199),
+                72 => bundle.batches[0].observations[0].observer_source_id = "candidate".into(),
+                73 => bundle.batches[0].observations[0].observer_control_domain = "candidate-domain".into(),
+                74 => bundle.batches[0].observations[0].observed_at_ms = 1,
+                75 => bundle.batches[0].observations[0].observed_at_ms = bundle.batches[0].receipt.measurement_end_ms + 1,
+                76 => bundle.batches[0].observations[0].sequence = 0,
+                77 => bundle.batches[0].observations[0].sequence = bundle.batches[0].observations[1].sequence,
+                78 => bundle.batches[0].observations[0].event_class = "wrong-class".into(),
+                79 => { bundle.batches[0].observations.remove(0); }
+                80 => { let duplicate = bundle.batches[0].observations[0].clone(); bundle.batches[0].observations.push(duplicate); }
+                81 => {
+                    let negative = bundle.batches[0].injections.iter().find(|i| i.expectation == ProbeExpectation::MustNotObserve).unwrap().clone();
+                    bundle.batches[0].observations.push(ObservedProbeEvent {
+                        batch_id: negative.batch_id, probe_id: negative.probe_id,
+                        marker_digest: negative.marker_digest, surface: negative.surface,
+                        event_class: "false-positive".into(),
+                        calibration_runtime_digest: negative.calibration_runtime_digest,
+                        observed_at_ms: 24, observer_source_id: manifest.runtime_observer_source_id.clone(),
+                        observer_control_domain: manifest.runtime_observer_control_domain.clone(), sequence: 99,
+                    });
+                }
+                82 => { let duplicate = bundle.batches[0].loss_observations[0].clone(); bundle.batches[0].loss_observations.push(duplicate); }
+                83 => { bundle.batches[0].loss_observations.clear(); }
+                84 => bundle.batches[0].loss_observations[0].calibration_runtime_digest = d(199),
+                85 => bundle.batches[0].loss_observations[0].observer_source_id = "candidate".into(),
+                86 => bundle.batches[0].loss_observations[0].observer_control_domain = "candidate-domain".into(),
+                87 => bundle.batches[0].loss_observations[0].observed_at_ms = 1,
+                88 => bundle.batches[0].loss_observations[0].observed_at_ms = bundle.batches[0].receipt.measurement_end_ms + 1,
+                _ => { bundle.batches[0].loss_observations[0].dropped_event_count = 0; bundle.batches[0].loss_observations[0].sequence_gap_count = 0; }
+            }
+            assert!(
+                validate_observer_fitness_bundle(&manifest, &freeze, &bundle).is_err(),
+                "observer fitness adversarial vector {vector} was accepted"
+            );
+        }
+    }
+
+    #[test]
+    fn receipt_issue_time_must_be_strictly_after_measurement_end() {
+        let (manifest, freeze) = crate::sealed::tests::runtime_manifest_fixture();
+        let mut bundle = fixture(&manifest, &freeze);
+        bundle.batches[0].receipt.issued_at_ms = bundle.batches[0].receipt.measurement_end_ms;
+        bundle.batches[0].receipt.valid_from_ms = bundle.batches[0].receipt.issued_at_ms;
+        assert_eq!(
+            validate_observer_fitness_bundle(&manifest, &freeze, &bundle),
+            Err(ObserverFitnessError::InvalidFitnessInterval)
+        );
+    }
+
+
 }
