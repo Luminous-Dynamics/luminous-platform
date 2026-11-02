@@ -193,6 +193,7 @@ pub struct ObserverFitnessBundle {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ObserverFitnessBatchSummary {
     pub receipt_digest: Digest,
+    pub batch_nonce_digest: Digest,
     pub batch_id: String,
     pub calibration_runtime_digest: Digest,
     pub calibration_namespace_digest: Digest,
@@ -719,6 +720,7 @@ pub fn validate_observer_fitness_bundle(
             .ok_or(ObserverFitnessError::ArithmeticOverflow)?;
         batches.push(ObserverFitnessBatchSummary {
             receipt_digest: receipt.receipt_digest.clone(),
+            batch_nonce_digest: receipt.batch_nonce_digest.clone(),
             batch_id: receipt.batch_id.clone(),
             calibration_runtime_digest: receipt.calibration_runtime_digest.clone(),
             calibration_namespace_digest: receipt.calibration_namespace_digest.clone(),
