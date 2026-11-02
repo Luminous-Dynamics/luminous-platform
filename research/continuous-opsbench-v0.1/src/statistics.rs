@@ -93,6 +93,7 @@ pub enum SuperiorityVerdict {
     SuperiorityEstablished,
     NotEstablished,
     IndeterminateCoverageExceeded,
+    FaultFamilyRegressionNotCleared,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -152,6 +153,7 @@ pub struct InferenceResult {
     pub maximum_upper_confidence_arm_indeterminate_rate_ppm: i64,
     pub minimum_meaningful_effect_ppm: i64,
     pub maximum_indeterminate_rate_ppm: u32,
+    pub maximum_family_regression_ppm: u32,
     pub verdict: SuperiorityVerdict,
 }
 
