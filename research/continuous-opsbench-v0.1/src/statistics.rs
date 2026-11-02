@@ -745,6 +745,23 @@ mod tests {
     }
 
     #[test]
+    fn splitmix64_known_answer_stream_is_stable() {
+        let mut rng = SplitMix64::new(0);
+        assert_eq!(rng.next_u64(), 0xe220_a839_7b1d_cdaf);
+        assert_eq!(rng.next_u64(), 0x6e78_9e6a_a1b9_65f4);
+        assert_eq!(rng.next_u64(), 0x06c4_5d18_8009_454f);
+        assert_eq!(rng.next_u64(), 0xf88b_b8a8_724c_81ec);
+    }
+
+    #[test]
+    fn nearest_rank_percentiles_use_the_preregistered_rank_rule() {
+        assert_eq!(nearest_rank_index(100, 0.025), 2);
+        assert_eq!(nearest_rank_index(100, 0.975), 97);
+        assert_eq!(nearest_rank_index(1_000, 0.025), 24);
+        assert_eq!(nearest_rank_index(1_000, 0.975), 974);
+    }
+
+    #[test]
     fn zero_event_exact_upper_bound_matches_closed_form_and_sample_size() {
         let upper = clopper_pearson_upper(0, 500, 9_500).unwrap();
         assert!((upper - 0.0059735).abs() < 0.00001);
