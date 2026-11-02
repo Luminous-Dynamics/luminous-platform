@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-monitoring-task-v0.1.json",
+  "title": "Continuous OpsBench monitoring task contract v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "scenario_id",
+    "task_id",
+    "cluster_id",
+    "kind",
+    "starts_at_ms",
+    "ends_at_ms",
+    "condition_digest",
+    "required_action_digest",
+    "expected_observer_source_id",
+    "expected_observer_control_domain",
+    "agent_control_domain",
+    "evaluator_control_domain",
+    "minimum_offered_observation_events",
+    "maximum_requested_wait_ms",
+    "required_baseline_observation"
+  ],
+  "properties": {
+    "schema": {
+      "const": "continuous-opsbench-monitoring-v0.1"
+    },
+    "scenario_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "cluster_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "kind": {
+      "enum": [
+        "passive_wait_for_signal",
+        "active_monitoring",
+        "relative_baseline",
+        "no_op",
+        "urgent_ephemeral",
+        "persistent_event"
+      ]
+    },
+    "starts_at_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "ends_at_ms": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "condition_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "required_action_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "expected_observer_source_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "expected_observer_control_domain": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "agent_control_domain": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "evaluator_control_domain": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "minimum_offered_observation_events": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "maximum_requested_wait_ms": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "required_baseline_observation": {
+      "type": "boolean"
+    }
+  }
+}
