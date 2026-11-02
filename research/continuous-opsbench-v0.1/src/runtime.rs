@@ -178,6 +178,7 @@ pub enum RuntimeAttestationError {
     ChallengeReceiptAuthorityMismatch,
     ChallengeReceiptSequenceInvalid,
     ChallengeReceiptSequenceNotContiguous,
+    ChallengeReceiptDenominatorMismatch,
     ChallengeFreshnessInvalid(String, EvaluationArm),
     ChallengeLifetimeExceeded(String, EvaluationArm),
     InvalidObserverSequence,
@@ -298,7 +299,11 @@ fn validate_runtime_attestations(
         if challenge.sequence == 0 {
             return Err(RuntimeAttestationError::ChallengeReceiptSequenceInvalid);
         }
-        challenge_sequences.push((challenge.sequence, challenge.issued_at_ms));
+        challenge_sequences.push((
+            challenge.sequence,
+            challenge.issued_at_ms,
+            challenge.clock_uncertainty_ms,
+        ));
     }
     challenge_sequences.sort_unstable_by_key(|entry| entry.0);
     if challenge_sequences.first().map(|entry| entry.0) != Some(1)
@@ -306,10 +311,17 @@ fn validate_runtime_attestations(
     {
         return Err(RuntimeAttestationError::ChallengeReceiptSequenceNotContiguous);
     }
-    if challenges.len() != manifest.trials.len().saturating_mul(2) {
-        return Err(RuntimeAttestationError::ChallengeReceiptMissing(
-            "challenge-denominator".into(), EvaluationArm::Candidate,
+    if challenge_sequences.windows(2).any(|pair| {
+        pair[0].1.saturating_sub(pair[0].2)
+            > pair[1].1.saturating_add(pair[1].2)
+    }) {
+        return Err(RuntimeAttestationError::ChallengeReceiptBindingMismatch(
+            "challenge-authority-time-order".into(),
+            EvaluationArm::Candidate,
         ));
+    }
+    if challenges.len() != manifest.trials.len().saturating_mul(2) {
+        return Err(RuntimeAttestationError::ChallengeReceiptDenominatorMismatch);
     }
     let mut ledger_index: BTreeMap<(&str, EvaluationArm), &TrialResult> = BTreeMap::new();
     for result in &ledger.trials {
