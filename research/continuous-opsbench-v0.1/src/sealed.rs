@@ -999,7 +999,7 @@ fn valid_git_revision(value: &str) -> bool {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
 
     fn manifest(lane: EvaluationLane) -> (RunManifest, Digest, FreezeReceipt) {
