@@ -59,6 +59,7 @@ def schema_record(document: dict, pointer: tuple[str, ...], label: str) -> dict:
 MAPPINGS = [
     ("runtime.rs", "RuntimeChallengeReceipt", "runtime-challenge-receipt.schema.json", ()),
     ("runtime.rs", "RuntimeTrialAttestation", "runtime-trial-attestation.schema.json", ()),
+    ("runtime.rs", "RuntimeSensorCoverage", "runtime-trial-attestation.schema.json", ("$defs", "sensor_coverage")),
     ("sealed.rs", "RunManifest", "sealed-run-manifest.schema.json", ("$defs", "manifest")),
     ("sealed.rs", "FreezeReceipt", "sealed-run-manifest.schema.json", ("$defs", "freeze_receipt")),
     ("sealed.rs", "FrozenAgentIdentity", "sealed-run-manifest.schema.json", ("$defs", "agent")),
