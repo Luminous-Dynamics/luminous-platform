@@ -88,3 +88,7 @@ Minimum controls: 40 known-answer controls (at least 10 positive, 10 negative, a
 The additive `src/bundle.rs` verifier transports the existing evidence and claim graph without creating another participant ledger or policy engine. It requires an offline verification mode, eight distinct run trust domains, complete candidate/baseline planned-arm subjects, content-addressed artifact inventory, a pinned trust-policy snapshot and a dependency-checked claim DAG. Mutable external references, path traversal and public embedding of active sealed payload/private oracle bytes are rejected. Missing required artifacts remain Indeterminate.
 
 See `OFFLINE_EVIDENCE_BUNDLE_V0_1.md` and the strict `evidence-bundle.schema.json`, `evidence-trust-policy.schema.json`, and `evidence-verification-receipt.schema.json` schemas. Signature verification, trust-root/revocation authentication, archive/bundle digest recomputation and no-network sandboxing remain with the existing typed source-evidence adapter and the offline CLI environment. The Rust module validates the resulting structural bindings only.
+
+
+The offline bundle also pins a separate restricted-distribution policy digest when disclosure is Restricted, and checks that ordinary operational claims cite OperationalEvidence artifacts rather than private-oracle commitments. The verification receipt repeats the restricted-policy digest.
+
