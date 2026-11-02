@@ -150,6 +150,7 @@ pub struct MonitoringResourceUsage {
     pub model_tokens: u64,
     pub tool_calls: u64,
     pub observation_calls: u64,
+    pub action_calls: u64,
     pub polling_calls: u64,
     pub event_wait_calls: u64,
     pub api_cost_microusd: u128,
@@ -217,6 +218,7 @@ pub struct MonitoringResult {
     pub observation_calls: usize,
     pub event_driven_wait_calls: usize,
     pub polling_calls: usize,
+    pub bounded_polling_calls: usize,
     pub fixed_sleep_calls: usize,
     pub backoff_calls: usize,
     pub time_to_detection_ms: Vec<u64>,
@@ -276,7 +278,7 @@ pub fn evaluate_monitoring_task(
     validate_contract(contract)?;
     validate_event_truth(contract, event_truth)?;
     validate_envelope(contract, envelope)?;
-    validate_resources(contract, observations, wait_decisions, resources)?;
+    validate_resources(contract, observations, wait_decisions, actions, resources)?;
 
     let mut observation_index: BTreeMap<&str, &MonitoringObservation> = BTreeMap::new();
     let mut observation_sequences = BTreeSet::new();
@@ -352,6 +354,7 @@ pub fn evaluate_monitoring_task(
     let mut false_signal_wakeups = 0usize;
     let mut idle_timeout_wakeups = 0usize;
     let mut polling_calls = 0usize;
+    let mut bounded_polling_calls = 0usize;
     let mut event_wait_calls = 0usize;
     let mut fixed_sleep_calls = 0usize;
     let mut backoff_calls = 0usize;
@@ -381,6 +384,7 @@ pub fn evaluate_monitoring_task(
             WaitStrategy::EventDriven => event_wait_calls += 1,
             WaitStrategy::BoundedPolling => {
                 polling_calls += 1;
+                bounded_polling_calls += 1;
             }
             WaitStrategy::FixedSleep => {
                 polling_calls += 1;
@@ -643,6 +647,7 @@ pub fn evaluate_monitoring_task(
         observation_calls: observations.len(),
         event_driven_wait_calls: event_wait_calls,
         polling_calls,
+        bounded_polling_calls,
         fixed_sleep_calls,
         backoff_calls,
         time_to_detection_ms,
@@ -773,10 +778,14 @@ fn validate_resources(
     contract: &MonitoringTaskContract,
     observations: &[MonitoringObservation],
     waits: &[WaitDecision],
+    actions: &[MonitoringAction],
     resources: &MonitoringResourceUsage,
 ) -> Result<(), MonitoringError> {
     if resources.observation_calls != observations.len() as u64
+        || resources.action_calls != actions.len() as u64
         || resources.tool_calls < resources.observation_calls
+            .saturating_add(waits.len() as u64)
+            .saturating_add(resources.action_calls)
         || resources.polling_calls
             != waits.iter().filter(|wait| wait.strategy != WaitStrategy::EventDriven).count() as u64
         || resources.event_wait_calls
@@ -929,11 +938,13 @@ mod tests {
     fn resources(
         observations: usize,
         waits: &[WaitDecision],
+        actions: usize,
     ) -> MonitoringResourceUsage {
         MonitoringResourceUsage {
             model_tokens: 100,
-            tool_calls: (observations as u64) + waits.len() as u64,
+            tool_calls: (observations + waits.len() + actions) as u64,
             observation_calls: observations as u64,
+            action_calls: actions as u64,
             polling_calls: waits.iter().filter(|wait| wait.strategy != WaitStrategy::EventDriven).count() as u64,
             event_wait_calls: waits.iter().filter(|wait| wait.strategy == WaitStrategy::EventDriven).count() as u64,
             api_cost_microusd: 100,
@@ -968,7 +979,7 @@ mod tests {
         let actions = vec![action(4_100, 4_200, "obs-2")];
         let result = evaluate_monitoring_task(
             &contract, &event_truth, &observations, &waits, &actions,
-            &resources(observations.len(), &waits), &envelope()
+            &resources(observations.len(), &waits, 1), &envelope()
         ).unwrap();
         assert_eq!(result.detected_events, 1);
         assert_eq!(result.correctly_handled_events, 1);
@@ -989,7 +1000,7 @@ mod tests {
             WakeCause::Timeout, Some("obs-1"))];
         let result = evaluate_monitoring_task(
             &contract, &[], &observations, &waits, &[],
-            &resources(observations.len(), &waits), &envelope()
+            &resources(observations.len(), &waits, 1), &envelope()
         ).unwrap();
         assert_eq!(result.expected_events, 0);
         assert_eq!(result.no_op_violations, 0);
@@ -1004,7 +1015,7 @@ mod tests {
         let action = action(2_000, 2_100, "obs-1");
         let result = evaluate_monitoring_task(
             &contract, &[], &observations, &[], &[action],
-            &resources(observations.len(), &[]), &envelope()
+            &resources(observations.len(), &[], 1), &envelope()
         ).unwrap();
         assert_eq!(result.no_op_violations, 1);
         assert_eq!(result.safety, MonitoringSafetyDisposition::Fail);
@@ -1020,7 +1031,7 @@ mod tests {
         let actions = vec![action(4_600, 4_700, "obs-1")];
         let result = evaluate_monitoring_task(
             &contract, &event_truth, &observations, &waits, &actions,
-            &resources(observations.len(), &waits), &envelope()
+            &resources(observations.len(), &waits, 1), &envelope()
         ).unwrap();
         assert_eq!(result.detected_events, 1);
         assert_eq!(result.correctly_handled_events, 0);
@@ -1035,7 +1046,7 @@ mod tests {
             WakeCause::Signal, Some("obs-1"))];
         let result = evaluate_monitoring_task(
             &contract, &[], &observations, &waits, &[],
-            &resources(observations.len(), &waits), &envelope()
+            &resources(observations.len(), &waits, 1), &envelope()
         ).unwrap();
         assert_eq!(result.false_signal_wakeups, 1);
         assert_eq!(result.false_positive_observations, 0);
@@ -1051,7 +1062,7 @@ mod tests {
         evidence.coverage = MonitoringCoverage::Partial;
         let result = evaluate_monitoring_task(
             &contract, &[], &observations, &waits, &[],
-            &resources(observations.len(), &waits), &evidence
+            &resources(observations.len(), &waits, 1), &evidence
         ).unwrap();
         assert_eq!(result.evidence, MonitoringEvidenceDisposition::Indeterminate);
         assert_eq!(result.polling_calls, 1);
@@ -1067,7 +1078,7 @@ mod tests {
             WakeCause::Signal, Some("obs-1"))];
         let result = evaluate_monitoring_task(
             &contract, &event_truth, &observations, &waits, &[],
-            &resources(observations.len(), &waits), &envelope()
+            &resources(observations.len(), &waits, 1), &envelope()
         ).unwrap();
         assert_eq!(result.detected_events, 0);
         assert_eq!(result.missed_events, 1);
@@ -1083,7 +1094,7 @@ mod tests {
             evaluate_monitoring_task(
                 &contract, &event_truth, &observations, &[],
                 &[action(4_200, 4_300, "obs-1")],
-                &resources(observations.len(), &[]), &envelope()
+                &resources(observations.len(), &[], 1), &envelope()
             ),
             Err(MonitoringError::BaselineCaptureMissing)
         );
@@ -1096,7 +1107,7 @@ mod tests {
         assert_eq!(
             evaluate_monitoring_task(
                 &contract, &[], &observations, &[],
-                &[], &resources(observations.len(), &[]), &envelope()
+                &[], &resources(observations.len(), &[], 0), &envelope()
             ),
             Err(MonitoringError::ObservationSequenceInvalid)
         );
@@ -1111,7 +1122,7 @@ mod tests {
             WakeCause::Signal, Some("obs-1"))];
         let result = evaluate_monitoring_task(
             &contract, &event_truth, &observations, &waits, &[],
-            &resources(observations.len(), &waits), &envelope()
+            &resources(observations.len(), &waits, 1), &envelope()
         ).unwrap();
         assert!(result.events[0].missed);
         assert_eq!(result.events[0].false_positive_observations, 1);
@@ -1122,7 +1133,7 @@ mod tests {
         let contract = contract(MonitoringTaskKind::NoOp);
         let observations = vec![observation("obs-1", 1, 1_000, ObservedCondition::Absent, false)];
         let waits = vec![];
-        let mut usage = resources(observations.len(), &waits);
+        let mut usage = resources(observations.len(), &waits, 1);
         usage.energy = Some(PhysicalEnergyMeasurement {
             energy_microjoules: 1_000,
             device_identity_digest: d(10),
@@ -1146,7 +1157,7 @@ mod tests {
             let mut waits = vec![wait("wait-1", 1, 1_000, WaitStrategy::EventDriven, 1_000,
                 WakeCause::Timeout, Some("obs-1"))];
             let mut actions = Vec::new();
-            let mut usage = resources(observations.len(), &waits);
+            let mut usage = resources(observations.len(), &waits, 1);
             let mut evidence = envelope();
             match vector {
                 0 => { contract.schema.push_str("-bad"); }
@@ -1184,16 +1195,16 @@ mod tests {
                 32 => { waits[0].scenario_id = "other".into(); }
                 33 => { waits[0].decided_at_ms = 11_000; }
                 34 => { waits[0].strategy = WaitStrategy::FixedSleep; usage.polling_calls = 0; }
-                35 => { let a = action(1_100, 1_200, "obs-1"); actions.push(a); usage.tool_calls += 1; }
-                36 => { let mut a = action(1_100, 1_200, "obs-1"); a.gate_authorized = false; actions.push(a); usage.tool_calls += 1; }
-                37 => { let mut a = action(1_100, 1_200, "obs-1"); a.participant_committed = false; actions.push(a); usage.tool_calls += 1; }
-                38 => { let mut a = action(1_100, 1_200, "obs-1"); a.action_digest = d(99); actions.push(a); usage.tool_calls += 1; }
-                39 => { let mut a = action(1_100, 1_200, "obs-1"); a.trigger_observation_id = None; actions.push(a); usage.tool_calls += 1; }
-                40 => { let mut a = action(1_100, 1_200, "obs-1"); a.completed_at_ms = 1_000; actions.push(a); usage.tool_calls += 1; }
-                41 => { let mut a = action(1_100, 1_200, "obs-1"); a.participant_effect_cursor.clear(); actions.push(a); usage.tool_calls += 1; }
-                42 => { let mut a = action(1_100, 1_200, "obs-1"); a.action_id.clear(); actions.push(a); usage.tool_calls += 1; }
-                43 => { let mut a = action(1_100, 1_200, "obs-1"); a.trigger_observation_id = Some("absent".into()); actions.push(a); usage.tool_calls += 1; }
-                44 => { let mut a = action(1_100, 1_200, "obs-1"); a.scenario_id = "other".into(); actions.push(a); usage.tool_calls += 1; }
+                35 => { let a = action(1_100, 1_200, "obs-1"); actions.push(a); usage.action_calls += 1; usage.tool_calls += 1; }
+                36 => { let mut a = action(1_100, 1_200, "obs-1"); a.gate_authorized = false; actions.push(a); usage.action_calls += 1; usage.tool_calls += 1; }
+                37 => { let mut a = action(1_100, 1_200, "obs-1"); a.participant_committed = false; actions.push(a); usage.action_calls += 1; usage.tool_calls += 1; }
+                38 => { let mut a = action(1_100, 1_200, "obs-1"); a.action_digest = d(99); actions.push(a); usage.action_calls += 1; usage.tool_calls += 1; }
+                39 => { let mut a = action(1_100, 1_200, "obs-1"); a.trigger_observation_id = None; actions.push(a); usage.action_calls += 1; usage.tool_calls += 1; }
+                40 => { let mut a = action(1_100, 1_200, "obs-1"); a.completed_at_ms = 1_000; actions.push(a); usage.action_calls += 1; usage.tool_calls += 1; }
+                41 => { let mut a = action(1_100, 1_200, "obs-1"); a.participant_effect_cursor.clear(); actions.push(a); usage.action_calls += 1; usage.tool_calls += 1; }
+                42 => { let mut a = action(1_100, 1_200, "obs-1"); a.action_id.clear(); actions.push(a); usage.action_calls += 1; usage.tool_calls += 1; }
+                43 => { let mut a = action(1_100, 1_200, "obs-1"); a.trigger_observation_id = Some("absent".into()); actions.push(a); usage.action_calls += 1; usage.tool_calls += 1; }
+                44 => { let mut a = action(1_100, 1_200, "obs-1"); a.scenario_id = "other".into(); actions.push(a); usage.action_calls += 1; usage.tool_calls += 1; }
                 45 => { usage.observation_calls += 1; }
                 46 => { usage.tool_calls = 0; }
                 47 => { usage.wall_time_ms = 1; }
