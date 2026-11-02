@@ -206,7 +206,13 @@
         "runtime_observer_control_domain",
         "runtime_observer_adapter_digest",
         "runtime_challenge_authority_id",
-        "runtime_challenge_authority_control_domain"
+        "runtime_challenge_authority_control_domain",
+        "runtime_kernel_profile_digest",
+        "observer_fitness_plan_digest",
+        "observer_probe_injector_id",
+        "observer_probe_injector_control_domain",
+        "observer_fitness_verifier_id",
+        "observer_fitness_verifier_control_domain"
       ],
       "properties": {
         "schema": {
@@ -303,6 +309,24 @@
         },
         "runtime_challenge_authority_control_domain": {
           "$ref": "#/$defs/id"
+        },
+        "runtime_kernel_profile_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "observer_fitness_plan_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "observer_probe_injector_id": {
+          "$ref": "#/$defs/id"
+        },
+        "observer_probe_injector_control_domain": {
+          "$ref": "#/$defs/id"
+        },
+        "observer_fitness_verifier_id": {
+          "$ref": "#/$defs/id"
+        },
+        "observer_fitness_verifier_control_domain": {
+          "$ref": "#/$defs/id"
         }
       }
     },
@@ -329,7 +353,13 @@
         "runtime_observer_control_domain",
         "runtime_observer_adapter_digest",
         "runtime_challenge_authority_id",
-        "runtime_challenge_authority_control_domain"
+        "runtime_challenge_authority_control_domain",
+        "runtime_kernel_profile_digest",
+        "observer_fitness_plan_digest",
+        "observer_probe_injector_id",
+        "observer_probe_injector_control_domain",
+        "observer_fitness_verifier_id",
+        "observer_fitness_verifier_control_domain"
       ],
       "properties": {
         "run_id": {
@@ -392,6 +422,24 @@
           "$ref": "#/$defs/id"
         },
         "runtime_challenge_authority_control_domain": {
+          "$ref": "#/$defs/id"
+        },
+        "runtime_kernel_profile_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "observer_fitness_plan_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "observer_probe_injector_id": {
+          "$ref": "#/$defs/id"
+        },
+        "observer_probe_injector_control_domain": {
+          "$ref": "#/$defs/id"
+        },
+        "observer_fitness_verifier_id": {
+          "$ref": "#/$defs/id"
+        },
+        "observer_fitness_verifier_control_domain": {
           "$ref": "#/$defs/id"
         }
       }
