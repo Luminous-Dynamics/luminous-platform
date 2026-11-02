@@ -131,7 +131,8 @@
     },
     "receipt_sequence": {
       "type": "integer",
-      "minimum": 1
+      "minimum": 1,
+      "description": "Run-scoped observer sequence. Across all 2 × planned trials, values must be unique and exactly contiguous from 1."
     },
     "issued_at_ms": {
       "type": "integer",
@@ -148,7 +149,8 @@
     "clock_uncertainty_ms": {
       "type": "integer",
       "minimum": 0,
-      "maximum": 1000
+      "maximum": 1000,
+      "description": "Bound applied conservatively to measurement coverage and observer receipt ordering. Maximum 1,000 ms."
     },
     "process_tree_commitment": {
       "type": "string",
@@ -176,7 +178,8 @@
         "partial",
         "unknown",
         "tampered"
-      ]
+      ],
+      "description": "Only complete can qualify. partial, unknown and tampered fail closed."
     },
     "sequence_gap_count": {
       "type": "integer",
@@ -220,11 +223,13 @@
     },
     "allowlisted_egress_events": {
       "type": "integer",
-      "minimum": 0
+      "minimum": 0,
+      "description": "Count only. Authenticated runtime adapter must validate each committed egress event against the exact frozen allowlist; this field alone is not proof of allowlist compliance."
     },
     "challenge_nonce_digest": {
       "type": "string",
-      "pattern": "^[a-f0-9]{64}$"
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Digest of a fresh one-use nonce issued by the frozen challenge authority. Must be nonzero and unique across the run; durable cross-run replay protection is external."
     },
     "challenge_authority_id": {
       "type": "string",
@@ -238,11 +243,14 @@
     },
     "challenge_issued_at_ms": {
       "type": "integer",
-      "minimum": 0
+      "minimum": 0,
+      "description": "Must be strictly after manifest freeze and strictly before measurement_start_ms."
     },
     "challenge_expires_at_ms": {
       "type": "integer",
-      "minimum": 0
+      "minimum": 0,
+      "description": "Must be strictly after measurement_end_ms and issued_at_ms including clock uncertainty; TTL from challenge_issued_at_ms must not exceed 86,400,000 ms."
     }
-  }
+  },
+  "description": "One independently source-authenticated receipt per planned (trial, arm). This schema validates record shape; it does not authenticate signatures or enforce sandbox policy."
 }
