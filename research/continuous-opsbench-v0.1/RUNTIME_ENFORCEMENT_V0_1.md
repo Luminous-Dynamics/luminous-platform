@@ -91,3 +91,12 @@ The design follows the emerging continuous-attestation direction: trust at launc
 The runtime validator has positive clean-run controls and negative controls for forged ledger summaries, missing/duplicated arm receipts, challenge reuse/expiry/authority substitution, observer/control-domain substitution, exact manifest/policy binding, unique runtime and namespace identity, measurement coverage including clock uncertainty, sequence start/order/contiguity, partial/unknown/tampered coverage, oracle/artifact access, forbidden egress, state carry-over and missing scenarios. The source-event certification entry point is tested independently of the supplied-summary composition path.
 
 The 72-vector runtime mutation matrix is deterministic and synthetic. It includes challenge expiry/TTL, zero and reused nonces, cross-class runtime/namespace collisions, uncertainty-overlapping and provably reversed sequence timestamps, and frozen challenge-authority substitution. A green CI run proves the encoded structural conformance tests, not a real sandbox security guarantee.
+
+
+## Observer fitness: pre-run and post-run
+
+The runtime join now requires a fresh known-answer fitness batch before the runtime campaign and a distinct post-run batch measured after the last runtime receipt. The pre-run fitness measurement and receipt must precede the earliest runtime measurement after combined clock uncertainty; its one-hour validity interval must enclose each arm's complete runtime measurement interval. Each runtime attestation names that exact pre-run fitness receipt digest.
+
+Exactly one post-run batch must remain unreferenced by runtime attestations. Its measurement starts after the latest runtime measurement end and its receipt is issued after both its own measurement and the latest runtime receipt. Missing, early, duplicated or excess post-run evidence rejects the run. A single fitness pass cannot be extended over an arbitrarily long run; each runtime attestation interval must fit wholly within a valid one-hour window.
+
+See [OBSERVER_FITNESS_V0_1.md](OBSERVER_FITNESS_V0_1.md) for the probe protocol, 90-vector adversarial suite and claim ceiling.
