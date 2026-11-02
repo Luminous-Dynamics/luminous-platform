@@ -938,7 +938,7 @@ mod tests {
         attestations: &[RuntimeTrialAttestation],
     ) -> Result<RuntimeAttestationSummary, RuntimeAttestationError> {
         let challenges = challenge_receipts(attestations);
-        validate_fixture(manifest, freeze, ledger, scenarios, &challenges, attestations)
+        validate_runtime_attestations(manifest, freeze, ledger, scenarios, &challenges, attestations)
     }
     fn fixture() -> (
         RunManifest,
@@ -1366,6 +1366,77 @@ mod tests {
         assert_eq!(
             validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ChallengeAuthorityMismatch)
+        );
+    }
+
+    #[test]
+    fn separately_authenticated_challenge_receipt_is_mandatory_per_trial_arm() {
+        let (manifest, freeze, ledger, scenarios, attestations) = fixture();
+        let mut challenges = challenge_receipts(&attestations);
+        challenges.pop();
+        assert!(matches!(
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &challenges, &attestations),
+            Err(RuntimeAttestationError::ChallengeReceiptMissing(_, _))
+        ));
+    }
+
+    #[test]
+    fn observer_attestation_must_reference_exact_independent_challenge_receipt() {
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        let challenges = challenge_receipts(&attestations);
+        attestations[0].challenge_receipt_digest = digest(99);
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &challenges, &attestations),
+            Err(RuntimeAttestationError::ChallengeReceiptBindingMismatch(
+                "trial-a".into(), EvaluationArm::Candidate
+            ))
+        );
+    }
+
+    #[test]
+    fn challenge_receipt_cannot_be_substituted_or_reassigned_to_another_arm() {
+        let (manifest, freeze, ledger, scenarios, attestations) = fixture();
+        let mut challenges = challenge_receipts(&attestations);
+        challenges[0].challenge_authority_control_domain = manifest.agent.control_domain.clone();
+        assert!(matches!(
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &challenges, &attestations),
+            Err(RuntimeAttestationError::ChallengeReceiptBindingMismatch(_, _))
+                | Err(RuntimeAttestationError::ChallengeReceiptAuthorityMismatch)
+        ));
+        let (manifest, freeze, ledger, scenarios, attestations) = fixture();
+        let mut challenges = challenge_receipts(&attestations);
+        challenges[0].arm = EvaluationArm::Baseline;
+        assert!(validate_runtime_attestations(
+            &manifest, &freeze, &ledger, &scenarios, &challenges, &attestations
+        ).is_err());
+    }
+
+    #[test]
+    fn duplicate_or_noncontiguous_challenge_sequences_are_rejected() {
+        let (manifest, freeze, ledger, scenarios, attestations) = fixture();
+        let mut challenges = challenge_receipts(&attestations);
+        challenges[1].sequence = challenges[0].sequence;
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &challenges, &attestations),
+            Err(RuntimeAttestationError::ChallengeReceiptSequenceNotContiguous)
+        );
+    }
+
+    #[test]
+    fn zero_or_duplicate_challenge_receipt_digests_are_rejected() {
+        let (manifest, freeze, ledger, scenarios, attestations) = fixture();
+        let mut challenges = challenge_receipts(&attestations);
+        challenges[0].receipt_digest = digest(0);
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &challenges, &attestations),
+            Err(RuntimeAttestationError::ChallengeReceiptDigestInvalid)
+        );
+        let (manifest, freeze, ledger, scenarios, attestations) = fixture();
+        let mut challenges = challenge_receipts(&attestations);
+        challenges[1].receipt_digest = challenges[0].receipt_digest.clone();
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &challenges, &attestations),
+            Err(RuntimeAttestationError::ChallengeReceiptDigestInvalid)
         );
     }
 
