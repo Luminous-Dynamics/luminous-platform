@@ -975,32 +975,32 @@ pub(crate) mod tests {
             injection.marker_digest = fresh;
             injection.calibration_runtime_digest = d(227);
             injection.calibration_namespace_digest = d(228);
-            injection.issued_at_ms = 101;
-            injection.executed_at_ms = 102;
-            injection.completed_at_ms = 103;
+            injection.issued_at_ms = 141;
+            injection.executed_at_ms = 142;
+            injection.completed_at_ms = 143;
         }
         for observation in &mut post_run_batch.observations {
             observation.batch_id = "fitness-batch-post".into();
             observation.marker_digest = marker_map[&observation.marker_digest].clone();
             observation.calibration_runtime_digest = d(227);
-            observation.observed_at_ms = 104;
+            observation.observed_at_ms = 144;
         }
         for loss in &mut post_run_batch.loss_observations {
             loss.batch_id = "fitness-batch-post".into();
             loss.marker_digest = marker_map[&loss.marker_digest].clone();
             loss.calibration_runtime_digest = d(227);
-            loss.observed_at_ms = 104;
+            loss.observed_at_ms = 144;
         }
         post_run_batch.receipt.batch_id = "fitness-batch-post".into();
         post_run_batch.receipt.receipt_digest = d(225);
         post_run_batch.receipt.batch_nonce_digest = d(226);
         post_run_batch.receipt.calibration_runtime_digest = d(227);
         post_run_batch.receipt.calibration_namespace_digest = d(228);
-        post_run_batch.receipt.measurement_start_ms = 100;
-        post_run_batch.receipt.measurement_end_ms = 105;
-        post_run_batch.receipt.issued_at_ms = 110;
-        post_run_batch.receipt.valid_from_ms = 110;
-        post_run_batch.receipt.expires_at_ms = 3_600_110;
+        post_run_batch.receipt.measurement_start_ms = 140;
+        post_run_batch.receipt.measurement_end_ms = 145;
+        post_run_batch.receipt.issued_at_ms = 150;
+        post_run_batch.receipt.valid_from_ms = 150;
+        post_run_batch.receipt.expires_at_ms = 3_600_150;
 
         ObserverFitnessBundle {
             plan,
