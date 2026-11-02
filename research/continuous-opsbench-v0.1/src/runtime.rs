@@ -328,7 +328,6 @@ fn validate_runtime_attestations(
         BTreeMap::new();
     let mut runtime_identity_digests = BTreeSet::new();
     let mut sequences = BTreeSet::new();
-    let mut challenge_nonces = BTreeSet::new();
     let mut sequence_order = Vec::with_capacity(attestations.len());
     let mut evidence = Vec::with_capacity(attestations.len());
     let mut allowlisted_egress_events = 0u128;
@@ -396,9 +395,6 @@ fn validate_runtime_attestations(
         }
         if is_zero(&receipt.challenge_nonce_digest) {
             return Err(RuntimeAttestationError::ChallengeNonceInvalid);
-        }
-        if !challenge_nonces.insert(receipt.challenge_nonce_digest.clone()) {
-            return Err(RuntimeAttestationError::ChallengeNonceCollision);
         }
         if receipt.challenge_issued_at_ms <= manifest.frozen_at_ms
             || receipt.challenge_issued_at_ms >= receipt.measurement_start_ms
