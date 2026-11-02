@@ -227,6 +227,7 @@ pub struct MonitoringMetrics {
     pub missed_actions: usize,
     pub false_positive_observations: usize,
     pub false_wakeups: usize,
+    pub late_wakeups: usize,
     pub premature_actions: usize,
     pub late_actions: usize,
     pub false_actions: usize,
@@ -382,6 +383,8 @@ pub fn evaluate_monitoring_trial(
     };
     let mut condition_observations = 0usize;
     let mut positive_observations: Vec<&ObservationReceipt> = Vec::new();
+    let mut false_wakeup_count = 0usize;
+    let mut late_wakeup_count = 0usize;
     let mut false_positive_observations = 0usize;
     let mut latencies = Vec::new();
 
@@ -494,7 +497,7 @@ pub fn evaluate_monitoring_trial(
         if wait.outcome == WaitOutcome::ConditionSatisfied {
             let condition = wait.condition_digest.as_ref()
                 .ok_or_else(|| MonitoringError::WaitConditionMissing(wait.wait_id.clone()))?;
-            let observed = positive_observations.iter().any(|observation| {
+            let observed_during_event = positive_observations.iter().any(|observation| {
                 observation.condition_digest == *condition
                     && observation.observed_at_ms >= wait.requested_at_ms
                     && observation.observed_at_ms <= wait.returned_at_ms
@@ -503,8 +506,27 @@ pub fn evaluate_monitoring_trial(
                             && event_active_at(event, observation.observed_at_ms)
                     })
             });
-            if !observed {
-                return Err(MonitoringError::WaitWithoutObservation(wait.wait_id.clone()));
+            if observed_during_event {
+                let still_active_on_return = events.iter().any(|event| {
+                    event.condition_digest == *condition
+                        && event_active_at(event, wait.returned_at_ms)
+                });
+                if !still_active_on_return {
+                    late_wakeup_count += 1;
+                }
+            } else {
+                let event_was_active_in_wait = events.iter().any(|event| {
+                    if event.condition_digest != *condition {
+                        return false;
+                    }
+                    let expiry = event.expires_at_ms.unwrap_or(contract.ends_at_ms);
+                    event.onset_at_ms <= wait.returned_at_ms
+                        && expiry > wait.requested_at_ms
+                });
+                if event_was_active_in_wait {
+                    return Err(MonitoringError::WaitWithoutObservation(wait.wait_id.clone()));
+                }
+                false_wakeup_count += 1;
             }
         } else if wait.condition_digest.is_none()
             && matches!(wait.strategy, WaitStrategy::ConditionWait | WaitStrategy::Subscription)
@@ -682,19 +704,10 @@ pub fn evaluate_monitoring_trial(
         false_actions = false_actions.max(actions.len());
     }
 
-    let false_wakeups = waits.iter().filter(|wait| {
-        wait.outcome == WaitOutcome::ConditionSatisfied
-            && wait.condition_digest.as_ref().map(|condition| {
-                !events.iter().any(|event| {
-                    event.condition_digest == *condition
-                        && event_active_at(event, wait.returned_at_ms)
-                })
-            }).unwrap_or(true)
-    }).count();
-
     let no_op_success = if contract.task_kind == MonitoringTaskKind::NoOp {
         let violation = !actions.is_empty()
-            || false_wakeups > 0
+            || false_wakeup_count > 0
+            || late_wakeup_count > 0
             || false_positive_observations > 0;
         if violation {
             Some(false)
@@ -744,7 +757,8 @@ pub fn evaluate_monitoring_trial(
         correct_actions,
         missed_actions,
         false_positive_observations,
-        false_wakeups,
+        false_wakeups: false_wakeup_count,
+        late_wakeups: late_wakeup_count,
         premature_actions,
         late_actions: late_action_ids.len(),
         false_actions,
