@@ -31,7 +31,8 @@
     "resources",
     "evidence",
     "safety",
-    "events"
+    "events",
+    "bounded_polling_calls"
   ],
   "properties": {
     "scenario_id": {
@@ -142,7 +143,7 @@
       }
     },
     "resources": {
-      "type": "object"
+      "$ref": "https://luminousdynamics.io/schemas/continuous-opsbench-monitoring-agent-trace-v0.1.json#/$defs/resources"
     },
     "evidence": {
       "enum": [
@@ -162,6 +163,10 @@
       "items": {
         "$ref": "#/$defs/event_result"
       }
+    },
+    "bounded_polling_calls": {
+      "type": "integer",
+      "minimum": 0
     }
   },
   "$defs": {
@@ -172,7 +177,6 @@
         "event_id",
         "detected",
         "missed",
-        "false_positive_observations",
         "detection_latency_ms",
         "time_to_correct_action_ms",
         "correctly_handled",
@@ -191,10 +195,6 @@
         },
         "missed": {
           "type": "boolean"
-        },
-        "false_positive_observations": {
-          "type": "integer",
-          "minimum": 0
         },
         "detection_latency_ms": {
           "type": [
