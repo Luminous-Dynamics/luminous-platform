@@ -104,3 +104,7 @@ A passing receipt means the supplied and already authenticated bundle records sa
 It does not prove that the publisher was authentic unless the external verifier authenticated the source statement; that an offline host had no network unless the CLI was sandboxed; that the oracle was secret during the run; that the runtime monitor observed every event; that the cohort represents production; or that any agent is better than SOTA.
 
 Architecture remains unchanged: Platform Saga coordinates episodes; the broker gates authority; participant-owned ledgers own external effects; independent service observers own outcomes; runtime/Supervisor adapters own measured boundary/resource facts; Nixward remains the sole host transaction/interlock/journal/recovery authority.
+
+
+The Restricted bundle mode also requires a nonzero restricted-distribution policy digest pinned in the bundle and repeated in the verification receipt. This digest must resolve through an independently authenticated authorization policy outside the bundle verifier. A Restricted label alone does not authorize disclosure.
+
