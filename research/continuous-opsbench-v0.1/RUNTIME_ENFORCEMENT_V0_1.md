@@ -30,6 +30,10 @@ A valid receipt binds:
 - runtime instance and writable namespace digests;
 - the independent observer and adapter;
 - process tree, mount namespace, filesystem/object-access, network-egress and runtime-event log commitments;
+- exactly five per-sensor coverage records (process tree, mount namespace, filesystem access, network egress, runtime event stream), each bound to the observer source/control domain, adapter digest, sensor instance and sensor binary;
+- each sensor's active interval must enclose the complete declared monitoring interval after applying observer clock uncertainty;
+- every sensor stream has explicit first/last sequence and observed-event count; sequence arithmetic must reconcile exactly, with zero gaps and zero dropped events;
+- each sensor coverage commitment must equal the corresponding top-level log commitment; sensor instance identities must be unique across all trial/arm records;
 - complete coverage, zero sequence gaps and zero dropped events;
 - clock uncertainty no greater than the contract limit; successful event counts cannot exceed their corresponding attempt counts;
 - zero oracle-read attempts or successes;
@@ -90,4 +94,4 @@ The design follows the emerging continuous-attestation direction: trust at launc
 
 The runtime validator has positive clean-run controls and negative controls for forged ledger summaries, missing/duplicated arm receipts, challenge reuse/expiry/authority substitution, observer/control-domain substitution, exact manifest/policy binding, unique runtime and namespace identity, measurement coverage including clock uncertainty, sequence start/order/contiguity, partial/unknown/tampered coverage, oracle/artifact access, forbidden egress, state carry-over and missing scenarios. The source-event certification entry point is tested independently of the supplied-summary composition path.
 
-The 76-vector runtime mutation matrix is deterministic and synthetic. It includes challenge expiry/TTL, challenge-before-scenario ordering, combined clock uncertainty, zero and reused nonces, impossible success/attempt counter relationships, cross-class runtime/namespace collisions, uncertainty-overlapping and provably reversed sequence timestamps, and frozen challenge-authority substitution. Direct tests separately exercise the timing and counter invariants. A green CI run proves the encoded structural conformance tests, not a real sandbox security guarantee.
+The runtime mutation matrix is deterministic and synthetic. In addition to the 76 general runtime mutations, targeted sensor controls cover missing/duplicate roles, interval gaps, sequence/count inconsistency, log-commitment substitution, observer-source substitution and cross-trial sensor-instance reuse. It includes challenge expiry/TTL, challenge-before-scenario ordering, combined clock uncertainty, zero and reused nonces, impossible success/attempt counter relationships, cross-class runtime/namespace collisions, uncertainty-overlapping and provably reversed sequence timestamps, and frozen challenge-authority substitution. Direct tests separately exercise the timing and counter invariants. A green CI run proves the encoded structural conformance tests, not a real sandbox security guarantee.
