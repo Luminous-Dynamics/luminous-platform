@@ -198,6 +198,11 @@ pub enum RuntimeAttestationError {
     ObserverFitnessInvalid(ObserverFitnessError),
     ObserverFitnessReceiptMissing(String, EvaluationArm),
     ObserverFitnessReceiptExpired(String, EvaluationArm),
+    ObserverFitnessPreRunMissing,
+    ObserverFitnessPostRunMissing,
+    ObserverFitnessWindowDoesNotCoverRuntime(String, EvaluationArm),
+    ObserverFitnessPostRunOrderInvalid,
+    ObserverFitnessBatchUnreferenced,
     ObserverFitnessRuntimeIdentityCollision,
 
     ChallengeLifetimeExceeded(String, EvaluationArm),
@@ -277,7 +282,7 @@ fn validate_runtime_attestations(
     validate_ledger_binding(manifest, ledger)?;
     if fitness_summary.run_id != manifest.run_id
         || fitness_summary.plan_digest != manifest.observer_fitness_plan_digest
-        || fitness_summary.batches.is_empty()
+        || fitness_summary.batches.len() < 2
     {
         return Err(RuntimeAttestationError::LedgerManifestMismatch);
     }
@@ -296,6 +301,8 @@ fn validate_runtime_attestations(
         }
     }
     let mut used_fitness_receipts = BTreeSet::new();
+    let mut latest_runtime_measurement_end = 0u64;
+    let mut latest_runtime_receipt_issue = 0u64;
 
     let mut scenario_index: BTreeMap<&str, &ScenarioReceipt> = BTreeMap::new();
     for scenario in scenarios {
@@ -456,13 +463,42 @@ fn validate_runtime_attestations(
                 receipt.trial_id.clone(),
                 receipt.arm,
             ))?;
-        let first_activity = result.first_started_at_ms.unwrap_or(result.terminal_at_ms);
-        if first_activity < fitness.valid_from_ms || result.terminal_at_ms > fitness.expires_at_ms {
-            return Err(RuntimeAttestationError::ObserverFitnessReceiptExpired(
+        let runtime_start_earliest = receipt.measurement_start_ms
+            .checked_sub(receipt.clock_uncertainty_ms)
+            .ok_or(RuntimeAttestationError::ObserverFitnessPreRunMissing)?;
+        let runtime_end_latest = receipt.measurement_end_ms
+            .checked_add(receipt.clock_uncertainty_ms)
+            .ok_or(RuntimeAttestationError::ArithmeticOverflow)?;
+        let fitness_measurement_end_latest = fitness.measurement_end_ms
+            .checked_add(fitness.clock_uncertainty_ms)
+            .ok_or(RuntimeAttestationError::ArithmeticOverflow)?;
+        let fitness_valid_from_latest = fitness.valid_from_ms
+            .checked_add(fitness.clock_uncertainty_ms)
+            .ok_or(RuntimeAttestationError::ArithmeticOverflow)?;
+        let fitness_expiry_earliest = fitness.expires_at_ms
+            .checked_sub(fitness.clock_uncertainty_ms)
+            .ok_or(RuntimeAttestationError::ObserverFitnessReceiptExpired(
+                receipt.trial_id.clone(), receipt.arm,
+            ))?;
+        if fitness_measurement_end_latest >= runtime_start_earliest
+            || fitness_valid_from_latest > runtime_start_earliest
+        {
+            return Err(RuntimeAttestationError::ObserverFitnessPreRunMissing);
+        }
+        if fitness_expiry_earliest <= runtime_end_latest
+            || first_activity < fitness.valid_from_ms
+            || result.terminal_at_ms > fitness.expires_at_ms
+        {
+            return Err(RuntimeAttestationError::ObserverFitnessWindowDoesNotCoverRuntime(
                 receipt.trial_id.clone(),
                 receipt.arm,
             ));
         }
+        latest_runtime_measurement_end = latest_runtime_measurement_end.max(runtime_end_latest);
+        latest_runtime_receipt_issue = latest_runtime_receipt_issue.max(
+            receipt.issued_at_ms.checked_add(receipt.clock_uncertainty_ms)
+                .ok_or(RuntimeAttestationError::ArithmeticOverflow)?
+        );
         if receipt.runtime_instance_digest == fitness.calibration_runtime_digest
             || receipt.runtime_instance_digest == fitness.calibration_namespace_digest
             || receipt.writable_state_namespace_digest == fitness.calibration_runtime_digest
@@ -638,10 +674,35 @@ fn validate_runtime_attestations(
         }
     }
 
-    if used_fitness_receipts.len() != fitness_summary.batches.len() {
-        return Err(RuntimeAttestationError::ObserverFitnessInvalid(
-            ObserverFitnessError::FitnessReceiptBindingMismatch("unused-fitness-batch".into()),
-        ));
+    let post_run_batches: Vec<&ObserverFitnessBatchSummary> = fitness_summary.batches
+        .iter()
+        .filter(|fitness| !used_fitness_receipts.contains(&fitness.receipt_digest))
+        .collect();
+    if post_run_batches.is_empty() {
+        return Err(RuntimeAttestationError::ObserverFitnessPostRunMissing);
+    }
+    if post_run_batches.len() != 1
+        || used_fitness_receipts.len() + post_run_batches.len() != fitness_summary.batches.len()
+    {
+        return Err(RuntimeAttestationError::ObserverFitnessBatchUnreferenced);
+    }
+    let post_run = post_run_batches[0];
+    let post_measurement_start_earliest = post_run.measurement_start_ms
+        .checked_sub(post_run.clock_uncertainty_ms)
+        .ok_or(RuntimeAttestationError::ObserverFitnessPostRunOrderInvalid)?;
+    let post_issue_earliest = post_run.issued_at_ms
+        .checked_sub(post_run.clock_uncertainty_ms)
+        .ok_or(RuntimeAttestationError::ObserverFitnessPostRunOrderInvalid)?;
+    if post_measurement_start_earliest <= latest_runtime_measurement_end
+        || post_issue_earliest <= latest_runtime_receipt_issue
+        || post_run.measurement_end_ms <= post_run.measurement_start_ms
+        || post_run.valid_from_ms != post_run.issued_at_ms
+        || post_run.expires_at_ms <= post_run.valid_from_ms
+        || post_run.positive_controls == 0
+        || post_run.negative_controls == 0
+        || post_run.loss_controls == 0
+    {
+        return Err(RuntimeAttestationError::ObserverFitnessPostRunOrderInvalid);
     }
     if sequences.len() != attestations.len() {
         return Err(RuntimeAttestationError::DuplicateObserverSequence);
