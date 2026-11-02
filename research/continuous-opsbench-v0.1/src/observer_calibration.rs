@@ -674,9 +674,9 @@ pub fn evaluate_observer_calibration(
     }
 
     let mut channels = Vec::new();
-    for (channel, accumulator) in channel_accumulators {
+    for (channel, accumulator) in &channel_accumulators {
         channels.push(ChannelCalibrationSummary {
-            channel,
+            channel: *channel,
             probes: accumulator.probes,
             positive_controls: accumulator.positive_controls,
             negative_controls: accumulator.negative_controls,
@@ -750,7 +750,10 @@ fn validate_plan_binding(
         EvaluationArm::Candidate => &manifest.agent_identity_digest,
         EvaluationArm::Baseline => &manifest.baseline_identity_digest,
     };
-    if is_zero(&plan.challenge_id_digest)
+    if plan.run_id != manifest.run_id
+        || plan.trial_id != runtime.trial_id
+        || plan.arm != runtime.arm
+        || is_zero(&plan.challenge_id_digest)
         || is_zero(&plan.probe_suite_digest)
         || plan.manifest_commitment != runtime.manifest_commitment
         || plan.scenario_commitment != runtime.scenario_commitment
