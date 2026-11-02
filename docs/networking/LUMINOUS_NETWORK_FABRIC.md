@@ -284,6 +284,7 @@ LNF is an integration programme, not a reason to create parallel projects. The f
 
 ### Immediate execution sequence
 
+0. Use LNF-EDGE-DTN-001 / issue #208 as the cross-project end-to-end campaign owner; it binds the broker, gateway, local-first and DTN stages without duplicating their implementations.
 1. Review and reconcile LNF PR #207 with PR #64 and the existing owner issues above.
 2. Close the software-only broker contract and reviewed dependency lockfiles in the existing PR #64; retain the already reported tests as source/CI evidence, not live network proof.
 3. Run the isolated OpenWrt/two-WAN fault matrix and local-only service campaign on named gateway revisions. Record physical/VM evidence separately.
