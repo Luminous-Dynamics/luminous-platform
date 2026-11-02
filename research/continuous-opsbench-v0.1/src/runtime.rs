@@ -176,6 +176,13 @@ pub struct RuntimeTrialEvidence {
 pub struct RuntimeAttestationSummary {
     pub run_id: String,
     pub planned_arm_trials: usize,
+    pub runtime_kernel_profile_digest: Digest,
+    pub observer_fitness_plan_digest: Digest,
+    pub pre_run_fitness_receipt_digest: Digest,
+    pub post_run_fitness_receipt_digest: Digest,
+    pub positive_fitness_controls: usize,
+    pub negative_fitness_controls: usize,
+    pub loss_fitness_controls: usize,
     pub complete_attestations: usize,
     pub allowlisted_egress_events: u128,
     pub runtime_observer_source_id: String,
@@ -194,6 +201,12 @@ pub struct RuntimeAttestationSummary {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct ObserverFitnessPair {
+    pre_run: ObserverFitnessBatchSummary,
+    post_run: ObserverFitnessBatchSummary,
+}
+
 pub enum RuntimeAttestationError {
     UnsupportedSchema(String),
     LedgerManifestMismatch,
@@ -219,6 +232,7 @@ pub enum RuntimeAttestationError {
     ObserverFitnessBatchCountInvalid,
     ObserverFitnessPreRunQualificationInvalid,
     ObserverFitnessPostRunQualificationInvalid,
+    ObserverFitnessCalibrationIdentityCollision,
     ObserverFitnessReferenceMismatch(String, EvaluationArm),
     ChallengeAuthorityMismatch,
     ChallengeNonceInvalid,
@@ -458,7 +472,7 @@ fn validate_runtime_attestations(
             manifest,
             &ledger.manifest_commitment,
             scenario,
-            &fitness_pair.pre_run.receipt_digest,
+            &fitness_pair.pre_run,
             receipt,
         )?;
         let challenge = challenge_index
@@ -471,7 +485,7 @@ fn validate_runtime_attestations(
             manifest,
             &ledger.manifest_commitment,
             scenario,
-            &fitness_pair.pre_run.receipt_digest,
+            &fitness_pair.pre_run,
             challenge,
             receipt,
         )?;
@@ -637,7 +651,6 @@ fn validate_runtime_attestations(
             arm: receipt.arm,
             runtime_instance_digest: receipt.runtime_instance_digest.clone(),
             writable_state_namespace_digest: receipt.writable_state_namespace_digest.clone(),
-            observer_fitness_receipt_digest: receipt.observer_fitness_receipt_digest.clone(),
             challenge_nonce_digest: receipt.challenge_nonce_digest.clone(),
             challenge_receipt_digest: receipt.challenge_receipt_digest.clone(),
             observer_fitness_receipt_digest: receipt.observer_fitness_receipt_digest.clone(),
@@ -707,6 +720,117 @@ fn validate_runtime_attestations(
         loss_fitness_controls: fitness_summary.total_loss_controls,
         evidence,
     })
+}
+
+fn validate_observer_fitness_timeline(
+    manifest: &RunManifest,
+    summary: &ObserverFitnessSummary,
+    attestations: &[RuntimeTrialAttestation],
+) -> Result<ObserverFitnessPair, RuntimeAttestationError> {
+    if summary.run_id != manifest.run_id
+        || summary.plan_digest != manifest.observer_fitness_plan_digest
+        || summary.batches.len() != 2
+        || summary.total_positive_controls < 18
+        || summary.total_negative_controls < 18
+        || summary.total_loss_controls < 2
+        || attestations.is_empty()
+    {
+        return Err(RuntimeAttestationError::ObserverFitnessBatchCountInvalid);
+    }
+
+    let earliest_runtime_start = attestations.iter()
+        .map(|receipt| receipt.measurement_start_ms.saturating_sub(receipt.clock_uncertainty_ms))
+        .min()
+        .ok_or(RuntimeAttestationError::ObserverFitnessBatchCountInvalid)?;
+    let latest_runtime_end = attestations.iter()
+        .map(|receipt| receipt.measurement_end_ms.saturating_add(receipt.clock_uncertainty_ms))
+        .max()
+        .ok_or(RuntimeAttestationError::ObserverFitnessBatchCountInvalid)?;
+    let latest_runtime_receipt_issue = attestations.iter()
+        .map(|receipt| receipt.issued_at_ms.saturating_add(receipt.clock_uncertainty_ms))
+        .max()
+        .ok_or(RuntimeAttestationError::ObserverFitnessBatchCountInvalid)?;
+
+    let mut pre = Vec::new();
+    let mut post = Vec::new();
+    for batch in &summary.batches {
+        let pre_end_latest = batch.measurement_end_ms
+            .checked_add(batch.clock_uncertainty_ms)
+            .ok_or(RuntimeAttestationError::ArithmeticOverflow)?;
+        let pre_issue_latest = batch.valid_from_ms
+            .checked_add(batch.clock_uncertainty_ms)
+            .ok_or(RuntimeAttestationError::ArithmeticOverflow)?;
+        if pre_end_latest < earliest_runtime_start && pre_issue_latest < earliest_runtime_start {
+            pre.push(batch.clone());
+            continue;
+        }
+
+        let post_start_earliest = batch.measurement_start_ms
+            .checked_sub(batch.clock_uncertainty_ms)
+            .ok_or(RuntimeAttestationError::ObserverFitnessPostRunQualificationInvalid)?;
+        let post_issue_earliest = batch.valid_from_ms
+            .checked_sub(batch.clock_uncertainty_ms)
+            .ok_or(RuntimeAttestationError::ObserverFitnessPostRunQualificationInvalid)?;
+        if post_start_earliest > latest_runtime_end
+            && post_issue_earliest > latest_runtime_receipt_issue
+            && batch.issued_at_ms > latest_runtime_receipt_issue
+        {
+            post.push(batch.clone());
+        }
+    }
+
+    if pre.len() != 1 {
+        return Err(RuntimeAttestationError::ObserverFitnessPreRunQualificationInvalid);
+    }
+    if post.len() != 1 {
+        return Err(RuntimeAttestationError::ObserverFitnessPostRunQualificationInvalid);
+    }
+    let pre = pre.remove(0);
+    let post = post.remove(0);
+    if pre.receipt_digest == post.receipt_digest
+        || pre.batch_nonce_digest == post.batch_nonce_digest
+        || pre.batch_id == post.batch_id
+        || pre.calibration_runtime_digest == post.calibration_runtime_digest
+        || pre.calibration_namespace_digest == post.calibration_namespace_digest
+    {
+        return Err(RuntimeAttestationError::ObserverFitnessCalibrationIdentityCollision);
+    }
+
+    let pre_expiry_earliest = pre.expires_at_ms
+        .checked_sub(pre.clock_uncertainty_ms)
+        .ok_or(RuntimeAttestationError::ObserverFitnessPreRunQualificationInvalid)?;
+    if pre.valid_from_ms != pre.issued_at_ms
+        || pre.expires_at_ms <= pre.valid_from_ms
+        || pre_expiry_earliest <= latest_runtime_end
+        || pre_expiry_earliest <= latest_runtime_receipt_issue
+    {
+        return Err(RuntimeAttestationError::ObserverFitnessPreRunQualificationInvalid);
+    }
+    if post.valid_from_ms != post.issued_at_ms
+        || post.issued_at_ms <= post.measurement_end_ms
+        || post.expires_at_ms <= post.valid_from_ms
+        || post.measurement_end_ms < post.measurement_start_ms
+    {
+        return Err(RuntimeAttestationError::ObserverFitnessPostRunQualificationInvalid);
+    }
+
+    let mut runtime_ids = BTreeSet::new();
+    for attestation in attestations {
+        runtime_ids.insert(attestation.runtime_instance_digest.clone());
+        runtime_ids.insert(attestation.writable_state_namespace_digest.clone());
+        for sensor in &attestation.sensor_coverage {
+            runtime_ids.insert(sensor.sensor_instance_digest.clone());
+        }
+    }
+    if runtime_ids.contains(&pre.calibration_runtime_digest)
+        || runtime_ids.contains(&pre.calibration_namespace_digest)
+        || runtime_ids.contains(&post.calibration_runtime_digest)
+        || runtime_ids.contains(&post.calibration_namespace_digest)
+    {
+        return Err(RuntimeAttestationError::ObserverFitnessCalibrationIdentityCollision);
+    }
+
+    Ok(ObserverFitnessPair { pre_run: pre, post_run: post })
 }
 
 pub(crate) fn validate_ledger_binding(
@@ -845,7 +969,7 @@ fn validate_challenge_binding(
     manifest: &RunManifest,
     expected_manifest_commitment: &Digest,
     scenario: &ScenarioReceipt,
-    pre_run_fitness_receipt_digest: &Digest,
+    pre_run_fitness: &ObserverFitnessBatchSummary,
     challenge: &RuntimeChallengeReceipt,
     attestation: &RuntimeTrialAttestation,
 ) -> Result<(), RuntimeAttestationError> {
@@ -888,7 +1012,7 @@ fn validate_challenge_binding(
         || challenge.writable_state_namespace_digest != attestation.writable_state_namespace_digest
         || challenge.observer_adapter_digest != manifest.runtime_observer_adapter_digest
         || challenge.runtime_kernel_profile_digest != manifest.runtime_kernel_profile_digest
-        || challenge.observer_fitness_receipt_digest != *pre_run_fitness_receipt_digest
+        || challenge.observer_fitness_receipt_digest != pre_run_fitness.receipt_digest
         || challenge.observer_fitness_receipt_digest != attestation.observer_fitness_receipt_digest
         || challenge.observer_source_id != manifest.runtime_observer_source_id
         || challenge.observer_control_domain != manifest.runtime_observer_control_domain
@@ -931,8 +1055,17 @@ fn validate_challenge_binding(
     let receipt_issue_latest = attestation.issued_at_ms
         .checked_add(combined_uncertainty)
         .ok_or(RuntimeAttestationError::ArithmeticOverflow)?;
+    let pre_fitness_issue_latest = pre_run_fitness.valid_from_ms
+        .checked_add(pre_run_fitness.clock_uncertainty_ms)
+        .ok_or(RuntimeAttestationError::ArithmeticOverflow)?;
+    let challenge_issue_earliest = challenge.issued_at_ms
+        .checked_sub(challenge.clock_uncertainty_ms)
+        .ok_or(RuntimeAttestationError::ChallengeFreshnessInvalid(
+            challenge.trial_id.clone(), challenge.arm,
+        ))?;
     if challenge.issued_at_ms <= manifest.frozen_at_ms
         || challenge.issued_at_ms <= scenario.issued_at_ms
+        || challenge_issue_earliest <= pre_fitness_issue_latest
         || challenge_issue_latest >= measurement_start_earliest
         || challenge.expires_at_ms <= measurement_end_latest
         || challenge.expires_at_ms <= receipt_issue_latest
@@ -949,7 +1082,7 @@ fn validate_receipt_binding(
     manifest: &RunManifest,
     expected_manifest_commitment: &Digest,
     scenario: &ScenarioReceipt,
-    pre_run_fitness_receipt_digest: &Digest,
+    pre_run_fitness: &ObserverFitnessBatchSummary,
     receipt: &RuntimeTrialAttestation,
 ) -> Result<(), RuntimeAttestationError> {
     let expected_identity = match receipt.arm {
@@ -970,7 +1103,7 @@ fn validate_receipt_binding(
         || receipt.network_egress_policy_digest != manifest.network_egress_policy_digest
         || receipt.observer_adapter_digest != manifest.runtime_observer_adapter_digest
         || receipt.runtime_kernel_profile_digest != manifest.runtime_kernel_profile_digest
-        || receipt.observer_fitness_receipt_digest != *pre_run_fitness_receipt_digest
+        || receipt.observer_fitness_receipt_digest != pre_run_fitness.receipt_digest
     {
         return Err(RuntimeAttestationError::AttestationBindingMismatch(
             receipt.trial_id.clone(),
