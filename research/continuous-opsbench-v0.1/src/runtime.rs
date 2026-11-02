@@ -16,6 +16,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 pub const RUNTIME_ATTESTATION_SCHEMA: &str = "continuous-opsbench-runtime-attestation-v0.1";
 pub const MAX_CLOCK_UNCERTAINTY_MS: u64 = 1_000;
+/// Initial policy ceiling: a one-use challenge cannot remain valid for more than a day.
+pub const MAX_RUNTIME_CHALLENGE_TTL_MS: u64 = 86_400_000;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RuntimeCoverage {
@@ -132,6 +134,7 @@ pub enum RuntimeAttestationError {
     ChallengeNonceInvalid,
     ChallengeNonceCollision,
     ChallengeFreshnessInvalid(String, EvaluationArm),
+    ChallengeLifetimeExceeded(String, EvaluationArm),
     InvalidObserverSequence,
     EmptyOrInvalidIdentity,
     RuntimeInstanceCollision,
@@ -301,6 +304,16 @@ fn validate_runtime_attestations(
                 <= receipt.issued_at_ms.saturating_add(receipt.clock_uncertainty_ms)
         {
             return Err(RuntimeAttestationError::ChallengeFreshnessInvalid(
+                receipt.trial_id.clone(),
+                receipt.arm,
+            ));
+        }
+
+        if receipt.challenge_expires_at_ms
+            .saturating_sub(receipt.challenge_issued_at_ms)
+            > MAX_RUNTIME_CHALLENGE_TTL_MS
+        {
+            return Err(RuntimeAttestationError::ChallengeLifetimeExceeded(
                 receipt.trial_id.clone(),
                 receipt.arm,
             ));
@@ -1306,6 +1319,34 @@ mod tests {
         assert!(validate_runtime_attestations(
             &manifest, &freeze, &ledger, &scenarios, &attestations
         ).is_ok());
+    }
+
+    #[test]
+    fn runtime_challenge_lifetime_is_bounded() {
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].challenge_expires_at_ms =
+            attestations[0].challenge_issued_at_ms + MAX_RUNTIME_CHALLENGE_TTL_MS + 1;
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::ChallengeLifetimeExceeded(
+                "trial-a".into(), EvaluationArm::Candidate
+            ))
+        );
+    }
+
+    #[test]
+    fn provably_reversed_receipt_time_order_is_rejected() {
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].measurement_end_ms = 100;
+        attestations[0].issued_at_ms = 130;
+        attestations[0].challenge_expires_at_ms = 200;
+        attestations[1].measurement_end_ms = 100;
+        attestations[1].issued_at_ms = 101;
+        attestations[1].challenge_expires_at_ms = 200;
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::ObserverSequenceOrderInvalid)
+        );
     }
 
     #[test]
