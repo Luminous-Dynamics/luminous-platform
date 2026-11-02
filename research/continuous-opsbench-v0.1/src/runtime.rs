@@ -235,8 +235,6 @@ fn validate_runtime_attestations(
 
     let mut receipt_index: BTreeMap<(&str, EvaluationArm), &RuntimeTrialAttestation> =
         BTreeMap::new();
-    let mut instances = BTreeSet::new();
-    let mut namespaces = BTreeSet::new();
     let mut runtime_identity_digests = BTreeSet::new();
     let mut sequences = BTreeSet::new();
     let mut challenge_nonces = BTreeSet::new();
@@ -323,8 +321,6 @@ fn validate_runtime_attestations(
         if !runtime_identity_digests.insert(receipt.writable_state_namespace_digest.clone()) {
             return Err(RuntimeAttestationError::StateNamespaceCollision);
         }
-        instances.insert(receipt.runtime_instance_digest.clone());
-        namespaces.insert(receipt.writable_state_namespace_digest.clone());
 
         if receipt.measurement_start_ms >= receipt.measurement_end_ms
             || receipt.issued_at_ms < receipt.measurement_end_ms
@@ -1274,6 +1270,13 @@ mod tests {
         attestations[0].receipt_sequence = 10;
         assert_eq!(
             validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::ObserverSequenceNotContiguous)
+        );
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].receipt_sequence = 4;
+        attestations[3].receipt_sequence = 1;
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ObserverSequenceOrderInvalid)
         );
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
@@ -1281,6 +1284,69 @@ mod tests {
         assert_eq!(
             validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ObserverSequenceNotContiguous)
+        );
+    }
+
+    #[test]
+    fn zero_sequence_is_invalid_and_uncertainty_overlap_is_not_false_ordering() {
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].receipt_sequence = 0;
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::InvalidObserverSequence)
+        );
+
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].measurement_end_ms = 100;
+        attestations[0].issued_at_ms = 111;
+        attestations[0].challenge_expires_at_ms = 200;
+        attestations[1].measurement_end_ms = 100;
+        attestations[1].issued_at_ms = 101;
+        attestations[1].challenge_expires_at_ms = 200;
+        assert!(validate_runtime_attestations(
+            &manifest, &freeze, &ledger, &scenarios, &attestations
+        ).is_ok());
+    }
+
+    #[test]
+    fn challenge_expiry_must_cover_receipt_issue_and_clock_uncertainty() {
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].challenge_expires_at_ms = attestations[0].issued_at_ms;
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::ChallengeFreshnessInvalid(
+                "trial-a".into(), EvaluationArm::Candidate
+            ))
+        );
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].challenge_expires_at_ms =
+            attestations[0].issued_at_ms + attestations[0].clock_uncertainty_ms;
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::ChallengeFreshnessInvalid(
+                "trial-a".into(), EvaluationArm::Candidate
+            ))
+        );
+    }
+
+    #[test]
+    fn runtime_namespace_cannot_alias_any_runtime_instance_or_other_namespace() {
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[1].writable_state_namespace_digest =
+            attestations[0].runtime_instance_digest.clone();
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::StateNamespaceCollision)
+        );
+    }
+
+    #[test]
+    fn challenge_nonce_digest_must_be_nonzero() {
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].challenge_nonce_digest = digest(0);
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::ChallengeNonceInvalid)
         );
     }
 
