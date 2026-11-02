@@ -72,3 +72,10 @@ This is still structural validation. The typed source-evidence adapter must auth
 The additive validator in `src/runtime.rs` joins one runtime observer attestation to every planned Candidate/Baseline arm using the raw-event-derived sealed ledger. It checks challenge freshness (24-hour maximum TTL), observer and challenge authority separation, run-scoped contiguous sequences, clock-uncertainty-aware measurement coverage, non-aliasing runtime/namespace identities, complete telemetry, and hard denials for oracle/artifact reads, disallowed egress and cross-trial state. See `RUNTIME_ENFORCEMENT_V0_1.md` and `runtime-trial-attestation.schema.json`.
 
 Only `validate_runtime_attestations_from_events` is public as the certification entry point. The lower-level summary composition is private. Signatures, durable cross-run replay protection, challenge issuance, allowlist event verification and actual kernel/hypervisor enforcement remain external obligations.
+
+
+### Long-running monitoring and event-aware waiting
+
+The additive `src/monitoring.rs` evaluator covers passive/active persistent conditions, relative baselines, no-op restraint, urgent ephemeral events and noisy/ambiguous monitoring. It keeps evaluator-owned event timelines separate from source observation and wait receipts. It reports detection/false-wake/action-before-expiry metrics separately from model/tool cost, human time and calibrated energy. See `LONG_RUNNING_MONITORING_AND_EVENT_WAIT_V0_1.md` and `monitoring-trial.schema.json`.
+
+The paired evaluator requires the same hidden events, execution environment and resource budget for Candidate and Baseline. Missing observation telemetry is indeterminate; no query during a known active event is a missed detection; unknown cost/energy stays unknown. This does not execute a real wait tool or authenticate the runtime sources.
