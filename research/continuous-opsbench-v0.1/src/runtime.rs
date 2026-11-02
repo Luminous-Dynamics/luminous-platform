@@ -1821,7 +1821,7 @@ mod tests {
     }
 
     #[test]
-    fn seventy_five_adversarial_runtime_mutations_fail_closed() {
+    fn seventy_six_adversarial_runtime_mutations_fail_closed() {
         for vector in 0..76 {
             let (mut manifest, freeze, mut ledger, mut scenarios, mut attestations) = fixture();
             match vector {
