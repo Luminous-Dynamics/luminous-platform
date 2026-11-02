@@ -48,6 +48,8 @@ pub struct PathObservation {
     pub capacity_bps: u64,
     pub mtu_bytes: u32,
     pub data_remaining_bytes: u64,
+    /// ISO-4217-style uppercase currency code for the integer cost rate.
+    pub cost_currency: String,
     /// Cost and energy rate per MiB, in caller-declared integer units.
     pub cost_micros_per_mib: u64,
     pub energy_uwh_per_mib: u64,
@@ -62,6 +64,8 @@ pub struct ScheduleRequest {
     pub bytes: u64,
     pub deadline_us: Option<u64>,
     pub max_cost_micros: u64,
+    /// Currency expected for every eligible path's cost rate.
+    pub cost_currency: String,
     pub max_energy_uwh: u64,
     pub minimum_trust: u8,
     pub minimum_mtu_bytes: u32,
@@ -115,6 +119,7 @@ pub enum ScheduleError {
     ZeroMaximumPaths,
     InvalidLossBound,
     InvalidGainThreshold,
+    InvalidCurrencyCode,
     InvalidPathId,
     DuplicatePathId,
     TooManyPaths,
@@ -192,6 +197,9 @@ fn exclusion_reason(request: &ScheduleRequest, path: &PathObservation) -> Option
     if path.data_remaining_bytes == 0 {
         return Some("data_allowance_exhausted");
     }
+    if path.cost_currency != request.cost_currency {
+        return Some("cost_currency_mismatch");
+    }
     if path.shared_risk_group.trim().is_empty() {
         return Some("shared_risk_group_unknown");
     }
@@ -210,6 +218,11 @@ fn validate_request(request: &ScheduleRequest) -> Result<(), ScheduleError> {
     }
     if request.minimum_gain_ppm > 1_000_000 {
         return Err(ScheduleError::InvalidGainThreshold);
+    }
+    if request.cost_currency.len() != 3
+        || !request.cost_currency.as_bytes().iter().all(u8::is_ascii_uppercase)
+    {
+        return Err(ScheduleError::InvalidCurrencyCode);
     }
     Ok(())
 }
@@ -593,6 +606,7 @@ mod tests {
             capacity_bps,
             mtu_bytes: 1500,
             data_remaining_bytes: 16 * 1_048_576,
+            cost_currency: "ZAR".to_owned(),
             cost_micros_per_mib: cost,
             energy_uwh_per_mib: 10,
             shared_risk_group: risk.to_owned(),
@@ -606,6 +620,7 @@ mod tests {
             bytes: 8 * 1_048_576,
             deadline_us: Some(5_000_000),
             max_cost_micros: 1_000_000,
+            cost_currency: "ZAR".to_owned(),
             max_energy_uwh: 1_000_000,
             minimum_trust: 1,
             minimum_mtu_bytes: 1200,
@@ -747,6 +762,33 @@ mod tests {
 
         let fastest = evaluate(&req, &paths, Strategy::IntentAware).expect("valid inputs");
         assert_eq!(fastest.allocations[0].path_id, "high-rtt-high-capacity");
+    }
+
+    #[test]
+    fn mixed_currency_paths_are_excluded_before_ranking() {
+        let mut usd = path("usd", 1_000, 100_000_000, 1, "usd");
+        usd.cost_currency = "USD".to_owned();
+        let zar = path("zar", 10_000, 10_000_000, 10, "zar");
+        let result = evaluate(
+            &request(),
+            &[usd, zar],
+            Strategy::LowestCost,
+        )
+        .expect("valid inputs");
+        assert_eq!(result.mode, DecisionMode::SinglePath);
+        assert_eq!(result.allocations[0].path_id, "zar");
+        assert_eq!(result.exclusions[0].reason, "cost_currency_mismatch");
+    }
+
+    #[test]
+    fn malformed_request_currency_is_rejected() {
+        let mut req = request();
+        req.cost_currency = "zar".to_owned();
+        assert_eq!(
+            evaluate(&req, &[path("a", 1_000, 10_000_000, 1, "a")], Strategy::BestRtt)
+                .unwrap_err(),
+            ScheduleError::InvalidCurrencyCode
+        );
     }
 
     #[test]
