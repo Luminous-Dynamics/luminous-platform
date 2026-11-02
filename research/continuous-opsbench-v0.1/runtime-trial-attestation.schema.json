@@ -50,7 +50,8 @@
     "disallowed_egress_successes",
     "cross_trial_state_observations",
     "shared_writable_namespace_observations",
-    "allowlisted_egress_events"
+    "allowlisted_egress_events",
+    "sensor_coverage"
   ],
   "properties": {
     "schema": {
@@ -258,7 +259,105 @@
     },
     "challenge_receipt_digest": {
       "$ref": "#/$defs/sha256"
+    },
+    "sensor_coverage": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "$ref": "#/$defs/sensor_coverage"
+      },
+      "description": "Exactly one independently measured record for each required sensor role. Role completeness, identity uniqueness, sequence arithmetic, and interval binding are enforced by the Rust validator."
     }
   },
-  "description": "One independently source-authenticated receipt per planned (trial, arm). This schema validates record shape; it does not authenticate signatures or enforce sandbox policy."
+  "description": "One independently source-authenticated receipt per planned (trial, arm). This schema validates record shape; it does not authenticate signatures or enforce sandbox policy.",
+  "$defs": {
+    "sensor_coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "sensor_instance_digest",
+        "sensor_binary_digest",
+        "observer_source_id",
+        "observer_control_domain",
+        "observer_adapter_digest",
+        "coverage_start_ms",
+        "coverage_end_ms",
+        "first_sequence",
+        "last_sequence",
+        "observed_event_count",
+        "sequence_gap_count",
+        "dropped_event_count",
+        "log_commitment"
+      ],
+      "properties": {
+        "role": {
+          "enum": [
+            "process_tree",
+            "mount_namespace",
+            "filesystem_access",
+            "network_egress",
+            "runtime_event_stream"
+          ]
+        },
+        "sensor_instance_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "sensor_binary_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "observer_source_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "observer_control_domain": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "observer_adapter_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "coverage_start_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coverage_end_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "first_sequence": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "last_sequence": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "observed_event_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sequence_gap_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dropped_event_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "log_commitment": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    }
+  }
 }
