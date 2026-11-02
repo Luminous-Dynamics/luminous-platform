@@ -132,3 +132,8 @@ These are hypotheses for a confirmatory program, not observed results:
 The Rust validator proves that supplied records satisfy the encoded tier contract. It does not launch a sandbox, inspect kernel/hypervisor state, verify TPM/HSM attestation, prove hardware isolation, or authenticate Supervisor signatures. Those controls require the external Supervisor adapter, the typed source-evidence verifier and adversarial qualification of the actual runtime. A green CI run is structural conformance evidence only.
 
 Platform Saga remains the episode coordinator; the broker enforces mutation authority; participant-owned ledgers own remote effects; independent workload/business observers own service outcomes; Nixward remains the only host transaction/interlock/journal/recovery authority.
+
+
+### Latest harness regression correction
+
+The tier fixture carries the runtime challenge-authority identity exactly once in the freeze receipt and once in the derived run ledger. This remains a structural source-binding check; the independent challenge authority and typed evidence verifier authenticate the signed nonce and consume replay state.
