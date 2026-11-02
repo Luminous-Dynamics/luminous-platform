@@ -452,6 +452,9 @@ pub fn validate_observer_fitness_bundle(
             || receipt.issued_at_ms < receipt.measurement_end_ms
             || receipt.valid_from_ms != receipt.issued_at_ms
             || receipt.expires_at_ms <= receipt.valid_from_ms
+            || is_zero(&receipt.injection_bundle_digest)
+            || is_zero(&receipt.observation_bundle_digest)
+            || is_zero(&receipt.loss_bundle_digest)
         {
             return Err(ObserverFitnessError::InvalidFitnessInterval);
         }
@@ -699,9 +702,8 @@ pub fn validate_observer_fitness_bundle(
             return Err(ObserverFitnessError::ObserverSequenceNotContiguous);
         }
         if timed_events.windows(2).any(|pair| {
-            pair[0].1.saturating_add(receipt.clock_uncertainty_ms)
-                < pair[1].1.saturating_sub(receipt.clock_uncertainty_ms)
-                && pair[0].0 >= pair[1].0
+            pair[0].1.saturating_sub(receipt.clock_uncertainty_ms)
+                > pair[1].1.saturating_add(receipt.clock_uncertainty_ms)
         }) {
             return Err(ObserverFitnessError::ObserverSequenceOrderInvalid);
         }
@@ -773,7 +775,7 @@ fn is_zero(digest: &Digest) -> bool {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
 
     fn d(value: u8) -> Digest {
@@ -817,7 +819,7 @@ mod tests {
         probes
     }
 
-    pub fn fixture(
+    pub(crate) fn fixture(
         manifest: &RunManifest,
         freeze: &FreezeReceipt,
     ) -> ObserverFitnessBundle {
