@@ -177,7 +177,7 @@ pub fn validate_runtime_attestations_from_events(
     validate_runtime_attestations(manifest, freeze, &ledger, scenarios, attestations)
 }
 
-pub fn validate_runtime_attestations(
+fn validate_runtime_attestations(
     manifest: &RunManifest,
     freeze: &FreezeReceipt,
     ledger: &RunLedgerSummary,
@@ -237,6 +237,7 @@ pub fn validate_runtime_attestations(
         BTreeMap::new();
     let mut instances = BTreeSet::new();
     let mut namespaces = BTreeSet::new();
+    let mut runtime_identity_digests = BTreeSet::new();
     let mut sequences = BTreeSet::new();
     let mut challenge_nonces = BTreeSet::new();
     let mut sequence_order = Vec::with_capacity(attestations.len());
@@ -293,9 +294,13 @@ pub fn validate_runtime_attestations(
         }
         if receipt.challenge_issued_at_ms <= manifest.frozen_at_ms
             || receipt.challenge_issued_at_ms >= receipt.measurement_start_ms
-            || receipt.challenge_expires_at_ms < receipt.measurement_end_ms
-            || receipt.challenge_expires_at_ms < receipt.issued_at_ms
+            || receipt.challenge_expires_at_ms <= receipt.measurement_end_ms
+            || receipt.challenge_expires_at_ms <= receipt.issued_at_ms
             || receipt.challenge_expires_at_ms <= receipt.challenge_issued_at_ms
+            || receipt.challenge_expires_at_ms
+                <= receipt.measurement_end_ms.saturating_add(receipt.clock_uncertainty_ms)
+            || receipt.challenge_expires_at_ms
+                <= receipt.issued_at_ms.saturating_add(receipt.clock_uncertainty_ms)
         {
             return Err(RuntimeAttestationError::ChallengeFreshnessInvalid(
                 receipt.trial_id.clone(),
@@ -312,12 +317,14 @@ pub fn validate_runtime_attestations(
                 receipt.arm,
             ));
         }
-        if !instances.insert(receipt.runtime_instance_digest.clone()) {
+        if !runtime_identity_digests.insert(receipt.runtime_instance_digest.clone()) {
             return Err(RuntimeAttestationError::RuntimeInstanceCollision);
         }
-        if !namespaces.insert(receipt.writable_state_namespace_digest.clone()) {
+        if !runtime_identity_digests.insert(receipt.writable_state_namespace_digest.clone()) {
             return Err(RuntimeAttestationError::StateNamespaceCollision);
         }
+        instances.insert(receipt.runtime_instance_digest.clone());
+        namespaces.insert(receipt.writable_state_namespace_digest.clone());
 
         if receipt.measurement_start_ms >= receipt.measurement_end_ms
             || receipt.issued_at_ms < receipt.measurement_end_ms
@@ -400,8 +407,15 @@ pub fn validate_runtime_attestations(
         allowlisted_egress_events = allowlisted_egress_events
             .checked_add(receipt.allowlisted_egress_events as u128)
             .ok_or(RuntimeAttestationError::ArithmeticOverflow)?;
+        if receipt.receipt_sequence == 0 {
+            return Err(RuntimeAttestationError::InvalidObserverSequence);
+        }
         sequences.insert(receipt.receipt_sequence);
-        sequence_order.push((receipt.issued_at_ms, receipt.receipt_sequence));
+        sequence_order.push((
+            receipt.receipt_sequence,
+            receipt.issued_at_ms,
+            receipt.clock_uncertainty_ms,
+        ));
         evidence.push(RuntimeTrialEvidence {
             trial_id: receipt.trial_id.clone(),
             arm: receipt.arm,
@@ -440,17 +454,19 @@ pub fn validate_runtime_attestations(
     if sequences.len() != attestations.len() {
         return Err(RuntimeAttestationError::DuplicateObserverSequence);
     }
-    sequence_order.sort_unstable_by_key(|(issued, sequence)| (*issued, *sequence));
-    if sequence_order
-        .windows(2)
-        .any(|pair| pair[0].1 >= pair[1].1)
-    {
-        return Err(RuntimeAttestationError::ObserverSequenceOrderInvalid);
-    }
-    if sequence_order.first().map(|entry| entry.1) != Some(1)
-        || sequence_order.windows(2).any(|pair| pair[1].1 != pair[0].1.saturating_add(1))
+    sequence_order.sort_unstable_by_key(|entry| entry.0);
+    if sequence_order.first().map(|entry| entry.0) != Some(1)
+        || sequence_order.windows(2).any(|pair| pair[1].0 != pair[0].0.saturating_add(1))
     {
         return Err(RuntimeAttestationError::ObserverSequenceNotContiguous);
+    }
+    // Observer timestamps can overlap within their declared uncertainty. Reject
+    // only an ordering that is provably reversed, not harmless clock jitter.
+    if sequence_order.windows(2).any(|pair| {
+        pair[0].1.saturating_sub(pair[0].2)
+            > pair[1].1.saturating_add(pair[1].2)
+    }) {
+        return Err(RuntimeAttestationError::ObserverSequenceOrderInvalid);
     }
 
     Ok(RuntimeAttestationSummary {
