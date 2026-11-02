@@ -966,15 +966,98 @@ mod tests {
         }
     }
 
+    fn event(
+        manifest: &RunManifest,
+        scenario: &ScenarioReceipt,
+        arm: EvaluationArm,
+        event_id: &str,
+        at: u64,
+        kind: TrialEventKind,
+    ) -> TrialEvent {
+        let arm_identity_digest = match arm {
+            EvaluationArm::Candidate => manifest.agent_identity_digest.clone(),
+            EvaluationArm::Baseline => manifest.baseline_identity_digest.clone(),
+        };
+        TrialEvent {
+            run_id: manifest.run_id.clone(),
+            arm,
+            trial_id: scenario.trial_id.clone(),
+            event_id: event_id.into(),
+            attempt: 1,
+            occurred_at_ms: at,
+            kind,
+            manifest_commitment: scenario.manifest_commitment.clone(),
+            arm_identity_digest,
+            evaluator_digest: manifest.evaluator_digest.clone(),
+            scenario_commitment: scenario.case_payload_commitment.clone(),
+            source_id: manifest.evidence_source_id.clone(),
+            control_domain: manifest.evidence_control_domain.clone(),
+        }
+    }
+
+    fn complete_trial_events(
+        manifest: &RunManifest,
+        scenarios: &[ScenarioReceipt],
+    ) -> Vec<TrialEvent> {
+        let mut events = Vec::new();
+        for scenario in scenarios {
+            let (first_arm, second_arm) = match manifest.trials.iter()
+                .find(|trial| trial.trial_id == scenario.trial_id).unwrap().first_arm
+            {
+                EvaluationArm::Candidate => (EvaluationArm::Candidate, EvaluationArm::Baseline),
+                EvaluationArm::Baseline => (EvaluationArm::Baseline, EvaluationArm::Candidate),
+            };
+            events.push(event(manifest, scenario, first_arm, "first-start", 40,
+                TrialEventKind::Started));
+            events.push(event(manifest, scenario, first_arm, "first-complete", 50,
+                TrialEventKind::Completed));
+            events.push(event(manifest, scenario, second_arm, "second-start", 60,
+                TrialEventKind::Started));
+            events.push(event(manifest, scenario, second_arm, "second-complete", 70,
+                TrialEventKind::Completed));
+        }
+        events
+    }
+
     #[test]
     fn complete_clean_runtime_receipts_cover_every_arm_and_trial() {
         let (manifest, freeze, ledger, scenarios, attestations) = fixture();
-        let result =
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations).unwrap();
+        let events = complete_trial_events(&manifest, &scenarios);
+        let result = validate_runtime_attestations_from_events(
+            &manifest,
+            &freeze,
+            &scenarios,
+            &[],
+            &events,
+            &attestations,
+        ).unwrap();
         assert_eq!(result.planned_arm_trials, 4);
         assert_eq!(result.complete_attestations, 4);
         assert_eq!(result.allowlisted_egress_events, 8);
         assert_eq!(result.evidence.len(), 4);
+    }
+
+    #[test]
+    fn preferred_entrypoint_rejects_unbound_raw_trial_events() {
+        let (manifest, freeze, _ledger, scenarios, attestations) = fixture();
+        let mut events = complete_trial_events(&manifest, &scenarios);
+        events[0].arm_identity_digest = digest(99);
+        assert!(matches!(
+            validate_runtime_attestations_from_events(
+                &manifest, &freeze, &scenarios, &[], &events, &attestations
+            ),
+            Err(RuntimeAttestationError::TrialLedgerInvalid(_))
+        ));
+    }
+
+    #[test]
+    fn preferred_entrypoint_does_not_accept_caller_supplied_ledger_summary() {
+        let (manifest, freeze, _ledger, scenarios, attestations) = fixture();
+        let events = complete_trial_events(&manifest, &scenarios);
+        let result = validate_runtime_attestations_from_events(
+            &manifest, &freeze, &scenarios, &[], &events, &attestations
+        ).unwrap();
+        assert_eq!(result.complete_attestations, manifest.trials.len() * 2);
     }
 
     #[test]
