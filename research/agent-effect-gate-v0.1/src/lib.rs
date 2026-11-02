@@ -408,6 +408,9 @@ impl<P: ParticipantPort> EffectBroker<P> {
             Ok(m) => m.clone(),
             Err(reason) => return self.denied_report(proposal, reason),
         };
+        if manifest.finality_mode == FinalityMode::AttestationBound {
+            return self.denied_report(proposal, GateDenial::ExecutionFinalityRequired);
+        }
 
         let attempt_key = (proposal.tenant_id.clone(), proposal.attempt_id.clone());
         if self.used_attempts.contains(&attempt_key) {
@@ -460,18 +463,8 @@ impl<P: ParticipantPort> EffectBroker<P> {
         // ledger, not this broker, persists the authoritative attempt/effect state.
         self.used_attempts.insert(attempt_key);
 
-        let request = DispatchRequest {
-            participant_id: manifest.participant_id.clone(),
-            tenant_id: proposal.tenant_id.clone(),
-            episode_id: proposal.episode_id.clone(),
-            step_id: proposal.step_id.clone(),
-            tool_id: proposal.tool_id.clone(),
-            operation_id: proposal.operation_id.clone(),
-            target_digest: proposal.target_digest.clone(),
-            request_digest: proposal.request_digest.clone(),
-            attempt_id: proposal.attempt_id.clone(),
-            idempotency_key: proposal.idempotency_key.clone(),
-        };
+        let request = self.dispatch_request(proposal, grant.expect("authorize checked grant"),
+            &manifest);
 
         let (status, evidence) = match self.participant.submit(&request) {
             Ok(e) if self.evidence_matches(&e, &manifest, proposal)
@@ -480,7 +473,7 @@ impl<P: ParticipantPort> EffectBroker<P> {
             _ => (AttemptStatus::OutcomeUnknown, None),
         };
         DispatchReport { gate_receipt, participant_status: Some(status),
-            participant_evidence: evidence }
+            participant_evidence: evidence, finality_handle_digest: None }
     }
 
     /// Query the exact attempt, then cross-check it against the participant's current
@@ -558,8 +551,16 @@ impl<P: ParticipantPort> EffectBroker<P> {
         if g.scope != m.required_scope { return Err(GateDenial::GrantScopeMismatch); }
         if p.policy_version != m.policy_version || g.policy_version != m.policy_version
             || p.policy_digest != m.policy_digest || g.policy_digest != m.policy_digest
+            || m.policy_digest == Digest::ZERO
         {
             return Err(GateDenial::PolicyVersionMismatch);
+        }
+        if m.finality_mode == FinalityMode::AttestationBound
+            && (m.finality_verifier_id.is_empty()
+                || m.finality_verifier_control_domain.is_empty()
+                || m.max_finality_handle_ttl_ms == 0)
+        {
+            return Err(GateDenial::FinalityVerifierUnavailable);
         }
         let exact = g.grant_id == p.grant_id && g.tenant_id == p.tenant_id
             && g.principal_id == p.principal_id && g.episode_id == p.episode_id
@@ -579,7 +580,67 @@ impl<P: ParticipantPort> EffectBroker<P> {
         p: &MutationProposal) -> bool {
         e.participant_id == m.participant_id && e.tenant_id == p.tenant_id
             && e.idempotency_key == p.idempotency_key && e.attempt_id == p.attempt_id
-            && e.request_digest == p.request_digest && !e.ledger_cursor.is_empty()
+            && e.request_digest == p.request_digest && e.finality_handle_digest.is_none()
+            && !e.ledger_cursor.is_empty()
+    }
+
+    fn evidence_matches_finality(
+        &self,
+        evidence: &ParticipantEvidence,
+        manifest: &ToolManifest,
+        proposal: &MutationProposal,
+        handle: &ExecutionHandle,
+    ) -> bool {
+        self.evidence_matches_base(evidence, manifest, proposal)
+            && evidence.finality_handle_digest.as_ref() == Some(&handle.handle_digest)
+    }
+
+    fn evidence_matches_base(
+        &self,
+        evidence: &ParticipantEvidence,
+        manifest: &ToolManifest,
+        proposal: &MutationProposal,
+    ) -> bool {
+        evidence.participant_id == manifest.participant_id
+            && evidence.tenant_id == proposal.tenant_id
+            && evidence.idempotency_key == proposal.idempotency_key
+            && evidence.attempt_id == proposal.attempt_id
+            && evidence.request_digest == proposal.request_digest
+            && !evidence.ledger_cursor.is_empty()
+    }
+
+    fn dispatch_request(
+        &self,
+        proposal: &MutationProposal,
+        grant: &AuthorityGrant,
+        manifest: &ToolManifest,
+    ) -> DispatchRequest {
+        DispatchRequest {
+            participant_id: manifest.participant_id.clone(),
+            tenant_id: proposal.tenant_id.clone(),
+            principal_id: proposal.principal_id.clone(),
+            plan_digest: proposal.plan_digest.clone(),
+            episode_id: proposal.episode_id.clone(),
+            step_id: proposal.step_id.clone(),
+            tool_id: proposal.tool_id.clone(),
+            operation_id: proposal.operation_id.clone(),
+            grant_id: grant.grant_id.clone(),
+            grant_issuer: grant.issuer.clone(),
+            grant_scope: grant.scope.clone(),
+            grant_expires_at_ms: grant.expires_at_ms,
+            manifest_version: proposal.manifest_version.clone(),
+            manifest_digest: proposal.manifest_digest.clone(),
+            toolchain_id: proposal.toolchain_id.clone(),
+            toolchain_digest: proposal.toolchain_digest.clone(),
+            policy_version: proposal.policy_version.clone(),
+            policy_digest: proposal.policy_digest.clone(),
+            environment: proposal.environment.clone(),
+            risk_level: proposal.risk_level,
+            target_digest: proposal.target_digest.clone(),
+            request_digest: proposal.request_digest.clone(),
+            attempt_id: proposal.attempt_id.clone(),
+            idempotency_key: proposal.idempotency_key.clone(),
+        }
     }
 
     fn next_receipt_sequence(&mut self) -> u64 {
@@ -593,7 +654,7 @@ impl<P: ParticipantPort> EffectBroker<P> {
             gate_receipt: GateReceipt { sequence, tenant_id: p.tenant_id.clone(),
                 episode_id: p.episode_id.clone(), attempt_id: p.attempt_id.clone(),
                 request_digest: p.request_digest.clone(), decision: GateDecision::Denied(reason) },
-            participant_status: None, participant_evidence: None,
+            participant_status: None, participant_evidence: None, finality_handle_digest: None,
         }
     }
 
