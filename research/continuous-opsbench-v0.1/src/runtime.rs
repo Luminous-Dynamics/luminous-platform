@@ -1094,6 +1094,35 @@ mod tests {
         attestations.iter().map(challenge_from_attestation).collect()
     }
 
+    fn validate_fixture_with_fitness_summary(
+        manifest: &RunManifest,
+        freeze: &FreezeReceipt,
+        ledger: &RunLedgerSummary,
+        scenarios: &[ScenarioReceipt],
+        fitness_summary: &ObserverFitnessSummary,
+        attestations: &[RuntimeTrialAttestation],
+    ) -> Result<RuntimeAttestationSummary, RuntimeAttestationError> {
+        let challenges = challenge_receipts(attestations);
+        validate_runtime_attestations(
+            manifest, freeze, ledger, scenarios, fitness_summary, &challenges, attestations
+        )
+    }
+
+    fn validate_fixture_with_fitness_bundle(
+        manifest: &RunManifest,
+        freeze: &FreezeReceipt,
+        ledger: &RunLedgerSummary,
+        scenarios: &[ScenarioReceipt],
+        fitness_bundle: &ObserverFitnessBundle,
+        attestations: &[RuntimeTrialAttestation],
+    ) -> Result<RuntimeAttestationSummary, RuntimeAttestationError> {
+        let fitness_summary = validate_observer_fitness_bundle(manifest, freeze, fitness_bundle)
+            .map_err(RuntimeAttestationError::ObserverFitnessInvalid)?;
+        validate_fixture_with_fitness_summary(
+            manifest, freeze, ledger, scenarios, &fitness_summary, attestations
+        )
+    }
+
     fn validate_fixture(
         manifest: &RunManifest,
         freeze: &FreezeReceipt,
@@ -1101,12 +1130,9 @@ mod tests {
         scenarios: &[ScenarioReceipt],
         attestations: &[RuntimeTrialAttestation],
     ) -> Result<RuntimeAttestationSummary, RuntimeAttestationError> {
-        let challenges = challenge_receipts(attestations);
         let fitness_bundle = crate::observer_fitness::tests::fixture(manifest, freeze);
-        let fitness_summary = validate_observer_fitness_bundle(manifest, freeze, &fitness_bundle)
-            .map_err(RuntimeAttestationError::ObserverFitnessInvalid)?;
-        validate_runtime_attestations(
-            manifest, freeze, ledger, scenarios, &fitness_summary, &challenges, attestations
+        validate_fixture_with_fitness_bundle(
+            manifest, freeze, ledger, scenarios, &fitness_bundle, attestations
         )
     }
     fn fixture() -> (
@@ -1632,6 +1658,97 @@ mod tests {
         assert_eq!(
             validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &challenges, &attestations),
             Err(RuntimeAttestationError::ChallengeReceiptDigestInvalid)
+        );
+    }
+
+    #[test]
+    fn certification_requires_distinct_pre_run_and_post_run_fitness_receipts() {
+        let (manifest, freeze, ledger, scenarios, attestations) = fixture();
+        let mut fitness_bundle = crate::observer_fitness::tests::fixture(&manifest, &freeze);
+        fitness_bundle.batches.pop();
+        assert_eq!(
+            validate_fixture_with_fitness_bundle(
+                &manifest, &freeze, &ledger, &scenarios, &fitness_bundle, &attestations
+            ),
+            Err(RuntimeAttestationError::ObserverFitnessPostRunMissing)
+        );
+    }
+
+    #[test]
+    fn pre_run_fitness_must_be_measured_and_issued_before_runtime_starts() {
+        let (manifest, freeze, ledger, scenarios, attestations) = fixture();
+        let fitness_bundle = crate::observer_fitness::tests::fixture(&manifest, &freeze);
+        let mut summary = validate_observer_fitness_bundle(&manifest, &freeze, &fitness_bundle).unwrap();
+        summary.batches[0].measurement_end_ms = 39;
+        assert_eq!(
+            validate_fixture_with_fitness_summary(
+                &manifest, &freeze, &ledger, &scenarios, &summary, &attestations
+            ),
+            Err(RuntimeAttestationError::ObserverFitnessPreRunMissing)
+        );
+    }
+
+    #[test]
+    fn pre_run_fitness_validity_must_cover_the_entire_runtime_measurement_interval() {
+        let (manifest, freeze, ledger, scenarios, attestations) = fixture();
+        let fitness_bundle = crate::observer_fitness::tests::fixture(&manifest, &freeze);
+        let mut summary = validate_observer_fitness_bundle(&manifest, &freeze, &fitness_bundle).unwrap();
+        summary.batches[0].expires_at_ms = 60;
+        assert_eq!(
+            validate_fixture_with_fitness_summary(
+                &manifest, &freeze, &ledger, &scenarios, &summary, &attestations
+            ),
+            Err(RuntimeAttestationError::ObserverFitnessWindowDoesNotCoverRuntime(
+                "trial-a".into(), EvaluationArm::Candidate
+            ))
+        );
+    }
+
+    #[test]
+    fn post_run_fitness_must_be_measured_after_all_runtime_observation_ends() {
+        let (manifest, freeze, ledger, scenarios, attestations) = fixture();
+        let fitness_bundle = crate::observer_fitness::tests::fixture(&manifest, &freeze);
+        let mut summary = validate_observer_fitness_bundle(&manifest, &freeze, &fitness_bundle).unwrap();
+        summary.batches[1].measurement_start_ms = 90;
+        summary.batches[1].measurement_end_ms = 95;
+        assert_eq!(
+            validate_fixture_with_fitness_summary(
+                &manifest, &freeze, &ledger, &scenarios, &summary, &attestations
+            ),
+            Err(RuntimeAttestationError::ObserverFitnessPostRunOrderInvalid)
+        );
+    }
+
+    #[test]
+    fn a_post_run_fitness_receipt_cannot_be_reused_as_pre_run_qualification() {
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        let fitness_bundle = crate::observer_fitness::tests::fixture(&manifest, &freeze);
+        let summary = validate_observer_fitness_bundle(&manifest, &freeze, &fitness_bundle).unwrap();
+        attestations[0].observer_fitness_receipt_digest = summary.batches[1].receipt_digest.clone();
+        assert_eq!(
+            validate_fixture_with_fitness_summary(
+                &manifest, &freeze, &ledger, &scenarios, &summary, &attestations
+            ),
+            Err(RuntimeAttestationError::ObserverFitnessPreRunMissing)
+        );
+    }
+
+    #[test]
+    fn an_extra_unreferenced_fitness_batch_cannot_be_used_to_pad_the_evidence_bundle() {
+        let (manifest, freeze, ledger, scenarios, attestations) = fixture();
+        let fitness_bundle = crate::observer_fitness::tests::fixture(&manifest, &freeze);
+        let mut summary = validate_observer_fitness_bundle(&manifest, &freeze, &fitness_bundle).unwrap();
+        let mut extra = summary.batches[1].clone();
+        extra.receipt_digest = digest(240);
+        extra.batch_id = "unreferenced-extra".into();
+        extra.calibration_runtime_digest = digest(241);
+        extra.calibration_namespace_digest = digest(242);
+        summary.batches.push(extra);
+        assert_eq!(
+            validate_fixture_with_fitness_summary(
+                &manifest, &freeze, &ledger, &scenarios, &summary, &attestations
+            ),
+            Err(RuntimeAttestationError::ObserverFitnessBatchUnreferenced)
         );
     }
 
