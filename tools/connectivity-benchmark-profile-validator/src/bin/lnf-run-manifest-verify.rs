@@ -443,7 +443,7 @@ fn validate_workloads(manifest: &Value) -> Vec<String> {
             errors.push(format!("workload {id} is duplicated"));
             continue;
         }
-        let Some((intent, semantics)) = expected.get(id) else {
+        let Some((intent, semantics)) = expected.get(id).copied() else {
             errors.push(format!("unknown workload {id}"));
             continue;
         };
