@@ -27,14 +27,19 @@ pub struct ArmOutcomeCounts {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct PairedCluster {
-    pub cluster_id: String,
+pub struct ArmClusterRecord {
     pub fault_schedule_digest: Digest,
     pub topology_digest: Digest,
     pub workload_profile_digest: Digest,
     pub offered_demand_contract_digest: Digest,
-    pub candidate: ArmOutcomeCounts,
-    pub baseline: ArmOutcomeCounts,
+    pub outcomes: ArmOutcomeCounts,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PairedCluster {
+    pub cluster_id: String,
+    pub candidate: ArmClusterRecord,
+    pub baseline: ArmClusterRecord,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -188,50 +193,75 @@ pub fn evaluate_paired_clusters(
         if !ids.insert(cluster.cluster_id.as_str()) {
             return Err(InferenceError::DuplicateCluster(cluster.cluster_id.clone()));
         }
-        for (digest, name) in [
-            (&cluster.fault_schedule_digest, "fault_schedule_digest"),
-            (&cluster.topology_digest, "topology_digest"),
-            (&cluster.workload_profile_digest, "workload_profile_digest"),
-            (&cluster.offered_demand_contract_digest, "offered_demand_contract_digest"),
+        for (candidate_digest, baseline_digest, name) in [
+            (
+                &cluster.candidate.fault_schedule_digest,
+                &cluster.baseline.fault_schedule_digest,
+                "fault_schedule_digest",
+            ),
+            (
+                &cluster.candidate.topology_digest,
+                &cluster.baseline.topology_digest,
+                "topology_digest",
+            ),
+            (
+                &cluster.candidate.workload_profile_digest,
+                &cluster.baseline.workload_profile_digest,
+                "workload_profile_digest",
+            ),
+            (
+                &cluster.candidate.offered_demand_contract_digest,
+                &cluster.baseline.offered_demand_contract_digest,
+                "offered_demand_contract_digest",
+            ),
         ] {
-            if digest_is_zero(digest) {
+            if digest_is_zero(candidate_digest) || digest_is_zero(baseline_digest) {
                 return Err(InferenceError::ZeroRequiredDigest(name.into()));
+            }
+            if candidate_digest != baseline_digest {
+                return Err(InferenceError::CandidateBaselineScheduleMismatch(
+                    cluster.cluster_id.clone(),
+                ));
             }
         }
         validate_arm_counts(
             &cluster.cluster_id,
             EvaluationArm::Candidate,
-            &cluster.candidate,
+            &cluster.candidate.outcomes,
         )?;
         validate_arm_counts(
             &cluster.cluster_id,
             EvaluationArm::Baseline,
-            &cluster.baseline,
+            &cluster.baseline.outcomes,
         )?;
-        if cluster.candidate.planned_faults != cluster.baseline.planned_faults {
+        if cluster.candidate.outcomes.planned_faults
+            != cluster.baseline.outcomes.planned_faults
+        {
             return Err(InferenceError::CandidateBaselineScheduleMismatch(
                 cluster.cluster_id.clone(),
             ));
         }
-        let denominator = cluster.candidate.planned_faults as f64;
+        let candidate_counts = &cluster.candidate.outcomes;
+        let baseline_counts = &cluster.baseline.outcomes;
+        let denominator = candidate_counts.planned_faults as f64;
         let candidate_lower =
-            cluster.candidate.verified_recoveries as f64 / denominator;
-        let candidate_upper = (cluster.candidate.verified_recoveries
-            + cluster.candidate.indeterminate_recoveries) as f64
+            candidate_counts.verified_recoveries as f64 / denominator;
+        let candidate_upper = (candidate_counts.verified_recoveries
+            + candidate_counts.indeterminate_recoveries) as f64
             / denominator;
         let baseline_lower =
-            cluster.baseline.verified_recoveries as f64 / denominator;
-        let baseline_upper = (cluster.baseline.verified_recoveries
-            + cluster.baseline.indeterminate_recoveries) as f64
+            baseline_counts.verified_recoveries as f64 / denominator;
+        let baseline_upper = (baseline_counts.verified_recoveries
+            + baseline_counts.indeterminate_recoveries) as f64
             / denominator;
         rates.push(ClusterRates {
             candidate_lower,
             candidate_upper,
-            candidate_indeterminate: cluster.candidate.indeterminate_recoveries as f64
+            candidate_indeterminate: candidate_counts.indeterminate_recoveries as f64
                 / denominator,
             baseline_lower,
             baseline_upper,
-            baseline_indeterminate: cluster.baseline.indeterminate_recoveries as f64
+            baseline_indeterminate: baseline_counts.indeterminate_recoveries as f64
                 / denominator,
         });
     }
@@ -579,15 +609,21 @@ mod tests {
         }
     }
 
-    fn cluster(id: &str, candidate: ArmOutcomeCounts, baseline: ArmOutcomeCounts) -> PairedCluster {
-        PairedCluster {
-            cluster_id: id.into(),
+    fn arm_record(outcomes: ArmOutcomeCounts) -> ArmClusterRecord {
+        ArmClusterRecord {
             fault_schedule_digest: digest(1),
             topology_digest: digest(2),
             workload_profile_digest: digest(3),
             offered_demand_contract_digest: digest(4),
-            candidate,
-            baseline,
+            outcomes,
+        }
+    }
+
+    fn cluster(id: &str, candidate: ArmOutcomeCounts, baseline: ArmOutcomeCounts) -> PairedCluster {
+        PairedCluster {
+            cluster_id: id.into(),
+            candidate: arm_record(candidate),
+            baseline: arm_record(baseline),
         }
     }
 
@@ -675,7 +711,7 @@ mod tests {
     #[test]
     fn schedule_digest_mismatch_is_rejected() {
         let mut clusters = clean_pairs();
-        clusters[0].workload_profile_digest = digest(99);
+        clusters[0].baseline.workload_profile_digest = digest(99);
         assert_eq!(
             evaluate_paired_clusters(&plan(94, 8), &clusters),
             Err(InferenceError::CandidateBaselineScheduleMismatch("cluster-00".into()))
@@ -691,7 +727,7 @@ mod tests {
             Err(InferenceError::DuplicateCluster("cluster-00".into()))
         );
         let mut clusters = clean_pairs();
-        clusters[0].candidate.known_nonrecoveries -= 1;
+        clusters[0].candidate.outcomes.known_nonrecoveries -= 1;
         assert_eq!(
             evaluate_paired_clusters(&plan(96, 8), &clusters),
             Err(InferenceError::OutcomeDenominatorMismatch(
@@ -740,19 +776,19 @@ mod tests {
                 0 => { clusters.pop(); }
                 1 => { let extra = clusters[0].clone(); clusters.push(extra); }
                 2 => clusters[0].cluster_id.clear(),
-                3 => clusters[0].fault_schedule_digest = digest(0),
-                4 => clusters[0].topology_digest = digest(0),
-                5 => clusters[0].workload_profile_digest = digest(0),
-                6 => clusters[0].offered_demand_contract_digest = digest(0),
-                7 => clusters[0].candidate.planned_faults = 0,
-                8 => clusters[0].candidate.verified_recoveries += 1,
-                9 => clusters[0].candidate.known_nonrecoveries -= 1,
-                10 => clusters[0].candidate.indeterminate_recoveries += 1,
-                11 => clusters[0].baseline.verified_recoveries += 1,
-                12 => clusters[0].baseline.known_nonrecoveries -= 1,
-                13 => clusters[0].baseline.indeterminate_recoveries += 1,
-                14 => clusters[0].baseline.planned_faults += 1,
-                15 => clusters[0].candidate.planned_faults += 1,
+                3 => clusters[0].candidate.fault_schedule_digest = digest(0),
+                4 => clusters[0].candidate.topology_digest = digest(0),
+                5 => clusters[0].candidate.workload_profile_digest = digest(0),
+                6 => clusters[0].candidate.offered_demand_contract_digest = digest(0),
+                7 => clusters[0].candidate.outcomes.planned_faults = 0,
+                8 => clusters[0].candidate.outcomes.verified_recoveries += 1,
+                9 => clusters[0].candidate.outcomes.known_nonrecoveries -= 1,
+                10 => clusters[0].candidate.outcomes.indeterminate_recoveries += 1,
+                11 => clusters[0].baseline.outcomes.verified_recoveries += 1,
+                12 => clusters[0].baseline.outcomes.known_nonrecoveries -= 1,
+                13 => clusters[0].baseline.outcomes.indeterminate_recoveries += 1,
+                14 => clusters[0].baseline.outcomes.planned_faults += 1,
+                15 => clusters[0].candidate.outcomes.planned_faults += 1,
                 16 => configured.minimum_independent_clusters = 9,
                 17 => configured.minimum_independent_clusters = 1,
                 18 => configured.bootstrap_replicates = 0,
@@ -765,26 +801,26 @@ mod tests {
                 25 => configured.bootstrap_seed_commitment = digest(0),
                 26 => configured.algorithm_version = "unversioned".into(),
                 27 => configured.schema = "wrong".into(),
-                28 => clusters[1].fault_schedule_digest = digest(77),
-                29 => clusters[1].topology_digest = digest(77),
-                30 => clusters[1].workload_profile_digest = digest(77),
-                31 => clusters[1].offered_demand_contract_digest = digest(77),
-                32 => clusters[0].baseline.verified_recoveries = clusters[0].baseline.planned_faults + 1,
-                33 => clusters[0].candidate.known_nonrecoveries = u64::MAX,
-                34 => clusters[0].baseline.indeterminate_recoveries = u64::MAX,
+                28 => clusters[1].baseline.fault_schedule_digest = digest(77),
+                29 => clusters[1].baseline.topology_digest = digest(77),
+                30 => clusters[1].baseline.workload_profile_digest = digest(77),
+                31 => clusters[1].baseline.offered_demand_contract_digest = digest(77),
+                32 => clusters[0].baseline.outcomes.verified_recoveries = clusters[0].baseline.outcomes.planned_faults + 1,
+                33 => clusters[0].candidate.outcomes.known_nonrecoveries = u64::MAX,
+                34 => clusters[0].baseline.outcomes.indeterminate_recoveries = u64::MAX,
                 35 => clusters[0].cluster_id = "c\n0".into(),
                 36 => clusters[0].cluster_id = "x".repeat(257),
-                37 => clusters[0].candidate.planned_faults = 1,
-                38 => clusters[0].baseline.planned_faults = 2,
+                37 => clusters[0].candidate.outcomes.planned_faults = 1,
+                38 => clusters[0].baseline.outcomes.planned_faults = 2,
                 39 => configured.bootstrap_replicates = MIN_BOOTSTRAP_REPLICATES - 1,
                 40 => configured.minimum_independent_clusters = MAX_INDEPENDENT_CLUSTERS + 1,
                 41 => clusters[2].cluster_id = clusters[0].cluster_id.clone(),
-                42 => clusters[1].candidate.verified_recoveries = clusters[1].candidate.planned_faults + 1,
-                43 => clusters[1].baseline.known_nonrecoveries = u64::MAX,
-                44 => clusters[3].fault_schedule_digest = digest(0),
-                45 => clusters[3].topology_digest = digest(0),
-                46 => clusters[4].workload_profile_digest = digest(0),
-                _ => clusters[5].offered_demand_contract_digest = digest(0),
+                42 => clusters[1].candidate.outcomes.verified_recoveries = clusters[1].candidate.outcomes.planned_faults + 1,
+                43 => clusters[1].baseline.outcomes.known_nonrecoveries = u64::MAX,
+                44 => clusters[3].candidate.fault_schedule_digest = digest(0),
+                45 => clusters[3].candidate.topology_digest = digest(0),
+                46 => clusters[4].candidate.workload_profile_digest = digest(0),
+                _ => clusters[5].candidate.offered_demand_contract_digest = digest(0),
             }
             assert!(
                 evaluate_paired_clusters(&configured, &clusters).is_err(),
