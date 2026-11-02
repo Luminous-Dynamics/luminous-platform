@@ -196,8 +196,12 @@ pub struct ObserverFitnessBatchSummary {
     pub batch_id: String,
     pub calibration_runtime_digest: Digest,
     pub calibration_namespace_digest: Digest,
+    pub measurement_start_ms: u64,
+    pub measurement_end_ms: u64,
+    pub issued_at_ms: u64,
     pub valid_from_ms: u64,
     pub expires_at_ms: u64,
+    pub clock_uncertainty_ms: u64,
     pub positive_controls: usize,
     pub negative_controls: usize,
     pub loss_controls: usize,
@@ -449,7 +453,7 @@ pub fn validate_observer_fitness_bundle(
         }
         if receipt.clock_uncertainty_ms > FITNESS_MAX_CLOCK_UNCERTAINTY_MS
             || receipt.measurement_start_ms >= receipt.measurement_end_ms
-            || receipt.issued_at_ms < receipt.measurement_end_ms
+            || receipt.issued_at_ms <= receipt.measurement_end_ms
             || receipt.valid_from_ms != receipt.issued_at_ms
             || receipt.expires_at_ms <= receipt.valid_from_ms
             || is_zero(&receipt.injection_bundle_digest)
@@ -718,8 +722,12 @@ pub fn validate_observer_fitness_bundle(
             batch_id: receipt.batch_id.clone(),
             calibration_runtime_digest: receipt.calibration_runtime_digest.clone(),
             calibration_namespace_digest: receipt.calibration_namespace_digest.clone(),
+            measurement_start_ms: receipt.measurement_start_ms,
+            measurement_end_ms: receipt.measurement_end_ms,
+            issued_at_ms: receipt.issued_at_ms,
             valid_from_ms: receipt.valid_from_ms,
             expires_at_ms: receipt.expires_at_ms,
+            clock_uncertainty_ms: receipt.clock_uncertainty_ms,
             positive_controls: positive,
             negative_controls: negative,
             loss_controls: loss_count,
