@@ -8,7 +8,8 @@
     "schema_version",
     "known_answers",
     "mutations",
-    "interactions"
+    "interactions",
+    "metamorphic_controls"
   ],
   "properties": {
     "schema_version": {
@@ -36,6 +37,14 @@
       "maxItems": 100000,
       "items": {
         "$ref": "#/$defs/interaction"
+      }
+    },
+    "metamorphic_controls": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/metamorphic"
       }
     }
   },
@@ -361,6 +370,55 @@
           "type": "boolean"
         },
         "observed_acceptance": {
+          "type": "boolean"
+        }
+      }
+    },
+    "metamorphic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "control_id",
+        "task_id",
+        "base_instruction_digest",
+        "variant_instruction_digest",
+        "shared_precondition_digest",
+        "shared_postcondition_digest",
+        "equivalence_contract_digest",
+        "expected_semantic_equivalence",
+        "observed_semantic_equivalence"
+      ],
+      "properties": {
+        "control_id": {
+          "$ref": "#/$defs/id"
+        },
+        "task_id": {
+          "$ref": "#/$defs/id"
+        },
+        "base_instruction_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "variant_instruction_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "shared_precondition_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "shared_postcondition_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "equivalence_contract_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "expected_semantic_equivalence": {
+          "type": "boolean"
+        },
+        "observed_semantic_equivalence": {
           "type": "boolean"
         }
       }
