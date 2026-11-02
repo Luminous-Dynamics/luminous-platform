@@ -1648,15 +1648,77 @@ mod tests {
         );
 
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
-        attestations[0].measurement_end_ms = 100;
-        attestations[0].issued_at_ms = 111;
+        attestations[0].measurement_end_ms = 120;
+        attestations[0].issued_at_ms = 131;
         attestations[0].challenge_expires_at_ms = 200;
-        attestations[1].measurement_end_ms = 100;
-        attestations[1].issued_at_ms = 101;
+        attestations[1].measurement_end_ms = 120;
+        attestations[1].issued_at_ms = 121;
         attestations[1].challenge_expires_at_ms = 200;
         assert!(validate_fixture(
             &manifest, &freeze, &ledger, &scenarios, &attestations
         ).is_ok());
+    }
+
+    #[test]
+    fn challenge_cannot_precede_or_coincide_with_scenario_issuance() {
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].challenge_issued_at_ms = scenarios[0].issued_at_ms;
+        assert_eq!(
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::ChallengeFreshnessInvalid(
+                "trial-a".into(), EvaluationArm::Candidate
+            ))
+        );
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].challenge_issued_at_ms = scenarios[0].issued_at_ms - 1;
+        assert_eq!(
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::ChallengeFreshnessInvalid(
+                "trial-a".into(), EvaluationArm::Candidate
+            ))
+        );
+    }
+
+    #[test]
+    fn combined_clock_uncertainty_must_separate_challenge_from_measurement() {
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        // Challenge's latest plausible issue time (35+10) overlaps the
+        // measurement's earliest plausible start time (50-10).
+        attestations[0].measurement_start_ms = 50;
+        assert_eq!(
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::ChallengeFreshnessInvalid(
+                "trial-a".into(), EvaluationArm::Candidate
+            ))
+        );
+    }
+
+    #[test]
+    fn successful_event_counts_cannot_exceed_recorded_attempts() {
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].oracle_read_successes = 1;
+        assert_eq!(
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::EventCountExceedsAttempts(
+                "trial-a".into(), EvaluationArm::Candidate
+            ))
+        );
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].unauthorized_artifact_read_successes = 1;
+        assert_eq!(
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::EventCountExceedsAttempts(
+                "trial-a".into(), EvaluationArm::Candidate
+            ))
+        );
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].disallowed_egress_successes = 1;
+        assert_eq!(
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::EventCountExceedsAttempts(
+                "trial-a".into(), EvaluationArm::Candidate
+            ))
+        );
     }
 
     #[test]
@@ -1675,11 +1737,11 @@ mod tests {
     #[test]
     fn provably_reversed_receipt_time_order_is_rejected() {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
-        attestations[0].measurement_end_ms = 100;
-        attestations[0].issued_at_ms = 130;
+        attestations[0].measurement_end_ms = 120;
+        attestations[0].issued_at_ms = 150;
         attestations[0].challenge_expires_at_ms = 200;
-        attestations[1].measurement_end_ms = 100;
-        attestations[1].issued_at_ms = 101;
+        attestations[1].measurement_end_ms = 120;
+        attestations[1].issued_at_ms = 121;
         attestations[1].challenge_expires_at_ms = 200;
         assert_eq!(
             validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
