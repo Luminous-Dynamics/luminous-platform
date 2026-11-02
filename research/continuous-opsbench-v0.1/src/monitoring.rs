@@ -1722,8 +1722,32 @@ mod tests {
     }
 
     #[test]
-    fn sixty_adversarial_monitoring_mutations_fail_closed() {
-        for vector in 0..60 {
+    fn event_wait_return_after_ephemeral_expiry_is_late_not_false() {
+        let c = contract(EvaluationArm::Candidate, MonitoringTaskKind::UrgentEphemeral);
+        let e = vec![event(2_000, Some(2_500))];
+        let o = vec![observation(EvaluationArm::Candidate,"seen",1,2_400,true,
+            ObservationPurpose::ConditionCheck,None)];
+        let w = vec![wait(EvaluationArm::Candidate,"late-wake",2,1_900,2_700,
+            WaitStrategy::ConditionWait,WaitOutcome::ConditionSatisfied,Some(d(2)))];
+        let r=evaluate_monitoring_trial(&c,&e,&o,&w,&[],&resources()).unwrap();
+        assert_eq!(r.metrics.false_wakeups,0);
+        assert_eq!(r.metrics.late_wakeups,1);
+    }
+
+    #[test]
+    fn no_op_success_is_unknown_when_monitor_coverage_is_incomplete() {
+        let c=contract(EvaluationArm::Candidate,MonitoringTaskKind::NoOp);
+        let w=vec![wait(EvaluationArm::Candidate,"failed-observer",1,500,600,
+            WaitStrategy::Subscription,WaitOutcome::ObserverError,Some(d(2)))];
+        let r=evaluate_monitoring_trial(&c,&[],&[],&w,&[],&resources()).unwrap();
+        assert_eq!(r.no_op_success,None);
+        assert_eq!(r.evidence_complete,false);
+        assert_eq!(r.safety,MonitoringSafety::Indeterminate);
+    }
+
+    #[test]
+    fn sixty_four_adversarial_monitoring_mutations_fail_closed() {
+        for vector in 0..64 {
             let mut c = contract(EvaluationArm::Candidate, MonitoringTaskKind::UrgentEphemeral);
             let mut e = vec![event(1_000, Some(2_000))];
             let mut o = vec![observation(EvaluationArm::Candidate, "obs", 1, 1_100, true,
@@ -1792,7 +1816,11 @@ mod tests {
                 56 => { o.push(o[0].clone()); },
                 57 => { w.push(w[0].clone()); },
                 58 => c.task_kind = MonitoringTaskKind::NoOp,
-                _ => e[0].expires_at_ms = Some(c.starts_at_ms),
+                59 => e[0].expires_at_ms = Some(c.starts_at_ms),
+                60 => { a[0].target_digest = d(99); },
+                61 => { a.push(action(EvaluationArm::Candidate,"duplicate",1_160,1_260)); },
+                62 => { u.energy_microjoules = Some(500); },
+                _ => { w[0].returned_at_ms = 2_600; w[0].deadline_at_ms = 3_000; },
             }
             let result = evaluate_monitoring_trial(&c,&e,&o,&w,&a,&u);
             assert!(result.is_err() || result.as_ref().is_ok_and(|r| {
