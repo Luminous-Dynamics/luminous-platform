@@ -1,0 +1,597 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-monitoring-trial-v0.1.json",
+  "title": "Continuous OpsBench long-running monitoring trial evidence v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "contract",
+    "event_truth",
+    "observations",
+    "waits",
+    "actions",
+    "resources"
+  ],
+  "properties": {
+    "schema": {
+      "const": "continuous-opsbench-monitoring-trial-v0.1"
+    },
+    "contract": {
+      "$ref": "#/$defs/contract"
+    },
+    "event_truth": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/event_truth"
+      }
+    },
+    "observations": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/observation"
+      }
+    },
+    "waits": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/wait"
+      }
+    },
+    "actions": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/action"
+      }
+    },
+    "resources": {
+      "$ref": "#/$defs/resources"
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "arm": {
+      "enum": [
+        "candidate",
+        "baseline"
+      ]
+    },
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "run_id",
+        "trial_id",
+        "scenario_id",
+        "arm",
+        "manifest_commitment",
+        "execution_environment_digest",
+        "resource_budget_digest",
+        "task_kind",
+        "condition_digest",
+        "starts_at_ms",
+        "ends_at_ms",
+        "observer_source_id",
+        "observer_control_domain",
+        "agent_control_domain",
+        "minimum_condition_observations",
+        "maximum_observation_calls",
+        "maximum_wait_calls",
+        "maximum_action_attempts"
+      ],
+      "properties": {
+        "schema": {
+          "const": "continuous-opsbench-monitoring-trial-v0.1"
+        },
+        "run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "trial_id": {
+          "$ref": "#/$defs/id"
+        },
+        "scenario_id": {
+          "$ref": "#/$defs/id"
+        },
+        "arm": {
+          "$ref": "#/$defs/arm"
+        },
+        "manifest_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "execution_environment_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "resource_budget_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "task_kind": {
+          "enum": [
+            "passive_persistent",
+            "active_persistent",
+            "relative_baseline",
+            "no_op",
+            "urgent_ephemeral",
+            "noisy_ambiguous"
+          ]
+        },
+        "condition_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "starts_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ends_at_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "observer_source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "observer_control_domain": {
+          "$ref": "#/$defs/id"
+        },
+        "agent_control_domain": {
+          "$ref": "#/$defs/id"
+        },
+        "minimum_condition_observations": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "maximum_observation_calls": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "maximum_wait_calls": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "maximum_action_attempts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        }
+      }
+    },
+    "event_truth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_id",
+        "condition_digest",
+        "onset_at_ms",
+        "expires_at_ms",
+        "expected_action_class",
+        "target_digest"
+      ],
+      "properties": {
+        "event_id": {
+          "$ref": "#/$defs/id"
+        },
+        "condition_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "onset_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expires_at_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "expected_action_class": {
+          "$ref": "#/$defs/id"
+        },
+        "target_digest": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "trial_id",
+        "scenario_id",
+        "arm",
+        "manifest_commitment",
+        "observation_id",
+        "receipt_sequence",
+        "source_id",
+        "control_domain",
+        "observed_at_ms",
+        "purpose",
+        "condition_digest",
+        "observed_value_digest",
+        "baseline_anchor_digest",
+        "condition_satisfied",
+        "complete",
+        "clock_uncertainty_ms",
+        "tool_cost_micro_usd",
+        "tokens"
+      ],
+      "properties": {
+        "run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "trial_id": {
+          "$ref": "#/$defs/id"
+        },
+        "scenario_id": {
+          "$ref": "#/$defs/id"
+        },
+        "arm": {
+          "$ref": "#/$defs/arm"
+        },
+        "manifest_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "observation_id": {
+          "$ref": "#/$defs/id"
+        },
+        "receipt_sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "control_domain": {
+          "$ref": "#/$defs/id"
+        },
+        "observed_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "purpose": {
+          "enum": [
+            "baseline",
+            "condition_check"
+          ]
+        },
+        "condition_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "observed_value_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "baseline_anchor_digest": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "condition_satisfied": {
+          "type": "boolean"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "clock_uncertainty_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "tool_cost_micro_usd": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "tokens": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "wait": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "trial_id",
+        "scenario_id",
+        "arm",
+        "manifest_commitment",
+        "wait_id",
+        "receipt_sequence",
+        "source_id",
+        "control_domain",
+        "requested_at_ms",
+        "deadline_at_ms",
+        "returned_at_ms",
+        "strategy",
+        "outcome",
+        "condition_digest",
+        "complete",
+        "clock_uncertainty_ms",
+        "tool_cost_micro_usd",
+        "tokens"
+      ],
+      "properties": {
+        "run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "trial_id": {
+          "$ref": "#/$defs/id"
+        },
+        "scenario_id": {
+          "$ref": "#/$defs/id"
+        },
+        "arm": {
+          "$ref": "#/$defs/arm"
+        },
+        "manifest_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "wait_id": {
+          "$ref": "#/$defs/id"
+        },
+        "receipt_sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "control_domain": {
+          "$ref": "#/$defs/id"
+        },
+        "requested_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "deadline_at_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "returned_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "strategy": {
+          "enum": [
+            "fixed_sleep",
+            "bounded_backoff",
+            "condition_wait",
+            "subscription"
+          ]
+        },
+        "outcome": {
+          "enum": [
+            "condition_satisfied",
+            "timeout",
+            "cancelled",
+            "observer_error"
+          ]
+        },
+        "condition_digest": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "clock_uncertainty_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "tool_cost_micro_usd": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "tokens": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "trial_id",
+        "scenario_id",
+        "arm",
+        "manifest_commitment",
+        "action_id",
+        "condition_digest",
+        "action_class",
+        "target_digest",
+        "attempted_at_ms",
+        "dispatched_at_ms",
+        "committed_at_ms",
+        "outcome",
+        "authorized",
+        "participant_effect_receipt_digest",
+        "participant_ledger_cursor"
+      ],
+      "properties": {
+        "run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "trial_id": {
+          "$ref": "#/$defs/id"
+        },
+        "scenario_id": {
+          "$ref": "#/$defs/id"
+        },
+        "arm": {
+          "$ref": "#/$defs/arm"
+        },
+        "manifest_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "action_id": {
+          "$ref": "#/$defs/id"
+        },
+        "condition_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "action_class": {
+          "$ref": "#/$defs/id"
+        },
+        "target_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "attempted_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dispatched_at_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "committed_at_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "outcome": {
+          "enum": [
+            "attempted",
+            "dispatched",
+            "committed",
+            "rejected",
+            "never_accepted",
+            "unknown"
+          ]
+        },
+        "authorized": {
+          "type": "boolean"
+        },
+        "participant_effect_receipt_digest": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "participant_ledger_cursor": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model_input_tokens",
+        "model_output_tokens",
+        "model_api_cost_micro_usd",
+        "infrastructure_cost_micro_usd",
+        "cpu_time_ms",
+        "energy_microjoules",
+        "human_active_time_ms"
+      ],
+      "properties": {
+        "model_input_tokens": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "model_output_tokens": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "model_api_cost_micro_usd": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "infrastructure_cost_micro_usd": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "cpu_time_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "energy_microjoules": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "human_active_time_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    }
+  }
+}
