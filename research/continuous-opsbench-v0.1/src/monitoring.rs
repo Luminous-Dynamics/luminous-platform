@@ -818,7 +818,10 @@ fn event_active_at(event: &MonitoringEventTruth, at_ms: u64) -> bool {
 }
 
 fn hex_prefix(digest: &Digest) -> String {
-    digest.0[..4].iter().map(|byte| format!("{byte:02x}")).collect()
+    format!(
+        "{:02x}{:02x}{:02x}{:02x}",
+        digest.0[0], digest.0[1], digest.0[2], digest.0[3]
+    )
 }
 
 fn valid_id(value: &str) -> bool {
