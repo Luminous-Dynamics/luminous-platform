@@ -297,15 +297,15 @@ LNF is an integration programme, not a reason to create parallel projects. The f
 
 ### Immediate execution sequence
 
-0. Use LNF-EDGE-DTN-001 / issue #208 as the cross-project end-to-end campaign owner; it binds the broker, gateway, local-first and DTN stages without duplicating their implementations.
-1. Keep LNF-MPATH-001 / PR #211 stacked on the broker: qualify the offline schedule model first, then integrate with a named Linux MPTCP kernel/path manager/scheduler; test Multipath QUIC only against a pinned two-ended implementation of the approved revision.
-1. Review and reconcile LNF PR #207 with PR #64 and the existing owner issues above.
-2. Close the software-only broker contract and reviewed dependency lockfiles in the existing PR #64; retain the already reported tests as source/CI evidence, not live network proof.
-3. Run the isolated OpenWrt/two-WAN fault matrix and local-only service campaign on named gateway revisions. Record physical/VM evidence separately.
-4. In parallel, use Symthaea #1100/#4834 to qualify a small redundant routed-fabric topology against Batfish and live FRR probes; do not give this adapter production actuation authority.
-5. Use Sol-Atlas #323/#325 to model a named service topology with power and backhaul common-cause failures using the existing shared service-network evaluators.
-6. Continue DTN durability work and the new BPSec-vs-envelope interoperability research in `kitsune2-transport-dtn` issue #10.
-7. Only after these terrestrial paths have reproducible receipts should LNF open the broader NTN/space link conformance and contact-plan campaign.
+0. Use LNF-EDGE-DTN-001 / PR #208 as the cross-project end-to-end campaign owner; it binds the broker, gateway, local-first and DTN stages without duplicating their implementations.
+1. Review the LNF architecture PR #207 and reconcile it with the owner issues listed above.
+2. Finish the software-only provider-neutral broker contract in PR #64, including reviewed dependency lockfiles; its existing exact-head test pass is not live network evidence.
+3. Qualify the offline multipath model/profile in PR #211, then use issue #212 to measure real MPTCP subflows in an isolated namespace lab with exact kernel, path-manager, scheduler and congestion-control pins.
+4. Run the isolated OpenWrt/two-WAN fault matrix and local-only service campaign on named gateway revisions; keep VM, hardware-bench and field evidence distinct.
+5. In parallel, use Symthaea #1100/#4834 to qualify a small redundant routed-fabric topology against Batfish and live FRR probes; do not give this adapter production actuation authority.
+6. Use Sol-Atlas #323/#325 to model a named service topology with power and backhaul common-cause failures using the existing shared service-network evaluators.
+7. Continue DTN durability work and BPSec-vs-envelope interoperability research in `kitsune2-transport-dtn` issue #10.
+8. Only after these terrestrial paths have reproducible receipts should LNF open the broader NTN/space link conformance and contact-plan campaign.
 
 ## 9. Repository responsibility map
 
@@ -321,6 +321,7 @@ LNF is an integration programme, not a reason to create parallel projects. The f
 | symtropy | validated models, simulation and digital twins | replacing mature 5G/PHY/EM/RF engines without evidence |
 | sol-atlas-leptos | geospatial planning and infrastructure coordination | treating modeled coverage as field-tested coverage |
 | LNF multipath policy core (draft PR #211) | offline, deterministic session scheduling among broker-eligible paths | path discovery, subflow lifecycle, route mutation or transport wire changes |
+| LNF MPTCP namespace lab (issue #212) | real kernel negotiation, subflow observation, path failure and scheduler measurements in isolated namespaces | physical RF, carrier behavior or production router mutation |
 
 ## 10. South African deployment gates
 
