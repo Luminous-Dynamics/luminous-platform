@@ -52,6 +52,21 @@ Consequently:
 
 The observer must live outside the agent's user, mount, PID and network namespaces and must not share the agent or evaluator control domain. Access to BPF, audit and trace output is privileged and can expose paths, process identities and network metadata; isolate and protect that data as sensitive operational evidence.
 
+### 2a. Per-sensor coverage proof
+
+The attestation contains exactly five sensor roles: process tree, mount namespace, filesystem/object access, network egress and runtime event stream. Each role has its own sensor-instance digest, sensor-binary digest, observer source/control-domain and adapter binding, active interval, sequence range, observed-event count, gap/drop counters and log commitment.
+
+The validator checks:
+- exactly one record for each required role, no unknown or duplicate roles;
+- each sensor source, control domain and adapter equal the frozen observer identity;
+- sensor-instance digests are nonzero, unique across sensor roles and unique across all runtime/namespace identities in the full run;
+- each sensor active interval encloses the complete runtime measurement interval after the declared observer clock uncertainty;
+- an empty stream is represented explicitly by no first/last sequence and zero events; a nonempty stream must have positive first sequence and `last - first + 1 = observed_event_count`;
+- gap/drop counters are zero;
+- each sensor commitment exactly matches the corresponding process/mount/filesystem/network/event-stream commitment in the parent attestation.
+
+This prevents a single generic `coverage: complete` label from substituting for five distinct sensor claims. It still does not prove that the sensor binary, kernel hook or collector was genuinely active: the authenticated adapter must validate the binaries/attachments and run known-answer probes. The separate observer-fitness layer (#205) qualifies actual detection and loss behavior before and after each run.
+
 ### 3. State and artifact separation
 
 - Allocate a unique runtime instance and writable namespace for every `(run, trial, arm)`.
