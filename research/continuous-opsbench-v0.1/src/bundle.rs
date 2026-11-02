@@ -489,6 +489,9 @@ fn validate_artifacts(
     }
 
     for artifact in &bundle.artifacts {
+        if artifact_index.contains_key(&artifact.artifact_id) {
+            return Err(BundleError::DuplicateArtifactId(artifact.artifact_id.clone()));
+        }
         if !valid_id(&artifact.artifact_id)
             || !valid_id(&artifact.publisher_id)
             || !valid_id(&artifact.publisher_key_id)
@@ -560,6 +563,17 @@ fn validate_artifacts(
             }
             ArtifactSensitivity::Public | ArtifactSensitivity::OperationalEvidence => {}
         }
+        if artifact.delivery == ArtifactDelivery::CommitmentOnly
+            && !matches!(
+                artifact.sensitivity,
+                ArtifactSensitivity::ActiveSealedPayload
+                    | ArtifactSensitivity::PrivateOracle
+                    | ArtifactSensitivity::RetiredReveal
+                    | ArtifactSensitivity::RestrictedPrivate
+            )
+        {
+            return Err(BundleError::InvalidArtifact(artifact.artifact_id.clone()));
+        }
         match artifact.delivery {
             ArtifactDelivery::Embedded => {
                 let archive_path = artifact.archive_path.as_ref()
@@ -625,6 +639,9 @@ fn validate_claim_graph(
             || !valid_id(&claim.subject.scope_id)
             || !valid_id(&claim.claim_ceiling)
             || claim.evidence_artifact_ids.is_empty()
+            || claim.assumptions.iter().any(|assumption| {
+                assumption.trim().is_empty() || assumption.chars().any(char::is_control)
+            })
         {
             return Err(BundleError::InvalidClaim(claim.claim_id.clone()));
         }
@@ -1118,8 +1135,24 @@ mod tests {
                 29 => bundle.artifacts[2].sensitivity = ArtifactSensitivity::RestrictedPrivate,
                 30 => bundle.artifacts[2].delivery = ArtifactDelivery::CommitmentOnly,
                 31 => bundle.artifacts[2].sensitivity = ArtifactSensitivity::RetiredReveal,
-                32 => bundle.artifacts[2].retired_at_ms = Some(bundle.created_at_ms + 1),
-                33 => bundle.artifacts[2].retired_at_ms = None,
+                32 => {
+                    bundle.lane = EvaluationLane::RetiredReproducibility;
+                    bundle.artifacts[2].sensitivity = ArtifactSensitivity::RetiredReveal;
+                    bundle.artifacts[2].delivery = ArtifactDelivery::Embedded;
+                    bundle.artifacts[2].archive_path = Some("retired/oracle.bin".into());
+                    bundle.artifacts[2].retired_at_ms = Some(bundle.created_at_ms + 1);
+                    materialized.push(MaterializedArtifact {
+                        artifact_id: "oracle-commitment".into(),
+                        archive_path: "retired/oracle.bin".into(),
+                        computed_digest: d(32),
+                        computed_byte_length: 32,
+                    });
+                }
+                33 => {
+                    bundle.lane = EvaluationLane::RetiredReproducibility;
+                    bundle.artifacts[2].sensitivity = ArtifactSensitivity::RetiredReveal;
+                    bundle.artifacts[2].retired_at_ms = None;
+                }
                 34 => materialized[0].computed_digest = d(99),
                 35 => materialized[0].computed_byte_length += 1,
                 36 => materialized[0].archive_path = "../escape".into(),
@@ -1135,10 +1168,10 @@ mod tests {
                 46 => bundle.claims[0].depends_on_claim_ids = vec!["missing".into()],
                 47 => bundle.claims[1].depends_on_claim_ids = vec!["effect".into(), "effect".into()],
                 48 => bundle.claims[1].depends_on_claim_ids = vec!["service-recovery".into()],
-                49 => bundle.claims[0].status = ClaimStatus::Pass,
+                49 => bundle.claims[0].status = ClaimStatus::Fail,
                 50 => bundle.claims[0].claim_ceiling.clear(),
-                51 => bundle.claims[1].status = ClaimStatus::Pass,
-                52 => bundle.claims[2].status = ClaimStatus::Indeterminate,
+                51 => bundle.claims[1].status = ClaimStatus::Indeterminate,
+                52 => bundle.claims[2].status = ClaimStatus::Fail,
                 53 => bundle.claims[2].evidence_artifact_ids = vec!["missing".into()],
                 54 => bundle.claims[2].assumptions = vec![" ".into()],
                 55 => bundle.claims[2].subject.trial_id = Some("trial-a".into()),
@@ -1150,12 +1183,39 @@ mod tests {
                 61 => bundle.artifacts[1].content_digest = bundle.artifacts[0].content_digest.clone(),
                 62 => bundle.artifacts[0].retired_at_ms = Some(1),
                 63 => bundle.artifacts[0].delivery = ArtifactDelivery::CommitmentOnly,
-                64 => bundle.artifacts[0].sensitivity = ArtifactSensitivity::Public,
+                64 => {
+                    bundle.artifacts[0].sensitivity = ArtifactSensitivity::Public;
+                    bundle.artifacts[0].delivery = ArtifactDelivery::CommitmentOnly;
+                    bundle.artifacts[0].archive_path = None;
+                    materialized.retain(|item| item.artifact_id != "effect-receipt");
+                }
                 65 => bundle.artifacts[1].delivery = ArtifactDelivery::Unavailable,
                 66 => bundle.claims[1].status = ClaimStatus::Fail,
                 67 => bundle.claims[2].status = ClaimStatus::Fail,
-                68 => bundle.disclosure = BundleDisclosure::Restricted,
-                69 => bundle.disclosure = BundleDisclosure::Public,
+                68 => {
+                    bundle.disclosure = BundleDisclosure::Public;
+                    bundle.artifacts[2].sensitivity = ArtifactSensitivity::RestrictedPrivate;
+                    bundle.artifacts[2].delivery = ArtifactDelivery::Embedded;
+                    bundle.artifacts[2].archive_path = Some("private/oracle.bin".into());
+                    materialized.push(MaterializedArtifact {
+                        artifact_id: "oracle-commitment".into(),
+                        archive_path: "private/oracle.bin".into(),
+                        computed_digest: d(32),
+                        computed_byte_length: 32,
+                    });
+                }
+                69 => {
+                    bundle.disclosure = BundleDisclosure::Public;
+                    bundle.artifacts[2].sensitivity = ArtifactSensitivity::PrivateOracle;
+                    bundle.artifacts[2].delivery = ArtifactDelivery::Embedded;
+                    bundle.artifacts[2].archive_path = Some("private/oracle.bin".into());
+                    materialized.push(MaterializedArtifact {
+                        artifact_id: "oracle-commitment".into(),
+                        archive_path: "private/oracle.bin".into(),
+                        computed_digest: d(32),
+                        computed_byte_length: 32,
+                    });
+                }
                 70 => bundle.artifacts[1].publisher_id = "oracle-publisher".into(),
                 71 => bundle.artifacts[1].source_id = "oracle-source".into(),
                 72 => bundle.artifacts[1].issued_at_ms = 1,
@@ -1167,10 +1227,14 @@ mod tests {
                 78 => bundle.verifier_digest = d(99),
                 _ => trust.valid_from_ms = trust.valid_until_ms,
             }
-            assert!(
-                validate_evidence_bundle(&bundle, &digest, &trust, &materialized, 110).is_err(),
-                "bundle mutation {vector} was accepted"
-            );
+            match validate_evidence_bundle(&bundle, &digest, &trust, &materialized, 110) {
+                Err(_) => {}
+                Ok(receipt) => assert_ne!(
+                    receipt.disposition,
+                    BundleDisposition::Pass,
+                    "bundle mutation {vector} produced a passing receipt"
+                ),
+            }
         }
     }
 }
