@@ -686,6 +686,7 @@ mod tests {
         let clusters = clean_pairs();
         let result = evaluate_paired_clusters(&plan(90, 8), &clusters).unwrap();
         assert_eq!(result.independent_clusters, 8);
+        assert_eq!(result.claim_mode, InferenceClaimMode::Exploratory);
         assert_eq!(result.candidate.verified_rate_ci.lower_ppm, 800_000);
         assert_eq!(result.candidate.maximum_possible_rate_ci.upper_ppm, 900_000);
         assert_eq!(result.baseline.verified_rate_ci.lower_ppm, 500_000);
@@ -703,6 +704,7 @@ mod tests {
         configured.claim_mode = InferenceClaimMode::Confirmatory;
         configured.bootstrap_replicates = MIN_CONFIRMATORY_BOOTSTRAP_REPLICATES;
         let result = evaluate_paired_clusters(&configured, &clusters).unwrap();
+        assert_eq!(result.claim_mode, InferenceClaimMode::Confirmatory);
         assert_eq!(result.verdict, SuperiorityVerdict::SuperiorityEstablished);
         assert_eq!(result.independent_clusters, MIN_CONFIRMATORY_CLUSTERS);
         assert_eq!(result.bootstrap_replicates, MIN_CONFIRMATORY_BOOTSTRAP_REPLICATES);
@@ -797,6 +799,32 @@ mod tests {
         let mut p = plan(99, 8);
         p.bootstrap_seed_commitment = digest(0);
         assert_eq!(evaluate_paired_clusters(&p, &clusters), Err(InferenceError::ZeroBootstrapSeed));
+    }
+
+    #[test]
+    fn confirmatory_mode_cannot_be_preregistered_below_the_claim_floors() {
+        let clusters = clean_pairs();
+        let mut configured = plan(88, 8);
+        configured.claim_mode = InferenceClaimMode::Confirmatory;
+        configured.bootstrap_replicates = MIN_CONFIRMATORY_BOOTSTRAP_REPLICATES;
+        assert_eq!(
+            evaluate_paired_clusters(&configured, &clusters),
+            Err(InferenceError::ConfirmatoryClusterFloorNotMet)
+        );
+        configured.minimum_independent_clusters = MIN_CONFIRMATORY_CLUSTERS;
+        configured.bootstrap_replicates = MIN_CONFIRMATORY_BOOTSTRAP_REPLICATES - 1;
+        assert_eq!(
+            evaluate_paired_clusters(&configured, &clusters),
+            Err(InferenceError::ConfirmatoryBootstrapFloorNotMet)
+        );
+    }
+
+    #[test]
+    fn zero_event_sample_size_is_minimal_at_the_declared_risk_ceiling() {
+        let required = zero_event_sample_size(1_000, 9_500).unwrap();
+        assert_eq!(required, 2_995);
+        assert!(clopper_pearson_upper(0, required, 9_500).unwrap() <= 0.001);
+        assert!(clopper_pearson_upper(0, required - 1, 9_500).unwrap() > 0.001);
     }
 
     #[test]
