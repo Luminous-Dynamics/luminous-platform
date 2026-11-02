@@ -6,6 +6,7 @@
   "additionalProperties": false,
   "required": [
     "schema",
+    "claim_mode",
     "algorithm_version",
     "bootstrap_seed_commitment",
     "independent_clusters",
@@ -82,9 +83,16 @@
     },
     "verdict": {
       "enum": [
+        "exploratory_only",
         "superiority_established",
         "not_established",
         "indeterminate_coverage_exceeded"
+      ]
+    },
+    "claim_mode": {
+      "enum": [
+        "exploratory",
+        "confirmatory"
       ]
     }
   },
