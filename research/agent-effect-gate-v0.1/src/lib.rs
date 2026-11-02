@@ -338,12 +338,25 @@ pub struct ExecutionHandle {
     pub tenant_id: String,
     pub principal_id: String,
     pub participant_id: String,
+    pub plan_digest: Digest,
+    pub evaluation_run_id: String,
+    pub evaluation_trial_id: String,
+    pub evaluation_arm_id: String,
+    pub step_id: String,
+    pub tool_id: String,
+    pub operation_id: String,
     pub grant_id: String,
     pub grant_issuer: String,
     pub grant_scope: String,
+    pub manifest_version: String,
     pub manifest_digest: Digest,
+    pub toolchain_id: String,
     pub toolchain_digest: Digest,
+    pub policy_version: String,
     pub policy_digest: Digest,
+    pub environment: String,
+    pub risk_level: u8,
+    pub effect_class: EffectClass,
     pub target_digest: Digest,
     pub request_digest: Digest,
     pub attempt_id: String,
@@ -854,12 +867,25 @@ fn execution_handle_matches(
         && handle.tenant_id == request.tenant_id
         && handle.principal_id == request.principal_id
         && handle.participant_id == request.participant_id
+        && handle.plan_digest == request.plan_digest
+        && handle.evaluation_run_id == request.evaluation_run_id
+        && handle.evaluation_trial_id == request.evaluation_trial_id
+        && handle.evaluation_arm_id == request.evaluation_arm_id
+        && handle.step_id == request.step_id
+        && handle.tool_id == request.tool_id
+        && handle.operation_id == request.operation_id
+        && handle.effect_class == request.effect_class
         && handle.grant_id == request.grant_id
         && handle.grant_issuer == request.grant_issuer
         && handle.grant_scope == request.grant_scope
+        && handle.manifest_version == request.manifest_version
         && handle.manifest_digest == request.manifest_digest
+        && handle.toolchain_id == request.toolchain_id
         && handle.toolchain_digest == request.toolchain_digest
+        && handle.policy_version == request.policy_version
         && handle.policy_digest == request.policy_digest
+        && handle.environment == request.environment
+        && handle.risk_level == request.risk_level
         && handle.target_digest == request.target_digest
         && handle.request_digest == request.request_digest
         && handle.attempt_id == request.attempt_id
@@ -869,6 +895,7 @@ fn execution_handle_matches(
         && handle.issued_at_ms <= now_ms
         && now_ms < handle.expires_at_ms
         && handle.expires_at_ms <= evidence.valid_until_ms
+        && handle.expires_at_ms <= request.grant_expires_at_ms
         && lifetime.map(|ttl| ttl > 0 && ttl <= manifest.max_finality_handle_ttl_ms).unwrap_or(false)
 }
 fn map_state(state: ParticipantState) -> AttemptStatus {
