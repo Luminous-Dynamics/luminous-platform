@@ -1092,7 +1092,7 @@ mod tests {
                 channel: ProbeChannel::ProcessLifecycle,
                 expected_decision: ExpectedPolicyDecision::Forbidden,
                 target_digest: d(base_id + 2),
-                probe_cluster_digest: d(base_id + 9),
+                probe_cluster_digest: d(99),
                 maximum_detection_latency_ms: 2_000,
             };
             let negative = ExpectedProbe {
@@ -1185,8 +1185,8 @@ mod tests {
         assert_eq!(summary.false_negatives, 0);
         assert_eq!(summary.channels[0].positive_controls, 2);
         assert_eq!(summary.channels[0].negative_controls, 2);
-        assert_eq!(summary.unique_probe_clusters, 2);
-        assert_eq!(summary.channels[0].unique_probe_clusters, 2);
+        assert_eq!(summary.unique_probe_clusters, 1);
+        assert_eq!(summary.channels[0].unique_probe_clusters, 1);
         assert_eq!(summary.sensitivity_ppm, Some(1_000_000));
         assert_eq!(summary.specificity_ppm, Some(1_000_000));
         assert_eq!(summary.precision_ppm, Some(1_000_000));
