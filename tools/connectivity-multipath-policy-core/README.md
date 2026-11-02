@@ -31,10 +31,13 @@ Cost currency identity and exchange-rate provenance remain caller-owned. Never c
 
 ## Strategies
 
-- `BestRtt`: selects the eligible single path with minimum RTT (then cost and stable path ID).
-- `LowestCost`: selects the eligible single path with minimum estimated cost (then completion time and stable path ID).
-- `AggregateCapacity`: splits bytes proportionally to effective capacity across the highest-capacity eligible paths, subject to per-path data allowance and total cost/energy/deadline/reorder limits. If no multipath candidate fits, it falls back to the best eligible single path.
-- `IntentAware`: uses multipath only when the modelled completion-time improvement reaches the request's threshold and every hard constraint is met. Otherwise it uses a single-path fallback based on task intent.
+The Rust core currently implements four transparent model strategies:
+- `BestRtt`: minimum RTT among eligible single paths (not a claim about the exact MPTCP default scheduler).
+- `LowestCost`: minimum estimated cost among eligible single paths.
+- `AggregateCapacity`: proportional byte split by effective capacity, subject to per-path allowance and total cost/energy/deadline/reorder limits; otherwise falls back to one path.
+- `IntentAware`: uses the aggregate candidate only when its estimated completion-time gain clears the declared threshold and all hard constraints; otherwise follows the workload's single-path fallback.
+
+The **benchmark comparator set** is broader than the Rust model: include Round Robin, Earliest Completion First (ECF), BLEST (reordering-aware), redundant-transmission control, and the exact Linux in-tree default scheduler. ECF/BLEST or redundant variants may require a separately pinned research patch/module; record that provenance and never call an out-of-tree implementation an in-tree Linux baseline. Identify the Linux default scheduler from the exact kernel source instead of assuming its label. Pin congestion control separately because scheduling performance depends on the congestion controller.
 
 This first implementation is deliberately a transparent comparison model. It does not yet implement packet-level congestion control, ACK scheduling, retransmission, send-buffer dynamics, retransmission coupling, receiver reassembly, or live path discovery. The proportional split is a simple reference policy, not a claim that it is optimal.
 
