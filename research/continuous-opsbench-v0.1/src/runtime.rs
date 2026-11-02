@@ -44,6 +44,8 @@ pub struct RuntimeChallengeReceipt {
     pub observer_control_domain: String,
     pub observer_adapter_digest: Digest,
     pub challenge_nonce_digest: Digest,
+    /// Digest of the separately authenticated challenge-authority receipt.
+    pub challenge_receipt_digest: Digest,
     pub challenge_authority_id: String,
     pub challenge_authority_control_domain: String,
     pub sequence: u64,
