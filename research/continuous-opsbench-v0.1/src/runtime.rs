@@ -18,6 +18,41 @@ pub const RUNTIME_ATTESTATION_SCHEMA: &str = "continuous-opsbench-runtime-attest
 pub const MAX_CLOCK_UNCERTAINTY_MS: u64 = 1_000;
 /// Initial policy ceiling: a one-use challenge cannot remain valid for more than a day.
 pub const MAX_RUNTIME_CHALLENGE_TTL_MS: u64 = 86_400_000;
+pub const RUNTIME_CHALLENGE_SCHEMA: &str = "continuous-opsbench-runtime-challenge-v0.1";
+
+/// Independently source-authenticated one-use challenge issued before runtime measurement.
+/// Its signature/source identity is verified by the existing typed evidence adapter.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RuntimeChallengeReceipt {
+    pub schema: String,
+    pub receipt_digest: Digest,
+    pub run_id: String,
+    pub trial_id: String,
+    pub arm: EvaluationArm,
+    pub arm_identity_digest: Digest,
+    pub scenario_commitment: Digest,
+    pub manifest_commitment: Digest,
+    pub evaluator_digest: Digest,
+    pub execution_environment_digest: Digest,
+    pub resource_budget_digest: Digest,
+    pub state_isolation_policy_digest: Digest,
+    pub artifact_access_policy_digest: Digest,
+    pub network_egress_policy_digest: Digest,
+    pub runtime_instance_digest: Digest,
+    pub writable_state_namespace_digest: Digest,
+    pub observer_source_id: String,
+    pub observer_control_domain: String,
+    pub observer_adapter_digest: Digest,
+    pub challenge_nonce_digest: Digest,
+    pub challenge_receipt_digest: Digest,
+    pub challenge_authority_id: String,
+    pub challenge_authority_control_domain: String,
+    pub sequence: u64,
+    pub issued_at_ms: u64,
+    pub expires_at_ms: u64,
+    pub clock_uncertainty_ms: u64,
+}
+
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RuntimeCoverage {
@@ -133,6 +168,15 @@ pub enum RuntimeAttestationError {
     ChallengeAuthorityMismatch,
     ChallengeNonceInvalid,
     ChallengeNonceCollision,
+    ChallengeReceiptUnsupportedSchema,
+    ChallengeReceiptDigestInvalid,
+    ChallengeReceiptMissing(String, EvaluationArm),
+    ChallengeReceiptDuplicate(String, EvaluationArm),
+    ChallengeReceiptUnplanned(String, EvaluationArm),
+    ChallengeReceiptBindingMismatch(String, EvaluationArm),
+    ChallengeReceiptAuthorityMismatch,
+    ChallengeReceiptSequenceInvalid,
+    ChallengeReceiptSequenceNotContiguous,
     ChallengeFreshnessInvalid(String, EvaluationArm),
     ChallengeLifetimeExceeded(String, EvaluationArm),
     InvalidObserverSequence,
@@ -166,6 +210,7 @@ pub fn validate_runtime_attestations_from_events(
     scenarios: &[ScenarioReceipt],
     reveals: &[ScenarioReveal],
     trial_events: &[TrialEvent],
+    challenges: &[RuntimeChallengeReceipt],
     attestations: &[RuntimeTrialAttestation],
 ) -> Result<RuntimeAttestationSummary, RuntimeAttestationError> {
     let ledger = validate_run_ledger_with_reveals(
@@ -177,7 +222,7 @@ pub fn validate_runtime_attestations_from_events(
         trial_events,
     )
     .map_err(RuntimeAttestationError::TrialLedgerInvalid)?;
-    validate_runtime_attestations(manifest, freeze, &ledger, scenarios, attestations)
+    validate_runtime_attestations(manifest, freeze, &ledger, scenarios, challenges, attestations)
 }
 
 fn validate_runtime_attestations(
@@ -185,6 +230,7 @@ fn validate_runtime_attestations(
     freeze: &FreezeReceipt,
     ledger: &RunLedgerSummary,
     scenarios: &[ScenarioReceipt],
+    challenges: &[RuntimeChallengeReceipt],
     attestations: &[RuntimeTrialAttestation],
 ) -> Result<RuntimeAttestationSummary, RuntimeAttestationError> {
     validate_manifest(manifest)
