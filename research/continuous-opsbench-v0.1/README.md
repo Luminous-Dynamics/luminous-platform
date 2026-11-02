@@ -72,3 +72,10 @@ This is still structural validation. The typed source-evidence adapter must auth
 The additive validator in `src/runtime.rs` joins one runtime observer attestation to every planned Candidate/Baseline arm using the raw-event-derived sealed ledger. It checks challenge freshness (24-hour maximum TTL), observer and challenge authority separation, run-scoped contiguous sequences, clock-uncertainty-aware measurement coverage, non-aliasing runtime/namespace identities, complete telemetry, and hard denials for oracle/artifact reads, disallowed egress and cross-trial state. See `RUNTIME_ENFORCEMENT_V0_1.md` and `runtime-trial-attestation.schema.json`.
 
 Only `validate_runtime_attestations_from_events` is public as the certification entry point. The lower-level summary composition is private. Signatures, durable cross-run replay protection, challenge issuance, allowlist event verification and actual kernel/hypervisor enforcement remain external obligations.
+
+
+### Independent runtime enforcement receipts v0.1
+
+The additive `src/runtime.rs` verifier joins one host-side runtime attestation and one separately authenticated, one-use challenge-authority receipt to every planned `(trial, Candidate/Baseline)` pair. It binds the run/scenario/system identities, execution environment and policy digests, unique runtime and writable namespace IDs, observer adapter/source, challenge nonce/receipt digest and issue/expiry interval. Missing or duplicated challenge/attestation records, sequence gaps, coverage loss, oracle reads, prohibited artifact access, disallowed egress, cross-trial state and shared writable namespaces fail closed.
+
+See `runtime-trial-attestation.schema.json`, `runtime-challenge-receipt.schema.json`, and `RUNTIME_ENFORCEMENT_ADAPTER_V0_1.md`. This is structural validation only; challenge and observer signatures, canonical artifact hashes, durable anti-replay, kernel/hypervisor enforcement, access telemetry completeness and actual runtime integration remain external requirements.
