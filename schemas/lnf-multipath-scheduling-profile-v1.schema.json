@@ -268,7 +268,8 @@
         "external_scheduler_modules_must_not_be_mislabeled_in_tree",
         "default_scheduler_must_be_identified_from_exact_kernel_source",
         "redundant_transmission_is_separate_reliability_energy_control",
-        "same_workload_and_path_trace_required"
+        "same_workload_and_path_trace_required",
+        "same_cost_currency_required"
       ],
       "properties": {
         "scheduler_implementation_pinning_required": {
@@ -290,6 +291,9 @@
           "const": true
         },
         "same_workload_and_path_trace_required": {
+          "const": true
+        },
+        "same_cost_currency_required": {
           "const": true
         }
       }
