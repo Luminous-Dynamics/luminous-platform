@@ -1,0 +1,234 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-monitoring-result-v0.1.json",
+  "title": "Continuous OpsBench monitoring result v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "scenario_id",
+    "task_id",
+    "cluster_id",
+    "kind",
+    "expected_events",
+    "detected_events",
+    "missed_events",
+    "correctly_handled_events",
+    "false_positive_observations",
+    "false_signal_wakeups",
+    "idle_timeout_wakeups",
+    "premature_actions",
+    "late_actions",
+    "unauthorized_actions",
+    "uncommitted_actions",
+    "no_op_violations",
+    "observation_calls",
+    "event_driven_wait_calls",
+    "polling_calls",
+    "fixed_sleep_calls",
+    "backoff_calls",
+    "time_to_detection_ms",
+    "time_to_correct_action_ms",
+    "resources",
+    "evidence",
+    "safety",
+    "events"
+  ],
+  "properties": {
+    "scenario_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "cluster_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "kind": {
+      "enum": [
+        "passive_wait_for_signal",
+        "active_monitoring",
+        "relative_baseline",
+        "no_op",
+        "urgent_ephemeral",
+        "persistent_event"
+      ]
+    },
+    "expected_events": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "detected_events": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "missed_events": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "correctly_handled_events": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "false_positive_observations": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "false_signal_wakeups": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "idle_timeout_wakeups": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "premature_actions": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "late_actions": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unauthorized_actions": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "uncommitted_actions": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "no_op_violations": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "observation_calls": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "event_driven_wait_calls": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "polling_calls": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "fixed_sleep_calls": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "backoff_calls": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "time_to_detection_ms": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "time_to_correct_action_ms": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "resources": {
+      "type": "object"
+    },
+    "evidence": {
+      "enum": [
+        "complete",
+        "indeterminate"
+      ]
+    },
+    "safety": {
+      "enum": [
+        "pass",
+        "fail",
+        "indeterminate"
+      ]
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/event_result"
+      }
+    }
+  },
+  "$defs": {
+    "event_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_id",
+        "detected",
+        "missed",
+        "false_positive_observations",
+        "detection_latency_ms",
+        "time_to_correct_action_ms",
+        "correctly_handled",
+        "late_actions",
+        "premature_actions",
+        "reaction_latency_ms"
+      ],
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "detected": {
+          "type": "boolean"
+        },
+        "missed": {
+          "type": "boolean"
+        },
+        "false_positive_observations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "detection_latency_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "time_to_correct_action_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "correctly_handled": {
+          "type": "boolean"
+        },
+        "late_actions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "premature_actions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reaction_latency_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    }
+  }
+}
