@@ -223,13 +223,18 @@
       "minimum": 0
     },
     "challenge_nonce_digest": {
-      "$ref": "#/$defs/sha256"
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
     },
     "challenge_authority_id": {
-      "$ref": "#/$defs/id"
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
     },
     "challenge_authority_control_domain": {
-      "$ref": "#/$defs/id"
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
     },
     "challenge_issued_at_ms": {
       "type": "integer",
