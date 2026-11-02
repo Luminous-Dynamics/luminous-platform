@@ -741,6 +741,18 @@ fn validate_challenge_binding(
     challenge: &RuntimeChallengeReceipt,
     attestation: &RuntimeTrialAttestation,
 ) -> Result<(), RuntimeAttestationError> {
+    if challenge.challenge_authority_id != manifest.runtime_challenge_authority_id
+        || challenge.challenge_authority_control_domain != manifest.runtime_challenge_authority_control_domain
+        || challenge.challenge_authority_control_domain == challenge.observer_control_domain
+        || challenge.challenge_authority_control_domain == manifest.agent.control_domain
+        || challenge.challenge_authority_control_domain == manifest.baseline.control_domain
+        || challenge.challenge_authority_control_domain == manifest.evaluator_control_domain
+        || challenge.challenge_authority_control_domain == manifest.freeze_authority_control_domain
+        || challenge.challenge_authority_control_domain == manifest.evidence_control_domain
+        || challenge.challenge_authority_control_domain == manifest.runtime_observer_control_domain
+    {
+        return Err(RuntimeAttestationError::ChallengeReceiptAuthorityMismatch);
+    }
     let expected_identity = match challenge.arm {
         EvaluationArm::Candidate => &manifest.agent_identity_digest,
         EvaluationArm::Baseline => &manifest.baseline_identity_digest,
@@ -762,8 +774,6 @@ fn validate_challenge_binding(
         || challenge.observer_adapter_digest != manifest.runtime_observer_adapter_digest
         || challenge.observer_source_id != manifest.runtime_observer_source_id
         || challenge.observer_control_domain != manifest.runtime_observer_control_domain
-        || challenge.challenge_authority_id != manifest.runtime_challenge_authority_id
-        || challenge.challenge_authority_control_domain != manifest.runtime_challenge_authority_control_domain
         || challenge.receipt_digest != attestation.challenge_receipt_digest
         || challenge.challenge_nonce_digest != attestation.challenge_nonce_digest
         || challenge.issued_at_ms != attestation.challenge_issued_at_ms
@@ -777,17 +787,6 @@ fn validate_challenge_binding(
         return Err(RuntimeAttestationError::ChallengeReceiptBindingMismatch(
             challenge.trial_id.clone(), challenge.arm,
         ));
-    }
-    if challenge.challenge_authority_id != manifest.runtime_challenge_authority_id
-        || challenge.challenge_authority_control_domain != manifest.runtime_challenge_authority_control_domain
-        || challenge.challenge_authority_control_domain == challenge.observer_control_domain
-        || challenge.challenge_authority_control_domain == manifest.agent.control_domain
-        || challenge.challenge_authority_control_domain == manifest.baseline.control_domain
-        || challenge.challenge_authority_control_domain == manifest.evaluator_control_domain
-        || challenge.challenge_authority_control_domain == manifest.freeze_authority_control_domain
-        || challenge.challenge_authority_control_domain == manifest.evidence_control_domain
-    {
-        return Err(RuntimeAttestationError::ChallengeReceiptAuthorityMismatch);
     }
     if is_zero(&challenge.runtime_instance_digest)
         || is_zero(&challenge.writable_state_namespace_digest)
