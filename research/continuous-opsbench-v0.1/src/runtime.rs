@@ -1139,12 +1139,12 @@ mod tests {
             TrialResult {
                 trial_id: "trial-b".into(), arm: EvaluationArm::Baseline,
                 cluster_id: "cluster-b".into(), disposition: TrialDisposition::Completed,
-                attempts_started: 1, first_started_at_ms: Some(40), terminal_at_ms: 50,
+                attempts_started: 1, first_started_at_ms: Some(80), terminal_at_ms: 90,
             },
             TrialResult {
                 trial_id: "trial-b".into(), arm: EvaluationArm::Candidate,
                 cluster_id: "cluster-b".into(), disposition: TrialDisposition::Completed,
-                attempts_started: 1, first_started_at_ms: Some(60), terminal_at_ms: 70,
+                attempts_started: 1, first_started_at_ms: Some(100), terminal_at_ms: 110,
             },
         ];
         let arm_summary = ArmRunSummary {
@@ -1776,7 +1776,7 @@ mod tests {
                 21 => attestations[1].receipt_sequence = attestations[0].receipt_sequence,
                 22 => attestations[0].receipt_sequence = 10,
                 23 => attestations[0].issued_at_ms = attestations[0].measurement_end_ms - 1,
-                24 => attestations[0].measurement_start_ms = 41,
+                24 => attestations[0].measurement_start_ms = 71,
                 25 => { attestations[0].measurement_end_ms = 49; attestations[0].issued_at_ms = 50; },
                 26 => attestations[0].measurement_end_ms = attestations[0].measurement_start_ms,
                 27 => attestations[0].clock_uncertainty_ms = MAX_CLOCK_UNCERTAINTY_MS + 1,
@@ -1822,7 +1822,7 @@ mod tests {
                 67 => attestations[0].challenge_authority_control_domain = manifest.runtime_observer_control_domain.clone(),
                 68 => ledger.runtime_challenge_authority_id = "substituted-authority".into(),
                 69 => { attestations[0].receipt_sequence = 4; attestations[3].receipt_sequence = 1; },
-                70 => attestations[0].measurement_start_ms = 39,
+                70 => attestations[0].measurement_start_ms = 71,
                 71 => attestations[0].clock_uncertainty_ms = MAX_CLOCK_UNCERTAINTY_MS + 1,
                 72 => attestations[0].oracle_read_successes = 1,
                 73 => attestations[0].unauthorized_artifact_read_successes = 1,
