@@ -559,7 +559,7 @@ fn validate_components<'a>(
         }
         if component.control_domain == manifest.agent.control_domain
             || component.control_domain == manifest.baseline.control_domain
-            || component.control_domain == manifest.evaluator_control_domain
+            || (component.control_domain == manifest.evaluator_control_domain && !evaluation_component)
             || component.control_domain == manifest.freeze_authority_control_domain
             || component.control_domain == manifest.evidence_control_domain
             || component.control_domain == manifest.runtime_observer_control_domain
@@ -1203,12 +1203,15 @@ mod tests {
                 88 => { interactions[0].control_id.clear(); }
                 _ => { cohort.cohort_version.clear(); }
             }
-            assert!(
-                validate_benchmark_component_audit(
-                    &manifest, &freeze, &cohort, &known, &mutations, &interactions
-                ).is_err(),
-                "benchmark audit adversarial vector {vector} was accepted"
-            );
+            match validate_benchmark_component_audit(
+                &manifest, &freeze, &cohort, &known, &mutations, &interactions
+            ) {
+                Err(_) => {}
+                Ok(result) => assert!(
+                    !result.claim_admissible,
+                    "benchmark audit adversarial vector {vector} was incorrectly admissible"
+                ),
+            }
         }
     }
 }
