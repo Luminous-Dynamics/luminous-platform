@@ -151,7 +151,7 @@
       "type": "integer",
       "minimum": 0,
       "maximum": 1000,
-      "description": "Bound applied conservatively to measurement coverage and observer receipt ordering. Maximum 1,000 ms."
+      "description": "Absolute bound for runtime observer timestamps, at most 1,000 ms. Combined with challenge-authority clock uncertainty for cross-domain challenge/measurement comparisons."
     },
     "process_tree_commitment": {
       "type": "string",
@@ -196,7 +196,8 @@
     },
     "oracle_read_successes": {
       "type": "integer",
-      "minimum": 0
+      "minimum": 0,
+      "description": "Must not exceed oracle_read_attempts. Any nonzero attempt or success fails strict sealed certification."
     },
     "unauthorized_artifact_read_attempts": {
       "type": "integer",
@@ -204,7 +205,8 @@
     },
     "unauthorized_artifact_read_successes": {
       "type": "integer",
-      "minimum": 0
+      "minimum": 0,
+      "description": "Must not exceed unauthorized_artifact_read_attempts. Any nonzero attempt or success fails strict sealed certification."
     },
     "disallowed_egress_attempts": {
       "type": "integer",
@@ -212,7 +214,8 @@
     },
     "disallowed_egress_successes": {
       "type": "integer",
-      "minimum": 0
+      "minimum": 0,
+      "description": "Must not exceed disallowed_egress_attempts. Any nonzero attempt or success fails strict sealed certification."
     },
     "cross_trial_state_observations": {
       "type": "integer",
@@ -245,12 +248,12 @@
     "challenge_issued_at_ms": {
       "type": "integer",
       "minimum": 0,
-      "description": "Must be strictly after manifest freeze and strictly before measurement_start_ms."
+      "description": "Must be strictly after the frozen run and scenario receipt. Must be issued before measurement begins, accounting for challenge-authority and runtime-observer clock uncertainty."
     },
     "challenge_expires_at_ms": {
       "type": "integer",
       "minimum": 0,
-      "description": "Must be strictly after measurement_end_ms and issued_at_ms including clock uncertainty; TTL from challenge_issued_at_ms must not exceed 86,400,000 ms."
+      "description": "Must remain strictly after the latest plausible measurement_end_ms and issued_at_ms after combining challenge-authority and runtime-observer clock uncertainty. Challenge TTL is bounded to 86,400,000 ms."
     },
     "challenge_receipt_digest": {
       "$ref": "#/$defs/sha256"
