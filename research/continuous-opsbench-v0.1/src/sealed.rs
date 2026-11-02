@@ -564,6 +564,10 @@ pub(crate) fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunE
         (manifest.observer_probe_injector_control_domain.as_str(), "observer_probe_injector_control_domain"),
         (manifest.observer_fitness_verifier_id.as_str(), "observer_fitness_verifier_id"),
         (manifest.observer_fitness_verifier_control_domain.as_str(), "observer_fitness_verifier_control_domain"),
+        (manifest.observer_probe_injector_id.as_str(), "observer_probe_injector_id"),
+        (manifest.observer_probe_injector_control_domain.as_str(), "observer_probe_injector_control_domain"),
+        (manifest.observer_fitness_verifier_id.as_str(), "observer_fitness_verifier_id"),
+        (manifest.observer_fitness_verifier_control_domain.as_str(), "observer_fitness_verifier_control_domain"),
     ] {
         if !valid_record_id(value) { return Err(SealedRunError::EmptyIdentity(name)); }
     }
@@ -995,7 +999,7 @@ fn valid_git_revision(value: &str) -> bool {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
 
     fn manifest(lane: EvaluationLane) -> (RunManifest, Digest, FreezeReceipt) {
@@ -1010,6 +1014,8 @@ mod tests {
         let artifact_access_policy_digest = Digest::from_byte(20);
         let network_egress_policy_digest = Digest::from_byte(25);
         let runtime_observer_adapter_digest = Digest::from_byte(26);
+        let runtime_kernel_profile_digest = Digest::from_byte(27);
+        let observer_fitness_plan_digest = Digest::from_byte(28);
         let manifest = RunManifest {
             schema: SEALED_RUN_SCHEMA.into(),
             version: SEALED_RUN_VERSION,
@@ -1029,6 +1035,12 @@ mod tests {
             runtime_observer_adapter_digest: runtime_observer_adapter_digest.clone(),
             runtime_challenge_authority_id: "challenge-authority".into(),
             runtime_challenge_authority_control_domain: "challenge-domain".into(),
+            runtime_kernel_profile_digest: runtime_kernel_profile_digest.clone(),
+            observer_fitness_plan_digest: observer_fitness_plan_digest.clone(),
+            observer_probe_injector_id: "probe-injector".into(),
+            observer_probe_injector_control_domain: "probe-domain".into(),
+            observer_fitness_verifier_id: "fitness-verifier".into(),
+            observer_fitness_verifier_control_domain: "fitness-domain".into(),
             agent_identity_digest: agent_identity_digest.clone(),
             baseline_identity_digest: baseline_identity_digest.clone(),
             agent: FrozenAgentIdentity {
@@ -1089,10 +1101,21 @@ mod tests {
             runtime_observer_adapter_digest,
             runtime_challenge_authority_id: "challenge-authority".into(),
             runtime_challenge_authority_control_domain: "challenge-domain".into(),
+            runtime_kernel_profile_digest,
+            observer_fitness_plan_digest,
+            observer_probe_injector_id: "probe-injector".into(),
+            observer_probe_injector_control_domain: "probe-domain".into(),
+            observer_fitness_verifier_id: "fitness-verifier".into(),
+            observer_fitness_verifier_control_domain: "fitness-domain".into(),
             publisher_id: "freeze-authority".into(),
             publisher_control_domain: "authority-domain".into(),
         };
         (manifest, commitment, freeze)
+    }
+
+    pub(crate) fn runtime_manifest_fixture() -> (RunManifest, FreezeReceipt) {
+        let (manifest, _commitment, freeze) = manifest(EvaluationLane::SealedCertification);
+        (manifest, freeze)
     }
 
     fn scenario(manifest: &RunManifest, commitment: &Digest, trial_id: &str) -> ScenarioReceipt {
