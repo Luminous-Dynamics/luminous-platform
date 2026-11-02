@@ -255,6 +255,43 @@ Do not reimplement mature simulators or radio stacks inside Symtropy.
 - Compare to ION-DTN and relevant CCSDS procedures.
 - Keep this separate from the terrestrial gateway release until its own conformance gates pass.
 
+## 9. Existing implementation inventory and integration order
+
+LNF is an integration programme, not a reason to create parallel projects. The following active work already exists and should remain with its current owners:
+
+| Existing work | Owner / reference | LNF integration |
+|---|---|---|
+| Provider-neutral connectivity policy core, strict profile/receipt validators and outcome-benchmark roadmap | `luminous-platform` PR #64; issue #63 | Phase 1 implementation owner. Do not create a second policy engine. Exact-head software checks are reported passed in PR #64; live OpenWrt/VM and physical gateway evidence remain outstanding. |
+| Community gateway, multi-WAN and local-service reference design | `luminous-platform` PR #62 / issue #61 | Phase 2 hardware and deployment reference. Starlink is only an optional authorized Ethernet/IP WAN; no assumption of resale rights or South African service availability. |
+| Passpoint/OpenRoaming federation | `luminous-platform` issue #65 | Separate Wi-Fi federation adapter; credential profile, AAA and federation participation are distinct from route selection. |
+| Local-first outage continuity and bounded store-and-forward | `luminous-platform` issue #67 | Application-level service contract and bounded queues; BPv7/BPSec interoperability is a separate protocol gate. |
+| Fully burdened connectivity economics | `luminous-platform` PR #70 / issue #69 | Cost-per-household/task ledgers, including donated equipment and volunteer labour; inputs must be dated and scope-matched. |
+| Network-device and fabric transition continuity | `symthaea` issue #1100 | Infrastructure configuration transitions and behavioral verification: Batfish, KNE/containerlab, gNMI/NETCONF/gNOI/Redfish adapters. This is distinct from end-user WAN route choice. |
+| Mesh reliability–airtime–energy Pareto harness | `symthaea` issue #8634 | Low-power/local mesh transport benchmark lane; do not generalize it to Wi-Fi roaming, cellular, or satellite without new PHY/link evidence. |
+| Containerlab + FRR network-twin adapter | `symthaea` issue #4834 | Reusable isolated routing/fabric emulation lane, exact runtime identity, and differential verification. |
+| Power-aware telecommunications resilience planning | `sol-atlas-leptos` issues #323 and #325 | Geospatial declared-topology, site-power, backhaul/common-cause and service-equity planning. It is not RF coverage prediction or packet simulation. |
+| F0 reproducible federation topology and network-emulation run manifests | `mycelix` issues #3251 and #3255 | Cross-node identity, topology, fault schedule and evidence-run manifest. Reuse the fixture/manifest design; do not create another emulation format. |
+| Time-ordered underground communications and egress trace replay | `symtropy` issue #2097 | Timed mission-state replay and staleness semantics, not a packet-level network simulator. Keep the distinction explicit. |
+
+### Integration boundaries that must remain separate
+
+- **Connectivity broker versus fabric continuity:** PR #64 chooses among eligible access paths from declared intents and link observations. Symthaea #1100 qualifies planned changes to network devices/fabrics. One is per-flow/service path selection; the other is infrastructure transition safety.
+- **Geospatial service resilience versus RF planning:** Sol-Atlas #323/#325 reasons over declared sites, capacities, power, backhaul and service demand. It must not infer radio coverage from distance or draw a packet-level conclusion from a topology graph.
+- **Mesh versus wide-area access:** Symthaea #8634 evaluates constrained mesh reliability/airtime/energy. Its channel model, radio profile and payload semantics must be declared before comparing it with Wi-Fi, cellular or satellite.
+- **Federation topology versus transport behavior:** Mycelix #3251/#3255 describes nodes, links, faults and run identity. It does not prove that a concrete transport delivers bundles correctly.
+- **Mission event replay versus network emulation:** Symtropy #2097 validates time-ordered coordination state and stale evidence. It does not model packet queues, airtime, PHY behavior or route convergence.
+- **Control-plane configuration versus data-plane outcome:** Symthaea #1100 explicitly preserves the boundary that device configuration acceptance is not network behavior verification or execution authority.
+
+### Immediate execution sequence
+
+1. Review and reconcile LNF PR #207 with PR #64 and the existing owner issues above.
+2. Close the software-only broker contract and reviewed dependency lockfiles in the existing PR #64; retain the already reported tests as source/CI evidence, not live network proof.
+3. Run the isolated OpenWrt/two-WAN fault matrix and local-only service campaign on named gateway revisions. Record physical/VM evidence separately.
+4. In parallel, use Symthaea #1100/#4834 to qualify a small redundant routed-fabric topology against Batfish and live FRR probes; do not give this adapter production actuation authority.
+5. Use Sol-Atlas #323/#325 to model a named service topology with power and backhaul common-cause failures using the existing shared service-network evaluators.
+6. Continue DTN durability work and the new BPSec-vs-envelope interoperability research in `kitsune2-transport-dtn` issue #10.
+7. Only after these terrestrial paths have reproducible receipts should LNF open the broader NTN/space link conformance and contact-plan campaign.
+
 ## 9. Repository responsibility map
 
 | Repository | Responsibility | Must not own |
