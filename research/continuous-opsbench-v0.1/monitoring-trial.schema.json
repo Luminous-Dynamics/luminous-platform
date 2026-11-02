@@ -539,7 +539,12 @@
         "infrastructure_cost_micro_usd",
         "cpu_time_ms",
         "energy_microjoules",
-        "human_active_time_ms"
+        "human_active_time_ms",
+        "energy_sensor_digest",
+        "energy_calibration_digest",
+        "energy_uncertainty_ppm",
+        "energy_interval_start_ms",
+        "energy_interval_end_ms"
       ],
       "properties": {
         "model_input_tokens": {
@@ -585,6 +590,34 @@
           "minimum": 0
         },
         "human_active_time_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "energy_sensor_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "energy_calibration_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "energy_uncertainty_ppm": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "energy_interval_start_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "energy_interval_end_ms": {
           "type": [
             "integer",
             "null"
