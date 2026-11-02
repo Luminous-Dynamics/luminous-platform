@@ -136,6 +136,8 @@ pub struct EvidenceBundle {
     pub run_id: String,
     pub lane: EvaluationLane,
     pub disclosure: BundleDisclosure,
+    /// Required for Restricted bundles; authenticates the separate disclosure path.
+    pub restricted_distribution_policy_digest: Option<Digest>,
     pub verification_mode: VerificationMode,
     pub created_at_ms: u64,
     pub manifest_commitment: Digest,
@@ -192,6 +194,7 @@ pub struct BundleVerificationReceipt {
     pub verifier_digest: Digest,
     pub trust_policy_digest: Digest,
     pub trust_roots_digest: Digest,
+    pub restricted_distribution_policy_digest: Option<Digest>,
     pub revocation_policy_digest: Digest,
     pub verified_at_ms: u64,
     pub artifact_count: usize,
@@ -210,6 +213,8 @@ pub enum BundleError {
     UnsupportedSchema,
     InvalidBundleIdentity,
     NetworkedVerificationForbidden,
+    RestrictedDisclosurePolicyMissing,
+    RestrictedDisclosurePolicyUnexpected,
     InvalidTrustPolicy,
     BundleTrustPolicyMismatch,
     VerifierIdentityMismatch,
@@ -300,6 +305,7 @@ pub fn validate_evidence_bundle(
         verifier_digest: trust.verifier_digest.clone(),
         trust_policy_digest: trust.policy_digest.clone(),
         trust_roots_digest: trust.trust_roots_digest.clone(),
+        restricted_distribution_policy_digest: bundle.restricted_distribution_policy_digest.clone(),
         revocation_policy_digest: trust.revocation_policy_digest.clone(),
         verified_at_ms,
         artifact_count: artifacts.len(),
@@ -341,6 +347,16 @@ fn validate_bundle_header(
     }
     if bundle.verification_mode != VerificationMode::Offline {
         return Err(BundleError::NetworkedVerificationForbidden);
+    }
+    match (bundle.disclosure, &bundle.restricted_distribution_policy_digest) {
+        (BundleDisclosure::Public, None) => {}
+        (BundleDisclosure::Public, Some(_)) => {
+            return Err(BundleError::RestrictedDisclosurePolicyUnexpected);
+        }
+        (BundleDisclosure::Restricted, Some(digest)) if !is_zero(digest) => {}
+        (BundleDisclosure::Restricted, _) => {
+            return Err(BundleError::RestrictedDisclosurePolicyMissing);
+        }
     }
     if !valid_id(&trust.policy_id)
         || !valid_id(&trust.verifier_id)
@@ -840,6 +856,7 @@ mod tests {
             run_id: "run-001".into(),
             lane: EvaluationLane::SealedCertification,
             disclosure: BundleDisclosure::Public,
+            restricted_distribution_policy_digest: None,
             verification_mode: VerificationMode::Offline,
             created_at_ms: 100,
             manifest_commitment: d(5),
@@ -948,6 +965,35 @@ mod tests {
         assert_eq!(result.pass_claims, 3);
     }
 
+    #[test]
+    fn restricted_bundle_requires_a_nonzero_separately_pinned_distribution_policy() {
+        let (mut bundle, trust, materialized, digest) = fixture();
+        bundle.disclosure = BundleDisclosure::Restricted;
+        assert_eq!(
+            validate_evidence_bundle(&bundle, &digest, &trust, &materialized, 110),
+            Err(BundleError::RestrictedDisclosurePolicyMissing)
+        );
+        bundle.restricted_distribution_policy_digest = Some(d(91));
+        assert!(validate_evidence_bundle(&bundle, &digest, &trust, &materialized, 110).is_ok());
+        bundle.restricted_distribution_policy_digest = Some(d(0));
+        assert_eq!(
+            validate_evidence_bundle(&bundle, &digest, &trust, &materialized, 110),
+            Err(BundleError::RestrictedDisclosurePolicyMissing)
+        );
+    }
+
+    #[test]
+    fn claim_kind_cannot_be_supported_by_a_different_evidence_class() {
+        let (mut bundle, trust, materialized, digest) = fixture();
+        bundle.claims[1].evidence_artifact_ids = vec!["oracle-commitment".into()];
+        assert_eq!(
+            validate_evidence_bundle(&bundle, &digest, &trust, &materialized, 110),
+            Err(BundleError::ClaimEvidenceRoleMismatch(
+                "service-recovery".into(),
+                "oracle-commitment".into()
+            ))
+        );
+    }
     #[test]
     fn public_bundle_rejects_active_payload_and_oracle_bytes() {
         for sensitivity in [ArtifactSensitivity::ActiveSealedPayload, ArtifactSensitivity::PrivateOracle] {
