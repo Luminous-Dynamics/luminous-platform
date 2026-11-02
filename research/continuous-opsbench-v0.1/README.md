@@ -79,3 +79,8 @@ Only `validate_runtime_attestations_from_events` is public as the certification 
 The additive `src/runtime.rs` verifier joins one host-side runtime attestation and one separately authenticated, one-use challenge-authority receipt to every planned `(trial, Candidate/Baseline)` pair. It binds the run/scenario/system identities, execution environment and policy digests, unique runtime and writable namespace IDs, observer adapter/source, challenge nonce/receipt digest and issue/expiry interval. Missing or duplicated challenge/attestation records, sequence gaps, coverage loss, oracle reads, prohibited artifact access, disallowed egress, cross-trial state and shared writable namespaces fail closed.
 
 See `runtime-trial-attestation.schema.json`, `runtime-challenge-receipt.schema.json`, and `RUNTIME_ENFORCEMENT_ADAPTER_V0_1.md`. This is structural validation only; challenge and observer signatures, canonical artifact hashes, durable anti-replay, kernel/hypervisor enforcement, access telemetry completeness and actual runtime integration remain external requirements.
+
+
+### Paired cluster inference and rare-event bounds
+
+`src/statistics.rs` adds a deterministic paired-cluster bootstrap, conservative lower/upper outcome bounds for indeterminate recoveries, and exact one-sided Clopper-Pearson safety bounds with a zero-event sample-size calculator. Exploratory runs report intervals but cannot declare superiority. Confirmatory mode requires at least 500 independent paired clusters and 10,000 bootstrap replicates before the effect and coverage gates can establish superiority. See `PAIRED_CLUSTER_INFERENCE_V0_1.md` and the two `cluster-inference-*.schema.json` files.
