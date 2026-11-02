@@ -536,13 +536,13 @@ pub fn evaluate(
         Strategy::BestRtt => (
             best_rtt_single,
             vec![
-                "selected the eligible single path with the lowest estimated completion time".to_owned(),
+                "selected eligible single path with the lowest estimated completion time".to_owned(),
             ],
         ),
         Strategy::LowestCost => (
             cheapest_single,
             vec![
-                "selected the lowest estimated cost single path that meets the declared hard limits"
+                "selected lowest-cost eligible single path within hard limits"
                     .to_owned(),
             ],
         ),
@@ -551,7 +551,7 @@ pub fn evaluate(
                 (
                     Some(candidate),
                     vec![
-                        "distributed payload by effective path capacity within per-path allowance and session budgets"
+                        "split bytes by effective capacity within per-path and session limits"
                             .to_owned(),
                     ],
                 )
@@ -559,7 +559,7 @@ pub fn evaluate(
                 (
                     best_single,
                     vec![
-                        "multipath candidate unavailable or inadmissible; fell back to the best eligible single path"
+                        "multipath unavailable or inadmissible; selected the best eligible single path"
                             .to_owned(),
                     ],
                 )
@@ -576,7 +576,7 @@ pub fn evaluate(
                 (
                     multi,
                     vec![
-                        "multipath met the workload-specific improvement threshold and all hard constraints"
+                        "multipath cleared the gain threshold and all hard constraints"
                             .to_owned(),
                     ],
                 )
@@ -591,7 +591,7 @@ pub fn evaluate(
                 (
                     candidate,
                     vec![
-                        "multipath did not meet the declared gain threshold or single-path intent preference was safer"
+                        "multipath did not clear the gain threshold; task intent favored a single path"
                             .to_owned(),
                     ],
                 )
