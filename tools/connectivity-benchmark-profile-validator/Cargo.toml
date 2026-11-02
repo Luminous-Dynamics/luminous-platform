@@ -20,3 +20,7 @@ all = "warn"
 [[bin]]
 name = "connectivity-measurement-receipt-verify"
 path = "src/bin/measurement-receipt-verify.rs"
+
+[[bin]]
+name = "lnf-run-manifest-verify"
+path = "src/bin/lnf-run-manifest-verify.rs"
