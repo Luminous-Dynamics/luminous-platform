@@ -373,7 +373,9 @@ pub fn evaluate_monitoring_task(
         {
             return Err(MonitoringError::WaitOutsideTaskWindow(wait.decision_id.clone()));
         }
-        if wait.requested_wait_ms > contract.maximum_requested_wait_ms {
+        if wait.requested_wait_ms > contract.maximum_requested_wait_ms
+            || wait.actual_wait_ms > wait.requested_wait_ms.saturating_add(envelope.clock_uncertainty_ms)
+        {
             return Err(MonitoringError::WaitDurationExceedsPolicy(wait.decision_id.clone()));
         }
         match wait.strategy {
@@ -391,10 +393,15 @@ pub fn evaluate_monitoring_task(
             }
         }
         if let Some(observation_id) = &wait.resulting_observation_id {
-            if !observation_index.contains_key(observation_id.as_str()) {
-                return Err(MonitoringError::ResultingObservationMissing(
+            let observation = observation_index.get(observation_id.as_str()).copied()
+                .ok_or_else(|| MonitoringError::ResultingObservationMissing(
                     wait.decision_id.clone(),
-                ));
+                ))?;
+            let expected_wake_at = wait.decided_at_ms.saturating_add(wait.actual_wait_ms);
+            if observation.observed_at_ms.abs_diff(expected_wake_at)
+                > envelope.clock_uncertainty_ms
+            {
+                return Err(MonitoringError::WaitBindingMismatch(wait.decision_id.clone()));
             }
         }
         match wait.wake_cause {
@@ -965,7 +972,7 @@ mod tests {
         let observations = vec![observation("obs-1", 1, 1_000, ObservedCondition::Absent, false),
             observation("obs-2", 2, 4_050, ObservedCondition::Present, false)];
         let waits = vec![
-            wait("wait-1", 1, 1_000, WaitStrategy::EventDriven, 3_100, WakeCause::Signal, Some("obs-2"))
+            wait("wait-1", 1, 1_000, WaitStrategy::EventDriven, 3_050, WakeCause::Signal, Some("obs-2"))
         ];
         let actions = vec![action(4_100, 4_200, "obs-2")];
         let result = evaluate_monitoring_task(
@@ -986,7 +993,7 @@ mod tests {
     #[test]
     fn no_op_task_rewards_waiting_without_prohibited_action() {
         let contract = contract(MonitoringTaskKind::NoOp);
-        let observations = vec![observation("obs-1", 1, 1_000, ObservedCondition::Absent, false)];
+        let observations = vec![observation("obs-1", 1, 6_000, ObservedCondition::Absent, false)];
         let waits = vec![wait("wait-1", 1, 1_000, WaitStrategy::EventDriven, 5_000,
             WakeCause::Timeout, Some("obs-1"))];
         let result = evaluate_monitoring_task(
