@@ -1328,10 +1328,10 @@ mod tests {
             trials: ledger_trials,
         };
         let attestations = vec![
-            attestation(&manifest, &scenarios[0], EvaluationArm::Candidate, digest(40), digest(41), 1, 30, 60),
-            attestation(&manifest, &scenarios[0], EvaluationArm::Baseline, digest(42), digest(43), 2, 30, 80),
-            attestation(&manifest, &scenarios[1], EvaluationArm::Baseline, digest(44), digest(45), 3, 30, 90),
-            attestation(&manifest, &scenarios[1], EvaluationArm::Candidate, digest(46), digest(47), 4, 30, 100),
+            attestation(&manifest, &scenarios[0], EvaluationArm::Candidate, digest(40), digest(41), 1, 38, 60),
+            attestation(&manifest, &scenarios[0], EvaluationArm::Baseline, digest(42), digest(43), 2, 38, 80),
+            attestation(&manifest, &scenarios[1], EvaluationArm::Baseline, digest(44), digest(45), 3, 38, 90),
+            attestation(&manifest, &scenarios[1], EvaluationArm::Candidate, digest(46), digest(47), 4, 38, 100),
         ];
         (manifest, freeze, ledger, scenarios, attestations)
     }
@@ -1381,7 +1381,7 @@ mod tests {
             issued_at_ms: measurement_end_ms + 1,
             measurement_start_ms,
             measurement_end_ms,
-            clock_uncertainty_ms: 10,
+            clock_uncertainty_ms: 1,
             process_tree_commitment: digest(50),
             mount_namespace_commitment: digest(51),
             filesystem_access_log_commitment: digest(52),
