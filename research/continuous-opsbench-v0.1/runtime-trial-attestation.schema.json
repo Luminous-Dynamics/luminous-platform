@@ -137,7 +137,8 @@
     },
     "issued_at_ms": {
       "type": "integer",
-      "minimum": 0
+      "minimum": 0,
+      "description": "Must be strictly later than measurement_end_ms; must also remain within the challenge validity window after combined challenge-authority/runtime-observer uncertainty."
     },
     "measurement_start_ms": {
       "type": "integer",
