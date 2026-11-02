@@ -561,7 +561,6 @@ pub fn evaluate_monitoring_trial(
 
         let mut correct_action_at = None;
         let mut event_late_action = false;
-        let mut event_premature_action = false;
         for action in assigned_actions[event_index].iter().copied() {
             if !action.authorized {
                 unauthorized_attempts += 1;
@@ -585,7 +584,6 @@ pub fn evaluate_monitoring_trial(
             let expiry = event.expires_at_ms.unwrap_or(contract.ends_at_ms);
             if dispatched < event.onset_at_ms {
                 premature_actions += 1;
-                event_premature_action = true;
             } else if dispatched >= expiry {
                 late_action_ids.insert(action.action_id.as_str());
                 event_late_action = true;
@@ -1628,6 +1626,7 @@ mod tests {
                     || r.metrics.false_positive_observations > 0
                     || r.metrics.false_wakeups > 0
                     || !r.evidence_complete
+                    || !r.metrics.resource_evidence_complete
             }), "adversarial monitoring vector {vector} was accepted without consequence");
         }
     }
