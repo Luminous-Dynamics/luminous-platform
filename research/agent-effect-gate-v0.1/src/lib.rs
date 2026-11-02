@@ -264,6 +264,85 @@ pub struct DispatchRequest {
     pub idempotency_key: String,
 }
 
+/// Source-bound runtime evidence claims produced by the existing #196 verifier adapter.
+/// This structure is not self-authenticating; ExecutionFinalityAuthority must validate the
+/// source signatures, challenge, freshness and policy binding before issuing a handle.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RuntimeEvidenceBinding {
+    pub run_id: String,
+    pub trial_id: String,
+    pub arm_id: String,
+    pub manifest_commitment: Digest,
+    pub attestation_digest: Digest,
+    pub challenge_receipt_digest: Digest,
+    pub challenge_nonce_digest: Digest,
+    pub observer_source_id: String,
+    pub observer_control_domain: String,
+    pub observer_adapter_digest: Digest,
+    pub runtime_policy_digest: Digest,
+    pub valid_until_ms: u64,
+}
+
+/// Exact effect candidate reconstructed from the dispatch request and frozen manifest.
+/// Production canonicalization must cover every field and the participant's exact payload.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CandidateAct {
+    pub request: DispatchRequest,
+    pub effect_class: EffectClass,
+    pub policy_digest: Digest,
+    pub runtime_evidence_digest: Digest,
+    pub challenge_receipt_digest: Digest,
+    pub challenge_nonce_digest: Digest,
+}
+
+/// Adapter for deterministic canonicalization (for example deterministic CBOR + SHA-256).
+/// Do not implement a bespoke production hash in this reference crate.
+pub trait CandidateActCanonicalizer {
+    fn canonical_digest(&self, act: &CandidateAct) -> Result<Digest, GateDenial>;
+}
+
+/// Act-bound, single-use authorization. The participant finality sink MUST independently
+/// verify its signature and all bindings and atomically consume handle_id/nonce with the effect.
+/// Public fields are wire claims; this struct alone is not proof of signature validity.
+#[derive(Debug, PartialEq, Eq)]
+pub struct ExecutionHandle {
+    pub handle_id: String,
+    pub handle_digest: Digest,
+    pub act_digest: Digest,
+    pub runtime_evidence_digest: Digest,
+    pub challenge_receipt_digest: Digest,
+    pub challenge_nonce_digest: Digest,
+    pub audience: String,
+    pub finality_sink_id: String,
+    pub tenant_id: String,
+    pub principal_id: String,
+    pub participant_id: String,
+    pub grant_id: String,
+    pub manifest_digest: Digest,
+    pub toolchain_digest: Digest,
+    pub policy_digest: Digest,
+    pub target_digest: Digest,
+    pub request_digest: Digest,
+    pub attempt_id: String,
+    pub idempotency_key: String,
+    pub issued_at_ms: u64,
+    pub expires_at_ms: u64,
+    pub verifier_id: String,
+    pub verifier_control_domain: String,
+    pub signature: Vec<u8>,
+}
+
+/// The implementation authenticates #196's evidence, canonicalizes this exact Candidate Act,
+/// and issues a short-lived signed handle. Cryptographic verification remains in adapters.
+pub trait ExecutionFinalityAuthority {
+    fn issue_handle(
+        &mut self,
+        act: &CandidateAct,
+        act_digest: &Digest,
+        evidence: &RuntimeEvidenceBinding,
+        now_ms: u64,
+    ) -> Result<ExecutionHandle, GateDenial>;
+}
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AttemptStatus { OutcomeUnknown, AcceptedPending, Committed, Rejected, NeverAccepted }
 
