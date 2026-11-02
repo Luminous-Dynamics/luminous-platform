@@ -282,6 +282,7 @@ pub struct DispatchRequest {
     pub request_digest: Digest,
     pub attempt_id: String,
     pub idempotency_key: String,
+    pub effect_class: EffectClass,
 }
 
 /// Source-bound runtime evidence claims produced by the existing #196 verifier adapter.
@@ -310,9 +311,9 @@ pub struct RuntimeEvidenceBinding {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CandidateAct {
     pub request: DispatchRequest,
-    pub effect_class: EffectClass,
-    pub policy_digest: Digest,
-    pub runtime_evidence: RuntimeEvidenceBinding,
+    pub runtime_evidence_digest: Digest,
+    pub challenge_receipt_digest: Digest,
+    pub challenge_nonce_digest: Digest,
 }
 
 /// Adapter for deterministic canonicalization (for example deterministic CBOR + SHA-256).
@@ -555,9 +556,9 @@ impl<P: ParticipantPort> EffectBroker<P> {
         let request = self.dispatch_request(proposal, grant, &manifest);
         let candidate_act = CandidateAct {
             request: request.clone(),
-            effect_class: manifest.effect_class,
-            policy_digest: manifest.policy_digest.clone(),
-            runtime_evidence: runtime_evidence.clone(),
+            runtime_evidence_digest: runtime_evidence.evidence_bundle_digest.clone(),
+            challenge_receipt_digest: runtime_evidence.challenge_receipt_digest.clone(),
+            challenge_nonce_digest: runtime_evidence.challenge_nonce_digest.clone(),
         };
         let act_digest = match canonicalizer.canonical_digest(&candidate_act) {
             Ok(value) if value != Digest::ZERO => value,
@@ -775,6 +776,7 @@ impl<P: ParticipantPort> EffectBroker<P> {
             request_digest: proposal.request_digest.clone(),
             attempt_id: proposal.attempt_id.clone(),
             idempotency_key: proposal.idempotency_key.clone(),
+            effect_class: manifest.effect_class,
         }
     }
 
