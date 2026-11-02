@@ -45,7 +45,6 @@ pub struct RuntimeChallengeReceipt {
     pub observer_adapter_digest: Digest,
     pub challenge_nonce_digest: Digest,
     /// Digest of the separately authenticated challenge-authority receipt.
-    pub challenge_receipt_digest: Digest,
     pub challenge_authority_id: String,
     pub challenge_authority_control_domain: String,
     pub sequence: u64,
@@ -85,6 +84,8 @@ pub struct RuntimeTrialAttestation {
     pub observer_adapter_digest: Digest,
     /// Fresh nonce issued by the frozen runtime challenge authority.
     pub challenge_nonce_digest: Digest,
+    /// Digest of the separately authenticated challenge-authority receipt.
+    pub challenge_receipt_digest: Digest,
     pub challenge_authority_id: String,
     pub challenge_authority_control_domain: String,
     pub challenge_issued_at_ms: u64,
