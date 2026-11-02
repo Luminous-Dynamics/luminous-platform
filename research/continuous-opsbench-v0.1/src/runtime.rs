@@ -464,7 +464,7 @@ fn validate_runtime_attestations(
         }
 
         if receipt.measurement_start_ms >= receipt.measurement_end_ms
-            || receipt.issued_at_ms < receipt.measurement_end_ms
+            || receipt.issued_at_ms <= receipt.measurement_end_ms
         {
             return Err(RuntimeAttestationError::InvalidMeasurementInterval(
                 receipt.trial_id.clone(),
@@ -1570,6 +1570,18 @@ mod tests {
     }
 
     #[test]
+    fn runtime_attestation_must_be_issued_strictly_after_measurement_end() {
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].issued_at_ms = attestations[0].measurement_end_ms;
+        assert_eq!(
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::InvalidMeasurementInterval(
+                "trial-a".into(), EvaluationArm::Candidate
+            ))
+        );
+    }
+
+    #[test]
     fn mismatched_policy_or_source_is_rejected() {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].artifact_access_policy_digest = digest(99);
@@ -1810,7 +1822,7 @@ mod tests {
 
     #[test]
     fn seventy_five_adversarial_runtime_mutations_fail_closed() {
-        for vector in 0..75 {
+        for vector in 0..76 {
             let (mut manifest, freeze, mut ledger, mut scenarios, mut attestations) = fixture();
             match vector {
                 0 => attestations[0].schema.push_str("-unknown"),
