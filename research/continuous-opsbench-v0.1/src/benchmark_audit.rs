@@ -236,6 +236,7 @@ pub struct ComponentAuditResult {
     pub missed_mutations: usize,
     pub unexpected_rejections: usize,
     pub mutation_miss_rate_ppm: Option<u64>,
+    pub mutation_overreject_rate_ppm: Option<u64>,
     pub reset_repetitions: usize,
 }
 
@@ -407,6 +408,7 @@ pub fn validate_benchmark_component_audit(
                         missed_mutations: 0,
                         unexpected_rejections: 0,
                         mutation_miss_rate_ppm: None,
+                        mutation_overreject_rate_ppm: None,
                         reset_repetitions: if component == BenchmarkComponent::EnvironmentTools {
                             reset_repetitions
                         } else {
@@ -512,6 +514,8 @@ pub fn validate_benchmark_component_audit(
             .then(|| rate_ppm(result.false_negatives, result.positive_controls));
         result.mutation_miss_rate_ppm = (result.expected_rejection_controls > 0)
             .then(|| rate_ppm(result.missed_mutations, result.expected_rejection_controls));
+        result.mutation_overreject_rate_ppm = (result.expected_non_rejection_controls > 0)
+            .then(|| rate_ppm(result.unexpected_rejections, result.expected_non_rejection_controls));
         if *component == BenchmarkComponent::EnvironmentTools
             && result.disposition == AuditDisposition::Pass
             && result.reset_repetitions < cohort.environment.minimum_reset_repetitions
@@ -1174,6 +1178,7 @@ mod tests {
         known[0].observed_acceptance = false;
         known[5].observed_acceptance = true;
         mutations[0].observed_rejection = false;
+        mutations[10].observed_rejection = true;
         let result = validate_benchmark_component_audit(
             &manifest, &freeze, &cohort, &known, &mutations, &interactions, &metamorphic
         ).unwrap();
@@ -1182,7 +1187,9 @@ mod tests {
         assert_eq!(user.false_positive_rate_ppm, Some(200_000));
         assert_eq!(user.false_negative_rate_ppm, Some(200_000));
         assert_eq!(user.mutation_miss_rate_ppm, Some(100_000));
-        assert_eq!(user.expected_rejection_controls, 15);
+        assert_eq!(user.mutation_overreject_rate_ppm, Some(200_000));
+        assert_eq!(user.expected_rejection_controls, 10);
+        assert_eq!(user.expected_non_rejection_controls, 5);
     }
 
     #[test]
