@@ -1,0 +1,411 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-benchmark-cohort-v0.1.json",
+  "title": "Continuous OpsBench benchmark cohort component contract v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "cohort"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "continuous-opsbench-benchmark-cohort-v0.1"
+    },
+    "cohort": {
+      "$ref": "#/$defs/cohort"
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "component": {
+      "enum": [
+        "user_task",
+        "environment_tools",
+        "ground_truth",
+        "evaluation"
+      ]
+    },
+    "component_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "component",
+        "version",
+        "artifact_digest",
+        "schema_digest",
+        "evidence_digest",
+        "source_id",
+        "control_domain"
+      ],
+      "properties": {
+        "component": {
+          "$ref": "#/$defs/component"
+        },
+        "version": {
+          "$ref": "#/$defs/id"
+        },
+        "artifact_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "schema_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "evidence_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "control_domain": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_id",
+        "instruction_digest",
+        "capability_id",
+        "ambiguity_class",
+        "precondition_digest",
+        "postcondition_digest",
+        "required_predicate_ids",
+        "prohibited_predicate_ids"
+      ],
+      "properties": {
+        "task_id": {
+          "$ref": "#/$defs/id"
+        },
+        "instruction_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "capability_id": {
+          "$ref": "#/$defs/id"
+        },
+        "ambiguity_class": {
+          "$ref": "#/$defs/id"
+        },
+        "precondition_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "postcondition_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "required_predicate_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10000,
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        },
+        "prohibited_predicate_ids": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "reset_receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reset_id",
+        "repetition",
+        "observed_initial_state_digest",
+        "fault_activation_control_passed",
+        "reset_completed_at_ms"
+      ],
+      "properties": {
+        "reset_id": {
+          "$ref": "#/$defs/id"
+        },
+        "repetition": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "observed_initial_state_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "fault_activation_control_passed": {
+          "type": "boolean"
+        },
+        "reset_completed_at_ms": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "environment_image_digest",
+        "tool_schema_digest",
+        "dependency_lock_digest",
+        "fault_injector_digest",
+        "reset_procedure_digest",
+        "expected_initial_state_digest",
+        "minimum_reset_repetitions",
+        "reset_receipts"
+      ],
+      "properties": {
+        "environment_image_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "tool_schema_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "dependency_lock_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "fault_injector_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "reset_procedure_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "expected_initial_state_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "minimum_reset_repetitions": {
+          "type": "integer",
+          "minimum": 3
+        },
+        "reset_receipts": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 10000,
+          "items": {
+            "$ref": "#/$defs/reset_receipt"
+          }
+        }
+      }
+    },
+    "ground_truth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "oracle_version",
+        "oracle_program_digest",
+        "oracle_coverage_digest",
+        "ambiguity_policy_digest",
+        "oracle_control_domain",
+        "oracle_predicate_ids",
+        "private_oracle_commitment"
+      ],
+      "properties": {
+        "oracle_version": {
+          "$ref": "#/$defs/id"
+        },
+        "oracle_program_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "oracle_coverage_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "ambiguity_policy_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "oracle_control_domain": {
+          "$ref": "#/$defs/id"
+        },
+        "oracle_predicate_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100000,
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        },
+        "private_oracle_commitment": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metric_id",
+        "numerator_predicate_ids",
+        "denominator_id",
+        "unit",
+        "direction",
+        "exclusion_policy_digest",
+        "estimand_semantics_digest"
+      ],
+      "properties": {
+        "metric_id": {
+          "$ref": "#/$defs/id"
+        },
+        "numerator_predicate_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10000,
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        },
+        "denominator_id": {
+          "$ref": "#/$defs/id"
+        },
+        "unit": {
+          "$ref": "#/$defs/id"
+        },
+        "direction": {
+          "enum": [
+            "higher_is_better",
+            "lower_is_better",
+            "target_range"
+          ]
+        },
+        "exclusion_policy_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "estimand_semantics_digest": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "evaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evaluator_binary_digest",
+        "metric_semantics_digest",
+        "statistical_plan_digest",
+        "metrics"
+      ],
+      "properties": {
+        "evaluator_binary_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "metric_semantics_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "statistical_plan_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "metrics": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10000,
+          "items": {
+            "$ref": "#/$defs/metric"
+          }
+        }
+      }
+    },
+    "cohort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "version",
+        "cohort_id",
+        "run_id",
+        "manifest_commitment",
+        "cohort_version",
+        "user_task_set_digest",
+        "issued_at_ms",
+        "auditor_id",
+        "auditor_control_domain",
+        "evaluator_control_domain",
+        "minimum_controls_per_component",
+        "minimum_mutations_per_component",
+        "components",
+        "tasks",
+        "environment",
+        "ground_truth",
+        "evaluation"
+      ],
+      "properties": {
+        "schema": {
+          "const": "continuous-opsbench-benchmark-audit-v0.1"
+        },
+        "version": {
+          "const": 1
+        },
+        "cohort_id": {
+          "$ref": "#/$defs/id"
+        },
+        "run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "manifest_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "cohort_version": {
+          "$ref": "#/$defs/id"
+        },
+        "user_task_set_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "issued_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "auditor_id": {
+          "$ref": "#/$defs/id"
+        },
+        "auditor_control_domain": {
+          "$ref": "#/$defs/id"
+        },
+        "evaluator_control_domain": {
+          "$ref": "#/$defs/id"
+        },
+        "minimum_controls_per_component": {
+          "type": "integer",
+          "minimum": 5
+        },
+        "minimum_mutations_per_component": {
+          "type": "integer",
+          "minimum": 10
+        },
+        "components": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "$ref": "#/$defs/component_evidence"
+          }
+        },
+        "tasks": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100000,
+          "items": {
+            "$ref": "#/$defs/task"
+          }
+        },
+        "environment": {
+          "$ref": "#/$defs/environment"
+        },
+        "ground_truth": {
+          "$ref": "#/$defs/ground_truth"
+        },
+        "evaluation": {
+          "$ref": "#/$defs/evaluation"
+        }
+      }
+    }
+  }
+}
