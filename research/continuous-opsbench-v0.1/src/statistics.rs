@@ -21,6 +21,9 @@ pub const MAX_EXACT_RARE_TRIALS: u64 = 1_000_000_000;
 pub const MIN_CONFIRMATORY_CLUSTERS: usize = 500;
 /// Confirmatory runs use at least 10,000 paired-cluster bootstrap replicates.
 pub const MIN_CONFIRMATORY_BOOTSTRAP_REPLICATES: u32 = 10_000;
+pub const MAX_FAULT_FAMILIES: usize = 64;
+/// Bound total bootstrap work across clusters and stratified families.
+pub const MAX_BOOTSTRAP_WORK_UNITS: u128 = 500_000_000;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ArmOutcomeCounts {
@@ -40,10 +43,19 @@ pub struct ArmClusterRecord {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PairedFamilyStratum {
+    pub family_id: String,
+    pub candidate: ArmOutcomeCounts,
+    pub baseline: ArmOutcomeCounts,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PairedCluster {
     pub cluster_id: String,
     pub candidate: ArmClusterRecord,
     pub baseline: ArmClusterRecord,
+    /// Mutually exclusive primary fault-family strata that partition each arm.
+    pub family_strata: Vec<PairedFamilyStratum>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -68,6 +80,11 @@ pub struct InferencePlan {
     pub minimum_meaningful_effect_ppm: i64,
     /// Maximum tolerated mean indeterminate rate, across either arm, in ppm.
     pub maximum_indeterminate_rate_ppm: u32,
+    /// Sorted, unique family IDs fixed before sealed scenario generation.
+    pub required_fault_families: Vec<String>,
+    /// A family may regress by at most this many ppm; the simultaneous lower
+    /// confidence bound must remain above its negative value.
+    pub maximum_family_regression_ppm: u32,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -91,6 +108,16 @@ pub struct ArmInferenceSummary {
     /// Bootstrap CI for the upper estimator: (verified + indeterminate) / planned.
     pub maximum_possible_rate_ci: PpmInterval,
     pub indeterminate_rate_ci: PpmInterval,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FaultFamilyInferenceSummary {
+    pub family_id: String,
+    pub conservative_effect_lower_mean_ppm: i64,
+    pub conservative_effect_upper_mean_ppm: i64,
+    /// Bonferroni-adjusted simultaneous interval across all required families.
+    pub conservative_effect_lower_simultaneous_ci: PpmInterval,
+    pub conservative_effect_upper_simultaneous_ci: PpmInterval,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -118,6 +145,8 @@ pub struct InferenceResult {
     pub candidate: ArmInferenceSummary,
     pub baseline: ArmInferenceSummary,
     pub paired_effect: PairedEffectSummary,
+    pub fault_families: Vec<FaultFamilyInferenceSummary>,
+    pub maximum_family_regression_ppm: u32,
     pub mean_candidate_indeterminate_rate_ppm: i64,
     pub mean_baseline_indeterminate_rate_ppm: i64,
     pub maximum_upper_confidence_arm_indeterminate_rate_ppm: i64,
@@ -152,6 +181,14 @@ pub enum InferenceError {
     InvalidRareEventRiskCeiling,
     ConfirmatoryClusterFloorNotMet,
     ConfirmatoryBootstrapFloorNotMet,
+    InvalidFaultFamilyPlan,
+    InvalidFaultFamilyId(String),
+    MissingFaultFamily(String, String),
+    DuplicateFaultFamily(String, String),
+    UnplannedFaultFamily(String, String),
+    FamilyPartitionMismatch(String, EvaluationArm),
+    BootstrapWorkLimitExceeded,
+    FaultFamilyRegressionNotCleared(String),
 }
 
 #[derive(Clone, Copy)]
@@ -162,6 +199,14 @@ struct ClusterRates {
     baseline_lower: f64,
     baseline_upper: f64,
     baseline_indeterminate: f64,
+}
+
+#[derive(Clone, Copy)]
+struct FamilyClusterRates {
+    candidate_lower: f64,
+    candidate_upper: f64,
+    baseline_lower: f64,
+    baseline_upper: f64,
 }
 
 #[derive(Clone, Copy, Default)]
