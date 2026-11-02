@@ -488,8 +488,25 @@ fn validate_plan(plan: &InferencePlan) -> Result<(), InferenceError> {
     {
         return Err(InferenceError::InvalidMinimumEffect);
     }
-    if plan.maximum_indeterminate_rate_ppm > 1_000_000 {
+    if plan.maximum_indeterminate_rate_ppm > 1_000_000
+        || plan.maximum_family_regression_ppm > 1_000_000
+    {
         return Err(InferenceError::InvalidIndeterminateCeiling);
+    }
+    if plan.required_fault_families.is_empty()
+        || plan.required_fault_families.len() > MAX_FAULT_FAMILIES
+        || plan.required_fault_families.windows(2)
+            .any(|pair| pair[0] >= pair[1])
+    {
+        return Err(InferenceError::InvalidFaultFamilyPlan);
+    }
+    for family_id in &plan.required_fault_families {
+        if family_id.trim().is_empty()
+            || family_id.len() > 128
+            || family_id.chars().any(char::is_control)
+        {
+            return Err(InferenceError::InvalidFaultFamilyId(family_id.clone()));
+        }
     }
     if digest_is_zero(&plan.bootstrap_seed_commitment) {
         return Err(InferenceError::ZeroBootstrapSeed);
@@ -517,6 +534,31 @@ fn validate_arm_counts(
         ));
     }
     Ok(())
+}
+
+fn accumulate_arm_counts(
+    total: &mut ArmOutcomeCounts,
+    next: &ArmOutcomeCounts,
+) -> Result<(), InferenceError> {
+    total.planned_faults = total.planned_faults.checked_add(next.planned_faults)
+        .ok_or(InferenceError::ArithmeticOverflow)?;
+    total.verified_recoveries = total.verified_recoveries.checked_add(next.verified_recoveries)
+        .ok_or(InferenceError::ArithmeticOverflow)?;
+    total.known_nonrecoveries = total.known_nonrecoveries.checked_add(next.known_nonrecoveries)
+        .ok_or(InferenceError::ArithmeticOverflow)?;
+    total.indeterminate_recoveries = total.indeterminate_recoveries
+        .checked_add(next.indeterminate_recoveries)
+        .ok_or(InferenceError::ArithmeticOverflow)?;
+    Ok(())
+}
+
+fn zero_arm_counts() -> ArmOutcomeCounts {
+    ArmOutcomeCounts {
+        planned_faults: 0,
+        verified_recoveries: 0,
+        known_nonrecoveries: 0,
+        indeterminate_recoveries: 0,
+    }
 }
 
 fn percentile_interval(samples: &mut [f64], tail_probability: f64) -> PpmInterval {
