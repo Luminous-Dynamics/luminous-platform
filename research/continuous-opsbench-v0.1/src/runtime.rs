@@ -1410,8 +1410,8 @@ mod tests {
     }
 
     #[test]
-    fn sixty_adversarial_runtime_mutations_fail_closed() {
-        for vector in 0..60 {
+    fn seventy_two_adversarial_runtime_mutations_fail_closed() {
+        for vector in 0..72 {
             let (mut manifest, freeze, mut ledger, mut scenarios, mut attestations) = fixture();
             match vector {
                 0 => attestations[0].schema.push_str("-unknown"),
@@ -1473,7 +1473,19 @@ mod tests {
                 56 => ledger.trials[0].cluster_id = "wrong-cluster".into(),
                 57 => { ledger.trials.pop(); },
                 58 => { manifest.runtime_observer_control_domain = manifest.agent.control_domain.clone(); },
-                _ => manifest.runtime_observer_adapter_digest = digest(0),
+                59 => manifest.runtime_observer_adapter_digest = digest(0),
+                60 => attestations[0].challenge_nonce_digest = digest(0),
+                61 => attestations[1].challenge_nonce_digest = attestations[0].challenge_nonce_digest.clone(),
+                62 => attestations[0].challenge_issued_at_ms = manifest.frozen_at_ms,
+                63 => attestations[0].challenge_issued_at_ms = attestations[0].measurement_start_ms,
+                64 => attestations[0].challenge_expires_at_ms = attestations[0].issued_at_ms,
+                65 => attestations[0].challenge_expires_at_ms = attestations[0].challenge_issued_at_ms + MAX_RUNTIME_CHALLENGE_TTL_MS + 1,
+                66 => attestations[0].writable_state_namespace_digest = attestations[1].runtime_instance_digest.clone(),
+                67 => attestations[0].challenge_authority_control_domain = manifest.runtime_observer_control_domain.clone(),
+                68 => ledger.runtime_challenge_authority_id = "substituted-authority".into(),
+                69 => { attestations[0].receipt_sequence = 4; attestations[3].receipt_sequence = 1; },
+                70 => attestations[0].measurement_start_ms = 39,
+                _ => attestations[0].clock_uncertainty_ms = MAX_CLOCK_UNCERTAINTY_MS + 1,
             }
             assert!(
                 validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations).is_err(),
