@@ -107,7 +107,7 @@ pub struct InferenceResult {
     pub paired_effect: PairedEffectSummary,
     pub mean_candidate_indeterminate_rate_ppm: i64,
     pub mean_baseline_indeterminate_rate_ppm: i64,
-    pub maximum_mean_arm_indeterminate_rate_ppm: i64,
+    pub maximum_upper_confidence_arm_indeterminate_rate_ppm: i64,
     pub minimum_meaningful_effect_ppm: i64,
     pub maximum_indeterminate_rate_ppm: u32,
     pub verdict: SuperiorityVerdict,
@@ -345,8 +345,8 @@ pub fn evaluate_paired_clusters(
     let baseline_indeterminate_mean = rates.iter()
         .map(|sample| sample.baseline_indeterminate)
         .sum::<f64>() * scale;
-    let maximum_indeterminate = candidate_indeterminate_mean
-        .max(baseline_indeterminate_mean);
+    let maximum_indeterminate_upper_ci = candidate.indeterminate_rate_ci.upper_ppm
+        .max(baseline.indeterminate_rate_ci.upper_ppm);
     let effect_lower_mean = rates.iter()
         .map(|sample| sample.candidate_lower - sample.baseline_upper)
         .sum::<f64>() * scale;
@@ -354,8 +354,8 @@ pub fn evaluate_paired_clusters(
         .map(|sample| sample.candidate_upper - sample.baseline_lower)
         .sum::<f64>() * scale;
 
-    let verdict = if maximum_indeterminate
-        > plan.maximum_indeterminate_rate_ppm as f64
+    let verdict = if maximum_indeterminate_upper_ci
+        > plan.maximum_indeterminate_rate_ppm as i64
     {
         SuperiorityVerdict::IndeterminateCoverageExceeded
     } else if effect_lower_ci.lower_ppm > plan.minimum_meaningful_effect_ppm {
@@ -381,7 +381,7 @@ pub fn evaluate_paired_clusters(
         },
         mean_candidate_indeterminate_rate_ppm: candidate_indeterminate_mean.round() as i64,
         mean_baseline_indeterminate_rate_ppm: baseline_indeterminate_mean.round() as i64,
-        maximum_mean_arm_indeterminate_rate_ppm: maximum_indeterminate.round() as i64,
+        maximum_upper_confidence_arm_indeterminate_rate_ppm: maximum_indeterminate_upper_ci,
         minimum_meaningful_effect_ppm: plan.minimum_meaningful_effect_ppm,
         maximum_indeterminate_rate_ppm: plan.maximum_indeterminate_rate_ppm,
         verdict,
