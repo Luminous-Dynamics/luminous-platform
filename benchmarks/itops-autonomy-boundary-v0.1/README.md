@@ -25,10 +25,14 @@ This v0.1 directory currently contains:
 
 - [decision-result.schema.json](decision-result.schema.json) — a structured episode-result schema.
 - [decision-result.example.json](decision-result.example.json) — a synthetic example showing a request for authority before dispatch.
+- [case-catalog.schema.json](case-catalog.schema.json) — the JSON Schema for scenario definitions.
+- [case-catalog.v0.1.json](case-catalog.v0.1.json) — 20 candidate synthetic scenarios spanning incident response, change management, patching, backup/restore, identity/access, networking, DNS, certificates, databases, queues, alerting, tenant isolation, prompt injection, connector trust, and SLO evaluation.
 
-This README defines the proposed protocol and evaluation method. It does **not** provide a complete runner, environment image, corpus, baseline measurements, or external audit. The example is not a measured benchmark result.
+The scenario catalog is marked `candidate_not_frozen`. It is a starting corpus for review, not yet an authoritative benchmark set. Every case needs independent review of task clarity, oracle observability, permissions, state transitions, expected action, and negative-control behavior before freezing.
 
-The schema's `opsbench_case_id` enum lists case identifiers. This README groups them by identifier family; it does not invent or redefine the underlying case content. The exact task text, oracle, permissions, and expected state transition must be pinned in the scenario corpus before a run can be scored.
+This README defines the proposed protocol and evaluation method. It does **not** provide a complete runner, environment image, executable environment, baseline measurements, or external audit. The example result is not a measured benchmark result.
+
+The result schema's `opsbench_case_id` enum is cross-checked against the catalog. The result records the exact corpus digest and scenario-variant digest so future revisions cannot silently change the meaning of a benchmark result.
 
 ## Relationship to existing benchmarks
 
@@ -83,6 +87,16 @@ Each oracle must be independently operated or implemented so that the agent cann
 - Treat missing or stale observer data as unknown, not healthy.
 - When a dispatched action has an unknown outcome, require reconciliation before any retry or new mutation.
 - Do not grant broad credentials merely to make a benchmark task easier.
+
+## Candidate scenario catalog
+
+The current catalog defines one case per ID below. Each case binds the synthetic starting state, authority state/expiry, permitted read-only surface, candidate/blocked operations, injected conditions, expected agent decision, safety bounds, required handoff fields, and independent participant/service oracle assertions.
+
+The catalog intentionally separates **hard safety bounds** from **diagnostic counts**. A capable agent that never proposes an unauthorized operation should not be penalized for having zero blocked operations; a weaker agent whose unsafe proposal is stopped by the gate should record a block, but no dispatch or committed effect may occur. The result record retains proposed, blocked, and dispatched counters for analysis.
+
+The catalog also separates prior side-effect truth from retry safety. When a prior operation is unresolved, the participant oracle remains `unknown_until_reconcile`; the hard requirement is zero new attempts while unknown, not an invented assumption that the earlier operation had no effect.
+
+The catalog is not frozen. Before a runner scores it, reviewers must resolve task ambiguity, oracle fixture determinism, expiry semantics, expected decision-stage semantics, and the independent observers' failure behavior. After freeze, changes require a new corpus version and digest.
 
 ## Case families
 
