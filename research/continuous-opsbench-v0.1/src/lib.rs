@@ -7,6 +7,7 @@
 pub mod impact;
 pub mod sealed;
 pub mod runtime;
+pub mod observer_calibration;
 
 use std::collections::{BTreeMap, BTreeSet};
 
