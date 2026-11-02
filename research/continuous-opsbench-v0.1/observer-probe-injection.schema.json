@@ -1,0 +1,290 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-observer-probe-injection-v0.1.json",
+  "title": "Continuous OpsBench probe injections and observed events v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "injections",
+    "observations",
+    "loss_observations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "continuous-opsbench-observer-probe-evidence-v0.1"
+    },
+    "injections": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/injection"
+      }
+    },
+    "observations": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/observed_probe_event"
+      }
+    },
+    "loss_observations": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/observed_probe_loss"
+      }
+    }
+  },
+  "$defs": {
+    "injection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "run_id",
+        "batch_id",
+        "plan_digest",
+        "probe_id",
+        "marker_digest",
+        "surface",
+        "expectation",
+        "operation",
+        "calibration_runtime_digest",
+        "calibration_namespace_digest",
+        "issued_at_ms",
+        "executed_at_ms",
+        "completed_at_ms",
+        "injector_id",
+        "injector_control_domain",
+        "sequence"
+      ],
+      "properties": {
+        "schema": {
+          "const": "continuous-opsbench-observer-probe-injection-v0.1"
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "batch_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "plan_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "probe_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "marker_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "surface": {
+          "enum": [
+            "process_exec",
+            "file_read",
+            "object_read",
+            "oracle_access",
+            "network_connect",
+            "dns_lookup",
+            "namespace_change",
+            "cgroup_membership",
+            "observer_heartbeat",
+            "event_stream_loss"
+          ]
+        },
+        "expectation": {
+          "enum": [
+            "must_observe",
+            "must_not_observe",
+            "must_detect_loss"
+          ]
+        },
+        "operation": {
+          "enum": [
+            "allowed_operation",
+            "denied_operation",
+            "negative_control",
+            "induced_event_loss"
+          ]
+        },
+        "calibration_runtime_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "calibration_namespace_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "issued_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "executed_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "completed_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "injector_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "injector_control_domain": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "observed_probe_event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "batch_id",
+        "probe_id",
+        "marker_digest",
+        "surface",
+        "event_class",
+        "calibration_runtime_digest",
+        "observed_at_ms",
+        "observer_source_id",
+        "observer_control_domain",
+        "sequence"
+      ],
+      "properties": {
+        "batch_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "probe_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "marker_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "surface": {
+          "enum": [
+            "process_exec",
+            "file_read",
+            "object_read",
+            "oracle_access",
+            "network_connect",
+            "dns_lookup",
+            "namespace_change",
+            "cgroup_membership",
+            "observer_heartbeat",
+            "event_stream_loss"
+          ]
+        },
+        "event_class": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "calibration_runtime_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "observed_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "observer_source_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "observer_control_domain": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "observed_probe_loss": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "batch_id",
+        "probe_id",
+        "marker_digest",
+        "calibration_runtime_digest",
+        "observed_at_ms",
+        "dropped_event_count",
+        "sequence_gap_count",
+        "observer_source_id",
+        "observer_control_domain",
+        "sequence"
+      ],
+      "properties": {
+        "batch_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "probe_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "marker_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "calibration_runtime_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "observed_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dropped_event_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sequence_gap_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "observer_source_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "observer_control_domain": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+}

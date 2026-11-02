@@ -50,7 +50,9 @@
     "disallowed_egress_successes",
     "cross_trial_state_observations",
     "shared_writable_namespace_observations",
-    "allowlisted_egress_events"
+    "allowlisted_egress_events",
+    "runtime_kernel_profile_digest",
+    "observer_fitness_receipt_digest"
   ],
   "properties": {
     "schema": {
@@ -137,8 +139,7 @@
     },
     "issued_at_ms": {
       "type": "integer",
-      "minimum": 0,
-      "description": "Must be strictly later than measurement_end_ms; must also remain within the challenge validity window after combined challenge-authority/runtime-observer uncertainty."
+      "minimum": 0
     },
     "measurement_start_ms": {
       "type": "integer",
@@ -152,7 +153,7 @@
       "type": "integer",
       "minimum": 0,
       "maximum": 1000,
-      "description": "Absolute bound for runtime observer timestamps, at most 1,000 ms. Combined with challenge-authority clock uncertainty for cross-domain challenge/measurement comparisons."
+      "description": "Bound applied conservatively to measurement coverage and observer receipt ordering. Maximum 1,000 ms."
     },
     "process_tree_commitment": {
       "type": "string",
@@ -197,8 +198,7 @@
     },
     "oracle_read_successes": {
       "type": "integer",
-      "minimum": 0,
-      "description": "Must not exceed oracle_read_attempts. Any nonzero attempt or success fails strict sealed certification."
+      "minimum": 0
     },
     "unauthorized_artifact_read_attempts": {
       "type": "integer",
@@ -206,8 +206,7 @@
     },
     "unauthorized_artifact_read_successes": {
       "type": "integer",
-      "minimum": 0,
-      "description": "Must not exceed unauthorized_artifact_read_attempts. Any nonzero attempt or success fails strict sealed certification."
+      "minimum": 0
     },
     "disallowed_egress_attempts": {
       "type": "integer",
@@ -215,8 +214,7 @@
     },
     "disallowed_egress_successes": {
       "type": "integer",
-      "minimum": 0,
-      "description": "Must not exceed disallowed_egress_attempts. Any nonzero attempt or success fails strict sealed certification."
+      "minimum": 0
     },
     "cross_trial_state_observations": {
       "type": "integer",
@@ -249,15 +247,23 @@
     "challenge_issued_at_ms": {
       "type": "integer",
       "minimum": 0,
-      "description": "Must be strictly after the frozen run and scenario receipt. Must be issued before measurement begins, accounting for challenge-authority and runtime-observer clock uncertainty."
+      "description": "Must be strictly after manifest freeze and strictly before measurement_start_ms."
     },
     "challenge_expires_at_ms": {
       "type": "integer",
       "minimum": 0,
-      "description": "Must remain strictly after the latest plausible measurement_end_ms and issued_at_ms after combining challenge-authority and runtime-observer clock uncertainty. Challenge TTL is bounded to 86,400,000 ms."
+      "description": "Must be strictly after measurement_end_ms and issued_at_ms including clock uncertainty; TTL from challenge_issued_at_ms must not exceed 86,400,000 ms."
     },
     "challenge_receipt_digest": {
       "$ref": "#/$defs/sha256"
+    },
+    "runtime_kernel_profile_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "observer_fitness_receipt_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
     }
   },
   "description": "One independently source-authenticated receipt per planned (trial, arm). This schema validates record shape; it does not authenticate signatures or enforce sandbox policy."

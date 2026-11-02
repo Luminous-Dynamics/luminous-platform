@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-observer-fitness-plan-v0.1.json",
+  "title": "Continuous OpsBench frozen observer fitness plan v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "plan"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "continuous-opsbench-observer-fitness-plan-bundle-v0.1"
+    },
+    "plan": {
+      "$ref": "#/$defs/plan"
+    }
+  },
+  "$defs": {
+    "probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "probe_id",
+        "surface",
+        "expectation",
+        "expected_event_class",
+        "maximum_detection_latency_ms"
+      ],
+      "properties": {
+        "probe_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "surface": {
+          "enum": [
+            "process_exec",
+            "file_read",
+            "object_read",
+            "oracle_access",
+            "network_connect",
+            "dns_lookup",
+            "namespace_change",
+            "cgroup_membership",
+            "observer_heartbeat",
+            "event_stream_loss"
+          ]
+        },
+        "expectation": {
+          "enum": [
+            "must_observe",
+            "must_not_observe",
+            "must_detect_loss"
+          ]
+        },
+        "expected_event_class": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "maximum_detection_latency_ms": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "plan_id",
+        "run_id",
+        "manifest_commitment",
+        "plan_digest",
+        "created_at_ms",
+        "runtime_observer_source_id",
+        "runtime_observer_control_domain",
+        "runtime_observer_adapter_digest",
+        "runtime_kernel_profile_digest",
+        "execution_environment_digest",
+        "state_isolation_policy_digest",
+        "artifact_access_policy_digest",
+        "network_egress_policy_digest",
+        "probe_injector_id",
+        "probe_injector_control_domain",
+        "fitness_verifier_id",
+        "fitness_verifier_control_domain",
+        "probes"
+      ],
+      "properties": {
+        "schema": {
+          "const": "continuous-opsbench-observer-fitness-plan-v0.1"
+        },
+        "plan_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "manifest_commitment": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "plan_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "created_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "runtime_observer_source_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "runtime_observer_control_domain": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "runtime_observer_adapter_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "runtime_kernel_profile_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "execution_environment_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "state_isolation_policy_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "artifact_access_policy_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "network_egress_policy_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "probe_injector_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "probe_injector_control_domain": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "fitness_verifier_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "fitness_verifier_control_domain": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "probes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10000,
+          "items": {
+            "$ref": "#/$defs/probe"
+          }
+        }
+      }
+    }
+  }
+}

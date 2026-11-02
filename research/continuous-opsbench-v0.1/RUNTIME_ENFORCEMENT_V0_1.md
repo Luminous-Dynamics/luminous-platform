@@ -16,9 +16,9 @@ Every runtime attestation carries:
 - a 32-byte nonzero challenge nonce digest;
 - the frozen challenge-authority identity and control domain;
 - challenge issue and expiry times;
-- the runtime measurement start/end and receipt issue times. Receipt issuance must be strictly after measurement end.
+- the runtime measurement start/end and receipt issue times.
 
-The structural contract requires the challenge to be issued after both the run freeze and the scenario receipt, and before runtime measurement starts. The challenge must remain valid through measurement completion and attestation issuance. Cross-domain comparisons use the sum of challenge-authority and runtime-observer clock uncertainty: the latest plausible challenge issue must precede the earliest plausible measurement start, and the latest plausible measurement/receipt times must precede challenge expiry. Challenge lifetime is capped at 24 hours. Nonce digests must be nonzero and unique across all arm trials in the run. This rejects stale replay and nonce reuse at the structural layer.
+The structural contract requires the challenge to be issued after the run freeze, before runtime measurement starts, and to remain valid through measurement completion and receipt issuance, including the runtime observer clock-uncertainty margin. Challenge lifetime is capped at 24 hours. Nonce digests must be nonzero and unique across all arm trials in the run. This rejects stale replay and nonce reuse at the structural layer.
 
 The source-evidence adapter must authenticate the challenge authority, verify the challenge signature and exact run/trial/arm/observer/policy subject binding, and enforce one-use nonce consumption through the existing durable replay guard (#191 / issue #190). A self-reported nonce is not cryptographic freshness evidence by itself.
 
@@ -31,7 +31,7 @@ A valid receipt binds:
 - the independent observer and adapter;
 - process tree, mount namespace, filesystem/object-access, network-egress and runtime-event log commitments;
 - complete coverage, zero sequence gaps and zero dropped events;
-- clock uncertainty no greater than the contract limit; successful event counts cannot exceed their corresponding attempt counts;
+- clock uncertainty no greater than the contract limit;
 - zero oracle-read attempts or successes;
 - zero unauthorized-artifact read attempts or successes;
 - zero disallowed-egress attempts or successes;
@@ -90,4 +90,13 @@ The design follows the emerging continuous-attestation direction: trust at launc
 
 The runtime validator has positive clean-run controls and negative controls for forged ledger summaries, missing/duplicated arm receipts, challenge reuse/expiry/authority substitution, observer/control-domain substitution, exact manifest/policy binding, unique runtime and namespace identity, measurement coverage including clock uncertainty, sequence start/order/contiguity, partial/unknown/tampered coverage, oracle/artifact access, forbidden egress, state carry-over and missing scenarios. The source-event certification entry point is tested independently of the supplied-summary composition path.
 
-The 76-vector runtime mutation matrix is deterministic and synthetic. It includes challenge expiry/TTL, challenge-before-scenario ordering, combined clock uncertainty, zero and reused nonces, impossible success/attempt counter relationships, cross-class runtime/namespace collisions, uncertainty-overlapping and provably reversed sequence timestamps, and frozen challenge-authority substitution. Direct tests separately exercise the timing and counter invariants. A green CI run proves the encoded structural conformance tests, not a real sandbox security guarantee.
+The 72-vector runtime mutation matrix is deterministic and synthetic. It includes challenge expiry/TTL, zero and reused nonces, cross-class runtime/namespace collisions, uncertainty-overlapping and provably reversed sequence timestamps, and frozen challenge-authority substitution. A green CI run proves the encoded structural conformance tests, not a real sandbox security guarantee.
+
+
+## Observer fitness: pre-run and post-run
+
+The runtime join now requires a fresh known-answer fitness batch before the runtime campaign and a distinct post-run batch measured after the last runtime receipt. The pre-run fitness measurement and receipt must precede the earliest runtime measurement after combined clock uncertainty; its one-hour validity interval must enclose each arm's complete runtime measurement interval. Each runtime attestation names that exact pre-run fitness receipt digest.
+
+Exactly one post-run batch must remain unreferenced by runtime attestations. Its measurement starts after the latest runtime measurement end and its receipt is issued after both its own measurement and the latest runtime receipt. Missing, early, duplicated or excess post-run evidence rejects the run. A single fitness pass cannot be extended over an arbitrarily long run; each runtime attestation interval must fit wholly within a valid one-hour window.
+
+See [OBSERVER_FITNESS_V0_1.md](OBSERVER_FITNESS_V0_1.md) for the probe protocol, 90-vector adversarial suite and claim ceiling.

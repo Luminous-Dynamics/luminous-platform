@@ -191,3 +191,10 @@ The trust architecture should also align to current attestation roles:
 - Microsoft's Linux workload guide explicitly separates confidential-VM attestation from workload-image approval; it combines dm-verity, IMA measurement, fresh TPM challenge/quote and verifier-side event-log replay: https://learn.microsoft.com/en-us/azure/confidential-computing/how-to-attest-linux-workload
 
 This sensor-fitness work is tracked separately in [issue #205](https://github.com/Luminous-Dynamics/luminous-platform/issues/205). These references describe mature components and integration patterns, not a turnkey system that proves agent safety. OpsBench should build interoperable evidence adapters around these standards, not custom cryptography or a second policy/attestation authority.
+
+
+## Observer fitness as an assurance axis
+
+A runtime observer must be benchmarked as a measurement system. The v0.1 probe plan requires positive and negative known-answer controls across process execution, file/object/oracle canary access, network connection, DNS, namespace/cgroup and observer heartbeat, plus a deliberate event-loss probe. Report per-surface false negatives, false positives, loss-detection rate, p50/p95/max detection latency, unexplained gaps/drops and requalification failures. Do not aggregate away misses on oracle-read or prohibited-egress controls.
+
+The certification target is 100% detection of each preregistered critical positive control, 100% non-observation on negative controls, and 100% detection/classification of injected event loss, with each event within its frozen latency ceiling. These are hard gates, not a weighted score. Runtime observer qualification must be fresh before execution and re-run after the campaign; one-hour expiry requires requalification for longer campaigns.
