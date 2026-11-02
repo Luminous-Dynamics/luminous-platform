@@ -24,7 +24,8 @@
     "pass_claims",
     "fail_claims",
     "indeterminate_claims",
-    "disposition"
+    "disposition",
+    "restricted_distribution_policy_digest"
   ],
   "properties": {
     "schema": {
@@ -99,6 +100,13 @@
         "fail",
         "indeterminate"
       ]
+    },
+    "restricted_distribution_policy_digest": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
     }
   }
 }
