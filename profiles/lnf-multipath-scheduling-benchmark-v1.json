@@ -26,7 +26,11 @@
     "best_rtt_single_path",
     "lowest_cost_single_path",
     "capacity_weighted_aggregate",
-    "linux_mptcp_default_scheduler_exact_kernel",
+    "round_robin",
+    "earliest_completion_first_ecf",
+    "blest_reordering_aware",
+    "redundant_retransmission_control",
+    "linux_in_tree_default_scheduler_exact_kernel",
     "approved_multipath_quic_stack_when_available",
     "lnf_intent_aware_constrained"
   ],
@@ -135,5 +139,14 @@
     "No claim that a modelled schedule is an observed transport packet schedule",
     "No claim of SOTA superiority before matched pinned transport runs",
     "No claim of production readiness or network actuation"
-  ]
+  ],
+  "baseline_methodology": {
+    "scheduler_implementation_pinning_required": true,
+    "congestion_control_pinning_required": true,
+    "congestion_control_factorial_or_matched_comparison_required": true,
+    "external_scheduler_modules_must_not_be_mislabeled_in_tree": true,
+    "default_scheduler_must_be_identified_from_exact_kernel_source": true,
+    "redundant_transmission_is_separate_reliability_energy_control": true,
+    "same_workload_and_path_trace_required": true
+  }
 }
