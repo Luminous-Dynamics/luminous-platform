@@ -121,6 +121,7 @@ pub struct RuntimeTrialEvidence {
     pub runtime_instance_digest: Digest,
     pub writable_state_namespace_digest: Digest,
     pub challenge_nonce_digest: Digest,
+    pub challenge_receipt_digest: Digest,
     pub challenge_issued_at_ms: u64,
     pub challenge_expires_at_ms: u64,
     pub receipt_sequence: u64,
@@ -531,6 +532,7 @@ fn validate_runtime_attestations(
             runtime_instance_digest: receipt.runtime_instance_digest.clone(),
             writable_state_namespace_digest: receipt.writable_state_namespace_digest.clone(),
             challenge_nonce_digest: receipt.challenge_nonce_digest.clone(),
+            challenge_receipt_digest: receipt.challenge_receipt_digest.clone(),
             challenge_issued_at_ms: receipt.challenge_issued_at_ms,
             challenge_expires_at_ms: receipt.challenge_expires_at_ms,
             receipt_sequence: receipt.receipt_sequence,
@@ -897,6 +899,51 @@ mod tests {
         Digest::from_byte(byte)
     }
 
+    fn challenge_from_attestation(receipt: &RuntimeTrialAttestation) -> RuntimeChallengeReceipt {
+        RuntimeChallengeReceipt {
+            schema: RUNTIME_CHALLENGE_SCHEMA.into(),
+            receipt_digest: receipt.challenge_receipt_digest.clone(),
+            run_id: receipt.run_id.clone(),
+            trial_id: receipt.trial_id.clone(),
+            arm: receipt.arm,
+            arm_identity_digest: receipt.arm_identity_digest.clone(),
+            scenario_commitment: receipt.scenario_commitment.clone(),
+            manifest_commitment: receipt.manifest_commitment.clone(),
+            evaluator_digest: receipt.evaluator_digest.clone(),
+            execution_environment_digest: receipt.execution_environment_digest.clone(),
+            resource_budget_digest: receipt.resource_budget_digest.clone(),
+            state_isolation_policy_digest: receipt.state_isolation_policy_digest.clone(),
+            artifact_access_policy_digest: receipt.artifact_access_policy_digest.clone(),
+            network_egress_policy_digest: receipt.network_egress_policy_digest.clone(),
+            runtime_instance_digest: receipt.runtime_instance_digest.clone(),
+            writable_state_namespace_digest: receipt.writable_state_namespace_digest.clone(),
+            observer_source_id: receipt.observer_source_id.clone(),
+            observer_control_domain: receipt.observer_control_domain.clone(),
+            observer_adapter_digest: receipt.observer_adapter_digest.clone(),
+            challenge_nonce_digest: receipt.challenge_nonce_digest.clone(),
+            challenge_authority_id: receipt.challenge_authority_id.clone(),
+            challenge_authority_control_domain: receipt.challenge_authority_control_domain.clone(),
+            sequence: receipt.receipt_sequence,
+            issued_at_ms: receipt.challenge_issued_at_ms,
+            expires_at_ms: receipt.challenge_expires_at_ms,
+            clock_uncertainty_ms: receipt.clock_uncertainty_ms,
+        }
+    }
+
+    fn challenge_receipts(attestations: &[RuntimeTrialAttestation]) -> Vec<RuntimeChallengeReceipt> {
+        attestations.iter().map(challenge_from_attestation).collect()
+    }
+
+    fn validate_fixture(
+        manifest: &RunManifest,
+        freeze: &FreezeReceipt,
+        ledger: &RunLedgerSummary,
+        scenarios: &[ScenarioReceipt],
+        attestations: &[RuntimeTrialAttestation],
+    ) -> Result<RuntimeAttestationSummary, RuntimeAttestationError> {
+        let challenges = challenge_receipts(attestations);
+        validate_fixture(manifest, freeze, ledger, scenarios, &challenges, attestations)
+    }
     fn fixture() -> (
         RunManifest,
         FreezeReceipt,
@@ -1141,6 +1188,7 @@ mod tests {
             observer_control_domain: manifest.runtime_observer_control_domain.clone(),
             observer_adapter_digest: manifest.runtime_observer_adapter_digest.clone(),
             challenge_nonce_digest: digest(60u8.saturating_add(sequence as u8)),
+            challenge_receipt_digest: digest(70u8.saturating_add(sequence as u8)),
             challenge_authority_id: manifest.runtime_challenge_authority_id.clone(),
             challenge_authority_control_domain: manifest.runtime_challenge_authority_control_domain.clone(),
             challenge_issued_at_ms: 25,
@@ -1269,7 +1317,7 @@ mod tests {
         let (manifest, freeze, mut ledger, scenarios, attestations) = fixture();
         ledger.unique_clusters = 1;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::LedgerManifestMismatch)
         );
     }
@@ -1279,7 +1327,7 @@ mod tests {
         let (manifest, freeze, mut ledger, scenarios, attestations) = fixture();
         ledger.trials[0].first_started_at_ms = None;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::LedgerTrialSummaryMismatch)
         );
     }
@@ -1289,13 +1337,13 @@ mod tests {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[1].challenge_nonce_digest = attestations[0].challenge_nonce_digest.clone();
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ChallengeNonceCollision)
         );
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].challenge_issued_at_ms = manifest.frozen_at_ms;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ChallengeFreshnessInvalid(
                 "trial-a".into(), EvaluationArm::Candidate
             ))
@@ -1307,7 +1355,7 @@ mod tests {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].challenge_expires_at_ms = 59;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ChallengeFreshnessInvalid(
                 "trial-a".into(), EvaluationArm::Candidate
             ))
@@ -1320,7 +1368,7 @@ mod tests {
         attestations[0].challenge_authority_control_domain =
             manifest.runtime_observer_control_domain.clone();
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ChallengeAuthorityMismatch)
         );
     }
@@ -1330,7 +1378,7 @@ mod tests {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations.pop();
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::MissingAttestation(
                 "trial-b".into(),
                 EvaluationArm::Candidate,
@@ -1343,7 +1391,7 @@ mod tests {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].oracle_read_attempts = 1;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::OracleAccessObserved(
                 "trial-a".into(),
                 EvaluationArm::Candidate,
@@ -1361,7 +1409,7 @@ mod tests {
             let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
             attestations[0].coverage = coverage;
             assert_eq!(
-                validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+                validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
                 Err(RuntimeAttestationError::IncompleteCoverage(
                     "trial-a".into(),
                     EvaluationArm::Candidate,
@@ -1376,14 +1424,14 @@ mod tests {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[1].runtime_instance_digest = attestations[0].runtime_instance_digest.clone();
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::RuntimeInstanceCollision)
         );
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[1].writable_state_namespace_digest =
             attestations[0].writable_state_namespace_digest.clone();
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::StateNamespaceCollision)
         );
     }
@@ -1393,7 +1441,7 @@ mod tests {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].measurement_start_ms = 41;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::MeasurementDoesNotCoverTrial(
                 "trial-a".into(),
                 EvaluationArm::Candidate,
@@ -1403,7 +1451,7 @@ mod tests {
         attestations[0].measurement_end_ms = 49;
         attestations[0].issued_at_ms = 50;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::MeasurementDoesNotCoverTrial(
                 "trial-a".into(),
                 EvaluationArm::Candidate,
@@ -1416,7 +1464,7 @@ mod tests {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].artifact_access_policy_digest = digest(99);
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::AttestationBindingMismatch(
                 "trial-a".into(),
                 EvaluationArm::Candidate,
@@ -1425,7 +1473,7 @@ mod tests {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].observer_source_id = "agent".into();
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ObserverIdentityMismatch)
         );
     }
@@ -1444,7 +1492,7 @@ mod tests {
         for mutate in mutations {
             let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
             mutate(&mut attestations[0]);
-            assert!(validate_runtime_attestations(
+            assert!(validate_fixture(
                 &manifest, &freeze, &ledger, &scenarios, &attestations
             ).is_err());
         }
@@ -1455,26 +1503,26 @@ mod tests {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[1].receipt_sequence = attestations[0].receipt_sequence;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::DuplicateObserverSequence)
         );
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].receipt_sequence = 10;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ObserverSequenceNotContiguous)
         );
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].receipt_sequence = 4;
         attestations[3].receipt_sequence = 1;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ObserverSequenceOrderInvalid)
         );
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[3].receipt_sequence = 6;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ObserverSequenceNotContiguous)
         );
     }
@@ -1484,7 +1532,7 @@ mod tests {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].receipt_sequence = 0;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::InvalidObserverSequence)
         );
 
@@ -1495,7 +1543,7 @@ mod tests {
         attestations[1].measurement_end_ms = 100;
         attestations[1].issued_at_ms = 101;
         attestations[1].challenge_expires_at_ms = 200;
-        assert!(validate_runtime_attestations(
+        assert!(validate_fixture(
             &manifest, &freeze, &ledger, &scenarios, &attestations
         ).is_ok());
     }
@@ -1506,7 +1554,7 @@ mod tests {
         attestations[0].challenge_expires_at_ms =
             attestations[0].challenge_issued_at_ms + MAX_RUNTIME_CHALLENGE_TTL_MS + 1;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ChallengeLifetimeExceeded(
                 "trial-a".into(), EvaluationArm::Candidate
             ))
@@ -1523,7 +1571,7 @@ mod tests {
         attestations[1].issued_at_ms = 101;
         attestations[1].challenge_expires_at_ms = 200;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ObserverSequenceOrderInvalid)
         );
     }
@@ -1533,7 +1581,7 @@ mod tests {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].challenge_expires_at_ms = attestations[0].issued_at_ms;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ChallengeFreshnessInvalid(
                 "trial-a".into(), EvaluationArm::Candidate
             ))
@@ -1542,7 +1590,7 @@ mod tests {
         attestations[0].challenge_expires_at_ms =
             attestations[0].issued_at_ms + attestations[0].clock_uncertainty_ms;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ChallengeFreshnessInvalid(
                 "trial-a".into(), EvaluationArm::Candidate
             ))
@@ -1555,7 +1603,7 @@ mod tests {
         attestations[1].writable_state_namespace_digest =
             attestations[0].runtime_instance_digest.clone();
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::StateNamespaceCollision)
         );
     }
@@ -1565,7 +1613,7 @@ mod tests {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].challenge_nonce_digest = digest(0);
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ChallengeNonceInvalid)
         );
     }
@@ -1575,7 +1623,7 @@ mod tests {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].clock_uncertainty_ms = MAX_CLOCK_UNCERTAINTY_MS + 1;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ClockUncertaintyExceeded(
                 "trial-a".into(),
                 EvaluationArm::Candidate,
@@ -1583,7 +1631,7 @@ mod tests {
         );
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].filesystem_access_log_commitment = digest(0);
-        assert!(validate_runtime_attestations(
+        assert!(validate_fixture(
             &manifest, &freeze, &ledger, &scenarios, &attestations
         ).is_err());
     }
@@ -1667,7 +1715,7 @@ mod tests {
                 _ => attestations[0].clock_uncertainty_ms = MAX_CLOCK_UNCERTAINTY_MS + 1,
             }
             assert!(
-                validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations).is_err(),
+                validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations).is_err(),
                 "runtime attestation adversarial vector {vector} was accepted"
             );
         }
@@ -1677,7 +1725,7 @@ mod tests {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].observer_control_domain = manifest.agent.control_domain.clone();
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ObserverControlDomainCollision)
         );
     }
@@ -1687,7 +1735,7 @@ mod tests {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].oracle_read_successes = 1;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::OracleAccessObserved(
                 "trial-a".into(),
                 EvaluationArm::Candidate,
@@ -1696,7 +1744,7 @@ mod tests {
         let (manifest, freeze, ledger, mut scenarios, attestations) = fixture();
         scenarios.pop();
         assert_eq!(
-            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ScenarioMissing("trial-b".into()))
         );
     }
