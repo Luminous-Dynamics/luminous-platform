@@ -38,6 +38,7 @@ pub struct ToolManifest {
     pub toolchain_id: String,
     pub toolchain_digest: Digest,
     pub policy_version: String,
+    pub policy_digest: Digest,
     pub effect_class: EffectClass,
     pub qualified: bool,
     pub required_scope: String,
@@ -93,6 +94,7 @@ pub struct MutationProposal {
     pub toolchain_id: String,
     pub toolchain_digest: Digest,
     pub policy_version: String,
+    pub policy_digest: Digest,
     pub target_digest: Digest,
     pub request_digest: Digest,
     pub grant_id: String,
@@ -126,6 +128,7 @@ pub struct AuthorityGrant {
     pub environment: String,
     pub risk_level: u8,
     pub policy_version: String,
+    pub policy_digest: Digest,
     pub expires_at_ms: u64,
     pub revoked: bool,
 }
@@ -251,11 +254,15 @@ pub struct DispatchRequest {
     pub tool_id: String,
     pub operation_id: String,
     pub grant_id: String,
+    pub grant_issuer: String,
+    pub grant_scope: String,
+    pub grant_expires_at_ms: u64,
     pub manifest_version: String,
     pub manifest_digest: Digest,
     pub toolchain_id: String,
     pub toolchain_digest: Digest,
     pub policy_version: String,
+    pub policy_digest: Digest,
     pub environment: String,
     pub risk_level: u8,
     pub target_digest: Digest,
@@ -318,6 +325,8 @@ pub struct ExecutionHandle {
     pub principal_id: String,
     pub participant_id: String,
     pub grant_id: String,
+    pub grant_issuer: String,
+    pub grant_scope: String,
     pub manifest_digest: Digest,
     pub toolchain_digest: Digest,
     pub policy_digest: Digest,
@@ -547,7 +556,9 @@ impl<P: ParticipantPort> EffectBroker<P> {
         if c.now_ms >= g.expires_at_ms { return Err(GateDenial::ExpiredGrant); }
         if g.issuer != m.required_grant_issuer { return Err(GateDenial::GrantIssuerMismatch); }
         if g.scope != m.required_scope { return Err(GateDenial::GrantScopeMismatch); }
-        if p.policy_version != m.policy_version || g.policy_version != m.policy_version {
+        if p.policy_version != m.policy_version || g.policy_version != m.policy_version
+            || p.policy_digest != m.policy_digest || g.policy_digest != m.policy_digest
+        {
             return Err(GateDenial::PolicyVersionMismatch);
         }
         let exact = g.grant_id == p.grant_id && g.tenant_id == p.tenant_id
@@ -558,7 +569,8 @@ impl<P: ParticipantPort> EffectBroker<P> {
             && g.toolchain_id == p.toolchain_id && g.toolchain_digest == p.toolchain_digest
             && g.target_digest == p.target_digest && g.request_digest == p.request_digest
             && g.attempt_id == p.attempt_id && g.idempotency_key == p.idempotency_key
-            && g.environment == p.environment && g.risk_level == p.risk_level;
+            && g.environment == p.environment && g.risk_level == p.risk_level
+            && g.policy_digest == p.policy_digest;
         if !exact { return Err(GateDenial::GrantBindingMismatch); }
         Ok(m)
     }
