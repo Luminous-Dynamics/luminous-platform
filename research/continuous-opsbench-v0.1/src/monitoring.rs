@@ -317,6 +317,7 @@ pub enum MonitoringError {
     ObservationCountExceeded,
     WaitCountExceeded,
     ActionCountExceeded,
+    InvalidObservationBudget,
     MissingRelativeBaseline,
     DuplicateRelativeBaseline,
     RelativeBaselineAfterEvent,
@@ -352,6 +353,14 @@ pub fn evaluate_monitoring_trial(
     }
     if actions.len() > contract.maximum_action_attempts as usize {
         return Err(MonitoringError::ActionCountExceeded);
+    }
+    if contract.minimum_condition_observations > contract.maximum_observation_calls
+        || (matches!(
+            contract.task_kind,
+            MonitoringTaskKind::ActivePersistent | MonitoringTaskKind::RelativeBaseline
+        ) && contract.minimum_condition_observations == 0)
+    {
+        return Err(MonitoringError::InvalidObservationBudget);
     }
 
     let mut ids = BTreeSet::new();
@@ -735,7 +744,7 @@ pub fn evaluate_monitoring_trial(
         None
     } else {
         let mid = latencies.len() / 2;
-        Some(if latencies.len() % 2 == 1 {
+        Some(if !latencies.len().is_multiple_of(2) {
             latencies[mid]
         } else {
             latencies[mid - 1] / 2 + latencies[mid] / 2
@@ -839,6 +848,7 @@ pub fn evaluate_monitoring_pair(
         || c.resource_budget_digest != b.resource_budget_digest
         || c.observer_source_id != b.observer_source_id
         || c.observer_control_domain != b.observer_control_domain
+        || c.agent_control_domain == b.agent_control_domain
         || c.minimum_condition_observations != b.minimum_condition_observations
         || c.maximum_observation_calls != b.maximum_observation_calls
         || c.maximum_wait_calls != b.maximum_wait_calls
@@ -911,11 +921,12 @@ fn select_event_for_action(
     }) {
         return Some(*index);
     }
-    let first = matching.first().unwrap();
+    let (Some(first), Some(last)) = (matching.first(), matching.last()) else {
+        return None;
+    };
     if action_at_ms < first.1.onset_at_ms {
         return Some(first.0);
     }
-    let last = matching.last().unwrap();
     let last_expiry = last.1.expires_at_ms.unwrap_or(u64::MAX);
     if action_at_ms >= last_expiry {
         return Some(last.0);
@@ -1120,11 +1131,21 @@ fn validate_energy_evidence(
     {
         return Err(MonitoringError::EnergyCalibrationEvidenceMismatch);
     }
-    let sensor = resources.energy_sensor_digest.as_ref().unwrap();
-    let calibration = resources.energy_calibration_digest.as_ref().unwrap();
-    let uncertainty = resources.energy_uncertainty_ppm.unwrap();
-    let start = resources.energy_interval_start_ms.unwrap();
-    let end = resources.energy_interval_end_ms.unwrap();
+    let (
+        Some(sensor),
+        Some(calibration),
+        Some(uncertainty),
+        Some(start),
+        Some(end),
+    ) = (
+        resources.energy_sensor_digest.as_ref(),
+        resources.energy_calibration_digest.as_ref(),
+        resources.energy_uncertainty_ppm,
+        resources.energy_interval_start_ms,
+        resources.energy_interval_end_ms,
+    ) else {
+        return Err(MonitoringError::EnergyCalibrationEvidenceMismatch);
+    };
     if is_zero(sensor) || is_zero(calibration) || uncertainty > 1_000_000 || start >= end {
         return Err(MonitoringError::EnergyCalibrationEvidenceMismatch);
     }
@@ -1652,6 +1673,31 @@ mod tests {
         let r=evaluate_monitoring_trial(&c,&[],&[],&[],&[],&u).unwrap();
         assert!(r.metrics.energy_evidence_complete);
         assert_eq!(r.metrics.energy_microjoules,Some(100));
+    }
+
+    #[test]
+    fn active_monitoring_contract_cannot_waive_all_observations() {
+        let mut c=contract(EvaluationArm::Candidate,MonitoringTaskKind::ActivePersistent);
+        c.minimum_condition_observations=0;
+        assert_eq!(
+            evaluate_monitoring_trial(&c,&[event(1_000,None)],&[],&[],&[],&resources()),
+            Err(MonitoringError::InvalidObservationBudget)
+        );
+    }
+
+    #[test]
+    fn paired_arms_must_use_distinct_agent_control_domains() {
+        let mut c=contract(EvaluationArm::Candidate,MonitoringTaskKind::NoOp);
+        let mut b=contract(EvaluationArm::Baseline,MonitoringTaskKind::NoOp);
+        b.agent_control_domain=c.agent_control_domain.clone();
+        let events:Vec<EventTruth>=Vec::new();
+        let obs:Vec<ObservationReceipt>=Vec::new();
+        let waits:Vec<WaitReceipt>=Vec::new();
+        let actions:Vec<ActionEvidence>=Vec::new();
+        let usage=resources();
+        let cp=MonitoringTrialInput{contract:&c,events:&events,observations:&obs,waits:&waits,actions:&actions,resources:&usage};
+        let bp=MonitoringTrialInput{contract:&b,events:&events,observations:&obs,waits:&waits,actions:&actions,resources:&usage};
+        assert_eq!(evaluate_monitoring_pair(&cp,&bp),Err(MonitoringError::PairMismatch));
     }
 
     #[test]
