@@ -43,6 +43,9 @@ jobs:
       - name: Lint multipath model with warnings denied
         run: cargo clippy --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml --all-targets -- -D warnings
 
+      - name: Check generic profile schema verifier formatting
+        run: rustfmt --edition 2024 --check tools/connectivity-benchmark-profile-validator/src/bin/json-schema-verify.rs
+
       - name: Test generic profile schema verifier
         run: cargo test --manifest-path tools/connectivity-benchmark-profile-validator/Cargo.toml --bin json-schema-verify
 
