@@ -616,6 +616,11 @@ fn validate_tasks(cohort: &BenchmarkCohortContract) -> Result<(), BenchmarkAudit
         }
         let required: BTreeSet<&str> = task.required_predicate_ids.iter().map(String::as_str).collect();
         let prohibited: BTreeSet<&str> = task.prohibited_predicate_ids.iter().map(String::as_str).collect();
+        if required.len() != task.required_predicate_ids.len()
+            || prohibited.len() != task.prohibited_predicate_ids.len()
+        {
+            return Err(BenchmarkAuditError::InvalidTask(task.task_id.clone()));
+        }
         if !required.is_disjoint(&prohibited) {
             return Err(BenchmarkAuditError::RequiredAndProhibitedOverlap(task.task_id.clone()));
         }
@@ -652,10 +657,13 @@ fn validate_environment(
         if !valid_id(&receipt.reset_id) || !ids.insert(receipt.reset_id.as_str())
             || receipt.repetition == 0
             || !repetition_ids.insert(receipt.repetition)
-            || receipt.reset_completed_at_ms == 0
-            || receipt.reset_completed_at_ms > audit_issued_at_ms
         {
             return Err(BenchmarkAuditError::DuplicateResetReceipt(receipt.reset_id.clone()));
+        }
+        if receipt.reset_completed_at_ms == 0
+            || receipt.reset_completed_at_ms > audit_issued_at_ms
+        {
+            return Err(BenchmarkAuditError::InvalidEnvironmentContract);
         }
         if receipt.observed_initial_state_digest != environment.expected_initial_state_digest {
             return Err(BenchmarkAuditError::ResetStateMismatch(receipt.reset_id.clone()));
