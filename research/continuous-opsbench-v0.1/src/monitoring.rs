@@ -296,6 +296,7 @@ pub fn evaluate_monitoring_task(
         if !valid_id(&observation.observation_id)
             || is_zero(&observation.state_snapshot_digest)
             || is_zero(&observation.condition_digest)
+            || observation.condition_digest != contract.condition_digest
         {
             return Err(MonitoringError::ObservationBindingMismatch(
                 observation.observation_id.clone(),
@@ -612,7 +613,8 @@ pub fn evaluate_monitoring_task(
         && envelope.sequence_gap_count == 0
         && envelope.dropped_event_count == 0
         && envelope.resource_measurements_complete
-        && observations.iter().all(|observation| observation.complete)
+        && observations.iter().all(|observation|
+            observation.complete && observation.condition != ObservedCondition::Unknown)
         && wait_decisions.iter().all(|wait| wait.event_stream_complete)
     {
         MonitoringEvidenceDisposition::Complete
@@ -1350,7 +1352,7 @@ mod tests {
                 45 => { usage.observation_calls += 1; }
                 46 => { usage.tool_calls = 0; }
                 47 => { usage.wall_time_ms = 1; }
-                48 => { usage.cpu_time_ms = usage.wall_time_ms + 1; }
+                48 => { usage.action_calls = 1; }
                 49 => { usage.energy = Some(PhysicalEnergyMeasurement { energy_microjoules: 1, device_identity_digest: d(0), calibration_profile_digest: d(1), sample_started_at_ms: 0, sample_ended_at_ms: 10_000, uncertainty_ppm: 1, hardware_source_id: "rapl".into() }); }
                 50 => { usage.energy = Some(PhysicalEnergyMeasurement { energy_microjoules: 1, device_identity_digest: d(1), calibration_profile_digest: d(0), sample_started_at_ms: 0, sample_ended_at_ms: 10_000, uncertainty_ppm: 1, hardware_source_id: "rapl".into() }); }
                 51 => { evidence.coverage = MonitoringCoverage::Partial; }
