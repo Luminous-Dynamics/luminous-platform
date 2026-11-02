@@ -51,3 +51,15 @@ The matched baseline identity is now fully pinned (provider/model/version, sourc
 See [BENCHMARK_TARGETS_AND_INDUSTRY_COMPARISON_V0_1.md](BENCHMARK_TARGETS_AND_INDUSTRY_COMPARISON_V0_1.md) for current external reference benchmarks, a preregistered target ladder, rare-event confidence interpretation, and the matched confirmatory evaluation protocol. All numeric targets are goals, not measured results.
 
 The run freeze also pins the state-isolation, artifact-access and network-egress policy digests. These describe per-trial writable state/cache boundaries, agent separation from private oracle artifacts, and default-deny or allowlisted outbound retrieval. The structural validator verifies digest presence/binding only; a separate runtime observer must attest enforcement.
+
+## Independent runtime enforcement and challenge receipts
+
+The additive runtime verifier requires one independent observer attestation and one separately authenticated, one-use challenge-authority receipt for every planned Candidate/Baseline arm. It binds the run/scenario/system identities, environment and policy digests, unique runtime and writable namespace IDs, observer adapter/source, challenge nonce/receipt digest and validity interval. Each attestation now carries five separate sensor coverage records (process tree, mounts, filesystem access, network egress, runtime events) with explicit active intervals, stream watermarks, event counts, gap/drop counters and matching log commitments. The verifier derives the sealed ledger from raw trial events, independently validates arm/cluster/attempt denominators, and rejects missing/duplicate challenge or attestation records, sequence gaps, incomplete sensor coverage, oracle reads, prohibited artifact access, disallowed egress, cross-trial state and shared writable namespaces.
+
+See [RUNTIME_ENFORCEMENT_V0_1.md](RUNTIME_ENFORCEMENT_V0_1.md), [RUNTIME_ENFORCEMENT_ADAPTER_V0_1.md](RUNTIME_ENFORCEMENT_ADAPTER_V0_1.md), [runtime-trial-attestation.schema.json](runtime-trial-attestation.schema.json), and [runtime-challenge-receipt.schema.json](runtime-challenge-receipt.schema.json).
+
+This remains structural validation. Challenge and observer signatures, durable cross-run anti-replay, allowlist event verification, actual kernel/hypervisor enforcement, successful-access event capture and sensor known-answer qualification remain external adapter obligations. Per-sensor metadata prevents a generic completeness flag from hiding a missing stream, but does not prove that a hook was actually attached or could not be bypassed.
+
+## Observer fitness
+
+[Issue #205](https://github.com/Luminous-Dynamics/luminous-platform/issues/205) extends this work with blinded positive/negative known-answer probes, event-loss injection, per-sensor false-negative and latency measurements, and expiry on kernel/runtime/adapter/policy changes. A "complete" coverage claim must be qualified against the exact pinned instrumentation profile; missing sensors or silent drops are indeterminate, never zero accesses.

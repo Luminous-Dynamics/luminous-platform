@@ -82,6 +82,13 @@ pub struct RunManifest {
     pub artifact_access_policy_digest: Digest,
     /// Frozen default-deny or allowlisted outbound network policy.
     pub network_egress_policy_digest: Digest,
+    /// Independently trusted runtime observer that attests actual sandbox enforcement.
+    pub runtime_observer_source_id: String,
+    pub runtime_observer_control_domain: String,
+    pub runtime_observer_adapter_digest: Digest,
+    /// Independent verifier that issues one-use, post-freeze runtime challenges.
+    pub runtime_challenge_authority_id: String,
+    pub runtime_challenge_authority_control_domain: String,
     pub agent_identity_digest: Digest,
     pub baseline_identity_digest: Digest,
     pub agent: FrozenAgentIdentity,
@@ -110,6 +117,11 @@ pub struct FreezeReceipt {
     pub state_isolation_policy_digest: Digest,
     pub artifact_access_policy_digest: Digest,
     pub network_egress_policy_digest: Digest,
+    pub runtime_observer_source_id: String,
+    pub runtime_observer_control_domain: String,
+    pub runtime_observer_adapter_digest: Digest,
+    pub runtime_challenge_authority_id: String,
+    pub runtime_challenge_authority_control_domain: String,
     pub publisher_id: String,
     pub publisher_control_domain: String,
 }
@@ -238,6 +250,11 @@ pub struct RunLedgerSummary {
     pub state_isolation_policy_digest: Digest,
     pub artifact_access_policy_digest: Digest,
     pub network_egress_policy_digest: Digest,
+    pub runtime_observer_source_id: String,
+    pub runtime_observer_control_domain: String,
+    pub runtime_observer_adapter_digest: Digest,
+    pub runtime_challenge_authority_id: String,
+    pub runtime_challenge_authority_control_domain: String,
     pub trials: Vec<TrialResult>,
 }
 
@@ -481,11 +498,16 @@ pub fn validate_run_ledger_with_reveals(
         state_isolation_policy_digest: manifest.state_isolation_policy_digest.clone(),
         artifact_access_policy_digest: manifest.artifact_access_policy_digest.clone(),
         network_egress_policy_digest: manifest.network_egress_policy_digest.clone(),
+        runtime_observer_source_id: manifest.runtime_observer_source_id.clone(),
+        runtime_observer_control_domain: manifest.runtime_observer_control_domain.clone(),
+        runtime_observer_adapter_digest: manifest.runtime_observer_adapter_digest.clone(),
+        runtime_challenge_authority_id: manifest.runtime_challenge_authority_id.clone(),
+        runtime_challenge_authority_control_domain: manifest.runtime_challenge_authority_control_domain.clone(),
         trials: results,
     })
 }
 
-fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunError> {
+pub(crate) fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunError> {
     if manifest.schema != SEALED_RUN_SCHEMA || manifest.version != SEALED_RUN_VERSION {
         return Err(SealedRunError::UnsupportedSchema);
     }
@@ -508,6 +530,10 @@ fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunError> {
         (manifest.evaluator_control_domain.as_str(), "evaluator_control_domain"),
         (manifest.evidence_source_id.as_str(), "evidence_source_id"),
         (manifest.evidence_control_domain.as_str(), "evidence_control_domain"),
+        (manifest.runtime_observer_source_id.as_str(), "runtime_observer_source_id"),
+        (manifest.runtime_observer_control_domain.as_str(), "runtime_observer_control_domain"),
+        (manifest.runtime_challenge_authority_id.as_str(), "runtime_challenge_authority_id"),
+        (manifest.runtime_challenge_authority_control_domain.as_str(), "runtime_challenge_authority_control_domain"),
     ] {
         if !valid_record_id(value) { return Err(SealedRunError::EmptyIdentity(name)); }
     }
@@ -533,6 +559,20 @@ fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunError> {
         || manifest.freeze_authority_control_domain == manifest.evaluator_control_domain
         || manifest.freeze_authority_control_domain == manifest.evidence_control_domain
         || manifest.evaluator_control_domain == manifest.evidence_control_domain
+        || manifest.runtime_observer_control_domain == manifest.agent.control_domain
+        || manifest.runtime_observer_control_domain == manifest.baseline.control_domain
+        || manifest.runtime_observer_control_domain == manifest.freeze_authority_control_domain
+        || manifest.runtime_observer_control_domain == manifest.evaluator_control_domain
+        || manifest.runtime_observer_control_domain == manifest.evidence_control_domain
+        || manifest.runtime_observer_source_id == manifest.evidence_source_id
+        || manifest.runtime_challenge_authority_control_domain == manifest.agent.control_domain
+        || manifest.runtime_challenge_authority_control_domain == manifest.baseline.control_domain
+        || manifest.runtime_challenge_authority_control_domain == manifest.freeze_authority_control_domain
+        || manifest.runtime_challenge_authority_control_domain == manifest.evaluator_control_domain
+        || manifest.runtime_challenge_authority_control_domain == manifest.evidence_control_domain
+        || manifest.runtime_challenge_authority_control_domain == manifest.runtime_observer_control_domain
+        || manifest.runtime_challenge_authority_id == manifest.runtime_observer_source_id
+        || digest_is_zero(&manifest.runtime_observer_adapter_digest)
         || digest_is_zero(&manifest.evaluator_digest)
         || digest_is_zero(&manifest.execution_environment_digest)
         || digest_is_zero(&manifest.resource_budget_digest)
@@ -560,7 +600,7 @@ fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunError> {
     Ok(())
 }
 
-fn validate_freeze_receipt(
+pub(crate) fn validate_freeze_receipt(
     manifest: &RunManifest,
     expected_commitment: &Digest,
     receipt: &FreezeReceipt,
@@ -580,6 +620,11 @@ fn validate_freeze_receipt(
         || receipt.state_isolation_policy_digest != manifest.state_isolation_policy_digest
         || receipt.artifact_access_policy_digest != manifest.artifact_access_policy_digest
         || receipt.network_egress_policy_digest != manifest.network_egress_policy_digest
+        || receipt.runtime_observer_source_id != manifest.runtime_observer_source_id
+        || receipt.runtime_observer_control_domain != manifest.runtime_observer_control_domain
+        || receipt.runtime_observer_adapter_digest != manifest.runtime_observer_adapter_digest
+        || receipt.runtime_challenge_authority_id != manifest.runtime_challenge_authority_id
+        || receipt.runtime_challenge_authority_control_domain != manifest.runtime_challenge_authority_control_domain
         || receipt.publisher_id != manifest.freeze_authority_id
         || receipt.publisher_control_domain != manifest.freeze_authority_control_domain
     {
@@ -593,7 +638,7 @@ fn validate_freeze_receipt(
     Ok(())
 }
 
-fn validate_scenario(
+pub(crate) fn validate_scenario(
     manifest: &RunManifest,
     expected_commitment: &Digest,
     trial: &PlannedTrial,
@@ -908,6 +953,7 @@ mod tests {
         let state_isolation_policy_digest = Digest::from_byte(19);
         let artifact_access_policy_digest = Digest::from_byte(20);
         let network_egress_policy_digest = Digest::from_byte(25);
+        let runtime_observer_adapter_digest = Digest::from_byte(26);
         let manifest = RunManifest {
             schema: SEALED_RUN_SCHEMA.into(),
             version: SEALED_RUN_VERSION,
@@ -922,6 +968,11 @@ mod tests {
             state_isolation_policy_digest: state_isolation_policy_digest.clone(),
             artifact_access_policy_digest: artifact_access_policy_digest.clone(),
             network_egress_policy_digest: network_egress_policy_digest.clone(),
+            runtime_observer_source_id: "runtime-independent-observer".into(),
+            runtime_observer_control_domain: "runtime-observer-domain".into(),
+            runtime_observer_adapter_digest: runtime_observer_adapter_digest.clone(),
+            runtime_challenge_authority_id: "challenge-authority".into(),
+            runtime_challenge_authority_control_domain: "challenge-domain".into(),
             agent_identity_digest: agent_identity_digest.clone(),
             baseline_identity_digest: baseline_identity_digest.clone(),
             agent: FrozenAgentIdentity {
@@ -977,6 +1028,11 @@ mod tests {
             state_isolation_policy_digest,
             artifact_access_policy_digest,
             network_egress_policy_digest,
+            runtime_observer_source_id: "runtime-independent-observer".into(),
+            runtime_observer_control_domain: "runtime-observer-domain".into(),
+            runtime_observer_adapter_digest,
+            runtime_challenge_authority_id: "challenge-authority".into(),
+            runtime_challenge_authority_control_domain: "challenge-domain".into(),
             publisher_id: "freeze-authority".into(),
             publisher_control_domain: "authority-domain".into(),
         };
@@ -1429,8 +1485,8 @@ mod tests {
     }
 
     #[test]
-    fn sixty_seven_adversarial_mutations_fail_closed() {
-        for vector in 0..84 {
+    fn eighty_seven_adversarial_mutations_fail_closed() {
+        for vector in 0..87 {
             let (mut m, commitment, mut freeze, mut scenarios, mut events) = valid_fixture();
             match vector {
                 0 => { m.run_id.clear(); }
@@ -1516,7 +1572,11 @@ mod tests {
                 80 => { freeze.network_egress_policy_digest = Digest::from_byte(99); }
                 81 => { m.agent.model_id = "bad\nmodel".into(); }
                 82 => { m.baseline.baseline_id = "x".repeat(257); }
-                _ => { m.freeze_authority_id = "authority\u{7f}".into(); }
+                83 => { m.runtime_observer_source_id.clear(); }
+                84 => { m.runtime_observer_control_domain = m.agent.control_domain.clone(); }
+                85 => { m.runtime_observer_adapter_digest = Digest::from_byte(0); }
+                86 => { freeze.runtime_observer_source_id = "substituted-observer".into(); }
+                _ => panic!("unexpected sealed-run mutation vector {vector}"),
             };
             assert!(
                 validate_run_ledger(&m, &commitment, &freeze, &scenarios, &events).is_err(),

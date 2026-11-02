@@ -1,0 +1,367 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-runtime-attestation-v0.1.json",
+  "title": "Continuous OpsBench independent runtime trial attestation v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "run_id",
+    "trial_id",
+    "arm",
+    "arm_identity_digest",
+    "scenario_commitment",
+    "manifest_commitment",
+    "evaluator_digest",
+    "execution_environment_digest",
+    "resource_budget_digest",
+    "state_isolation_policy_digest",
+    "artifact_access_policy_digest",
+    "network_egress_policy_digest",
+    "runtime_instance_digest",
+    "writable_state_namespace_digest",
+    "observer_source_id",
+    "observer_control_domain",
+    "observer_adapter_digest",
+    "challenge_nonce_digest",
+    "challenge_receipt_digest",
+    "challenge_authority_id",
+    "challenge_authority_control_domain",
+    "challenge_issued_at_ms",
+    "challenge_expires_at_ms",
+    "receipt_sequence",
+    "issued_at_ms",
+    "measurement_start_ms",
+    "measurement_end_ms",
+    "clock_uncertainty_ms",
+    "process_tree_commitment",
+    "mount_namespace_commitment",
+    "filesystem_access_log_commitment",
+    "network_egress_log_commitment",
+    "runtime_event_stream_commitment",
+    "coverage",
+    "sequence_gap_count",
+    "dropped_event_count",
+    "oracle_read_attempts",
+    "oracle_read_successes",
+    "unauthorized_artifact_read_attempts",
+    "unauthorized_artifact_read_successes",
+    "disallowed_egress_attempts",
+    "disallowed_egress_successes",
+    "cross_trial_state_observations",
+    "shared_writable_namespace_observations",
+    "allowlisted_egress_events",
+    "sensor_coverage"
+  ],
+  "properties": {
+    "schema": {
+      "const": "continuous-opsbench-runtime-attestation-v0.1"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "trial_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "arm": {
+      "enum": [
+        "candidate",
+        "baseline"
+      ]
+    },
+    "arm_identity_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "scenario_commitment": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "manifest_commitment": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "evaluator_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "execution_environment_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "resource_budget_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "state_isolation_policy_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "artifact_access_policy_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "network_egress_policy_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "runtime_instance_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "writable_state_namespace_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "observer_source_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "observer_control_domain": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "observer_adapter_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "receipt_sequence": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Run-scoped observer sequence. Across all 2 × planned trials, values must be unique and exactly contiguous from 1."
+    },
+    "issued_at_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Must be strictly later than measurement_end_ms; must also remain within the challenge validity window after combined challenge-authority/runtime-observer uncertainty."
+    },
+    "measurement_start_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "measurement_end_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "clock_uncertainty_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000,
+      "description": "Absolute bound for runtime observer timestamps, at most 1,000 ms. Combined with challenge-authority clock uncertainty for cross-domain challenge/measurement comparisons."
+    },
+    "process_tree_commitment": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "mount_namespace_commitment": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "filesystem_access_log_commitment": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "network_egress_log_commitment": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "runtime_event_stream_commitment": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "coverage": {
+      "enum": [
+        "complete",
+        "partial",
+        "unknown",
+        "tampered"
+      ],
+      "description": "Only complete can qualify. partial, unknown and tampered fail closed."
+    },
+    "sequence_gap_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "dropped_event_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "oracle_read_attempts": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "oracle_read_successes": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Must not exceed oracle_read_attempts. Any nonzero attempt or success fails strict sealed certification."
+    },
+    "unauthorized_artifact_read_attempts": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unauthorized_artifact_read_successes": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Must not exceed unauthorized_artifact_read_attempts. Any nonzero attempt or success fails strict sealed certification."
+    },
+    "disallowed_egress_attempts": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "disallowed_egress_successes": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Must not exceed disallowed_egress_attempts. Any nonzero attempt or success fails strict sealed certification."
+    },
+    "cross_trial_state_observations": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "shared_writable_namespace_observations": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "allowlisted_egress_events": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Count only. Authenticated runtime adapter must validate each committed egress event against the exact frozen allowlist; this field alone is not proof of allowlist compliance."
+    },
+    "challenge_nonce_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Digest of a fresh one-use nonce issued by the frozen challenge authority. Must be nonzero and unique across the run; durable cross-run replay protection is external."
+    },
+    "challenge_authority_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "challenge_authority_control_domain": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "challenge_issued_at_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Must be strictly after the frozen run and scenario receipt. Must be issued before measurement begins, accounting for challenge-authority and runtime-observer clock uncertainty."
+    },
+    "challenge_expires_at_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Must remain strictly after the latest plausible measurement_end_ms and issued_at_ms after combining challenge-authority and runtime-observer clock uncertainty. Challenge TTL is bounded to 86,400,000 ms."
+    },
+    "challenge_receipt_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "sensor_coverage": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "$ref": "#/$defs/sensor_coverage"
+      },
+      "description": "Exactly one independently measured record for each required sensor role. Role completeness, identity uniqueness, sequence arithmetic, and interval binding are enforced by the Rust validator."
+    }
+  },
+  "description": "One independently source-authenticated receipt per planned (trial, arm). This schema validates record shape; it does not authenticate signatures or enforce sandbox policy.",
+  "$defs": {
+    "sensor_coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "sensor_instance_digest",
+        "sensor_binary_digest",
+        "observer_source_id",
+        "observer_control_domain",
+        "observer_adapter_digest",
+        "coverage_start_ms",
+        "coverage_end_ms",
+        "first_sequence",
+        "last_sequence",
+        "observed_event_count",
+        "sequence_gap_count",
+        "dropped_event_count",
+        "log_commitment"
+      ],
+      "properties": {
+        "role": {
+          "enum": [
+            "process_tree",
+            "mount_namespace",
+            "filesystem_access",
+            "network_egress",
+            "runtime_event_stream"
+          ]
+        },
+        "sensor_instance_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "sensor_binary_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "observer_source_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "observer_control_domain": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "observer_adapter_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "coverage_start_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coverage_end_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "first_sequence": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "last_sequence": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "observed_event_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sequence_gap_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dropped_event_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "log_commitment": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}
