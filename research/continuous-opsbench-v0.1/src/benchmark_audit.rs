@@ -7,8 +7,7 @@
 //! responsibilities of the existing typed source-evidence infrastructure.
 
 use crate::sealed::{
-    validate_freeze_receipt, validate_manifest, ComponentDigestPlaceholder, EvaluationLane,
-    FreezeReceipt, RunManifest,
+    validate_freeze_receipt, validate_manifest, EvaluationLane, FreezeReceipt, RunManifest,
 };
 use crate::Digest;
 use std::collections::{BTreeMap, BTreeSet};
@@ -144,6 +143,7 @@ pub struct BenchmarkCohortContract {
     pub run_id: String,
     pub manifest_commitment: Digest,
     pub cohort_version: String,
+    pub user_task_set_digest: Digest,
     pub issued_at_ms: u64,
     pub auditor_id: String,
     pub auditor_control_domain: String,
@@ -254,6 +254,7 @@ pub enum BenchmarkAuditError {
     FaultActivationControlFailed(String),
     InvalidGroundTruthContract,
     OracleEvaluatorDomainCollision,
+    OracleEvaluatorIndependenceCollision,
     InvalidEvaluationContract,
     DuplicateMetric(String),
     InvalidMetric(String),
@@ -330,9 +331,21 @@ pub fn validate_benchmark_component_audit(
 
     let component_index = validate_components(manifest, cohort)?;
     validate_tasks(cohort)?;
-    let reset_repetitions = validate_environment(&cohort.environment)?;
-    validate_ground_truth(&cohort.ground_truth, &cohort.evaluation)?;
-    validate_evaluation(&cohort.evaluation)?;
+    let reset_repetitions = validate_environment(&cohort.environment, cohort.issued_at_ms)?;
+    let ground_truth_component = component_index.get(&BenchmarkComponent::GroundTruth)
+        .ok_or(BenchmarkAuditError::MissingComponent(BenchmarkComponent::GroundTruth))?;
+    let evaluation_component = component_index.get(&BenchmarkComponent::Evaluation)
+        .ok_or(BenchmarkAuditError::MissingComponent(BenchmarkComponent::Evaluation))?;
+    if cohort.ground_truth.oracle_control_domain != ground_truth_component.control_domain
+        || cohort.ground_truth.oracle_control_domain == evaluation_component.control_domain
+    {
+        return Err(BenchmarkAuditError::OracleEvaluatorDomainCollision);
+    }
+    if cohort.ground_truth.oracle_program_digest == cohort.evaluation.evaluator_binary_digest {
+        return Err(BenchmarkAuditError::OracleEvaluatorIndependenceCollision);
+    }
+    validate_ground_truth(&cohort.ground_truth)?;
+    validate_evaluation(&cohort.evaluation, &cohort.ground_truth)?;
 
     let mut known_ids = BTreeSet::new();
     let mut mutations_ids = BTreeSet::new();
@@ -437,8 +450,9 @@ pub fn validate_benchmark_component_audit(
     }
 
     for (component, result) in &mut component_results {
-        if result.known_answer_controls < cohort.minimum_controls_per_component
-            || result.mutation_controls < cohort.minimum_mutations_per_component
+        if result.disposition == AuditDisposition::Pass
+            && (result.known_answer_controls < cohort.minimum_controls_per_component
+                || result.mutation_controls < cohort.minimum_mutations_per_component)
         {
             result.disposition = AuditDisposition::Indeterminate;
         }
@@ -517,6 +531,7 @@ fn validate_components<'a>(
 ) -> Result<BTreeMap<BenchmarkComponent, &'a ComponentEvidence>, BenchmarkAuditError> {
     let mut index = BTreeMap::new();
     let mut sources = BTreeSet::new();
+    let mut domains = BTreeSet::new();
     for component in &cohort.components {
         if index.insert(component.component, component).is_some() {
             return Err(BenchmarkAuditError::DuplicateComponent(component.component));
@@ -530,8 +545,17 @@ fn validate_components<'a>(
         {
             return Err(BenchmarkAuditError::InvalidComponentEvidence(component.component));
         }
-        if !sources.insert(component.source_id.as_str()) {
+        if !sources.insert(component.source_id.as_str())
+            || !domains.insert(component.control_domain.as_str())
+        {
             return Err(BenchmarkAuditError::InvalidComponentEvidence(component.component));
+        }
+        let evaluation_component = component.component == BenchmarkComponent::Evaluation;
+        if component.control_domain == manifest.evaluator_control_domain && !evaluation_component {
+            return Err(BenchmarkAuditError::ComponentControlDomainCollision(component.component));
+        }
+        if evaluation_component && component.control_domain != manifest.evaluator_control_domain {
+            return Err(BenchmarkAuditError::ComponentControlDomainCollision(component.component));
         }
         if component.control_domain == manifest.agent.control_domain
             || component.control_domain == manifest.baseline.control_domain
@@ -548,6 +572,21 @@ fn validate_components<'a>(
         if index.len() > REQUIRED_COMPONENTS {
             return Err(BenchmarkAuditError::InvalidComponentEvidence(component.component));
         }
+    }
+    let expected_task_component = index.get(&BenchmarkComponent::UserTask)
+        .map(|component| &component.artifact_digest);
+    let expected_environment_component = index.get(&BenchmarkComponent::EnvironmentTools)
+        .map(|component| &component.artifact_digest);
+    let expected_ground_truth_component = index.get(&BenchmarkComponent::GroundTruth)
+        .map(|component| &component.artifact_digest);
+    let expected_evaluation_component = index.get(&BenchmarkComponent::Evaluation)
+        .map(|component| &component.artifact_digest);
+    if expected_task_component != Some(&cohort.user_task_set_digest)
+        || expected_environment_component != Some(&cohort.environment.environment_image_digest)
+        || expected_ground_truth_component != Some(&cohort.ground_truth.oracle_program_digest)
+        || expected_evaluation_component != Some(&cohort.evaluation.evaluator_binary_digest)
+    {
+        return Err(BenchmarkAuditError::InvalidComponentEvidence(BenchmarkComponent::Evaluation));
     }
     Ok(index)
 }
@@ -592,6 +631,7 @@ fn validate_tasks(cohort: &BenchmarkCohortContract) -> Result<(), BenchmarkAudit
 
 fn validate_environment(
     environment: &EnvironmentToolsContract,
+    audit_issued_at_ms: u64,
 ) -> Result<usize, BenchmarkAuditError> {
     if digest_is_zero(&environment.environment_image_digest)
         || digest_is_zero(&environment.tool_schema_digest)
@@ -610,7 +650,10 @@ fn validate_environment(
     let mut repetition_ids = BTreeSet::new();
     for receipt in &environment.reset_receipts {
         if !valid_id(&receipt.reset_id) || !ids.insert(receipt.reset_id.as_str())
+            || receipt.repetition == 0
             || !repetition_ids.insert(receipt.repetition)
+            || receipt.reset_completed_at_ms == 0
+            || receipt.reset_completed_at_ms > audit_issued_at_ms
         {
             return Err(BenchmarkAuditError::DuplicateResetReceipt(receipt.reset_id.clone()));
         }
@@ -626,7 +669,6 @@ fn validate_environment(
 
 fn validate_ground_truth(
     ground_truth: &GroundTruthContract,
-    evaluation: &EvaluationContract,
 ) -> Result<(), BenchmarkAuditError> {
     if !valid_id(&ground_truth.oracle_version)
         || digest_is_zero(&ground_truth.oracle_program_digest)
@@ -638,13 +680,17 @@ fn validate_ground_truth(
     {
         return Err(BenchmarkAuditError::InvalidGroundTruthContract);
     }
-    if ground_truth.oracle_control_domain == evaluation_component_control_domain_placeholder(evaluation) {
-        return Err(BenchmarkAuditError::OracleEvaluatorDomainCollision);
+    let ids: BTreeSet<&str> = ground_truth.oracle_predicate_ids.iter().map(String::as_str).collect();
+    if ids.len() != ground_truth.oracle_predicate_ids.len() {
+        return Err(BenchmarkAuditError::InvalidGroundTruthContract);
     }
     Ok(())
 }
 
-fn validate_evaluation(evaluation: &EvaluationContract) -> Result<(), BenchmarkAuditError> {
+fn validate_evaluation(
+    evaluation: &EvaluationContract,
+    ground_truth: &GroundTruthContract,
+) -> Result<(), BenchmarkAuditError> {
     if digest_is_zero(&evaluation.evaluator_binary_digest)
         || digest_is_zero(&evaluation.metric_semantics_digest)
         || digest_is_zero(&evaluation.statistical_plan_digest)
@@ -657,7 +703,12 @@ fn validate_evaluation(evaluation: &EvaluationContract) -> Result<(), BenchmarkA
         if !valid_id(&metric.metric_id) || !ids.insert(metric.metric_id.as_str()) {
             return Err(BenchmarkAuditError::DuplicateMetric(metric.metric_id.clone()));
         }
+        let numerator_ids: BTreeSet<&str> =
+            metric.numerator_predicate_ids.iter().map(String::as_str).collect();
         if metric.numerator_predicate_ids.is_empty()
+            || numerator_ids.len() != metric.numerator_predicate_ids.len()
+            || numerator_ids.iter().any(|id|
+                !ground_truth.oracle_predicate_ids.iter().any(|predicate| predicate == id))
             || !valid_id(&metric.denominator_id)
             || !valid_id(&metric.unit)
             || digest_is_zero(&metric.exclusion_policy_digest)
@@ -667,11 +718,6 @@ fn validate_evaluation(evaluation: &EvaluationContract) -> Result<(), BenchmarkA
         }
     }
     Ok(())
-}
-
-fn evaluation_component_control_domain_placeholder(_evaluation: &EvaluationContract) -> &'static str {
-    // Replaced by the frozen Evaluation component's control domain in the outer validator.
-    "__use_outer_contract__"
 }
 
 fn valid_id(value: &str) -> bool {
@@ -687,10 +733,7 @@ fn digest_is_zero(digest: &Digest) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sealed::{
-        BaselineIdentity, EvaluationArm, EvaluationLane, FrozenAgentIdentity,
-        RuntimeChallengeAuthorityPlaceholder,
-    };
+    use crate::sealed::{BaselineIdentity, EvaluationArm, EvaluationLane, FrozenAgentIdentity};
 
     fn d(byte: u8) -> Digest {
         Digest::from_byte(byte)
@@ -813,7 +856,7 @@ mod tests {
             ComponentEvidence {
                 component: BenchmarkComponent::UserTask,
                 version: "task-v1".into(),
-                artifact_digest: d(30),
+                artifact_digest: d(60),
                 schema_digest: d(31),
                 evidence_digest: d(32),
                 source_id: "task-source".into(),
@@ -822,7 +865,7 @@ mod tests {
             ComponentEvidence {
                 component: BenchmarkComponent::EnvironmentTools,
                 version: "env-v1".into(),
-                artifact_digest: d(33),
+                artifact_digest: d(45),
                 schema_digest: d(34),
                 evidence_digest: d(35),
                 source_id: "env-source".into(),
@@ -831,7 +874,7 @@ mod tests {
             ComponentEvidence {
                 component: BenchmarkComponent::GroundTruth,
                 version: "oracle-v1".into(),
-                artifact_digest: d(36),
+                artifact_digest: d(51),
                 schema_digest: d(37),
                 evidence_digest: d(38),
                 source_id: "oracle-source".into(),
@@ -840,7 +883,7 @@ mod tests {
             ComponentEvidence {
                 component: BenchmarkComponent::Evaluation,
                 version: "eval-v1".into(),
-                artifact_digest: d(39),
+                artifact_digest: d(55),
                 schema_digest: d(40),
                 evidence_digest: d(41),
                 source_id: "eval-source".into(),
@@ -907,6 +950,7 @@ mod tests {
             run_id: manifest.run_id.clone(),
             manifest_commitment: manifest_commitment.clone(),
             cohort_version: "cohort-v1".into(),
+            user_task_set_digest: d(60),
             issued_at_ms: 15,
             auditor_id: "benchmark-auditor".into(),
             auditor_control_domain: "auditor-domain".into(),
@@ -1054,7 +1098,7 @@ mod tests {
     #[test]
     fn oracle_and_evaluator_must_not_share_a_control_domain() {
         let (manifest, freeze, mut cohort, known, mutations, interactions) = fixture();
-        cohort.ground_truth.oracle_control_domain = cohort.evaluation.metrics[0].metric_id.clone();
+        cohort.ground_truth.oracle_control_domain = "evaluator-domain".into();
         assert_eq!(
             validate_benchmark_component_audit(
                 &manifest, &freeze, &cohort, &known, &mutations, &interactions
@@ -1150,7 +1194,7 @@ mod tests {
                 79 => { cohort.environment.reset_receipts[0].repetition = cohort.environment.reset_receipts[1].repetition; }
                 80 => { cohort.environment.reset_receipts[0].reset_completed_at_ms = 0; }
                 81 => { cohort.ground_truth.oracle_coverage_digest = d(0); }
-                82 => { cohort.private_oracle_commitment = d(0); }
+                82 => { cohort.ground_truth.private_oracle_commitment = d(0); }
                 83 => { cohort.environment.reset_receipts.clear(); }
                 84 => { cohort.minimum_controls_per_component = 0; }
                 85 => { cohort.minimum_mutations_per_component = 0; }
