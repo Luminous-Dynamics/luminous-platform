@@ -242,6 +242,15 @@ pub fn evaluate_paired_clusters(
     let mut ordered: Vec<&PairedCluster> = clusters.iter().collect();
     ordered.sort_unstable_by(|left, right| left.cluster_id.cmp(&right.cluster_id));
 
+    let family_indices: BTreeMap<&str, usize> = plan.required_fault_families
+        .iter()
+        .enumerate()
+        .map(|(index, family_id)| (family_id.as_str(), index))
+        .collect();
+    let mut family_rates: Vec<Vec<FamilyClusterRates>> = plan.required_fault_families
+        .iter()
+        .map(|_| Vec::with_capacity(ordered.len()))
+        .collect();
     let mut rates = Vec::with_capacity(ordered.len());
     for cluster in &ordered {
         if cluster.cluster_id.trim().is_empty()
@@ -326,9 +335,91 @@ pub fn evaluate_paired_clusters(
             baseline_indeterminate: baseline_counts.indeterminate_recoveries as f64
                 / denominator,
         });
+
+        let mut seen_families = BTreeSet::new();
+        let mut candidate_family_total = zero_arm_counts();
+        let mut baseline_family_total = zero_arm_counts();
+        for stratum in &cluster.family_strata {
+            let family_index = family_indices
+                .get(stratum.family_id.as_str())
+                .copied()
+                .ok_or_else(|| InferenceError::UnplannedFaultFamily(
+                    cluster.cluster_id.clone(),
+                    stratum.family_id.clone(),
+                ))?;
+            if !seen_families.insert(stratum.family_id.as_str()) {
+                return Err(InferenceError::DuplicateFaultFamily(
+                    cluster.cluster_id.clone(),
+                    stratum.family_id.clone(),
+                ));
+            }
+            validate_arm_counts(
+                &cluster.cluster_id,
+                EvaluationArm::Candidate,
+                &stratum.candidate,
+            )?;
+            validate_arm_counts(
+                &cluster.cluster_id,
+                EvaluationArm::Baseline,
+                &stratum.baseline,
+            )?;
+            if stratum.candidate.planned_faults != stratum.baseline.planned_faults {
+                return Err(InferenceError::CandidateBaselineScheduleMismatch(
+                    cluster.cluster_id.clone(),
+                ));
+            }
+            accumulate_arm_counts(
+                &mut candidate_family_total,
+                &stratum.candidate,
+            )?;
+            accumulate_arm_counts(
+                &mut baseline_family_total,
+                &stratum.baseline,
+            )?;
+            let family_denominator = stratum.candidate.planned_faults as f64;
+            family_rates[family_index].push(FamilyClusterRates {
+                candidate_lower: stratum.candidate.verified_recoveries as f64
+                    / family_denominator,
+                candidate_upper: (stratum.candidate.verified_recoveries
+                    + stratum.candidate.indeterminate_recoveries) as f64
+                    / family_denominator,
+                baseline_lower: stratum.baseline.verified_recoveries as f64
+                    / family_denominator,
+                baseline_upper: (stratum.baseline.verified_recoveries
+                    + stratum.baseline.indeterminate_recoveries) as f64
+                    / family_denominator,
+            });
+        }
+        for family_id in &plan.required_fault_families {
+            if !seen_families.contains(family_id.as_str()) {
+                return Err(InferenceError::MissingFaultFamily(
+                    cluster.cluster_id.clone(),
+                    family_id.clone(),
+                ));
+            }
+        }
+        if candidate_family_total != cluster.candidate.outcomes {
+            return Err(InferenceError::FamilyPartitionMismatch(
+                cluster.cluster_id.clone(),
+                EvaluationArm::Candidate,
+            ));
+        }
+        if baseline_family_total != cluster.baseline.outcomes {
+            return Err(InferenceError::FamilyPartitionMismatch(
+                cluster.cluster_id.clone(),
+                EvaluationArm::Baseline,
+            ));
+        }
     }
 
     let cluster_count = rates.len();
+    let family_count = plan.required_fault_families.len();
+    let bootstrap_work_units = (cluster_count as u128)
+        .saturating_mul(plan.bootstrap_replicates as u128)
+        .saturating_mul((family_count + 1) as u128);
+    if bootstrap_work_units > MAX_BOOTSTRAP_WORK_UNITS {
+        return Err(InferenceError::BootstrapWorkLimitExceeded);
+    }
     let mut rng = SplitMix64::new(seed_from_digest(&plan.bootstrap_seed_commitment));
     let mut candidate_lower_samples = Vec::with_capacity(plan.bootstrap_replicates as usize);
     let mut candidate_upper_samples = Vec::with_capacity(plan.bootstrap_replicates as usize);
@@ -338,11 +429,19 @@ pub fn evaluate_paired_clusters(
     let mut baseline_upper_samples = Vec::with_capacity(plan.bootstrap_replicates as usize);
     let mut baseline_indeterminate_samples =
         Vec::with_capacity(plan.bootstrap_replicates as usize);
+    let mut family_lower_samples: Vec<Vec<f64>> = (0..family_count)
+        .map(|_| Vec::with_capacity(plan.bootstrap_replicates as usize))
+        .collect();
+    let mut family_upper_samples: Vec<Vec<f64>> = (0..family_count)
+        .map(|_| Vec::with_capacity(plan.bootstrap_replicates as usize))
+        .collect();
     let mut effect_lower_samples = Vec::with_capacity(plan.bootstrap_replicates as usize);
     let mut effect_upper_samples = Vec::with_capacity(plan.bootstrap_replicates as usize);
 
     for _ in 0..plan.bootstrap_replicates {
         let mut aggregate = AggregateRates::default();
+        let mut family_lower_aggregate = vec![0.0f64; family_count];
+        let mut family_upper_aggregate = vec![0.0f64; family_count];
         for _ in 0..cluster_count {
             let index = rng.sample_index(cluster_count);
             let sample = rates[index];
@@ -354,8 +453,21 @@ pub fn evaluate_paired_clusters(
             aggregate.baseline_indeterminate += sample.baseline_indeterminate;
             aggregate.effect_lower += sample.candidate_lower - sample.baseline_upper;
             aggregate.effect_upper += sample.candidate_upper - sample.baseline_lower;
+            for family_index in 0..family_count {
+                let family_sample = family_rates[family_index][index];
+                family_lower_aggregate[family_index] +=
+                    family_sample.candidate_lower - family_sample.baseline_upper;
+                family_upper_aggregate[family_index] +=
+                    family_sample.candidate_upper - family_sample.baseline_lower;
+            }
         }
         let scale = 1_000_000.0 / cluster_count as f64;
+        for family_index in 0..family_count {
+            family_lower_samples[family_index]
+                .push(family_lower_aggregate[family_index] * scale);
+            family_upper_samples[family_index]
+                .push(family_upper_aggregate[family_index] * scale);
+        }
         candidate_lower_samples.push(aggregate.candidate_lower * scale);
         candidate_upper_samples.push(aggregate.candidate_upper * scale);
         candidate_indeterminate_samples.push(aggregate.candidate_indeterminate * scale);
@@ -409,6 +521,34 @@ pub fn evaluate_paired_clusters(
         .sum::<f64>() * scale;
     let maximum_indeterminate_upper_ci = candidate.indeterminate_rate_ci.upper_ppm
         .max(baseline.indeterminate_rate_ci.upper_ppm);
+    let family_tail = alpha / (2.0 * family_count as f64);
+    let mut fault_families = Vec::with_capacity(family_count);
+    for family_index in 0..family_count {
+        let family_effect_lower_ci =
+            percentile_interval(&mut family_lower_samples[family_index], family_tail);
+        let family_effect_upper_ci =
+            percentile_interval(&mut family_upper_samples[family_index], family_tail);
+        let family_scale = 1_000_000.0 / cluster_count as f64;
+        let family_effect_lower_mean = family_rates[family_index]
+            .iter()
+            .map(|sample| sample.candidate_lower - sample.baseline_upper)
+            .sum::<f64>() * family_scale;
+        let family_effect_upper_mean = family_rates[family_index]
+            .iter()
+            .map(|sample| sample.candidate_upper - sample.baseline_lower)
+            .sum::<f64>() * family_scale;
+        fault_families.push(FaultFamilyInferenceSummary {
+            family_id: plan.required_fault_families[family_index].clone(),
+            conservative_effect_lower_mean_ppm: family_effect_lower_mean.round() as i64,
+            conservative_effect_upper_mean_ppm: family_effect_upper_mean.round() as i64,
+            conservative_effect_lower_simultaneous_ci: family_effect_lower_ci,
+            conservative_effect_upper_simultaneous_ci: family_effect_upper_ci,
+        });
+    }
+    let family_regression_not_cleared = fault_families.iter().any(|family| {
+        family.conservative_effect_lower_simultaneous_ci.lower_ppm
+            < -(plan.maximum_family_regression_ppm as i64)
+    });
     let effect_lower_mean = rates.iter()
         .map(|sample| sample.candidate_lower - sample.baseline_upper)
         .sum::<f64>() * scale;
@@ -422,6 +562,8 @@ pub fn evaluate_paired_clusters(
         SuperiorityVerdict::IndeterminateCoverageExceeded
     } else if plan.claim_mode == InferenceClaimMode::Exploratory {
         SuperiorityVerdict::ExploratoryOnly
+    } else if family_regression_not_cleared {
+        SuperiorityVerdict::FaultFamilyRegressionNotCleared
     } else if effect_lower_ci.lower_ppm > plan.minimum_meaningful_effect_ppm {
         SuperiorityVerdict::SuperiorityEstablished
     } else {
@@ -444,6 +586,8 @@ pub fn evaluate_paired_clusters(
             conservative_effect_lower_ci: effect_lower_ci,
             conservative_effect_upper_ci: effect_upper_ci,
         },
+        fault_families,
+        maximum_family_regression_ppm: plan.maximum_family_regression_ppm,
         mean_candidate_indeterminate_rate_ppm: candidate_indeterminate_mean.round() as i64,
         mean_baseline_indeterminate_rate_ppm: baseline_indeterminate_mean.round() as i64,
         maximum_upper_confidence_arm_indeterminate_rate_ppm: maximum_indeterminate_upper_ci,
