@@ -595,7 +595,9 @@ pub fn evaluate_observer_calibration(
                     (_, ObservedPolicyDecision::Unknown) => {
                         total_unknown += 1;
                         accumulator.unknown_classifications += 1;
-                        disposition = CalibrationDisposition::Indeterminate;
+                        if disposition == CalibrationDisposition::Pass {
+                            disposition = CalibrationDisposition::Indeterminate;
+                        }
                     }
                 }
                 sequence_timestamps.push((
@@ -1139,9 +1141,11 @@ mod tests {
             evaluate_observer_calibration(&m, &f, &s, &[], &e, &r, &p, &i, &d),
             Err(ObserverCalibrationError::DuplicateInjection("trial-1".into()))
         );
-        let (m, f, s, e, r, p, i, mut d) = fixture();
-        d[0].probe_id_digest = d(99);
-        assert!(evaluate_observer_calibration(&m, &f, &s, &[], &e, &r, &p, &i, &d).is_err());
+        let (m, f, s, e, r, p, i, mut detections) = fixture();
+        detections[0].probe_id_digest = Digest::from_byte(99);
+        assert!(evaluate_observer_calibration(
+            &m, &f, &s, &[], &e, &r, &p, &i, &detections
+        ).is_err());
     }
 
     #[test]
@@ -1163,7 +1167,7 @@ mod tests {
     }
 
     #[test]
-    fn 72_adversarial_calibration_mutations_fail_closed() {
+    fn seventy_two_adversarial_calibration_mutations_fail_closed() {
         for vector in 0..72 {
             let (mut m, f, s, e, r, mut p, mut i, mut d) = fixture();
             match vector {
@@ -1185,7 +1189,7 @@ mod tests {
                 15 => p[0].expected_probes[0].probe_id_digest = Digest::from_byte(0),
                 16 => p[0].expected_probes[0].target_digest = Digest::from_byte(0),
                 17 => p[0].expected_probes[0].maximum_detection_latency_ms = 0,
-                18 => p[0].expected_probes[1] = p[0].expected_probes[0].clone(),
+                18 => { let duplicate = p[0].expected_probes[0].clone(); p[0].expected_probes[1] = duplicate; },
                 19 => p[0].expected_probes.pop(),
                 20 => i[0].run_id = "other".into(),
                 21 => i[0].challenge_id_digest = Digest::from_byte(99),
@@ -1233,12 +1237,12 @@ mod tests {
                 63 => { m.runtime_observer_source_id = m.runtime_challenge_authority_id.clone(); },
                 64 => { m.runtime_challenge_authority_control_domain = m.agent.control_domain.clone(); },
                 65 => { m.runtime_observer_control_domain = m.agent.control_domain.clone(); },
-                66 => { if let ProbeObservation::Detected { detected_at_ms, .. } = &mut d[0].observation { *detected_at_ms = d[0].observation.clone().to_owned().eq(&ProbeObservation::NotDetected).then_some(0).unwrap_or(1); } },
-                67 => { p[0].expected_probes[1].target_digest = p[0].expected_probes[0].target_digest.clone(); },
+                66 => { if let ProbeObservation::Detected { event_commitment, .. } = &mut d[0].observation { *event_commitment = Digest::from_byte(0); } },
+                67 => { let target = p[0].expected_probes[0].target_digest.clone(); p[0].expected_probes[1].target_digest = target; },
                 68 => { d[0].observer_source_id.clear(); },
                 69 => { i[0].injector_source_id.clear(); },
                 70 => { if let ProbeObservation::Detected { event_sequence, .. } = &mut d[0].observation { *event_sequence = u64::MAX; } },
-                _ => { p[0].expires_at_ms = runtime_by_arm_dummy(); }
+                _ => { p[0].expires_at_ms = p[0].issued_at_ms; }
             }
             assert!(evaluate_observer_calibration(
                 &m, &f, &s, &[], &e, &r, &p, &i, &d
