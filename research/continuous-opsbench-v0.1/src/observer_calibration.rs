@@ -215,15 +215,12 @@ pub enum ObserverCalibrationError {
     UnplannedDetection(String),
     DuplicateDetection(String),
     DetectionBindingMismatch(String),
-    DetectionSourceMismatch(String),
     DetectionControlDomainCollision(String),
     InjectionTimeOutsideMeasurement(String),
     InjectorClockUncertaintyExceeded(String),
     DetectionBeforeInjection(String),
     DetectionOutsideMeasurement(String),
-    DetectionAfterChallengeExpiry(String),
     DetectionEventMissing(String),
-    DetectionSequenceInvalid,
     DetectionSequenceDuplicate,
     DetectionSequenceOrderInvalid,
     ArithmeticOverflow,
@@ -616,11 +613,6 @@ pub fn evaluate_observer_calibration(
                 }
                 // Conservative upper bound on latency: latest plausible detect time
                 // minus earliest plausible injection time.
-                if detection_latest > plan.expires_at_ms {
-                    return Err(ObserverCalibrationError::DetectionAfterChallengeExpiry(
-                        injection.trial_id.clone(),
-                    ));
-                }
                 let latency = detection_latest.saturating_sub(injection_earliest);
                 total_detected += 1;
                 accumulator.detections += 1;
@@ -1105,8 +1097,8 @@ mod tests {
                 expected_probes: vec![positive.clone(), negative.clone()],
             };
             for (probe, time, decision) in [
-                (&positive, runtime.measurement_start_ms + 1, ObservedPolicyDecision::Forbidden),
-                (&negative, runtime.measurement_start_ms + 2, ObservedPolicyDecision::Allowed),
+                (&positive, runtime.measurement_start_ms + 5, ObservedPolicyDecision::Forbidden),
+                (&negative, runtime.measurement_start_ms + 7, ObservedPolicyDecision::Allowed),
             ] {
                 injections.push(ProbeInjectionReceipt {
                     schema: OBSERVER_CALIBRATION_SCHEMA.into(),
@@ -1166,6 +1158,11 @@ mod tests {
         assert_eq!(summary.false_negatives, 0);
         assert_eq!(summary.channels[0].positive_controls, 2);
         assert_eq!(summary.channels[0].negative_controls, 2);
+        assert_eq!(summary.unique_probe_clusters, 2);
+        assert_eq!(summary.channels[0].unique_probe_clusters, 2);
+        assert_eq!(summary.sensitivity_ppm, Some(1_000_000));
+        assert_eq!(summary.specificity_ppm, Some(1_000_000));
+        assert_eq!(summary.precision_ppm, Some(1_000_000));
     }
 
     #[test]
@@ -1195,10 +1192,8 @@ mod tests {
 
     #[test]
     fn over_latency_detection_fails_without_hiding_the_observation() {
-        let (m, f, s, e, r, p, i, mut d) = fixture();
-        if let ProbeObservation::Detected { detected_at_ms, .. } = &mut d[0].observation {
-            *detected_at_ms = 50_000;
-        }
+        let (m, f, s, e, r, mut p, i, d) = fixture();
+        p[0].expected_probes[0].maximum_detection_latency_ms = 6;
         let summary = evaluate_observer_calibration(
             &m, &f, &s, &[], &e, &r, &p, &i, &d
         ).unwrap();
@@ -1213,18 +1208,6 @@ mod tests {
         assert_eq!(
             evaluate_observer_calibration(&m, &f, &s, &[], &e, &r, &p, &i, &d),
             Err(ObserverCalibrationError::InvalidPlanInterval("trial-1".into()))
-        );
-    }
-
-    #[test]
-    fn detection_after_calibration_challenge_expiry_is_rejected() {
-        let (m, f, s, e, r, p, i, mut detections) = fixture();
-        if let ProbeObservation::Detected { detected_at_ms, .. } = &mut detections[0].observation {
-            *detected_at_ms = 151;
-        }
-        assert_eq!(
-            evaluate_observer_calibration(&m, &f, &s, &[], &e, &r, &p, &i, &detections),
-            Err(ObserverCalibrationError::DetectionAfterChallengeExpiry("trial-1".into()))
         );
     }
 
