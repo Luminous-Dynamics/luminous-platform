@@ -1279,6 +1279,48 @@ mod tests {
     }
 
     #[test]
+    fn unknown_classification_is_indeterminate_and_fail_remains_sticky() {
+        let (m, f, s, e, r, p, i, mut detections) = fixture();
+        if let ProbeObservation::Detected { decision, .. } = &mut detections[0].observation {
+            *decision = ObservedPolicyDecision::Unknown;
+        }
+        let summary = evaluate_observer_calibration(
+            &m, &f, &s, &[], &e, &r, &p, &i, &detections
+        ).unwrap();
+        assert_eq!(summary.disposition, CalibrationDisposition::Indeterminate);
+        assert_eq!(summary.unknown_classifications, 1);
+        assert_eq!(summary.false_negatives, 1);
+
+        let (m, f, s, e, r, p, i, mut detections) = fixture();
+        detections[0].observation = ProbeObservation::NotDetected;
+        if let ProbeObservation::Detected { decision, .. } = &mut detections[1].observation {
+            *decision = ObservedPolicyDecision::Unknown;
+        }
+        let summary = evaluate_observer_calibration(
+            &m, &f, &s, &[], &e, &r, &p, &i, &detections
+        ).unwrap();
+        assert_eq!(summary.disposition, CalibrationDisposition::Fail);
+    }
+
+    #[test]
+    fn duplicate_detection_and_cross_probe_cluster_reuse_are_explicit() {
+        let (m, f, s, e, r, p, i, mut detections) = fixture();
+        let duplicate = detections[0].clone();
+        detections.push(duplicate);
+        assert_eq!(
+            evaluate_observer_calibration(&m, &f, &s, &[], &e, &r, &p, &i, &detections),
+            Err(ObserverCalibrationError::DuplicateDetection("trial-1".into()))
+        );
+
+        let (m, f, s, e, r, p, i, detections) = fixture();
+        let summary = evaluate_observer_calibration(
+            &m, &f, &s, &[], &e, &r, &p, &i, &detections
+        ).unwrap();
+        assert_eq!(summary.unique_probe_clusters, 1);
+        assert_eq!(summary.channels[0].unique_probe_clusters, 1);
+    }
+
+    #[test]
     fn duplicate_or_unplanned_probes_are_rejected() {
         let (m, f, s, e, r, p, mut i, d) = fixture();
         let duplicate = i[0].clone();
@@ -1390,12 +1432,16 @@ mod tests {
                 70 => { if let ProbeObservation::Detected { event_sequence, .. } = &mut d[0].observation { *event_sequence = u64::MAX; } },
                 _ => { p[0].expires_at_ms = p[0].issued_at_ms; }
             }
-            assert!(evaluate_observer_calibration(
+            match evaluate_observer_calibration(
                 &m, &f, &s, &[], &e, &r, &p, &i, &d
-            ).is_err() || {
-                let _ = vector;
-                false
-            }, "calibration adversarial vector {vector} was accepted");
+            ) {
+                Err(_) => {}
+                Ok(summary) => assert_ne!(
+                    summary.disposition,
+                    CalibrationDisposition::Pass,
+                    "calibration adversarial vector {vector} was accepted"
+                ),
+            }
         }
     }
 }
