@@ -1127,12 +1127,12 @@ mod tests {
             TrialResult {
                 trial_id: "trial-a".into(), arm: EvaluationArm::Candidate,
                 cluster_id: "cluster-a".into(), disposition: TrialDisposition::Completed,
-                attempts_started: 1, first_started_at_ms: Some(40), terminal_at_ms: 50,
+                attempts_started: 1, first_started_at_ms: Some(80), terminal_at_ms: 90,
             },
             TrialResult {
                 trial_id: "trial-a".into(), arm: EvaluationArm::Baseline,
                 cluster_id: "cluster-a".into(), disposition: TrialDisposition::Completed,
-                attempts_started: 1, first_started_at_ms: Some(60), terminal_at_ms: 70,
+                attempts_started: 1, first_started_at_ms: Some(100), terminal_at_ms: 110,
             },
             TrialResult {
                 trial_id: "trial-b".into(), arm: EvaluationArm::Baseline,
@@ -1180,10 +1180,10 @@ mod tests {
             trials: ledger_trials,
         };
         let attestations = vec![
-            attestation(&manifest, &scenarios[0], EvaluationArm::Candidate, digest(40), digest(41), 1, 30, 60),
-            attestation(&manifest, &scenarios[0], EvaluationArm::Baseline, digest(42), digest(43), 2, 30, 80),
-            attestation(&manifest, &scenarios[1], EvaluationArm::Baseline, digest(44), digest(45), 3, 30, 90),
-            attestation(&manifest, &scenarios[1], EvaluationArm::Candidate, digest(46), digest(47), 4, 30, 100),
+            attestation(&manifest, &scenarios[0], EvaluationArm::Candidate, digest(40), digest(41), 1, 60, 100),
+            attestation(&manifest, &scenarios[0], EvaluationArm::Baseline, digest(42), digest(43), 2, 60, 120),
+            attestation(&manifest, &scenarios[1], EvaluationArm::Baseline, digest(44), digest(45), 3, 60, 130),
+            attestation(&manifest, &scenarios[1], EvaluationArm::Candidate, digest(46), digest(47), 4, 60, 140),
         ];
         (manifest, freeze, ledger, scenarios, attestations)
     }
@@ -1225,7 +1225,7 @@ mod tests {
             challenge_receipt_digest: digest(70u8.saturating_add(sequence as u8)),
             challenge_authority_id: manifest.runtime_challenge_authority_id.clone(),
             challenge_authority_control_domain: manifest.runtime_challenge_authority_control_domain.clone(),
-            challenge_issued_at_ms: 25,
+            challenge_issued_at_ms: 35,
             challenge_expires_at_ms: measurement_end_ms + 100,
             receipt_sequence: sequence,
             issued_at_ms: measurement_end_ms + 1,
@@ -1294,13 +1294,13 @@ mod tests {
                 EvaluationArm::Baseline => (EvaluationArm::Baseline, EvaluationArm::Candidate),
             };
             events.push(event(manifest, scenario, first_arm,
-                &format!("{}-first-start", scenario.trial_id), 40, TrialEventKind::Started));
+                &format!("{}-first-start", scenario.trial_id), 80, TrialEventKind::Started));
             events.push(event(manifest, scenario, first_arm,
-                &format!("{}-first-complete", scenario.trial_id), 50, TrialEventKind::Completed));
+                &format!("{}-first-complete", scenario.trial_id), 90, TrialEventKind::Completed));
             events.push(event(manifest, scenario, second_arm,
-                &format!("{}-second-start", scenario.trial_id), 60, TrialEventKind::Started));
+                &format!("{}-second-start", scenario.trial_id), 100, TrialEventKind::Started));
             events.push(event(manifest, scenario, second_arm,
-                &format!("{}-second-complete", scenario.trial_id), 70, TrialEventKind::Completed));
+                &format!("{}-second-complete", scenario.trial_id), 110, TrialEventKind::Completed));
         }
         events
     }
