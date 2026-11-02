@@ -1135,7 +1135,7 @@ mod tests {
     fn fully_valid_cohort_produces_component_vector_without_scalar_score() {
         let (manifest, freeze, cohort, known, mutations, interactions, metamorphic) = fixture();
         let result = validate_benchmark_component_audit(
-            &manifest, &freeze, &cohort, &known, &mutations, &interactions
+            &manifest, &freeze, &cohort, &known, &mutations, &interactions, &metamorphic
         ).unwrap();
         assert!(result.claim_admissible);
         assert_eq!(result.components.len(), REQUIRED_COMPONENTS);
@@ -1168,7 +1168,7 @@ mod tests {
         known[0].observed_acceptance = false;
         known[5].observed_acceptance = true;
         let result = validate_benchmark_component_audit(
-            &manifest, &freeze, &cohort, &known, &mutations, &interactions
+            &manifest, &freeze, &cohort, &known, &mutations, &interactions, &metamorphic
         ).unwrap();
         assert!(!result.claim_admissible);
         let user = result.components.iter()
@@ -1210,7 +1210,7 @@ mod tests {
         cohort.environment.reset_receipts[1].observed_initial_state_digest = d(99);
         assert_eq!(
             validate_benchmark_component_audit(
-                &manifest, &freeze, &cohort, &known, &mutations, &interactions
+                &manifest, &freeze, &cohort, &known, &mutations, &interactions, &metamorphic
             ),
             Err(BenchmarkAuditError::ResetStateMismatch("reset-1".into()))
         );
@@ -1218,7 +1218,7 @@ mod tests {
         cohort.environment.reset_receipts[1].fault_activation_control_passed = false;
         assert_eq!(
             validate_benchmark_component_audit(
-                &manifest, &freeze, &cohort, &known, &mutations, &interactions
+                &manifest, &freeze, &cohort, &known, &mutations, &interactions, &metamorphic
             ),
             Err(BenchmarkAuditError::FaultActivationControlFailed("reset-1".into()))
         );
@@ -1230,7 +1230,7 @@ mod tests {
         cohort.tasks[0].required_predicate_ids.push("not-in-oracle".into());
         assert_eq!(
             validate_benchmark_component_audit(
-                &manifest, &freeze, &cohort, &known, &mutations, &interactions
+                &manifest, &freeze, &cohort, &known, &mutations, &interactions, &metamorphic
             ),
             Err(BenchmarkAuditError::TaskPredicateNotInOracle("task-a".into()))
         );
@@ -1238,7 +1238,7 @@ mod tests {
         cohort.tasks[0].prohibited_predicate_ids.push("service-healthy".into());
         assert_eq!(
             validate_benchmark_component_audit(
-                &manifest, &freeze, &cohort, &known, &mutations, &interactions
+                &manifest, &freeze, &cohort, &known, &mutations, &interactions, &metamorphic
             ),
             Err(BenchmarkAuditError::RequiredAndProhibitedOverlap("task-a".into()))
         );
@@ -1250,7 +1250,7 @@ mod tests {
         interactions.pop();
         assert_eq!(
             validate_benchmark_component_audit(
-                &manifest, &freeze, &cohort, &known, &mutations, &interactions
+                &manifest, &freeze, &cohort, &known, &mutations, &interactions, &metamorphic
             ),
             Err(BenchmarkAuditError::InsufficientInteractionControls)
         );
@@ -1262,7 +1262,7 @@ mod tests {
         cohort.ground_truth.oracle_control_domain = "evaluator-domain".into();
         assert_eq!(
             validate_benchmark_component_audit(
-                &manifest, &freeze, &cohort, &known, &mutations, &interactions
+                &manifest, &freeze, &cohort, &known, &mutations, &interactions, &metamorphic
             ),
             Err(BenchmarkAuditError::OracleEvaluatorDomainCollision)
         );
@@ -1370,7 +1370,7 @@ mod tests {
                 _ => { metamorphic[0].control_id = metamorphic[1].control_id.clone(); }
             }
             match validate_benchmark_component_audit(
-                &manifest, &freeze, &cohort, &known, &mutations, &interactions
+                &manifest, &freeze, &cohort, &known, &mutations, &interactions, &metamorphic
             ) {
                 Err(_) => {}
                 Ok(result) => assert!(
