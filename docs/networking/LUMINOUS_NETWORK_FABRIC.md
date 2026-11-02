@@ -72,6 +72,8 @@ Do not tunnel every protocol through a single proprietary overlay. Avoid packet-
 
 Use BPv7 (RFC 9171) as the bundle protocol baseline for disruption-tolerant store-carry-forward. Evaluate BPSec (RFC 9172) and its default security contexts (RFC 9173) for bundle integrity and confidentiality. Compare implementations and interoperability before choosing a production dependency.
 
+**Security boundary:** BPSec supplies bundle integrity and confidentiality services; RFC 9172 explicitly does not define hop-by-hop authentication and leaves key management to a separate network-management function. RFC 9173 provides default security contexts useful for interoperability testing, not a universal key lifecycle. LNF must separately specify security-source/acceptor policy, credential-to-principal mapping, key provisioning/rotation, revocation freshness during partitions, and what metadata remains visible. ION-DTN documents BPSec support; dtn7-rs's public project description establishes BPv7 support but is not evidence of BPSec support at any given revision. Pin and test both before selecting an adapter.
+
 The LNF application contract separately defines stable message identity, expiry, traffic class, payload size limits, custody/receipt semantics, sender principal binding, duplicate disposition, and application idempotency. Do not equate daemon acceptance, bundle forwarding, endpoint delivery, transport-handler acceptance, and application commit.
 
 **Exactly-once transport delivery is not a valid general claim.** A crash after an application side effect but before its durable receipt can cause redelivery. The reference consumer must use a durable inbox/idempotency transaction or document at-least-once semantics.
@@ -207,7 +209,9 @@ Fairness rules:
 
 Do not reimplement mature simulators or radio stacks inside Symtropy.
 
-- **5G-LENA + ns-3:** 3GPP NR system-level simulation; pin a mutually compatible release (the upstream project lists NR v5.1 with ns-3.48 in 2026). It is a model, not proof of live RAN performance.
+- **5G-LENA + ns-3:** 3GPP NR system-level simulation; the upstream compatibility table lists NR v5.1 with ns-3.48 (August 6, 2026), while v5.2 is under development. Pin both exact revisions and apply/review the release notes' recommended ns-3 channel/performance patches before publishing results. It is a model, not proof of live RAN performance.
+- **IMT-2030 research envelope:** the ITU-R WP 5D draft technical performance requirements were completed in February 2026 and draft evaluation guidelines in June 2026; both were submitted for SG 5 approval in December 2026. Use the six IMT-2030 usage scenarios and draft methods to shape research, but do not call them final approved requirements, a product certification, or a real-world SLA.
+- **Site-specific radio validation:** 3GPP statistical channel models and system-level simulation are useful for controlled comparisons, but may miss deterministic street-canyon blockage, corner diffraction and site geometry. Where coverage or beam-management conclusions depend on those effects, use a documented ray-tracing/measurement lane and validate it against site measurements before field extrapolation.
 - **Site-specific propagation / ray tracing:** use a calibrated ray-tracing path where the site and model justify it; compare against statistical channel models rather than assuming one is universally superior.
 - **srsRAN Project / OpenAirInterface:** candidate open RAN lab stacks; validate exact hardware, software release, core, UE and supported features.
 - **EMANE:** candidate wireless emulation for controlled propagation, mobility and interference experiments.
