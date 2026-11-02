@@ -282,9 +282,12 @@ fn validate_runtime_attestations(
     validate_ledger_binding(manifest, ledger)?;
     if fitness_summary.run_id != manifest.run_id
         || fitness_summary.plan_digest != manifest.observer_fitness_plan_digest
-        || fitness_summary.batches.len() < 2
+        || fitness_summary.batches.is_empty()
     {
         return Err(RuntimeAttestationError::LedgerManifestMismatch);
+    }
+    if fitness_summary.batches.len() < 2 {
+        return Err(RuntimeAttestationError::ObserverFitnessPostRunMissing);
     }
     let mut fitness_index: BTreeMap<Digest, &ObserverFitnessBatchSummary> = BTreeMap::new();
     let mut calibration_identities = BTreeSet::new();
