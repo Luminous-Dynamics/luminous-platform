@@ -1149,6 +1149,145 @@ mod tests {
     }
 
     #[test]
+    fn forty_known_answer_monitoring_controls_cover_wait_noop_ephemeral_and_persistent_tasks() {
+        let mut controls = 0usize;
+
+        for index in 0..10u64 {
+            let task = contract(MonitoringTaskKind::NoOp);
+            let observations = vec![observation(
+                "obs-1", 1, 9_000 + index, ObservedCondition::Absent, false
+            )];
+            let waits = Vec::new();
+            let result = evaluate_monitoring_task(
+                &task,
+                &[],
+                &observations,
+                &waits,
+                &[],
+                &resources(observations.len(), &waits, 0),
+                &envelope(),
+            ).unwrap();
+            assert_eq!(result.expected_events, 0);
+            assert_eq!(result.no_op_violations, 0);
+            assert_eq!(result.safety, MonitoringSafetyDisposition::Pass);
+            controls += 1;
+        }
+
+        for index in 0..10u64 {
+            let task = contract(MonitoringTaskKind::PassiveWaitForSignal);
+            let detected_at = 4_000 + index;
+            let event_truth = vec![MonitoringEventTruth {
+                event_id: "event-1".into(),
+                scenario_id: task.scenario_id.clone(),
+                task_id: task.task_id.clone(),
+                condition_digest: task.condition_digest.clone(),
+                required_action_digest: task.required_action_digest.clone(),
+                starts_at_ms: 3_000,
+                expires_at_ms: Some(9_000),
+                requires_action: false,
+            }];
+            let observations = vec![
+                observation("obs-1", 1, 1_000, ObservedCondition::Absent, false),
+                observation("obs-2", 2, detected_at, ObservedCondition::Present, false),
+            ];
+            let elapsed = detected_at - 1_000;
+            let waits = vec![wait(
+                "wait-1", 1, 1_000, WaitStrategy::EventDriven, elapsed,
+                WakeCause::Signal, Some("obs-2")
+            )];
+            let result = evaluate_monitoring_task(
+                &task,
+                &event_truth,
+                &observations,
+                &waits,
+                &[],
+                &resources(observations.len(), &waits, 0),
+                &envelope(),
+            ).unwrap();
+            assert_eq!(result.detected_events, 1);
+            assert_eq!(result.correctly_handled_events, 1);
+            assert_eq!(result.polling_calls, 0);
+            controls += 1;
+        }
+
+        for index in 0..10u64 {
+            let task = contract(MonitoringTaskKind::UrgentEphemeral);
+            let detected_at = 4_000 + index;
+            let event_truth = vec![MonitoringEventTruth {
+                event_id: "event-1".into(),
+                scenario_id: task.scenario_id.clone(),
+                task_id: task.task_id.clone(),
+                condition_digest: task.condition_digest.clone(),
+                required_action_digest: task.required_action_digest.clone(),
+                starts_at_ms: 3_000,
+                expires_at_ms: Some(8_000),
+                requires_action: true,
+            }];
+            let observations = vec![
+                observation("obs-1", 1, 1_000, ObservedCondition::Absent, false),
+                observation("obs-2", 2, detected_at, ObservedCondition::Present, false),
+            ];
+            let elapsed = detected_at - 1_000;
+            let waits = vec![wait(
+                "wait-1", 1, 1_000, WaitStrategy::EventDriven, elapsed,
+                WakeCause::Signal, Some("obs-2")
+            )];
+            let actions = vec![action(detected_at + 50, detected_at + 100, "obs-2")];
+            let result = evaluate_monitoring_task(
+                &task,
+                &event_truth,
+                &observations,
+                &waits,
+                &actions,
+                &resources(observations.len(), &waits, actions.len()),
+                &envelope(),
+            ).unwrap();
+            assert_eq!(result.correctly_handled_events, 1);
+            assert_eq!(result.late_actions, 0);
+            controls += 1;
+        }
+
+        for index in 0..10u64 {
+            let task = contract(MonitoringTaskKind::PersistentEvent);
+            let detected_at = 4_000 + index;
+            let event_truth = vec![MonitoringEventTruth {
+                event_id: "event-1".into(),
+                scenario_id: task.scenario_id.clone(),
+                task_id: task.task_id.clone(),
+                condition_digest: task.condition_digest.clone(),
+                required_action_digest: task.required_action_digest.clone(),
+                starts_at_ms: 3_000,
+                expires_at_ms: None,
+                requires_action: true,
+            }];
+            let observations = vec![
+                observation("obs-1", 1, 1_000, ObservedCondition::Absent, false),
+                observation("obs-2", 2, detected_at, ObservedCondition::Present, false),
+            ];
+            let elapsed = detected_at - 1_000;
+            let waits = vec![wait(
+                "wait-1", 1, 1_000, WaitStrategy::ExponentialBackoff, elapsed,
+                WakeCause::Signal, Some("obs-2")
+            )];
+            let actions = vec![action(detected_at + 50, detected_at + 100, "obs-2")];
+            let result = evaluate_monitoring_task(
+                &task,
+                &event_truth,
+                &observations,
+                &waits,
+                &actions,
+                &resources(observations.len(), &waits, actions.len()),
+                &envelope(),
+            ).unwrap();
+            assert_eq!(result.correctly_handled_events, 1);
+            assert_eq!(result.backoff_calls, 1);
+            controls += 1;
+        }
+
+        assert_eq!(controls, 40);
+    }
+
+    #[test]
     fn sixty_adversarial_mutations_fail_closed() {
         for vector in 0..60 {
             let mut contract = contract(MonitoringTaskKind::NoOp);
