@@ -16,6 +16,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 pub const OBSERVER_CALIBRATION_SCHEMA: &str = "continuous-opsbench-observer-calibration-v0.1";
 pub const MAX_PROBES_PER_ARM: usize = 4_096;
+pub const MAX_CALIBRATION_CHALLENGE_TTL_MS: u64 = 3_600_000;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ProbeChannel {
@@ -547,6 +548,7 @@ pub fn evaluate_observer_calibration(
             || detection.observer_source_id != manifest.runtime_observer_source_id
             || detection.observer_control_domain != manifest.runtime_observer_control_domain
             || detection.observer_adapter_digest != manifest.runtime_observer_adapter_digest
+            || detection.observer_source_id == manifest.runtime_challenge_authority_id
         {
             return Err(ObserverCalibrationError::DetectionBindingMismatch(
                 injection.trial_id.clone(),
@@ -782,6 +784,8 @@ fn validate_plan_binding(
         || plan.expires_at_ms < runtime.measurement_end_ms
         || plan.expires_at_ms > runtime.challenge_expires_at_ms
         || plan.expires_at_ms <= plan.issued_at_ms
+        || plan.expires_at_ms.saturating_sub(plan.issued_at_ms)
+            > MAX_CALIBRATION_CHALLENGE_TTL_MS
     {
         return Err(ObserverCalibrationError::InvalidPlanInterval(
             plan.trial_id.clone(),
@@ -1063,6 +1067,7 @@ mod tests {
                 channel: ProbeChannel::ProcessLifecycle,
                 expected_decision: ExpectedPolicyDecision::Forbidden,
                 target_digest: d(base_id + 2),
+                probe_cluster_digest: d(base_id + 9),
                 maximum_detection_latency_ms: 2_000,
             };
             let negative = ExpectedProbe {
@@ -1070,6 +1075,7 @@ mod tests {
                 channel: ProbeChannel::ProcessLifecycle,
                 expected_decision: ExpectedPolicyDecision::Allowed,
                 target_digest: d(base_id + 4),
+                probe_cluster_digest: d(base_id + 9),
                 maximum_detection_latency_ms: 2_000,
             };
             let plan = ObserverCalibrationPlan {
@@ -1108,6 +1114,7 @@ mod tests {
                     target_digest: probe.target_digest.clone(),
                     status: ProbeInjectionStatus::Injected,
                     injected_at_ms: time,
+                    injector_clock_uncertainty_ms: 1,
                     injection_event_commitment: d(90),
                     injector_source_id: challenge_authority_id.into(),
                     injector_control_domain: challenge_domain.into(),
