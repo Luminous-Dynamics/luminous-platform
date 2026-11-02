@@ -502,6 +502,60 @@ pub fn evaluate_observer_calibration(
 
     let mut detections_by_probe: BTreeMap<(&str, EvaluationArm, Digest), &ProbeDetectionReceipt> =
         BTreeMap::new();
+    for detection in detections {
+        if detection.schema != OBSERVER_CALIBRATION_SCHEMA {
+            return Err(ObserverCalibrationError::UnsupportedSchema(
+                detection.trial_id.clone(),
+            ));
+        }
+        let plan = plan_by_arm
+            .get(&(detection.trial_id.as_str(), detection.arm))
+            .copied()
+            .ok_or_else(|| ObserverCalibrationError::UnplannedDetection(
+                detection.trial_id.clone(),
+            ))?;
+        if !probe_keys.contains_key(&(
+            detection.trial_id.as_str(),
+            detection.arm,
+            detection.probe_id_digest.clone(),
+        )) {
+            return Err(ObserverCalibrationError::UnplannedDetection(
+                detection.trial_id.clone(),
+            ));
+        }
+        let key = (
+            detection.trial_id.as_str(),
+            detection.arm,
+            detection.probe_id_digest.clone(),
+        );
+        if detections_by_probe.insert(key, detection).is_some() {
+            return Err(ObserverCalibrationError::DuplicateDetection(
+                detection.trial_id.clone(),
+            ));
+        }
+        let runtime = runtime_by_arm[&(detection.trial_id.as_str(), detection.arm)];
+        if detection.run_id != manifest.run_id
+            || detection.challenge_id_digest != plan.challenge_id_digest
+            || detection.runtime_instance_digest != runtime.runtime_instance_digest
+            || detection.observer_source_id != manifest.runtime_observer_source_id
+            || detection.observer_source_id == manifest.runtime_challenge_authority_id
+            || detection.observer_control_domain != manifest.runtime_observer_control_domain
+            || detection.observer_adapter_digest != manifest.runtime_observer_adapter_digest
+        {
+            return Err(ObserverCalibrationError::DetectionBindingMismatch(
+                detection.trial_id.clone(),
+            ));
+        }
+        if detection.observer_control_domain
+            == manifest.runtime_challenge_authority_control_domain
+            || detection.observer_control_domain == manifest.agent.control_domain
+            || detection.observer_control_domain == manifest.baseline.control_domain
+        {
+            return Err(ObserverCalibrationError::DetectionControlDomainCollision(
+                detection.trial_id.clone(),
+            ));
+        }
+    }
     let mut observer_sequences = BTreeSet::new();
     let mut sequence_timestamps = Vec::new();
     let mut total_injected = 0usize;
@@ -524,43 +578,14 @@ pub fn evaluate_observer_calibration(
         let expected = probe_keys[&key];
         let plan = plan_by_arm[&(injection.trial_id.as_str(), injection.arm)];
         let runtime = runtime_by_arm[&(injection.trial_id.as_str(), injection.arm)];
-        let detection = detections
-            .iter()
-            .find(|receipt| {
-                receipt.trial_id == injection.trial_id
-                    && receipt.arm == injection.arm
-                    && receipt.probe_id_digest == injection.probe_id_digest
-            })
+        let detection = detections_by_probe
+            .get(&key)
+            .copied()
             .ok_or_else(|| ObserverCalibrationError::MissingDetection(
                 injection.trial_id.clone(),
             ))?;
-        if detections_by_probe.insert(key, detection).is_some() {
-            return Err(ObserverCalibrationError::DuplicateDetection(
-                injection.trial_id.clone(),
-            ));
-        }
-        if detection.schema != OBSERVER_CALIBRATION_SCHEMA
-            || detection.run_id != manifest.run_id
-            || detection.challenge_id_digest != plan.challenge_id_digest
-            || detection.runtime_instance_digest != runtime.runtime_instance_digest
-            || detection.observer_source_id != manifest.runtime_observer_source_id
-            || detection.observer_control_domain != manifest.runtime_observer_control_domain
-            || detection.observer_adapter_digest != manifest.runtime_observer_adapter_digest
-            || detection.observer_source_id == manifest.runtime_challenge_authority_id
-        {
-            return Err(ObserverCalibrationError::DetectionBindingMismatch(
-                injection.trial_id.clone(),
-            ));
-        }
-        if detection.observer_control_domain
-            == manifest.runtime_challenge_authority_control_domain
-            || detection.observer_control_domain == manifest.agent.control_domain
-            || detection.observer_control_domain == manifest.baseline.control_domain
-        {
-            return Err(ObserverCalibrationError::DetectionControlDomainCollision(
-                injection.trial_id.clone(),
-            ));
-        }
+        let injection_earliest = injection.injected_at_ms
+            .saturating_sub(injection.injector_clock_uncertainty_ms);
 
         let accumulator = channel_accumulators.get_mut(&expected.channel).unwrap();
         match &detection.observation {
@@ -779,13 +804,19 @@ fn validate_plan_binding(
     if plan.issued_at_ms <= manifest.frozen_at_ms
         || plan.issued_at_ms <= runtime.challenge_issued_at_ms
         || plan.issued_at_ms >= runtime.measurement_start_ms
-        || plan.expires_at_ms < runtime.measurement_end_ms
+        || plan.expires_at_ms
+            < runtime.measurement_end_ms.saturating_add(runtime.clock_uncertainty_ms)
         || plan.expires_at_ms > runtime.challenge_expires_at_ms
         || plan.expires_at_ms <= plan.issued_at_ms
-        || plan.expires_at_ms.saturating_sub(plan.issued_at_ms)
-            > MAX_CALIBRATION_CHALLENGE_TTL_MS
     {
         return Err(ObserverCalibrationError::InvalidPlanInterval(
+            plan.trial_id.clone(),
+        ));
+    }
+    if plan.expires_at_ms.saturating_sub(plan.issued_at_ms)
+        > MAX_CALIBRATION_CHALLENGE_TTL_MS
+    {
+        return Err(ObserverCalibrationError::ChallengeLifetimeExceeded(
             plan.trial_id.clone(),
         ));
     }
