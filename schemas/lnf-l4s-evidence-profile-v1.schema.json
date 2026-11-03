@@ -1,0 +1,374 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/lnf-l4s-evidence-profile-v1.schema.json",
+  "title": "LNF L4S DualQ Classic Coexistence Evidence Profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "status",
+    "reviewed_on",
+    "objective",
+    "evidence_boundary",
+    "standards",
+    "network_aqm_arms",
+    "l4s_sender_arms",
+    "pair_identity_fields",
+    "evidence_requirements",
+    "scenarios",
+    "scenario_definitions",
+    "comparators",
+    "benchmarks",
+    "required_metrics",
+    "gates",
+    "thresholds",
+    "evidence_classes",
+    "explicit_non_claims"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.lnf.l4s-evidence-profile.v1"
+    },
+    "profile_id": {
+      "const": "lnf-l4s-dualq-coexistence-v1"
+    },
+    "status": {
+      "const": "draft_targets_not_results"
+    },
+    "reviewed_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence_boundary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "standards": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "status",
+          "purpose"
+        ],
+        "properties": {
+          "id": {
+            "enum": [
+              "RFC 9330",
+              "RFC 9331",
+              "RFC 9332",
+              "RFC 9438",
+              "RFC 8290"
+            ]
+          },
+          "status": {
+            "enum": [
+              "informational",
+              "experimental",
+              "standards_track"
+            ]
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "network_aqm_arms": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1
+          },
+          "qualification": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "l4s_sender_arms": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "qualification"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "qualification": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "pair_identity_fields": {
+      "type": "array",
+      "minItems": 13,
+      "maxItems": 13,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "evidence_requirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exact_aqm_implementation_identity",
+        "exact_classic_sender_identity",
+        "exact_l4s_sender_identity",
+        "external_artifacts_require_sha256",
+        "in_tree_implementations_bound_to_kernel_build_sha256",
+        "qdisc_readback_required",
+        "endpoint_ecn_negotiation_proof_both_ends",
+        "ect1_transmission_and_receiver_observation_required",
+        "ce_marking_at_aqm_and_sender_feedback_required_under_frozen_congestion_challenge",
+        "dual_queue_class_counters_required_for_mixed_traffic",
+        "cleanup_verification_required",
+        "unsupported_fallback_or_missing_counters_never_pass",
+        "pair_verdict_scope"
+      ],
+      "properties": {
+        "exact_aqm_implementation_identity": {
+          "const": true
+        },
+        "exact_classic_sender_identity": {
+          "const": true
+        },
+        "exact_l4s_sender_identity": {
+          "const": true
+        },
+        "external_artifacts_require_sha256": {
+          "const": true
+        },
+        "in_tree_implementations_bound_to_kernel_build_sha256": {
+          "const": true
+        },
+        "qdisc_readback_required": {
+          "const": true
+        },
+        "endpoint_ecn_negotiation_proof_both_ends": {
+          "const": true
+        },
+        "ect1_transmission_and_receiver_observation_required": {
+          "const": true
+        },
+        "ce_marking_at_aqm_and_sender_feedback_required_under_frozen_congestion_challenge": {
+          "const": true
+        },
+        "dual_queue_class_counters_required_for_mixed_traffic": {
+          "const": true
+        },
+        "cleanup_verification_required": {
+          "const": true
+        },
+        "unsupported_fallback_or_missing_counters_never_pass": {
+          "const": true
+        },
+        "pair_verdict_scope": {
+          "const": "single_paired_trial_only"
+        }
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 15,
+      "maxItems": 15,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^L4S-[0-9]{2}$"
+      }
+    },
+    "scenario_definitions": {
+      "type": "array",
+      "minItems": 15,
+      "maxItems": 15,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "topology",
+          "purpose"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^L4S-[0-9]{2}$"
+          },
+          "topology": {
+            "type": "string",
+            "minLength": 1
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "comparators": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "benchmarks": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "metric",
+          "operator",
+          "target",
+          "target_status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^L4S_[A-Z0-9_]{3,80}$"
+          },
+          "metric": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operator": {
+            "enum": [
+              "all_required",
+              ">=",
+              "<",
+              "<=",
+              "=="
+            ]
+          },
+          "target": {
+            "type": "number"
+          },
+          "target_status": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "required_metrics": {
+      "type": "array",
+      "minItems": 20,
+      "maxItems": 20,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "gates": {
+      "const": [
+        "pass",
+        "fail",
+        "inconclusive",
+        "unsupported"
+      ]
+    },
+    "thresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "classic_retention_target_ppm",
+        "classic_retention_investigation_floor_ppm",
+        "l4s_average_queue_delay_target_us",
+        "l4s_p99_queue_delay_target_us",
+        "delay_targets_apply_only_when_rfc9332_reproduction_profile_verified",
+        "pair_verdict_scope",
+        "all_targets_status"
+      ],
+      "properties": {
+        "classic_retention_target_ppm": {
+          "const": 950000
+        },
+        "classic_retention_investigation_floor_ppm": {
+          "const": 900000
+        },
+        "l4s_average_queue_delay_target_us": {
+          "const": 1000
+        },
+        "l4s_p99_queue_delay_target_us": {
+          "const": 2000
+        },
+        "delay_targets_apply_only_when_rfc9332_reproduction_profile_verified": {
+          "const": true
+        },
+        "pair_verdict_scope": {
+          "const": "single_paired_trial_only"
+        },
+        "all_targets_status": {
+          "const": "proposed_not_measured"
+        }
+      }
+    },
+    "evidence_classes": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "explicit_non_claims": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}
