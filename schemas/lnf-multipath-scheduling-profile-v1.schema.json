@@ -228,13 +228,13 @@
     },
     "required_metrics": {
       "type": "array",
-      "minItems": 36,
+      "minItems": 37,
       "uniqueItems": true,
       "items": {
         "type": "string",
         "minLength": 1
       },
-      "maxItems": 36
+      "maxItems": 37
     },
     "evidence_classes": {
       "type": "array",
