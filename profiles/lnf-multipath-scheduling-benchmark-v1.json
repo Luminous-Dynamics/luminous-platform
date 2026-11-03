@@ -125,13 +125,26 @@
       "operator": "==",
       "target": 0,
       "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_INORDER_USEFUL_DELIVERY_001",
+      "metric": "network_received_unique_bytes_are_not_counted_as_useful_until_in_order_application_release",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_REASSEMBLY_TIMEOUT_001",
+      "metric": "out_of_order_buffer_byte_microseconds_and_unreleased_bytes_after_declared_timeout",
+      "operator": "baseline_first",
+      "target": null,
+      "target_status": "baseline_first"
     }
   ],
   "required_metrics": [
     "useful_task_completion_probability_by_deadline",
     "flow_completion_time_p50_p95_p99",
     "goodput_bytes_per_second",
-    "receiver_reorder_exposure_bytes_and_byte_seconds",
     "duplicate_or_redundant_transmission_bytes",
     "per_path_utilization_and_idle_capacity",
     "cost_per_successful_task",
@@ -142,7 +155,12 @@
     "packet_segment_arrival_latency_p50_p95_p99",
     "receiver_reorder_buffer_peak_bytes_and_byte_microseconds",
     "synthetic_loss_correlation_by_declared_failure_domain",
-    "trace_transmitted_bytes_vs_useful_bytes"
+    "trace_transmitted_bytes_vs_useful_bytes",
+    "receiver_reorder_exposure_bytes_and_byte_microseconds",
+    "network_first_arrival_latency_p50_p95_p99",
+    "in_order_application_release_latency_p50_p95_p99",
+    "network_received_unique_bytes_vs_in_order_useful_application_bytes",
+    "out_of_order_bytes_retained_at_reassembly_timeout"
   ],
   "evidence_classes": [
     "deterministic_model",
