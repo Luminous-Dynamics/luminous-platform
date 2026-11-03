@@ -121,7 +121,10 @@ pub struct BestPathComparison {
     pub path_a_tcp_goodput_bps: u64,
     pub path_b_tcp_goodput_bps: u64,
     pub mptcp_goodput_bps: u64,
-    pub identity: ExperimentIdentity,
+    /// Each arm carries its own exact identity; the evaluator verifies equality.
+    pub path_a_identity: ExperimentIdentity,
+    pub path_b_identity: ExperimentIdentity,
+    pub mptcp_identity: ExperimentIdentity,
     pub evidence: MptcpEvidence,
 }
 
@@ -243,7 +246,21 @@ pub fn evaluate_best_path_improvement(
     if minimum_ratio_ppm == 0 || minimum_ratio_ppm > MAX_RATIO_PPM {
         return Err(EvidenceError::InvalidTarget);
     }
-    comparison.identity.validate()?;
+    let identities_match = identity_pair_valid(
+        &comparison.path_a_identity,
+        &comparison.path_b_identity,
+    )? && identity_pair_valid(
+        &comparison.path_a_identity,
+        &comparison.mptcp_identity,
+    )?;
+    if !identities_match {
+        return Ok(GateResult::new(
+            "MPTCP_GOAL1_BEST_PATH",
+            GateDisposition::Inconclusive,
+            "single_path_and_mptcp_experiment_identity_mismatch",
+            Some(minimum_ratio_ppm),
+        ));
+    }
     if let Some(result) = evidence_disposition(
         "MPTCP_GOAL1_BEST_PATH",
         comparison.evidence,
@@ -469,7 +486,9 @@ mod tests {
                 path_a_tcp_goodput_bps: 70_000_000,
                 path_b_tcp_goodput_bps: 85_000_000,
                 mptcp_goodput_bps: 90_000_000,
-                identity: identity(),
+                path_a_identity: identity(),
+                path_b_identity: identity(),
+                mptcp_identity: identity(),
                 evidence: evidence(),
             },
             1_000_000,
@@ -477,6 +496,30 @@ mod tests {
         .expect("valid evidence");
         assert_eq!(result.disposition, GateDisposition::Pass);
         assert_eq!(result.primary_ratio_ppm, Some(1_058_823));
+    }
+
+    #[test]
+    fn independent_comparison_with_mismatched_qdisc_is_inconclusive() {
+        let mut path_b_identity = identity();
+        path_b_identity.qdisc_config_sha256 = "f".repeat(64);
+        let result = evaluate_best_path_improvement(
+            &BestPathComparison {
+                path_a_tcp_goodput_bps: 70_000_000,
+                path_b_tcp_goodput_bps: 85_000_000,
+                mptcp_goodput_bps: 90_000_000,
+                path_a_identity: identity(),
+                path_b_identity,
+                mptcp_identity: identity(),
+                evidence: evidence(),
+            },
+            1_000_000,
+        )
+        .expect("pair with mismatched input identities is classified");
+        assert_eq!(result.disposition, GateDisposition::Inconclusive);
+        assert_eq!(
+            result.reason,
+            "single_path_and_mptcp_experiment_identity_mismatch"
+        );
     }
 
     #[test]
@@ -507,7 +550,7 @@ mod tests {
         assert_eq!(result.disposition, GateDisposition::Pass);
         assert_eq!(result.primary_ratio_ppm, Some(947_368));
         assert_eq!(result.secondary_ratio_ppm, Some(926_315));
-        assert_eq!(result.total_goodput_ratio_ppm, Some(947_368));
+        assert_eq!(result.total_goodput_ratio_ppm, Some(936_842));
     }
 
     #[test]
