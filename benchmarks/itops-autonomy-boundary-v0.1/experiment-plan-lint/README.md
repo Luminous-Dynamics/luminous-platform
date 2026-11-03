@@ -22,7 +22,7 @@ From the linter crate directory:
     cargo test
     cargo run --release
 
-The linter checks that stratum minimum sample counts sum to the target,
+The linter checks that stratum minimum sample counts per arm sum to the target sample count per arm,
 population weights sum to one, each arm role occurs exactly once, the
 ungated arm is synthetic-only, the inference unit matches the dependence
 unit, the zero-event confidence-bound method matches the declared unit,
@@ -31,7 +31,7 @@ include scenario-variant and stratum identity.
 
 ## Interpretation
 
-The example is a preregistration template, not an executed campaign. The
+The example plans 3,000 episode blocks per arm (9,000 total arm executions across three arms); the safety interval is computed and reported separately for each pinned system arm. It is a preregistration template, not an executed campaign. The
 3,000-episode target is not a claim of 3,000 independent observations. An
 episode counts as independent only when the reset, randomization, memory,
 environment and failure-domain assumptions support that unit. Shared state
