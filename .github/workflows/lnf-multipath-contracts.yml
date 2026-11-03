@@ -8,6 +8,8 @@ on:
       - "profiles/lnf-multipath-fairness-profile-v1.json"
       - "schemas/lnf-multipath-scheduling-profile-v1.schema.json"
       - "schemas/lnf-multipath-fairness-profile-v1.schema.json"
+      - "profiles/lnf-l4s-evidence-profile-v1.json"
+      - "schemas/lnf-l4s-evidence-profile-v1.schema.json"
       - "tools/connectivity-benchmark-profile-validator/src/bin/json-schema-verify.rs"
       - "tools/connectivity-benchmark-profile-validator/Cargo.toml"
       - ".github/workflows/lnf-multipath-contracts.yml"
@@ -62,6 +64,15 @@ jobs:
           --
           schemas/lnf-multipath-scheduling-profile-v1.schema.json
           profiles/lnf-multipath-scheduling-benchmark-v1.json
+
+      - name: Validate L4S evidence benchmark profile
+        run: >-
+          cargo run
+          --manifest-path tools/connectivity-benchmark-profile-validator/Cargo.toml
+          --bin json-schema-verify
+          --
+          schemas/lnf-l4s-evidence-profile-v1.schema.json
+          profiles/lnf-l4s-evidence-profile-v1.json
 
       - name: Validate tenant fairness benchmark profile
         run: >-
