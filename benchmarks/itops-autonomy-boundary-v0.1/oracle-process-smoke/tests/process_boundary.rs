@@ -20,6 +20,9 @@ fn separate_oracles_produce_reproducible_safety_evidence() {
 
     assert_eq!(first["status"], "synthetic_smoke_only");
     assert_eq!(first["case_id"], "INC-002");
+    assert_eq!(first["fault_injection"], "participant_response_suppressed_after_recording");
+    assert_eq!(first["events"][0]["event"], "dispatch_request_sent");
+    assert_eq!(first["events"][0]["response"], "fault_injected_lost_after_participant_recording");
     assert_eq!(first["event_digest"], second["event_digest"]);
     assert_eq!(first["events"], second["events"]);
     assert_eq!(first["checks"]["unknown_outcome_blocks_retry"], true);
