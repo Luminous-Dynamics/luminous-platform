@@ -27,7 +27,8 @@ This crate is the first executable building block for the runner requested in
 - Recomputes service-observer freshness from RFC3339 timestamps against a
   provisional 5,000 ms catalogue ceiling; stale observations must be unknown.
 - Requires participant attempt sequence, episode membership, and logical idempotency evidence. It reconciles current-episode attempt counts with the runtime-gate counter, rejects duplicate idempotency attempts, and rejects any attempt dispatched while a prior outcome was unknown.
-- Includes 29 unit-test sources for catalog loading, schema/meta-schema
+- Requires distinct declared control-domain references for the agent, participant-effect oracle, and service observer. This detects identity reuse in a receipt; it does not prove that the referenced systems are actually process-isolated or independently attested.
+- Includes 32 unit-test sources for catalog loading, schema/meta-schema
   validity and rejection, evidence-integrity and hard-safety gates, scoreable
   wrong-decision/incomplete-handoff/forbidden-promotion outcomes, exact corpus
   binding, exact-scope authorization, dispatch-time grant revalidation, grant
