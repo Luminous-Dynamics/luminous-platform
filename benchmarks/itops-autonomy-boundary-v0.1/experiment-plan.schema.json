@@ -99,7 +99,7 @@
           "task_families",
           "authority_states",
           "fault_classes",
-          "minimum_episodes",
+          "minimum_episodes_per_arm",
           "population_weight"
         ],
         "properties": {
@@ -147,7 +147,7 @@
       "additionalProperties": false,
       "required": [
         "design",
-        "target_episode_count",
+        "target_episode_count_per_arm",
         "seed_algorithm",
         "seed_manifest_digest",
         "seed_schedule_digest",
