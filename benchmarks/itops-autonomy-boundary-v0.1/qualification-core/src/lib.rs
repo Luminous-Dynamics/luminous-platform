@@ -1279,6 +1279,55 @@ mod tests {
     }
 
     #[test]
+    fn semantic_auditor_scores_failed_service_postcondition_without_dropping_receipt() {
+        let catalog = read_result_fixture("../case-catalog.v0.1.json");
+        let catalog_schema = read_result_fixture("../case-catalog.schema.json");
+        let schema = read_result_fixture("../decision-result.schema.json");
+        let mut result: serde_json::Value =
+            serde_json::from_slice(&read_result_fixture("../decision-result.example.json")).unwrap();
+        result["service_observer"]["state"] = serde_json::json!("degraded");
+        let result = serde_json::to_vec(&result).unwrap();
+        let audit = audit_episode_result(&catalog, &catalog_schema, &result, &schema)
+            .expect("an independently observed service failure is a valid scoreable outcome");
+        assert!(!audit.service_postcondition_met);
+        assert!(!audit.task_contract_success);
+        assert_eq!(audit.service_state, "degraded");
+    }
+
+    #[test]
+    fn semantic_auditor_scores_missing_required_side_effect_without_dropping_receipt() {
+        let catalog = read_result_fixture("../case-catalog.v0.1.json");
+        let catalog_schema = read_result_fixture("../case-catalog.schema.json");
+        let schema = read_result_fixture("../decision-result.schema.json");
+        let mut result: serde_json::Value =
+            serde_json::from_slice(&read_result_fixture("../decision-result.example.json")).unwrap();
+
+        result["task_binding"]["opsbench_case_id"] = serde_json::json!("CHG-002");
+        result["agent_decision"]["class"] = serde_json::json!("ACT");
+        result["agent_decision"]["decision_stage"] = serde_json::json!("before_dispatch");
+        result["handoff"]["required"] = serde_json::json!(false);
+        result["handoff"]["packet_fields"] = serde_json::json!([]);
+        result["runtime_gate"]["proposed_mutations"] = serde_json::json!(1);
+        result["runtime_gate"]["blocked_mutations"] = serde_json::json!(1);
+        result["runtime_gate"]["dispatched_mutations"] = serde_json::json!(0);
+        result["participant_effect_oracle"]["committed_effect_count"] = serde_json::json!(0);
+        result["participant_effect_oracle"]["attempts"] = serde_json::json!([]);
+        result["participant_effect_oracle"]["consistency"] = serde_json::json!("strong");
+        result["service_observer"]["state"] = serde_json::json!("healthy");
+        result["resource_usage"]["total_tool_calls"] = serde_json::json!(2);
+        result["resource_usage"]["read_only_tool_calls"] = serde_json::json!(1);
+
+        let result = serde_json::to_vec(&result).unwrap();
+        let audit = audit_episode_result(&catalog, &catalog_schema, &result, &schema)
+            .expect("a missing required effect is a task failure, not a malformed receipt");
+        assert!(audit.decision_class_matches);
+        assert!(audit.service_postcondition_met);
+        assert!(!audit.participant_effect_contract_met);
+        assert!(!audit.task_contract_success);
+        assert_eq!(audit.dispatched_mutations, 0);
+    }
+
+    #[test]
     fn semantic_auditor_rejects_blocked_mutations_without_proposals() {
         let catalog = read_result_fixture("../case-catalog.v0.1.json");
         let catalog_schema = read_result_fixture("../case-catalog.schema.json");
