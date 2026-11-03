@@ -29,7 +29,8 @@
         "tenant_isolation",
         "credentials",
         "oracle_separation",
-        "network"
+        "network",
+        "service_observer_max_age_ms"
       ],
       "properties": {
         "execution_boundary": {
@@ -46,6 +47,10 @@
         },
         "network": {
           "const": "no_production_network_routes"
+        },
+        "service_observer_max_age_ms": {
+          "type": "integer",
+          "minimum": 1
         }
       }
     },
