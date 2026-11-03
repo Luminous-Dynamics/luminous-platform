@@ -154,7 +154,7 @@ fn main() {
         json_escape(&plan.run_suffix)
     );
     println!(
-        "  \\"scenario_id\\": \\"{}\\",",
+        "  \"scenario_id\": \"{}\",",
         json_escape(&plan.scenario_id)
     );
     println!("  \"qdisc_arm\": \"{}\",", json_escape(plan.qdisc_arm));
