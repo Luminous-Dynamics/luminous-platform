@@ -203,7 +203,8 @@ fn capacity_domain_ids_error(ids: &[String]) -> Option<&'static str> {
 }
 
 fn capacity_domains_disjoint(left: &[String], right: &[String]) -> bool {
-    left.iter().all(|left_id| right.iter().all(|right_id| left_id != right_id))
+    left.iter()
+        .all(|left_id| right.iter().all(|right_id| left_id != right_id))
 }
 
 fn canonical_capacity_domain_ids(ids: &[String]) -> Vec<String> {
@@ -365,20 +366,20 @@ fn aggregate_candidate(
         for right_index in left_index + 1..eligible.len() {
             let left = eligible[left_index];
             let right = eligible[right_index];
-            if !capacity_domains_disjoint(
-                &left.capacity_domain_ids,
-                &right.capacity_domain_ids,
-            ) {
+            if !capacity_domains_disjoint(&left.capacity_domain_ids, &right.capacity_domain_ids) {
                 continue;
             }
             let combined_capacity =
                 u128::from(effective_capacity(left)) + u128::from(effective_capacity(right));
-            let replace = best_pair.as_ref().is_none_or(|(best_capacity, best_left, best_right)| {
-                combined_capacity > *best_capacity
-                    || (combined_capacity == *best_capacity
-                        && (left.id.as_str(), right.id.as_str())
-                            < (best_left.id.as_str(), best_right.id.as_str()))
-            });
+            let replace =
+                best_pair
+                    .as_ref()
+                    .is_none_or(|(best_capacity, best_left, best_right)| {
+                        combined_capacity > *best_capacity
+                            || (combined_capacity == *best_capacity
+                                && (left.id.as_str(), right.id.as_str())
+                                    < (best_left.id.as_str(), best_right.id.as_str()))
+                    });
             if replace {
                 best_pair = Some((combined_capacity, left, right));
             }
@@ -801,10 +802,8 @@ mod tests {
     fn aggregate_never_counts_two_paths_in_one_capacity_domain() {
         let mut first = path("a", 10_000, 40_000_000, 10, "failure-a");
         let mut second = path("b", 20_000, 60_000_000, 10, "failure-b");
-        first.capacity_domain_ids =
-            vec!["access-a".to_owned(), "shared-backhaul".to_owned()];
-        second.capacity_domain_ids =
-            vec!["access-b".to_owned(), "shared-backhaul".to_owned()];
+        first.capacity_domain_ids = vec!["access-a".to_owned(), "shared-backhaul".to_owned()];
+        second.capacity_domain_ids = vec!["access-b".to_owned(), "shared-backhaul".to_owned()];
         let result = evaluate(&request(), &[first, second], Strategy::AggregateCapacity)
             .expect("valid observations");
         assert_eq!(result.mode, DecisionMode::SinglePath);
@@ -818,12 +817,9 @@ mod tests {
         let mut path_a = path("a", 10_000, 60_000_000, 10, "risk-a");
         let mut path_b = path("b", 10_000, 100_000_000, 10, "risk-b");
         let mut path_c = path("c", 10_000, 50_000_000, 10, "risk-c");
-        path_a.capacity_domain_ids =
-            vec!["access-a".to_owned(), "shared-x".to_owned()];
-        path_b.capacity_domain_ids =
-            vec!["shared-x".to_owned(), "shared-y".to_owned()];
-        path_c.capacity_domain_ids =
-            vec!["access-c".to_owned(), "shared-y".to_owned()];
+        path_a.capacity_domain_ids = vec!["access-a".to_owned(), "shared-x".to_owned()];
+        path_b.capacity_domain_ids = vec!["shared-x".to_owned(), "shared-y".to_owned()];
+        path_c.capacity_domain_ids = vec!["access-c".to_owned(), "shared-y".to_owned()];
         let result = evaluate(
             &request(),
             &[path_b, path_c, path_a],
@@ -866,12 +862,7 @@ mod tests {
     fn capacity_domain_ids_are_canonicalized_in_the_report() {
         let mut first = path("a", 10_000, 20_000_000, 10, "risk-a");
         first.capacity_domain_ids = vec!["z".to_owned(), "a".to_owned()];
-        let result = evaluate(
-            &request(),
-            &[first],
-            Strategy::BestRtt,
-        )
-        .expect("valid path");
+        let result = evaluate(&request(), &[first], Strategy::BestRtt).expect("valid path");
         assert_eq!(
             result.allocations[0].capacity_domain_ids,
             vec!["a".to_owned(), "z".to_owned()]
