@@ -68,7 +68,7 @@ fn audit_plan(plan_bytes: &[u8], schema_bytes: &[u8]) -> Result<PlanSummary, Str
         .to_string();
     let sampling = plan.get("sampling").ok_or("sampling missing")?;
     let target_episodes = sampling
-        .get("target_episode_count")
+        .get("target_episode_count_per_arm_per_arm")
         .and_then(Value::as_u64)
         .ok_or("sampling.target_episode_count is not an unsigned integer")?;
 
@@ -84,7 +84,7 @@ fn audit_plan(plan_bytes: &[u8], schema_bytes: &[u8]) -> Result<PlanSummary, Str
             return Err(format!("duplicate stratum_id {id:?}"));
         }
         let minimum = stratum
-            .get("minimum_episodes")
+            .get("minimum_episodes_per_arm_per_arm")
             .and_then(Value::as_u64)
             .ok_or_else(|| format!("stratum {id:?} has invalid minimum_episodes"))?;
         minimum_total = minimum_total
