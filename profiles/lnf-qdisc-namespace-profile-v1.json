@@ -40,8 +40,13 @@
   "qdisc_arms": [
     {
       "id": "fq_codel",
-      "type": "fq_codel",
+      "type": "fq_codel_under_tbf",
+      "shaper": "tbf",
       "options": [
+        "tbf root rate equals shared shaping_rate_bps",
+        "tbf burst 32kb",
+        "tbf latency 400ms",
+        "fq_codel child parent 1:1",
         "limit 10240",
         "flows 1024",
         "target 5ms",
@@ -59,7 +64,8 @@
         "triple-isolate",
         "nonat"
       ],
-      "host_flow_isolation": "source_destination_host_and_flow"
+      "host_flow_isolation": "source_destination_host_and_flow",
+      "shaper": "cake_bandwidth"
     },
     {
       "id": "cake_diffserv3_triple_isolate",
@@ -69,7 +75,8 @@
         "triple-isolate",
         "nonat"
       ],
-      "host_flow_isolation": "source_destination_host_and_flow"
+      "host_flow_isolation": "source_destination_host_and_flow",
+      "shaper": "cake_bandwidth"
     },
     {
       "id": "cake_diffserv4_triple_isolate",
@@ -79,7 +86,8 @@
         "triple-isolate",
         "nonat"
       ],
-      "host_flow_isolation": "source_destination_host_and_flow"
+      "host_flow_isolation": "source_destination_host_and_flow",
+      "shaper": "cake_bandwidth"
     }
   ],
   "shaping_rate_bounds_bps": {
@@ -128,7 +136,6 @@
     "iperf3_version",
     "namespace_inventory_before",
     "command_plan_sha256",
-    "exact_qdisc_install_argv",
     "qdisc_readback_json",
     "qdisc_statistics_before_after_json",
     "gateway_link_counters_json",
@@ -137,7 +144,10 @@
     "tenant_a_iperf3_json",
     "tenant_b_iperf3_json",
     "cleanup_namespace_inventory_after",
-    "run_manifest_with_source_and_config_digests"
+    "run_manifest_with_source_and_config_digests",
+    "qdisc_install_argv",
+    "tbf_shaper_install_argv",
+    "fq_codel_child_install_argv"
   ],
   "required_metrics": [
     "per_tenant_goodput_bps",
@@ -215,11 +225,13 @@
     "fq_codel is a flow-isolation baseline and is not equivalent to CAKE triple-isolate host fairness",
     "No claim that CAKE or fq_codel is beaten before matched namespace and hardware runs",
     "No claim of 5G RAN slicing or carrier scheduler equivalence",
-    "No claim of production deployment or public network authorization"
+    "No claim of production deployment or public network authorization",
+    "TBF plus fq_codel and CAKE's integrated bandwidth shaper are different shaping and queue-management implementations and are compared as such"
   ],
   "supported_scenario_ids": [
     "QDISC-01",
     "QDISC-02",
     "QDISC-03"
-  ]
+  ],
+  "qdisc_comparison_note": "The fq_codel arm is TBF-shaped at the same configured rate as the CAKE arms. Rate equality controls the shared bottleneck; it does not make TBF+fq_codel and CAKE equivalent shaper/AQM implementations."
 }
