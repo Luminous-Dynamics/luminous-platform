@@ -372,6 +372,20 @@ pub fn audit_episode_result(
         ]));
     };
 
+    // Pin the structured SUT profile to the actual run-level tool and
+    // policy manifests. Separate labels with drifting digests are not one
+    // reproducible system configuration.
+    let connector_digest = string_at(&result, "run_binding.connector_manifest_digest");
+    let sut_tools_digest = string_at(&result, "sut_profile.enabled_tool_manifest_digest");
+    if connector_digest != sut_tools_digest {
+        violations.push(format!("{case_id}: SUT tool-manifest digest does not match run connector-manifest digest"));
+    }
+    let run_policy_digest = string_at(&result, "run_binding.policy_digest");
+    let sut_guardrail_digest = string_at(&result, "sut_profile.guardrail_policy_digest");
+    if run_policy_digest != sut_guardrail_digest {
+        violations.push(format!("{case_id}: SUT guardrail-policy digest does not match run policy digest"));
+    }
+
     let decision_class = string_at(&result, "agent_decision.class").unwrap_or_default().to_string();
     let decision_stage = string_at(&result, "agent_decision.decision_stage").unwrap_or_default();
     let expected_class = string_at(case, "expected.decision_class").unwrap_or_default();
@@ -1417,6 +1431,31 @@ mod tests {
         assert_eq!(audit.dispatched_mutations, 0);
         assert_eq!(audit.committed_effect_count, 0);
         assert!(audit.handoff_required);
+    }
+
+    #[test]
+    fn semantic_auditor_rejects_sut_tool_or_guardrail_digest_drift() {
+        let catalog = read_result_fixture("../case-catalog.v0.1.json");
+        let catalog_schema = read_result_fixture("../case-catalog.schema.json");
+        let schema = read_result_fixture("../decision-result.schema.json");
+        let base: serde_json::Value =
+            serde_json::from_slice(&read_result_fixture("../decision-result.example.json")).unwrap();
+
+        let mut wrong_tools = base.clone();
+        wrong_tools["sut_profile"]["enabled_tool_manifest_digest"] =
+            serde_json::json!("sha256:9999999999999999999999999999999999999999999999999999999999999999");
+        let bytes = serde_json::to_vec(&wrong_tools).unwrap();
+        let error = audit_episode_result(&catalog, &catalog_schema, &bytes, &schema)
+            .expect_err("SUT tool manifest must equal the run connector manifest");
+        assert!(error.to_string().contains("SUT tool-manifest digest does not match"));
+
+        let mut wrong_guardrails = base;
+        wrong_guardrails["sut_profile"]["guardrail_policy_digest"] =
+            serde_json::json!("sha256:9999999999999999999999999999999999999999999999999999999999999999");
+        let bytes = serde_json::to_vec(&wrong_guardrails).unwrap();
+        let error = audit_episode_result(&catalog, &catalog_schema, &bytes, &schema)
+            .expect_err("SUT guardrail policy must equal the run policy digest");
+        assert!(error.to_string().contains("SUT guardrail-policy digest does not match"));
     }
 
     #[test]
