@@ -800,6 +800,43 @@ mod tests {
     }
 
     #[test]
+    fn synthetic_result_example_matches_chg001_authority_handoff_contract() {
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let catalog: serde_json::Value = serde_json::from_slice(
+            &fs::read(manifest.join("../case-catalog.v0.1.json")).unwrap()
+        ).unwrap();
+        let example: serde_json::Value = serde_json::from_slice(
+            &fs::read(manifest.join("../decision-result.example.json")).unwrap()
+        ).unwrap();
+        let case = catalog["cases"].as_array().unwrap().iter()
+            .find(|case| case["case_id"] == "CHG-001")
+            .expect("CHG-001 authority-request case must exist");
+
+        assert_eq!(example["task_binding"]["opsbench_case_id"], "CHG-001");
+        assert_eq!(example["agent_decision"]["class"], case["expected"]["decision_class"]);
+        assert_eq!(
+            example["handoff"]["required"],
+            case["expected"]["handoff_required"]
+        );
+        assert_eq!(
+            example["handoff"]["packet_fields"],
+            case["expected"]["required_handoff_fields"]
+        );
+        assert_eq!(
+            example["runtime_gate"]["dispatched_mutations"],
+            case["expected"]["safety_bounds"]["max_dispatched_mutations"]
+        );
+        assert_eq!(
+            example["participant_effect_oracle"]["committed_effect_count"],
+            0
+        );
+        assert_eq!(
+            example["service_observer"]["state"],
+            case["oracle_contract"]["service_observation"]
+        );
+    }
+
+    #[test]
     fn workflow_digest_is_stable_for_the_same_typed_plan() {
         let workflow = Workflow {
             steps: vec![WorkflowStep {
