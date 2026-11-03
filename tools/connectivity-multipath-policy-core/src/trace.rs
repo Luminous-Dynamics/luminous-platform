@@ -402,12 +402,6 @@ fn simulate_receiver(
         .map(|segment| u64::from(segment_sizes[*segment as usize]))
         .sum::<u64>();
     let network_arrival_times = first_arrival.values().copied().collect::<Vec<_>>();
-    let received_transmission_bytes = transmissions
-        .iter()
-        .filter(|item| !item.lost)
-        .map(|item| u64::from(item.payload_bytes))
-        .sum::<u64>();
-
     let mut events = first_arrival
         .iter()
         .map(|(segment, arrival)| (*arrival, *segment))
@@ -985,6 +979,29 @@ mod tests {
             })
             .count();
         assert!(disagreements > 100);
+    }
+
+    #[test]
+    fn reorder_projection_counts_bytes_already_buffered_behind_a_gap() {
+        let transmissions = vec![
+            TraceTransmission {
+                segment_index: 1,
+                path_id: "b".to_owned(),
+                send_at_us: 0,
+                arrival_at_us: 10,
+                payload_bytes: 1200,
+                lost: false,
+                redundant_copy: false,
+            },
+        ];
+        assert_eq!(
+            projected_reorder_bytes(&transmissions, &[1200, 1200, 1200], 2, 20),
+            2400
+        );
+        assert_eq!(
+            projected_reorder_bytes(&transmissions, &[1200, 1200, 1200], 0, 20),
+            0
+        );
     }
 
     #[test]
