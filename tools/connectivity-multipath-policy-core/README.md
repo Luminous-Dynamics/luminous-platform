@@ -55,6 +55,22 @@ Estimated completion for a path allocation is:
 
 These are planning estimates. They do not model time-varying congestion or packet-level reordering.
 
+## Capacity domains versus failure domains
+
+Every path declares both:
+- `shared_risk_group`: links expected to experience a common-cause failure;
+- `shared_capacity_group`: links consuming the same declared hard throughput bottleneck.
+
+These are not interchangeable. Two paths may fail independently but still share one backhaul. The current v1 aggregate and redundant controls conservatively select at most one path per declared capacity group. Redundant transmission requires both a distinct failure group and a distinct capacity group. Unknown/empty capacity groups are excluded. This can underuse real capacity within one group; a future group-level rate ceiling requires a separately qualified model.
+
+## Tenant fairness
+
+`fairness::allocate_tenant_weighted_max_min` allocates a single declared bottleneck in two stages: first among caller-supplied tenant principal IDs, then among flows inside each tenant. Opening more flows under the same tenant therefore does not create additional aggregate tenant entitlement. Tenant identity authentication/binding remains the caller's responsibility; this allocator does not authenticate principals or inspect packet content.
+
+The allocator uses integer bits-per-second, positive tenant/flow weights, hard minimum service floors, deterministic largest-remainder tie-breaking, a 512-flow bound and overflow rejection. It explicitly reports unused capacity when requested demand is exhausted and fails closed when the sum of minimum floors cannot fit the bottleneck. Jain fairness is reported only among backlogged tenants/flows; demand-limited entities are not marked unfair for failing to consume unrequested capacity.
+
+It is a resource budget reference, not a replacement for fq_codel, CAKE or a kernel RAN scheduler. The benchmark profile compares those real queueing baselines separately.
+
 ## Hard constraints and bounded behavior
 
 The model excludes paths that are broker-ineligible, unauthorized, stale, below the trust/MTU floor, have zero or invalid capacity/loss, exhausted data allowance, or missing declared failure-domain identity.
