@@ -301,11 +301,13 @@ LNF is an integration programme, not a reason to create parallel projects. The f
 1. Review the LNF architecture PR #207 and reconcile it with the owner issues listed above.
 2. Finish the software-only provider-neutral broker contract in PR #64, including reviewed dependency lockfiles; its existing exact-head test pass is not live network evidence.
 3. Qualify the offline multipath model/profile in PR #211, then use issue #212 to measure real MPTCP subflows in an isolated namespace lab with exact kernel, path-manager, scheduler and congestion-control pins.
-4. Run the isolated OpenWrt/two-WAN fault matrix and local-only service campaign on named gateway revisions; keep VM, hardware-bench and field evidence distinct.
-5. In parallel, use Symthaea #1100/#4834 to qualify a small redundant routed-fabric topology against Batfish and live FRR probes; do not give this adapter production actuation authority.
-6. Use Sol-Atlas #323/#325 to model a named service topology with power and backhaul common-cause failures using the existing shared service-network evaluators.
-7. Continue DTN durability work and BPSec-vs-envelope interoperability research in `kitsune2-transport-dtn` issue #10.
-8. Only after these terrestrial paths have reproducible receipts should LNF open the broader NTN/space link conformance and contact-plan campaign.
+4. Qualify shared capacity domains and tenant-first weighted max-min in PR #215; tenant fairness must be evaluated across a shared bottleneck, not inferred from per-flow or per-session fairness.
+5. Use PR #216's read-only plan to generate and review the isolated fq_codel/TBF and CAKE campaign. Only a separate explicit-opt-in executor may create namespaces/install qdiscs, and it must bind cleanup to resources created by that run.
+6. Run the isolated OpenWrt/two-WAN fault matrix and local-only service campaign on named gateway revisions; keep VM, hardware-bench and field evidence distinct.
+7. In parallel, use Symthaea #1100/#4834 to qualify a small redundant routed-fabric topology against Batfish and live FRR probes; do not give this adapter production actuation authority.
+8. Use Sol-Atlas #323/#325 to model a named service topology with power and backhaul common-cause failures using the existing shared service-network evaluators.
+9. Continue DTN durability work and BPSec-vs-envelope interoperability research in `kitsune2-transport-dtn` issue #10.
+10. Only after these terrestrial paths have reproducible receipts should LNF open the broader NTN/space link conformance and contact-plan campaign.
 
 ## 9. Repository responsibility map
 
@@ -322,6 +324,8 @@ LNF is an integration programme, not a reason to create parallel projects. The f
 | sol-atlas-leptos | geospatial planning and infrastructure coordination | treating modeled coverage as field-tested coverage |
 | LNF multipath policy core (draft PR #211) | offline, deterministic session scheduling among broker-eligible paths | path discovery, subflow lifecycle, route mutation or transport wire changes |
 | LNF MPTCP namespace lab (issue #212) | real kernel negotiation, subflow observation, path failure and scheduler measurements in isolated namespaces | physical RF, carrier behavior or production router mutation |
+| LNF tenant fairness allocator (draft PR #215) | two-level weighted max-min allocation among tenant principals and then flows; shared-capacity-domain accounting | authenticating the tenant principal, packet queueing/AQM or replacing CAKE/fq_codel |
+| LNF isolated qdisc planner (draft PR #216) | read-only namespace command planning for fq_codel/TBF and CAKE triple-isolate comparisons | executing privileged qdisc changes, claiming benchmark results or changing host networking |
 
 ## 10. South African deployment gates
 
