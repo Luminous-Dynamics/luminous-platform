@@ -28,6 +28,8 @@ pub fn validate_draft2020_12(
 ) -> Result<(), CoreError> {
     let instance: serde_json::Value = serde_json::from_slice(instance_bytes)?;
     let schema: serde_json::Value = serde_json::from_slice(schema_bytes)?;
+    jsonschema::draft202012::meta::validate(&schema)
+        .map_err(|error| CoreError::InvalidSchema(error.to_string()))?;
     let validator = jsonschema::draft202012::options()
         .should_validate_formats(true)
         .build(&schema)
@@ -692,6 +694,30 @@ mod tests {
         assert!(loaded.workflows.iter().all(|workflow| workflow.step_count >= 10));
     }
 
+
+    #[test]
+    fn published_schemas_are_valid_draft_2020_12_meta_schemas() {
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        for path in [
+            manifest.join("../case-catalog.schema.json"),
+            manifest.join("../decision-result.schema.json"),
+        ] {
+            let bytes = fs::read(path).expect("schema must be present");
+            let schema: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+            jsonschema::draft202012::meta::validate(&schema)
+                .expect("published schema must satisfy the Draft 2020-12 meta-schema");
+        }
+    }
+
+    #[test]
+    fn invalid_draft_2020_12_schema_is_rejected_before_instance_validation() {
+        let schema = br#"{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"not-a-json-schema-type"}"#;
+        let instance = br#""value""#;
+        assert!(matches!(
+            validate_draft2020_12(instance, schema),
+            Err(CoreError::InvalidSchema(_))
+        ));
+    }
 
     #[test]
     fn published_catalog_passes_complete_draft_2020_12_schema() {
