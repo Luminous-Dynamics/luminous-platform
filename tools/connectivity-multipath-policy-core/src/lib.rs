@@ -125,6 +125,10 @@ pub enum ScheduleError {
     DuplicatePathId,
     TooManyPaths,
     TooManyTraceSegments,
+    ZeroTraceSegmentSize,
+    ZeroReassemblyTimeout,
+    ArithmeticOverflow,
+    InternalInvariant,
 }
 
 #[derive(Clone, Debug)]
