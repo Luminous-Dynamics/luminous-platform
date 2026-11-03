@@ -7,7 +7,8 @@
     "tenant_isolation": "per_episode_isolated",
     "credentials": "ephemeral_least_privilege_test_grants_only",
     "oracle_separation": "participant_and_observer_outside_agent_process",
-    "network": "no_production_network_routes"
+    "network": "no_production_network_routes",
+    "service_observer_max_age_ms": 5000
   },
   "cases": [
     {
