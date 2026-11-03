@@ -384,7 +384,7 @@
         },
         "zero_event_method": {
           "enum": [
-            "exact_clopper_pearson_one_sided",
+            "stratified_clopper_pearson_bonferroni_one_sided",
             "cluster_conservative_one_sided"
           ]
         },
