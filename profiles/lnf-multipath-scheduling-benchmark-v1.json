@@ -190,6 +190,13 @@
       "operator": "==",
       "target": 0,
       "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_CAPACITY_CONFIDENCE_001",
+      "metric": "capacity_domains_scheduled_below_the_declared_evidence_confidence_floor",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
     }
   ],
   "required_metrics": [
@@ -222,7 +229,13 @@
     "stale_or_expired_capacity_dependency_observation_count",
     "incomplete_capacity_dependency_observation_count",
     "capacity_domain_source_id_per_path",
-    "capacity_domains_scheduled_without_verified_dependency_evidence"
+    "capacity_domains_scheduled_without_verified_dependency_evidence",
+    "capacity_domain_evidence_confidence_ppm_per_path",
+    "minimum_capacity_domain_confidence_floor_ppm_per_run",
+    "capacity_domains_scheduled_below_confidence_floor",
+    "invalid_capacity_domain_evidence_window_count",
+    "future_capacity_domain_observation_count",
+    "capacity_domain_dependency_ids_over_128_bytes_count"
   ],
   "evidence_classes": [
     "deterministic_model",
@@ -245,7 +258,8 @@
     "The v1 disjoint-set rule is conservative and is not a general multi-commodity flow optimizer",
     "For more than two paths, deterministic greedy extension may underuse some globally feasible disjoint path sets",
     "Capacity-domain evidence-envelope validation does not cryptographically authenticate the inventory or prove the declared topology is truthful",
-    "The scheduler does not discover hidden shared bottlenecks; field negative controls must challenge declared dependency sets"
+    "The scheduler does not discover hidden shared bottlenecks; field negative controls must challenge declared dependency sets",
+    "Capacity-domain confidence ppm is a source-declared evidence grade, not a calibrated statistical probability"
   ],
   "baseline_methodology": {
     "scheduler_implementation_pinning_required": true,
@@ -256,5 +270,9 @@
     "redundant_transmission_is_separate_reliability_energy_control": true,
     "same_workload_and_path_trace_required": true,
     "same_cost_currency_required": true
+  },
+  "target_defaults": {
+    "minimum_capacity_domain_confidence_floor_ppm": 950000,
+    "capacity_domain_evidence_floor_status": "proposed_not_calibrated"
   }
 }
