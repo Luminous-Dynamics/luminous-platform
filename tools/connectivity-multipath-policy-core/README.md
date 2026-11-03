@@ -135,3 +135,20 @@ Every verdict has scope `single_paired_trial`. A paired pass is not programme-le
 5. Publish the full Pareto frontier (useful-task completion, p95/p99 latency, cost, energy, reorder bytes and fairness), preserving all failures.
 
 A passing unit suite proves code contracts only. It does not prove live multipath behavior, end-to-end improvement, production readiness or SOTA superiority.
+
+## L4S / DualQ evidence evaluator
+
+`l4s::evaluate_l4s_pair` evaluates one frozen Classic-only CUBIC control against one mixed CUBIC + L4S treatment. This is evidence classification only; it does not implement Prague, ECN, DualPI2, packet capture or qdisc actuation.
+
+The evaluator requires:
+- exact matched kernel/topology/qdisc/endpoint/traffic/impairment/ECN-path identities;
+- exact, provenance-bound AQM, Classic sender and Prague sender implementations;
+- transport-specific accurate ECN feedback: TCP Prague requires AccECN evidence at both endpoints; QUIC Prague uses its own ECN count-feedback mode;
+- ECT(1) observed at sender, receiver and the AQM, CE marking under a frozen congestion challenge, and feedback at sender;
+- explicit ECT(1)-to-L4S-queue and Classic-to-Classic-queue observation;
+- per-flow Classic control/treatment goodput records that reconcile to aggregate totals, per-flow starvation intervals and aggregate retention;
+- qdisc readback, counters and verified cleanup.
+
+DCTCP and BBRv3 are not treated as Prague-compliant public-Internet senders by this qualification profile. A DualPI2 source file or module being present is not evidence that the target kernel includes it, and DualPI2 support does not imply TCP Prague support. RFC 9331 requires accurate feedback for scalable congestion control; the exact transport feedback mode is therefore part of the acceptance contract.
+
+The 1 ms mean / 2 ms p99 queue-delay targets apply only when the frozen RFC 9332 reproduction conditions are independently verified. Every result is scoped to one paired trial; repeated-trial confidence intervals remain external benchmark analysis.
