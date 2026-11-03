@@ -2760,7 +2760,7 @@ mod operational_dependency_supplement_tests {
         let error = audit_operational_dependency_supplement(&bytes, SCHEMA)
             .expect_err("not-exercised monitor cannot claim complete");
         assert!(error.to_string().contains("monitor_claimed_complete_without_observed_process:runtime-monitor"));
-    
+    }
 
     #[test]
     fn alias_dependency_identity_is_reported_as_shared_even_with_distinct_node_ids() {
