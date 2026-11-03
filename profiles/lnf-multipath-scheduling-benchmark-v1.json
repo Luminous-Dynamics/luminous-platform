@@ -155,6 +155,20 @@
       "operator": "==",
       "target": 0,
       "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_CAPACITY_SET_OVERLAP_001",
+      "metric": "selected_paths_with_any_shared_capacity_domain_overlap",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_CAPACITY_SET_INVALID_001",
+      "metric": "paths_with_empty_blank_duplicate_or_oversized_capacity_domain_sets_scheduled",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
     }
   ],
   "required_metrics": [
@@ -177,9 +191,11 @@
     "in_order_application_release_latency_p50_p95_p99",
     "network_received_unique_bytes_vs_in_order_useful_application_bytes",
     "out_of_order_bytes_retained_at_reassembly_timeout",
-    "declared_shared_capacity_group_per_path",
+    "declared_capacity_domain_ids_set_per_path",
     "independent_failure_domain_count_vs_capacity_domain_count",
-    "scheduled_bytes_from_paths_sharing_one_capacity_domain"
+    "scheduled_bytes_from_paths_sharing_one_capacity_domain",
+    "capacity_domain_set_size_per_path",
+    "pairwise_capacity_domain_overlap_exclusions"
   ],
   "evidence_classes": [
     "deterministic_model",
@@ -198,7 +214,9 @@
     "No claim that deterministic segment traces reproduce ACK clocks, congestion control, retransmission or real radio propagation",
     "No claim that shared-risk-group synthetic loss is a calibrated common-cause failure distribution",
     "No claim that links in distinct failure domains provide independent bottleneck capacity",
-    "The v1 scheduler permits only one path per declared capacity group and may underuse real capacity within that group"
+    "The v1 scheduler permits only one path per declared capacity group and may underuse real capacity within that group",
+    "The v1 disjoint-set rule is conservative and is not a general multi-commodity flow optimizer",
+    "For more than two paths, deterministic greedy extension may underuse some globally feasible disjoint path sets"
   ],
   "baseline_methodology": {
     "scheduler_implementation_pinning_required": true,
