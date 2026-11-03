@@ -5,6 +5,7 @@
 //! packets. Its finish-time and reorder figures are planning estimates, not
 //! transport measurements.
 pub mod fairness;
+pub mod l4s;
 pub mod trace;
 
 use std::collections::BTreeSet;
