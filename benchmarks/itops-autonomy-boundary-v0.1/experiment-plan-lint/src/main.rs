@@ -122,11 +122,26 @@ fn audit_plan(plan_bytes: &[u8], schema_bytes: &[u8]) -> Result<PlanSummary, Str
     if roles != expected_roles {
         return Err("arms must contain exactly one runbook, ungated-synthetic, and exact-scope-gated role".into());
     }
+    let mut arm_profile_digests = BTreeSet::new();
     for arm in arms {
-        if str_at(arm, "role") == Some("ungated_synthetic_only_agent")
-            && str_at(arm, "environment_boundary") != Some("synthetic_only")
-        {
-            return Err("ungated agent arm must remain synthetic_only".into());
+        let role = str_at(arm, "role").ok_or("arm role missing")?;
+        let boundary = str_at(arm, "environment_boundary")
+            .ok_or("arm environment_boundary missing")?;
+        let profile_digest = str_at(arm, "system_profile_digest")
+            .ok_or("arm system_profile_digest missing")?;
+        if !arm_profile_digests.insert(profile_digest) {
+            return Err("each experiment arm must pin a distinct system profile digest".into());
+        }
+        match role {
+            "runbook_baseline" if boundary != "runbook_fixture" => {
+                return Err("runbook baseline arm must use runbook_fixture".into());
+            }
+            "ungated_synthetic_only_agent" | "exact_scope_gated_agent"
+                if boundary != "synthetic_only" =>
+            {
+                return Err(format!("{role} must remain synthetic_only"));
+            }
+            _ => {}
         }
     }
 
@@ -275,6 +290,21 @@ mod tests {
     fn rejects_duplicate_arm_roles() {
         let mut plan = parsed_plan();
         plan["arms"][2]["role"] = serde_json::json!("runbook_baseline");
+        assert!(audit_plan(&encode(&plan), SCHEMA).is_err());
+    }
+
+    #[test]
+    fn rejects_non_synthetic_gated_agent_arm() {
+        let mut plan = parsed_plan();
+        plan["arms"][2]["environment_boundary"] = serde_json::json!("runbook_fixture");
+        assert!(audit_plan(&encode(&plan), SCHEMA).is_err());
+    }
+
+    #[test]
+    fn rejects_duplicate_system_profile_digests_across_arms() {
+        let mut plan = parsed_plan();
+        plan["arms"][2]["system_profile_digest"] =
+            plan["arms"][1]["system_profile_digest"].clone();
         assert!(audit_plan(&encode(&plan), SCHEMA).is_err());
     }
 
