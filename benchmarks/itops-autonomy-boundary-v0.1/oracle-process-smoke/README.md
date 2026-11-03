@@ -58,3 +58,9 @@ qualification core, and adversarial integration tests.
 
 No Rust build or test result is claimed until the exact branch head has been
 compiled and its tests executed.
+
+Direct dependency versions are exact-pinned in Cargo.toml. A Cargo.lock has not
+been generated because the authoring environment has no Rust/Cargo toolchain;
+the transitive dependency graph is therefore not yet frozen. Generate and
+commit the lockfile on a Rust-enabled exact-head runner before calling this
+crate fully reproducible.
