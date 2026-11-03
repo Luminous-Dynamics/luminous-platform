@@ -98,7 +98,8 @@
         "required_scalar_identity",
         "all_arms_must_match_identity",
         "mismatched_identity_disposition",
-        "implementation_identity_must_be_exact"
+        "implementation_identity_must_be_exact",
+        "implementation_provenance_contract"
       ],
       "properties": {
         "required_digests": {
@@ -117,7 +118,9 @@
             "measurement_duration_us",
             "tcp_congestion_control",
             "mptcp_congestion_control",
-            "mptcp_scheduler"
+            "mptcp_scheduler",
+            "mptcp_scheduler_provenance",
+            "mptcp_congestion_control_provenance"
           ]
         },
         "all_arms_must_match_identity": {
@@ -128,6 +131,9 @@
         },
         "implementation_identity_must_be_exact": {
           "const": true
+        },
+        "implementation_provenance_contract": {
+          "const": "in_tree_implementation_is_bound_to_kernel_build_sha256; external_implementation_requires_its_own_artifact_sha256"
         }
       }
     },
@@ -144,7 +150,9 @@
         "cleanup_verification_required",
         "unsupported_or_missing_is_not_pass",
         "fixed_point_ratio_unit",
-        "statistical_confidence_intervals"
+        "statistical_confidence_intervals",
+        "paired_gate_scope",
+        "programme_qualification_requires_external_repeated_trial_analysis"
       ],
       "properties": {
         "mptcp_kernel_support_required": {
@@ -177,6 +185,12 @@
         "statistical_confidence_intervals": {
           "type": "string",
           "minLength": 1
+        },
+        "paired_gate_scope": {
+          "const": "single_paired_trial_only"
+        },
+        "programme_qualification_requires_external_repeated_trial_analysis": {
+          "const": true
         }
       }
     },
@@ -325,8 +339,8 @@
     },
     "explicit_non_claims": {
       "type": "array",
-      "minItems": 9,
-      "maxItems": 9,
+      "minItems": 10,
+      "maxItems": 10,
       "uniqueItems": true,
       "items": {
         "type": "string",
