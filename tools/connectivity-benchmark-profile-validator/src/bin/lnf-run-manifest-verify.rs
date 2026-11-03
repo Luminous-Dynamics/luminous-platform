@@ -5,7 +5,7 @@
 //! deployment authorization.
 
 use jsonschema::draft202012;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 use std::env;
@@ -66,17 +66,20 @@ const SOURCE_PINS: [SourcePin; 4] = [
 ];
 
 const REQUIRED_SCENARIOS: [&str; 12] = [
-    "E2E-00", "E2E-01", "E2E-02", "E2E-03", "E2E-04", "E2E-05",
-    "E2E-06", "E2E-07", "E2E-08", "E2E-09", "E2E-10", "E2E-11",
+    "E2E-00", "E2E-01", "E2E-02", "E2E-03", "E2E-04", "E2E-05", "E2E-06", "E2E-07", "E2E-08",
+    "E2E-09", "E2E-10", "E2E-11",
 ];
 
 const REQUIRED_NODES: [&str; 6] = [
-    "client", "gateway", "local_service", "dtn_sender", "dtn_receiver", "observer",
+    "client",
+    "gateway",
+    "local_service",
+    "dtn_sender",
+    "dtn_receiver",
+    "observer",
 ];
 
-const REQUIRED_LINKS: [&str; 4] = [
-    "lan-client-gateway", "wan-a", "wan-b", "dtn-delay-path",
-];
+const REQUIRED_LINKS: [&str; 4] = ["lan-client-gateway", "wan-a", "wan-b", "dtn-delay-path"];
 
 const REQUIRED_BENCHMARK_IDS: [&str; 8] = [
     "POLICY_HARD_CONSTRAINTS_001",
@@ -90,8 +93,8 @@ const REQUIRED_BENCHMARK_IDS: [&str; 8] = [
 ];
 
 fn read_bounded(path: &Path) -> Result<Vec<u8>, String> {
-    let file = fs::File::open(path)
-        .map_err(|error| format!("cannot open {}: {error}", path.display()))?;
+    let file =
+        fs::File::open(path).map_err(|error| format!("cannot open {}: {error}", path.display()))?;
     let mut limited = file.take((MAX_INPUT_BYTES + 1) as u64);
     let mut bytes = Vec::new();
     limited
@@ -224,7 +227,10 @@ fn validate_source_pins(manifest: &Value, repo_root: &Path) -> Vec<String> {
 
     let mut seen = BTreeSet::new();
     for binding in bindings {
-        let id = binding.get("id").and_then(Value::as_str).unwrap_or("<missing>");
+        let id = binding
+            .get("id")
+            .and_then(Value::as_str)
+            .unwrap_or("<missing>");
         if !seen.insert(id.to_owned()) {
             errors.push(format!("source binding {id} is duplicated"));
             continue;
@@ -298,7 +304,9 @@ fn validate_benchmarks(manifest: &Value, profile: &Value) -> Vec<String> {
         .filter_map(|item| item.get("id").and_then(Value::as_str))
         .collect();
 
-    let selected = manifest.get("selected_benchmarks").and_then(Value::as_array);
+    let selected = manifest
+        .get("selected_benchmarks")
+        .and_then(Value::as_array);
     let Some(selected) = selected else {
         return vec!["selected_benchmarks must be an array".to_owned()];
     };
@@ -321,7 +329,9 @@ fn validate_benchmarks(manifest: &Value, profile: &Value) -> Vec<String> {
 
     for required in REQUIRED_BENCHMARK_IDS {
         if !selected_ids.contains(required) {
-            errors.push(format!("required campaign benchmark {required} is not selected"));
+            errors.push(format!(
+                "required campaign benchmark {required} is not selected"
+            ));
         }
     }
 
@@ -385,9 +395,15 @@ fn validate_topology(manifest: &Value) -> Vec<String> {
         errors.push("semantic identity must remain separate from runtime identity".to_owned());
     }
 
-    if let Some(nodes) = topology.and_then(|value| value.get("nodes")).and_then(Value::as_array) {
+    if let Some(nodes) = topology
+        .and_then(|value| value.get("nodes"))
+        .and_then(Value::as_array)
+    {
         for node in nodes {
-            let id = node.get("id").and_then(Value::as_str).unwrap_or("<unknown>");
+            let id = node
+                .get("id")
+                .and_then(Value::as_str)
+                .unwrap_or("<unknown>");
             if node.get("provenance").and_then(Value::as_str) != Some("synthetic") {
                 errors.push(format!("node {id} must remain synthetic in this fixture"));
             }
@@ -399,11 +415,21 @@ fn validate_topology(manifest: &Value) -> Vec<String> {
         }
     }
 
-    if let Some(links) = topology.and_then(|value| value.get("links")).and_then(Value::as_array) {
+    if let Some(links) = topology
+        .and_then(|value| value.get("links"))
+        .and_then(Value::as_array)
+    {
         let mut wan_domains = BTreeSet::new();
         for link in links {
-            let id = link.get("id").and_then(Value::as_str).unwrap_or("<unknown>");
-            if link.get("physical_technology_claimed").and_then(Value::as_bool) != Some(false) {
+            let id = link
+                .get("id")
+                .and_then(Value::as_str)
+                .unwrap_or("<unknown>");
+            if link
+                .get("physical_technology_claimed")
+                .and_then(Value::as_bool)
+                != Some(false)
+            {
                 errors.push(format!("link {id} must not claim a physical technology"));
             }
             if matches!(id, "wan-a" | "wan-b")
@@ -436,7 +462,10 @@ fn validate_workloads(manifest: &Value) -> Vec<String> {
 
     let mut seen = BTreeSet::new();
     for workload in workloads {
-        let id = workload.get("id").and_then(Value::as_str).unwrap_or("<missing>");
+        let id = workload
+            .get("id")
+            .and_then(Value::as_str)
+            .unwrap_or("<missing>");
         if !seen.insert(id.to_owned()) {
             errors.push(format!("workload {id} is duplicated"));
             continue;
@@ -533,7 +562,11 @@ fn validate_manifest(
     if manifest.get("status").and_then(Value::as_str) != Some("design_fixture_only") {
         errors.push("manifest status must remain design_fixture_only".to_owned());
     }
-    if manifest.get("run_id").and_then(Value::as_str).is_none_or(|id| !id.starts_with("fixture-")) {
+    if manifest
+        .get("run_id")
+        .and_then(Value::as_str)
+        .is_none_or(|id| !id.starts_with("fixture-"))
+    {
         errors.push("run_id must remain a non-executed fixture identifier".to_owned());
     }
 
@@ -705,13 +738,20 @@ mod tests {
         let (schema, mut manifest, profile, root) = fixtures();
         manifest["claim_ceiling"]["field_observed"] = json!(true);
         let errors = validate_manifest(&schema, &manifest, &profile, &root);
-        assert!(errors.iter().any(|error| error.contains("claim_ceiling/field_observed")));
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("claim_ceiling/field_observed"))
+        );
     }
 
     #[test]
     fn required_outage_scenario_cannot_be_omitted() {
         let (schema, mut manifest, profile, root) = fixtures();
-        manifest["scenario_ids"].as_array_mut().expect("array").pop();
+        manifest["scenario_ids"]
+            .as_array_mut()
+            .expect("array")
+            .pop();
         let errors = validate_manifest(&schema, &manifest, &profile, &root);
         assert!(errors.iter().any(|error| error.contains("scenario_ids")));
     }
@@ -719,8 +759,7 @@ mod tests {
     #[test]
     fn duplicate_wan_failure_domains_are_rejected() {
         let (schema, mut manifest, profile, root) = fixtures();
-        manifest["topology"]["links"][2]["failure_domain"] =
-            json!("wan-a-independent-netem");
+        manifest["topology"]["links"][2]["failure_domain"] = json!("wan-a-independent-netem");
         let errors = validate_manifest(&schema, &manifest, &profile, &root);
         assert!(errors.iter().any(|error| error.contains("failure domains")));
     }
@@ -730,7 +769,11 @@ mod tests {
         let (schema, mut manifest, profile, root) = fixtures();
         manifest["selected_benchmarks"][0] = json!("NOT_A_REAL_BENCHMARK");
         let errors = validate_manifest(&schema, &manifest, &profile, &root);
-        assert!(errors.iter().any(|error| error.contains("selected_benchmarks")));
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("selected_benchmarks"))
+        );
     }
 
     #[test]
@@ -739,7 +782,11 @@ mod tests {
         manifest["source_bindings"][3]["verification_method"] =
             json!("local_git_blob_at_pinned_commit");
         let errors = validate_manifest(&schema, &manifest, &profile, &root);
-        assert!(errors.iter().any(|error| error.contains("verification_method")));
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("verification_method"))
+        );
     }
 
     #[test]
@@ -755,6 +802,10 @@ mod tests {
         let (mut schema, manifest, profile, root) = fixtures();
         schema["properties"]["status"]["$ref"] = json!("https://example.invalid/remote.json");
         let errors = validate_manifest(&schema, &manifest, &profile, &root);
-        assert!(errors.iter().any(|error| error.contains("only local fragment references")));
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("only local fragment references"))
+        );
     }
 }
