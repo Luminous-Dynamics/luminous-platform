@@ -67,6 +67,8 @@ These are not interchangeable. Two paths may fail independently but still share 
 
 `fairness::allocate_tenant_weighted_max_min` allocates a single declared bottleneck in two stages: first among caller-supplied tenant principal IDs, then among flows inside each tenant. Opening more flows under the same tenant therefore does not create additional aggregate tenant entitlement. Tenant identity authentication/binding remains the caller's responsibility; this allocator does not authenticate principals or inspect packet content.
 
+Flow fairness is reported **within each tenant's allocated budget**, not across flows belonging to different tenants. The report includes each tenant's backlogged-flow count and Jain index where at least two flows are backlogged, plus the worst measurable tenant result. The tenant-level index is reported separately. This preserves the hierarchy: equal entitlement between tenants first, then weighted flow sharing inside each tenant. A tenant with one flow must not make the cross-tenant flow score look unfair merely because another tenant has more concurrent flows.
+
 The allocator uses integer bits-per-second, positive tenant/flow weights, hard minimum service floors, deterministic largest-remainder tie-breaking, a 512-flow bound and overflow rejection. It explicitly reports unused capacity when requested demand is exhausted and fails closed when the sum of minimum floors cannot fit the bottleneck. Jain fairness is reported only among backlogged tenants/flows; demand-limited entities are not marked unfair for failing to consume unrequested capacity.
 
 It is a resource budget reference, not a replacement for fq_codel, CAKE or a kernel RAN scheduler. The benchmark profile compares those real queueing baselines separately.
@@ -100,6 +102,23 @@ cargo test --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml -
 cargo clippy --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml --all-targets -- -D warnings
 cargo fmt --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml -- --check
 ```
+
+## MPTCP coexistence evidence evaluator
+
+`coexistence::evaluate_best_path_improvement` and `coexistence::evaluate_shared_bottleneck_do_no_harm` evaluate paired measured summaries. They do not implement MPTCP, simulate congestion control or actuate a kernel.
+
+The best-path gate requires separate identities for path-A TCP, path-B TCP and MPTCP trials, verifies that their kernel/topology/qdisc/workload/impairment/seed/duration/controller identities match, and evaluates MPTCP application goodput against the better single-path TCP reference.
+
+The shared-bottleneck gate compares a TCP+TCP control with an MPTCP+TCP treatment at the same declared bottleneck rate and experiment identity. It reports:
+- MPTCP goodput relative to mean per-flow goodput in the TCP+TCP control;
+- companion TCP retention relative to that same control reference;
+- total treatment goodput relative to total control goodput.
+
+The default proposed thresholds are MPTCP share <= 1.10x the single-TCP reference and companion TCP retention >= 0.90x. These are engineering targets, not results or universal constants. The profile and issue #222 define the wider experiment. Mismatched identities are inconclusive, unsupported kernel/controller arms are unsupported, a single negotiated subflow fails the multipath gate, missing counters are inconclusive, and unverified cleanup fails qualification.
+
+The evaluator uses checked integer ratios in parts-per-million; confidence intervals and uncertainty analysis remain in the external benchmark layer. It does not infer physical capacity independence from different IP addresses or path names.
+
+Every verdict has scope `single_paired_trial`. A paired pass is not programme-level statistical qualification: the external analysis must retain all repetitions and failures and compute the declared confidence intervals before promoting the programme. The exact kernel build digest binds in-tree TCP/MPTCP congestion-control and scheduler code; every out-of-tree TCP or MPTCP controller and scheduler must provide its own artifact SHA-256 in the paired identity.
 
 ## Required next steps before a performance claim
 
