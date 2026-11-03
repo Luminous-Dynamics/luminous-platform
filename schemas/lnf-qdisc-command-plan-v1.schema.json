@@ -71,7 +71,8 @@
               "workload-server",
               "workload-client",
               "capture",
-              "cleanup"
+              "cleanup",
+              "post-cleanup-capture"
             ]
           },
           "parallel_group": {
