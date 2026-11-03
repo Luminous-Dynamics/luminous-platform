@@ -1,0 +1,385 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/lnf-qdisc-namespace-profile-v1.schema.json",
+  "title": "LNF Isolated Qdisc Tenant-Fairness Profile v1",
+  "description": "Strict campaign definition for isolated fq_codel and CAKE experiments. Profile validation is not experiment execution.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "status",
+    "reviewed_on",
+    "objective",
+    "execution_stage",
+    "topology",
+    "safety_contract",
+    "qdisc_arms",
+    "shaping_rate_bounds_bps",
+    "workload_bounds",
+    "scenario_ids",
+    "baselines",
+    "required_artifacts",
+    "required_metrics",
+    "benchmarks",
+    "evidence_classes",
+    "explicit_non_claims"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.lnf-qdisc-namespace-profile.v1"
+    },
+    "profile_id": {
+      "const": "lnf-qdisc-isolated-tenant-fairness-v1"
+    },
+    "status": {
+      "const": "draft_targets_not_results"
+    },
+    "reviewed_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "execution_stage": {
+      "const": "read_only_command_plan_only"
+    },
+    "topology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "namespaces",
+        "bottleneck",
+        "tenant_addressing",
+        "gateway_bridge",
+        "host_default_route",
+        "host_interface_or_route_mutation",
+        "host_qdisc_mutation",
+        "public_network_access",
+        "nat_enabled",
+        "ipv4_prefixes"
+      ],
+      "properties": {
+        "namespaces": {
+          "const": [
+            "gateway",
+            "server",
+            "tenant_a",
+            "tenant_b"
+          ]
+        },
+        "bottleneck": {
+          "const": "gateway namespace veth WAN egress"
+        },
+        "tenant_addressing": {
+          "const": "one stable source IP per tenant"
+        },
+        "gateway_bridge": {
+          "const": true
+        },
+        "host_default_route": {
+          "const": false
+        },
+        "host_interface_or_route_mutation": {
+          "const": false
+        },
+        "host_qdisc_mutation": {
+          "const": false
+        },
+        "public_network_access": {
+          "const": false
+        },
+        "nat_enabled": {
+          "const": false
+        },
+        "ipv4_prefixes": {
+          "const": [
+            "10.77.0.0/24",
+            "10.77.1.0/30"
+          ]
+        }
+      }
+    },
+    "safety_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "explicit_execution_opt_in_required",
+        "default_mode_is_read_only_plan",
+        "argv_only_no_shell",
+        "unsupported_environment_is_not_pass",
+        "namespace_inventory_preflight_required",
+        "cleanup_only_for_namespaces_created_by_this_run",
+        "qdisc_is_installed_only_inside_gateway_namespace",
+        "qdisc_readback_required",
+        "raw_payload_capture",
+        "subscriber_data_or_provider_credentials"
+      ],
+      "properties": {
+        "explicit_execution_opt_in_required": {
+          "const": true
+        },
+        "default_mode_is_read_only_plan": {
+          "const": true
+        },
+        "argv_only_no_shell": {
+          "const": true
+        },
+        "unsupported_environment_is_not_pass": {
+          "const": true
+        },
+        "namespace_inventory_preflight_required": {
+          "const": true
+        },
+        "cleanup_only_for_namespaces_created_by_this_run": {
+          "const": true
+        },
+        "qdisc_is_installed_only_inside_gateway_namespace": {
+          "const": true
+        },
+        "qdisc_readback_required": {
+          "const": true
+        },
+        "raw_payload_capture": {
+          "const": false
+        },
+        "subscriber_data_or_provider_credentials": {
+          "const": false
+        }
+      }
+    },
+    "qdisc_arms": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "type",
+          "options",
+          "host_flow_isolation"
+        ],
+        "properties": {
+          "id": {
+            "enum": [
+              "fq_codel",
+              "cake_besteffort_triple_isolate",
+              "cake_diffserv3_triple_isolate",
+              "cake_diffserv4_triple_isolate"
+            ]
+          },
+          "type": {
+            "enum": [
+              "fq_codel",
+              "cake"
+            ]
+          },
+          "tin": {
+            "enum": [
+              "besteffort",
+              "diffserv3",
+              "diffserv4"
+            ]
+          },
+          "options": {
+            "type": "array",
+            "minItems": 2,
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "host_flow_isolation": {
+            "enum": [
+              "per_5_tuple_flow",
+              "source_destination_host_and_flow"
+            ]
+          }
+        }
+      }
+    },
+    "shaping_rate_bounds_bps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimum",
+        "maximum"
+      ],
+      "properties": {
+        "minimum": {
+          "const": 1000000
+        },
+        "maximum": {
+          "const": 1000000000
+        }
+      }
+    },
+    "workload_bounds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "duration_seconds",
+        "parallel_flows_per_tenant",
+        "total_flows_maximum"
+      ],
+      "properties": {
+        "duration_seconds": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "minimum",
+            "maximum"
+          ],
+          "properties": {
+            "minimum": {
+              "const": 5
+            },
+            "maximum": {
+              "const": 300
+            }
+          }
+        },
+        "parallel_flows_per_tenant": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "minimum",
+            "maximum"
+          ],
+          "properties": {
+            "minimum": {
+              "const": 1
+            },
+            "maximum": {
+              "const": 32
+            }
+          }
+        },
+        "total_flows_maximum": {
+          "const": 64
+        }
+      }
+    },
+    "scenario_ids": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^QDISC-[0-9]{2}$"
+      }
+    },
+    "baselines": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "fq_codel_exact_kernel",
+          "cake_besteffort_triple_isolate_exact_kernel",
+          "cake_diffserv3_triple_isolate_exact_kernel",
+          "cake_diffserv4_triple_isolate_exact_kernel",
+          "cake_flows_ablation_if_supported",
+          "cake_dual_srchost_ablation_if_supported",
+          "cake_dual_dsthost_ablation_if_supported",
+          "naive_equal_per_flow_negative_control"
+        ]
+      }
+    },
+    "required_artifacts": {
+      "type": "array",
+      "minItems": 16,
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required_metrics": {
+      "type": "array",
+      "minItems": 16,
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "benchmarks": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "metric",
+          "operator",
+          "target",
+          "target_status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^QDISC_[A-Z0-9_]{3,80}$"
+          },
+          "metric": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operator": {
+            "enum": [
+              "==",
+              ">=",
+              "baseline_first"
+            ]
+          },
+          "target": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "target_status": {
+            "enum": [
+              "proposed_target",
+              "baseline_first"
+            ]
+          }
+        }
+      }
+    },
+    "evidence_classes": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "read_only_command_plan",
+          "network_namespace_or_vm_emulation",
+          "hardware_bench",
+          "field_observed"
+        ]
+      }
+    },
+    "explicit_non_claims": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}
