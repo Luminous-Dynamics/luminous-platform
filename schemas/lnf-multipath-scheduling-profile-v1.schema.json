@@ -182,8 +182,8 @@
     },
     "benchmarks": {
       "type": "array",
-      "minItems": 12,
-      "maxItems": 12,
+      "minItems": 17,
+      "maxItems": 17,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -227,12 +227,13 @@
     },
     "required_metrics": {
       "type": "array",
-      "minItems": 22,
+      "minItems": 30,
       "uniqueItems": true,
       "items": {
         "type": "string",
         "minLength": 1
-      }
+      },
+      "maxItems": 30
     },
     "evidence_classes": {
       "type": "array",
@@ -251,8 +252,8 @@
     },
     "explicit_non_claims": {
       "type": "array",
-      "minItems": 10,
-      "maxItems": 10,
+      "minItems": 14,
+      "maxItems": 14,
       "uniqueItems": true,
       "items": {
         "type": "string",
