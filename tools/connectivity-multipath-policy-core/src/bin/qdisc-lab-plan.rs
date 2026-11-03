@@ -65,6 +65,7 @@ fn parse_args() -> Result<QdiscProfile, String> {
 
     let expected = [
         "run-suffix",
+        "scenario-id",
         "arm",
         "rate-bps",
         "duration-seconds",
@@ -94,6 +95,7 @@ fn parse_args() -> Result<QdiscProfile, String> {
 
     Ok(QdiscProfile {
         run_suffix: values.get("run-suffix").cloned().unwrap_or_default(),
+        scenario_id: values.get("scenario-id").cloned().unwrap_or_default(),
         arm,
         shaping_rate_bps: parse("rate-bps")?,
         duration_seconds: u16::try_from(parse("duration-seconds")?)
@@ -113,6 +115,7 @@ fn main() {
                 concat!(
                     "Usage: qdisc-lab-plan\n",
                     "  --run-suffix <1-8-lowercase-alphanumeric>\n",
+                    "  --scenario-id <QDISC-01|QDISC-02|QDISC-03>\\n",
                     "  --arm <fq_codel|cake_besteffort|cake_diffserv3|cake_diffserv4>\n",
                     "  --rate-bps <1000000..1000000000>\n",
                     "  --duration-seconds <5..300>\n",
@@ -149,6 +152,10 @@ fn main() {
     println!(
         "  \"run_suffix\": \"{}\",",
         json_escape(&plan.run_suffix)
+    );
+    println!(
+        "  \\"scenario_id\\": \\"{}\\",",
+        json_escape(&plan.scenario_id)
     );
     println!("  \\"qdisc_arm\\": \\"{}\\",",
         json_escape(plan.qdisc_arm)
