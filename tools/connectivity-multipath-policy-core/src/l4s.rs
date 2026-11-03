@@ -87,6 +87,9 @@ pub struct PairIdentity {
     pub measurement_duration_us: u64,
     pub link_rate_bps: u64,
     pub base_rtt_us: u64,
+    /// Frozen maximum contiguous no-service interval tolerated for a
+    /// continuously backlogged Classic flow in this paired experiment.
+    pub classic_starvation_threshold_us: u64,
 }
 
 impl PairIdentity {
@@ -109,6 +112,7 @@ impl PairIdentity {
             || self.warmup_us >= self.measurement_duration_us
             || self.link_rate_bps == 0
             || self.base_rtt_us == 0
+            || self.classic_starvation_threshold_us == 0
         {
             return Err(L4sEvidenceError::InvalidDecisionDuration);
         }
@@ -166,7 +170,8 @@ pub struct ClassicFlowPair {
     pub backlogged: bool,
     pub control_goodput_bps: u64,
     pub treatment_goodput_bps: u64,
-    pub zero_service_duration_us: u64,
+    /// Maximum contiguous no-service interval while this flow was backlogged.
+    pub max_zero_service_gap_us: u64,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -193,7 +198,8 @@ pub struct MixedL4sTreatment {
     pub l4s_queue_delay_average_us: u64,
     pub l4s_queue_delay_p99_us: u64,
     pub classic_queue_delay_p99_us: u64,
-    pub classic_zero_service_duration_us: u64,
+    /// Maximum contiguous no-service interval across backlogged Classic flows.
+    pub classic_max_zero_service_gap_us: u64,
     /// True only when rate, RTT, workload and measurement conditions match
     /// the frozen RFC 9332 reproduction profile for which delay targets apply.
     pub rfc9332_reproduction_profile_verified: bool,
@@ -766,8 +772,15 @@ pub fn evaluate_l4s_pair(
     let mut paired_treatment_goodput = 0_u64;
     let mut worst_backlogged_classic_flow_retention_ppm: Option<u64> = None;
     let mut per_flow_starvation = false;
+    if treatment.classic_flow_pairs.len() > 512 {
+        return Err(L4sEvidenceError::InvalidDecisionDuration);
+    }
     for flow in &treatment.classic_flow_pairs {
-        if flow.flow_id.trim().is_empty() || !seen_classic_flow_ids.insert(flow.flow_id.as_str()) {
+        if flow.flow_id.trim().is_empty()
+            || flow.flow_id.len() > 128
+            || flow.flow_id.chars().any(char::is_control)
+            || !seen_classic_flow_ids.insert(flow.flow_id.as_str())
+        {
             let failure = gate(
                 "L4S_CLASSIC_FLOW_RETENTION_001",
                 GateDisposition::Inconclusive,
@@ -827,9 +840,8 @@ pub fn evaluate_l4s_pair(
             .map_err(|_| L4sEvidenceError::ArithmeticOverflow)?;
             worst_backlogged_classic_flow_retention_ppm =
                 Some(worst_backlogged_classic_flow_retention_ppm.map_or(ratio, |current| current.min(ratio)));
-            per_flow_starvation |= flow.zero_service_duration_us > 0;
-        } else if flow.zero_service_duration_us > 0 {
-            per_flow_starvation = true;
+            per_flow_starvation |= flow.max_zero_service_gap_us
+                > treatment.identity.classic_starvation_threshold_us;
         }
     }
 
@@ -891,14 +903,24 @@ pub fn evaluate_l4s_pair(
         ),
     };
 
-    let starvation = if per_flow_starvation || treatment.classic_zero_service_duration_us > 0
+    let maximum_zero_service_gap_us = treatment
+        .classic_flow_pairs
+        .iter()
+        .filter(|flow| flow.backlogged)
+        .map(|flow| flow.max_zero_service_gap_us)
+        .max()
+        .unwrap_or(0)
+        .max(treatment.classic_max_zero_service_gap_us);
+    let starvation = if per_flow_starvation
+        || treatment.classic_max_zero_service_gap_us
+            > treatment.identity.classic_starvation_threshold_us
     {
         gate(
             "L4S_CLASSIC_STARVATION_001",
             GateDisposition::Fail,
             "backlogged_classic_flow_experienced_zero_service",
             Some(0),
-            Some(treatment.classic_zero_service_duration_us),
+            Some(maximum_zero_service_gap_us),
         )
     } else {
         gate(
@@ -906,7 +928,7 @@ pub fn evaluate_l4s_pair(
             GateDisposition::Pass,
             "no_zero_service_interval_reported_for_backlogged_classic_flows",
             Some(0),
-            Some(treatment.classic_zero_service_duration_us),
+            Some(maximum_zero_service_gap_us),
         )
     };
 
@@ -970,6 +992,7 @@ mod tests {
             measurement_duration_us: 30_000_000,
             link_rate_bps: 100_000_000,
             base_rtt_us: 15_000,
+            classic_starvation_threshold_us: 100_000,
         }
     }
 
@@ -1025,14 +1048,14 @@ mod tests {
                     backlogged: true,
                     control_goodput_bps: 22_500_000,
                     treatment_goodput_bps: 22_000_000,
-                    zero_service_duration_us: 0,
+                    max_zero_service_gap_us: 0,
                 },
                 ClassicFlowPair {
                     flow_id: "classic-b".to_owned(),
                     backlogged: true,
                     control_goodput_bps: 22_500_000,
                     treatment_goodput_bps: 22_000_000,
-                    zero_service_duration_us: 0,
+                    max_zero_service_gap_us: 0,
                 },
             ],
             ecn: EcnPathEvidence {
@@ -1053,7 +1076,7 @@ mod tests {
             l4s_queue_delay_average_us: 700,
             l4s_queue_delay_p99_us: 1_800,
             classic_queue_delay_p99_us: 12_000,
-            classic_zero_service_duration_us: 0,
+            classic_max_zero_service_gap_us: 0,
             rfc9332_reproduction_profile_verified: true,
         }
     }
@@ -1176,8 +1199,8 @@ mod tests {
     #[test]
     fn no_zero_service_is_required_for_backlogged_classic_flows() {
         let mut mixed = treatment();
-        mixed.classic_zero_service_duration_us = 10;
-        mixed.classic_flow_pairs[0].zero_service_duration_us = 10;
+        mixed.classic_max_zero_service_gap_us = 100_001;
+        mixed.classic_flow_pairs[0].max_zero_service_gap_us = 100_001;
         let result = evaluate_l4s_pair(&control(), &mixed, QualificationThresholds::default())
             .expect("valid pair");
         assert_eq!(result.classic_starvation.disposition, GateDisposition::Fail);
@@ -1233,7 +1256,7 @@ mod tests {
         let mut mixed = treatment();
         mixed.classic_goodput_bps = 44_000_000;
         mixed.classic_flow_pairs[0].treatment_goodput_bps = 0;
-        mixed.classic_flow_pairs[0].zero_service_duration_us = 100_000;
+        mixed.classic_flow_pairs[0].max_zero_service_gap_us = 100_001;
         mixed.classic_flow_pairs[1].treatment_goodput_bps = 44_000_000;
         let result = evaluate_l4s_pair(&control(), &mixed, QualificationThresholds::default())
             .expect("paired per-flow evidence");
