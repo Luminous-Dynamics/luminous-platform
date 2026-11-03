@@ -3,7 +3,7 @@
 //! It never executes commands, creates namespaces, changes routes or installs
 //! qdiscs. A separate future executor must require explicit user opt-in.
 
-use connectivity_multipath_policy_core::qdisc::{build_plan, QdiscArm, QdiscProfile};
+use connectivity_multipath_policy_core::qdisc::{QdiscArm, QdiscProfile, build_plan};
 use std::collections::BTreeMap;
 use std::env;
 use std::process;
@@ -111,20 +111,18 @@ fn main() {
     let profile = match parse_args() {
         Ok(profile) => profile,
         Err(error) if error == "help" => {
-            println!(
-                concat!(
-                    "Usage: qdisc-lab-plan\n",
-                    "  --run-suffix <1-8-lowercase-alphanumeric>\n",
-                    "  --scenario-id <QDISC-01|QDISC-02|QDISC-03>\\n",
-                    "  --arm <fq_codel|cake_besteffort|cake_diffserv3|cake_diffserv4>\n",
-                    "  --rate-bps <1000000..1000000000>\n",
-                    "  --duration-seconds <5..300>\n",
-                    "  --tenant-a-flows <1..32>\n",
-                    "  --tenant-b-flows <1..32>\n",
-                    "Emits a deterministic JSON argv plan only. No command is executed.\n",
-                    "No host interface/route/qdisc or public network is changed."
-                )
-            );
+            println!(concat!(
+                "Usage: qdisc-lab-plan\n",
+                "  --run-suffix <1-8-lowercase-alphanumeric>\n",
+                "  --scenario-id <QDISC-01|QDISC-02|QDISC-03>\n",
+                "  --arm <fq_codel|cake_besteffort|cake_diffserv3|cake_diffserv4>\n",
+                "  --rate-bps <1000000..1000000000>\n",
+                "  --duration-seconds <5..300>\n",
+                "  --tenant-a-flows <1..32>\n",
+                "  --tenant-b-flows <1..32>\n",
+                "Emits a deterministic JSON argv plan only. No command is executed.\n",
+                "No host interface/route/qdisc or public network is changed."
+            ));
             return;
         }
         Err(error) => {
@@ -142,28 +140,33 @@ fn main() {
     };
 
     println!("{{");
-    println!(
-        "  \"schema_version\": \"luminous.lnf-qdisc-command-plan.v1\","
-    );
-    println!(
-        "  \"profile_id\": \"{}\",",
-        json_escape(plan.profile_id)
-    );
-    println!(
-        "  \"run_suffix\": \"{}\",",
-        json_escape(&plan.run_suffix)
-    );
-    println!(
-        "  \"scenario_id\": \"{}\",",
-        json_escape(&plan.scenario_id)
-    );
+    println!("  \"schema_version\": \"luminous.lnf-qdisc-command-plan.v1\",");
+    println!("  \"profile_id\": \"{}\",", json_escape(plan.profile_id));
+    println!("  \"run_suffix\": \"{}\",", json_escape(&plan.run_suffix));
+    println!("  \"scenario_id\": \"{}\",", json_escape(&plan.scenario_id));
     println!("  \"qdisc_arm\": \"{}\",", json_escape(plan.qdisc_arm));
     println!("  \"shaping_rate_bps\": {},", plan.shaping_rate_bps);
-    println!("  \"tbf_minimum_kernel_hz\": {},", plan.tbf_minimum_kernel_hz.map(|value| value.to_string()).unwrap_or_else(|| "null".to_owned()));
-    println!("  \"tbf_burst_bytes\": {},", plan.tbf_burst_bytes.map(|value| value.to_string()).unwrap_or_else(|| "null".to_owned()));
+    println!(
+        "  \"tbf_minimum_kernel_hz\": {},",
+        plan.tbf_minimum_kernel_hz
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "null".to_owned())
+    );
+    println!(
+        "  \"tbf_burst_bytes\": {},",
+        plan.tbf_burst_bytes
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "null".to_owned())
+    );
     println!("  \"duration_seconds\": {},", plan.duration_seconds);
-    println!("  \"tenant_a_parallel_flows\": {},", plan.tenant_a_parallel_flows);
-    println!("  \"tenant_b_parallel_flows\": {},", plan.tenant_b_parallel_flows);
+    println!(
+        "  \"tenant_a_parallel_flows\": {},",
+        plan.tenant_a_parallel_flows
+    );
+    println!(
+        "  \"tenant_b_parallel_flows\": {},",
+        plan.tenant_b_parallel_flows
+    );
     println!("  \"host_interface_route_or_qdisc_mutation\": false,");
     println!("  \"public_network_access\": false,");
     println!("  \"nat_enabled\": false,");
@@ -178,7 +181,11 @@ fn main() {
     );
     println!("  \"commands\": [");
     for (index, command) in plan.commands.iter().enumerate() {
-        let comma = if index + 1 == plan.commands.len() { "" } else { "," };
+        let comma = if index + 1 == plan.commands.len() {
+            ""
+        } else {
+            ","
+        };
         let args = command
             .args
             .iter()
