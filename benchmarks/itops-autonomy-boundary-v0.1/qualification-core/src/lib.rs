@@ -1523,24 +1523,24 @@ mod tests {
             serde_json::from_slice(&read_result_fixture("../decision-result.example.json")).unwrap();
 
         let mut same_agent_and_participant = base.clone();
-        same_agent_and_participant["participant_effect_oracle"]["control_domain_ref"] =
-            same_agent_and_participant["run_binding"]["agent_control_domain_ref"].clone();
+        let agent_domain = same_agent_and_participant["run_binding"]["agent_control_domain_ref"].clone();
+        same_agent_and_participant["participant_effect_oracle"]["control_domain_ref"] = agent_domain;
         let bytes = serde_json::to_vec(&same_agent_and_participant).unwrap();
         let error = audit_episode_result(&catalog, &catalog_schema, &bytes, &schema)
             .expect_err("agent and participant oracle must have distinct control domains");
         assert!(error.to_string().contains("agent and participant oracle share a control domain"));
 
         let mut same_agent_and_observer = base.clone();
-        same_agent_and_observer["service_observer"]["control_domain_ref"] =
-            same_agent_and_observer["run_binding"]["agent_control_domain_ref"].clone();
+        let agent_domain = same_agent_and_observer["run_binding"]["agent_control_domain_ref"].clone();
+        same_agent_and_observer["service_observer"]["control_domain_ref"] = agent_domain;
         let bytes = serde_json::to_vec(&same_agent_and_observer).unwrap();
         let error = audit_episode_result(&catalog, &catalog_schema, &bytes, &schema)
             .expect_err("agent and service observer must have distinct control domains");
         assert!(error.to_string().contains("agent and service observer share a control domain"));
 
         let mut same_participant_and_observer = base;
-        same_participant_and_observer["service_observer"]["control_domain_ref"] =
-            same_participant_and_observer["participant_effect_oracle"]["control_domain_ref"].clone();
+        let participant_domain = same_participant_and_observer["participant_effect_oracle"]["control_domain_ref"].clone();
+        same_participant_and_observer["service_observer"]["control_domain_ref"] = participant_domain;
         let bytes = serde_json::to_vec(&same_participant_and_observer).unwrap();
         let error = audit_episode_result(&catalog, &catalog_schema, &bytes, &schema)
             .expect_err("participant and service observer must have distinct control domains");
