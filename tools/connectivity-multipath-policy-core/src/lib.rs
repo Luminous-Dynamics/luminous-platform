@@ -76,6 +76,8 @@ pub struct CapacityDomainEvidence {
     pub topology_sha256: String,
     /// False means the inventory cannot attest that every bottleneck is enumerated.
     pub complete: bool,
+    /// Operator-declared evidence confidence in parts per million (0..=1,000,000).
+    pub confidence_ppm: u32,
     /// Unix epoch milliseconds at which this observation was made.
     pub observed_at_unix_ms: u64,
     /// Unix epoch milliseconds after which this observation must not be used.
@@ -90,6 +92,9 @@ pub struct ScheduleRequest {
     /// Caller-supplied decision time; all capacity dependency evidence is
     /// checked against this exact timestamp for deterministic replay.
     pub now_unix_ms: u64,
+    /// Minimum operator-declared capacity-dependency evidence confidence in ppm.
+    /// This is an evidence-grade field, not a statistical probability.
+    pub minimum_capacity_domain_confidence_ppm: u32,
     pub intent: TrafficIntent,
     pub bytes: u64,
     pub deadline_us: Option<u64>,
@@ -155,6 +160,7 @@ pub enum ScheduleError {
     InvalidCurrencyCode,
     InvalidTopologyDigest,
     InvalidCurrentTime,
+    InvalidCapacityDomainConfidenceFloor,
     InvalidPathId,
     DuplicatePathId,
     TooManyPaths,
@@ -260,6 +266,12 @@ fn capacity_domain_evidence_error(
     if !evidence.complete {
         return Some("capacity_domain_evidence_incomplete");
     }
+    if evidence.confidence_ppm > 1_000_000 {
+        return Some("capacity_domain_evidence_confidence_invalid");
+    }
+    if evidence.confidence_ppm < request.minimum_capacity_domain_confidence_ppm {
+        return Some("capacity_domain_evidence_confidence_below_floor");
+    }
     if evidence.observed_at_unix_ms == 0
         || evidence.observed_at_unix_ms > request.now_unix_ms
     {
@@ -340,6 +352,11 @@ fn validate_request(request: &ScheduleRequest) -> Result<(), ScheduleError> {
     }
     if request.now_unix_ms == 0 {
         return Err(ScheduleError::InvalidCurrentTime);
+    }
+    if request.minimum_capacity_domain_confidence_ppm == 0
+        || request.minimum_capacity_domain_confidence_ppm > 1_000_000
+    {
+        return Err(ScheduleError::InvalidCapacityDomainConfidenceFloor);
     }
     if request.minimum_gain_ppm > 1_000_000 {
         return Err(ScheduleError::InvalidGainThreshold);
@@ -840,6 +857,7 @@ mod tests {
                 inventory_sha256: "a".repeat(64),
                 topology_sha256: "f".repeat(64),
                 complete: true,
+                confidence_ppm: 1_000_000,
                 observed_at_unix_ms: 900_000,
                 valid_until_unix_ms: 1_100_000,
             },
@@ -851,6 +869,7 @@ mod tests {
             task_id: "task-1".to_owned(),
             topology_sha256: "f".repeat(64),
             now_unix_ms: 1_000_000,
+            minimum_capacity_domain_confidence_ppm: 950_000,
             intent: TrafficIntent::BulkTransfer,
             bytes: 8 * 1_048_576,
             deadline_us: Some(5_000_000),
@@ -995,6 +1014,30 @@ mod tests {
         assert_eq!(
             result.exclusions[0].reason,
             "capacity_domain_inventory_digest_invalid"
+        );
+    }
+
+    #[test]
+    fn low_confidence_capacity_domain_inventory_is_excluded() {
+        let mut path = path("low-confidence", 10_000, 20_000_000, 10, "risk-a");
+        path.capacity_domain_evidence.confidence_ppm = 949_999;
+        let result = evaluate(&request(), &[path], Strategy::BestRtt).expect("valid path");
+        assert_eq!(result.mode, DecisionMode::NoRoute);
+        assert_eq!(
+            result.exclusions[0].reason,
+            "capacity_domain_evidence_confidence_below_floor"
+        );
+    }
+
+    #[test]
+    fn confidence_above_one_million_is_invalid() {
+        let mut path = path("invalid-confidence", 10_000, 20_000_000, 10, "risk-a");
+        path.capacity_domain_evidence.confidence_ppm = 1_000_001;
+        let result = evaluate(&request(), &[path], Strategy::BestRtt).expect("invalid evidence is excluded");
+        assert_eq!(result.mode, DecisionMode::NoRoute);
+        assert_eq!(
+            result.exclusions[0].reason,
+            "capacity_domain_evidence_confidence_invalid"
         );
     }
 
