@@ -9,6 +9,11 @@
     "schema_version",
     "profile_id",
     "run_suffix",
+    "tenant_b_parallel_flows",
+    "tenant_a_parallel_flows",
+    "duration_seconds",
+    "shaping_rate_bps",
+    "qdisc_arm",
     "host_interface_route_or_qdisc_mutation",
     "public_network_access",
     "nat_enabled",
@@ -111,6 +116,34 @@
           }
         }
       }
+    },
+    "qdisc_arm": {
+      "enum": [
+        "fq_codel",
+        "cake_besteffort_triple_isolate",
+        "cake_diffserv3_triple_isolate",
+        "cake_diffserv4_triple_isolate"
+      ]
+    },
+    "shaping_rate_bps": {
+      "type": "integer",
+      "minimum": 1000000,
+      "maximum": 1000000000
+    },
+    "duration_seconds": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 300
+    },
+    "tenant_a_parallel_flows": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 32
+    },
+    "tenant_b_parallel_flows": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 32
     }
   }
 }
