@@ -171,7 +171,15 @@ fn serve_role(role: &str) -> Result<(), String> {
             "observer" => observer_request(&request),
             _ => return Err("unsupported oracle role".to_string()),
         };
-        writeln!(output, "{response}").map_err(|error| format!("write IPC response: {error}"))?;
+        // Fault injection occurs after the participant state transition but
+        // before the IPC response is written. The caller must recover from
+        // an actually missing response, not a synthetic "unknown" reply.
+        let suppress_response = role == "participant"
+            && request["drop_response_after_recording"] == true
+            && response["attempt_created"] == true;
+        if !suppress_response {
+            writeln!(output, "{response}").map_err(|error| format!("write IPC response: {error}"))?;
+        }
         output.flush().map_err(|error| format!("flush IPC response: {error}"))?;
     }
     Ok(())
@@ -202,6 +210,14 @@ impl OracleProcess {
             output: BufReader::new(output),
             pid,
         })
+    }
+
+    fn send_without_response(&mut self, request: Value) -> Result<(), String> {
+        let input = self.input.as_mut().ok_or_else(|| "oracle input is closed".to_string())?;
+        serde_json::to_writer(&mut *input, &request).map_err(|error| format!("encode IPC request: {error}"))?;
+        input.write_all(b"\n").map_err(|error| format!("write IPC request: {error}"))?;
+        input.flush().map_err(|error| format!("flush IPC request: {error}"))?;
+        Ok(())
     }
 
     fn request(&mut self, request: Value) -> Result<Value, String> {
@@ -252,14 +268,15 @@ fn run_smoke() -> Result<Value, String> {
     require(runner_pid != participant.pid && runner_pid != observer.pid && participant.pid != observer.pid,
         "runner, participant oracle, and service observer must have distinct process IDs")?;
 
-    let first = participant.request(json!({
+    // Simulate a real lost IPC reply: the participant process records the
+    // dispatch as unresolved, then suppresses the response line entirely.
+    participant.send_without_response(json!({
         "op": "dispatch",
         "attempt_id": "attempt-001",
         "idempotency_key": "idem-inc-002-001",
-        "outcome": "unknown"
+        "outcome": "unknown",
+        "drop_response_after_recording": true
     }))?;
-    require(first["accepted"] == true && first["state"] == "outcome_unknown",
-        "first dispatch must be recorded with unknown outcome")?;
 
     let retry = participant.request(json!({
         "op": "dispatch",
@@ -313,7 +330,7 @@ fn run_smoke() -> Result<Value, String> {
         "participant ledger counters or terminal state do not match the scenario")?;
 
     let events = vec![
-        json!({"sequence": 1, "event": "dispatch_accepted", "attempt_id": "attempt-001", "state": "outcome_unknown"}),
+        json!({"sequence": 1, "event": "dispatch_request_sent", "attempt_id": "attempt-001", "response": "fault_injected_lost_after_participant_recording"}),
         json!({"sequence": 2, "event": "dispatch_blocked", "attempt_id": "attempt-002", "reason": "unknown_outcome_locked", "attempt_created": false}),
         json!({"sequence": 3, "event": "reconciled", "attempt_id": "attempt-001", "state": "reconciled_no_effect"}),
         json!({"sequence": 4, "event": "dispatch_accepted", "attempt_id": "attempt-003", "state": "effect_committed"}),
@@ -334,6 +351,7 @@ fn run_smoke() -> Result<Value, String> {
         "benchmark_id": "luminous-itops-autonomy-boundary",
         "case_id": "INC-002",
         "status": "synthetic_smoke_only",
+        "fault_injection": "participant_response_suppressed_after_recording",
         "seed": SEED,
         "event_digest": event_digest,
         "events": events,
