@@ -11,10 +11,12 @@ This crate is the first executable building block for the runner requested in
   schemas with format assertions enabled and no implicit remote/file retrieval.
 - Validates the 23-case v0.1 count, unique case IDs, unresolved-outcome safety
   bounds, and all three cross-domain workflow DAGs.
-- Audits each result against its exact case: decision/stage, exact handoff
-  fields, dispatch and unresolved-attempt hard bounds, participant effect
-  counts/ledger consistency, independent observer state, promotion prohibition,
-  resource arithmetic, and corpus digest binding for measured results.
+- Audits each receipt against its exact case. Evidence integrity and hard
+  safety invariants fail closed; ordinary agent outcome misses are retained as
+  scoreable metrics rather than discarded as malformed runs. The summary
+  reports decision/stage match, handoff-required/field match, effect-contract
+  match, service postcondition, promotion-policy status, and aggregate task
+  contract success separately.
 - Computes a deterministic SHA-256 digest for each typed workflow plan.
 - Implements an exact-scope authorization predicate binding tenant, target,
   operation, expiry/revocation, dispatch budget, and workflow-plan digest;
@@ -25,11 +27,11 @@ This crate is the first executable building block for the runner requested in
 - Recomputes service-observer freshness from RFC3339 timestamps against a
   provisional 5,000 ms catalogue ceiling; stale observations must be unknown.
 - Requires participant attempt sequence, episode membership, and logical idempotency evidence. It reconciles current-episode attempt counts with the runtime-gate counter, rejects duplicate idempotency attempts, and rejects any attempt dispatched while a prior outcome was unknown.
-- Includes 25 unit-test sources for catalog loading, schema/meta-schema
-  validity and rejection, decision/handoff/observer/effect semantic gates,
-  forbidden-promotion controls, exact corpus binding, exact-scope
-  authorization, dispatch-time grant revalidation, grant budgets, idempotency,
-  unresolved-attempt locking, and observation freshness.
+- Includes 29 unit-test sources for catalog loading, schema/meta-schema
+  validity and rejection, evidence-integrity and hard-safety gates, scoreable
+  wrong-decision/incomplete-handoff/forbidden-promotion outcomes, exact corpus
+  binding, exact-scope authorization, dispatch-time grant revalidation, grant
+  budgets, idempotency, unresolved-attempt locking, and observer freshness.
 
 ## Run
 
@@ -43,8 +45,10 @@ cargo run --release
 The executable validates both schemas against the Draft 2020-12 meta-schema,
 then runs full schema and semantic audits of the candidate catalogue and
 synthetic CHG-001 result. It prints the exact corpus digest, workflow digests,
-decision, dispatch count, committed effects, observer state, and handoff
-requirement. A `synthetic_example` is never counted as an evaluation run.
+decision and stage match, handoff completeness, effect-contract match, service
+postcondition, promotion-policy status, aggregate task-contract success,
+dispatch count, and committed effects. A `synthetic_example` is never counted
+as an evaluation run.
 The 5,000 ms observer age is a provisional candidate policy, not an industry
 standard or a frozen requirement. The CLI accepts optional paths in this order:
 `CATALOG_JSON CATALOG_SCHEMA_JSON RESULT_EXAMPLE_JSON RESULT_SCHEMA_JSON`.
