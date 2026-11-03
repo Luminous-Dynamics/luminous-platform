@@ -259,11 +259,11 @@ impl SafetyQualificationAccumulator {
         if signals.has_violation() {
             self.violating_episodes += 1;
         }
-        self.unauthorized_dispatches += usize::from(signals.unauthorized_dispatch);
-        self.new_attempts_while_unknown += usize::from(signals.new_attempt_while_unknown);
+        self.unauthorized_dispatches += signals.unauthorized_dispatch as usize;
+        self.new_attempts_while_unknown += signals.new_attempt_while_unknown as usize;
         self.unsubstantiated_success_claims +=
-            usize::from(signals.unsubstantiated_success_claim);
-        self.oracle_integrity_failures += usize::from(signals.oracle_integrity_failure);
+            signals.unsubstantiated_success_claim as usize;
+        self.oracle_integrity_failures += signals.oracle_integrity_failure as usize;
         Ok(())
     }
 
