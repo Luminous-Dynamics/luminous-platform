@@ -45,6 +45,7 @@ impl QdiscArm {
 pub struct QdiscProfile {
     /// 1-8 lowercase ASCII letters/digits; never used as an unchecked command fragment.
     pub run_suffix: String,
+    pub scenario_id: String,
     pub arm: QdiscArm,
     pub shaping_rate_bps: u64,
     pub duration_seconds: u16,
@@ -67,6 +68,7 @@ pub struct CommandSpec {
 pub struct CommandPlan {
     pub profile_id: &'static str,
     pub run_suffix: String,
+    pub scenario_id: String,
     pub qdisc_arm: &'static str,
     pub shaping_rate_bps: u64,
     pub duration_seconds: u16,
@@ -86,6 +88,8 @@ pub enum QdiscPlanError {
     InvalidShapingRate,
     InvalidDuration,
     InvalidFlowCount,
+    UnsupportedScenario,
+    ScenarioFlowMismatch,
     DuplicateNamespace,
     InvalidGeneratedPlan,
 }
@@ -116,6 +120,15 @@ fn validate_profile(profile: &QdiscProfile) -> Result<(), QdiscPlanError> {
             .is_none_or(|sum| sum > 2 * MAX_PARALLEL_FLOWS)
     {
         return Err(QdiscPlanError::InvalidFlowCount);
+    }
+    let expected_flows = match profile.scenario_id.as_str() {
+        "QDISC-01" => (1, 1),
+        "QDISC-02" => (8, 1),
+        "QDISC-03" => (32, 1),
+        _ => return Err(QdiscPlanError::UnsupportedScenario),
+    };
+    if (profile.tenant_a_parallel_flows, profile.tenant_b_parallel_flows) != expected_flows {
+        return Err(QdiscPlanError::ScenarioFlowMismatch);
     }
     Ok(())
 }
@@ -736,6 +749,7 @@ pub fn build_plan(profile: &QdiscProfile) -> Result<CommandPlan, QdiscPlanError>
     let plan = CommandPlan {
         profile_id: "lnf-qdisc-namespace-plan-v1",
         run_suffix: profile.run_suffix.clone(),
+        scenario_id: profile.scenario_id.clone(),
         qdisc_arm: profile.arm.as_str(),
         shaping_rate_bps: profile.shaping_rate_bps,
         duration_seconds: profile.duration_seconds,
@@ -759,6 +773,7 @@ mod tests {
     fn profile(arm: QdiscArm) -> QdiscProfile {
         QdiscProfile {
             run_suffix: "test01".to_owned(),
+            scenario_id: "QDISC-02".to_owned(),
             arm,
             shaping_rate_bps: 100_000_000,
             duration_seconds: 30,
@@ -938,6 +953,20 @@ mod tests {
         assert_eq!(inventory.program, "ip");
         assert_eq!(inventory.args, vec!["netns", "list"]);
         assert_eq!(inventory.phase, "preflight");
+    }
+
+    #[test]
+    fn plan_rejects_scenario_flow_count_mismatch() {
+        let mut invalid = profile(QdiscArm::FqCodel);
+        invalid.scenario_id = "QDISC-01".to_owned();
+        assert_eq!(build_plan(&invalid), Err(QdiscPlanError::ScenarioFlowMismatch));
+    }
+
+    #[test]
+    fn plan_rejects_unimplemented_scenario_id() {
+        let mut invalid = profile(QdiscArm::FqCodel);
+        invalid.scenario_id = "QDISC-09".to_owned();
+        assert_eq!(build_plan(&invalid), Err(QdiscPlanError::UnsupportedScenario));
     }
 
     #[test]
