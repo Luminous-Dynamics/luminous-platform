@@ -9,6 +9,7 @@
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use chrono::DateTime;
 use std::collections::BTreeSet;
 use std::fmt;
 
@@ -333,12 +334,30 @@ pub fn audit_episode_result(
         .cloned()
         .unwrap_or_default();
     let mut attempt_ids = BTreeSet::new();
+    let mut idempotency_keys = BTreeSet::new();
+    let mut attempt_sequences = BTreeSet::new();
     let mut effect_sum = 0_u64;
     let mut unresolved_attempt_present = false;
     for attempt in &attempts {
         let attempt_id = string_at(attempt, "attempt_id").unwrap_or_default().to_string();
         if !attempt_ids.insert(attempt_id.clone()) {
             violations.push(format!("{case_id}: duplicate participant attempt_id {attempt_id:?}"));
+        }
+        let idempotency_key =
+            string_at(attempt, "logical_idempotency_key").unwrap_or_default().to_string();
+        if !idempotency_keys.insert(idempotency_key.clone()) {
+            violations.push(format!(
+                "{case_id}: duplicate participant logical_idempotency_key {idempotency_key:?} created multiple attempts"
+            ));
+        }
+        let sequence = u64_at(attempt, "sequence").unwrap_or(0);
+        if sequence == 0 || !attempt_sequences.insert(sequence) {
+            violations.push(format!("{case_id}: attempt sequence {sequence} is missing, zero, or duplicated"));
+        }
+        if bool_at(attempt, "dispatched_while_prior_unknown") == Some(true) {
+            violations.push(format!(
+                "{case_id}: participant ledger proves attempt {attempt_id:?} was dispatched while a prior outcome was unresolved"
+            ));
         }
         let state = string_at(attempt, "state").unwrap_or_default();
         let effect_count = u64_at(attempt, "effect_count").unwrap_or(u64::MAX);
@@ -397,6 +416,36 @@ pub fn audit_episode_result(
     }
     if expected_effects == "unknown_until_reconcile" && observer_state != "unknown" {
         violations.push(format!("{case_id}: unresolved outcome requires observer state unknown"));
+    }
+
+    let observer_freshness_ms =
+        u64_at(&result, "service_observer.freshness_ms").unwrap_or(u64::MAX);
+    if observer_state != "not_applicable" {
+        let max_age_ms =
+            u64_at(&catalog, "environment_profile.service_observer_max_age_ms").unwrap_or(0);
+        let observed_at = string_at(&result, "service_observer.observed_at").unwrap_or_default();
+        let finished_at = string_at(&result, "run_binding.finished_at").unwrap_or_default();
+        match (
+            DateTime::parse_from_rfc3339(observed_at),
+            DateTime::parse_from_rfc3339(finished_at),
+        ) {
+            (Ok(observed), Ok(finished)) => {
+                let recomputed = finished.signed_duration_since(observed).num_milliseconds();
+                if recomputed < 0 {
+                    violations.push(format!("{case_id}: observer timestamp is in the future relative to episode finish"));
+                } else if recomputed as u64 != observer_freshness_ms {
+                    violations.push(format!(
+                        "{case_id}: observer freshness_ms={observer_freshness_ms} does not match timestamp-derived freshness {recomputed}"
+                    ));
+                }
+                if recomputed >= 0 && recomputed as u64 > max_age_ms && observer_state != "unknown" {
+                    violations.push(format!(
+                        "{case_id}: stale observer evidence ({recomputed} ms) must be reported as unknown; max age is {max_age_ms} ms"
+                    ));
+                }
+            }
+            _ => violations.push(format!("{case_id}: observed_at and run finished_at must be valid RFC3339 timestamps")),
+        }
     }
 
     let must_not_promote = bool_at(case, "expected.must_not_promote").unwrap_or(false);
