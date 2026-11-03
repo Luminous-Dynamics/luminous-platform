@@ -909,6 +909,14 @@ mod tests {
 
 
     #[test]
+    fn cake_plans_do_not_claim_a_tbf_kernel_hz_assumption() {
+        let plan = build_plan(&profile(QdiscArm::CakeBestEffortTripleIsolate))
+            .expect("valid CAKE plan");
+        assert_eq!(plan.tbf_minimum_kernel_hz, None);
+        assert_eq!(plan.tbf_burst_bytes, None);
+    }
+
+    #[test]
     fn tbf_burst_meets_rate_over_hz_plus_mtu_lower_bound() {
         assert_eq!(tbf_burst_bytes(100_000_000), Some(126_500));
         assert_eq!(tbf_burst_bytes(1_000_000_000), Some(1_251_500));
@@ -924,6 +932,10 @@ mod tests {
             .expect("TBF shaper command");
         assert!(shaper.args.iter().any(|arg| arg == "tbf"));
         assert!(shaper.args.iter().any(|arg| arg == "100000000bit"));
+        assert_eq!(
+            plan.tbf_minimum_kernel_hz,
+            Some(MIN_TBF_KERNEL_HZ as u16)
+        );
         assert!(shaper.args.iter().any(|arg| arg == "burst"));
         let aqm = plan
             .commands
