@@ -1,11 +1,10 @@
-pub mod trace;
-
 //! Deterministic, privilege-free multipath session scheduling model.
 //!
 //! The model consumes broker-admitted path observations. It does not discover
 //! addresses, create subflows, modify routes, inspect packet contents, or send
 //! packets. Its finish-time and reorder figures are planning estimates, not
 //! transport measurements.
+pub mod trace;
 
 use std::collections::BTreeSet;
 
