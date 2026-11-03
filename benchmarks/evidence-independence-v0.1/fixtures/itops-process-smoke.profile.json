@@ -92,7 +92,13 @@
           "evidence_refs": []
         }
       },
-      "depends_on": []
+      "depends_on": [],
+      "dependency_inventory": {
+        "status": "complete_asserted",
+        "evidence_refs": [
+          "fixture:closed-world-three-component-topology"
+        ]
+      }
     },
     {
       "component_id": "participant",
@@ -184,7 +190,13 @@
           "component_id": "runner",
           "relation": "observes_input_from"
         }
-      ]
+      ],
+      "dependency_inventory": {
+        "status": "complete_asserted",
+        "evidence_refs": [
+          "fixture:closed-world-three-component-topology"
+        ]
+      }
     },
     {
       "component_id": "observer",
@@ -276,7 +288,13 @@
           "component_id": "runner",
           "relation": "observes_input_from"
         }
-      ]
+      ],
+      "dependency_inventory": {
+        "status": "complete_asserted",
+        "evidence_refs": [
+          "fixture:closed-world-three-component-topology"
+        ]
+      }
     }
   ],
   "claims": [
