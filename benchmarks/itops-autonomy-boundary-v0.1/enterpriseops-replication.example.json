@@ -110,6 +110,7 @@
   "reference_reproduction": {
     "required_for_direct_comparison": true,
     "reproduced": false,
-    "system_profile_digest": null
+    "system_profile_digest": null,
+    "profile_artifact_uri": null
   }
 }
