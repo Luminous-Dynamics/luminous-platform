@@ -58,6 +58,7 @@ pub struct OperationalDependencyClaimAudit {
     pub shared_fault_domain_keys: Vec<String>,
     pub required_not_exercised_dependency_ids: Vec<String>,
     pub required_unknown_dependency_ids: Vec<String>,
+    pub compared_component_not_exercised: bool,
     pub claim_ceiling: String,
 }
 
@@ -376,6 +377,7 @@ pub fn audit_operational_dependency_supplement(
                 .collect(),
             required_not_exercised_dependency_ids: not_exercised.into_iter().collect(),
             required_unknown_dependency_ids: unknown.into_iter().collect(),
+            compared_component_not_exercised,
             claim_ceiling,
         });
     }
@@ -413,22 +415,48 @@ pub fn audit_operational_dependency_supplement(
         let monitor_id = monitor
             .get("monitor_component_id")
             .and_then(serde_json::Value::as_str);
+        let monitor_status = monitor
+            .get("status")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or_default();
         if let Some(monitor_id) = monitor_id {
-            if !components.contains_key(monitor_id) {
-                violations.push(format!("monitor_component_unknown:{monitor_id}"));
-            }
-            if monitor
-                .get("status")
-                .and_then(serde_json::Value::as_str)
-                == Some("complete")
-                && components
-                    .get(monitor_id)
-                    .and_then(|component| component.get("role"))
+            if let Some(monitor_component) = components.get(monitor_id).copied() {
+                if monitor_component
+                    .get("role")
                     .and_then(serde_json::Value::as_str)
                     != Some("runtime_access_monitor")
-            {
-                violations.push(format!("monitor_component_role_mismatch:{monitor_id}"));
+                {
+                    violations.push(format!("monitor_component_role_mismatch:{monitor_id}"));
+                }
+                if monitor_status == "complete"
+                    && monitor_component
+                        .get("execution_status")
+                        .and_then(serde_json::Value::as_str)
+                        != Some("process_observed")
+                {
+                    violations.push(format!("monitor_claimed_complete_without_observed_process:{monitor_id}"));
+                }
+                if monitor_status == "not_exercised"
+                    && monitor_component
+                        .get("execution_status")
+                        .and_then(serde_json::Value::as_str)
+                        != Some("not_exercised")
+                {
+                    violations.push(format!("monitor_not_exercised_status_mismatch:{monitor_id}"));
+                }
+            } else {
+                violations.push(format!("monitor_component_unknown:{monitor_id}"));
             }
+        } else if monitor_status == "complete" {
+            violations.push("complete_monitor_missing_component_id".to_string());
+        }
+        if monitor_status == "not_exercised"
+            && monitor
+                .get("evidence_refs")
+                .and_then(serde_json::Value::as_array)
+                .is_some_and(|items| !items.is_empty())
+        {
+            violations.push("not_exercised_monitor_has_evidence_refs".to_string());
         }
     }
 
@@ -2651,3 +2679,85 @@ mod operational_dependency_supplement_tests {
         assert!(error.to_string().contains("claim_findings_mismatch:inc-002-participant-effect"));
     }
 }
+
+
+    #[test]
+    fn fixture_explicitly_reports_unexercised_agent_comparator() {
+        let audit = audit_operational_dependency_supplement(FIXTURE, SCHEMA)
+            .expect("fixture audit");
+        assert!(audit.claims.iter().all(|claim| claim.compared_component_not_exercised));
+        for claim in &audit.claims {
+            let expected = fixture_value();
+            let claim_doc = expected["claim_bindings"]
+                .as_array()
+                .expect("claims")
+                .iter()
+                .find(|item| item["claim_id"] == claim.claim_id)
+                .expect("claim fixture");
+            assert!(claim_doc["expected_claim_findings"]
+                .as_array()
+                .expect("expected findings")
+                .iter()
+                .any(|finding| finding == "compared_component_not_exercised"));
+        }
+    }
+
+    #[test]
+    fn duplicate_dependency_ids_cannot_hide_shared_canonical_domain_identity() {
+        let mut fixture = fixture_value();
+        let host = fixture["dependencies"]
+            .as_array()
+            .expect("dependency array")
+            .iter()
+            .find(|dependency| dependency["dependency_id"] == "host-kernel")
+            .expect("host dependency")
+            .clone();
+        let mut alias = host.clone();
+        alias["dependency_id"] = serde_json::json!("host-kernel-alias");
+        fixture["dependencies"]
+            .as_array_mut()
+            .expect("dependency array")
+            .push(alias);
+
+        let runner_edge = fixture["dependency_edges"]
+            .as_array_mut()
+            .expect("edge array")
+            .iter_mut()
+            .find(|edge| {
+                edge["from_component_id"] == "runner"
+                    && edge["dependency_id"] == "host-kernel"
+            })
+            .expect("runner host edge");
+        runner_edge["dependency_id"] = serde_json::json!("host-kernel-alias");
+
+        let bytes = serde_json::to_vec(&fixture).expect("mutated fixture JSON");
+        let audit = audit_operational_dependency_supplement(&bytes, SCHEMA)
+            .expect("aliased host identity is still a shared dependency");
+        let participant = audit
+            .claims
+            .iter()
+            .find(|claim| claim.claim_id == "inc-002-participant-effect")
+            .expect("participant claim");
+        assert!(participant
+            .shared_dependency_ids
+            .contains(&"host-kernel".to_string()));
+        assert!(participant
+            .shared_fault_domain_keys
+            .iter()
+            .any(|key| key == "ExecutionProvider=fixture:smoke-host-001"));
+    }
+
+    #[test]
+    fn monitor_cannot_claim_complete_without_observed_runtime_monitor() {
+        let mut fixture = fixture_value();
+        fixture["monitor_coverage"]["status"] = serde_json::json!("complete");
+        fixture["monitor_coverage"]["events_observed"] = serde_json::json!(10);
+        fixture["monitor_coverage"]["events_dropped"] = serde_json::json!(0);
+        fixture["monitor_coverage"]["sequence_continuity"] = serde_json::json!(true);
+        fixture["monitor_coverage"]["evidence_refs"] =
+            serde_json::json!(["fixture:fake-monitor-receipt"]);
+        let bytes = serde_json::to_vec(&fixture).expect("mutated fixture JSON");
+        let error = audit_operational_dependency_supplement(&bytes, SCHEMA)
+            .expect_err("not-exercised monitor cannot claim complete");
+        assert!(error.to_string().contains("monitor_claimed_complete_without_observed_process:runtime-monitor"));
+    }
