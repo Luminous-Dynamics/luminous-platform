@@ -217,8 +217,8 @@ fn qdisc_args(profile: &QdiscProfile) -> Vec<(String, Vec<String>)> {
                     .map(str::to_owned),
             );
             vec![
-                ("tbf-shaper-install".to_owned(), shaper),
-                ("fq-codel-child-install".to_owned(), aqm),
+                ("tbf_shaper_install_argv".to_owned(), shaper),
+                ("fq_codel_child_install_argv".to_owned(), aqm),
             ]
         }
         arm => {
@@ -231,7 +231,7 @@ fn qdisc_args(profile: &QdiscProfile) -> Vec<(String, Vec<String>)> {
             // No NAT exists in this topology. Explicit nonat keeps the tested
             // source/destination IP identities visible at the shaped egress.
             args.push("nonat".to_owned());
-            vec![("cake-shaper-install".to_owned(), args)]
+            vec![("qdisc_install_argv".to_owned(), args)]
         }
     }
 }
@@ -872,7 +872,7 @@ mod tests {
         let shaper = plan
             .commands
             .iter()
-            .find(|command| command.artifact_id.as_deref() == Some("tbf-shaper-install"))
+            .find(|command| command.artifact_id.as_deref() == Some("tbf_shaper_install_argv"))
             .expect("TBF shaper command");
         assert!(shaper.args.iter().any(|arg| arg == "tbf"));
         assert!(shaper.args.iter().any(|arg| arg == "100000000bit"));
@@ -880,7 +880,7 @@ mod tests {
         let aqm = plan
             .commands
             .iter()
-            .find(|command| command.artifact_id.as_deref() == Some("fq-codel-child-install"))
+            .find(|command| command.artifact_id.as_deref() == Some("fq_codel_child_install_argv"))
             .expect("fq_codel child command");
         assert!(aqm.args.iter().any(|arg| arg == "parent"));
         assert!(aqm.args.iter().any(|arg| arg == "1:1"));
