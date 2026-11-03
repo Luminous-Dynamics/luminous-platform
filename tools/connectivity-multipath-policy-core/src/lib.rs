@@ -800,8 +800,7 @@ mod tests {
         let mut usd = path("usd", 1_000, 100_000_000, 1, "usd");
         usd.cost_currency = "USD".to_owned();
         let zar = path("zar", 10_000, 10_000_000, 10, "zar");
-        let result = evaluate(&request(), &[usd, zar], Strategy::LowestCost)
-            .expect("valid inputs");
+        let result = evaluate(&request(), &[usd, zar], Strategy::LowestCost).expect("valid inputs");
         assert_eq!(result.mode, DecisionMode::SinglePath);
         assert_eq!(result.allocations[0].path_id, "zar");
         assert_eq!(result.exclusions[0].reason, "cost_currency_mismatch");
