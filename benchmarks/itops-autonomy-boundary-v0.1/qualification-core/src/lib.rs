@@ -2760,4 +2760,46 @@ mod operational_dependency_supplement_tests {
         let error = audit_operational_dependency_supplement(&bytes, SCHEMA)
             .expect_err("not-exercised monitor cannot claim complete");
         assert!(error.to_string().contains("monitor_claimed_complete_without_observed_process:runtime-monitor"));
+    
+
+    #[test]
+    fn alias_dependency_identity_is_reported_as_shared_even_with_distinct_node_ids() {
+        let mut fixture = fixture_value();
+        let host = fixture["dependencies"]
+            .as_array()
+            .expect("dependency array")
+            .iter()
+            .find(|dependency| dependency["dependency_id"] == "host-kernel")
+            .expect("host dependency")
+            .clone();
+        let mut alias = host.clone();
+        alias["dependency_id"] = serde_json::json!("host-kernel-alias");
+        fixture["dependencies"]
+            .as_array_mut()
+            .expect("dependency array")
+            .push(alias);
+
+        let edge = fixture["dependency_edges"]
+            .as_array_mut()
+            .expect("edge array")
+            .iter_mut()
+            .find(|edge| {
+                edge["from_component_id"] == "runner"
+                    && edge["dependency_id"] == "host-kernel"
+            })
+            .expect("runner host edge");
+        edge["dependency_id"] = serde_json::json!("host-kernel-alias");
+
+        let bytes = serde_json::to_vec(&fixture).expect("mutated fixture JSON");
+        let audit = audit_operational_dependency_supplement(&bytes, SCHEMA)
+            .expect("canonical identity overlap must remain visible");
+        let claim = audit
+            .claims
+            .iter()
+            .find(|claim| claim.claim_id == "inc-002-participant-effect")
+            .expect("participant claim");
+        assert!(claim.shared_dependency_ids.contains(&"host-kernel".to_string()));
+        assert!(claim.shared_fault_domain_keys
+            .contains(&"ExecutionProvider=fixture:smoke-host-001".to_string()));
     }
+}
