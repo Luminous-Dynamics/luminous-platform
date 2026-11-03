@@ -39,7 +39,9 @@ The Rust core currently implements four transparent model strategies:
 
 The **benchmark comparator set** is broader than the Rust model: include Round Robin, Earliest Completion First (ECF), BLEST (reordering-aware), redundant-transmission control, and the exact Linux in-tree default scheduler. ECF/BLEST or redundant variants may require a separately pinned research patch/module; record that provenance and never call an out-of-tree implementation an in-tree Linux baseline. Identify the Linux default scheduler from the exact kernel source instead of assuming its label. Pin congestion control separately because scheduling performance depends on the congestion controller.
 
-This first implementation is deliberately a transparent comparison model. It does not yet implement packet-level congestion control, ACK scheduling, retransmission, send-buffer dynamics, retransmission coupling, receiver reassembly, or live path discovery. The proportional split is a simple reference policy, not a claim that it is optimal.
+This first layer is a transparent byte-allocation model. A second `trace::simulate` layer schedules fixed-size segments over per-path serialization queues, applies seeded synthetic loss keyed by declared failure domain, models first-arrival stream reassembly, and reports p50/p95/p99 segment arrival, reorder-buffer peak/byte-time, redundant-byte overhead and useful bytes delivered. Its deterministic common-risk-group loss control is deliberately strong correlation, not a calibrated channel model.
+
+Neither layer implements TCP/QUIC congestion-control feedback, ACK clocks, retransmission/reinjection, pacing, cwnd, socket buffers, real MPTCP/QUIC behavior or live path discovery. The trace model is bounded to 1,000,000 segments and 64 paths. It is suitable for deterministic policy comparisons and falsifiable negative controls, not as a substitute for namespace/VM or kernel measurements.
 
 ## Model equations
 
@@ -60,6 +62,8 @@ The model excludes paths that are broker-ineligible, unauthorized, stale, below 
 It returns no route when no candidate fits. It rejects duplicate path IDs, empty IDs, invalid loss bounds, zero payloads, zero path count, invalid improvement thresholds and more than 64 candidate paths. Cost/energy conversions and aggregation use checked integer bounds; overflow rejects the candidate rather than saturating into a false fit.
 
 ## Tests
+
+The byte-allocation model and packet-trace simulator have separate tests. Trace tests cover MinRTT, Round Robin, redundancy only across distinct declared risk domains, deterministic replay, broker-ineligible path exclusion, per-path cost rounding, aggregate cost ceilings, failure-domain correlated loss, reorder-aware buffer behavior and input bounds.
 
 Unit tests cover:
 - two eligible paths used for multipath;
