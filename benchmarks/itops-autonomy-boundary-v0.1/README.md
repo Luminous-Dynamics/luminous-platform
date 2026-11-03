@@ -1,6 +1,6 @@
 # ITOPS Autonomy Boundary Benchmark v0.1
 
-**Status:** Protocol draft and schema/example only. No public benchmark run or SOTA claim is made by this document.  
+**Status:** Candidate corpus plus protocol, schemas, catalog linter, and an executable qualification-core prototype. No complete agent runner, public benchmark run, or SOTA claim is made.  
 **Scope:** Agentic IT operations in a controlled, synthetic environment.  
 **Primary question:** Can an agent make useful operational progress while respecting authority, proving side effects independently, and stopping safely when the outcome is unknown?
 
@@ -27,11 +27,11 @@ This v0.1 directory currently contains:
 - [decision-result.example.json](decision-result.example.json) — a synthetic example showing a request for authority before dispatch.
 - [case-catalog.schema.json](case-catalog.schema.json) — the JSON Schema for scenario definitions.
 - [case-catalog.v0.1.json](case-catalog.v0.1.json) — 23 candidate synthetic scenarios spanning operational safety cases plus three multi-step cross-domain workflows; the long-horizon cases encode ordered dependencies, system domains, expected evidence, and blocked mutation stages.
-- [catalog-lint/](catalog-lint/) — a small Rust CLI for cross-field catalog invariants and exact corpus SHA-256 output. It does not execute agents or implement full JSON Schema validation.
+- [catalog-lint/](catalog-lint/) — a small Rust CLI for cross-field catalog invariants and exact corpus SHA-256 output. It does not execute agents or implement full JSON Schema validation.\n- [qualification-core/](qualification-core/) — a Rust prototype for candidate-catalog loading, workflow-DAG validation, exact-scope plan-digest authorization, unresolved-attempt locking, and service-observation freshness. It is not a complete runner or process-isolated oracle.
 
 The scenario catalog is marked `candidate_not_frozen`. It is a starting corpus for review, not yet an authoritative benchmark set. Every case needs independent review of task clarity, oracle observability, permissions, state transitions, expected action, and negative-control behavior before freezing.
 
-This README defines the proposed protocol and evaluation method. It does **not** provide a complete runner, environment image, executable environment, baseline measurements, or external audit. The example result is not a measured benchmark result.
+This README defines the proposed protocol and evaluation method. The qualification-core provides executable local primitives, but it does **not** provide a complete runner, agent integration, environment image, process-isolated oracle, baseline measurements, or external audit. The example result is not a measured benchmark result.
 
 The result schema's `opsbench_case_id` enum is cross-checked against the catalog. The result records the exact corpus digest and scenario-variant digest so future revisions cannot silently change the meaning of a benchmark result.
 
@@ -136,7 +136,7 @@ The corpus is still provisional. Once cases and oracles are independently review
 
 These are research gates, not current performance claims. EnterpriseOps-Gym's published 34.1% top-model result is a useful warning about task difficulty, but it is not a directly comparable score: a valid comparison requires running the same public task version and evaluation rules. The target is to beat baselines on both useful completion and safety, not to trade one for the other.
 
-## Experiment arms
+## Qualification-core prototype\n\nFrom the qualification-core directory:\n\n\`\`\`sh\ncargo test\ncargo run --release\n\`\`\`\n\nThe CLI reports the exact-byte corpus digest and each typed workflow-plan digest. Unit tests cover exact tenant/target/operation/plan binding, revocation and expiry, duplicate idempotency keys, unknown-outcome dispatch locks, and stale observer behavior. These test sources have not yet been compiled or executed. The ledger and observer remain in-process models; process separation and agent integration are tracked in [issue #213](https://github.com/Luminous-Dynamics/luminous-platform/issues/213).\n\n## Experiment arms
 
 Compare the following arms under identical tasks and environment images:
 
