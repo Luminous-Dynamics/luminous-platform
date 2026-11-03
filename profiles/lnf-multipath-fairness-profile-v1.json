@@ -135,7 +135,6 @@
   "required_metrics": [
     "tenant_aggregate_allocated_bps",
     "tenant_weighted_jain_index_ppm_for_backlogged_tenants",
-    "flow_weighted_jain_index_ppm_for_backlogged_flows",
     "tenant_minimum_service_floor_violation_count",
     "flow_minimum_service_floor_violation_count",
     "tenant_flow_count",
@@ -150,7 +149,9 @@
     "loss_and_ecn_marks",
     "cpu_memory_and_scheduler_decision_cost",
     "capacity_domain_overlap_and_accounting",
-    "flow_churn_and_tenant_join_leave_response"
+    "flow_churn_and_tenant_join_leave_response",
+    "worst_tenant_flow_weighted_jain_index_ppm_for_tenants_with_two_or_more_backlogged_flows",
+    "per_tenant_flow_weighted_jain_index_ppm"
   ],
   "evidence_classes": [
     "deterministic_model",
