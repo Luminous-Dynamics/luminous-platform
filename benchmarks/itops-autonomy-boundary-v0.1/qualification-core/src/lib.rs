@@ -433,6 +433,8 @@ pub struct DispatchPermit {
     operation: String,
     plan_sha256: String,
     max_dispatches: u64,
+    not_before_unix: i64,
+    expires_at_unix: i64,
 }
 
 impl DispatchPermit {
@@ -487,6 +489,8 @@ pub fn authorize_mutation(
         operation: grant.operation.clone(),
         plan_sha256: grant.plan_sha256.clone(),
         max_dispatches: grant.max_dispatches,
+        not_before_unix: grant.not_before_unix,
+        expires_at_unix: grant.expires_at_unix,
     })
 }
 
@@ -518,6 +522,9 @@ pub enum LedgerError {
     UnknownOutcomeLocked,
     DuplicateIdempotencyKey,
     GrantBindingMismatch,
+    GrantRevoked,
+    PermitNotYetValid,
+    PermitExpired,
     AttemptNotFound,
     InvalidTransition,
 }
@@ -541,8 +548,38 @@ impl ParticipantEffectLedger {
     pub fn dispatch(
         &mut self,
         permit: DispatchPermit,
+        current_grant: &AuthorityGrant,
+        now_unix: i64,
         idempotency_key: impl Into<String>,
     ) -> Result<u64, LedgerError> {
+        // Recheck the latest grant at the point of dispatch. A permit minted
+        // before expiry/revocation must not remain usable after its authority
+        // window closes or its grant is rebound.
+        if current_grant.revoked {
+            return Err(LedgerError::GrantRevoked);
+        }
+        if now_unix < current_grant.not_before_unix
+            || now_unix < permit.not_before_unix
+        {
+            return Err(LedgerError::PermitNotYetValid);
+        }
+        if now_unix >= current_grant.expires_at_unix
+            || now_unix >= permit.expires_at_unix
+        {
+            return Err(LedgerError::PermitExpired);
+        }
+        if current_grant.grant_id != permit.grant_id
+            || current_grant.tenant_binding != permit.tenant_binding
+            || current_grant.target_binding != permit.target_binding
+            || current_grant.operation != permit.operation
+            || current_grant.plan_sha256 != permit.plan_sha256
+            || current_grant.max_dispatches != permit.max_dispatches
+            || current_grant.not_before_unix != permit.not_before_unix
+            || current_grant.expires_at_unix != permit.expires_at_unix
+        {
+            return Err(LedgerError::GrantBindingMismatch);
+        }
+
         let idempotency_key = idempotency_key.into();
         if idempotency_key.is_empty() { return Err(LedgerError::EmptyIdempotencyKey); }
         if self.attempts.iter().any(|a| a.idempotency_key == idempotency_key) {
@@ -838,28 +875,28 @@ mod tests {
         grant.max_dispatches = 2;
         let permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
         let mut ledger = ParticipantEffectLedger::default();
-        let first = ledger.dispatch(permit, "idem-001").unwrap();
+        let first = ledger.dispatch(permit, &grant, 150, "idem-001").unwrap();
         let pending_permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
         assert_eq!(
-            ledger.dispatch(pending_permit, "idem-pending"),
+            ledger.dispatch(pending_permit, &grant, 150, "idem-pending"),
             Err(LedgerError::UnknownOutcomeLocked)
         );
         ledger.mark_outcome_unknown(first).unwrap();
 
         let second_permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
         assert_eq!(
-            ledger.dispatch(second_permit, "idem-002"),
+            ledger.dispatch(second_permit, &grant, 150, "idem-002"),
             Err(LedgerError::UnknownOutcomeLocked)
         );
 
         ledger.reconcile_no_effect(first).unwrap();
         let third_permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
-        assert!(ledger.dispatch(third_permit, "idem-003").is_ok());
+        assert!(ledger.dispatch(third_permit, &grant, 150, "idem-003").is_ok());
 
         // The same exact grant cannot exceed its declared two-dispatch budget.
         let fourth_permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
         assert_eq!(
-            ledger.dispatch(fourth_permit, "idem-004"),
+            ledger.dispatch(fourth_permit, &grant, 150, "idem-004"),
             Err(LedgerError::GrantUseLimitReached)
         );
     }
@@ -872,11 +909,11 @@ mod tests {
         let mut ledger = ParticipantEffectLedger::default();
 
         let first = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
-        ledger.dispatch(first, "idem-grant-001").unwrap();
+        ledger.dispatch(first, &grant, 150, "idem-grant-001").unwrap();
 
         let second = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
         assert_eq!(
-            ledger.dispatch(second, "idem-grant-002"),
+            ledger.dispatch(second, &grant, 150, "idem-grant-002"),
             Err(LedgerError::GrantUseLimitReached)
         );
 
@@ -894,7 +931,37 @@ mod tests {
             150,
         ).unwrap();
         assert_eq!(
-            ledger.dispatch(rebound, "idem-grant-003"),
+            ledger.dispatch(rebound, &rebound_grant, 150, "idem-grant-003"),
+            Err(LedgerError::GrantBindingMismatch)
+        );
+    }
+
+    #[test]
+    fn permit_is_rechecked_against_latest_grant_at_dispatch_time() {
+        let requirement = example_requirement();
+        let plan = "a".repeat(64);
+        let grant = valid_grant(&plan);
+        let permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
+        let mut ledger = ParticipantEffectLedger::default();
+
+        assert_eq!(
+            ledger.dispatch(permit, &grant, 200, "expired-permit"),
+            Err(LedgerError::PermitExpired)
+        );
+
+        let revoked_permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
+        let mut revoked = grant.clone();
+        revoked.revoked = true;
+        assert_eq!(
+            ledger.dispatch(revoked_permit, &revoked, 150, "revoked-permit"),
+            Err(LedgerError::GrantRevoked)
+        );
+
+        let rebound_permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
+        let mut rebound = grant.clone();
+        rebound.expires_at_unix = 250;
+        assert_eq!(
+            ledger.dispatch(rebound_permit, &rebound, 150, "rebound-permit"),
             Err(LedgerError::GrantBindingMismatch)
         );
     }
@@ -906,11 +973,11 @@ mod tests {
         let grant = valid_grant(&plan);
         let mut ledger = ParticipantEffectLedger::default();
         let permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
-        ledger.dispatch(permit, "idem-001").unwrap();
+        ledger.dispatch(permit, &grant, 150, "idem-001").unwrap();
 
         let duplicate_permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
         assert_eq!(
-            ledger.dispatch(duplicate_permit, "idem-001"),
+            ledger.dispatch(duplicate_permit, &grant, 150, "idem-001"),
             Err(LedgerError::DuplicateIdempotencyKey)
         );
     }
