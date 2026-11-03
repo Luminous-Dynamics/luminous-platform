@@ -10,3 +10,5 @@ description = "Deterministic synthetic qualification primitives for the Luminous
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.10"
+# Pin a complete local Draft 2020-12 validator; disable remote/file reference fetchers.
+jsonschema = { version = "=0.60.2", default-features = false }
