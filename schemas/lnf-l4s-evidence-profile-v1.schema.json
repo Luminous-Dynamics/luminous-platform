@@ -162,7 +162,11 @@
         "dual_queue_class_counters_required_for_mixed_traffic",
         "cleanup_verification_required",
         "unsupported_fallback_or_missing_counters_never_pass",
-        "pair_verdict_scope"
+        "pair_verdict_scope",
+        "tcp_prague_requires_accecn_both_endpoints",
+        "quic_prague_requires_quic_ecn_feedback_counts",
+        "per_flow_classic_goodput_pairs_reconcile_to_aggregate",
+        "per_flow_starvation_is_a_separate_gate"
       ],
       "properties": {
         "exact_aqm_implementation_identity": {
@@ -203,6 +207,18 @@
         },
         "pair_verdict_scope": {
           "const": "single_paired_trial_only"
+        },
+        "tcp_prague_requires_accecn_both_endpoints": {
+          "const": true
+        },
+        "quic_prague_requires_quic_ecn_feedback_counts": {
+          "const": true
+        },
+        "per_flow_classic_goodput_pairs_reconcile_to_aggregate": {
+          "const": true
+        },
+        "per_flow_starvation_is_a_separate_gate": {
+          "const": true
         }
       }
     },
@@ -256,8 +272,8 @@
     },
     "benchmarks": {
       "type": "array",
-      "minItems": 9,
-      "maxItems": 9,
+      "minItems": 10,
+      "maxItems": 10,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -298,8 +314,8 @@
     },
     "required_metrics": {
       "type": "array",
-      "minItems": 20,
-      "maxItems": 20,
+      "minItems": 24,
+      "maxItems": 24,
       "uniqueItems": true,
       "items": {
         "type": "string",
@@ -362,8 +378,8 @@
     },
     "explicit_non_claims": {
       "type": "array",
-      "minItems": 10,
-      "maxItems": 10,
+      "minItems": 12,
+      "maxItems": 12,
       "uniqueItems": true,
       "items": {
         "type": "string",
