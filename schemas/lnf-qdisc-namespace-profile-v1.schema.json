@@ -24,7 +24,8 @@
     "benchmarks",
     "evidence_classes",
     "explicit_non_claims",
-    "qdisc_comparison_note"
+    "qdisc_comparison_note",
+    "supported_scenario_ids"
   ],
   "properties": {
     "schema_version": {
@@ -392,6 +393,19 @@
     "qdisc_comparison_note": {
       "type": "string",
       "minLength": 1
+    },
+    "supported_scenario_ids": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "QDISC-01",
+          "QDISC-02",
+          "QDISC-03"
+        ]
+      }
     }
   }
 }
