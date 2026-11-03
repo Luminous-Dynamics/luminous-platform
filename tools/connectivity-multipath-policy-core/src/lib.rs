@@ -4,8 +4,8 @@
 //! addresses, create subflows, modify routes, inspect packet contents, or send
 //! packets. Its finish-time and reorder figures are planning estimates, not
 //! transport measurements.
-pub mod coexistence;
 pub mod fairness;
+pub mod coexistence;
 pub mod trace;
 
 use std::collections::BTreeSet;
@@ -263,8 +263,7 @@ fn capacity_domain_evidence_error(
     if !is_sha256(&evidence.inventory_sha256) {
         return Some("capacity_domain_inventory_digest_invalid");
     }
-    if !is_sha256(&evidence.topology_sha256)
-        || evidence.topology_sha256 != request.topology_sha256
+    if !is_sha256(&evidence.topology_sha256) || evidence.topology_sha256 != request.topology_sha256
     {
         return Some("capacity_domain_topology_digest_mismatch");
     }
@@ -277,9 +276,7 @@ fn capacity_domain_evidence_error(
     if evidence.confidence_ppm < request.minimum_capacity_domain_confidence_ppm {
         return Some("capacity_domain_evidence_confidence_below_floor");
     }
-    if evidence.observed_at_unix_ms == 0
-        || evidence.observed_at_unix_ms > request.now_unix_ms
-    {
+    if evidence.observed_at_unix_ms == 0 || evidence.observed_at_unix_ms > request.now_unix_ms {
         return Some("capacity_domain_evidence_observation_time_invalid");
     }
     if evidence.valid_until_unix_ms <= evidence.observed_at_unix_ms {
@@ -1050,7 +1047,8 @@ mod tests {
     fn confidence_above_one_million_is_invalid() {
         let mut path = path("invalid-confidence", 10_000, 20_000_000, 10, "risk-a");
         path.capacity_domain_evidence.confidence_ppm = 1_000_001;
-        let result = evaluate(&request(), &[path], Strategy::BestRtt).expect("invalid evidence is excluded");
+        let result =
+            evaluate(&request(), &[path], Strategy::BestRtt).expect("invalid evidence is excluded");
         assert_eq!(result.mode, DecisionMode::NoRoute);
         assert_eq!(
             result.exclusions[0].reason,
@@ -1095,7 +1093,9 @@ mod tests {
         assert_eq!(result.topology_sha256, request().topology_sha256);
         assert_eq!(result.decision_time_unix_ms, request().now_unix_ms);
         assert_eq!(
-            result.allocations[0].capacity_domain_evidence.confidence_ppm,
+            result.allocations[0]
+                .capacity_domain_evidence
+                .confidence_ppm,
             1_000_000
         );
     }
