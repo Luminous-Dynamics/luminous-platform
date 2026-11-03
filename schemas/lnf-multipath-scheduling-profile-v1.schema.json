@@ -20,7 +20,8 @@
     "benchmarks",
     "required_metrics",
     "evidence_classes",
-    "explicit_non_claims"
+    "explicit_non_claims",
+    "target_defaults"
   ],
   "properties": {
     "schema_version": {
@@ -182,8 +183,8 @@
     },
     "benchmarks": {
       "type": "array",
-      "minItems": 12,
-      "maxItems": 12,
+      "minItems": 18,
+      "maxItems": 18,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -227,12 +228,13 @@
     },
     "required_metrics": {
       "type": "array",
-      "minItems": 22,
+      "minItems": 36,
       "uniqueItems": true,
       "items": {
         "type": "string",
         "minLength": 1
-      }
+      },
+      "maxItems": 36
     },
     "evidence_classes": {
       "type": "array",
@@ -251,8 +253,8 @@
     },
     "explicit_non_claims": {
       "type": "array",
-      "minItems": 10,
-      "maxItems": 10,
+      "minItems": 15,
+      "maxItems": 15,
       "uniqueItems": true,
       "items": {
         "type": "string",
@@ -296,6 +298,22 @@
         },
         "same_cost_currency_required": {
           "const": true
+        }
+      }
+    },
+    "target_defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimum_capacity_domain_confidence_floor_ppm",
+        "capacity_domain_evidence_floor_status"
+      ],
+      "properties": {
+        "minimum_capacity_domain_confidence_floor_ppm": {
+          "const": 950000
+        },
+        "capacity_domain_evidence_floor_status": {
+          "const": "proposed_not_calibrated"
         }
       }
     }
