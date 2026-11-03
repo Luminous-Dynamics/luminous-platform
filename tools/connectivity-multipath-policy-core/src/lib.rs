@@ -486,9 +486,7 @@ fn aggregate_candidate(
             }
         }
     }
-    let Some((_, first, second)) = best_pair else {
-        return None;
-    };
+    let (_, first, second) = best_pair?;
     let mut selected = vec![first, second];
     let mut seen_capacity_domains = first
         .capacity_domain_ids
