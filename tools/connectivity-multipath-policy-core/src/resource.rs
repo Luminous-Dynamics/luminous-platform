@@ -161,9 +161,7 @@ fn is_sha256(value: &str) -> bool {
 }
 
 fn valid_identifier(value: &str) -> bool {
-    !value.trim().is_empty()
-        && value.len() <= MAX_ID_BYTES
-        && !value.chars().any(char::is_control)
+    !value.trim().is_empty() && value.len() <= MAX_ID_BYTES && !value.chars().any(char::is_control)
 }
 
 fn validate_request(request: &ResourceAllocationRequest) -> Result<(), ResourceAllocationError> {
@@ -197,8 +195,7 @@ fn evidence_error(
     if !is_sha256(&evidence.inventory_sha256) {
         return Some("resource_inventory_digest_invalid");
     }
-    if !is_sha256(&evidence.topology_sha256)
-        || evidence.topology_sha256 != request.topology_sha256
+    if !is_sha256(&evidence.topology_sha256) || evidence.topology_sha256 != request.topology_sha256
     {
         return Some("resource_topology_digest_mismatch");
     }
@@ -412,8 +409,8 @@ pub fn allocate_resource_incidence(
             if *active_weight == 0 {
                 continue;
             }
-            let remaining = remaining_scaled[domain_index]
-                .ok_or(ResourceAllocationError::InternalInvariant)?;
+            let remaining =
+                remaining_scaled[domain_index].ok_or(ResourceAllocationError::InternalInvariant)?;
             let candidate = remaining / *active_weight;
             delta_level = Some(delta_level.map_or(candidate, |current| current.min(candidate)));
         }
@@ -474,8 +471,8 @@ pub fn allocate_resource_incidence(
             let used = delta
                 .checked_mul(*active_weight)
                 .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
-            let remaining = remaining_scaled[domain_index]
-                .ok_or(ResourceAllocationError::InternalInvariant)?;
+            let remaining =
+                remaining_scaled[domain_index].ok_or(ResourceAllocationError::InternalInvariant)?;
             remaining_scaled[domain_index] = Some(
                 remaining
                     .checked_sub(used)
@@ -485,9 +482,7 @@ pub fn allocate_resource_incidence(
 
         let mut freeze = vec![false; eligible.len()];
         for (index, item) in eligible.iter().enumerate() {
-            if active[index]
-                && rates_scaled[index] >= path_ceiling_scaled[index]
-            {
+            if active[index] && rates_scaled[index] >= path_ceiling_scaled[index] {
                 freeze[index] = true;
             }
         }
@@ -495,8 +490,8 @@ pub fn allocate_resource_incidence(
             if *active_weight == 0 {
                 continue;
             }
-            let remaining = remaining_scaled[domain_index]
-                .ok_or(ResourceAllocationError::InternalInvariant)?;
+            let remaining =
+                remaining_scaled[domain_index].ok_or(ResourceAllocationError::InternalInvariant)?;
             if remaining < *active_weight {
                 for (index, item) in eligible.iter().enumerate() {
                     if active[index] && item.domain_indexes.contains(&domain_index) {
@@ -521,13 +516,21 @@ pub fn allocate_resource_incidence(
 
     let mut integer_rates = rates_scaled
         .iter()
-        .map(|value| u64::try_from(value / RATE_SCALE).map_err(|_| ResourceAllocationError::ArithmeticOverflow))
+        .map(|value| {
+            u64::try_from(value / RATE_SCALE)
+                .map_err(|_| ResourceAllocationError::ArithmeticOverflow)
+        })
         .collect::<Result<Vec<_>, _>>()?;
     let mut fractional_order = (0..eligible.len()).collect::<Vec<_>>();
     fractional_order.sort_by(|left, right| {
         (rates_scaled[*right] % RATE_SCALE)
             .cmp(&(rates_scaled[*left] % RATE_SCALE))
-            .then_with(|| eligible[*left].path.path_id.cmp(&eligible[*right].path.path_id))
+            .then_with(|| {
+                eligible[*left]
+                    .path
+                    .path_id
+                    .cmp(&eligible[*right].path.path_id)
+            })
     });
 
     // Largest-remainder bps rounding is admitted only when every resource on
@@ -669,7 +672,13 @@ mod tests {
         }
     }
 
-    fn resource(id: &str, capacity: u64, load: u64, reserved: u64, margin: u64) -> CapacityResource {
+    fn resource(
+        id: &str,
+        capacity: u64,
+        load: u64,
+        reserved: u64,
+        margin: u64,
+    ) -> CapacityResource {
         CapacityResource {
             resource_id: id.to_owned(),
             declared_capacity_bps: capacity,
@@ -697,7 +706,10 @@ mod tests {
                 path("a", 100, 1, &["access-a"]),
                 path("b", 80, 1, &["access-b"]),
             ],
-            &[resource("access-a", 100, 0, 0, 0), resource("access-b", 80, 0, 0, 0)],
+            &[
+                resource("access-a", 100, 0, 0, 0),
+                resource("access-b", 80, 0, 0, 0),
+            ],
         )
         .expect("valid independent resources");
         assert_eq!(report.total_allocated_rate_bps, 180);
@@ -824,11 +836,17 @@ mod tests {
                 path("blocked", 100, 1, &["zero"]),
                 path("free", 40, 1, &["free"]),
             ],
-            &[resource("zero", 100, 100, 0, 0), resource("free", 40, 0, 0, 0)],
+            &[
+                resource("zero", 100, 100, 0, 0),
+                resource("free", 40, 0, 0, 0),
+            ],
         )
         .expect("valid resources with a zero residual");
         assert_eq!(report.total_allocated_rate_bps, 40);
-        assert_eq!(report.exclusions[0].reason, "capacity_resource_residual_zero");
+        assert_eq!(
+            report.exclusions[0].reason,
+            "capacity_resource_residual_zero"
+        );
         assert_eq!(report.path_allocations.len(), 1);
         assert_eq!(report.path_allocations[0].path_id, "free");
     }
@@ -907,8 +925,8 @@ mod tests {
             resource("access-b", 100, 0, 0, 0),
             resource("independent", 20, 0, 0, 0),
         ];
-        let first = allocate_resource_incidence(&request(), &paths, &resources)
-            .expect("valid first order");
+        let first =
+            allocate_resource_incidence(&request(), &paths, &resources).expect("valid first order");
         let second = allocate_resource_incidence(
             &request(),
             &paths.into_iter().rev().collect::<Vec<_>>(),
@@ -936,7 +954,10 @@ mod tests {
             &[resource("shared", 100, 10, 0, 0)],
         )
         .expect("valid snapshot manifest");
-        assert_eq!(report.resource_snapshot_sha256, request().resource_snapshot_sha256);
+        assert_eq!(
+            report.resource_snapshot_sha256,
+            request().resource_snapshot_sha256
+        );
     }
 
     #[test]
@@ -1017,14 +1038,7 @@ mod tests {
                     let used = usage.get(domain).copied().unwrap_or(0);
                     usage.insert(domain.clone(), used + rate);
                 }
-                visit(
-                    index + 1,
-                    paths,
-                    capacities,
-                    usage,
-                    total + rate,
-                    best,
-                );
+                visit(index + 1, paths, capacities, usage, total + rate, best);
                 for domain in &path.capacity_domain_ids {
                     let used = usage.get(domain).copied().unwrap_or(0);
                     usage.insert(domain.clone(), used - rate);
@@ -1042,14 +1056,7 @@ mod tests {
             })
             .collect::<BTreeMap<_, _>>();
         let mut best = 0;
-        visit(
-            0,
-            paths,
-            &capacities,
-            &mut BTreeMap::new(),
-            0,
-            &mut best,
-        );
+        visit(0, paths, &capacities, &mut BTreeMap::new(), 0, &mut best);
         best
     }
 
@@ -1165,10 +1172,7 @@ mod tests {
             path("b", 10, 1, &["x", "y"]),
             path("c", 10, 1, &["y"]),
         ];
-        let resources = vec![
-            resource("x", 10, 0, 0, 0),
-            resource("y", 8, 0, 0, 0),
-        ];
+        let resources = vec![resource("x", 10, 0, 0, 0), resource("y", 8, 0, 0, 0)];
         let report = allocate_resource_incidence(&request(), &paths, &resources)
             .expect("valid overlapping topology");
         assert_eq!(report.total_allocated_rate_bps, 14);
@@ -1184,7 +1188,14 @@ mod tests {
         assert_eq!(exact_max, 18);
         assert!(report.total_allocated_rate_bps < exact_max);
         let exact_fair = exact_integer_weighted_max_min_reference(&paths, &resources);
-        assert_eq!(report.path_allocations.iter().map(|p| p.allocated_rate_bps).collect::<Vec<_>>(), exact_fair);
+        assert_eq!(
+            report
+                .path_allocations
+                .iter()
+                .map(|p| p.allocated_rate_bps)
+                .collect::<Vec<_>>(),
+            exact_fair
+        );
         // The allocator's weighted max-min objective is intentionally not
         // presented as a maximum-sum-rate optimizer; the gap remains visible.
     }
