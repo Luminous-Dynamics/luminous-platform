@@ -1,0 +1,303 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/lnf-multipath-fairness-profile-v1.schema.json",
+  "title": "LNF Multipath Tenant Fairness Profile v1",
+  "description": "Strict benchmark contract for tenant-first weighted max-min sharing at one declared capacity bottleneck. Validation does not constitute benchmark execution.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "status",
+    "reviewed_on",
+    "objective",
+    "ownership_boundary",
+    "domain_semantics",
+    "units",
+    "allocator",
+    "baselines",
+    "scenario_ids",
+    "benchmarks",
+    "required_metrics",
+    "evidence_classes",
+    "explicit_non_claims"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.lnf-multipath-fairness-profile.v1"
+    },
+    "profile_id": {
+      "const": "lnf-multipath-tenant-fairness-v1"
+    },
+    "status": {
+      "const": "draft_targets_not_results"
+    },
+    "reviewed_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ownership_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "principal_identity_supplied_by_authenticated_caller",
+        "allocator_authenticates_principals",
+        "broker_owns_path_eligibility",
+        "path_manager_owns_subflow_lifecycle",
+        "session_scheduler_owns_per_session_path_choice",
+        "tenant_allocator_owns_shared_bottleneck_rate_budget",
+        "qdisc_owns_packet_queueing_and_aqm",
+        "no_packet_content_inspection",
+        "no_privileged_network_actuation"
+      ],
+      "properties": {
+        "principal_identity_supplied_by_authenticated_caller": {
+          "const": true
+        },
+        "allocator_authenticates_principals": {
+          "const": false
+        },
+        "broker_owns_path_eligibility": {
+          "const": true
+        },
+        "path_manager_owns_subflow_lifecycle": {
+          "const": true
+        },
+        "session_scheduler_owns_per_session_path_choice": {
+          "const": true
+        },
+        "tenant_allocator_owns_shared_bottleneck_rate_budget": {
+          "const": true
+        },
+        "qdisc_owns_packet_queueing_and_aqm": {
+          "const": true
+        },
+        "no_packet_content_inspection": {
+          "const": true
+        },
+        "no_privileged_network_actuation": {
+          "const": true
+        }
+      }
+    },
+    "domain_semantics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "failure_domain",
+        "capacity_domain",
+        "fairness_principal",
+        "failure_domain_and_capacity_domain_are_not_interchangeable",
+        "unknown_capacity_relationship_must_not_be_counted_as_independent_capacity",
+        "unknown_fairness_principal_is_not_accepted"
+      ],
+      "properties": {
+        "failure_domain": {
+          "const": "declared_common_cause_link_or_site_failure"
+        },
+        "capacity_domain": {
+          "const": "declared_shared_hard_throughput_bottleneck"
+        },
+        "fairness_principal": {
+          "const": "caller_authenticated_tenant_or_household_identity"
+        },
+        "failure_domain_and_capacity_domain_are_not_interchangeable": {
+          "const": true
+        },
+        "unknown_capacity_relationship_must_not_be_counted_as_independent_capacity": {
+          "const": true
+        },
+        "unknown_fairness_principal_is_not_accepted": {
+          "const": true
+        }
+      }
+    },
+    "units": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "capacity",
+        "demand",
+        "minimum_service_floor",
+        "tenant_weight",
+        "flow_weight",
+        "fairness_index"
+      ],
+      "properties": {
+        "capacity": {
+          "const": "bits_per_second"
+        },
+        "demand": {
+          "const": "bits_per_second"
+        },
+        "minimum_service_floor": {
+          "const": "bits_per_second"
+        },
+        "tenant_weight": {
+          "const": "positive_integer"
+        },
+        "flow_weight": {
+          "const": "positive_integer"
+        },
+        "fairness_index": {
+          "const": "parts_per_million"
+        }
+      }
+    },
+    "allocator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "algorithm",
+        "allocation_order",
+        "stable_tie_break",
+        "floors_are_hard_constraints",
+        "floors_exceed_capacity",
+        "unused_capacity_when_demand_satisfied",
+        "maximum_flow_count",
+        "rate_conservation_required"
+      ],
+      "properties": {
+        "algorithm": {
+          "const": "two_level_integer_weighted_max_min_water_filling"
+        },
+        "allocation_order": {
+          "const": [
+            "tenant_principal",
+            "flow_within_tenant"
+          ]
+        },
+        "stable_tie_break": {
+          "const": "lexicographic_principal_and_flow_id_after_largest_remainder"
+        },
+        "floors_are_hard_constraints": {
+          "const": true
+        },
+        "floors_exceed_capacity": {
+          "const": "explicit_error_no_partial_report"
+        },
+        "unused_capacity_when_demand_satisfied": {
+          "const": "reported_not_reallocated_beyond_demand"
+        },
+        "maximum_flow_count": {
+          "const": 512
+        },
+        "rate_conservation_required": {
+          "const": true
+        }
+      }
+    },
+    "baselines": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "linux_fq_codel_exact_kernel",
+          "openwrt_cake_besteffort_exact_kernel",
+          "openwrt_cake_diffserv3_exact_kernel",
+          "openwrt_cake_diffserv4_exact_kernel",
+          "openwrt_cake_triple_isolate_exact_kernel",
+          "naive_equal_per_flow",
+          "unweighted_max_min_per_flow",
+          "weighted_max_min_per_flow",
+          "weighted_proportional_fair_reference",
+          "lnf_tenant_first_weighted_max_min"
+        ]
+      }
+    },
+    "scenario_ids": {
+      "type": "array",
+      "minItems": 16,
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^MPFAIR-[0-9]{2}$"
+      }
+    },
+    "benchmarks": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "metric",
+          "operator",
+          "target",
+          "target_status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^MPFAIR_[A-Z0-9_]{3,80}$"
+          },
+          "metric": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operator": {
+            "enum": [
+              "==",
+              ">=",
+              "baseline_first"
+            ]
+          },
+          "target": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "target_status": {
+            "enum": [
+              "proposed_target",
+              "baseline_first"
+            ]
+          }
+        }
+      }
+    },
+    "required_metrics": {
+      "type": "array",
+      "minItems": 18,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "evidence_classes": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "deterministic_model",
+          "network_namespace_or_vm_emulation",
+          "hardware_bench",
+          "field_observed"
+        ]
+      }
+    },
+    "explicit_non_claims": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}
