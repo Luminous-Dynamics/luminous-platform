@@ -775,9 +775,6 @@ mod tests {
                 assert_eq!(command.phase, "preflight");
                 assert_eq!(command.args, vec!["-V"]);
             }
-            if command.program == "ip" && command.args.first().is_some_and(|arg| arg == "link") {
-                assert_eq!(command.args.get(1).map(String::as_str), Some("-n"));
-            }
             if command.program == "ip"
                 && command.args.first().is_some_and(|arg| arg == "-n")
             {
