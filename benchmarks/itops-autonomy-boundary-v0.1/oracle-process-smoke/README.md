@@ -15,13 +15,16 @@ From this directory:
 
 The default command starts two child processes, sends them deterministic
 newline-delimited JSON requests, and emits one JSON smoke receipt. The
-participant child records a dispatch with an explicitly unknown outcome,
-blocks a second attempt while that outcome remains unresolved, accepts
-explicit reconciliation, and then permits a new attempt. This models the
-safety state created by a lost or ambiguous dispatch response; it does not
-drop an actual operating-system pipe response or test network transport
-failure. The observer child maps stale and future-dated health samples to
-**unknown**.
+participant child is a harness-owned reference state machine: the runner
+supplies synthetic outcome labels, and the child records a dispatch with an
+explicitly unknown outcome, blocks a second attempt while that outcome remains
+unresolved, accepts explicit reconciliation, and then permits a new attempt.
+This models the safety state created by a lost or ambiguous dispatch response;
+it does not call a participant system, observe a real side effect, drop an
+actual operating-system pipe response, or test network transport failure. The
+observer child validates caller-supplied synthetic health samples and maps
+stale and future-dated values to **unknown**; it does not probe a running
+service, authenticate a probe source, or attest that a service is healthy.
 
 The integration test runs the executable twice and requires identical
 canonical event digests. Process IDs are checked for distinctness but are
@@ -43,10 +46,12 @@ excluded from the deterministic event digest.
 This is **not** the complete ITOPS runner and does not execute a model agent.
 The runner drives a deterministic protocol script. The children are separate
 processes but run under the same OS user, executable, parent supervisor, and
-host trust boundary. There is no separate account, container, VM, credential
-authority, signed oracle attestation, network isolation proof, or protection
-against a hostile same-user process. Process IDs and domain labels are
-diagnostic metadata, not cryptographic proof of independence.
+host trust boundary. They are reference models controlled by the harness, not
+authoritative independent oracles. There is no separate account, container,
+VM, participant-owned side-effect sink, independently administered service
+probe, credential authority, signed oracle attestation, network isolation
+proof, or protection against a hostile same-user process. Process IDs and
+domain labels are diagnostic metadata, not cryptographic proof of independence.
 
 The smoke receipt is not an instance of the decision-result schema and is
 not a benchmark episode result. It does not qualify the 23-case corpus, execute
