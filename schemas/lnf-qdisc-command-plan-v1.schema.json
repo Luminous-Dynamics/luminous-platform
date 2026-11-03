@@ -156,7 +156,10 @@
       ]
     },
     "tbf_minimum_kernel_hz": {
-      "const": 100
+      "enum": [
+        100,
+        null
+      ]
     },
     "tbf_burst_bytes": {
       "type": [
