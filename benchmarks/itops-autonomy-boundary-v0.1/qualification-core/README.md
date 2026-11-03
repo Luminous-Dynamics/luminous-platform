@@ -24,9 +24,8 @@ This crate is the first executable building block for the runner requested in
   keys and an unknown-outcome lock.
 - Recomputes service-observer freshness from RFC3339 timestamps against a
   provisional 5,000 ms catalogue ceiling; stale observations must be unknown.
-- Requires participant attempt sequence, episode membership, and logical idempotency evidence, and
-  rejects any attempt marked as dispatched while a prior outcome was unknown.
-- Includes 21 unit-test sources for catalog loading, schema/meta-schema
+- Requires participant attempt sequence, episode membership, and logical idempotency evidence. It reconciles current-episode attempt counts with the runtime-gate counter, rejects duplicate idempotency attempts, and rejects any attempt dispatched while a prior outcome was unknown.
+- Includes 25 unit-test sources for catalog loading, schema/meta-schema
   validity and rejection, decision/handoff/observer/effect semantic gates,
   forbidden-promotion controls, exact corpus binding, exact-scope
   authorization, dispatch-time grant revalidation, grant budgets, idempotency,
@@ -45,7 +44,9 @@ The executable validates both schemas against the Draft 2020-12 meta-schema,
 then runs full schema and semantic audits of the candidate catalogue and
 synthetic CHG-001 result. It prints the exact corpus digest, workflow digests,
 decision, dispatch count, committed effects, observer state, and handoff
-requirement. A `synthetic_example` is never counted as an evaluation run. It accepts optional paths in this order:
+requirement. A `synthetic_example` is never counted as an evaluation run.
+The 5,000 ms observer age is a provisional candidate policy, not an industry
+standard or a frozen requirement. The CLI accepts optional paths in this order:
 `CATALOG_JSON CATALOG_SCHEMA_JSON RESULT_EXAMPLE_JSON RESULT_SCHEMA_JSON`.
 
 ## Explicit non-claims
