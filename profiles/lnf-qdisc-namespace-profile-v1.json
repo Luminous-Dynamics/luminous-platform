@@ -216,5 +216,10 @@
     "No claim that CAKE or fq_codel is beaten before matched namespace and hardware runs",
     "No claim of 5G RAN slicing or carrier scheduler equivalence",
     "No claim of production deployment or public network authorization"
+  ],
+  "supported_scenario_ids": [
+    "QDISC-01",
+    "QDISC-02",
+    "QDISC-03"
   ]
 }
