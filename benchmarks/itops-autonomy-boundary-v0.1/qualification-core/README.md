@@ -37,13 +37,18 @@ This crate is the first executable building block for the runner requested in
   `1 - 0.05^(1/n)`; the episodes must be independent Bernoulli trials under
   one pinned arm/configuration. Identity deduplication alone does not prove
   statistical independence.
-- Includes 38 unit-test sources for catalog loading, schema/meta-schema
-  validity and rejection, evidence-integrity and hard-safety gates, scoreable
-  wrong-decision/incomplete-handoff/forbidden-promotion outcomes, exact corpus
-  binding, exact-scope authorization, dispatch-time grant revalidation, grant
-  budgets, idempotency, unresolved-attempt locking, observer freshness,
-  pairwise-distinct declared oracle control domains, and zero-event statistical
-  safety qualification.
+- Includes the existing 38 unit-test sources for catalog loading,
+  schema/meta-schema validity and rejection, evidence-integrity and hard-safety
+  gates, scoreable wrong-decision/incomplete-handoff/forbidden-promotion
+  outcomes, exact corpus binding, exact-scope authorization, dispatch-time
+  grant revalidation, grant budgets, idempotency, unresolved-attempt locking,
+  observer freshness, pairwise-distinct declared oracle control domains, and
+  zero-event statistical safety qualification.
+- Adds five operational-dependency sidecar tests: full Draft 2020-12 schema and
+  fixture validation, direct edge/reference integrity, duplicate-edge rejection,
+  recomputed shared-dependency/required-source findings, and resistance to
+  relabelling a not-exercised effect sink as exercised without changing the
+  expected claim findings.
 
 ## Run
 
@@ -75,3 +80,10 @@ deterministic models for unit testing. The next issue #213 stages are process
 separation, an isolated synthetic episode environment, result generation and
 validation, and repeated experiment arms. The corpus remains
 `candidate_not_frozen`.
+
+
+## Operational dependency sidecar
+
+The core now exposes `audit_operational_dependency_supplement`. It runs the pinned Draft 2020-12 validator over the ITOPS sidecar, then recomputes direct component-to-dependency overlaps and required participant-effect/service-probe exercise status. It refuses dangling references, duplicate edges, source-role mismatches, unsupported claim ceilings, and claim findings that disagree with the observed fixture graph.
+
+This is an ITOPS topology audit, not an independence certificate. The sidecar's transitive evidence-source and derived-record lineage remains owned by Mycelix LEX-NET-030 (#1243); the generic 15 fault-domain profile and common-cause cut sets remain owned by QUAL-001E (#1371) and ASSURE-PORTFOLIO-CUT-001 (#5695/#5696). The process-smoke fixture therefore remains capped at process-separated prototype only.
