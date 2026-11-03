@@ -303,6 +303,7 @@ LNF is an integration programme, not a reason to create parallel projects. The f
 3. Qualify the offline multipath model/profile in PR #211, then use issue #212 to measure real MPTCP subflows in an isolated namespace lab with exact kernel, path-manager, scheduler and congestion-control pins.
 4. Qualify shared capacity domains and tenant-first weighted max-min in PR #215; tenant fairness must be evaluated across a shared bottleneck, not inferred from per-flow or per-session fairness.
 5. Use PR #216's read-only plan to generate and review the isolated fq_codel/TBF and CAKE campaign. Only a separate explicit-opt-in executor may create namespaces/install qdiscs, and it must bind cleanup to resources created by that run.
+6. Apply PR #222's RFC 6356 best-path and do-no-harm evaluator to exact paired Linux MPTCP/TCP trials from issue #212. Do not accept a throughput gain if a companion TCP flow is materially starved.
 6. Run the isolated OpenWrt/two-WAN fault matrix and local-only service campaign on named gateway revisions; keep VM, hardware-bench and field evidence distinct.
 7. In parallel, use Symthaea #1100/#4834 to qualify a small redundant routed-fabric topology against Batfish and live FRR probes; do not give this adapter production actuation authority.
 8. Use Sol-Atlas #323/#325 to model a named service topology with power and backhaul common-cause failures using the existing shared service-network evaluators.
@@ -326,6 +327,7 @@ LNF is an integration programme, not a reason to create parallel projects. The f
 | LNF MPTCP namespace lab (issue #212) | real kernel negotiation, subflow observation, path failure and scheduler measurements in isolated namespaces | physical RF, carrier behavior or production router mutation |
 | LNF tenant fairness allocator (draft PR #215) | two-level weighted max-min allocation among tenant principals and then flows; shared-capacity-domain accounting | authenticating the tenant principal, packet queueing/AQM or replacing CAKE/fq_codel |
 | LNF isolated qdisc planner (draft PR #216) | read-only namespace command planning for fq_codel/TBF and CAKE triple-isolate comparisons | executing privileged qdisc changes, claiming benchmark results or changing host networking |
+| LNF MPTCP coexistence evaluator (draft PR #222) | paired best-path and shared-bottleneck do-no-harm evidence evaluation against TCP controls | implementing a congestion controller or claiming kernel/field performance from model outputs |
 
 ## 10. South African deployment gates
 
