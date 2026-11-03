@@ -369,7 +369,7 @@ pub fn allocate_tenant_weighted_max_min(
             })
             .map(|item| {
                 let weight = *flow_weights.get(item.flow_id.as_str()).unwrap_or(&1);
-                f64::from(item.allocated_bps) / weight as f64
+                item.allocated_bps as f64 / weight as f64
             })
             .collect::<Vec<_>>();
         per_tenant_flow_fairness.push(TenantFlowFairness {
