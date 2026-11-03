@@ -111,6 +111,20 @@
       "operator": "baseline_first",
       "target": null,
       "target_status": "baseline_first"
+    },
+    {
+      "id": "MPATH_TRACE_REPLAY_001",
+      "metric": "byte_identical_packet_trace_decisions_for_identical_seed_inputs_and_model_version",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_TRACE_BUDGET_001",
+      "metric": "trace_cost_energy_and_per_path_data_allowance_budget_violations",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
     }
   ],
   "required_metrics": [
@@ -124,13 +138,18 @@
     "energy_per_successful_task",
     "jain_fairness_under_shared_bottlenecks",
     "path_switch_count_and_oscillation_rate",
-    "cpu_and_memory_high_water_marks"
+    "cpu_and_memory_high_water_marks",
+    "packet_segment_arrival_latency_p50_p95_p99",
+    "receiver_reorder_buffer_peak_bytes_and_byte_microseconds",
+    "synthetic_loss_correlation_by_declared_failure_domain",
+    "trace_transmitted_bytes_vs_useful_bytes"
   ],
   "evidence_classes": [
     "deterministic_model",
     "network_namespace_or_vm_emulation",
     "hardware_bench",
-    "field_observed"
+    "field_observed",
+    "deterministic_packet_trace_model"
   ],
   "explicit_non_claims": [
     "No claim that theoretical path bandwidths sum to achieved application goodput",
@@ -138,7 +157,9 @@
     "No claim that Multipath QUIC is an RFC until publication is confirmed",
     "No claim that a modelled schedule is an observed transport packet schedule",
     "No claim of SOTA superiority before matched pinned transport runs",
-    "No claim of production readiness or network actuation"
+    "No claim of production readiness or network actuation",
+    "No claim that deterministic segment traces reproduce ACK clocks, congestion control, retransmission or real radio propagation",
+    "No claim that shared-risk-group synthetic loss is a calibrated common-cause failure distribution"
   ],
   "baseline_methodology": {
     "scheduler_implementation_pinning_required": true,
