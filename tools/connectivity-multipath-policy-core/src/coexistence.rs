@@ -84,7 +84,9 @@ impl ExperimentIdentity {
             &self.mptcp_scheduler_provenance
         {
             if !is_sha256(artifact_sha256) {
-                return Err(EvidenceError::InvalidImplementationArtifact("mptcp_scheduler"));
+                return Err(EvidenceError::InvalidImplementationArtifact(
+                    "mptcp_scheduler",
+                ));
             }
         }
         Ok(())
@@ -258,9 +260,7 @@ fn evidence_disposition(
             target,
         ));
     }
-    if evidence.local_negotiated_subflow_count < 2
-        || evidence.remote_negotiated_subflow_count < 2
-    {
+    if evidence.local_negotiated_subflow_count < 2 || evidence.remote_negotiated_subflow_count < 2 {
         return Some(GateResult::new(
             gate_id,
             GateDisposition::Fail,
@@ -294,13 +294,9 @@ pub fn evaluate_best_path_improvement(
     if minimum_ratio_ppm == 0 || minimum_ratio_ppm > MAX_RATIO_PPM {
         return Err(EvidenceError::InvalidTarget);
     }
-    let identities_match = identity_pair_valid(
-        &comparison.path_a_identity,
-        &comparison.path_b_identity,
-    )? && identity_pair_valid(
-        &comparison.path_a_identity,
-        &comparison.mptcp_identity,
-    )?;
+    let identities_match =
+        identity_pair_valid(&comparison.path_a_identity, &comparison.path_b_identity)?
+            && identity_pair_valid(&comparison.path_a_identity, &comparison.mptcp_identity)?;
     if !identities_match {
         return Ok(GateResult::new(
             "MPTCP_GOAL1_BEST_PATH",
@@ -389,10 +385,8 @@ pub fn evaluate_shared_bottleneck_do_no_harm(
     }
 
     let gate_id = "MPTCP_GOAL2_SHARED_BOTTLENECK";
-    let identities_match = identity_pair_valid(
-        &comparison.control.identity,
-        &comparison.treatment.identity,
-    )?;
+    let identities_match =
+        identity_pair_valid(&comparison.control.identity, &comparison.treatment.identity)?;
     if !identities_match {
         return Ok(GateResult::new(
             gate_id,
@@ -434,9 +428,7 @@ pub fn evaluate_shared_bottleneck_do_no_harm(
             Some(max_mptcp_share_ratio_ppm),
         ));
     }
-    if comparison.control.bottleneck_capacity_bps
-        != comparison.treatment.bottleneck_capacity_bps
-    {
+    if comparison.control.bottleneck_capacity_bps != comparison.treatment.bottleneck_capacity_bps {
         return Ok(GateResult::new(
             gate_id,
             GateDisposition::Inconclusive,
@@ -643,12 +635,9 @@ mod tests {
 
     #[test]
     fn shared_bottleneck_do_no_harm_passes_matched_tcp_reference() {
-        let result = evaluate_shared_bottleneck_do_no_harm(
-            &shared_comparison(),
-            1_100_000,
-            900_000,
-        )
-        .expect("valid evidence");
+        let result =
+            evaluate_shared_bottleneck_do_no_harm(&shared_comparison(), 1_100_000, 900_000)
+                .expect("valid evidence");
         assert_eq!(result.disposition, GateDisposition::Pass);
         assert_eq!(result.primary_ratio_ppm, Some(947_368));
         assert_eq!(result.secondary_ratio_ppm, Some(926_315));
@@ -659,29 +648,18 @@ mod tests {
     fn mptcp_excess_shared_bottleneck_share_fails() {
         let mut comparison = shared_comparison();
         comparison.treatment.mptcp_goodput_bps = 60_000_000;
-        let result = evaluate_shared_bottleneck_do_no_harm(
-            &comparison,
-            1_100_000,
-            900_000,
-        )
-        .expect("valid evidence");
+        let result = evaluate_shared_bottleneck_do_no_harm(&comparison, 1_100_000, 900_000)
+            .expect("valid evidence");
         assert_eq!(result.disposition, GateDisposition::Fail);
-        assert_eq!(
-            result.reason,
-            "mptcp_exceeds_single_tcp_equivalent_share"
-        );
+        assert_eq!(result.reason, "mptcp_exceeds_single_tcp_equivalent_share");
     }
 
     #[test]
     fn companion_tcp_starvation_fails_even_when_mptcp_ratio_is_bounded() {
         let mut comparison = shared_comparison();
         comparison.treatment.companion_tcp_goodput_bps = 10_000_000;
-        let result = evaluate_shared_bottleneck_do_no_harm(
-            &comparison,
-            1_100_000,
-            900_000,
-        )
-        .expect("valid evidence");
+        let result = evaluate_shared_bottleneck_do_no_harm(&comparison, 1_100_000, 900_000)
+            .expect("valid evidence");
         assert_eq!(result.disposition, GateDisposition::Fail);
         assert_eq!(
             result.reason,
@@ -693,12 +671,8 @@ mod tests {
     fn single_subflow_is_not_qualified_as_multipath() {
         let mut comparison = shared_comparison();
         comparison.treatment.evidence.local_negotiated_subflow_count = 1;
-        let result = evaluate_shared_bottleneck_do_no_harm(
-            &comparison,
-            1_100_000,
-            900_000,
-        )
-        .expect("valid evidence");
+        let result = evaluate_shared_bottleneck_do_no_harm(&comparison, 1_100_000, 900_000)
+            .expect("valid evidence");
         assert_eq!(result.disposition, GateDisposition::Fail);
         assert_eq!(
             result.reason,
@@ -709,13 +683,12 @@ mod tests {
     #[test]
     fn remote_endpoint_single_subflow_is_not_qualified_as_multipath() {
         let mut comparison = shared_comparison();
-        comparison.treatment.evidence.remote_negotiated_subflow_count = 1;
-        let result = evaluate_shared_bottleneck_do_no_harm(
-            &comparison,
-            1_100_000,
-            900_000,
-        )
-        .expect("valid evidence");
+        comparison
+            .treatment
+            .evidence
+            .remote_negotiated_subflow_count = 1;
+        let result = evaluate_shared_bottleneck_do_no_harm(&comparison, 1_100_000, 900_000)
+            .expect("valid evidence");
         assert_eq!(result.disposition, GateDisposition::Fail);
         assert_eq!(
             result.reason,
@@ -727,12 +700,8 @@ mod tests {
     fn missing_negotiation_counters_are_inconclusive() {
         let mut comparison = shared_comparison();
         comparison.treatment.evidence.all_required_counters_present = false;
-        let result = evaluate_shared_bottleneck_do_no_harm(
-            &comparison,
-            1_100_000,
-            900_000,
-        )
-        .expect("valid evidence");
+        let result = evaluate_shared_bottleneck_do_no_harm(&comparison, 1_100_000, 900_000)
+            .expect("valid evidence");
         assert_eq!(result.disposition, GateDisposition::Inconclusive);
     }
 
@@ -740,12 +709,8 @@ mod tests {
     fn unsupported_kernel_scheduler_is_not_a_pass() {
         let mut comparison = shared_comparison();
         comparison.treatment.evidence.scheduler_supported = false;
-        let result = evaluate_shared_bottleneck_do_no_harm(
-            &comparison,
-            1_100_000,
-            900_000,
-        )
-        .expect("valid evidence");
+        let result = evaluate_shared_bottleneck_do_no_harm(&comparison, 1_100_000, 900_000)
+            .expect("valid evidence");
         assert_eq!(result.disposition, GateDisposition::Unsupported);
     }
 
@@ -753,12 +718,8 @@ mod tests {
     fn mismatched_qdisc_digest_makes_pair_inconclusive() {
         let mut comparison = shared_comparison();
         comparison.treatment.identity.qdisc_config_sha256 = "f".repeat(64);
-        let result = evaluate_shared_bottleneck_do_no_harm(
-            &comparison,
-            1_100_000,
-            900_000,
-        )
-        .expect("valid evidence");
+        let result = evaluate_shared_bottleneck_do_no_harm(&comparison, 1_100_000, 900_000)
+            .expect("valid evidence");
         assert_eq!(result.disposition, GateDisposition::Inconclusive);
         assert_eq!(
             result.reason,
@@ -770,12 +731,8 @@ mod tests {
     fn different_bottleneck_capacity_makes_pair_inconclusive() {
         let mut comparison = shared_comparison();
         comparison.treatment.bottleneck_capacity_bps = 90_000_000;
-        let result = evaluate_shared_bottleneck_do_no_harm(
-            &comparison,
-            1_100_000,
-            900_000,
-        )
-        .expect("valid evidence");
+        let result = evaluate_shared_bottleneck_do_no_harm(&comparison, 1_100_000, 900_000)
+            .expect("valid evidence");
         assert_eq!(result.disposition, GateDisposition::Inconclusive);
         assert_eq!(
             result.reason,
@@ -787,29 +744,18 @@ mod tests {
     fn cleanup_failure_cannot_be_a_pass() {
         let mut comparison = shared_comparison();
         comparison.treatment.evidence.cleanup_verified = false;
-        let result = evaluate_shared_bottleneck_do_no_harm(
-            &comparison,
-            1_100_000,
-            900_000,
-        )
-        .expect("valid evidence");
+        let result = evaluate_shared_bottleneck_do_no_harm(&comparison, 1_100_000, 900_000)
+            .expect("valid evidence");
         assert_eq!(result.disposition, GateDisposition::Fail);
-        assert_eq!(
-            result.reason,
-            "namespace_or_resource_cleanup_not_verified"
-        );
+        assert_eq!(result.reason, "namespace_or_resource_cleanup_not_verified");
     }
 
     #[test]
     fn missing_tcp_control_counters_make_pair_inconclusive() {
         let mut comparison = shared_comparison();
         comparison.control.all_required_counters_present = false;
-        let result = evaluate_shared_bottleneck_do_no_harm(
-            &comparison,
-            1_100_000,
-            900_000,
-        )
-        .expect("valid evidence");
+        let result = evaluate_shared_bottleneck_do_no_harm(&comparison, 1_100_000, 900_000)
+            .expect("valid evidence");
         assert_eq!(result.disposition, GateDisposition::Inconclusive);
     }
 
@@ -828,12 +774,8 @@ mod tests {
         let mut comparison = shared_comparison();
         comparison.control.tcp_flow_a_goodput_bps = 0;
         comparison.control.tcp_flow_b_goodput_bps = 0;
-        let result = evaluate_shared_bottleneck_do_no_harm(
-            &comparison,
-            1_100_000,
-            900_000,
-        )
-        .expect("valid evidence");
+        let result = evaluate_shared_bottleneck_do_no_harm(&comparison, 1_100_000, 900_000)
+            .expect("valid evidence");
         assert_eq!(result.disposition, GateDisposition::Inconclusive);
     }
 
@@ -857,13 +799,14 @@ mod tests {
     fn external_scheduler_requires_a_valid_artifact_digest() {
         let mut trial_identity = identity();
         trial_identity.mptcp_scheduler = "research-scheduler".to_owned();
-        trial_identity.mptcp_scheduler_provenance =
-            ImplementationProvenance::ExternalArtifact {
-                artifact_sha256: "not-a-digest".to_owned(),
-            };
+        trial_identity.mptcp_scheduler_provenance = ImplementationProvenance::ExternalArtifact {
+            artifact_sha256: "not-a-digest".to_owned(),
+        };
         assert_eq!(
             trial_identity.validate(),
-            Err(EvidenceError::InvalidImplementationArtifact("mptcp_scheduler"))
+            Err(EvidenceError::InvalidImplementationArtifact(
+                "mptcp_scheduler"
+            ))
         );
     }
 
@@ -914,12 +857,10 @@ mod tests {
     #[test]
     fn fixed_point_ratio_is_repeatable() {
         let comparison = shared_comparison();
-        let first =
-            evaluate_shared_bottleneck_do_no_harm(&comparison, 1_100_000, 900_000)
-                .expect("valid evidence");
-        let second =
-            evaluate_shared_bottleneck_do_no_harm(&comparison, 1_100_000, 900_000)
-                .expect("same frozen evidence");
+        let first = evaluate_shared_bottleneck_do_no_harm(&comparison, 1_100_000, 900_000)
+            .expect("valid evidence");
+        let second = evaluate_shared_bottleneck_do_no_harm(&comparison, 1_100_000, 900_000)
+            .expect("same frozen evidence");
         assert_eq!(first, second);
     }
 }
