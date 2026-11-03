@@ -263,14 +263,14 @@ pub fn build_plan(profile: &QdiscProfile) -> Result<CommandPlan, QdiscPlanError>
     let mut commands = Vec::new();
 
     // Read-only host capability/version preflight.
-    add(&mut commands, "preflight", None, Some("kernel-version"), "uname", &["-r"]);
-    add(&mut commands, "preflight", None, Some("iproute2-version"), "ip", &["-Version"]);
-    add(&mut commands, "preflight", None, Some("tc-version"), "tc", &["-V"]);
+    add(&mut commands, "preflight", None, Some("kernel_version"), "uname", &["-r"]);
+    add(&mut commands, "preflight", None, Some("iproute2_version"), "ip", &["-Version"]);
+    add(&mut commands, "preflight", None, Some("tc_version"), "tc", &["-V"]);
     add(
         &mut commands,
         "preflight",
         None,
-        Some("iperf3-version"),
+        Some("iperf3_version"),
         "iperf3",
         &["--version"],
     );
@@ -278,7 +278,7 @@ pub fn build_plan(profile: &QdiscProfile) -> Result<CommandPlan, QdiscPlanError>
         &mut commands,
         "preflight",
         None,
-        Some("existing-netns-inventory"),
+        Some("namespace_inventory_before"),
         "ip",
         &["netns", "list"],
     );
@@ -539,7 +539,7 @@ pub fn build_plan(profile: &QdiscProfile) -> Result<CommandPlan, QdiscPlanError>
         &mut commands,
         "setup",
         None,
-        Some("exact-qdisc-install-argv".to_owned()),
+        Some("exact_qdisc_install_argv".to_owned()),
         "ip",
         qdisc_args(profile),
     );
@@ -547,7 +547,25 @@ pub fn build_plan(profile: &QdiscProfile) -> Result<CommandPlan, QdiscPlanError>
         &mut commands,
         "pre-load-capture",
         None,
-        Some("qdisc-statistics-pre-load".to_owned()),
+        Some("qdisc_readback_json".to_owned()),
+        "ip",
+        vec![
+            "netns".to_owned(),
+            "exec".to_owned(),
+            gw.clone(),
+            "tc".to_owned(),
+            "-j".to_owned(),
+            "qdisc".to_owned(),
+            "show".to_owned(),
+            "dev".to_owned(),
+            "vwan".to_owned(),
+        ],
+    );
+    add_owned(
+        &mut commands,
+        "pre-load-capture",
+        None,
+        Some("qdisc_statistics_pre_load_json".to_owned()),
         "ip",
         vec![
             "netns".to_owned(),
@@ -566,7 +584,7 @@ pub fn build_plan(profile: &QdiscProfile) -> Result<CommandPlan, QdiscPlanError>
         &mut commands,
         "pre-load-capture",
         None,
-        Some("gateway-link-counters-pre-load".to_owned()),
+        Some("gateway_link_counters_pre_load_json".to_owned()),
         "ip",
         vec![
             "netns".to_owned(),
@@ -586,7 +604,7 @@ pub fn build_plan(profile: &QdiscProfile) -> Result<CommandPlan, QdiscPlanError>
         &mut commands,
         "workload-server",
         None,
-        Some("iperf3-server".to_owned()),
+        Some("iperf3_server_start".to_owned()),
         "ip",
         vec![
             "netns".to_owned(),
@@ -602,8 +620,8 @@ pub fn build_plan(profile: &QdiscProfile) -> Result<CommandPlan, QdiscPlanError>
     // concurrently by a future executor. They use identical duration and do
     // not assign preferential DSCP markings.
     for (namespace, flow_count, artifact) in [
-        (&tenant_a, profile.tenant_a_parallel_flows, "tenant-a-iperf3-json"),
-        (&tenant_b, profile.tenant_b_parallel_flows, "tenant-b-iperf3-json"),
+        (&tenant_a, profile.tenant_a_parallel_flows, "tenant_a_iperf3_json"),
+        (&tenant_b, profile.tenant_b_parallel_flows, "tenant_b_iperf3_json"),
     ] {
         add_owned(
             &mut commands,
@@ -633,25 +651,25 @@ pub fn build_plan(profile: &QdiscProfile) -> Result<CommandPlan, QdiscPlanError>
             gw.clone(),
             "tc",
             vec!["-s", "-j", "qdisc", "show", "dev", "vwan"],
-            "qdisc-statistics-post-load",
+            "qdisc_statistics_post_load_json",
         ),
         (
             gw.clone(),
             "ip",
             vec!["-j", "-s", "link", "show", "dev", "vwan"],
-            "gateway-link-counters-post-load",
+            "gateway_link_counters_post_load_json",
         ),
         (
             gw.clone(),
             "ip",
             vec!["-j", "route", "show", "table", "all"],
-            "gateway-routes",
+            "gateway_routes_json",
         ),
         (
             server.clone(),
             "ip",
             vec!["-j", "route", "show", "table", "all"],
-            "server-routes",
+            "server_routes_json",
         ),
     ] {
         let mut argv = vec![
@@ -670,23 +688,6 @@ pub fn build_plan(profile: &QdiscProfile) -> Result<CommandPlan, QdiscPlanError>
             argv,
         );
     }
-    add(
-        &mut commands,
-        "capture",
-        None,
-        Some("qdisc-readback-text"),
-        "ip",
-        &[
-            "netns",
-            "exec",
-            &gw,
-            "tc",
-            "qdisc",
-            "show",
-            "dev",
-            "vwan",
-        ],
-    );
 
     // Delete server namespace first, then the remaining isolated namespaces.
     // Namespace deletion is the resource cleanup boundary; no host qdisc command
@@ -713,7 +714,7 @@ pub fn build_plan(profile: &QdiscProfile) -> Result<CommandPlan, QdiscPlanError>
         &mut commands,
         "post-cleanup-capture",
         None,
-        Some("cleanup-namespace-inventory-after"),
+        Some("cleanup_namespace_inventory_after"),
         "ip",
         &["netns", "list"],
     );
@@ -922,7 +923,7 @@ mod tests {
         let inventory = plan
             .commands
             .iter()
-            .find(|command| command.artifact_id.as_deref() == Some("existing-netns-inventory"))
+            .find(|command| command.artifact_id.as_deref() == Some("namespace_inventory_before"))
             .expect("read-only namespace inventory");
         assert_eq!(inventory.program, "ip");
         assert_eq!(inventory.args, vec!["netns", "list"]);
