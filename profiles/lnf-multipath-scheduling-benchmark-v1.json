@@ -67,7 +67,9 @@
     "MPATH-14",
     "MPATH-15",
     "MPATH-16",
-    "MPATH-17"
+    "MPATH-17",
+    "MPATH-18",
+    "MPATH-19"
   ],
   "benchmarks": [
     {
@@ -139,6 +141,20 @@
       "operator": "baseline_first",
       "target": null,
       "target_status": "baseline_first"
+    },
+    {
+      "id": "MPATH_CAPACITY_DOMAIN_001",
+      "metric": "bytes_or_rate_counted_from_same_declared_capacity_domain_more_than_once",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_REDUNDANT_DOMAIN_DIVERSITY_001",
+      "metric": "redundant_copy_sent_without_distinct_failure_and_capacity_domains",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
     }
   ],
   "required_metrics": [
@@ -160,7 +176,10 @@
     "network_first_arrival_latency_p50_p95_p99",
     "in_order_application_release_latency_p50_p95_p99",
     "network_received_unique_bytes_vs_in_order_useful_application_bytes",
-    "out_of_order_bytes_retained_at_reassembly_timeout"
+    "out_of_order_bytes_retained_at_reassembly_timeout",
+    "declared_shared_capacity_group_per_path",
+    "independent_failure_domain_count_vs_capacity_domain_count",
+    "scheduled_bytes_from_paths_sharing_one_capacity_domain"
   ],
   "evidence_classes": [
     "deterministic_model",
@@ -177,7 +196,9 @@
     "No claim of SOTA superiority before matched pinned transport runs",
     "No claim of production readiness or network actuation",
     "No claim that deterministic segment traces reproduce ACK clocks, congestion control, retransmission or real radio propagation",
-    "No claim that shared-risk-group synthetic loss is a calibrated common-cause failure distribution"
+    "No claim that shared-risk-group synthetic loss is a calibrated common-cause failure distribution",
+    "No claim that links in distinct failure domains provide independent bottleneck capacity",
+    "The v1 scheduler permits only one path per declared capacity group and may underuse real capacity within that group"
   ],
   "baseline_methodology": {
     "scheduler_implementation_pinning_required": true,
