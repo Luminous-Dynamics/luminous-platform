@@ -223,6 +223,13 @@ fn validate_generated_plan(plan: &CommandPlan) -> Result<(), QdiscPlanError> {
                 return Err(QdiscPlanError::InvalidGeneratedPlan);
             }
         }
+        if command.program == "ip"
+            && command.args.first().is_some_and(|arg| arg == "netns")
+            && command.args.get(1).is_some_and(|arg| arg == "add" || arg == "del")
+            && command.args.get(2).is_none_or(|name| !expected.contains(name))
+        {
+            return Err(QdiscPlanError::InvalidGeneratedPlan);
+        }
         if command.phase == "cleanup"
             && command.args.windows(2).any(|pair| pair == ["netns", "del"])
             && command.guard != Some("namespace-created-by-this-run")
