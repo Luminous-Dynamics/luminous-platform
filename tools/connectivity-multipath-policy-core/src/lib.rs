@@ -12,6 +12,8 @@ use std::collections::BTreeSet;
 const PARTS_PER_MILLION: u128 = 1_000_000;
 const BYTES_PER_MIB: u128 = 1_048_576;
 const MAX_CAPACITY_DOMAINS_PER_PATH: usize = 32;
+const MAX_CAPACITY_DOMAIN_ID_BYTES: usize = 128;
+const MAX_CAPACITY_EVIDENCE_SOURCE_ID_BYTES: usize = 128;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TrafficIntent {
@@ -58,13 +60,36 @@ pub struct PathObservation {
     pub energy_uwh_per_mib: u64,
     /// Operator-declared common-cause failure group.
     pub shared_risk_group: String,
-    /// Operator-declared hard capacity bottleneck group; distinct from failure correlation.
+    /// Complete set of hard throughput bottlenecks consumed by this path.
     pub capacity_domain_ids: Vec<String>,
+    /// Provenance and validity of the capacity dependency set.
+    pub capacity_domain_evidence: CapacityDomainEvidence,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CapacityDomainEvidence {
+    /// Stable identifier of the inventory/controller supplying the dependency set.
+    pub source_id: String,
+    /// Digest of the exact source inventory artifact.
+    pub inventory_sha256: String,
+    /// Frozen end-to-end topology snapshot this dependency evidence belongs to.
+    pub topology_sha256: String,
+    /// False means the inventory cannot attest that every bottleneck is enumerated.
+    pub complete: bool,
+    /// Unix epoch milliseconds at which this observation was made.
+    pub observed_at_unix_ms: u64,
+    /// Unix epoch milliseconds after which this observation must not be used.
+    pub valid_until_unix_ms: u64,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ScheduleRequest {
     pub task_id: String,
+    /// SHA-256 of the frozen topology/run snapshot expected by this decision.
+    pub topology_sha256: String,
+    /// Caller-supplied decision time; all capacity dependency evidence is
+    /// checked against this exact timestamp for deterministic replay.
+    pub now_unix_ms: u64,
     pub intent: TrafficIntent,
     pub bytes: u64,
     pub deadline_us: Option<u64>,
@@ -93,6 +118,7 @@ pub struct PathAllocation {
     pub estimated_energy_uwh: u64,
     pub shared_risk_group: String,
     pub capacity_domain_ids: Vec<String>,
+    pub capacity_domain_evidence: CapacityDomainEvidence,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -127,6 +153,8 @@ pub enum ScheduleError {
     InvalidLossBound,
     InvalidGainThreshold,
     InvalidCurrencyCode,
+    InvalidTopologyDigest,
+    InvalidCurrentTime,
     InvalidPathId,
     DuplicatePathId,
     TooManyPaths,
@@ -185,6 +213,10 @@ fn finish_time_us(bytes: u64, path: &PathObservation) -> u64 {
         .saturating_add(transfer_time_us(bytes, effective_capacity(path)))
 }
 
+fn is_sha256(value: &str) -> bool {
+    value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
+}
+
 fn capacity_domain_ids_error(ids: &[String]) -> Option<&'static str> {
     if ids.is_empty() {
         return Some("capacity_domains_unknown");
@@ -195,9 +227,49 @@ fn capacity_domain_ids_error(ids: &[String]) -> Option<&'static str> {
     if ids.iter().any(|id| id.trim().is_empty()) {
         return Some("capacity_domain_id_blank");
     }
+    if ids.iter().any(|id| id.len() > MAX_CAPACITY_DOMAIN_ID_BYTES) {
+        return Some("capacity_domain_id_too_long");
+    }
+    if ids.iter().any(|id| id.chars().any(char::is_control)) {
+        return Some("capacity_domain_id_contains_control_character");
+    }
     let unique = ids.iter().map(String::as_str).collect::<BTreeSet<_>>();
     if unique.len() != ids.len() {
         return Some("capacity_domain_id_duplicate");
+    }
+    None
+}
+
+fn capacity_domain_evidence_error(
+    request: &ScheduleRequest,
+    evidence: &CapacityDomainEvidence,
+) -> Option<&'static str> {
+    if evidence.source_id.trim().is_empty()
+        || evidence.source_id.len() > MAX_CAPACITY_EVIDENCE_SOURCE_ID_BYTES
+    {
+        return Some("capacity_domain_evidence_source_unknown");
+    }
+    if !is_sha256(&evidence.inventory_sha256) {
+        return Some("capacity_domain_inventory_digest_invalid");
+    }
+    if !is_sha256(&evidence.topology_sha256)
+        || evidence.topology_sha256 != request.topology_sha256
+    {
+        return Some("capacity_domain_topology_digest_mismatch");
+    }
+    if !evidence.complete {
+        return Some("capacity_domain_evidence_incomplete");
+    }
+    if evidence.observed_at_unix_ms == 0
+        || evidence.observed_at_unix_ms > request.now_unix_ms
+    {
+        return Some("capacity_domain_evidence_observation_time_invalid");
+    }
+    if evidence.valid_until_unix_ms <= evidence.observed_at_unix_ms {
+        return Some("capacity_domain_evidence_validity_window_invalid");
+    }
+    if evidence.valid_until_unix_ms <= request.now_unix_ms {
+        return Some("capacity_domain_evidence_stale_or_expired");
     }
     None
 }
@@ -247,6 +319,9 @@ fn exclusion_reason(request: &ScheduleRequest, path: &PathObservation) -> Option
     if let Some(reason) = capacity_domain_ids_error(&path.capacity_domain_ids) {
         return Some(reason);
     }
+    if let Some(reason) = capacity_domain_evidence_error(request, &path.capacity_domain_evidence) {
+        return Some(reason);
+    }
     None
 }
 
@@ -259,6 +334,12 @@ fn validate_request(request: &ScheduleRequest) -> Result<(), ScheduleError> {
     }
     if request.maximum_paths == 0 {
         return Err(ScheduleError::ZeroMaximumPaths);
+    }
+    if !is_sha256(&request.topology_sha256) {
+        return Err(ScheduleError::InvalidTopologyDigest);
+    }
+    if request.now_unix_ms == 0 {
+        return Err(ScheduleError::InvalidCurrentTime);
     }
     if request.minimum_gain_ppm > 1_000_000 {
         return Err(ScheduleError::InvalidGainThreshold);
@@ -328,6 +409,7 @@ fn single_candidate(request: &ScheduleRequest, path: &PathObservation) -> Option
             estimated_energy_uwh: energy,
             shared_risk_group: path.shared_risk_group.clone(),
             capacity_domain_ids: canonical_capacity_domain_ids(&path.capacity_domain_ids),
+            capacity_domain_evidence: path.capacity_domain_evidence.clone(),
         }],
         finish_us: finish,
         cost_micros: cost,
@@ -753,12 +835,22 @@ mod tests {
             energy_uwh_per_mib: 10,
             shared_risk_group: risk.to_owned(),
             capacity_domain_ids: vec![format!("capacity-{id}")],
+            capacity_domain_evidence: CapacityDomainEvidence {
+                source_id: "operator-inventory-1".to_owned(),
+                inventory_sha256: "a".repeat(64),
+                topology_sha256: "f".repeat(64),
+                complete: true,
+                observed_at_unix_ms: 900_000,
+                valid_until_unix_ms: 1_100_000,
+            },
         }
     }
 
     fn request() -> ScheduleRequest {
         ScheduleRequest {
             task_id: "task-1".to_owned(),
+            topology_sha256: "f".repeat(64),
+            now_unix_ms: 1_000_000,
             intent: TrafficIntent::BulkTransfer,
             bytes: 8 * 1_048_576,
             deadline_us: Some(5_000_000),
@@ -856,6 +948,75 @@ mod tests {
         assert_eq!(result.exclusions.len(), 2);
         assert_eq!(result.exclusions[0].reason, "capacity_domain_id_blank");
         assert_eq!(result.exclusions[1].reason, "capacity_domain_id_duplicate");
+    }
+
+    #[test]
+    fn incomplete_capacity_domain_inventory_is_excluded() {
+        let mut path = path("incomplete", 10_000, 20_000_000, 10, "risk-a");
+        path.capacity_domain_evidence.complete = false;
+        let result = evaluate(&request(), &[path], Strategy::BestRtt).expect("valid path");
+        assert_eq!(result.mode, DecisionMode::NoRoute);
+        assert_eq!(
+            result.exclusions[0].reason,
+            "capacity_domain_evidence_incomplete"
+        );
+    }
+
+    #[test]
+    fn expired_capacity_domain_inventory_is_excluded() {
+        let mut path = path("expired", 10_000, 20_000_000, 10, "risk-a");
+        path.capacity_domain_evidence.valid_until_unix_ms = request().now_unix_ms;
+        let result = evaluate(&request(), &[path], Strategy::BestRtt).expect("valid path");
+        assert_eq!(result.mode, DecisionMode::NoRoute);
+        assert_eq!(
+            result.exclusions[0].reason,
+            "capacity_domain_evidence_stale_or_expired"
+        );
+    }
+
+    #[test]
+    fn capacity_domain_inventory_from_another_topology_is_excluded() {
+        let mut path = path("wrong-topology", 10_000, 20_000_000, 10, "risk-a");
+        path.capacity_domain_evidence.topology_sha256 = "b".repeat(64);
+        let result = evaluate(&request(), &[path], Strategy::BestRtt).expect("valid path");
+        assert_eq!(result.mode, DecisionMode::NoRoute);
+        assert_eq!(
+            result.exclusions[0].reason,
+            "capacity_domain_topology_digest_mismatch"
+        );
+    }
+
+    #[test]
+    fn malformed_inventory_digest_is_excluded() {
+        let mut path = path("bad-inventory", 10_000, 20_000_000, 10, "risk-a");
+        path.capacity_domain_evidence.inventory_sha256 = "not-a-digest".to_owned();
+        let result = evaluate(&request(), &[path], Strategy::BestRtt).expect("valid path");
+        assert_eq!(result.mode, DecisionMode::NoRoute);
+        assert_eq!(
+            result.exclusions[0].reason,
+            "capacity_domain_inventory_digest_invalid"
+        );
+    }
+
+    #[test]
+    fn future_capacity_domain_observation_is_excluded() {
+        let mut path = path("future", 10_000, 20_000_000, 10, "risk-a");
+        path.capacity_domain_evidence.observed_at_unix_ms = request().now_unix_ms + 1;
+        let result = evaluate(&request(), &[path], Strategy::BestRtt).expect("valid path");
+        assert_eq!(result.mode, DecisionMode::NoRoute);
+        assert_eq!(
+            result.exclusions[0].reason,
+            "capacity_domain_evidence_observation_time_invalid"
+        );
+    }
+
+    #[test]
+    fn capacity_domain_id_length_is_bounded() {
+        let mut path = path("too-long", 10_000, 20_000_000, 10, "risk-a");
+        path.capacity_domain_ids = vec!["x".repeat(MAX_CAPACITY_DOMAIN_ID_BYTES + 1)];
+        let result = evaluate(&request(), &[path], Strategy::BestRtt).expect("valid path");
+        assert_eq!(result.mode, DecisionMode::NoRoute);
+        assert_eq!(result.exclusions[0].reason, "capacity_domain_id_too_long");
     }
 
     #[test]
