@@ -55,9 +55,36 @@ pub fn validate_draft2020_12(
 pub struct OperationalDependencyClaimAudit {
     pub claim_id: String,
     pub shared_dependency_ids: Vec<String>,
+    pub shared_fault_domain_keys: Vec<String>,
     pub required_not_exercised_dependency_ids: Vec<String>,
     pub required_unknown_dependency_ids: Vec<String>,
     pub claim_ceiling: String,
+}
+
+fn operational_dependency_domain_keys(
+    dependency: &serde_json::Value,
+) -> BTreeSet<(String, String)> {
+    let status = dependency
+        .get("status")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or_default();
+    if !matches!(status, "observed_in_fixture" | "declared_shared") {
+        return BTreeSet::new();
+    }
+    let Some(identity) = dependency
+        .get("identity_label")
+        .and_then(serde_json::Value::as_str)
+    else {
+        return BTreeSet::new();
+    };
+    dependency
+        .get("canonical_fault_domains")
+        .and_then(serde_json::Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(serde_json::Value::as_str)
+        .map(|dimension| (dimension.to_string(), identity.to_string()))
+        .collect()
 }
 
 /// Deterministic semantic audit of an ITOPS operational dependency supplement.
@@ -250,19 +277,60 @@ pub fn audit_operational_dependency_supplement(
             .map(ToOwned::to_owned)
             .collect();
         let mut shared = BTreeSet::new();
+        let mut shared_fault_domain_keys = BTreeSet::new();
+        let mut compared_component_not_exercised = false;
         for compared_id in &compared_ids {
-            if !components.contains_key(compared_id) {
+            let Some(compared_component) = components.get(compared_id).copied() else {
                 violations.push(format!("claim_comparison_component_unknown:{claim_id}:{compared_id}"));
                 continue;
+            };
+            if compared_id == source_id {
+                violations.push(format!("claim_compares_source_to_itself:{claim_id}:{compared_id}"));
+                continue;
             }
+            let peer_role = compared_component
+                .get("role")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or_default();
+            if !matches!(peer_role, "agent_under_test" | "episode_runner" | "benchmark_evaluator") {
+                violations.push(format!("claim_comparison_role_not_allowed:{claim_id}:{compared_id}:{peer_role}"));
+            }
+            let execution_status = compared_component
+                .get("execution_status")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or_default();
+            if !matches!(execution_status, "process_observed" | "synthetic_reference") {
+                compared_component_not_exercised = true;
+            }
+
             if let Some(peer_dependencies) = component_dependencies.get(compared_id) {
-                shared.extend(source_dependencies.intersection(peer_dependencies).cloned());
+                let mut peer_domain_keys = BTreeSet::new();
+                for dependency_id in peer_dependencies {
+                    if let Some(dependency) = dependencies.get(dependency_id) {
+                        peer_domain_keys.extend(operational_dependency_domain_keys(dependency));
+                    }
+                }
+                for source_dependency_id in &source_dependencies {
+                    let Some(source_dependency) = dependencies.get(source_dependency_id) else {
+                        continue;
+                    };
+                    let source_keys = operational_dependency_domain_keys(source_dependency);
+                    let overlap: BTreeSet<_> =
+                        source_keys.intersection(&peer_domain_keys).cloned().collect();
+                    if !overlap.is_empty() {
+                        shared.insert(source_dependency_id.clone());
+                        shared_fault_domain_keys.extend(overlap);
+                    }
+                }
             }
         }
 
         let mut actual_findings = BTreeSet::new();
         if !shared.is_empty() {
             actual_findings.insert("shared_dependencies_present".to_string());
+        }
+        if compared_component_not_exercised {
+            actual_findings.insert("compared_component_not_exercised".to_string());
         }
         if !not_exercised.is_empty() {
             actual_findings.insert("required_source_not_exercised".to_string());
@@ -302,6 +370,10 @@ pub fn audit_operational_dependency_supplement(
         claims.push(OperationalDependencyClaimAudit {
             claim_id,
             shared_dependency_ids: shared.into_iter().collect(),
+            shared_fault_domain_keys: shared_fault_domain_keys
+                .into_iter()
+                .map(|(dimension, identity)| format!("{dimension}={identity}"))
+                .collect(),
             required_not_exercised_dependency_ids: not_exercised.into_iter().collect(),
             required_unknown_dependency_ids: unknown.into_iter().collect(),
             claim_ceiling,
