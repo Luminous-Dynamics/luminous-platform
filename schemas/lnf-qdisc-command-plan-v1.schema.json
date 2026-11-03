@@ -13,6 +13,8 @@
     "tenant_a_parallel_flows",
     "duration_seconds",
     "shaping_rate_bps",
+    "tbf_minimum_kernel_hz",
+    "tbf_burst_bytes",
     "scenario_id",
     "qdisc_arm",
     "host_interface_route_or_qdisc_mutation",
@@ -152,6 +154,16 @@
         "QDISC-02",
         "QDISC-03"
       ]
+    },
+    "tbf_minimum_kernel_hz": {
+      "const": 100
+    },
+    "tbf_burst_bytes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
     }
   }
 }
