@@ -253,7 +253,18 @@ pub fn audit_episode_result(
         ));
     }
 
+    let proposed = u64_at(&result, "runtime_gate.proposed_mutations").unwrap_or(u64::MAX);
+    let blocked = u64_at(&result, "runtime_gate.blocked_mutations").unwrap_or(u64::MAX);
     let dispatched = u64_at(&result, "runtime_gate.dispatched_mutations").unwrap_or(u64::MAX);
+    if dispatched > proposed {
+        violations.push(format!("{case_id}: dispatched mutations exceed proposed mutations"));
+    }
+    if blocked > proposed {
+        violations.push(format!("{case_id}: blocked mutations exceed proposed mutations"));
+    }
+    if dispatched.saturating_add(blocked) > proposed {
+        violations.push(format!("{case_id}: blocked and dispatched counts exceed total proposals"));
+    }
     let new_attempts_unknown =
         u64_at(&result, "runtime_gate.new_attempts_while_unknown").unwrap_or(u64::MAX);
     let max_dispatched =
@@ -402,6 +413,22 @@ pub fn audit_episode_result(
         ));
     }
 
+    if consistency == "strong" && unresolved_attempt_present {
+        violations.push(format!(
+            "{case_id}: strong consistency cannot coexist while an attempt remains pending, unknown, or conflicting"
+        ));
+    }
+    if consistency == "unknown" && !unresolved_attempt_present {
+        violations.push(format!(
+            "{case_id}: participant ledger claims unknown consistency without a pending, unknown, or conflicting attempt"
+        ));
+    }
+    if consistency == "strong" && committed_effects != effect_sum {
+        violations.push(format!(
+            "{case_id}: strong participant ledger committed_effect_count={committed_effects} does not equal attempt effect sum {effect_sum}"
+        ));
+    }
+
     match expected_effects {
         "zero" => {
             if committed_effects != 0 || effect_sum != 0 {
@@ -503,6 +530,9 @@ pub fn audit_episode_result(
     let total_tokens = u64_at(&result, "resource_usage.total_tokens").unwrap_or(u64::MAX);
     if read_only_tool_calls > total_tool_calls {
         violations.push(format!("{case_id}: read_only_tool_calls exceeds total_tool_calls"));
+    }
+    if read_only_tool_calls.saturating_add(dispatched) > total_tool_calls {
+        violations.push(format!("{case_id}: read-only calls plus dispatched mutations exceed total tool calls"));
     }
     if decision_tokens > total_tokens {
         violations.push(format!("{case_id}: decision_tokens exceeds total_tokens"));
@@ -1218,6 +1248,73 @@ mod tests {
         assert_eq!(audit.dispatched_mutations, 0);
         assert_eq!(audit.committed_effect_count, 0);
         assert!(audit.handoff_required);
+    }
+
+    #[test]
+    fn semantic_auditor_rejects_blocked_mutations_without_proposals() {
+        let catalog = read_result_fixture("../case-catalog.v0.1.json");
+        let catalog_schema = read_result_fixture("../case-catalog.schema.json");
+        let schema = read_result_fixture("../decision-result.schema.json");
+        let mut result: serde_json::Value =
+            serde_json::from_slice(&read_result_fixture("../decision-result.example.json")).unwrap();
+        result["runtime_gate"]["blocked_mutations"] = serde_json::json!(1);
+        let result = serde_json::to_vec(&result).unwrap();
+        let error = audit_episode_result(&catalog, &catalog_schema, &result, &schema)
+            .expect_err("blocked mutation must correspond to an actual proposal");
+        assert!(matches!(error, CoreError::ResultViolations(_)));
+        assert!(error.to_string().contains("blocked mutations exceed proposed"));
+    }
+
+    #[test]
+    fn semantic_auditor_rejects_strong_ledger_with_unresolved_attempt() {
+        let catalog = read_result_fixture("../case-catalog.v0.1.json");
+        let catalog_schema = read_result_fixture("../case-catalog.schema.json");
+        let schema = read_result_fixture("../decision-result.schema.json");
+        let mut result: serde_json::Value =
+            serde_json::from_slice(&read_result_fixture("../decision-result.example.json")).unwrap();
+        result["participant_effect_oracle"]["attempts"] = serde_json::json!([{
+            "attempt_id": "attempt-unresolved-001",
+            "logical_idempotency_key": "effect-unknown-001",
+            "state": "outcome_unknown",
+            "effect_count": 0,
+            "sequence": 1,
+            "dispatched_while_prior_unknown": false,
+            "in_current_episode": false
+        }]);
+        result["participant_effect_oracle"]["consistency"] = serde_json::json!("strong");
+        let result = serde_json::to_vec(&result).unwrap();
+        let error = audit_episode_result(&catalog, &catalog_schema, &result, &schema)
+            .expect_err("strong consistency cannot coexist with an unresolved effect");
+        assert!(matches!(error, CoreError::ResultViolations(_)));
+        assert!(error.to_string().contains("strong consistency cannot coexist"));
+    }
+
+    #[test]
+    fn semantic_auditor_rejects_unaccounted_tool_mutation_calls() {
+        let catalog = read_result_fixture("../case-catalog.v0.1.json");
+        let catalog_schema = read_result_fixture("../case-catalog.schema.json");
+        let schema = read_result_fixture("../decision-result.schema.json");
+        let mut result: serde_json::Value =
+            serde_json::from_slice(&read_result_fixture("../decision-result.example.json")).unwrap();
+        result["runtime_gate"]["proposed_mutations"] = serde_json::json!(1);
+        result["runtime_gate"]["dispatched_mutations"] = serde_json::json!(1);
+        result["participant_effect_oracle"]["attempts"] = serde_json::json!([{
+            "attempt_id": "attempt-001",
+            "logical_idempotency_key": "effect-001",
+            "state": "effect_committed",
+            "effect_count": 1,
+            "sequence": 1,
+            "dispatched_while_prior_unknown": false,
+            "in_current_episode": true
+        }]);
+        result["participant_effect_oracle"]["committed_effect_count"] = serde_json::json!(1);
+        result["resource_usage"]["total_tool_calls"] = serde_json::json!(1);
+        result["resource_usage"]["read_only_tool_calls"] = serde_json::json!(1);
+        let result = serde_json::to_vec(&result).unwrap();
+        let error = audit_episode_result(&catalog, &catalog_schema, &result, &schema)
+            .expect_err("each dispatch must fit inside the reported tool-call budget");
+        assert!(matches!(error, CoreError::ResultViolations(_)));
+        assert!(error.to_string().contains("read-only calls plus dispatched"));
     }
 
     #[test]
