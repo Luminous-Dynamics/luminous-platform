@@ -44,6 +44,73 @@ Source:
 
 **What we add:** independent participant-effect evidence, explicit authorization/revocation semantics, no-retry-while-unknown invariants, exact plan binding, and a case-specific evidence claim ceiling.
 
+## Continuous-operation and harness-evolution baselines
+
+### SRE-Marathon — long-horizon operational reliability
+
+SRE-Marathon (September 2026) changes the evaluation unit from one injected incident to continuous operation. Its benchmark uses a live two-zone Kubernetes deployment, repeated agent invocation at a fixed cadence, persistent workspace, overlapping faults, and code/configuration changes that travel through the same build pipeline used for repair. Runs are sealed and scored offline. The paper reports roughly sixty injected faults per run and a best score of 41.3/100 across ten evaluated methods.
+
+This is an important comparator for the next ITOPS generation, but not a directly comparable score: SRE-Marathon's task taxonomy, infrastructure, model arms and Marathon-Score differ from our candidate corpus.
+
+Source:
+- [SRE-Marathon, arXiv:2609.33023](https://arxiv.org/abs/2609.33023)
+
+**What we adopt:** fixed-cadence operation, overlapping faults, persistent state/workspace, source/configuration drift, offline scoring from recorded evidence, and long-horizon repair progress.
+
+**What we add:** the participant-effect ledger, exact-scope authority, consume-once mutation gates, explicit unknown-outcome locks, independent service observations, and proof that each claimed repair actually changed the participant-owned state.
+
+### EVOHARNESSBENCH — harness evolution and retention
+
+EVOHARNESSBENCH (September 2026) evaluates harness change itself, rather than placing all non-stationarity in the task stream. Its 17 multi-stage streams contain 802 tasks, 520 tools, 42 skills and 62 agents. It separates deployment evaluation (retention of prior capability as the harness grows) from self-evolving adaptation to new capabilities. The authors report harness-induced forgetting and inconsistent adaptation gains.
+
+Source:
+- [EVOHARNESSBENCH, arXiv:2609.04280](https://arxiv.org/abs/2609.04280)
+
+**What we adopt:** tool/skill/agent roster changes as an explicit experimental factor, retention tests after every change, and separate reporting of old-task retention versus new-task adaptation.
+
+**What we add:** permission-scope non-expansion, revocation propagation, stale-plan rejection, oracle non-interference, and zero safety-invariant regression after harness updates. This connects to the existing [ITOPS harness-evolution track #224](https://github.com/Luminous-Dynamics/luminous-platform/issues/224) and [PR #225](https://github.com/Luminous-Dynamics/luminous-platform/pull/225).
+
+### Harness Bench — model/harness attribution
+
+Harness Bench describes a 2026 diagnostic suite with 300 sandboxed tasks, seven native harnesses, ten model backends and over twenty thousand evaluation runs. It uses task-specific oracles rather than an LLM judge. Its main value here is methodological: isolate harness configuration effects from model-backend effects.
+
+Source:
+- [Harness Bench](https://www.harness-bench.ai/)
+
+We should use a factorial design where feasible:
+
+- same model + different harness;
+- different model + same harness;
+- same model/harness + changed tool roster;
+- same model/harness + changed policy/permissions;
+- same task corpus + changed hidden environment state.
+
+The benchmark must report interaction effects rather than attributing all changes to the base model.
+
+### New ITOPS campaign dimensions
+
+The next runner campaign should contain two distinct suites:
+
+1. **Episodic qualification:** the existing 23-case candidate corpus, exact-scope grants, effect ledger and oracle checks.
+2. **Continuous operation:** a persistent synthetic environment with overlapping injected faults, scheduled change events, repeated agent invocations, sealed offline evidence and an explicit human escalation channel.
+
+For the continuous suite, a proposed initial target is at least 60 fault/change events per run, across several service domains, with multiple independent run seeds and a frozen environment/agent/harness profile. This is a design target inspired by long-horizon literature, not an observed result or a claim of equivalence to SRE-Marathon.
+
+Report at least:
+
+- strict verified task success and recovery completion;
+- time spent in degraded state and time-to-detection/localization/repair;
+- unresolved side-effect duration and any blocked retry attempts;
+- unauthorized dispatches, duplicate effects and unsubstantiated success claims;
+- collateral mutations and regressions to previously healthy services;
+- retained success on tasks solved before a harness change;
+- adaptation success on newly enabled tasks;
+- permission and authority invariants before/after every harness change;
+- human active review time, escalation quality, model/tool cost and resource consumption;
+- exact event, environment, SUT, harness, oracle and seed provenance.
+
+No single aggregate score may compensate for a critical safety violation. Retention, adaptation, operational utility and safety remain separate dimensions.
+
 ## Methodology crosswalk
 
 | External methodology dimension | ITOPS implementation | Additional qualification |
