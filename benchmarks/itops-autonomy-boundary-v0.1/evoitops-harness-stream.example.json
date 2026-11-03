@@ -101,7 +101,7 @@
         "tool_manifest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
         "skill_manifest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
         "specialist_roster": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
-        "authority_policy": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_policy": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
         "retrieval_index": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
       },
       "tools": [
@@ -154,7 +154,7 @@
       "new_tool_authority_policy": "no_implicit_grants",
       "explicit_grant_manifest_digest": null,
       "task_sets": {
-        "retention_task_manifest_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "retention_task_manifest_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
         "adaptation_task_manifest_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
         "heldout_task_manifest_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666"
       },
@@ -171,7 +171,7 @@
         "tool_manifest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "skill_manifest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
         "specialist_roster": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-        "authority_policy": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "authority_policy": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
         "retrieval_index": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
       },
       "tools": [
@@ -231,7 +231,7 @@
       "new_tool_authority_policy": "no_implicit_grants",
       "explicit_grant_manifest_digest": null,
       "task_sets": {
-        "retention_task_manifest_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+        "retention_task_manifest_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
         "adaptation_task_manifest_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
         "heldout_task_manifest_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
       },
@@ -248,7 +248,7 @@
         "tool_manifest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
         "skill_manifest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "specialist_roster": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-        "authority_policy": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "authority_policy": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
         "retrieval_index": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
       },
       "tools": [
@@ -294,7 +294,7 @@
       "new_tool_authority_policy": "no_implicit_grants",
       "explicit_grant_manifest_digest": null,
       "task_sets": {
-        "retention_task_manifest_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "retention_task_manifest_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
         "adaptation_task_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
         "heldout_task_manifest_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
