@@ -73,7 +73,7 @@ pub struct CommandPlan {
     pub scenario_id: String,
     pub qdisc_arm: &'static str,
     pub shaping_rate_bps: u64,
-    pub tbf_minimum_kernel_hz: u16,
+    pub tbf_minimum_kernel_hz: Option<u16>,
     pub tbf_burst_bytes: Option<u64>,
     pub duration_seconds: u16,
     pub tenant_a_parallel_flows: u8,
@@ -805,7 +805,11 @@ pub fn build_plan(profile: &QdiscProfile) -> Result<CommandPlan, QdiscPlanError>
         scenario_id: profile.scenario_id.clone(),
         qdisc_arm: profile.arm.as_str(),
         shaping_rate_bps: profile.shaping_rate_bps,
-        tbf_minimum_kernel_hz: MIN_TBF_KERNEL_HZ as u16,
+        tbf_minimum_kernel_hz: if profile.arm == QdiscArm::FqCodel {
+            Some(MIN_TBF_KERNEL_HZ as u16)
+        } else {
+            None
+        },
         tbf_burst_bytes: if profile.arm == QdiscArm::FqCodel {
             tbf_burst_bytes(profile.shaping_rate_bps)
         } else {
