@@ -144,7 +144,16 @@ The corpus is still provisional. Once cases and oracles are independently review
 
 These are research gates, not current performance claims. EnterpriseOps-Gym's published 34.1% top-model result is a useful warning about task difficulty, but it is not a directly comparable score: a valid comparison requires running the same public task version and evaluation rules. The target is to beat baselines on both useful completion and safety, not to trade one for the other.
 
-## Qualification-core prototype\n\nFrom the qualification-core directory:\n\n\`\`\`sh\ncargo test\ncargo run --release\n\`\`\`\n\nThe CLI reports the exact-byte corpus digest and each typed workflow-plan digest. Unit tests cover exact tenant/target/operation/plan binding, revocation and expiry, duplicate idempotency keys, unknown-outcome dispatch locks, and stale observer behavior. These test sources have not yet been compiled or executed. The ledger and observer remain in-process models; process separation and agent integration are tracked in [issue #213](https://github.com/Luminous-Dynamics/luminous-platform/issues/213).\n\n## Experiment arms
+## Qualification-core prototype
+
+From the qualification-core directory:
+
+```sh
+cargo test
+cargo run --release
+```
+
+The CLI validates both published schemas and audits the synthetic result. The Rust core includes exact one-sided zero-event safety bounds and SUT-profile digest consistency checks. These source tests have not been compiled or executed. The ledger and observer remain in-process models; process separation, trusted SUT/observer identity attestation, and agent integration are tracked in [issue #213](https://github.com/Luminous-Dynamics/luminous-platform/issues/213).\n\n## Experiment arms
 
 Compare the following arms under identical tasks and environment images:
 
@@ -249,6 +258,7 @@ Every result binds:
 
 - source commit and runner/toolchain/environment digests;
 - policy and connector-manifest digests;
+- structured SUT profile: model/provider/version/size, explicit inference parameters, prompt and memory digests, tool-permission and guardrail digests, persistent-state scope, and human-approval profile;
 - corpus and scenario-variant digests;
 - oracle version, run, arm, episode, and seed;
 - task and target commitments;
@@ -276,3 +286,6 @@ The schema is domain-specific. It can be wrapped in the experimental [Luminous E
 - [ITBench-AA evaluation](https://artificialanalysis.ai/evaluations/itbench-aa).
 - [EnterpriseOps-Gym-AA announcement](https://artificialanalysis.ai/articles/announcing-enterpriseops-gym-aa), 8 July 2026.
 - [IETF Internet-Draft: Benchmarking Methodology for AI Agents in Network Operations](https://datatracker.ietf.org/doc/draft-contreras-bpm-ai-agent-benchmarking/), draft-00, 2 November 2026.
+- [Artificial Analysis EnterpriseOps-Gym-AA evaluation](https://artificialanalysis.ai/evaluations/enterprise-ops-gym-aa), current external leaderboard and methodology snapshot.
+- [Artificial Analysis ITBench-AA evaluation](https://artificialanalysis.ai/evaluations/itbench-aa), current Kubernetes incident-diagnosis benchmark and metric definition.
+- [Industry alignment crosswalk](INDUSTRY_ALIGNMENT_2026-11-03.md), dated methodology comparison and non-comparability notes.
