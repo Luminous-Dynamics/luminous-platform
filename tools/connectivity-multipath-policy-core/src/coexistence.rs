@@ -9,6 +9,14 @@ const MAX_SUBFLOWS: u16 = 64;
 const MAX_RATIO_PPM: u64 = 10_000_000;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ImplementationProvenance {
+    /// Exact implementation is part of the pinned kernel build digest.
+    InTreeKernel,
+    /// Out-of-tree implementation must be bound to its compiled artifact digest.
+    ExternalArtifact { artifact_sha256: String },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ExperimentIdentity {
     pub kernel_build_sha256: String,
     pub topology_sha256: String,
@@ -22,8 +30,10 @@ pub struct ExperimentIdentity {
     pub tcp_congestion_control: String,
     /// Exact coupled MPTCP congestion-control identity under test.
     pub mptcp_congestion_control: String,
-    /// Exact packet scheduler identity under test (including source/build identity elsewhere).
+    pub mptcp_congestion_control_provenance: ImplementationProvenance,
+    /// Exact packet scheduler identity under test.
     pub mptcp_scheduler: String,
+    pub mptcp_scheduler_provenance: ImplementationProvenance,
 }
 
 impl ExperimentIdentity {
@@ -51,6 +61,22 @@ impl ExperimentIdentity {
         {
             return Err(EvidenceError::MissingImplementationIdentity);
         }
+        if let ImplementationProvenance::ExternalArtifact { artifact_sha256 } =
+            &self.mptcp_congestion_control_provenance
+        {
+            if !is_sha256(artifact_sha256) {
+                return Err(EvidenceError::InvalidImplementationArtifact(
+                    "mptcp_congestion_control",
+                ));
+            }
+        }
+        if let ImplementationProvenance::ExternalArtifact { artifact_sha256 } =
+            &self.mptcp_scheduler_provenance
+        {
+            if !is_sha256(artifact_sha256) {
+                return Err(EvidenceError::InvalidImplementationArtifact("mptcp_scheduler"));
+            }
+        }
         Ok(())
     }
 }
@@ -66,6 +92,7 @@ pub enum GateDisposition {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum EvidenceError {
     InvalidDigest(&'static str),
+    InvalidImplementationArtifact(&'static str),
     ZeroMeasurementDuration,
     InvalidWarmupDuration,
     MissingImplementationIdentity,
@@ -77,6 +104,9 @@ pub enum EvidenceError {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct GateResult {
     pub gate_id: &'static str,
+    /// This module classifies one matched pair; programme-level qualification
+    /// requires the external repeated-trial analysis and denominator checks.
+    pub scope: &'static str,
     pub disposition: GateDisposition,
     pub reason: &'static str,
     pub target_ratio_ppm: Option<u64>,
@@ -94,6 +124,7 @@ impl GateResult {
     ) -> Self {
         Self {
             gate_id,
+            scope: "single_paired_trial",
             disposition,
             reason,
             target_ratio_ppm,
@@ -462,7 +493,9 @@ mod tests {
             measurement_duration_us: 30_000_000,
             tcp_congestion_control: "cubic".to_owned(),
             mptcp_congestion_control: "lia".to_owned(),
+            mptcp_congestion_control_provenance: ImplementationProvenance::InTreeKernel,
             mptcp_scheduler: "default".to_owned(),
+            mptcp_scheduler_provenance: ImplementationProvenance::InTreeKernel,
         }
     }
 
@@ -764,6 +797,42 @@ mod tests {
         )
         .expect("valid evidence");
         assert_eq!(result.disposition, GateDisposition::Inconclusive);
+    }
+
+    #[test]
+    fn external_scheduler_requires_a_valid_artifact_digest() {
+        let mut trial_identity = identity();
+        trial_identity.mptcp_scheduler = "research-scheduler".to_owned();
+        trial_identity.mptcp_scheduler_provenance =
+            ImplementationProvenance::ExternalArtifact {
+                artifact_sha256: "not-a-digest".to_owned(),
+            };
+        assert_eq!(
+            trial_identity.validate(),
+            Err(EvidenceError::InvalidImplementationArtifact("mptcp_scheduler"))
+        );
+    }
+
+    #[test]
+    fn paired_trial_pass_is_not_programme_level_qualification() {
+        let result = evaluate_best_path_improvement(
+            &BestPathComparison {
+                path_a_tcp_goodput_bps: 70_000_000,
+                path_b_tcp_goodput_bps: 85_000_000,
+                mptcp_goodput_bps: 90_000_000,
+                path_a_identity: identity(),
+                path_b_identity: identity(),
+                mptcp_identity: identity(),
+                path_a_counters_present: true,
+                path_b_counters_present: true,
+                reference_cleanup_verified: true,
+                evidence: evidence(),
+            },
+            1_000_000,
+        )
+        .expect("valid pair");
+        assert_eq!(result.disposition, GateDisposition::Pass);
+        assert_eq!(result.scope, "single_paired_trial");
     }
 
     #[test]
