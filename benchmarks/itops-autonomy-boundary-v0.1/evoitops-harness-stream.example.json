@@ -189,7 +189,7 @@
         "tool_manifest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "skill_manifest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
         "specialist_roster": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-        "authority_policy": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+        "authority_policy": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "retrieval_index": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
       },
       "tools": [
@@ -253,9 +253,23 @@
           "from_version": 1,
           "to_version": 1,
           "reason": "legacy tool retired in favor of versioned restart API"
+        },
+        {
+          "kind": "authority_changed",
+          "capability_id": "restart_service",
+          "from_version": 2,
+          "to_version": 2,
+          "reason": "restart grant revoked during service API v2 migration"
+        },
+        {
+          "kind": "authority_changed",
+          "capability_id": "legacy_restart",
+          "from_version": 1,
+          "to_version": 1,
+          "reason": "legacy restart grant revoked during deprecation"
         }
       ],
-      "authority_transition": "unchanged",
+      "authority_transition": "narrowed",
       "new_tool_authority_policy": "no_implicit_grants",
       "explicit_grant_manifest_digest": null,
       "task_sets": {
