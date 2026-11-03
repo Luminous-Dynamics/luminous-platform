@@ -76,6 +76,7 @@
             "enum": [
               "preflight",
               "setup",
+              "pre-load-capture",
               "workload-server",
               "workload-client",
               "capture",
