@@ -532,9 +532,47 @@ pub fn build_plan(profile: &QdiscProfile) -> Result<CommandPlan, QdiscPlanError>
         &mut commands,
         "setup",
         None,
-        None,
+        Some("exact-qdisc-install-argv".to_owned()),
         "ip",
         qdisc_args(profile),
+    );
+    add_owned(
+        &mut commands,
+        "pre-load-capture",
+        None,
+        Some("qdisc-statistics-pre-load".to_owned()),
+        "ip",
+        vec![
+            "netns".to_owned(),
+            "exec".to_owned(),
+            gw.clone(),
+            "tc".to_owned(),
+            "-s".to_owned(),
+            "-j".to_owned(),
+            "qdisc".to_owned(),
+            "show".to_owned(),
+            "dev".to_owned(),
+            "vwan".to_owned(),
+        ],
+    );
+    add_owned(
+        &mut commands,
+        "pre-load-capture",
+        None,
+        Some("gateway-link-counters-pre-load".to_owned()),
+        "ip",
+        vec![
+            "netns".to_owned(),
+            "exec".to_owned(),
+            gw.clone(),
+            "ip".to_owned(),
+            "-j".to_owned(),
+            "-s".to_owned(),
+            "link".to_owned(),
+            "show".to_owned(),
+            "dev".to_owned(),
+            "vwan".to_owned(),
+        ],
     );
 
     add_owned(
@@ -583,21 +621,38 @@ pub fn build_plan(profile: &QdiscProfile) -> Result<CommandPlan, QdiscPlanError>
         );
     }
 
-    for (namespace, args, artifact) in [
+    for (namespace, inner_program, args, artifact) in [
         (
             gw.clone(),
+            "tc",
             vec!["-s", "-j", "qdisc", "show", "dev", "vwan"],
-            "gateway-qdisc-readback",
+            "qdisc-statistics-post-load",
         ),
         (
             gw.clone(),
-            vec!["-s", "-j", "link", "show", "dev", "vwan"],
-            "gateway-wan-link-counters",
+            "ip",
+            vec!["-j", "-s", "link", "show", "dev", "vwan"],
+            "gateway-link-counters-post-load",
         ),
-        (gw.clone(), vec!["-j", "route", "show", "table", "all"], "gateway-routes"),
-        (server.clone(), vec!["-j", "route", "show", "table", "all"], "server-routes"),
+        (
+            gw.clone(),
+            "ip",
+            vec!["-j", "route", "show", "table", "all"],
+            "gateway-routes",
+        ),
+        (
+            server.clone(),
+            "ip",
+            vec!["-j", "route", "show", "table", "all"],
+            "server-routes",
+        ),
     ] {
-        let mut argv = vec!["netns".to_owned(), "exec".to_owned(), namespace];
+        let mut argv = vec![
+            "netns".to_owned(),
+            "exec".to_owned(),
+            namespace,
+            inner_program.to_owned(),
+        ];
         argv.extend(args.into_iter().map(str::to_owned));
         add_owned(
             &mut commands,
@@ -647,6 +702,14 @@ pub fn build_plan(profile: &QdiscProfile) -> Result<CommandPlan, QdiscPlanError>
             vec!["netns".to_owned(), "del".to_owned(), namespace.clone()],
         );
     }
+    add(
+        &mut commands,
+        "post-cleanup-capture",
+        None,
+        Some("cleanup-namespace-inventory-after"),
+        "ip",
+        &["netns", "list"],
+    );
 
     // A future executor may delete only namespace handles that this exact run
     // successfully created; a name collision must never authorize deleting an
