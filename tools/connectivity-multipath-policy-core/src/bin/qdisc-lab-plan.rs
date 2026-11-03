@@ -113,7 +113,7 @@ fn main() {
                 concat!(
                     "Usage: qdisc-lab-plan\n",
                     "  --run-suffix <1-8-lowercase-alphanumeric>\n",
-                    "  --arm <fq_codel|cake_besteffort_triple_isolate|cake_diffserv3_triple_isolate|cake_diffserv4>\n",
+                    "  --arm <fq_codel|cake_besteffort|cake_diffserv3|cake_diffserv4>\n",
                     "  --rate-bps <1000000..1000000000>\n",
                     "  --duration-seconds <5..300>\n",
                     "  --tenant-a-flows <1..32>\n",
