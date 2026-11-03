@@ -29,12 +29,26 @@ This v0.1 directory currently contains:
 - [case-catalog.v0.1.json](case-catalog.v0.1.json) — 23 candidate synthetic scenarios spanning operational safety cases plus three multi-step cross-domain workflows; the long-horizon cases encode ordered dependencies, system domains, expected evidence, and blocked mutation stages.
 - [catalog-lint/](catalog-lint/) — a small Rust CLI for cross-field catalog invariants and exact corpus SHA-256 output. It does not execute agents or implement full JSON Schema validation.
 - [qualification-core/](qualification-core/) — a Rust prototype that validates full Draft 2020-12 schemas and audits receipts against the exact scenario contract. It rejects malformed or internally inconsistent evidence and hard-safety violations, while retaining incorrect agent decisions, incomplete handoffs, failed effect/service postconditions, and forbidden promotion claims as scoreable outcome metrics. It also validates workflow DAGs, exact-scope plan-digest authorization, grant expiry/revocation at dispatch, deterministic effect/observer models, pairwise-distinct declared control-domain identities, and a 3,000-episode zero-critical-violation qualification calculation. The identity references are declarations, not process-isolation proof; this is not a complete runner.
+- [experiment-plan.schema.json](experiment-plan.schema.json) and [experiment-plan.example.json](experiment-plan.example.json) — a versioned preregistration contract and illustrative negative-control campaign plan covering estimand, strata, sampling, reset, dependence groups, paired arms, stopping, inference, and reporting.
+- [experiment-plan-lint/](experiment-plan-lint/) — a Rust Draft 2020-12 and semantic auditor. It checks sample-count totals, population-weight sums, arm-role uniqueness, synthetic-only boundaries, analysis-unit/interval-method consistency, reset/memory consistency, and paired-block keys.
 
 The scenario catalog is marked `candidate_not_frozen`. It is a starting corpus for review, not yet an authoritative benchmark set. Every case needs independent review of task clarity, oracle observability, permissions, state transitions, expected action, and negative-control behavior before freezing.
 
 This README defines the proposed protocol and evaluation method. The qualification-core provides executable local primitives, but it does **not** provide a complete runner, agent integration, environment image, process-isolated oracle, baseline measurements, or external audit. The example result is not a measured benchmark result.
 
 The result schema's `opsbench_case_id` enum is cross-checked against the catalog. The result records the exact corpus digest and scenario-variant digest so future revisions cannot silently change the meaning of a benchmark result.
+
+## Preregistered campaign design
+
+The experiment-plan example is a template, not a frozen plan or measured result.
+Its digest values, SUT profiles, seed manifest and population weights are
+illustrative placeholders. Replace them with reviewed, reproducible values
+before freezing the plan. The semantic linter checks the structural and
+cross-field contracts, but it cannot prove that a seed schedule is random,
+that resets actually occurred, or that dependence groups match deployment
+reality. The runner must emit reset and lineage receipts, and an independent
+review must establish whether the analysis unit is an episode or a cluster.
+
 
 ## Relationship to existing benchmarks
 
