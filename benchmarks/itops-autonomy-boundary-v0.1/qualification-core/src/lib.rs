@@ -7,7 +7,7 @@
 //! qualification. A future runner must place the gate, participant oracle,
 //! and service observer in separate processes/control domains.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 use std::fmt;
@@ -96,13 +96,13 @@ struct OracleContract {
     participant_effects: String,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Workflow {
     pub steps: Vec<WorkflowStep>,
     pub completion_preconditions: Vec<String>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct WorkflowStep {
     pub step_id: String,
     pub domain: String,
@@ -113,7 +113,7 @@ pub struct WorkflowStep {
     pub authority_requirement: Option<AuthorityRequirement>,
 }
 
-#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct AuthorityRequirement {
     pub tenant_binding: String,
     pub target_binding: String,
@@ -475,7 +475,7 @@ pub enum LedgerError {
     InvalidTransition,
 }
 
-/// Participant-owned append-only effect-ledger model.
+/// Participant-owned effect-ledger model.
 ///
 /// The agent adapter must receive read-only access to snapshots, never a
 /// mutable reference to this ledger. This in-process type is a deterministic
@@ -501,7 +501,7 @@ impl ParticipantEffectLedger {
         if self.attempts.iter().any(|a| a.idempotency_key == idempotency_key) {
             return Err(LedgerError::DuplicateIdempotencyKey);
         }
-        if self.attempts.iter().any(|a| a.state == EffectState::OutcomeUnknown) {
+        if self.attempts.iter().any(|a| matches!(a.state, EffectState::Dispatched | EffectState::OutcomeUnknown)) {
             return Err(LedgerError::UnknownOutcomeLocked);
         }
 
