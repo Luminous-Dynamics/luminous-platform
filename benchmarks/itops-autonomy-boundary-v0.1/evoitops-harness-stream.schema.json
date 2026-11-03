@@ -137,7 +137,9 @@
                 "version",
                 "schema_digest",
                 "authority_scope_digest",
-                "lifecycle"
+                "lifecycle",
+                "authorization_state",
+                "grant_binding_digest"
               ],
               "properties": {
                 "capability_id": {
@@ -158,8 +160,68 @@
                     "active",
                     "deprecated"
                   ]
+                },
+                "authorization_state": {
+                  "enum": [
+                    "no_grant",
+                    "explicit_grant"
+                  ]
+                },
+                "grant_binding_digest": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/sha256"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
-              }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "authorization_state": {
+                        "const": "no_grant"
+                      }
+                    },
+                    "required": [
+                      "authorization_state"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "grant_binding_digest": {
+                        "type": "null"
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "authorization_state": {
+                        "const": "explicit_grant"
+                      }
+                    },
+                    "required": [
+                      "authorization_state"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "grant_binding_digest": {
+                        "$ref": "#/$defs/sha256"
+                      }
+                    }
+                  }
+                }
+              ]
             }
           },
           "capability_events": {
@@ -259,7 +321,35 @@
               "full_harness_adaptation_fixed_model",
               "declared_clustered_memory"
             ]
-          }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "authority_transition": {
+                    "const": "expanded_with_explicit_grants"
+                  }
+                },
+                "required": [
+                  "authority_transition"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "explicit_grant_manifest_digest": {
+                    "$ref": "#/$defs/sha256"
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "explicit_grant_manifest_digest": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          ]
         }
       }
     },
