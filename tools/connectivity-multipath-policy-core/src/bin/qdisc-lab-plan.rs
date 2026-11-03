@@ -110,8 +110,17 @@ fn main() {
         Ok(profile) => profile,
         Err(error) if error == "help" => {
             println!(
-                "Usage: qdisc-lab-plan\\n  --run-suffix <1-8-lowercase-alphanumeric>\\n  --arm <fq_codel|cake_besteffort_triple_isolate|cake_diffserv3_triple_isolate|cake_diffserv4_triple_isolate>\\n  --rate-bps <1000000..1000000000>\\n  --duration-seconds <5..300>\\n  --tenant-a-flows <1..32>\\n  --tenant-b-flows <1..32>\\nEmits a deterministic JSON argv plan only. No command is executed, no host interface/route/qdisc is changed, and no public network is accessed."
-
+                concat!(
+                    "Usage: qdisc-lab-plan\\n",
+                    "  --run-suffix <1-8-lowercase-alphanumeric>\\n",
+                    "  --arm <fq_codel|cake_besteffort_triple_isolate|cake_diffserv3_triple_isolate|cake_diffserv4_triple_isolate>\\n",
+                    "  --rate-bps <1000000..1000000000>\\n",
+                    "  --duration-seconds <5..300>\\n",
+                    "  --tenant-a-flows <1..32>\\n",
+                    "  --tenant-b-flows <1..32>\\n",
+                    "Emits a deterministic JSON argv plan only. No command is executed.\\n",
+                    "No host interface/route/qdisc or public network is changed."
+                )
             );
             return;
         }
@@ -141,7 +150,7 @@ fn main() {
         "  \"run_suffix\": \"{}\",",
         json_escape(&plan.run_suffix)
     );
-    println!("  \"host_network_mutation\": false,");
+    println!("  \"host_interface_route_or_qdisc_mutation\": false,");
     println!("  \"public_network_access\": false,");
     println!("  \"nat_enabled\": false,");
     println!("  \"execution_conducted\": false,");
@@ -176,7 +185,11 @@ fn main() {
             .map(|value| format!("\"{}\"", json_escape(value)))
             .unwrap_or_else(|| "null".to_owned());
         println!(
-            "    {{\"phase\":\"{}\",\"parallel_group\":{},\"artifact_id\":{},\"guard\":{},\"program\":\"{}\",\"args\":[{}]}}{}",
+            concat!(
+                "    {{\\\"phase\\\":\\\"{}\\\",\\\"parallel_group\\\":{},",
+                "\\\"artifact_id\\\":{},\\\"guard\\\":{},\\\"program\\\":\\\"{}\\\",",
+                "\\\"args\\\":[{}]}}{}"
+            ),
             json_escape(command.phase),
             group,
             artifact,
