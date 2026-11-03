@@ -481,7 +481,7 @@ pub fn allocate_resource_incidence(
         }
 
         let mut freeze = vec![false; eligible.len()];
-        for (index, item) in eligible.iter().enumerate() {
+        for index in 0..eligible.len() {
             if active[index] && rates_scaled[index] >= path_ceiling_scaled[index] {
                 freeze[index] = true;
             }
