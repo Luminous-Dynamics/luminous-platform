@@ -52,7 +52,9 @@
     "fixed_point_ratio_unit": "parts_per_million",
     "statistical_confidence_intervals": "external analysis layer retains all repetitions and denominators",
     "paired_gate_scope": "single_paired_trial_only",
-    "programme_qualification_requires_external_repeated_trial_analysis": true
+    "programme_qualification_requires_external_repeated_trial_analysis": true,
+    "minimum_negotiated_subflows_each_endpoint": 2,
+    "local_and_remote_subflow_counts_must_be_reported_separately": true
   },
   "scenarios": [
     "MPCX-00",
