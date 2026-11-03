@@ -1,0 +1,302 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/lnf-resource-incidence-profile-v1.schema.json",
+  "title": "LNF Resource Incidence Progressive Filling Profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "status",
+    "reviewed_on",
+    "objective",
+    "ownership_boundary",
+    "algorithm",
+    "evidence_contract",
+    "scenario_ids",
+    "scenario_definitions",
+    "comparators",
+    "benchmarks",
+    "required_metrics",
+    "verdicts",
+    "evidence_classes",
+    "explicit_non_claims"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.lnf.resource-incidence-profile.v1"
+    },
+    "profile_id": {
+      "const": "lnf-resource-incidence-v1"
+    },
+    "status": {
+      "const": "draft_targets_not_results"
+    },
+    "reviewed_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ownership_boundary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "algorithm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "numeric_representation",
+        "scale",
+        "tie_break",
+        "max_paths",
+        "max_resources",
+        "max_capacity_domains_per_path",
+        "path_ceiling_is_hard",
+        "resource_capacity_is_shared_constraint",
+        "residual_capacity_formula",
+        "objective",
+        "exact_reference"
+      ],
+      "properties": {
+        "name": {
+          "const": "weighted_progressive_filling"
+        },
+        "numeric_representation": {
+          "const": "checked_u128_scaled_micro_bps_then_integer_bps"
+        },
+        "scale": {
+          "const": 1000000
+        },
+        "tie_break": {
+          "const": "largest_remainder_then_stable_path_id"
+        },
+        "max_paths": {
+          "const": 64
+        },
+        "max_resources": {
+          "const": 64
+        },
+        "max_capacity_domains_per_path": {
+          "const": 32
+        },
+        "path_ceiling_is_hard": {
+          "const": true
+        },
+        "resource_capacity_is_shared_constraint": {
+          "const": true
+        },
+        "residual_capacity_formula": {
+          "const": "declared_capacity_bps - measured_background_load_bps - committed_reservations_bps - safety_margin_bps"
+        },
+        "objective": {
+          "const": "weighted_max_min_progressive_filling_not_global_sum_rate_optimum"
+        },
+        "exact_reference": {
+          "const": "independent_integer_bps_small_topology_enumeration"
+        }
+      }
+    },
+    "evidence_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required_resource_fields",
+        "required_evidence_fields",
+        "topology_digest_must_match_request",
+        "inventory_digest_sha256_required",
+        "completeness_required",
+        "minimum_confidence_ppm",
+        "confidence_is_probability",
+        "validity_window_required",
+        "unknown_or_invalid_resource_excludes_dependent_paths",
+        "resource_capacity_underflow",
+        "residual_capacity_must_be_nonnegative"
+      ],
+      "properties": {
+        "required_resource_fields": {
+          "const": [
+            "resource_id",
+            "declared_capacity_bps",
+            "measured_background_load_bps",
+            "committed_reservations_bps",
+            "safety_margin_bps"
+          ]
+        },
+        "required_evidence_fields": {
+          "const": [
+            "source_id",
+            "inventory_sha256",
+            "topology_sha256",
+            "complete",
+            "confidence_ppm",
+            "measurement_window_start_unix_ms",
+            "measurement_window_end_unix_ms",
+            "observed_at_unix_ms",
+            "valid_until_unix_ms"
+          ]
+        },
+        "topology_digest_must_match_request": {
+          "const": true
+        },
+        "inventory_digest_sha256_required": {
+          "const": true
+        },
+        "completeness_required": {
+          "const": true
+        },
+        "minimum_confidence_ppm": {
+          "const": 950000
+        },
+        "confidence_is_probability": {
+          "const": false
+        },
+        "validity_window_required": {
+          "const": true
+        },
+        "unknown_or_invalid_resource_excludes_dependent_paths": {
+          "const": true
+        },
+        "resource_capacity_underflow": {
+          "const": "hard_error"
+        },
+        "residual_capacity_must_be_nonnegative": {
+          "const": true
+        }
+      }
+    },
+    "scenario_ids": {
+      "type": "array",
+      "minItems": 16,
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^RIA-[0-9]{2}$"
+      }
+    },
+    "scenario_definitions": {
+      "type": "array",
+      "minItems": 16,
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "topology",
+          "purpose"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^RIA-[0-9]{2}$"
+          },
+          "topology": {
+            "type": "string",
+            "minLength": 1
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "comparators": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "benchmarks": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "metric",
+          "operator",
+          "target",
+          "target_status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^RIA_[A-Z0-9_]{3,80}$"
+          },
+          "metric": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operator": {
+            "enum": [
+              "==",
+              "report"
+            ]
+          },
+          "target": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "target_status": {
+            "enum": [
+              "proposed_target",
+              "baseline_first"
+            ]
+          }
+        }
+      }
+    },
+    "required_metrics": {
+      "type": "array",
+      "minItems": 22,
+      "maxItems": 22,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "verdicts": {
+      "const": [
+        "pass",
+        "fail",
+        "inconclusive",
+        "unsupported"
+      ]
+    },
+    "evidence_classes": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "explicit_non_claims": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}
