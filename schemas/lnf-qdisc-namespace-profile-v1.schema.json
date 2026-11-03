@@ -23,7 +23,8 @@
     "required_metrics",
     "benchmarks",
     "evidence_classes",
-    "explicit_non_claims"
+    "explicit_non_claims",
+    "qdisc_comparison_note"
   ],
   "properties": {
     "schema_version": {
@@ -161,7 +162,8 @@
           "id",
           "type",
           "options",
-          "host_flow_isolation"
+          "host_flow_isolation",
+          "shaper"
         ],
         "properties": {
           "id": {
@@ -174,7 +176,7 @@
           },
           "type": {
             "enum": [
-              "fq_codel",
+              "fq_codel_under_tbf",
               "cake"
             ]
           },
@@ -197,6 +199,12 @@
             "enum": [
               "per_5_tuple_flow",
               "source_destination_host_and_flow"
+            ]
+          },
+          "shaper": {
+            "enum": [
+              "tbf",
+              "cake_bandwidth"
             ]
           }
         }
@@ -294,8 +302,8 @@
     },
     "required_artifacts": {
       "type": "array",
-      "minItems": 16,
-      "maxItems": 16,
+      "minItems": 18,
+      "maxItems": 18,
       "uniqueItems": true,
       "items": {
         "type": "string",
@@ -373,13 +381,17 @@
     },
     "explicit_non_claims": {
       "type": "array",
-      "minItems": 8,
-      "maxItems": 8,
+      "minItems": 9,
+      "maxItems": 9,
       "uniqueItems": true,
       "items": {
         "type": "string",
         "minLength": 1
       }
+    },
+    "qdisc_comparison_note": {
+      "type": "string",
+      "minLength": 1
     }
   }
 }
