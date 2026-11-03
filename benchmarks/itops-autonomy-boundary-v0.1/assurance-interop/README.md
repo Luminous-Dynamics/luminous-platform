@@ -59,7 +59,7 @@ Before an episode may consume this supplement as assurance evidence:
 5. verify monitor continuity and treat any gap, loss, missing monitor, or unknown source as indeterminate;
 6. preserve every shared and not-exercised dependency in the resulting claim view.
 
-The JSON Schema checks record shape. It does not authenticate component identities, verify a domain membership assertion, prove dependency inventory completeness, or substitute for the Mycelix semantic profile checker.
+The JSON Schema is executed by the existing `itops-qualification-core` Draft 2020-12 validator. The public `audit_operational_dependency_supplement` function then checks component/dependency/edge references, duplicate edges, role-to-claim bindings, recomputes direct shared dependency IDs, checks required sink/probe exercise status, and verifies that declared claim findings match the recomputed topology. Its result is still not an independence verdict. It does not authenticate component identities, verify domain membership, prove dependency inventory completeness, or replace the Mycelix semantic profile checker. It deliberately analyzes only direct ITOPS component-to-dependency edges; transitive evidence-source derivation remains owned by LEX-NET-030.
 
 ## Research and benchmark direction
 
