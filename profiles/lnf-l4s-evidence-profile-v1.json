@@ -35,9 +35,9 @@
   "network_aqm_arms": [
     {
       "id": "dualpi2",
-      "status": "linux_mainline_source_present",
-      "qualification": "supported_only_when_exact_kernel_and_qdisc_readback_are_pinned",
-      "notes": "DualPI2 source supports RFC 9332 coupled DualQ and ECT(1) identification."
+      "status": "linux_mainline_since_6_17",
+      "qualification": "verify_exact_kernel_build_tc_qdisc_readback_and_full_netlink_configuration; source_presence_is_not_device_support",
+      "notes": "Mainline source is net/sched/sch_dualpi2.c; this does not prove the target distro/device kernel includes or enables the qdisc."
     },
     {
       "id": "fq_l4s",
@@ -56,7 +56,7 @@
   "l4s_sender_arms": [
     {
       "id": "tcp_prague",
-      "qualification": "requires_exact_controller_identity_and_artifact_or_kernel_build_digest"
+      "qualification": "TCP Prague mainlining has started but must not be assumed present in a released target kernel; pin a separate exact implementation artifact or verified kernel build and satisfy RFC 9331 accurate ECN feedback at both endpoints"
     },
     {
       "id": "quic_prague",
@@ -103,7 +103,11 @@
     "dual_queue_class_counters_required_for_mixed_traffic": true,
     "cleanup_verification_required": true,
     "unsupported_fallback_or_missing_counters_never_pass": true,
-    "pair_verdict_scope": "single_paired_trial_only"
+    "pair_verdict_scope": "single_paired_trial_only",
+    "tcp_prague_requires_accecn_both_endpoints": true,
+    "quic_prague_requires_quic_ecn_feedback_counts": true,
+    "per_flow_classic_goodput_pairs_reconcile_to_aggregate": true,
+    "per_flow_starvation_is_a_separate_gate": true
   },
   "scenarios": [
     "L4S-00",
@@ -272,6 +276,13 @@
       "operator": "==",
       "target": 0,
       "target_status": "proposed_target"
+    },
+    {
+      "id": "L4S_CLASSIC_FLOW_RETENTION_001",
+      "metric": "worst_backlogged_classic_flow_goodput_over_matched_control_goodput_ppm",
+      "operator": ">=",
+      "target": 950000,
+      "target_status": "proposed_target"
     }
   ],
   "required_metrics": [
@@ -294,7 +305,11 @@
     "ecn_bleaching_fallback_and_unsupported_counts",
     "resource_domain_capacity_queue_occupancy_and_residual_binding",
     "short_flow_completion_p50_p95_p99_us",
-    "full_aqm_sender_kernel_artifact_and_configuration_digests"
+    "full_aqm_sender_kernel_artifact_and_configuration_digests",
+    "accurate_ecn_feedback_mode_by_transport_and_endpoint",
+    "ect1_packets_observed_at_dualpi2_enqueue",
+    "worst_backlogged_classic_flow_retention_ppm",
+    "per_classic_flow_control_and_treatment_goodput_reconciliation"
   ],
   "gates": [
     "pass",
@@ -328,6 +343,8 @@
     "A passing paired trial is not programme-level statistical qualification.",
     "No public Internet, production RAN or field result is claimed by unit tests.",
     "No host qdisc, route, socket congestion control or radio is changed by this evaluator.",
-    "The evaluator does not independently authenticate endpoint counter sources or operator telemetry."
+    "The evaluator does not independently authenticate endpoint counter sources or operator telemetry.",
+    "Mainline DualPI2 source availability does not imply TCP Prague is available in the same kernel or on a target device.",
+    "Aggregate Classic goodput can conceal a starved flow; per-flow paired measurements are required."
   ]
 }
