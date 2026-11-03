@@ -169,6 +169,27 @@
       "operator": "==",
       "target": 0,
       "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_CAPACITY_EVIDENCE_001",
+      "metric": "capacity_domains_scheduled_without_complete_fresh_evidence",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_CAPACITY_TOPOLOGY_BINDING_001",
+      "metric": "paths_scheduled_with_topology_digest_mismatch",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_CAPACITY_INVENTORY_DIGEST_001",
+      "metric": "paths_scheduled_with_invalid_inventory_digest_or_source_id",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
     }
   ],
   "required_metrics": [
@@ -195,7 +216,13 @@
     "independent_failure_domain_count_vs_capacity_domain_count",
     "scheduled_bytes_from_paths_sharing_one_capacity_domain",
     "capacity_domain_set_size_per_path",
-    "pairwise_capacity_domain_overlap_exclusions"
+    "pairwise_capacity_domain_overlap_exclusions",
+    "capacity_domain_inventory_sha256_per_path",
+    "capacity_domain_topology_digest_match_count",
+    "stale_or_expired_capacity_dependency_observation_count",
+    "incomplete_capacity_dependency_observation_count",
+    "capacity_domain_source_id_per_path",
+    "capacity_domains_scheduled_without_verified_dependency_evidence"
   ],
   "evidence_classes": [
     "deterministic_model",
@@ -216,7 +243,9 @@
     "No claim that links in distinct failure domains provide independent bottleneck capacity",
     "The v1 scheduler permits only one path per declared capacity group and may underuse real capacity within that group",
     "The v1 disjoint-set rule is conservative and is not a general multi-commodity flow optimizer",
-    "For more than two paths, deterministic greedy extension may underuse some globally feasible disjoint path sets"
+    "For more than two paths, deterministic greedy extension may underuse some globally feasible disjoint path sets",
+    "Capacity-domain evidence-envelope validation does not cryptographically authenticate the inventory or prove the declared topology is truthful",
+    "The scheduler does not discover hidden shared bottlenecks; field negative controls must challenge declared dependency sets"
   ],
   "baseline_methodology": {
     "scheduler_implementation_pinning_required": true,
