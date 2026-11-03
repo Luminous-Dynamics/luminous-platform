@@ -141,9 +141,9 @@ fn stable_hash(value: &str) -> u64 {
 
 fn is_lost(seed: u64, segment: u32, path: &PathObservation) -> bool {
     let domain_hash = stable_hash(&path.shared_risk_group);
-    let sample = mix64(
-        seed ^ (u64::from(segment).wrapping_mul(0x9e37_79b9_7f4a_7c15)) ^ domain_hash,
-    ) % 1_000_000;
+    let sample =
+        mix64(seed ^ (u64::from(segment).wrapping_mul(0x9e37_79b9_7f4a_7c15)) ^ domain_hash)
+            % 1_000_000;
     sample < u64::from(path.loss_ppm)
 }
 
@@ -157,11 +157,7 @@ fn serialization_us(bytes: u32, capacity_bps: u64) -> u64 {
     u64::try_from(duration).unwrap_or(u64::MAX)
 }
 
-fn candidate_path(
-    state: &PathState,
-    index: usize,
-    bytes: u32,
-) -> Option<CandidatePath> {
+fn candidate_path(state: &PathState, index: usize, bytes: u32) -> Option<CandidatePath> {
     let next_bytes = state.bytes_used.checked_add(u64::from(bytes))?;
     if next_bytes > state.path.data_remaining_bytes {
         return None;
@@ -285,11 +281,14 @@ fn choose_candidate(
                 .then_with(|| left.arrival_at_us.cmp(&right.arrival_at_us))
                 .then_with(|| states[left.index].path.id.cmp(&states[right.index].path.id))
         }),
-        TraceStrategy::RoundRobin => {
-            (0..states.len())
-                .map(|offset| (round_robin_cursor + offset) % states.len())
-                .find_map(|index| candidates.iter().find(|candidate| candidate.index == index).copied())
-        }
+        TraceStrategy::RoundRobin => (0..states.len())
+            .map(|offset| (round_robin_cursor + offset) % states.len())
+            .find_map(|index| {
+                candidates
+                    .iter()
+                    .find(|candidate| candidate.index == index)
+                    .copied()
+            }),
         TraceStrategy::EarliestCompletion | TraceStrategy::IntentAware => {
             candidates.iter().copied().min_by(|left, right| {
                 left.arrival_at_us
@@ -313,11 +312,13 @@ fn choose_candidate(
                     .cmp(&right.arrival_at_us)
                     .then_with(|| states[left.index].path.id.cmp(&states[right.index].path.id))
             }),
-        TraceStrategy::RedundantDistinctDomains => candidates.iter().copied().min_by(|left, right| {
-            left.arrival_at_us
-                .cmp(&right.arrival_at_us)
-                .then_with(|| states[left.index].path.id.cmp(&states[right.index].path.id))
-        }),
+        TraceStrategy::RedundantDistinctDomains => {
+            candidates.iter().copied().min_by(|left, right| {
+                left.arrival_at_us
+                    .cmp(&right.arrival_at_us)
+                    .then_with(|| states[left.index].path.id.cmp(&states[right.index].path.id))
+            })
+        }
     }
 }
 
@@ -341,9 +342,10 @@ fn record_transmission(
     )?;
     let path_candidate = candidate_path(state, 0, bytes)?;
     let loss = is_lost(trace_request.deterministic_seed, segment_index, &state.path);
-    state.ready_at_us = path_candidate
-        .send_at_us
-        .saturating_add(serialization_us(bytes, super::effective_capacity(&state.path)));
+    state.ready_at_us = path_candidate.send_at_us.saturating_add(serialization_us(
+        bytes,
+        super::effective_capacity(&state.path),
+    ));
     state.bytes_used = state.bytes_used.checked_add(u64::from(bytes))?;
     state.cost_used = state.cost_used.checked_add(cost)?;
     state.energy_used = state.energy_used.checked_add(energy)?;
@@ -370,7 +372,10 @@ fn pctl(sorted: &[u64], numerator: usize, denominator: usize) -> Option<u64> {
         return None;
     }
     let rank = (sorted.len() * numerator).div_ceil(denominator).max(1);
-    sorted.get(rank - 1).copied().or_else(|| sorted.last().copied())
+    sorted
+        .get(rank - 1)
+        .copied()
+        .or_else(|| sorted.last().copied())
 }
 
 fn simulate_receiver(
@@ -445,8 +450,8 @@ fn simulate_receiver(
             }
         } else if segment > next_expected && !buffered.contains_key(&segment) {
             buffered.insert(segment, arrival);
-            buffered_bytes = buffered_bytes
-                .saturating_add(u64::from(segment_sizes[segment as usize]));
+            buffered_bytes =
+                buffered_bytes.saturating_add(u64::from(segment_sizes[segment as usize]));
             peak_buffered_bytes = peak_buffered_bytes.max(buffered_bytes);
             exceeded |= buffered_bytes > reorder_limit;
         }
@@ -504,7 +509,9 @@ pub fn simulate(
     let (mut states, exclusions) = eligible_states(request, paths);
     let mut transmissions = Vec::new();
     let total_segments = u32::try_from(
-        request.bytes.div_ceil(u64::from(trace_request.segment_bytes)),
+        request
+            .bytes
+            .div_ceil(u64::from(trace_request.segment_bytes)),
     )
     .unwrap_or(u32::MAX);
     if total_segments == 0 {
@@ -540,7 +547,13 @@ pub fn simulate(
             .enumerate()
             .filter_map(|(index, state)| {
                 let path = candidate_path(state, index, bytes)?;
-                candidate_increment(request, state, bytes, aggregate_cost_used, aggregate_energy_used)?;
+                candidate_increment(
+                    request,
+                    state,
+                    bytes,
+                    aggregate_cost_used,
+                    aggregate_energy_used,
+                )?;
                 Some(path)
             })
             .collect::<Vec<_>>();
@@ -840,7 +853,13 @@ mod tests {
             TraceStrategy::MinRtt,
         )
         .expect("valid trace");
-        assert!(report.path_summaries.iter().filter(|p| p.transmissions > 0).all(|p| p.path_id == "fast"));
+        assert!(
+            report
+                .path_summaries
+                .iter()
+                .filter(|p| p.transmissions > 0)
+                .all(|p| p.path_id == "fast")
+        );
     }
 
     #[test]
@@ -855,7 +874,14 @@ mod tests {
             TraceStrategy::RoundRobin,
         )
         .expect("valid trace");
-        assert_eq!(report.path_summaries.iter().filter(|p| p.transmissions > 0).count(), 2);
+        assert_eq!(
+            report
+                .path_summaries
+                .iter()
+                .filter(|p| p.transmissions > 0)
+                .count(),
+            2
+        );
     }
 
     #[test]
@@ -915,7 +941,12 @@ mod tests {
             TraceStrategy::EarliestCompletion,
         )
         .expect("valid trace");
-        assert!(report.transmissions.iter().all(|item| item.path_id != "blocked"));
+        assert!(
+            report
+                .transmissions
+                .iter()
+                .all(|item| item.path_id != "blocked")
+        );
         assert_eq!(report.exclusions[0].1, "broker_ineligible");
     }
 
@@ -943,8 +974,7 @@ mod tests {
         costed.cost_micros_per_mib = 1_000;
         let mut tr = trace();
         tr.segment_bytes = 1200;
-        let report = simulate(&req, &tr, &[costed], TraceStrategy::MinRtt)
-            .expect("valid trace");
+        let report = simulate(&req, &tr, &[costed], TraceStrategy::MinRtt).expect("valid trace");
         assert_eq!(report.estimated_cost_micros, 1_000);
     }
 
@@ -957,13 +987,8 @@ mod tests {
         let mut second = path("b", 20_000, 20_000_000, "b");
         first.cost_micros_per_mib = 100;
         second.cost_micros_per_mib = 100;
-        let report = simulate(
-            &req,
-            &trace(),
-            &[first, second],
-            TraceStrategy::RoundRobin,
-        )
-        .expect("valid trace can be partial");
+        let report = simulate(&req, &trace(), &[first, second], TraceStrategy::RoundRobin)
+            .expect("valid trace can be partial");
         assert!(report.estimated_cost_micros <= req.max_cost_micros);
         assert!(!report.delivery_complete);
     }
@@ -1082,10 +1107,9 @@ mod tests {
             path("low-latency", 1_000, 20_000_000, "a"),
             path("high-latency", 250_000, 20_000_000, "b"),
         ];
-        let rr = simulate(&req, &trace(), &paths, TraceStrategy::RoundRobin)
-            .expect("valid trace");
-        let aware = simulate(&req, &trace(), &paths, TraceStrategy::ReorderAware)
-            .expect("valid trace");
+        let rr = simulate(&req, &trace(), &paths, TraceStrategy::RoundRobin).expect("valid trace");
+        let aware =
+            simulate(&req, &trace(), &paths, TraceStrategy::ReorderAware).expect("valid trace");
         assert!(aware.receiver_reorder_peak_bytes <= rr.receiver_reorder_peak_bytes);
     }
 
