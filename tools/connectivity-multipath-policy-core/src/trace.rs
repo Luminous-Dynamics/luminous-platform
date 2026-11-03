@@ -73,9 +73,12 @@ pub struct TraceReport {
     pub delivery_complete: bool,
     pub delivered_by_deadline: bool,
     pub completion_us: Option<u64>,
-    pub delivery_latency_p50_us: Option<u64>,
-    pub delivery_latency_p95_us: Option<u64>,
-    pub delivery_latency_p99_us: Option<u64>,
+    pub network_arrival_p50_us: Option<u64>,
+    pub network_arrival_p95_us: Option<u64>,
+    pub network_arrival_p99_us: Option<u64>,
+    pub application_release_p50_us: Option<u64>,
+    pub application_release_p95_us: Option<u64>,
+    pub application_release_p99_us: Option<u64>,
     pub total_bytes_transmitted: u64,
     pub useful_bytes_delivered: u64,
     pub redundant_bytes: u64,
@@ -655,11 +658,16 @@ pub fn simulate(
             .deadline_us
             .is_none_or(|deadline| completion_us.is_some_and(|finish| finish <= deadline));
 
-    let mut latencies = delivered
+    let mut network_arrivals = delivered
+        .iter()
+        .map(|item| item.first_arrival_us)
+        .collect::<Vec<_>>();
+    network_arrivals.sort_unstable();
+    let mut application_releases = delivered
         .iter()
         .map(|item| item.application_release_us)
         .collect::<Vec<_>>();
-    latencies.sort_unstable();
+    application_releases.sort_unstable();
 
     let total_bytes_transmitted = transmissions
         .iter()
@@ -726,9 +734,12 @@ pub fn simulate(
         delivery_complete,
         delivered_by_deadline,
         completion_us,
-        delivery_latency_p50_us: pctl(&latencies, 50, 100),
-        delivery_latency_p95_us: pctl(&latencies, 95, 100),
-        delivery_latency_p99_us: pctl(&latencies, 99, 100),
+        network_arrival_p50_us: pctl(&network_arrivals, 50, 100),
+        network_arrival_p95_us: pctl(&network_arrivals, 95, 100),
+        network_arrival_p99_us: pctl(&network_arrivals, 99, 100),
+        application_release_p50_us: pctl(&application_releases, 50, 100),
+        application_release_p95_us: pctl(&application_releases, 95, 100),
+        application_release_p99_us: pctl(&application_releases, 99, 100),
         total_bytes_transmitted,
         useful_bytes_delivered,
         redundant_bytes,
@@ -896,21 +907,17 @@ mod tests {
     }
 
     #[test]
-    fn deterministic_loss_is_correlated_within_declared_failure_domain() {
-        let mut req = request();
-        req.bytes = 64 * 1200;
-        let mut first = path("a", 10_000, 20_000_000, "shared");
-        let mut second = path("b", 10_000, 20_000_000, "shared");
+    fn same_failure_domain_has_identical_loss_for_a_given_segment() {
+        let mut first = path("a", 10_000, 20_000_000, "shared-backhaul");
+        let mut second = path("b", 20_000, 40_000_000, "shared-backhaul");
         first.loss_ppm = 500_000;
         second.loss_ppm = 500_000;
-        let report = simulate(
-            &req,
-            &trace(),
-            &[first, second],
-            TraceStrategy::RedundantDistinctDomains,
-        )
-        .expect("valid trace");
-        assert_eq!(report.redundant_bytes, 0);
+        for segment in 0..1_000 {
+            assert_eq!(
+                is_lost(trace().deterministic_seed, segment, &first),
+                is_lost(trace().deterministic_seed, segment, &second)
+            );
+        }
     }
 
     #[test]
@@ -949,27 +956,85 @@ mod tests {
     }
 
     #[test]
-    fn shared_failure_domain_has_correlated_segment_loss() {
+    fn independent_failure_domains_use_different_loss_streams() {
+        let first = path("a", 10_000, 20_000_000, "wan-a");
+        let second = path("b", 10_000, 20_000_000, "wan-b");
+        let disagreements = (0..1_000)
+            .filter(|segment| {
+                is_lost(trace().deterministic_seed, *segment, &first)
+                    != is_lost(trace().deterministic_seed, *segment, &second)
+            })
+            .count();
+        assert!(disagreements > 100);
+    }
+
+    #[test]
+    fn received_out_of_order_bytes_are_not_useful_until_stream_release() {
+        let transmissions = vec![
+            TraceTransmission {
+                segment_index: 0,
+                path_id: "a".to_owned(),
+                send_at_us: 0,
+                arrival_at_us: 10,
+                payload_bytes: 1200,
+                lost: false,
+                redundant_copy: false,
+            },
+            TraceTransmission {
+                segment_index: 2,
+                path_id: "b".to_owned(),
+                send_at_us: 0,
+                arrival_at_us: 20,
+                payload_bytes: 1200,
+                lost: false,
+                redundant_copy: false,
+            },
+            TraceTransmission {
+                segment_index: 1,
+                path_id: "a".to_owned(),
+                send_at_us: 0,
+                arrival_at_us: 30,
+                payload_bytes: 1200,
+                lost: false,
+                redundant_copy: false,
+            },
+        ];
+        let (delivered, peak, byte_us, exceeded, received, unique_bytes, pending) =
+            simulate_receiver(&transmissions, &[1200, 1200, 1200], 2400, 500_000);
+        assert_eq!(received, 3);
+        assert_eq!(unique_bytes, 3600);
+        assert_eq!(delivered.len(), 3);
+        assert_eq!(delivered[2].first_arrival_us, 20);
+        assert_eq!(delivered[2].application_release_us, 30);
+        assert_eq!(peak, 1200);
+        assert_eq!(byte_us, 12_000);
+        assert!(!exceeded);
+        assert_eq!(pending, 0);
+    }
+
+    #[test]
+    fn lost_gap_keeps_later_segments_out_of_useful_delivery_until_timeout() {
+        let path = path("one-path", 10_000, 100_000_000, "one-domain");
+        let seed = (0..10_000)
+            .find(|seed| {
+                is_lost(*seed, 0, &path)
+                    && (1..4).all(|segment| !is_lost(*seed, segment, &path))
+            })
+            .expect("a deterministic seed with a first-segment loss exists");
         let mut req = request();
-        req.bytes = 64 * 1200;
-        let mut first = path("a", 10_000, 20_000_000, "shared");
-        let mut second = path("b", 10_000, 20_000_000, "shared");
-        first.loss_ppm = 500_000;
-        second.loss_ppm = 500_000;
-        let report = simulate(
-            &req,
-            &trace(),
-            &[first, second],
-            TraceStrategy::RoundRobin,
-        )
-        .expect("valid trace");
-        let by_segment: BTreeMap<u32, bool> = report
-            .transmissions
-            .iter()
-            .map(|item| (item.segment_index, item.lost))
-            .collect();
-        assert!(by_segment.values().any(|lost| *lost));
-        assert!(by_segment.values().any(|lost| !*lost));
+        req.bytes = 4 * 1200;
+        let mut tr = trace();
+        tr.deterministic_seed = seed;
+        let report = simulate(&req, &tr, &[path], TraceStrategy::MinRtt)
+            .expect("valid trace");
+        assert_eq!(report.network_received_segments, 3);
+        assert_eq!(report.network_received_unique_bytes, 3600);
+        assert_eq!(report.delivered_segments, 0);
+        assert_eq!(report.useful_bytes_delivered, 0);
+        assert_eq!(report.receiver_unreleased_buffered_bytes_at_timeout, 3600);
+        assert!(report.receiver_reorder_byte_microseconds > 0);
+        assert!(!report.delivery_complete);
+        assert_eq!(report.completion_us, None);
     }
 
     #[test]
@@ -986,6 +1051,22 @@ mod tests {
         let aware = simulate(&req, &trace(), &paths, TraceStrategy::ReorderAware)
             .expect("valid trace");
         assert!(aware.receiver_reorder_peak_bytes <= rr.receiver_reorder_peak_bytes);
+    }
+
+    #[test]
+    fn zero_reassembly_timeout_is_rejected() {
+        let mut invalid = trace();
+        invalid.reassembly_timeout_us = 0;
+        assert_eq!(
+            simulate(
+                &request(),
+                &invalid,
+                &[path("a", 1000, 1_000_000, "a")],
+                TraceStrategy::MinRtt
+            )
+            .unwrap_err(),
+            ScheduleError::ZeroPayload
+        );
     }
 
     #[test]
