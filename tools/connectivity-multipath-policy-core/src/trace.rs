@@ -977,10 +977,16 @@ mod tests {
         .expect("valid trace");
         assert_eq!(report.redundant_bytes, 0);
         assert_eq!(report.distinct_failure_domains_used, 2);
-        assert_eq!(report.distinct_capacity_domains_used, 2);
+        // Both links may carry primary segments, but the shared backhaul may
+        // not be treated as independent capacity for redundant copies.
+        assert_eq!(report.distinct_capacity_domains_used, 3);
         assert_eq!(
             report.capacity_domain_ids_used,
-            vec!["capacity-a".to_owned(), "capacity-b".to_owned()]
+            vec![
+                "access-a".to_owned(),
+                "access-b".to_owned(),
+                "shared-backhaul".to_owned()
+            ]
         );
         assert_eq!(report.topology_sha256, request().topology_sha256);
         assert_eq!(report.decision_time_unix_ms, request().now_unix_ms);
@@ -1085,8 +1091,10 @@ mod tests {
 
     #[test]
     fn independent_failure_domains_use_different_loss_streams() {
-        let first = path("a", 10_000, 20_000_000, "wan-a");
-        let second = path("b", 10_000, 20_000_000, "wan-b");
+        let mut first = path("a", 10_000, 20_000_000, "wan-a");
+        let mut second = path("b", 10_000, 20_000_000, "wan-b");
+        first.loss_ppm = 500_000;
+        second.loss_ppm = 500_000;
         let disagreements = (0..1_000)
             .filter(|segment| {
                 is_lost(trace().deterministic_seed, *segment, &first)
@@ -1171,7 +1179,8 @@ mod tests {
 
     #[test]
     fn lost_gap_keeps_later_segments_out_of_useful_delivery_until_timeout() {
-        let path = path("one-path", 10_000, 100_000_000, "one-domain");
+        let mut path = path("one-path", 10_000, 100_000_000, "one-domain");
+        path.loss_ppm = 250_000;
         let seed = (0..10_000)
             .find(|seed| {
                 is_lost(*seed, 0, &path) && (1..4).all(|segment| !is_lost(*seed, segment, &path))
