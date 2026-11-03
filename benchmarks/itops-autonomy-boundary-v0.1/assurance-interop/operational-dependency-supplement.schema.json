@@ -17,45 +17,66 @@
     "monitor_coverage"
   ],
   "properties": {
-    "schema_version": { "const": "0.1.0" },
+    "schema_version": {
+      "const": "0.1.0"
+    },
     "supplement_id": {
       "type": "string",
       "minLength": 1,
       "maxLength": 128,
       "pattern": "^[a-z0-9][a-z0-9._-]*$"
     },
-    "episode_binding": { "$ref": "#/$defs/episode_binding" },
+    "episode_binding": {
+      "$ref": "#/$defs/episode_binding"
+    },
     "assurance_references": {
       "type": "array",
       "minItems": 3,
-      "items": { "$ref": "#/$defs/assurance_reference" }
+      "items": {
+        "$ref": "#/$defs/assurance_reference"
+      }
     },
     "components": {
       "type": "array",
       "minItems": 2,
-      "items": { "$ref": "#/$defs/component" }
+      "items": {
+        "$ref": "#/$defs/component"
+      }
     },
     "dependencies": {
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/$defs/dependency" }
+      "items": {
+        "$ref": "#/$defs/dependency"
+      }
     },
     "dependency_edges": {
       "type": "array",
-      "items": { "$ref": "#/$defs/dependency_edge" }
+      "items": {
+        "$ref": "#/$defs/dependency_edge"
+      }
     },
     "claim_bindings": {
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/$defs/claim_binding" }
+      "items": {
+        "$ref": "#/$defs/claim_binding"
+      }
     },
-    "monitor_coverage": { "$ref": "#/$defs/monitor_coverage" }
+    "monitor_coverage": {
+      "$ref": "#/$defs/monitor_coverage"
+    }
   },
   "$defs": {
     "digest_or_null": {
       "oneOf": [
-        { "type": "null" },
-        { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" }
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        }
       ]
     },
     "episode_binding": {
@@ -71,23 +92,52 @@
         "evidence_basis"
       ],
       "properties": {
-        "benchmark_id": { "const": "itops-autonomy-boundary-v0.1" },
-        "scenario_id": { "type": "string", "minLength": 1, "maxLength": 128 },
-        "episode_id": { "type": "string", "minLength": 1, "maxLength": 192 },
-        "corpus_status": {
-          "enum": ["candidate_not_frozen", "frozen"]
+        "benchmark_id": {
+          "const": "itops-autonomy-boundary-v0.1"
         },
-        "corpus_sha256": { "$ref": "#/$defs/digest_or_null" },
-        "runner_profile_sha256": { "$ref": "#/$defs/digest_or_null" },
+        "scenario_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "episode_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 192
+        },
+        "corpus_status": {
+          "enum": [
+            "candidate_not_frozen",
+            "frozen"
+          ]
+        },
+        "corpus_sha256": {
+          "$ref": "#/$defs/digest_or_null"
+        },
+        "runner_profile_sha256": {
+          "$ref": "#/$defs/digest_or_null"
+        },
         "evidence_basis": {
-          "enum": ["source_description", "runtime_observation", "authenticated_attestation"]
+          "enum": [
+            "source_description",
+            "runtime_observation",
+            "authenticated_attestation"
+          ]
         }
       }
     },
     "assurance_reference": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["program", "reference", "ownership", "binding_state", "profile_sha256", "policy_sha256", "receipt_refs"],
+      "required": [
+        "program",
+        "reference",
+        "ownership",
+        "binding_state",
+        "profile_sha256",
+        "policy_sha256",
+        "receipt_refs"
+      ],
       "properties": {
         "program": {
           "enum": [
@@ -96,49 +146,106 @@
             "LEX-NET-030"
           ]
         },
-        "reference": { "type": "string", "minLength": 1, "maxLength": 256 },
-        "ownership": { "const": "external_canonical_owner" },
-        "binding_state": { "enum": ["unbound", "digest_bound", "receipt_verified"] },
-        "profile_sha256": { "$ref": "#/$defs/digest_or_null" },
-        "policy_sha256": { "$ref": "#/$defs/digest_or_null" },
+        "reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "ownership": {
+          "const": "external_canonical_owner"
+        },
+        "binding_state": {
+          "enum": [
+            "unbound",
+            "digest_bound",
+            "receipt_verified"
+          ]
+        },
+        "profile_sha256": {
+          "$ref": "#/$defs/digest_or_null"
+        },
+        "policy_sha256": {
+          "$ref": "#/$defs/digest_or_null"
+        },
         "receipt_refs": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
         }
       },
       "allOf": [
         {
           "if": {
-            "properties": { "binding_state": { "const": "unbound" } },
-            "required": ["binding_state"]
+            "properties": {
+              "binding_state": {
+                "const": "unbound"
+              }
+            },
+            "required": [
+              "binding_state"
+            ]
           },
           "then": {
             "properties": {
-              "profile_sha256": { "type": "null" },
-              "policy_sha256": { "type": "null" },
-              "receipt_refs": { "maxItems": 0 }
+              "profile_sha256": {
+                "type": "null"
+              },
+              "policy_sha256": {
+                "type": "null"
+              },
+              "receipt_refs": {
+                "maxItems": 0
+              }
             }
           }
         },
         {
           "if": {
-            "properties": { "binding_state": { "enum": ["digest_bound", "receipt_verified"] } },
-            "required": ["binding_state"]
+            "properties": {
+              "binding_state": {
+                "enum": [
+                  "digest_bound",
+                  "receipt_verified"
+                ]
+              }
+            },
+            "required": [
+              "binding_state"
+            ]
           },
           "then": {
             "properties": {
-              "profile_sha256": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" },
-              "policy_sha256": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" }
+              "profile_sha256": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{64}$"
+              },
+              "policy_sha256": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{64}$"
+              }
             }
           }
         },
         {
           "if": {
-            "properties": { "binding_state": { "const": "receipt_verified" } },
-            "required": ["binding_state"]
+            "properties": {
+              "binding_state": {
+                "const": "receipt_verified"
+              }
+            },
+            "required": [
+              "binding_state"
+            ]
           },
           "then": {
-            "properties": { "receipt_refs": { "minItems": 1 } }
+            "properties": {
+              "receipt_refs": {
+                "minItems": 1
+              }
+            }
           }
         }
       ]
@@ -146,7 +253,13 @@
     "component": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["component_id", "role", "execution_status", "identity_label", "evidence_refs"],
+      "required": [
+        "component_id",
+        "role",
+        "execution_status",
+        "identity_label",
+        "evidence_refs"
+      ],
       "properties": {
         "component_id": {
           "type": "string",
@@ -185,7 +298,11 @@
         "evidence_refs": {
           "type": "array",
           "minItems": 1,
-          "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
         }
       }
     },
@@ -241,7 +358,10 @@
           ]
         },
         "identity_label": {
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "maxLength": 512
         },
         "canonical_fault_domains": {
@@ -269,7 +389,11 @@
         },
         "evidence_refs": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
         },
         "limitation": {
           "type": "string",
@@ -280,25 +404,53 @@
       "allOf": [
         {
           "if": {
-            "properties": { "status": { "enum": ["observed_in_fixture", "declared_shared"] } },
-            "required": ["status"]
+            "properties": {
+              "status": {
+                "enum": [
+                  "observed_in_fixture",
+                  "declared_shared"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ]
           },
           "then": {
             "properties": {
-              "identity_label": { "type": "string", "minLength": 1 },
-              "evidence_refs": { "minItems": 1 },
-              "canonical_fault_domains": { "minItems": 1 }
+              "identity_label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "evidence_refs": {
+                "minItems": 1
+              },
+              "canonical_fault_domains": {
+                "minItems": 1
+              }
             }
           }
         },
         {
           "if": {
-            "properties": { "status": { "enum": ["not_exercised", "unknown", "not_applicable"] } },
-            "required": ["status"]
+            "properties": {
+              "status": {
+                "enum": [
+                  "not_exercised",
+                  "unknown",
+                  "not_applicable"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ]
           },
           "then": {
             "properties": {
-              "identity_label": { "type": "null" }
+              "identity_label": {
+                "type": "null"
+              }
             }
           }
         }
@@ -307,7 +459,11 @@
     "dependency_edge": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["from_component_id", "dependency_id", "relation"],
+      "required": [
+        "from_component_id",
+        "dependency_id",
+        "relation"
+      ],
       "properties": {
         "from_component_id": {
           "type": "string",
@@ -347,8 +503,8 @@
         "source_component_id",
         "compared_component_ids",
         "required_dependency_kinds",
-        "expected_claim_disposition",
-        "claim_ceiling"
+        "claim_ceiling",
+        "expected_claim_findings"
       ],
       "properties": {
         "claim_id": {
@@ -357,7 +513,10 @@
           "maxLength": 128
         },
         "claim_kind": {
-          "enum": ["participant_effect", "service_health"]
+          "enum": [
+            "participant_effect",
+            "service_health"
+          ]
         },
         "source_component_id": {
           "type": "string",
@@ -382,19 +541,24 @@
             "$ref": "#/$defs/dependency_kind"
           }
         },
-        "expected_claim_disposition": {
-          "enum": [
-            "shared_dependencies_present",
-            "required_source_not_exercised",
-            "indeterminate"
-          ]
-        },
         "claim_ceiling": {
           "enum": [
             "process_separated_prototype_only",
             "no_independent_effect_claim",
             "no_independent_service_health_claim"
           ]
+        },
+        "expected_claim_findings": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "shared_dependencies_present",
+              "required_source_not_exercised",
+              "required_source_unknown"
+            ]
+          }
         }
       }
     },
@@ -434,43 +598,104 @@
       ],
       "properties": {
         "status": {
-          "enum": ["complete", "gapped", "not_exercised", "unknown"]
+          "enum": [
+            "complete",
+            "gapped",
+            "not_exercised",
+            "unknown"
+          ]
         },
         "monitor_component_id": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
-        "events_observed": { "type": ["integer", "null"], "minimum": 0 },
-        "events_dropped": { "type": ["integer", "null"], "minimum": 0 },
-        "sequence_continuity": { "type": ["boolean", "null"] },
+        "events_observed": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "events_dropped": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "sequence_continuity": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "evidence_refs": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
         }
       },
       "allOf": [
         {
           "if": {
-            "properties": { "status": { "const": "complete" } },
-            "required": ["status"]
+            "properties": {
+              "status": {
+                "const": "complete"
+              }
+            },
+            "required": [
+              "status"
+            ]
           },
           "then": {
             "properties": {
-              "monitor_component_id": { "type": "string", "minLength": 1 },
-              "events_observed": { "type": "integer" },
-              "events_dropped": { "const": 0 },
-              "sequence_continuity": { "const": true },
-              "evidence_refs": { "minItems": 1 }
+              "monitor_component_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "events_observed": {
+                "type": "integer"
+              },
+              "events_dropped": {
+                "const": 0
+              },
+              "sequence_continuity": {
+                "const": true
+              },
+              "evidence_refs": {
+                "minItems": 1
+              }
             }
           }
         },
         {
           "if": {
-            "properties": { "status": { "enum": ["gapped", "not_exercised", "unknown"] } },
-            "required": ["status"]
+            "properties": {
+              "status": {
+                "enum": [
+                  "gapped",
+                  "not_exercised",
+                  "unknown"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ]
           },
           "then": {
             "properties": {
-              "sequence_continuity": { "enum": [false, null] }
+              "sequence_continuity": {
+                "enum": [
+                  false,
+                  null
+                ]
+              }
             }
           }
         }
