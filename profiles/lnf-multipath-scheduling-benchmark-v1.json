@@ -235,7 +235,8 @@
     "capacity_domains_scheduled_below_confidence_floor",
     "invalid_capacity_domain_evidence_window_count",
     "future_capacity_domain_observation_count",
-    "capacity_domain_dependency_ids_over_128_bytes_count"
+    "capacity_domain_dependency_ids_over_128_bytes_count",
+    "application_reassembly_wait_p50_p95_p99"
   ],
   "evidence_classes": [
     "deterministic_model",
