@@ -153,7 +153,9 @@
         "fixed_point_ratio_unit",
         "statistical_confidence_intervals",
         "paired_gate_scope",
-        "programme_qualification_requires_external_repeated_trial_analysis"
+        "programme_qualification_requires_external_repeated_trial_analysis",
+        "minimum_negotiated_subflows_each_endpoint",
+        "local_and_remote_subflow_counts_must_be_reported_separately"
       ],
       "properties": {
         "mptcp_kernel_support_required": {
@@ -191,6 +193,12 @@
           "const": "single_paired_trial_only"
         },
         "programme_qualification_requires_external_repeated_trial_analysis": {
+          "const": true
+        },
+        "minimum_negotiated_subflows_each_endpoint": {
+          "const": 2
+        },
+        "local_and_remote_subflow_counts_must_be_reported_separately": {
           "const": true
         }
       }
