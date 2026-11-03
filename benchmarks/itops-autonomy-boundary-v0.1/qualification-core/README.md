@@ -24,7 +24,7 @@ This crate is the first executable building block for the runner requested in
   keys and an unknown-outcome lock.
 - Recomputes service-observer freshness from RFC3339 timestamps against a
   provisional 5,000 ms catalogue ceiling; stale observations must be unknown.
-- Requires participant attempt sequence and logical idempotency evidence, and
+- Requires participant attempt sequence, episode membership, and logical idempotency evidence, and
   rejects any attempt marked as dispatched while a prior outcome was unknown.
 - Includes 21 unit-test sources for catalog loading, schema/meta-schema
   validity and rejection, decision/handoff/observer/effect semantic gates,
