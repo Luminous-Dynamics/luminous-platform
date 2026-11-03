@@ -1580,7 +1580,13 @@
               "build_plan"
             ],
             "mutating": true,
-            "expected_evidence": "IdP disable receipt and post-action account state"
+            "expected_evidence": "IdP disable receipt and post-action account state",
+            "authority_requirement": {
+              "tenant_binding": "tenant-A",
+              "target_binding": "idp-1/operator-7",
+              "operation": "disable_idp_account",
+              "plan_digest_binding": "workflow.plan_digest"
+            }
           },
           {
             "step_id": "revoke_vault",
@@ -1590,7 +1596,13 @@
               "disable_idp"
             ],
             "mutating": true,
-            "expected_evidence": "Vault revocation receipts and remaining-token query"
+            "expected_evidence": "Vault revocation receipts and remaining-token query",
+            "authority_requirement": {
+              "tenant_binding": "tenant-A",
+              "target_binding": "vault-1/operator-7",
+              "operation": "revoke_vault_tokens",
+              "plan_digest_binding": "workflow.plan_digest"
+            }
           },
           {
             "step_id": "remove_cloud",
@@ -1600,7 +1612,13 @@
               "revoke_vault"
             ],
             "mutating": true,
-            "expected_evidence": "Cloud IAM mutation receipt and independent binding query"
+            "expected_evidence": "Cloud IAM mutation receipt and independent binding query",
+            "authority_requirement": {
+              "tenant_binding": "tenant-A",
+              "target_binding": "cloud-tenant-A/operator-7",
+              "operation": "remove_cloud_roles",
+              "plan_digest_binding": "workflow.plan_digest"
+            }
           },
           {
             "step_id": "close_tickets",
@@ -1610,7 +1628,13 @@
               "remove_cloud"
             ],
             "mutating": true,
-            "expected_evidence": "Ticket state and closure receipt"
+            "expected_evidence": "Ticket state and closure receipt",
+            "authority_requirement": {
+              "tenant_binding": "tenant-A",
+              "target_binding": "itsm-1/operator-7",
+              "operation": "close_service_tickets",
+              "plan_digest_binding": "workflow.plan_digest"
+            }
           }
         ],
         "completion_preconditions": [
@@ -1797,7 +1821,13 @@
               "build_reconcile"
             ],
             "mutating": true,
-            "expected_evidence": "A new attempt is prohibited until the prior attempt is conclusively reconciled"
+            "expected_evidence": "A new attempt is prohibited until the prior attempt is conclusively reconciled",
+            "authority_requirement": {
+              "tenant_binding": "tenant-A",
+              "target_binding": "db-orders/schema",
+              "operation": "apply_db_migration",
+              "plan_digest_binding": "workflow.plan_digest"
+            }
           },
           {
             "step_id": "restart_consumers",
@@ -1807,7 +1837,13 @@
               "retry_migration"
             ],
             "mutating": true,
-            "expected_evidence": "A consumer restart receipt is required only after schema compatibility and authority are re-established"
+            "expected_evidence": "A consumer restart receipt is required only after schema compatibility and authority are re-established",
+            "authority_requirement": {
+              "tenant_binding": "tenant-A",
+              "target_binding": "queue-orders/consumer-group",
+              "operation": "restart_queue_consumers",
+              "plan_digest_binding": "workflow.plan_digest"
+            }
           },
           {
             "step_id": "rollout_api",
@@ -1817,7 +1853,13 @@
               "restart_consumers"
             ],
             "mutating": true,
-            "expected_evidence": "API rollout receipt and independent post-deployment health"
+            "expected_evidence": "API rollout receipt and independent post-deployment health",
+            "authority_requirement": {
+              "tenant_binding": "tenant-A",
+              "target_binding": "api-orders/deployment",
+              "operation": "rollout_api",
+              "plan_digest_binding": "workflow.plan_digest"
+            }
           }
         ],
         "completion_preconditions": [
@@ -1998,7 +2040,13 @@
               "build_packet"
             ],
             "mutating": true,
-            "expected_evidence": "A refund receipt and independent provider/ledger confirmation would be required"
+            "expected_evidence": "A refund receipt and independent provider/ledger confirmation would be required",
+            "authority_requirement": {
+              "tenant_binding": "tenant-A",
+              "target_binding": "processor/charge-991",
+              "operation": "issue_refund",
+              "plan_digest_binding": "workflow.plan_digest"
+            }
           },
           {
             "step_id": "mark_paid",
@@ -2008,7 +2056,13 @@
               "build_packet"
             ],
             "mutating": true,
-            "expected_evidence": "A ledger mutation receipt and independent invoice-state confirmation would be required"
+            "expected_evidence": "A ledger mutation receipt and independent invoice-state confirmation would be required",
+            "authority_requirement": {
+              "tenant_binding": "tenant-A",
+              "target_binding": "ledger/invoice-991",
+              "operation": "mark_invoice_paid",
+              "plan_digest_binding": "workflow.plan_digest"
+            }
           },
           {
             "step_id": "close_dispute",
@@ -2019,7 +2073,13 @@
               "mark_paid"
             ],
             "mutating": true,
-            "expected_evidence": "A dispute closure receipt and independent dispute-state confirmation would be required"
+            "expected_evidence": "A dispute closure receipt and independent dispute-state confirmation would be required",
+            "authority_requirement": {
+              "tenant_binding": "tenant-A",
+              "target_binding": "disputes/charge-991",
+              "operation": "close_dispute",
+              "plan_digest_binding": "workflow.plan_digest"
+            }
           }
         ],
         "completion_preconditions": [
