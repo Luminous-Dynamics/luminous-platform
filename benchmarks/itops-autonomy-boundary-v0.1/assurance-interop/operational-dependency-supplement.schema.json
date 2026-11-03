@@ -1,0 +1,480 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/itops-operational-dependency-supplement/0.1.0/schema.json",
+  "title": "ITOPS Operational Dependency Supplement",
+  "description": "An ITOPS-specific topology sidecar. It records operational dependencies for binding to existing Mycelix assurance and evidence-dependency profiles; it does not define generic verifier independence or authenticate declarations.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "supplement_id",
+    "episode_binding",
+    "assurance_references",
+    "components",
+    "dependencies",
+    "dependency_edges",
+    "claim_bindings",
+    "monitor_coverage"
+  ],
+  "properties": {
+    "schema_version": { "const": "0.1.0" },
+    "supplement_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "episode_binding": { "$ref": "#/$defs/episode_binding" },
+    "assurance_references": {
+      "type": "array",
+      "minItems": 3,
+      "items": { "$ref": "#/$defs/assurance_reference" }
+    },
+    "components": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/component" }
+    },
+    "dependencies": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/dependency" }
+    },
+    "dependency_edges": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/dependency_edge" }
+    },
+    "claim_bindings": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/claim_binding" }
+    },
+    "monitor_coverage": { "$ref": "#/$defs/monitor_coverage" }
+  },
+  "$defs": {
+    "digest_or_null": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" }
+      ]
+    },
+    "episode_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "benchmark_id",
+        "scenario_id",
+        "episode_id",
+        "corpus_status",
+        "corpus_sha256",
+        "runner_profile_sha256",
+        "evidence_basis"
+      ],
+      "properties": {
+        "benchmark_id": { "const": "itops-autonomy-boundary-v0.1" },
+        "scenario_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "episode_id": { "type": "string", "minLength": 1, "maxLength": 192 },
+        "corpus_status": {
+          "enum": ["candidate_not_frozen", "frozen"]
+        },
+        "corpus_sha256": { "$ref": "#/$defs/digest_or_null" },
+        "runner_profile_sha256": { "$ref": "#/$defs/digest_or_null" },
+        "evidence_basis": {
+          "enum": ["source_description", "runtime_observation", "authenticated_attestation"]
+        }
+      }
+    },
+    "assurance_reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["program", "reference", "ownership", "binding_state", "profile_sha256", "policy_sha256", "receipt_refs"],
+      "properties": {
+        "program": {
+          "enum": [
+            "QUAL-001E",
+            "ASSURE-PORTFOLIO-CUT-001",
+            "LEX-NET-030"
+          ]
+        },
+        "reference": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "ownership": { "const": "external_canonical_owner" },
+        "binding_state": { "enum": ["unbound", "digest_bound", "receipt_verified"] },
+        "profile_sha256": { "$ref": "#/$defs/digest_or_null" },
+        "policy_sha256": { "$ref": "#/$defs/digest_or_null" },
+        "receipt_refs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "binding_state": { "const": "unbound" } },
+            "required": ["binding_state"]
+          },
+          "then": {
+            "properties": {
+              "profile_sha256": { "type": "null" },
+              "policy_sha256": { "type": "null" },
+              "receipt_refs": { "maxItems": 0 }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "binding_state": { "enum": ["digest_bound", "receipt_verified"] } },
+            "required": ["binding_state"]
+          },
+          "then": {
+            "properties": {
+              "profile_sha256": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" },
+              "policy_sha256": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "binding_state": { "const": "receipt_verified" } },
+            "required": ["binding_state"]
+          },
+          "then": {
+            "properties": { "receipt_refs": { "minItems": 1 } }
+          }
+        }
+      ]
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["component_id", "role", "execution_status", "identity_label", "evidence_refs"],
+      "properties": {
+        "component_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 192,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+        },
+        "role": {
+          "enum": [
+            "agent_under_test",
+            "episode_runner",
+            "effect_broker",
+            "participant_effect_ledger",
+            "participant_effect_sink",
+            "service_observer",
+            "service_probe",
+            "runtime_access_monitor",
+            "telemetry_collector",
+            "episode_reset_authority",
+            "benchmark_evaluator"
+          ]
+        },
+        "execution_status": {
+          "enum": [
+            "process_observed",
+            "synthetic_reference",
+            "not_exercised",
+            "unknown"
+          ]
+        },
+        "identity_label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "evidence_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+        }
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dependency_id",
+        "dependency_kind",
+        "status",
+        "identity_label",
+        "canonical_fault_domains",
+        "evidence_refs",
+        "limitation"
+      ],
+      "properties": {
+        "dependency_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 192,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+        },
+        "dependency_kind": {
+          "enum": [
+            "host_kernel_namespace",
+            "operating_system_identity",
+            "process_supervisor",
+            "administration_domain",
+            "authority_issuer",
+            "participant_state_store",
+            "participant_effect_sink",
+            "replication_failover_domain",
+            "backup_restore_authority",
+            "network_or_ipc_path",
+            "dns_proxy_gateway",
+            "time_source",
+            "time_synchronization_authority",
+            "service_probe_source",
+            "telemetry_collector",
+            "runtime_monitor_source",
+            "build_artifact",
+            "toolchain_distribution",
+            "episode_reset_authority"
+          ]
+        },
+        "status": {
+          "enum": [
+            "observed_in_fixture",
+            "declared_shared",
+            "not_exercised",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "identity_label": {
+          "type": ["string", "null"],
+          "maxLength": 512
+        },
+        "canonical_fault_domains": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "EvaluatorIdentity",
+              "EvaluatorProfileIdentity",
+              "ImplementationLineage",
+              "SpecificationLineage",
+              "ExpectedAnswerLineage",
+              "TestCorpusLineage",
+              "SourceEvidenceLineage",
+              "ToolchainDistribution",
+              "RepositoryControl",
+              "ExecutionProvider",
+              "RunnerImage",
+              "Runtime",
+              "InputAcquisition",
+              "OperatorControl",
+              "TrustRoot"
+            ]
+          }
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+        },
+        "limitation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "status": { "enum": ["observed_in_fixture", "declared_shared"] } },
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {
+              "identity_label": { "type": "string", "minLength": 1 },
+              "evidence_refs": { "minItems": 1 },
+              "canonical_fault_domains": { "minItems": 1 }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "status": { "enum": ["not_exercised", "unknown", "not_applicable"] } },
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {
+              "identity_label": { "type": "null" }
+            }
+          }
+        }
+      ]
+    },
+    "dependency_edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from_component_id", "dependency_id", "relation"],
+      "properties": {
+        "from_component_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 192
+        },
+        "dependency_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 192
+        },
+        "relation": {
+          "enum": [
+            "executes_on",
+            "runs_under",
+            "administered_by",
+            "authorized_by",
+            "stores_in",
+            "writes_to",
+            "routes_through",
+            "communicates_over",
+            "time_synchronized_by",
+            "observes_from",
+            "observes_through",
+            "built_from",
+            "reset_by"
+          ]
+        }
+      }
+    },
+    "claim_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_id",
+        "claim_kind",
+        "source_component_id",
+        "compared_component_ids",
+        "required_dependency_kinds",
+        "expected_claim_disposition",
+        "claim_ceiling"
+      ],
+      "properties": {
+        "claim_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "claim_kind": {
+          "enum": ["participant_effect", "service_health"]
+        },
+        "source_component_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 192
+        },
+        "compared_component_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 192
+          }
+        },
+        "required_dependency_kinds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/dependency_kind"
+          }
+        },
+        "expected_claim_disposition": {
+          "enum": [
+            "shared_dependencies_present",
+            "required_source_not_exercised",
+            "indeterminate"
+          ]
+        },
+        "claim_ceiling": {
+          "enum": [
+            "process_separated_prototype_only",
+            "no_independent_effect_claim",
+            "no_independent_service_health_claim"
+          ]
+        }
+      }
+    },
+    "dependency_kind": {
+      "enum": [
+        "host_kernel_namespace",
+        "operating_system_identity",
+        "process_supervisor",
+        "administration_domain",
+        "authority_issuer",
+        "participant_state_store",
+        "participant_effect_sink",
+        "replication_failover_domain",
+        "backup_restore_authority",
+        "network_or_ipc_path",
+        "dns_proxy_gateway",
+        "time_source",
+        "time_synchronization_authority",
+        "service_probe_source",
+        "telemetry_collector",
+        "runtime_monitor_source",
+        "build_artifact",
+        "toolchain_distribution",
+        "episode_reset_authority"
+      ]
+    },
+    "monitor_coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "monitor_component_id",
+        "events_observed",
+        "events_dropped",
+        "sequence_continuity",
+        "evidence_refs"
+      ],
+      "properties": {
+        "status": {
+          "enum": ["complete", "gapped", "not_exercised", "unknown"]
+        },
+        "monitor_component_id": {
+          "type": ["string", "null"]
+        },
+        "events_observed": { "type": ["integer", "null"], "minimum": 0 },
+        "events_dropped": { "type": ["integer", "null"], "minimum": 0 },
+        "sequence_continuity": { "type": ["boolean", "null"] },
+        "evidence_refs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "status": { "const": "complete" } },
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {
+              "monitor_component_id": { "type": "string", "minLength": 1 },
+              "events_observed": { "type": "integer" },
+              "events_dropped": { "const": 0 },
+              "sequence_continuity": { "const": true },
+              "evidence_refs": { "minItems": 1 }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "status": { "enum": ["gapped", "not_exercised", "unknown"] } },
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {
+              "sequence_continuity": { "enum": [false, null] }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
