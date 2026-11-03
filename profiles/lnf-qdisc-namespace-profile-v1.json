@@ -147,7 +147,8 @@
     "run_manifest_with_source_and_config_digests",
     "qdisc_install_argv",
     "tbf_shaper_install_argv",
-    "fq_codel_child_install_argv"
+    "fq_codel_child_install_argv",
+    "kernel_hz_config_readback"
   ],
   "required_metrics": [
     "per_tenant_goodput_bps",
@@ -226,12 +227,21 @@
     "No claim that CAKE or fq_codel is beaten before matched namespace and hardware runs",
     "No claim of 5G RAN slicing or carrier scheduler equivalence",
     "No claim of production deployment or public network authorization",
-    "TBF plus fq_codel and CAKE's integrated bandwidth shaper are different shaping and queue-management implementations and are compared as such"
+    "TBF plus fq_codel and CAKE's integrated bandwidth shaper are different shaping and queue-management implementations and are compared as such",
+    "The read-only planner does not verify that the executing host kernel CONFIG_HZ meets the TBF burst assumption"
   ],
   "supported_scenario_ids": [
     "QDISC-01",
     "QDISC-02",
     "QDISC-03"
   ],
-  "qdisc_comparison_note": "The fq_codel arm is TBF-shaped at the same configured rate as the CAKE arms. Rate equality controls the shared bottleneck; it does not make TBF+fq_codel and CAKE equivalent shaper/AQM implementations."
+  "qdisc_comparison_note": "The fq_codel arm is TBF-shaped at the same configured rate as the CAKE arms. Rate equality controls the shared bottleneck; it does not make TBF+fq_codel and CAKE equivalent shaper/AQM implementations. The TBF burst is computed from the declared HZ=100 lower-bound assumption; the future executor must read the exact kernel CONFIG_HZ and refuse installation if it is below 100 or cannot be verified.",
+  "tbf_shaping": {
+    "minimum_kernel_hz_assumption": 100,
+    "burst_formula": "ceil(shaping_rate_bps / (8 * 100)) + 1500 bytes",
+    "mtu_compensation_bytes": 1500,
+    "plan_verifies_actual_kernel_hz": false,
+    "future_executor_must_verify_actual_config_hz_at_least_assumption": true,
+    "mismatch_or_unavailable": "unsupported_environment_no_qdisc_install"
+  }
 }
