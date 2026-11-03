@@ -8,9 +8,9 @@
 //! socket buffers, or real packet captures.
 
 use super::{
-    PathObservation, ScheduleError, ScheduleRequest, canonical_capacity_domain_ids,
-    CapacityDomainEvidence, capacity_domains_disjoint, estimated_cost, exclusion_reason, validate_path_set,
-    validate_request,
+    CapacityDomainEvidence, PathObservation, ScheduleError, ScheduleRequest,
+    canonical_capacity_domain_ids, capacity_domains_disjoint, estimated_cost, exclusion_reason,
+    validate_path_set, validate_request,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -1146,8 +1146,16 @@ mod tests {
                 redundant_copy: false,
             },
         ];
-        let (delivered, peak, byte_us, exceeded, received, unique_bytes, pending, _network_arrivals) =
-            simulate_receiver(&transmissions, &[1200, 1200, 1200], 2400, 500_000);
+        let (
+            delivered,
+            peak,
+            byte_us,
+            exceeded,
+            received,
+            unique_bytes,
+            pending,
+            _network_arrivals,
+        ) = simulate_receiver(&transmissions, &[1200, 1200, 1200], 2400, 500_000);
         assert_eq!(received, 3);
         assert_eq!(unique_bytes, 3600);
         assert_eq!(delivered.len(), 3);
