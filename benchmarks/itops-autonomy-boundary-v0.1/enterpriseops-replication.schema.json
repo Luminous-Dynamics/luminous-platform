@@ -8,6 +8,9 @@
     "benchmark_id",
     "plan_id",
     "status",
+    "target_result_surface",
+    "published_reference",
+    "reference_reproduction",
     "created_at",
     "source",
     "dataset",
@@ -592,6 +595,88 @@
           "const": true
         }
       }
+    },
+    "target_result_surface": {
+      "enum": [
+        "servicenow_nowai_bench_snapshot_2026-07-23",
+        "artificial_analysis_enterpriseops_gym_aa",
+        "original_pmlr_2026_paper"
+      ]
+    },
+    "published_reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model_name",
+        "organization",
+        "published_score_fraction",
+        "execution_mode",
+        "reported_snapshot_date",
+        "task_split",
+        "fallback_configuration",
+        "source_url"
+      ],
+      "properties": {
+        "model_name": {
+          "$ref": "#/$defs/nonempty"
+        },
+        "organization": {
+          "$ref": "#/$defs/nonempty"
+        },
+        "published_score_fraction": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "execution_mode": {
+          "const": "oracle"
+        },
+        "reported_snapshot_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "task_split": {
+          "$ref": "#/$defs/nonempty"
+        },
+        "fallback_configuration": {
+          "$ref": "#/$defs/nonempty"
+        },
+        "source_url": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "reference_reproduction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required_for_direct_comparison",
+        "reproduced",
+        "system_profile_digest"
+      ],
+      "properties": {
+        "required_for_direct_comparison": {
+          "const": true
+        },
+        "reproduced": {
+          "type": "boolean"
+        },
+        "system_profile_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
     }
   },
   "allOf": [
@@ -720,6 +805,16 @@
                 "$ref": "#/$defs/sha256"
               },
               "analysis_code_digest": {
+                "$ref": "#/$defs/sha256"
+              }
+            }
+          },
+          "reference_reproduction": {
+            "properties": {
+              "reproduced": {
+                "const": true
+              },
+              "system_profile_digest": {
                 "$ref": "#/$defs/sha256"
               }
             }
