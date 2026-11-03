@@ -1,0 +1,229 @@
+{
+  "schema_version": "luminous.lnf-mpath-coexistence-profile.v1",
+  "profile_id": "lnf-mpath-do-no-harm-v1",
+  "status": "draft_targets_not_results",
+  "reviewed_on": "2026-11-03",
+  "parent_issue": 212,
+  "qualification_issue": 222,
+  "objective": "Evaluate MPTCP best-path improvement and TCP coexistence fairness using exact matched independent/shared-bottleneck experiments.",
+  "execution_stage": "deterministic_evidence_evaluator_only",
+  "standards_basis": [
+    "RFC 6356",
+    "RFC 8684"
+  ],
+  "design_goals": {
+    "best_path_improvement": "MPTCP application goodput should be no worse than the best matched single-path TCP reference over genuinely independent capacity domains.",
+    "do_no_harm": "An MPTCP connection must not obtain materially more capacity at shared bottlenecks than an equivalent single TCP flow at the expense of a companion TCP flow.",
+    "resource_pooling": "Move traffic away from congestion where practical without double-counting shared capacity or harming competing traffic."
+  },
+  "paired_identity": {
+    "required_digests": [
+      "kernel_build_sha256",
+      "topology_sha256",
+      "qdisc_config_sha256",
+      "workload_sha256",
+      "impairment_sha256"
+    ],
+    "required_scalar_identity": [
+      "seed",
+      "warmup_us",
+      "measurement_duration_us",
+      "tcp_congestion_control",
+      "mptcp_congestion_control",
+      "mptcp_scheduler"
+    ],
+    "all_arms_must_match_identity": true,
+    "mismatched_identity_disposition": "inconclusive",
+    "implementation_identity_must_be_exact": true
+  },
+  "evidence_requirements": {
+    "mptcp_kernel_support_required": true,
+    "mptcp_scheduler_support_required": true,
+    "authoritative_negotiation_proof_both_endpoints": true,
+    "minimum_negotiated_subflows": 2,
+    "maximum_evaluator_subflows": 64,
+    "all_required_counters_required": true,
+    "cleanup_verification_required": true,
+    "unsupported_or_missing_is_not_pass": true,
+    "fixed_point_ratio_unit": "parts_per_million",
+    "statistical_confidence_intervals": "external analysis layer retains all repetitions and denominators"
+  },
+  "scenarios": [
+    "MPCX-00",
+    "MPCX-01",
+    "MPCX-02",
+    "MPCX-03",
+    "MPCX-04",
+    "MPCX-05",
+    "MPCX-06",
+    "MPCX-07",
+    "MPCX-08",
+    "MPCX-09",
+    "MPCX-10",
+    "MPCX-11"
+  ],
+  "scenario_definitions": [
+    {
+      "id": "MPCX-00",
+      "topology": "single_path_tcp_on_path_a",
+      "purpose": "best-path reference"
+    },
+    {
+      "id": "MPCX-01",
+      "topology": "single_path_tcp_on_path_b",
+      "purpose": "best-path reference"
+    },
+    {
+      "id": "MPCX-02",
+      "topology": "two_independent_bottlenecks_mptcp_and_two_tcp_reference_arms",
+      "purpose": "best-path improvement"
+    },
+    {
+      "id": "MPCX-03",
+      "topology": "two_mptcp_subflows_share_one_bottleneck_plus_companion_tcp",
+      "purpose": "do-no-harm"
+    },
+    {
+      "id": "MPCX-04",
+      "topology": "two_uncoupled_tcp_subflows_share_one_bottleneck_plus_companion_tcp",
+      "purpose": "negative control for shared-bottleneck unfairness"
+    },
+    {
+      "id": "MPCX-05",
+      "topology": "partially_overlapping_capacity_domains",
+      "purpose": "resource pooling and overlap"
+    },
+    {
+      "id": "MPCX-06",
+      "topology": "hidden_shared_bottleneck_not_disclosed_to_offline_model",
+      "purpose": "unknown-dependency negative control"
+    },
+    {
+      "id": "MPCX-07",
+      "topology": "asymmetric_rtt_and_rate_independent_paths",
+      "purpose": "best-path and reorder sensitivity"
+    },
+    {
+      "id": "MPCX-08",
+      "topology": "asymmetric_rtt_and_rate_shared_bottleneck",
+      "purpose": "congestion-control interaction"
+    },
+    {
+      "id": "MPCX-09",
+      "topology": "mptcp_negotiation_fallback_to_one_subflow",
+      "purpose": "must not qualify as multipath"
+    },
+    {
+      "id": "MPCX-10",
+      "topology": "missing_or_stale_path_and_companion_tcp_counters",
+      "purpose": "inconclusive evidence control"
+    },
+    {
+      "id": "MPCX-11",
+      "topology": "control_treatment_qdisc_or_workload_digest_mismatch",
+      "purpose": "paired identity negative control"
+    }
+  ],
+  "comparators": [
+    "exact_pinned_linux_mptcp_default_scheduler_and_congestion_controller",
+    "single_path_tcp_on_path_a",
+    "single_path_tcp_on_path_b",
+    "two_single_path_tcp_flows_shared_bottleneck",
+    "mptcp_plus_companion_tcp_shared_bottleneck",
+    "uncoupled_tcp_subflows_shared_bottleneck_negative_control",
+    "lnf_offline_schedule_prediction_not_applied"
+  ],
+  "benchmarks": [
+    {
+      "id": "MPCX_NEGOTIATION_AUTH_001",
+      "metric": "mptcp_trials_with_at_least_two_verified_subflows_at_both_endpoints",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPCX_BEST_PATH_001",
+      "metric": "mptcp_goodput_over_best_single_path_tcp_goodput_ppm",
+      "operator": ">=",
+      "target": 1000000,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPCX_DO_NO_HARM_001",
+      "metric": "mptcp_goodput_over_tcp_tcp_control_mean_flow_goodput_ppm",
+      "operator": "<=",
+      "target": 1100000,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPCX_COMPANION_RETENTION_001",
+      "metric": "companion_tcp_goodput_over_tcp_tcp_control_mean_flow_goodput_ppm",
+      "operator": ">=",
+      "target": 900000,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPCX_RESOURCE_ACCOUNTING_001",
+      "metric": "capacity_domains_counted_as_independent_when_topology_declares_shared",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPCX_EVIDENCE_INTEGRITY_001",
+      "metric": "missing_or_mismatched_evidence_pairs_classified_as_pass",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    }
+  ],
+  "required_metrics": [
+    "verified_negotiated_subflow_count_both_endpoints",
+    "mptcp_negotiation_or_tcp_fallback_disposition",
+    "exact_kernel_scheduler_and_congestion_control_identity",
+    "single_path_tcp_goodput_path_a_bps",
+    "single_path_tcp_goodput_path_b_bps",
+    "mptcp_application_goodput_bps",
+    "mptcp_over_best_path_tcp_ratio_ppm",
+    "tcp_tcp_control_flow_a_goodput_bps",
+    "tcp_tcp_control_flow_b_goodput_bps",
+    "mptcp_companion_tcp_goodput_bps",
+    "mptcp_over_tcp_control_mean_flow_ratio_ppm",
+    "companion_tcp_retention_ratio_ppm",
+    "mptcp_plus_companion_total_goodput_ratio_ppm",
+    "bottleneck_capacity_bps",
+    "queue_delay_p50_p95_p99",
+    "loss_and_ecn_marks",
+    "per_subflow_bytes_rtt_retransmission_and_reinjection",
+    "control_treatment_identity_and_cleanup_disposition"
+  ],
+  "verdicts": [
+    "pass",
+    "fail",
+    "inconclusive",
+    "unsupported"
+  ],
+  "target_defaults": {
+    "independent_best_path_min_ratio_ppm": 1000000,
+    "shared_mptcp_max_single_tcp_equivalent_ratio_ppm": 1100000,
+    "shared_companion_min_retention_ratio_ppm": 900000,
+    "target_status": "proposed_not_measured"
+  },
+  "evidence_classes": [
+    "deterministic_evaluator",
+    "network_namespace_or_vm_emulation",
+    "hardware_bench",
+    "field_observed"
+  ],
+  "explicit_non_claims": [
+    "No claim that the evaluator simulates or implements a congestion controller.",
+    "No claim that the Linux kernel uses a particular controller without exact runtime evidence.",
+    "No claim of MPTCP aggregation without two verified negotiated subflows at both endpoints.",
+    "No claim that independent IP addresses imply independent capacity domains.",
+    "No claim that per-session throughput improvement proves network-wide utility.",
+    "No claim that namespace-emulation results are physical radio or field results.",
+    "No claim of beating LIA, OLIA, BALIA or the Linux default before matched experiments.",
+    "No floating-point or statistical inference occurs inside the deterministic evaluator.",
+    "No missing counter, unsupported arm, failed cleanup or mismatched pair may be recorded as PASS."
+  ]
+}
