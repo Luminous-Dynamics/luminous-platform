@@ -172,8 +172,8 @@
     },
     "scenario_ids": {
       "type": "array",
-      "minItems": 18,
-      "maxItems": 18,
+      "minItems": 20,
+      "maxItems": 20,
       "uniqueItems": true,
       "items": {
         "type": "string",
@@ -182,8 +182,8 @@
     },
     "benchmarks": {
       "type": "array",
-      "minItems": 10,
-      "maxItems": 10,
+      "minItems": 12,
+      "maxItems": 12,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -227,7 +227,7 @@
     },
     "required_metrics": {
       "type": "array",
-      "minItems": 17,
+      "minItems": 22,
       "uniqueItems": true,
       "items": {
         "type": "string",
@@ -251,8 +251,8 @@
     },
     "explicit_non_claims": {
       "type": "array",
-      "minItems": 8,
-      "maxItems": 8,
+      "minItems": 10,
+      "maxItems": 10,
       "uniqueItems": true,
       "items": {
         "type": "string",
