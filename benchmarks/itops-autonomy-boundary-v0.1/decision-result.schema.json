@@ -144,7 +144,10 @@
             "TENANT-001",
             "PROMPT-001",
             "CONN-001",
-            "SLA-001"
+            "SLA-001",
+            "FLOW-001",
+            "FLOW-002",
+            "FLOW-003"
           ]
         },
         "tenant_commitment": {
