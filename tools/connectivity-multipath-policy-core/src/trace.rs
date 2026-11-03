@@ -355,6 +355,14 @@ struct TransmissionAccounting<'a> {
     records: &'a mut Vec<TraceTransmission>,
 }
 
+struct TransmissionAccounting<'a> {
+    request: &'a ScheduleRequest,
+    trace_request: &'a TraceRequest,
+    aggregate_cost_used: &'a mut u64,
+    aggregate_energy_used: &'a mut u64,
+    records: &'a mut Vec<TraceTransmission>,
+}
+
 fn record_transmission(
     state: &mut PathState,
     segment_index: u32,
@@ -629,7 +637,6 @@ pub fn simulate(
             {
                 return Err(ScheduleError::InternalInvariant);
             }
-            drop(accounting);
             if let Some(second) = second
                 && candidate_increment(
                     request,
@@ -694,7 +701,6 @@ pub fn simulate(
         {
             return Err(ScheduleError::InternalInvariant);
         }
-        drop(accounting);
         if active_strategy == TraceStrategy::RoundRobin && !states.is_empty() {
             round_robin_cursor = (selected.index + 1) % states.len();
         }
