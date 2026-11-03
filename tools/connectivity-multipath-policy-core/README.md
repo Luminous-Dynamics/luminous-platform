@@ -118,6 +118,8 @@ The default proposed thresholds are MPTCP share <= 1.10x the single-TCP referenc
 
 The evaluator uses checked integer ratios in parts-per-million; confidence intervals and uncertainty analysis remain in the external benchmark layer. It does not infer physical capacity independence from different IP addresses or path names.
 
+Every verdict has scope `single_paired_trial`. A paired pass is not programme-level statistical qualification: the external analysis must retain all repetitions and failures and compute the declared confidence intervals before promoting the programme. The exact kernel build digest binds in-tree congestion-control/scheduler code; out-of-tree implementations must provide their own artifact SHA-256 in the paired identity.
+
 ## Required next steps before a performance claim
 
 1. Compare model output with the exact Linux kernel MPTCP path-manager and scheduler configuration.
