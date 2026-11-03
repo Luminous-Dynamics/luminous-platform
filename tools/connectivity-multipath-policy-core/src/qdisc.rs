@@ -131,7 +131,11 @@ fn validate_profile(profile: &QdiscProfile) -> Result<(), QdiscPlanError> {
         "QDISC-03" => (32, 1),
         _ => return Err(QdiscPlanError::UnsupportedScenario),
     };
-    if (profile.tenant_a_parallel_flows, profile.tenant_b_parallel_flows) != expected_flows {
+    if (
+        profile.tenant_a_parallel_flows,
+        profile.tenant_b_parallel_flows,
+    ) != expected_flows
+    {
         return Err(QdiscPlanError::ScenarioFlowMismatch);
     }
     Ok(())
@@ -204,15 +208,9 @@ fn qdisc_args(profile: &QdiscProfile) -> Vec<(String, Vec<String>)> {
             // compared arm has the same configured bottleneck rate as CAKE.
             let mut shaper = prefix();
             shaper.extend(
-                [
-                    "root",
-                    "handle",
-                    "1:",
-                    "tbf",
-                    "rate",
-                ]
-                .into_iter()
-                .map(str::to_owned),
+                ["root", "handle", "1:", "tbf", "rate"]
+                    .into_iter()
+                    .map(str::to_owned),
             );
             shaper.push(format!("{}bit", profile.shaping_rate_bps));
             shaper.push("burst".to_owned());
@@ -221,29 +219,13 @@ fn qdisc_args(profile: &QdiscProfile) -> Vec<(String, Vec<String>)> {
                     .expect("validated shaping rate fits bounded TBF burst")
                     .to_string(),
             );
-            shaper.extend(
-                ["latency", "400ms"]
-                    .into_iter()
-                    .map(str::to_owned),
-            );
+            shaper.extend(["latency", "400ms"].into_iter().map(str::to_owned));
 
             let mut aqm = prefix();
             aqm.extend(
                 [
-                    "parent",
-                    "1:1",
-                    "fq_codel",
-                    "limit",
-                    "10240",
-                    "flows",
-                    "1024",
-                    "target",
-                    "5ms",
-                    "interval",
-                    "100ms",
-                    "quantum",
-                    "1514",
-                    "ecn",
+                    "parent", "1:1", "fq_codel", "limit", "10240", "flows", "1024", "target",
+                    "5ms", "interval", "100ms", "quantum", "1514", "ecn",
                 ]
                 .into_iter()
                 .map(str::to_owned),
@@ -273,17 +255,13 @@ fn validate_generated_plan(plan: &CommandPlan) -> Result<(), QdiscPlanError> {
     if expected.len() != plan.namespaces.len() {
         return Err(QdiscPlanError::DuplicateNamespace);
     }
-    if plan.host_interface_route_or_qdisc_mutation
-        || plan.public_network_access
-        || plan.nat_enabled
+    if plan.host_interface_route_or_qdisc_mutation || plan.public_network_access || plan.nat_enabled
     {
         return Err(QdiscPlanError::InvalidGeneratedPlan);
     }
 
     for command in &plan.commands {
-        if command.program == "tc"
-            && !(command.phase == "preflight" && command.args == ["-V"])
-        {
+        if command.program == "tc" && !(command.phase == "preflight" && command.args == ["-V"]) {
             return Err(QdiscPlanError::InvalidGeneratedPlan);
         }
         if command.program == "ip" && command.args.first().is_some_and(|arg| arg == "-n") {
@@ -294,8 +272,14 @@ fn validate_generated_plan(plan: &CommandPlan) -> Result<(), QdiscPlanError> {
         }
         if command.program == "ip"
             && command.args.first().is_some_and(|arg| arg == "netns")
-            && command.args.get(1).is_some_and(|arg| arg == "add" || arg == "del")
-            && command.args.get(2).is_none_or(|name| !expected.contains(name))
+            && command
+                .args
+                .get(1)
+                .is_some_and(|arg| arg == "add" || arg == "del")
+            && command
+                .args
+                .get(2)
+                .is_none_or(|name| !expected.contains(name))
         {
             return Err(QdiscPlanError::InvalidGeneratedPlan);
         }
@@ -305,9 +289,11 @@ fn validate_generated_plan(plan: &CommandPlan) -> Result<(), QdiscPlanError> {
         {
             return Err(QdiscPlanError::InvalidGeneratedPlan);
         }
-        if command.args.windows(2).any(|pair| {
-            pair[0] == "exec" && !expected.contains(&pair[1])
-        }) && command.program == "ip"
+        if command
+            .args
+            .windows(2)
+            .any(|pair| pair[0] == "exec" && !expected.contains(&pair[1]))
+            && command.program == "ip"
         {
             return Err(QdiscPlanError::InvalidGeneratedPlan);
         }
@@ -327,14 +313,40 @@ pub fn build_plan(profile: &QdiscProfile) -> Result<CommandPlan, QdiscPlanError>
     let server = ns_name(&profile.run_suffix, "srv");
     let tenant_a = ns_name(&profile.run_suffix, "a");
     let tenant_b = ns_name(&profile.run_suffix, "b");
-    let namespaces = vec![gw.clone(), server.clone(), tenant_a.clone(), tenant_b.clone()];
+    let namespaces = vec![
+        gw.clone(),
+        server.clone(),
+        tenant_a.clone(),
+        tenant_b.clone(),
+    ];
 
     let mut commands = Vec::new();
 
     // Read-only host capability/version preflight.
-    add(&mut commands, "preflight", None, Some("kernel_version"), "uname", &["-r"]);
-    add(&mut commands, "preflight", None, Some("iproute2_version"), "ip", &["-Version"]);
-    add(&mut commands, "preflight", None, Some("tc_version"), "tc", &["-V"]);
+    add(
+        &mut commands,
+        "preflight",
+        None,
+        Some("kernel_version"),
+        "uname",
+        &["-r"],
+    );
+    add(
+        &mut commands,
+        "preflight",
+        None,
+        Some("iproute2_version"),
+        "ip",
+        &["-Version"],
+    );
+    add(
+        &mut commands,
+        "preflight",
+        None,
+        Some("tc_version"),
+        "tc",
+        &["-V"],
+    );
     add(
         &mut commands,
         "preflight",
@@ -605,14 +617,7 @@ pub fn build_plan(profile: &QdiscProfile) -> Result<CommandPlan, QdiscPlanError>
     );
 
     for (artifact_id, argv) in qdisc_args(profile) {
-        add_owned(
-            &mut commands,
-            "setup",
-            None,
-            Some(artifact_id),
-            "ip",
-            argv,
-        );
+        add_owned(&mut commands, "setup", None, Some(artifact_id), "ip", argv);
     }
     add_owned(
         &mut commands,
@@ -691,8 +696,16 @@ pub fn build_plan(profile: &QdiscProfile) -> Result<CommandPlan, QdiscPlanError>
     // concurrently by a future executor. They use identical duration and do
     // not assign preferential DSCP markings.
     for (namespace, flow_count, artifact) in [
-        (&tenant_a, profile.tenant_a_parallel_flows, "tenant_a_iperf3_json"),
-        (&tenant_b, profile.tenant_b_parallel_flows, "tenant_b_iperf3_json"),
+        (
+            &tenant_a,
+            profile.tenant_a_parallel_flows,
+            "tenant_a_iperf3_json",
+        ),
+        (
+            &tenant_b,
+            profile.tenant_b_parallel_flows,
+            "tenant_b_iperf3_json",
+        ),
     ] {
         add_owned(
             &mut commands,
@@ -868,7 +881,10 @@ mod tests {
                 .commands
                 .iter()
                 .filter(|command| {
-                    command.args.windows(2).any(|pair| pair == ["qdisc", "replace"])
+                    command
+                        .args
+                        .windows(2)
+                        .any(|pair| pair == ["qdisc", "replace"])
                         && command.args.iter().any(|arg| arg == "vwan")
                 })
                 .collect::<Vec<_>>();
@@ -876,7 +892,10 @@ mod tests {
             assert_eq!(qdisc_commands.len(), expected_count);
             for command in qdisc_commands {
                 assert_eq!(command.program, "ip");
-                assert_eq!(&command.args[0..4], &["netns", "exec", "lnfq-test01-gw", "tc"]);
+                assert_eq!(
+                    &command.args[0..4],
+                    &["netns", "exec", "lnfq-test01-gw", "tc"]
+                );
             }
         }
     }
@@ -890,28 +909,17 @@ mod tests {
             .find(|command| command.args.iter().any(|arg| arg == "fq_codel"))
             .expect("fq_codel child qdisc command");
         for expected in [
-            "fq_codel",
-            "limit",
-            "10240",
-            "flows",
-            "1024",
-            "target",
-            "5ms",
-            "interval",
-            "100ms",
-            "quantum",
-            "1514",
-            "ecn",
+            "fq_codel", "limit", "10240", "flows", "1024", "target", "5ms", "interval", "100ms",
+            "quantum", "1514", "ecn",
         ] {
             assert!(command.args.iter().any(|arg| arg == expected));
         }
     }
 
-
     #[test]
     fn cake_plans_do_not_claim_a_tbf_kernel_hz_assumption() {
-        let plan = build_plan(&profile(QdiscArm::CakeBestEffortTripleIsolate))
-            .expect("valid CAKE plan");
+        let plan =
+            build_plan(&profile(QdiscArm::CakeBestEffortTripleIsolate)).expect("valid CAKE plan");
         assert_eq!(plan.tbf_minimum_kernel_hz, None);
         assert_eq!(plan.tbf_burst_bytes, None);
     }
@@ -932,10 +940,7 @@ mod tests {
             .expect("TBF shaper command");
         assert!(shaper.args.iter().any(|arg| arg == "tbf"));
         assert!(shaper.args.iter().any(|arg| arg == "100000000bit"));
-        assert_eq!(
-            plan.tbf_minimum_kernel_hz,
-            Some(MIN_TBF_KERNEL_HZ as u16)
-        );
+        assert_eq!(plan.tbf_minimum_kernel_hz, Some(MIN_TBF_KERNEL_HZ as u16));
         assert!(shaper.args.iter().any(|arg| arg == "burst"));
         let aqm = plan
             .commands
@@ -968,16 +973,13 @@ mod tests {
 
     #[test]
     fn no_host_namespace_link_or_qdisc_mutation_is_planned() {
-        let plan = build_plan(&profile(QdiscArm::CakeBestEffortTripleIsolate))
-            .expect("valid plan");
+        let plan = build_plan(&profile(QdiscArm::CakeBestEffortTripleIsolate)).expect("valid plan");
         for command in &plan.commands {
             if command.program == "tc" {
                 assert_eq!(command.phase, "preflight");
                 assert_eq!(command.args, vec!["-V"]);
             }
-            if command.program == "ip"
-                && command.args.first().is_some_and(|arg| arg == "-n")
-            {
+            if command.program == "ip" && command.args.first().is_some_and(|arg| arg == "-n") {
                 assert!(plan.namespaces.contains(&command.args[1]));
             }
         }
@@ -996,8 +998,10 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(defaults.len(), 2);
         for command in defaults {
-            assert!(command.args.contains(&"lnfq-test01-a".to_owned())
-                || command.args.contains(&"lnfq-test01-b".to_owned()));
+            assert!(
+                command.args.contains(&"lnfq-test01-a".to_owned())
+                    || command.args.contains(&"lnfq-test01-b".to_owned())
+            );
         }
     }
 
@@ -1010,15 +1014,21 @@ mod tests {
             .filter(|command| command.phase == "workload-client")
             .collect::<Vec<_>>();
         assert_eq!(workloads.len(), 2);
-        assert!(workloads
-            .iter()
-            .all(|command| command.parallel_group == Some("concurrent-tenants")));
-        assert!(workloads
-            .iter()
-            .any(|command| command.args.iter().any(|arg| arg == "8")));
-        assert!(workloads
-            .iter()
-            .any(|command| command.args.iter().any(|arg| arg == "1")));
+        assert!(
+            workloads
+                .iter()
+                .all(|command| command.parallel_group == Some("concurrent-tenants"))
+        );
+        assert!(
+            workloads
+                .iter()
+                .any(|command| command.args.iter().any(|arg| arg == "8"))
+        );
+        assert!(
+            workloads
+                .iter()
+                .any(|command| command.args.iter().any(|arg| arg == "1"))
+        );
     }
 
     #[test]
@@ -1039,7 +1049,11 @@ mod tests {
     #[test]
     fn cleanup_commands_are_guarded_by_namespace_ownership() {
         let plan = build_plan(&profile(QdiscArm::FqCodel)).expect("valid plan");
-        for command in plan.commands.iter().filter(|command| command.phase == "cleanup") {
+        for command in plan
+            .commands
+            .iter()
+            .filter(|command| command.phase == "cleanup")
+        {
             if command.args.windows(2).any(|pair| pair == ["netns", "del"]) {
                 assert_eq!(command.guard, Some("namespace-created-by-this-run"));
             }
@@ -1063,28 +1077,43 @@ mod tests {
     fn plan_rejects_scenario_flow_count_mismatch() {
         let mut invalid = profile(QdiscArm::FqCodel);
         invalid.scenario_id = "QDISC-01".to_owned();
-        assert_eq!(build_plan(&invalid), Err(QdiscPlanError::ScenarioFlowMismatch));
+        assert_eq!(
+            build_plan(&invalid),
+            Err(QdiscPlanError::ScenarioFlowMismatch)
+        );
     }
 
     #[test]
     fn plan_rejects_unimplemented_scenario_id() {
         let mut invalid = profile(QdiscArm::FqCodel);
         invalid.scenario_id = "QDISC-09".to_owned();
-        assert_eq!(build_plan(&invalid), Err(QdiscPlanError::UnsupportedScenario));
+        assert_eq!(
+            build_plan(&invalid),
+            Err(QdiscPlanError::UnsupportedScenario)
+        );
     }
 
     #[test]
     fn invalid_namespace_suffix_and_unbounded_inputs_are_rejected() {
         let mut invalid = profile(QdiscArm::FqCodel);
         invalid.run_suffix = "bad;touch".to_owned();
-        assert_eq!(build_plan(&invalid).unwrap_err(), QdiscPlanError::InvalidRunSuffix);
+        assert_eq!(
+            build_plan(&invalid).unwrap_err(),
+            QdiscPlanError::InvalidRunSuffix
+        );
 
         let mut invalid = profile(QdiscArm::FqCodel);
         invalid.duration_seconds = 301;
-        assert_eq!(build_plan(&invalid).unwrap_err(), QdiscPlanError::InvalidDuration);
+        assert_eq!(
+            build_plan(&invalid).unwrap_err(),
+            QdiscPlanError::InvalidDuration
+        );
 
         let mut invalid = profile(QdiscArm::FqCodel);
         invalid.tenant_a_parallel_flows = 33;
-        assert_eq!(build_plan(&invalid).unwrap_err(), QdiscPlanError::InvalidFlowCount);
+        assert_eq!(
+            build_plan(&invalid).unwrap_err(),
+            QdiscPlanError::InvalidFlowCount
+        );
     }
 }
