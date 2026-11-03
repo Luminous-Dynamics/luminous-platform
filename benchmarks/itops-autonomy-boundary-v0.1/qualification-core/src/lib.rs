@@ -372,6 +372,7 @@ pub struct AuthorityGrant {
     pub target_binding: String,
     pub operation: String,
     pub plan_sha256: String,
+    pub max_dispatches: u64,
     pub not_before_unix: i64,
     pub expires_at_unix: i64,
     pub revoked: bool,
@@ -387,6 +388,7 @@ pub enum AuthorityDenial {
     WrongOperation,
     WrongPlanDigest,
     MalformedRequirement,
+    GrantUseLimitReached,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -396,6 +398,7 @@ pub struct DispatchPermit {
     target_binding: String,
     operation: String,
     plan_sha256: String,
+    max_dispatches: u64,
 }
 
 impl DispatchPermit {
@@ -404,6 +407,7 @@ impl DispatchPermit {
     pub fn target_binding(&self) -> &str { &self.target_binding }
     pub fn operation(&self) -> &str { &self.operation }
     pub fn plan_sha256(&self) -> &str { &self.plan_sha256 }
+    pub fn max_dispatches(&self) -> u64 { self.max_dispatches }
 }
 
 /// Exact-scope authorization check. The permit cannot be constructed by
@@ -416,6 +420,12 @@ pub fn authorize_mutation(
     now_unix: i64,
 ) -> Result<DispatchPermit, AuthorityDenial> {
     if grant.revoked { return Err(AuthorityDenial::Revoked); }
+    if grant.grant_id.is_empty()
+        || grant.max_dispatches == 0
+        || grant.expires_at_unix <= grant.not_before_unix
+    {
+        return Err(AuthorityDenial::MalformedRequirement);
+    }
     if now_unix < grant.not_before_unix { return Err(AuthorityDenial::NotYetValid); }
     if now_unix >= grant.expires_at_unix { return Err(AuthorityDenial::Expired); }
     if requirement.plan_digest_binding != "workflow.plan_digest"
@@ -442,6 +452,7 @@ pub fn authorize_mutation(
         target_binding: grant.target_binding.clone(),
         operation: grant.operation.clone(),
         plan_sha256: grant.plan_sha256.clone(),
+        max_dispatches: grant.max_dispatches,
     })
 }
 
@@ -503,6 +514,12 @@ impl ParticipantEffectLedger {
         }
         if self.attempts.iter().any(|a| matches!(a.state, EffectState::Dispatched | EffectState::OutcomeUnknown)) {
             return Err(LedgerError::UnknownOutcomeLocked);
+        }
+        let grant_uses = self.attempts.iter()
+            .filter(|attempt| attempt.grant_id == permit.grant_id)
+            .count() as u64;
+        if grant_uses >= permit.max_dispatches {
+            return Err(LedgerError::GrantUseLimitReached);
         }
 
         self.next_attempt_id += 1;
@@ -579,7 +596,8 @@ impl ServiceObservation {
     pub fn qualified_state(&self, now_unix: i64, max_age_seconds: i64) -> ServiceState {
         if self.source.is_empty()
             || self.control_domain_ref.is_empty()
-            || self.evidence_sha256.is_empty()
+            || self.evidence_sha256.len() != 64
+            || !self.evidence_sha256.bytes().all(|byte| byte.is_ascii_hexdigit())
             || max_age_seconds < 0
             || now_unix < self.observed_at_unix
             || now_unix.saturating_sub(self.observed_at_unix) > max_age_seconds
@@ -612,6 +630,7 @@ mod tests {
             target_binding: "api-gateway/checkout_v2".into(),
             operation: "apply_config".into(),
             plan_sha256: plan_sha256.into(),
+            max_dispatches: 1,
             not_before_unix: 100,
             expires_at_unix: 200,
             revoked: false,
@@ -705,6 +724,11 @@ mod tests {
         let permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
         let mut ledger = ParticipantEffectLedger::default();
         let first = ledger.dispatch(permit, "idem-001").unwrap();
+        let pending_permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
+        assert_eq!(
+            ledger.dispatch(pending_permit, "idem-pending"),
+            Err(LedgerError::UnknownOutcomeLocked)
+        );
         ledger.mark_outcome_unknown(first).unwrap();
 
         let second_permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
@@ -716,6 +740,13 @@ mod tests {
         ledger.reconcile_no_effect(first).unwrap();
         let third_permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
         assert!(ledger.dispatch(third_permit, "idem-003").is_ok());
+
+        // The same exact grant is single-use even after reconciliation.
+        let fourth_permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
+        assert_eq!(
+            ledger.dispatch(fourth_permit, "idem-004"),
+            Err(LedgerError::GrantUseLimitReached)
+        );
     }
 
     #[test]
