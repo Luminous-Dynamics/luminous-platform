@@ -1,0 +1,116 @@
+{
+  "benchmark_id": "servicenow-enterpriseops-gym",
+  "plan_id": "EOG-PUBLIC-NATIVE-REPLICATION-001",
+  "status": "planning_unpinned",
+  "created_at": "2026-11-03T13:15:00Z",
+  "source": {
+    "repository_url": "https://github.com/ServiceNow/EnterpriseOps-Gym",
+    "repository_commit": "271f2c357f763376997dfd16807fcde2474ae41b",
+    "repository_commit_verified": true
+  },
+  "dataset": {
+    "repository_id": "ServiceNow-AI/EnterpriseOps-Gym",
+    "revision": null,
+    "revision_status": "unresolved",
+    "split": "public",
+    "license": "apache-2.0",
+    "task_manifest_digest": null
+  },
+  "task_selection": {
+    "selection_description": "Official public split from the pinned Hugging Face dataset revision. The split task IDs and domain manifest must be fetched and hashed before execution.",
+    "task_ids_digest": null,
+    "domain_inclusion_manifest_digest": null,
+    "private_data_excluded": true
+  },
+  "native_scoring": {
+    "mode": "oracle",
+    "success_metric": "strict_task_success_all_final_state_verifiers",
+    "scorer_path": null,
+    "scorer_commit": null,
+    "strict_all_verifiers": true,
+    "partial_credit": false,
+    "reference_fixture_digest": null
+  },
+  "environment": {
+    "container_images": [
+      {
+        "service": "enterpriseops-gym-orchestrator",
+        "image_reference": "official-repository-defined-image",
+        "image_digest": null
+      },
+      {
+        "service": "enterpriseops-gym-database",
+        "image_reference": "official-repository-defined-image",
+        "image_digest": null
+      },
+      {
+        "service": "enterpriseops-gym-tool-services",
+        "image_reference": "official-repository-defined-image",
+        "image_digest": null
+      }
+    ],
+    "database_snapshots": [
+      {
+        "database": "official-oracle-mode-state",
+        "snapshot_digest": null
+      }
+    ],
+    "network_boundary": "official_benchmark_network_policy",
+    "reset_policy": "official_benchmark_reset"
+  },
+  "system_under_test": {
+    "provider": null,
+    "model_name": null,
+    "immutable_model_version": null,
+    "endpoint_or_artifact": null,
+    "inference_config_digest": null,
+    "system_prompt_digest": null,
+    "developer_prompt_digest": null,
+    "memory_policy": "unknown",
+    "agent_framework": null,
+    "orchestrator_commit": null,
+    "tool_manifest_digest": null
+  },
+  "runner": {
+    "tool_mode": "oracle",
+    "concurrency": 1,
+    "timeout_seconds": 300,
+    "retry_policy": "Must match official baseline protocol; exact retry behavior unresolved before pinning.",
+    "seed_policy": "Use official benchmark seed/reset semantics; pin seed list before execution.",
+    "run_command_digest": null
+  },
+  "repeats": 3,
+  "reporting": {
+    "native_task_success": true,
+    "per_domain_success": true,
+    "per_verifier_pass_rate": true,
+    "latency_p50_p95": true,
+    "tokens_and_cost": true,
+    "failed_and_missing_runs": true,
+    "raw_receipt_digest": null,
+    "analysis_code_digest": null
+  },
+  "non_comparability": {
+    "aa_results_separate": true,
+    "native_scorer_unchanged": true,
+    "instrumentation_is_supplemental": true,
+    "no_private_tasks": true
+  },
+  "target_result_surface": "servicenow_nowai_bench_snapshot_2026-07-23",
+  "published_reference": {
+    "model_name": "Claude Fable 5 (with fallback)",
+    "organization": "Anthropic",
+    "published_score_fraction": 0.511,
+    "execution_mode": "oracle",
+    "reported_snapshot_date": "2026-07-23",
+    "task_split": "ServiceNow NOWAI-Bench synchronized EnterpriseOps-Gym leaderboard snapshot; public/full split details must be pinned from the selected source release.",
+    "fallback_configuration": "with fallback; exact fallback route and inference profile must be reconstructed from the source leaderboard configuration before direct comparison.",
+    "source_url": "https://github.com/ServiceNow/NOWAI-Bench"
+  },
+  "reference_reproduction": {
+    "required_for_direct_comparison": true,
+    "reproduced": false,
+    "system_profile_digest": null,
+    "profile_artifact_uri": null
+  }
+}

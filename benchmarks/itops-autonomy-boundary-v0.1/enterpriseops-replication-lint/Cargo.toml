@@ -1,0 +1,11 @@
+[package]
+name = "enterpriseops-parity-lint"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "AGPL-3.0-or-later"
+description = "Draft 2020-12 readiness auditor for pinned EnterpriseOps-Gym replications"
+
+[dependencies]
+serde_json = "=1.0.145"
+jsonschema = { version = "=0.60.2", default-features = false }

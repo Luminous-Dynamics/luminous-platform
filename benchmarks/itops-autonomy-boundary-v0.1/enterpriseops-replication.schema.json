@@ -1,0 +1,838 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/enterpriseops-replication-plan-v0.1.schema.json",
+  "title": "EnterpriseOps-Gym Native-Score Replication Plan v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "benchmark_id",
+    "plan_id",
+    "status",
+    "target_result_surface",
+    "published_reference",
+    "reference_reproduction",
+    "created_at",
+    "source",
+    "dataset",
+    "task_selection",
+    "native_scoring",
+    "environment",
+    "system_under_test",
+    "runner",
+    "repeats",
+    "reporting",
+    "non_comparability"
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "git_sha": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "nonempty": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    }
+  },
+  "properties": {
+    "benchmark_id": {
+      "const": "servicenow-enterpriseops-gym"
+    },
+    "plan_id": {
+      "$ref": "#/$defs/nonempty"
+    },
+    "status": {
+      "enum": [
+        "planning_unpinned",
+        "ready_to_execute",
+        "executed"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository_url",
+        "repository_commit",
+        "repository_commit_verified"
+      ],
+      "properties": {
+        "repository_url": {
+          "const": "https://github.com/ServiceNow/EnterpriseOps-Gym"
+        },
+        "repository_commit": {
+          "$ref": "#/$defs/git_sha"
+        },
+        "repository_commit_verified": {
+          "type": "boolean"
+        }
+      }
+    },
+    "dataset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository_id",
+        "revision",
+        "revision_status",
+        "split",
+        "license",
+        "task_manifest_digest"
+      ],
+      "properties": {
+        "repository_id": {
+          "const": "ServiceNow-AI/EnterpriseOps-Gym"
+        },
+        "revision": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "revision_status": {
+          "enum": [
+            "unresolved",
+            "verified"
+          ]
+        },
+        "split": {
+          "enum": [
+            "public",
+            "full",
+            "named_revision_split"
+          ]
+        },
+        "license": {
+          "type": "string",
+          "minLength": 1
+        },
+        "task_manifest_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "task_selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "selection_description",
+        "task_ids_digest",
+        "domain_inclusion_manifest_digest",
+        "private_data_excluded"
+      ],
+      "properties": {
+        "selection_description": {
+          "$ref": "#/$defs/nonempty"
+        },
+        "task_ids_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "domain_inclusion_manifest_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "private_data_excluded": {
+          "const": true
+        }
+      }
+    },
+    "native_scoring": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "success_metric",
+        "scorer_path",
+        "scorer_commit",
+        "strict_all_verifiers",
+        "partial_credit",
+        "reference_fixture_digest"
+      ],
+      "properties": {
+        "mode": {
+          "const": "oracle"
+        },
+        "success_metric": {
+          "const": "strict_task_success_all_final_state_verifiers"
+        },
+        "scorer_path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scorer_commit": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "anyOf": [
+            {
+              "$ref": "#/$defs/git_sha"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "strict_all_verifiers": {
+          "const": true
+        },
+        "partial_credit": {
+          "const": false
+        },
+        "reference_fixture_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "container_images",
+        "database_snapshots",
+        "network_boundary",
+        "reset_policy"
+      ],
+      "properties": {
+        "container_images": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "service",
+              "image_reference",
+              "image_digest"
+            ],
+            "properties": {
+              "service": {
+                "$ref": "#/$defs/nonempty"
+              },
+              "image_reference": {
+                "$ref": "#/$defs/nonempty"
+              },
+              "image_digest": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/sha256"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "database_snapshots": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "database",
+              "snapshot_digest"
+            ],
+            "properties": {
+              "database": {
+                "$ref": "#/$defs/nonempty"
+              },
+              "snapshot_digest": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/sha256"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "network_boundary": {
+          "enum": [
+            "official_benchmark_network_policy",
+            "offline_only",
+            "custom_documented"
+          ]
+        },
+        "reset_policy": {
+          "enum": [
+            "official_benchmark_reset",
+            "per_task_fresh_snapshot",
+            "custom_documented"
+          ]
+        }
+      }
+    },
+    "system_under_test": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "model_name",
+        "immutable_model_version",
+        "endpoint_or_artifact",
+        "inference_config_digest",
+        "system_prompt_digest",
+        "developer_prompt_digest",
+        "memory_policy",
+        "agent_framework",
+        "orchestrator_commit",
+        "tool_manifest_digest"
+      ],
+      "properties": {
+        "provider": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "model_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "immutable_model_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "endpoint_or_artifact": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "inference_config_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "system_prompt_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "developer_prompt_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "memory_policy": {
+          "enum": [
+            "stateless_per_task",
+            "isolated_per_task",
+            "persistent_within_declared_session",
+            "unknown"
+          ]
+        },
+        "agent_framework": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "orchestrator_commit": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "anyOf": [
+            {
+              "$ref": "#/$defs/git_sha"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tool_manifest_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "runner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tool_mode",
+        "concurrency",
+        "timeout_seconds",
+        "retry_policy",
+        "seed_policy",
+        "run_command_digest"
+      ],
+      "properties": {
+        "tool_mode": {
+          "enum": [
+            "oracle",
+            "standard",
+            "other_documented"
+          ]
+        },
+        "concurrency": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "retry_policy": {
+          "$ref": "#/$defs/nonempty"
+        },
+        "seed_policy": {
+          "$ref": "#/$defs/nonempty"
+        },
+        "run_command_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "repeats": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "reporting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "native_task_success",
+        "per_domain_success",
+        "per_verifier_pass_rate",
+        "latency_p50_p95",
+        "tokens_and_cost",
+        "failed_and_missing_runs",
+        "raw_receipt_digest",
+        "analysis_code_digest"
+      ],
+      "properties": {
+        "native_task_success": {
+          "const": true
+        },
+        "per_domain_success": {
+          "const": true
+        },
+        "per_verifier_pass_rate": {
+          "const": true
+        },
+        "latency_p50_p95": {
+          "const": true
+        },
+        "tokens_and_cost": {
+          "const": true
+        },
+        "failed_and_missing_runs": {
+          "const": true
+        },
+        "raw_receipt_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "analysis_code_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "non_comparability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "aa_results_separate",
+        "native_scorer_unchanged",
+        "instrumentation_is_supplemental",
+        "no_private_tasks"
+      ],
+      "properties": {
+        "aa_results_separate": {
+          "const": true
+        },
+        "native_scorer_unchanged": {
+          "const": true
+        },
+        "instrumentation_is_supplemental": {
+          "const": true
+        },
+        "no_private_tasks": {
+          "const": true
+        }
+      }
+    },
+    "target_result_surface": {
+      "enum": [
+        "servicenow_nowai_bench_snapshot_2026-07-23",
+        "artificial_analysis_enterpriseops_gym_aa",
+        "original_pmlr_2026_paper"
+      ]
+    },
+    "published_reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model_name",
+        "organization",
+        "published_score_fraction",
+        "execution_mode",
+        "reported_snapshot_date",
+        "task_split",
+        "fallback_configuration",
+        "source_url"
+      ],
+      "properties": {
+        "model_name": {
+          "$ref": "#/$defs/nonempty"
+        },
+        "organization": {
+          "$ref": "#/$defs/nonempty"
+        },
+        "published_score_fraction": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "execution_mode": {
+          "const": "oracle"
+        },
+        "reported_snapshot_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "task_split": {
+          "$ref": "#/$defs/nonempty"
+        },
+        "fallback_configuration": {
+          "$ref": "#/$defs/nonempty"
+        },
+        "source_url": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "reference_reproduction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required_for_direct_comparison",
+        "reproduced",
+        "system_profile_digest",
+        "profile_artifact_uri"
+      ],
+      "properties": {
+        "required_for_direct_comparison": {
+          "const": true
+        },
+        "reproduced": {
+          "type": "boolean"
+        },
+        "system_profile_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "profile_artifact_uri": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "ready_to_execute",
+              "executed"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "source": {
+            "properties": {
+              "repository_commit_verified": {
+                "const": true
+              }
+            }
+          },
+          "dataset": {
+            "properties": {
+              "revision": {
+                "$ref": "#/$defs/git_sha"
+              },
+              "revision_status": {
+                "const": "verified"
+              },
+              "task_manifest_digest": {
+                "$ref": "#/$defs/sha256"
+              }
+            }
+          },
+          "task_selection": {
+            "properties": {
+              "task_ids_digest": {
+                "$ref": "#/$defs/sha256"
+              },
+              "domain_inclusion_manifest_digest": {
+                "$ref": "#/$defs/sha256"
+              }
+            }
+          },
+          "native_scoring": {
+            "properties": {
+              "scorer_path": {
+                "$ref": "#/$defs/nonempty"
+              },
+              "scorer_commit": {
+                "$ref": "#/$defs/git_sha"
+              },
+              "reference_fixture_digest": {
+                "$ref": "#/$defs/sha256"
+              }
+            }
+          },
+          "environment": {
+            "properties": {
+              "container_images": {
+                "items": {
+                  "properties": {
+                    "image_digest": {
+                      "$ref": "#/$defs/sha256"
+                    }
+                  }
+                }
+              },
+              "database_snapshots": {
+                "items": {
+                  "properties": {
+                    "snapshot_digest": {
+                      "$ref": "#/$defs/sha256"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "system_under_test": {
+            "properties": {
+              "provider": {
+                "$ref": "#/$defs/nonempty"
+              },
+              "model_name": {
+                "$ref": "#/$defs/nonempty"
+              },
+              "immutable_model_version": {
+                "$ref": "#/$defs/nonempty"
+              },
+              "endpoint_or_artifact": {
+                "$ref": "#/$defs/nonempty"
+              },
+              "inference_config_digest": {
+                "$ref": "#/$defs/sha256"
+              },
+              "system_prompt_digest": {
+                "$ref": "#/$defs/sha256"
+              },
+              "developer_prompt_digest": {
+                "$ref": "#/$defs/sha256"
+              },
+              "agent_framework": {
+                "$ref": "#/$defs/nonempty"
+              },
+              "orchestrator_commit": {
+                "$ref": "#/$defs/git_sha"
+              },
+              "tool_manifest_digest": {
+                "$ref": "#/$defs/sha256"
+              }
+            }
+          },
+          "runner": {
+            "properties": {
+              "run_command_digest": {
+                "$ref": "#/$defs/sha256"
+              }
+            }
+          },
+          "reporting": {
+            "properties": {
+              "raw_receipt_digest": {
+                "$ref": "#/$defs/sha256"
+              },
+              "analysis_code_digest": {
+                "$ref": "#/$defs/sha256"
+              }
+            }
+          },
+          "reference_reproduction": {
+            "properties": {
+              "reproduced": {
+                "const": true
+              },
+              "system_profile_digest": {
+                "$ref": "#/$defs/sha256"
+              },
+              "profile_artifact_uri": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
