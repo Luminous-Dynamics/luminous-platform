@@ -297,7 +297,8 @@
               "state",
               "effect_count",
               "sequence",
-              "dispatched_while_prior_unknown"
+              "dispatched_while_prior_unknown",
+              "in_current_episode"
             ],
             "properties": {
               "attempt_id": {
@@ -327,6 +328,9 @@
                 "minimum": 1
               },
               "dispatched_while_prior_unknown": {
+                "type": "boolean"
+              },
+              "in_current_episode": {
                 "type": "boolean"
               }
             },
