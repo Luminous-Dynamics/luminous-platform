@@ -2463,3 +2463,119 @@ mod tests {
         assert_eq!(observation.qualified_state(99, 30), ServiceState::Unknown);
     }
 }
+
+
+#[cfg(test)]
+mod operational_dependency_supplement_tests {
+    use super::*;
+
+    const SCHEMA: &[u8] =
+        include_bytes!("../../assurance-interop/operational-dependency-supplement.schema.json");
+    const FIXTURE: &[u8] =
+        include_bytes!("../../assurance-interop/fixtures/inc-002-operational-dependencies.json");
+
+    fn fixture_value() -> serde_json::Value {
+        serde_json::from_slice(FIXTURE).expect("operational dependency fixture JSON")
+    }
+
+    #[test]
+    fn operational_dependency_fixture_passes_draft2020_and_semantic_audit() {
+        let audit = audit_operational_dependency_supplement(FIXTURE, SCHEMA)
+            .expect("fixture schema and semantic audit");
+        assert_eq!(audit.component_count, 11);
+        assert_eq!(audit.dependency_count, 16);
+        assert_eq!(audit.claims.len(), 2);
+        assert_eq!(
+            audit.unbound_assurance_programs,
+            vec![
+                "ASSURE-PORTFOLIO-CUT-001".to_string(),
+                "LEX-NET-030".to_string(),
+                "QUAL-001E".to_string()
+            ]
+        );
+
+        let participant = audit
+            .claims
+            .iter()
+            .find(|claim| claim.claim_id == "inc-002-participant-effect")
+            .expect("participant claim");
+        assert!(participant
+            .shared_dependency_ids
+            .contains(&"host-kernel".to_string()));
+        assert!(participant
+            .required_not_exercised_dependency_ids
+            .contains(&"real-effect-sink".to_string()));
+        assert_eq!(participant.claim_ceiling, "no_independent_effect_claim");
+
+        let observer = audit
+            .claims
+            .iter()
+            .find(|claim| claim.claim_id == "inc-002-service-health")
+            .expect("observer claim");
+        assert!(observer
+            .shared_dependency_ids
+            .contains(&"ipc-path".to_string()));
+        assert!(observer
+            .required_not_exercised_dependency_ids
+            .contains(&"real-service-probe".to_string()));
+        assert!(observer
+            .required_not_exercised_dependency_ids
+            .contains(&"independent-collector".to_string()));
+        assert_eq!(observer.claim_ceiling, "no_independent_service_health_claim");
+    }
+
+    #[test]
+    fn dangling_dependency_edge_is_rejected_after_schema_validation() {
+        let mut fixture = fixture_value();
+        fixture["dependency_edges"][0]["dependency_id"] = serde_json::json!("missing-dependency");
+        let bytes = serde_json::to_vec(&fixture).expect("mutated fixture JSON");
+        let error = audit_operational_dependency_supplement(&bytes, SCHEMA)
+            .expect_err("dangling edge must fail semantic audit");
+        assert!(error.to_string().contains("dangling_edge_dependency:missing-dependency"));
+    }
+
+    #[test]
+    fn duplicate_dependency_edge_is_rejected() {
+        let mut fixture = fixture_value();
+        let duplicate = fixture["dependency_edges"][0].clone();
+        fixture["dependency_edges"]
+            .as_array_mut()
+            .expect("edge array")
+            .push(duplicate);
+        let bytes = serde_json::to_vec(&fixture).expect("mutated fixture JSON");
+        let error = audit_operational_dependency_supplement(&bytes, SCHEMA)
+            .expect_err("duplicate edge must fail semantic audit");
+        assert!(error.to_string().contains("duplicate_dependency_edge:"));
+    }
+
+    #[test]
+    fn claim_findings_are_recomputed_not_trusted() {
+        let mut fixture = fixture_value();
+        fixture["claim_bindings"][0]["expected_claim_findings"] =
+            serde_json::json!(["required_source_not_exercised"]);
+        let bytes = serde_json::to_vec(&fixture).expect("mutated fixture JSON");
+        let error = audit_operational_dependency_supplement(&bytes, SCHEMA)
+            .expect_err("omitted shared-dependency finding must fail semantic audit");
+        assert!(error.to_string().contains("claim_findings_mismatch:inc-002-participant-effect"));
+    }
+
+    #[test]
+    fn synthetic_sink_cannot_be_relabelled_as_exercised_without_changing_claim_findings() {
+        let mut fixture = fixture_value();
+        let sink = fixture["dependencies"]
+            .as_array_mut()
+            .expect("dependency array")
+            .iter_mut()
+            .find(|dependency| {
+                dependency["dependency_id"] == "real-effect-sink"
+            })
+            .expect("real effect sink dependency");
+        sink["status"] = serde_json::json!("observed_in_fixture");
+        sink["identity_label"] = serde_json::json!("fixture:claimed-real-effect-sink");
+        sink["evidence_refs"] = serde_json::json!(["fixture:unsupported-relabel"]);
+        let bytes = serde_json::to_vec(&fixture).expect("mutated fixture JSON");
+        let error = audit_operational_dependency_supplement(&bytes, SCHEMA)
+            .expect_err("unsupported source promotion must fail semantic audit");
+        assert!(error.to_string().contains("claim_findings_mismatch:inc-002-participant-effect"));
+    }
+}
