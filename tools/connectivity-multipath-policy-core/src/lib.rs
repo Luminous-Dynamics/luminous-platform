@@ -355,30 +355,70 @@ fn aggregate_candidate(
         return None;
     }
 
-    let mut ordered: Vec<&PathObservation> = eligible.to_vec();
-    ordered.sort_by(|left, right| {
-        effective_capacity(right)
-            .cmp(&effective_capacity(left))
-            .then_with(|| left.id.cmp(&right.id))
-    });
-    let mut seen_capacity_domains = BTreeSet::new();
-    let mut selected = Vec::new();
-    for path in ordered {
-        let path_domains = path
-            .capacity_domain_ids
-            .iter()
-            .map(String::as_str)
-            .collect::<BTreeSet<_>>();
-        if path_domains.is_disjoint(&seen_capacity_domains) {
-            seen_capacity_domains.extend(path_domains);
-            selected.push(path);
-        }
-        if selected.len() >= usize::from(request.maximum_paths) {
-            break;
+    // Choose the highest-capacity disjoint pair exactly (O(n^2)); the
+    // default maximum_paths=2 is the common case and must not lose a valid
+    // independent pair merely because a higher-capacity middle path overlaps
+    // with both members. For larger path counts, extend that best pair using
+    // deterministic greedy admission and report the resulting dependency set.
+    let mut best_pair: Option<(u128, &PathObservation, &PathObservation)> = None;
+    for left_index in 0..eligible.len() {
+        for right_index in left_index + 1..eligible.len() {
+            let left = eligible[left_index];
+            let right = eligible[right_index];
+            if !capacity_domains_disjoint(
+                &left.capacity_domain_ids,
+                &right.capacity_domain_ids,
+            ) {
+                continue;
+            }
+            let combined_capacity =
+                u128::from(effective_capacity(left)) + u128::from(effective_capacity(right));
+            let replace = best_pair.as_ref().is_none_or(|(best_capacity, best_left, best_right)| {
+                combined_capacity > *best_capacity
+                    || (combined_capacity == *best_capacity
+                        && (left.id.as_str(), right.id.as_str())
+                            < (best_left.id.as_str(), best_right.id.as_str()))
+            });
+            if replace {
+                best_pair = Some((combined_capacity, left, right));
+            }
         }
     }
-    if selected.len() < 2 {
+    let Some((_, first, second)) = best_pair else {
         return None;
+    };
+    let mut selected = vec![first, second];
+    let mut seen_capacity_domains = first
+        .capacity_domain_ids
+        .iter()
+        .chain(second.capacity_domain_ids.iter())
+        .map(String::as_str)
+        .collect::<BTreeSet<_>>();
+    if selected.len() < usize::from(request.maximum_paths) {
+        let mut ordered: Vec<&PathObservation> = eligible
+            .iter()
+            .copied()
+            .filter(|path| path.id != first.id && path.id != second.id)
+            .collect();
+        ordered.sort_by(|left, right| {
+            effective_capacity(right)
+                .cmp(&effective_capacity(left))
+                .then_with(|| left.id.cmp(&right.id))
+        });
+        for path in ordered {
+            let path_domains = path
+                .capacity_domain_ids
+                .iter()
+                .map(String::as_str)
+                .collect::<BTreeSet<_>>();
+            if path_domains.is_disjoint(&seen_capacity_domains) {
+                seen_capacity_domains.extend(path_domains);
+                selected.push(path);
+            }
+            if selected.len() >= usize::from(request.maximum_paths) {
+                break;
+            }
+        }
     }
 
     let mut remaining = request.bytes;
@@ -771,6 +811,71 @@ mod tests {
         assert_eq!(result.allocations.len(), 1);
         assert_eq!(result.distinct_shared_risk_groups, 1);
         assert_eq!(result.distinct_capacity_domains, 2);
+    }
+
+    #[test]
+    fn chooses_the_best_independent_pair_when_highest_path_overlaps_both() {
+        let mut path_a = path("a", 10_000, 60_000_000, 10, "risk-a");
+        let mut path_b = path("b", 10_000, 100_000_000, 10, "risk-b");
+        let mut path_c = path("c", 10_000, 50_000_000, 10, "risk-c");
+        path_a.capacity_domain_ids =
+            vec!["access-a".to_owned(), "shared-x".to_owned()];
+        path_b.capacity_domain_ids =
+            vec!["shared-x".to_owned(), "shared-y".to_owned()];
+        path_c.capacity_domain_ids =
+            vec!["access-c".to_owned(), "shared-y".to_owned()];
+        let result = evaluate(
+            &request(),
+            &[path_b, path_c, path_a],
+            Strategy::AggregateCapacity,
+        )
+        .expect("valid multi-domain observations");
+        assert_eq!(result.mode, DecisionMode::Multipath);
+        assert_eq!(
+            result
+                .allocations
+                .iter()
+                .map(|allocation| allocation.path_id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["a", "c"]
+        );
+        assert_eq!(result.distinct_capacity_domains, 4);
+    }
+
+    #[test]
+    fn blank_and_duplicate_capacity_domain_ids_exclude_only_the_invalid_path() {
+        let mut blank = path("blank", 1_000, 100_000_000, 1, "risk-blank");
+        blank.capacity_domain_ids = vec!["access".to_owned(), " ".to_owned()];
+        let mut duplicate = path("duplicate", 2_000, 90_000_000, 1, "risk-duplicate");
+        duplicate.capacity_domain_ids = vec!["access".to_owned(), "access".to_owned()];
+        let allowed_a = path("allowed-a", 20_000, 20_000_000, 10, "risk-a");
+        let allowed_b = path("allowed-b", 25_000, 25_000_000, 10, "risk-b");
+        let result = evaluate(
+            &request(),
+            &[blank, duplicate, allowed_a, allowed_b],
+            Strategy::AggregateCapacity,
+        )
+        .expect("invalid individual dependencies are excluded");
+        assert_eq!(result.mode, DecisionMode::Multipath);
+        assert_eq!(result.exclusions.len(), 2);
+        assert_eq!(result.exclusions[0].reason, "capacity_domain_id_blank");
+        assert_eq!(result.exclusions[1].reason, "capacity_domain_id_duplicate");
+    }
+
+    #[test]
+    fn capacity_domain_ids_are_canonicalized_in_the_report() {
+        let mut first = path("a", 10_000, 20_000_000, 10, "risk-a");
+        first.capacity_domain_ids = vec!["z".to_owned(), "a".to_owned()];
+        let result = evaluate(
+            &request(),
+            &[first],
+            Strategy::BestRtt,
+        )
+        .expect("valid path");
+        assert_eq!(
+            result.allocations[0].capacity_domain_ids,
+            vec!["a".to_owned(), "z".to_owned()]
+        );
     }
 
     #[test]
