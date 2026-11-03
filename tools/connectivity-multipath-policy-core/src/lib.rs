@@ -1102,7 +1102,9 @@ mod tests {
         let mut unknown = path("unknown", 1_000, 100_000_000, 1, "failure-a");
         unknown.capacity_domain_ids.clear();
         let allowed = path("allowed", 20_000, 10_000_000, 10, "failure-b");
-        let result = evaluate(&request(), &[unknown, allowed], Strategy::AggregateCapacity)
+        let mut req = request();
+        req.deadline_us = None;
+        let result = evaluate(&req, &[unknown, allowed], Strategy::AggregateCapacity)
             .expect("valid observations");
         assert_eq!(result.mode, DecisionMode::SinglePath);
         assert_eq!(result.exclusions[0].reason, "capacity_domains_unknown");
@@ -1222,7 +1224,9 @@ mod tests {
         let mut usd = path("usd", 1_000, 100_000_000, 1, "usd");
         usd.cost_currency = "USD".to_owned();
         let zar = path("zar", 10_000, 10_000_000, 10, "zar");
-        let result = evaluate(&request(), &[usd, zar], Strategy::LowestCost).expect("valid inputs");
+        let mut req = request();
+        req.deadline_us = None;
+        let result = evaluate(&req, &[usd, zar], Strategy::LowestCost).expect("valid inputs");
         assert_eq!(result.mode, DecisionMode::SinglePath);
         assert_eq!(result.allocations[0].path_id, "zar");
         assert_eq!(result.exclusions[0].reason, "cost_currency_mismatch");
