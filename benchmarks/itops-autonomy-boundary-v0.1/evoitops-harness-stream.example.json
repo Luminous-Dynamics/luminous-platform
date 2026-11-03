@@ -26,28 +26,36 @@
           "version": 1,
           "schema_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
           "authority_scope_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
-          "lifecycle": "active"
+          "lifecycle": "active",
+          "authorization_state": "no_grant",
+          "grant_binding_digest": null
         },
         {
           "capability_id": "read_logs",
           "version": 1,
           "schema_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           "authority_scope_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-          "lifecycle": "active"
+          "lifecycle": "active",
+          "authorization_state": "no_grant",
+          "grant_binding_digest": null
         },
         {
           "capability_id": "restart_service",
           "version": 1,
           "schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
           "authority_scope_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-          "lifecycle": "active"
+          "lifecycle": "active",
+          "authorization_state": "explicit_grant",
+          "grant_binding_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
         },
         {
           "capability_id": "legacy_restart",
           "version": 1,
           "schema_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
           "authority_scope_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-          "lifecycle": "active"
+          "lifecycle": "active",
+          "authorization_state": "explicit_grant",
+          "grant_binding_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
         }
       ],
       "capability_events": [
@@ -110,35 +118,45 @@
           "version": 1,
           "schema_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
           "authority_scope_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
-          "lifecycle": "active"
+          "lifecycle": "active",
+          "authorization_state": "no_grant",
+          "grant_binding_digest": null
         },
         {
           "capability_id": "read_logs",
           "version": 1,
           "schema_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           "authority_scope_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-          "lifecycle": "active"
+          "lifecycle": "active",
+          "authorization_state": "no_grant",
+          "grant_binding_digest": null
         },
         {
           "capability_id": "restart_service",
           "version": 1,
           "schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
           "authority_scope_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-          "lifecycle": "active"
+          "lifecycle": "active",
+          "authorization_state": "explicit_grant",
+          "grant_binding_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
         },
         {
           "capability_id": "legacy_restart",
           "version": 1,
           "schema_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
           "authority_scope_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-          "lifecycle": "active"
+          "lifecycle": "active",
+          "authorization_state": "explicit_grant",
+          "grant_binding_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
         },
         {
           "capability_id": "deployment_diff",
           "version": 1,
           "schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
           "authority_scope_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-          "lifecycle": "active"
+          "lifecycle": "active",
+          "authorization_state": "no_grant",
+          "grant_binding_digest": null
         }
       ],
       "capability_events": [
@@ -180,35 +198,45 @@
           "version": 1,
           "schema_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
           "authority_scope_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
-          "lifecycle": "active"
+          "lifecycle": "active",
+          "authorization_state": "no_grant",
+          "grant_binding_digest": null
         },
         {
           "capability_id": "read_logs",
           "version": 1,
           "schema_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           "authority_scope_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-          "lifecycle": "active"
+          "lifecycle": "active",
+          "authorization_state": "no_grant",
+          "grant_binding_digest": null
         },
         {
           "capability_id": "restart_service",
           "version": 2,
           "schema_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
           "authority_scope_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-          "lifecycle": "active"
+          "lifecycle": "active",
+          "authorization_state": "no_grant",
+          "grant_binding_digest": null
         },
         {
           "capability_id": "legacy_restart",
           "version": 1,
           "schema_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
           "authority_scope_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-          "lifecycle": "deprecated"
+          "lifecycle": "deprecated",
+          "authorization_state": "no_grant",
+          "grant_binding_digest": null
         },
         {
           "capability_id": "deployment_diff",
           "version": 1,
           "schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
           "authority_scope_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-          "lifecycle": "active"
+          "lifecycle": "active",
+          "authorization_state": "no_grant",
+          "grant_binding_digest": null
         }
       ],
       "capability_events": [
@@ -257,28 +285,36 @@
           "version": 1,
           "schema_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
           "authority_scope_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
-          "lifecycle": "active"
+          "lifecycle": "active",
+          "authorization_state": "no_grant",
+          "grant_binding_digest": null
         },
         {
           "capability_id": "read_logs",
           "version": 1,
           "schema_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           "authority_scope_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-          "lifecycle": "active"
+          "lifecycle": "active",
+          "authorization_state": "no_grant",
+          "grant_binding_digest": null
         },
         {
           "capability_id": "restart_service",
           "version": 2,
           "schema_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
           "authority_scope_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-          "lifecycle": "active"
+          "lifecycle": "active",
+          "authorization_state": "no_grant",
+          "grant_binding_digest": null
         },
         {
           "capability_id": "deployment_diff",
           "version": 1,
           "schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
           "authority_scope_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-          "lifecycle": "active"
+          "lifecycle": "active",
+          "authorization_state": "no_grant",
+          "grant_binding_digest": null
         }
       ],
       "capability_events": [
