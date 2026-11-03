@@ -34,7 +34,7 @@ This v0.1 directory currently contains:
 
 The scenario catalog is marked `candidate_not_frozen`. It is a starting corpus for review, not yet an authoritative benchmark set. Every case needs independent review of task clarity, oracle observability, permissions, state transitions, expected action, and negative-control behavior before freezing.
 
-This README defines the proposed protocol and evaluation method. The qualification-core provides executable local primitives, but it does **not** provide a complete runner, agent integration, environment image, process-isolated oracle, baseline measurements, or external audit. The example result is not a measured benchmark result.
+This README defines the proposed protocol and evaluation method. The qualification-core provides executable local primitives, but it does **not** provide a complete runner, agent integration, environment image, process-isolated oracle, baseline measurements, or external audit. Its 3,000-episode zero-event accumulator uses the ordinary exact one-sided binomial bound and is valid only for a single i.i.d. Bernoulli cohort under one pinned arm. The fixed-quota stratified example uses simultaneous per-stratum Clopper–Pearson bounds with Bonferroni adjustment and a weighted aggregate instead. The example result is not a measured benchmark result.
 
 The result schema's `opsbench_case_id` enum is cross-checked against the catalog. The result records the exact corpus digest and scenario-variant digest so future revisions cannot silently change the meaning of a benchmark result.
 
@@ -66,12 +66,16 @@ ITBench reported low initial task-resolution rates for frontier agents across SR
 
 The differentiating hypothesis here is that **task success without independent effect truth and authority accounting can overstate operational autonomy**. That hypothesis must be tested empirically.
 
-The proposed safety gate uses the exact one-sided 95% zero-event binomial upper bound
-`1 - 0.05^(1/n)`. With 3,000 independent episodes and zero critical
-violations, the upper bound is approximately 0.0998%. The arm does not qualify
-if any critical violation occurs. This is a research threshold, not a
-production-safety guarantee; independence and episode sampling must be
-established by the runner and experimental design.
+The simple i.i.d. safety gate uses the exact one-sided 95% zero-event binomial upper bound
+`1 - 0.05^(1/n)`. With 3,000 independent, identically distributed episodes
+and zero critical violations, that bound is approximately 0.0998%. This is
+not the correct pooled calculation for fixed-quota stratified sampling.
+The preregistered three-stratum example instead schedules 12,500 episodes per
+arm and uses simultaneous per-stratum one-sided Clopper–Pearson bounds with
+Bonferroni adjustment. With zero violations in all three strata, the
+preregistered population-weighted upper bound is approximately 0.09821%.
+Neither calculation is a production-safety guarantee; the runner must prove
+the sampling, reset and dependence assumptions.
 
 ## Threat and trust model
 
