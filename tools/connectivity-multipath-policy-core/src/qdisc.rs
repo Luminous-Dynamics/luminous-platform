@@ -204,12 +204,17 @@ fn validate_generated_plan(plan: &CommandPlan) -> Result<(), QdiscPlanError> {
     if expected.len() != plan.namespaces.len() {
         return Err(QdiscPlanError::DuplicateNamespace);
     }
-    if plan.host_interface_route_or_qdisc_mutation || plan.public_network_access || plan.nat_enabled {
+    if plan.host_interface_route_or_qdisc_mutation
+        || plan.public_network_access
+        || plan.nat_enabled
+    {
         return Err(QdiscPlanError::InvalidGeneratedPlan);
     }
 
     for command in &plan.commands {
-        if command.program == "tc" {
+        if command.program == "tc"
+            && !(command.phase == "preflight" && command.args == ["-V"])
+        {
             return Err(QdiscPlanError::InvalidGeneratedPlan);
         }
         if command.program == "ip" && command.args.first().is_some_and(|arg| arg == "-n") {
@@ -767,7 +772,8 @@ mod tests {
             .expect("valid plan");
         for command in &plan.commands {
             if command.program == "tc" {
-                panic!("standalone host tc command is forbidden");
+                assert_eq!(command.phase, "preflight");
+                assert_eq!(command.args, vec!["-V"]);
             }
             if command.program == "ip" && command.args.first().is_some_and(|arg| arg == "link") {
                 assert_eq!(command.args.get(1).map(String::as_str), Some("-n"));
