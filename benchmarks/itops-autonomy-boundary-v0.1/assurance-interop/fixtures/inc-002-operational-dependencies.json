@@ -542,7 +542,8 @@
       "claim_kind": "participant_effect",
       "source_component_id": "participant",
       "compared_component_ids": [
-        "runner"
+        "runner",
+        "agent-under-test"
       ],
       "required_dependency_kinds": [
         "host_kernel_namespace",
@@ -557,7 +558,8 @@
       "claim_ceiling": "no_independent_effect_claim",
       "expected_claim_findings": [
         "shared_dependencies_present",
-        "required_source_not_exercised"
+        "required_source_not_exercised",
+        "compared_component_not_exercised"
       ]
     },
     {
@@ -565,7 +567,8 @@
       "claim_kind": "service_health",
       "source_component_id": "observer",
       "compared_component_ids": [
-        "runner"
+        "runner",
+        "agent-under-test"
       ],
       "required_dependency_kinds": [
         "host_kernel_namespace",
@@ -581,7 +584,8 @@
       "claim_ceiling": "no_independent_service_health_claim",
       "expected_claim_findings": [
         "shared_dependencies_present",
-        "required_source_not_exercised"
+        "required_source_not_exercised",
+        "compared_component_not_exercised"
       ]
     }
   ],
