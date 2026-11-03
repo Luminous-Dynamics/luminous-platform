@@ -14,7 +14,7 @@ fn json_escape(value: &str) -> String {
         match character {
             '"' => output.push_str("\\\""),
             '\\' => output.push_str("\\\\"),
-            '\n' => output.push_str("\\n"),
+            '\n' => output.push_str("\n"),
             '\r' => output.push_str("\\r"),
             '\t' => output.push_str("\\t"),
             character if character.is_control() => {
@@ -29,13 +29,13 @@ fn json_escape(value: &str) -> String {
 fn arm(value: &str) -> Option<QdiscArm> {
     match value {
         "fq_codel" => Some(QdiscArm::FqCodel),
-        "cake_besteffort_triple_isolate" => {
+        "cake_besteffort" | "cake_besteffort_triple_isolate" => {
             Some(QdiscArm::CakeBestEffortTripleIsolate)
         }
-        "cake_diffserv3_triple_isolate" => {
+        "cake_diffserv3" | "cake_diffserv3_triple_isolate" => {
             Some(QdiscArm::CakeDiffserv3TripleIsolate)
         }
-        "cake_diffserv4_triple_isolate" => {
+        "cake_diffserv4" | "cake_diffserv4_triple_isolate" => {
             Some(QdiscArm::CakeDiffserv4TripleIsolate)
         }
         _ => None,
@@ -111,14 +111,14 @@ fn main() {
         Err(error) if error == "help" => {
             println!(
                 concat!(
-                    "Usage: qdisc-lab-plan\\n",
-                    "  --run-suffix <1-8-lowercase-alphanumeric>\\n",
-                    "  --arm <fq_codel|cake_besteffort_triple_isolate|cake_diffserv3_triple_isolate|cake_diffserv4_triple_isolate>\\n",
-                    "  --rate-bps <1000000..1000000000>\\n",
-                    "  --duration-seconds <5..300>\\n",
-                    "  --tenant-a-flows <1..32>\\n",
-                    "  --tenant-b-flows <1..32>\\n",
-                    "Emits a deterministic JSON argv plan only. No command is executed.\\n",
+                    "Usage: qdisc-lab-plan\n",
+                    "  --run-suffix <1-8-lowercase-alphanumeric>\n",
+                    "  --arm <fq_codel|cake_besteffort_triple_isolate|cake_diffserv3_triple_isolate|cake_diffserv4>\n",
+                    "  --rate-bps <1000000..1000000000>\n",
+                    "  --duration-seconds <5..300>\n",
+                    "  --tenant-a-flows <1..32>\n",
+                    "  --tenant-b-flows <1..32>\n",
+                    "Emits a deterministic JSON argv plan only. No command is executed.\n",
                     "No host interface/route/qdisc or public network is changed."
                 )
             );
