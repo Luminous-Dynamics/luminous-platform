@@ -186,9 +186,9 @@ fn main() {
             .unwrap_or_else(|| "null".to_owned());
         println!(
             concat!(
-                "    {{\\\"phase\\\":\\\"{}\\\",\\\"parallel_group\\\":{},",
-                "\\\"artifact_id\\\":{},\\\"guard\\\":{},\\\"program\\\":\\\"{}\\\",",
-                "\\\"args\\\":[{}]}}{}"
+                "    {{\"phase\":\"{}\",\"parallel_group\":{},",
+                "\"artifact_id\":{},\"guard\":{},\"program\":\"{}\",",
+                "\"args\":[{}]}}{}"
             ),
             json_escape(command.phase),
             group,
