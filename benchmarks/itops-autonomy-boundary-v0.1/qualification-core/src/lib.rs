@@ -10,7 +10,7 @@
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use chrono::DateTime;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
 pub const BENCHMARK_ID: &str = "luminous-itops-autonomy-boundary";
@@ -45,6 +45,335 @@ pub fn validate_draft2020_12(
     } else {
         Err(CoreError::SchemaViolations(errors))
     }
+}
+
+
+
+/// Per-claim semantic findings for the ITOPS operational dependency sidecar.
+/// This is a topology consistency result, not an independence certification.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OperationalDependencyClaimAudit {
+    pub claim_id: String,
+    pub shared_dependency_ids: Vec<String>,
+    pub required_not_exercised_dependency_ids: Vec<String>,
+    pub required_unknown_dependency_ids: Vec<String>,
+    pub claim_ceiling: String,
+}
+
+/// Deterministic semantic audit of an ITOPS operational dependency supplement.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OperationalDependencyAudit {
+    pub supplement_sha256: String,
+    pub component_count: usize,
+    pub dependency_count: usize,
+    pub dependency_edge_count: usize,
+    pub unbound_assurance_programs: Vec<String>,
+    pub claims: Vec<OperationalDependencyClaimAudit>,
+}
+
+/// Validate and semantically cross-check the ITOPS-only operational dependency
+/// sidecar. Draft 2020-12 shape validation is performed by the existing pinned
+/// validator; this function checks references and recomputes claim findings
+/// from the direct component-to-dependency edges. Transitive evidence-source
+/// lineage remains owned by Mycelix LEX-NET-030.
+pub fn audit_operational_dependency_supplement(
+    instance_bytes: &[u8],
+    schema_bytes: &[u8],
+) -> Result<OperationalDependencyAudit, CoreError> {
+    validate_draft2020_12(instance_bytes, schema_bytes)?;
+    let document: serde_json::Value = serde_json::from_slice(instance_bytes)?;
+    let mut violations = Vec::new();
+
+    let component_items = document
+        .get("components")
+        .and_then(serde_json::Value::as_array)
+        .ok_or_else(|| CoreError::ResultViolations(vec!["components_missing".into()]))?;
+    let dependency_items = document
+        .get("dependencies")
+        .and_then(serde_json::Value::as_array)
+        .ok_or_else(|| CoreError::ResultViolations(vec!["dependencies_missing".into()]))?;
+    let edge_items = document
+        .get("dependency_edges")
+        .and_then(serde_json::Value::as_array)
+        .ok_or_else(|| CoreError::ResultViolations(vec!["dependency_edges_missing".into()]))?;
+    let claim_items = document
+        .get("claim_bindings")
+        .and_then(serde_json::Value::as_array)
+        .ok_or_else(|| CoreError::ResultViolations(vec!["claim_bindings_missing".into()]))?;
+
+    let mut components: BTreeMap<String, &serde_json::Value> = BTreeMap::new();
+    for component in component_items {
+        let Some(component_id) = component.get("component_id").and_then(serde_json::Value::as_str) else {
+            violations.push("component_id_missing".to_string());
+            continue;
+        };
+        if components.insert(component_id.to_string(), component).is_some() {
+            violations.push(format!("duplicate_component_id:{component_id}"));
+        }
+    }
+
+    let mut dependencies: BTreeMap<String, &serde_json::Value> = BTreeMap::new();
+    for dependency in dependency_items {
+        let Some(dependency_id) = dependency.get("dependency_id").and_then(serde_json::Value::as_str) else {
+            violations.push("dependency_id_missing".to_string());
+            continue;
+        };
+        if dependencies.insert(dependency_id.to_string(), dependency).is_some() {
+            violations.push(format!("duplicate_dependency_id:{dependency_id}"));
+        }
+    }
+
+    let mut component_dependencies: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+    let mut seen_edges = BTreeSet::new();
+    for edge in edge_items {
+        let from = edge.get("from_component_id").and_then(serde_json::Value::as_str);
+        let dependency_id = edge.get("dependency_id").and_then(serde_json::Value::as_str);
+        let relation = edge.get("relation").and_then(serde_json::Value::as_str);
+        let (Some(from), Some(dependency_id), Some(relation)) = (from, dependency_id, relation) else {
+            violations.push("dependency_edge_field_missing".to_string());
+            continue;
+        };
+        if !components.contains_key(from) {
+            violations.push(format!("dangling_edge_component:{from}"));
+        }
+        if !dependencies.contains_key(dependency_id) {
+            violations.push(format!("dangling_edge_dependency:{dependency_id}"));
+        }
+        let edge_key = (from.to_string(), dependency_id.to_string(), relation.to_string());
+        if !seen_edges.insert(edge_key) {
+            violations.push(format!("duplicate_dependency_edge:{from}:{dependency_id}:{relation}"));
+        }
+        component_dependencies
+            .entry(from.to_string())
+            .or_default()
+            .insert(dependency_id.to_string());
+    }
+
+    let mut claims = Vec::new();
+    let mut seen_claim_ids = BTreeSet::new();
+    for claim in claim_items {
+        let claim_id = claim
+            .get("claim_id")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("missing-claim-id")
+            .to_string();
+        if !seen_claim_ids.insert(claim_id.clone()) {
+            violations.push(format!("duplicate_claim_id:{claim_id}"));
+        }
+        let claim_kind = claim
+            .get("claim_kind")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or_default();
+        let source_id = claim
+            .get("source_component_id")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or_default();
+        let expected_role = match claim_kind {
+            "participant_effect" => "participant_effect_ledger",
+            "service_health" => "service_observer",
+            _ => {
+                violations.push(format!("unsupported_claim_kind:{claim_id}:{claim_kind}"));
+                ""
+            }
+        };
+        let source = components.get(source_id).copied();
+        if source.is_none() {
+            violations.push(format!("claim_source_unknown:{claim_id}:{source_id}"));
+        } else if source
+            .and_then(|component| component.get("role"))
+            .and_then(serde_json::Value::as_str)
+            != Some(expected_role)
+        {
+            violations.push(format!("claim_source_role_mismatch:{claim_id}:{source_id}"));
+        }
+
+        let required_kinds: BTreeSet<String> = claim
+            .get("required_dependency_kinds")
+            .and_then(serde_json::Value::as_array)
+            .into_iter()
+            .flatten()
+            .filter_map(serde_json::Value::as_str)
+            .map(ToOwned::to_owned)
+            .collect();
+        if required_kinds.is_empty() {
+            violations.push(format!("claim_required_dependency_kinds_empty:{claim_id}"));
+        }
+
+        let source_dependencies = component_dependencies
+            .get(source_id)
+            .cloned()
+            .unwrap_or_default();
+        let mut required_found = BTreeSet::new();
+        let mut not_exercised = BTreeSet::new();
+        let mut unknown = BTreeSet::new();
+
+        for dependency_id in &source_dependencies {
+            let Some(dependency) = dependencies.get(dependency_id).copied() else {
+                continue;
+            };
+            let kind = dependency
+                .get("dependency_kind")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or_default();
+            if !required_kinds.contains(kind) {
+                continue;
+            }
+            required_found.insert(kind.to_string());
+            match dependency
+                .get("status")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or_default()
+            {
+                "not_exercised" => {
+                    not_exercised.insert(dependency_id.clone());
+                }
+                "unknown" | "not_applicable" => {
+                    unknown.insert(dependency_id.clone());
+                }
+                "observed_in_fixture" | "declared_shared" => {}
+                other => violations.push(format!("unsupported_dependency_status:{dependency_id}:{other}")),
+            }
+        }
+
+        for required_kind in &required_kinds {
+            if !required_found.contains(required_kind) {
+                violations.push(format!("required_dependency_not_attached_to_source:{claim_id}:{required_kind}"));
+            }
+        }
+
+        let compared_ids: Vec<String> = claim
+            .get("compared_component_ids")
+            .and_then(serde_json::Value::as_array)
+            .into_iter()
+            .flatten()
+            .filter_map(serde_json::Value::as_str)
+            .map(ToOwned::to_owned)
+            .collect();
+        let mut shared = BTreeSet::new();
+        for compared_id in &compared_ids {
+            if !components.contains_key(compared_id) {
+                violations.push(format!("claim_comparison_component_unknown:{claim_id}:{compared_id}"));
+                continue;
+            }
+            if let Some(peer_dependencies) = component_dependencies.get(compared_id) {
+                shared.extend(source_dependencies.intersection(peer_dependencies).cloned());
+            }
+        }
+
+        let mut actual_findings = BTreeSet::new();
+        if !shared.is_empty() {
+            actual_findings.insert("shared_dependencies_present".to_string());
+        }
+        if !not_exercised.is_empty() {
+            actual_findings.insert("required_source_not_exercised".to_string());
+        }
+        if !unknown.is_empty() {
+            actual_findings.insert("required_source_unknown".to_string());
+        }
+
+        let expected_findings: BTreeSet<String> = claim
+            .get("expected_claim_findings")
+            .and_then(serde_json::Value::as_array)
+            .into_iter()
+            .flatten()
+            .filter_map(serde_json::Value::as_str)
+            .map(ToOwned::to_owned)
+            .collect();
+        if expected_findings != actual_findings {
+            violations.push(format!(
+                "claim_findings_mismatch:{claim_id}:expected={expected_findings:?}:actual={actual_findings:?}"
+            ));
+        }
+
+        let expected_ceiling = match claim_kind {
+            "participant_effect" => "no_independent_effect_claim",
+            "service_health" => "no_independent_service_health_claim",
+            _ => "",
+        };
+        let claim_ceiling = claim
+            .get("claim_ceiling")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or_default()
+            .to_string();
+        if claim_ceiling != expected_ceiling {
+            violations.push(format!("claim_ceiling_mismatch:{claim_id}"));
+        }
+
+        claims.push(OperationalDependencyClaimAudit {
+            claim_id,
+            shared_dependency_ids: shared.into_iter().collect(),
+            required_not_exercised_dependency_ids: not_exercised.into_iter().collect(),
+            required_unknown_dependency_ids: unknown.into_iter().collect(),
+            claim_ceiling,
+        });
+    }
+
+    let mut unbound_assurance_programs = BTreeSet::new();
+    let mut seen_programs = BTreeSet::new();
+    if let Some(assurance_refs) = document
+        .get("assurance_references")
+        .and_then(serde_json::Value::as_array)
+    {
+        for assurance_ref in assurance_refs {
+            let program = assurance_ref
+                .get("program")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or_default();
+            if !seen_programs.insert(program.to_string()) {
+                violations.push(format!("duplicate_assurance_program:{program}"));
+            }
+            if assurance_ref
+                .get("binding_state")
+                .and_then(serde_json::Value::as_str)
+                == Some("unbound")
+            {
+                unbound_assurance_programs.insert(program.to_string());
+            }
+        }
+    }
+    for required_program in ["QUAL-001E", "ASSURE-PORTFOLIO-CUT-001", "LEX-NET-030"] {
+        if !seen_programs.contains(required_program) {
+            violations.push(format!("canonical_assurance_reference_missing:{required_program}"));
+        }
+    }
+
+    if let Some(monitor) = document.get("monitor_coverage") {
+        let monitor_id = monitor
+            .get("monitor_component_id")
+            .and_then(serde_json::Value::as_str);
+        if let Some(monitor_id) = monitor_id {
+            if !components.contains_key(monitor_id) {
+                violations.push(format!("monitor_component_unknown:{monitor_id}"));
+            }
+            if monitor
+                .get("status")
+                .and_then(serde_json::Value::as_str)
+                == Some("complete")
+                && components
+                    .get(monitor_id)
+                    .and_then(|component| component.get("role"))
+                    .and_then(serde_json::Value::as_str)
+                    != Some("runtime_access_monitor")
+            {
+                violations.push(format!("monitor_component_role_mismatch:{monitor_id}"));
+            }
+        }
+    }
+
+    if !violations.is_empty() {
+        violations.sort();
+        violations.dedup();
+        return Err(CoreError::ResultViolations(violations));
+    }
+
+    Ok(OperationalDependencyAudit {
+        supplement_sha256: format!("{:x}", Sha256::digest(instance_bytes)),
+        component_count: components.len(),
+        dependency_count: dependencies.len(),
+        dependency_edge_count: edge_items.len(),
+        unbound_assurance_programs: unbound_assurance_programs.into_iter().collect(),
+        claims,
+    })
 }
 
 
