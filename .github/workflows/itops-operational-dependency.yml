@@ -1,0 +1,46 @@
+name: ITOPS Operational Dependency Assurance Adapter
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/itops-autonomy-boundary-v0.1/assurance-interop/**"
+      - "benchmarks/itops-autonomy-boundary-v0.1/qualification-core/**"
+      - ".github/workflows/itops-operational-dependency.yml"
+  push:
+    branches:
+      - "itops/operational-dependency-sidecar-2026-11-03"
+    paths:
+      - "benchmarks/itops-autonomy-boundary-v0.1/assurance-interop/**"
+      - "benchmarks/itops-autonomy-boundary-v0.1/qualification-core/**"
+      - ".github/workflows/itops-operational-dependency.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  operational-dependency-adapter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CARGO_TERM_COLOR: always
+      EXPECTED_SUBJECT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Assert exact subject before execution
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SUBJECT_SHA"
+      - uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          components: rustfmt, clippy
+      - name: Check formatting
+        run: cargo fmt --manifest-path benchmarks/itops-autonomy-boundary-v0.1/qualification-core/Cargo.toml --check
+      - name: Check all targets
+        run: cargo check --all-targets --manifest-path benchmarks/itops-autonomy-boundary-v0.1/qualification-core/Cargo.toml
+      - name: Run qualification and operational-dependency tests
+        run: cargo test --all-targets --manifest-path benchmarks/itops-autonomy-boundary-v0.1/qualification-core/Cargo.toml
+      - name: Run strict Clippy
+        run: cargo clippy --all-targets --manifest-path benchmarks/itops-autonomy-boundary-v0.1/qualification-core/Cargo.toml -- -D warnings
+      - name: Assert exact subject after execution
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SUBJECT_SHA"
