@@ -4,8 +4,6 @@
 //! schedule packets, infer congestion-control behavior or actuate a kernel.
 //! All qualification ratios use checked integer arithmetic in parts per million.
 
-use std::convert::TryFrom;
-
 const PPM: u128 = 1_000_000;
 const MAX_SUBFLOWS: u16 = 64;
 const MAX_RATIO_PPM: u64 = 10_000_000;
@@ -72,6 +70,7 @@ pub enum EvidenceError {
     InvalidWarmupDuration,
     MissingImplementationIdentity,
     InvalidTarget,
+    ZeroReferenceGoodput,
     ArithmeticOverflow,
 }
 
@@ -162,7 +161,7 @@ fn is_sha256(value: &str) -> bool {
 
 fn fixed_ratio_ppm(numerator: u128, denominator: u128) -> Result<u64, EvidenceError> {
     if denominator == 0 {
-        return Err(EvidenceError::ArithmeticOverflow);
+        return Err(EvidenceError::ZeroReferenceGoodput);
     }
     let scaled = numerator
         .checked_mul(PPM)
