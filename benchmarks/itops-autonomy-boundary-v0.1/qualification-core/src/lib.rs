@@ -473,6 +473,7 @@ pub struct EffectAttempt {
     pub target_binding: String,
     pub operation: String,
     pub plan_sha256: String,
+    pub max_dispatches: u64,
     pub state: EffectState,
     pub committed_effect_count: u64,
 }
@@ -482,6 +483,7 @@ pub enum LedgerError {
     EmptyIdempotencyKey,
     UnknownOutcomeLocked,
     DuplicateIdempotencyKey,
+    GrantBindingMismatch,
     AttemptNotFound,
     InvalidTransition,
 }
@@ -515,10 +517,19 @@ impl ParticipantEffectLedger {
         if self.attempts.iter().any(|a| matches!(a.state, EffectState::Dispatched | EffectState::OutcomeUnknown)) {
             return Err(LedgerError::UnknownOutcomeLocked);
         }
-        let grant_uses = self.attempts.iter()
+        let prior_grant_attempts: Vec<&EffectAttempt> = self.attempts.iter()
             .filter(|attempt| attempt.grant_id == permit.grant_id)
-            .count() as u64;
-        if grant_uses >= permit.max_dispatches {
+            .collect();
+        if prior_grant_attempts.iter().any(|attempt| {
+            attempt.tenant_binding != permit.tenant_binding
+                || attempt.target_binding != permit.target_binding
+                || attempt.operation != permit.operation
+                || attempt.plan_sha256 != permit.plan_sha256
+                || attempt.max_dispatches != permit.max_dispatches
+        }) {
+            return Err(LedgerError::GrantBindingMismatch);
+        }
+        if prior_grant_attempts.len() as u64 >= permit.max_dispatches {
             return Err(LedgerError::GrantUseLimitReached);
         }
 
@@ -532,6 +543,7 @@ impl ParticipantEffectLedger {
             target_binding: permit.target_binding,
             operation: permit.operation,
             plan_sha256: permit.plan_sha256,
+            max_dispatches: permit.max_dispatches,
             state: EffectState::Dispatched,
             committed_effect_count: 0,
         });
@@ -720,7 +732,8 @@ mod tests {
     fn unknown_effect_blocks_all_new_dispatch_until_reconciled() {
         let requirement = example_requirement();
         let plan = "a".repeat(64);
-        let grant = valid_grant(&plan);
+        let mut grant = valid_grant(&plan);
+        grant.max_dispatches = 2;
         let permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
         let mut ledger = ParticipantEffectLedger::default();
         let first = ledger.dispatch(permit, "idem-001").unwrap();
@@ -746,6 +759,41 @@ mod tests {
         assert_eq!(
             ledger.dispatch(fourth_permit, "idem-004"),
             Err(LedgerError::GrantUseLimitReached)
+        );
+    }
+
+    #[test]
+    fn grant_id_cannot_be_rebound_or_exceed_its_dispatch_budget() {
+        let requirement = example_requirement();
+        let plan = "a".repeat(64);
+        let grant = valid_grant(&plan);
+        let mut ledger = ParticipantEffectLedger::default();
+
+        let first = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
+        ledger.dispatch(first, "idem-grant-001").unwrap();
+
+        let second = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
+        assert_eq!(
+            ledger.dispatch(second, "idem-grant-002"),
+            Err(LedgerError::GrantUseLimitReached)
+        );
+
+        let mut rebound_grant = grant.clone();
+        rebound_grant.target_binding = "api-gateway/admin".into();
+        let rebound_requirement = AuthorityRequirement {
+            target_binding: "api-gateway/admin".into(),
+            ..requirement.clone()
+        };
+        let rebound = authorize_mutation(
+            &rebound_requirement,
+            "tenant-A",
+            &plan,
+            &rebound_grant,
+            150,
+        ).unwrap();
+        assert_eq!(
+            ledger.dispatch(rebound, "idem-grant-003"),
+            Err(LedgerError::GrantBindingMismatch)
         );
     }
 
