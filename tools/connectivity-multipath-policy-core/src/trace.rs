@@ -96,6 +96,7 @@ pub struct TraceReport {
     pub cost_currency: String,
     pub distinct_failure_domains_used: usize,
     pub distinct_capacity_domains_used: usize,
+    pub capacity_domain_ids_used: Vec<String>,
     pub path_summaries: Vec<PathTraceSummary>,
     pub transmissions: Vec<TraceTransmission>,
     pub exclusions: Vec<(String, &'static str)>,
@@ -744,6 +745,10 @@ pub fn simulate(
             capacity_domains.extend(summary.capacity_domain_ids.iter().map(String::as_str));
         }
     }
+    let capacity_domain_ids_used = capacity_domains
+        .iter()
+        .map(|domain| (*domain).to_owned())
+        .collect();
 
     let estimated_cost_micros = states
         .iter()
@@ -800,6 +805,7 @@ pub fn simulate(
         cost_currency: request.cost_currency.clone(),
         distinct_failure_domains_used: domains.len(),
         distinct_capacity_domains_used: capacity_domains.len(),
+        capacity_domain_ids_used,
         path_summaries,
         transmissions,
         exclusions,
