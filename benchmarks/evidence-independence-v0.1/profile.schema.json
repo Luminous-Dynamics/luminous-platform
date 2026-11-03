@@ -221,7 +221,8 @@
         "role",
         "identity",
         "control_domains",
-        "depends_on"
+        "depends_on",
+        "dependency_inventory"
       ],
       "properties": {
         "component_id": {
@@ -281,6 +282,9 @@
           "items": {
             "$ref": "#/$defs/dependency"
           }
+        },
+        "dependency_inventory": {
+          "$ref": "#/$defs/dependency_inventory"
         }
       }
     },
@@ -334,6 +338,53 @@
           "const": "indeterminate"
         }
       }
+    },
+    "dependency_inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "evidence_refs"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "complete_asserted",
+            "incomplete",
+            "unknown"
+          ]
+        },
+        "evidence_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "complete_asserted"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "evidence_refs": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }
