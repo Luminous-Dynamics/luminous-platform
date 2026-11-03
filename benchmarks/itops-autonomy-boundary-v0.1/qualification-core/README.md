@@ -11,6 +11,10 @@ This crate is the first executable building block for the runner requested in
   schemas with format assertions enabled and no implicit remote/file retrieval.
 - Validates the 23-case v0.1 count, unique case IDs, unresolved-outcome safety
   bounds, and all three cross-domain workflow DAGs.
+- Audits each result against its exact case: decision/stage, exact handoff
+  fields, dispatch and unresolved-attempt hard bounds, participant effect
+  counts/ledger consistency, independent observer state, promotion prohibition,
+  resource arithmetic, and corpus digest binding for measured results.
 - Computes a deterministic SHA-256 digest for each typed workflow plan.
 - Implements an exact-scope authorization predicate binding tenant, target,
   operation, expiry/revocation, dispatch budget, and workflow-plan digest;
@@ -20,8 +24,9 @@ This crate is the first executable building block for the runner requested in
   keys and an unknown-outcome lock.
 - Treats stale, future-dated, missing-source, or malformed-digest service
   observations as unknown.
-- Includes 15 unit-test sources for catalog loading, schema/meta-schema
-  validity and rejection, result/case semantic alignment, exact-scope
+- Includes 21 unit-test sources for catalog loading, schema/meta-schema
+  validity and rejection, decision/handoff/observer/effect semantic gates,
+  forbidden-promotion controls, exact corpus binding, exact-scope
   authorization, dispatch-time grant revalidation, grant budgets, idempotency,
   unresolved-attempt locking, and observation freshness.
 
@@ -34,16 +39,17 @@ cargo test
 cargo run --release
 ```
 
-The executable first validates both schema documents against the Draft
-2020-12 meta-schema, then validates the catalogue and example result with
-format assertions enabled. It prints the exact corpus digest and each
-workflow digest. It accepts optional paths in this order:
+The executable validates both schemas against the Draft 2020-12 meta-schema,
+then runs full schema and semantic audits of the candidate catalogue and
+synthetic CHG-001 result. It prints the exact corpus digest, workflow digests,
+decision, dispatch count, committed effects, observer state, and handoff
+requirement. A `synthetic_example` is never counted as an evaluation run. It accepts optional paths in this order:
 `CATALOG_JSON CATALOG_SCHEMA_JSON RESULT_EXAMPLE_JSON RESULT_SCHEMA_JSON`.
 
 ## Explicit non-claims
 
 This is not yet an agent runner, production runtime gate, independent process
-boundary, independent service observer, or measured benchmark. The complete JSON Schema validator is present, but has not yet been compiled or run. The effect ledger and observer are in-process
+boundary, independent service observer, or measured benchmark. The complete JSON Schema validator and semantic result auditor are present, but have not yet been compiled or run. The effect ledger and observer are in-process
 deterministic models for unit testing. The next issue #213 stages are process
 separation, an isolated synthetic episode environment, result generation and
 validation, and repeated experiment arms. The corpus remains
