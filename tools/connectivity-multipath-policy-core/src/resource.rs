@@ -69,6 +69,9 @@ pub struct ResourcePath {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ResourceAllocationRequest {
     pub topology_sha256: String,
+    /// Caller-computed digest of the canonical, frozen path/resource input snapshot.
+    /// The allocator echoes it; it does not independently calculate or authenticate it.
+    pub resource_snapshot_sha256: String,
     /// Caller-supplied timestamp used for deterministic evidence validation.
     pub now_unix_ms: u64,
     pub minimum_evidence_confidence_ppm: u32,
@@ -135,6 +138,7 @@ pub struct ResourceDomainUsage {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ResourceAllocationReport {
     pub topology_sha256: String,
+    pub resource_snapshot_sha256: String,
     pub decision_time_unix_ms: u64,
     pub total_allocated_rate_bps: u64,
     pub path_allocations: Vec<PathRateAllocation>,
@@ -164,6 +168,9 @@ fn valid_identifier(value: &str) -> bool {
 
 fn validate_request(request: &ResourceAllocationRequest) -> Result<(), ResourceAllocationError> {
     if !is_sha256(&request.topology_sha256) {
+        return Err(ResourceAllocationError::InvalidTopologyDigest);
+    }
+    if !is_sha256(&request.resource_snapshot_sha256) {
         return Err(ResourceAllocationError::InvalidTopologyDigest);
     }
     if request.now_unix_ms == 0 {
@@ -623,6 +630,7 @@ pub fn allocate_resource_incidence(
 
     Ok(ResourceAllocationReport {
         topology_sha256: request.topology_sha256.clone(),
+        resource_snapshot_sha256: request.resource_snapshot_sha256.clone(),
         decision_time_unix_ms: request.now_unix_ms,
         total_allocated_rate_bps,
         path_allocations,
@@ -655,6 +663,7 @@ mod tests {
     fn request() -> ResourceAllocationRequest {
         ResourceAllocationRequest {
             topology_sha256: "b".repeat(64),
+            resource_snapshot_sha256: "c".repeat(64),
             now_unix_ms: 1_000,
             minimum_evidence_confidence_ppm: 950_000,
         }
@@ -907,6 +916,27 @@ mod tests {
         )
         .expect("valid reversed order");
         assert_eq!(first, second);
+    }
+
+    #[test]
+    fn malformed_resource_snapshot_manifest_digest_is_rejected() {
+        let mut invalid = request();
+        invalid.resource_snapshot_sha256 = "not-a-sha256".to_owned();
+        assert_eq!(
+            allocate_resource_incidence(&invalid, &[], &[]).unwrap_err(),
+            ResourceAllocationError::InvalidTopologyDigest
+        );
+    }
+
+    #[test]
+    fn resource_snapshot_manifest_digest_is_echoed_for_exact_replay() {
+        let report = allocate_resource_incidence(
+            &request(),
+            &[path("a", 100, 1, &["shared"])],
+            &[resource("shared", 100, 10, 0, 0)],
+        )
+        .expect("valid snapshot manifest");
+        assert_eq!(report.resource_snapshot_sha256, request().resource_snapshot_sha256);
     }
 
     #[test]
