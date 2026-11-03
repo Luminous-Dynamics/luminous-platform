@@ -71,7 +71,7 @@ Separate three distinct decisions:
 2. **Path management:** the transport path manager creates/removes subflows and manages address/path lifecycle.
 3. **Session scheduling:** a scheduler distributes bytes/packets among the already eligible live subflows, considering completion deadline, congestion, RTT/jitter/loss, data/cost/energy caps, shared failure domains and receiver reorder pressure.
 
-LNF-MPATH-001 (draft PR #211) starts a deterministic Rust model and benchmark contract for the third decision. It does not modify MPTCP or QUIC wire formats, create subflows, or actuate routes. Linux MPTCP provides a real comparator with a separation between path manager and packet scheduler. Multipath QUIC -21 was IESG-approved as a Proposed Standard but remained in the RFC Editor queue as of 2 November 2026; its protocol specification does not define application scheduling. Do not call it a published RFC until publication is confirmed.
+LNF-MPATH-001 (draft PR #211) starts a deterministic Rust model and benchmark contract for the third decision. It does not modify MPTCP or QUIC wire formats, create subflows, or actuate routes. Linux MPTCP is the primary live comparator; path management and packet scheduling are distinct responsibilities. As of 3 November 2026, the IETF Datatracker lists draft-ietf-quic-multipath-21 as an active Internet-Draft with intended Proposed Standard status, submitted to the IESG and in the RFC Editor queue (awaiting editor assignment), not yet a published RFC. The draft defines path identifiers and path lifecycle, but leaves address discovery/management and application-level traffic scheduling out of scope. Keep any LNF adapter pinned to an exact compatible implementation revision and treat scheduling/address discovery as separate LNF responsibilities.
 
 A multipath scheduler must not simply maximize the sum of advertised bandwidths. More paths can increase out-of-order delivery, head-of-line delay, receiver memory, energy and metered cost. Compare useful task completion and tail latency under the same quality/security/cost floor, and include single-path fallback where multipath is unavailable or does not improve the workload.
 
@@ -116,7 +116,7 @@ All actuating control follows: observe -> propose -> validate against determinis
 | Community mesh | 802.11s, batman-adv or other qualified routing | Topology options only; mesh does not create backhaul or encryption by itself |
 | Cellular | 3GPP LTE/5G; future IMT-2030 | Use authorized commercial/private-network paths; no custom PHY initially |
 | Open RAN | O-RAN interfaces and RIC architecture | Treat xApps/rApps as privileged attack surfaces; enforce zero-trust controls |
-| Multipath transport | MPTCP, Multipath QUIC where supported | Benchmark per application and device; no universal seamlessness claim |
+| Multipath transport | Linux MPTCP (exact kernel/build); Multipath QUIC draft -21 implementation only where pinned and interoperable | Separate path management, congestion control and packet scheduling; no universal seamlessness claim |
 | Device enrolment | IEEE 802.1AR, BRSKI/RFC 8995, 802.1X, RADIUS/AAA | Reuse mature credential lifecycle; profile privacy and ownership transfer |
 | DTN | BPv7/RFC 9171, TCPCLv4/RFC 9174 and suitable convergence layers | Interoperate with existing DTN implementations |
 | DTN security | BPSec/RFC 9172 and default contexts/RFC 9173 | Prefer standards; separately test key management and resource abuse |
@@ -191,6 +191,9 @@ Every scenario needs a positive control, negative control, expected disposition,
 ## 6. SOTA comparators and fair comparison method
 
 LNF compares against existing systems, not a straw-man baseline.
+
+**Congestion-control and queue-management baselines must be pinned separately.** RFC 9438 CUBIC is the primary deployed single-path TCP reference because it is a Standards Track specification and is documented as the default TCP congestion controller in Linux, Windows and Apple stacks. RFC 6356 is an Experimental RFC, but its three MPTCP goals—best-path improvement, do-no-harm at shared resources, and movement away from congestion—are useful qualification properties. RFC 9330 L4S is Informational architecture; its DualQ/ECN/scalable-congestion-control behavior must be tested as a sender-network combination, not as an isolated qdisc switch.
+
 
 | Domain | Baselines to include | What LNF may claim only after evidence |
 |---|---|---|
@@ -304,6 +307,7 @@ LNF is an integration programme, not a reason to create parallel projects. The f
 4. Qualify shared capacity domains and tenant-first weighted max-min in PR #215; tenant fairness must be evaluated across a shared bottleneck, not inferred from per-flow or per-session fairness.
 5. Use PR #216's read-only plan to generate and review the isolated fq_codel/TBF and CAKE campaign. Only a separate explicit-opt-in executor may create namespaces/install qdiscs, and it must bind cleanup to resources created by that run.
 6. Apply PR #222's RFC 6356 best-path and do-no-harm evaluator to exact paired Linux MPTCP/TCP trials from issue #212. Do not accept a throughput gain if a companion TCP flow is materially starved.
+7. Compare PR #230's resource-incidence weighted max-min allocator against exact small-topology integer references. Publish both fairness and maximum-sum-rate gaps; do not conflate them.
 6. Run the isolated OpenWrt/two-WAN fault matrix and local-only service campaign on named gateway revisions; keep VM, hardware-bench and field evidence distinct.
 7. In parallel, use Symthaea #1100/#4834 to qualify a small redundant routed-fabric topology against Batfish and live FRR probes; do not give this adapter production actuation authority.
 8. Use Sol-Atlas #323/#325 to model a named service topology with power and backhaul common-cause failures using the existing shared service-network evaluators.
@@ -328,6 +332,7 @@ LNF is an integration programme, not a reason to create parallel projects. The f
 | LNF tenant fairness allocator (draft PR #215) | two-level weighted max-min allocation among tenant principals and then flows; shared-capacity-domain accounting | authenticating the tenant principal, packet queueing/AQM or replacing CAKE/fq_codel |
 | LNF isolated qdisc planner (draft PR #216) | read-only namespace command planning for fq_codel/TBF and CAKE triple-isolate comparisons | executing privileged qdisc changes, claiming benchmark results or changing host networking |
 | LNF MPTCP coexistence evaluator (draft PR #222) | paired best-path and shared-bottleneck do-no-harm evidence evaluation against TCP controls | implementing a congestion controller or claiming kernel/field performance from model outputs |
+| LNF shared-resource incidence allocator (draft PR #230) | evidence-bound residual capacity and weighted progressive filling across overlapping resource domains | treating path capacity as additive through shared backhaul or claiming maximum-sum-rate optimality |
 
 ## 10. South African deployment gates
 
