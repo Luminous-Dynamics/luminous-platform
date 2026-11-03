@@ -215,12 +215,9 @@ fn validate_generated_plan(plan: &CommandPlan) -> Result<(), QdiscPlanError> {
         if command.program == "tc" {
             return Err(QdiscPlanError::InvalidGeneratedPlan);
         }
-        if command.program == "ip" && command.args.first().is_some_and(|arg| arg == "link") {
-            // Interface operations must run in a declared lab namespace.
-            if command.args.len() < 3 || command.args[1] != "-n" {
-                return Err(QdiscPlanError::InvalidGeneratedPlan);
-            }
-            if !expected.contains(&command.args[2]) {
+        if command.program == "ip" && command.args.first().is_some_and(|arg| arg == "-n") {
+            // Namespace-scoped ip operations must target a declared lab namespace.
+            if command.args.len() < 3 || !expected.contains(&command.args[1]) {
                 return Err(QdiscPlanError::InvalidGeneratedPlan);
             }
         }
@@ -369,6 +366,24 @@ pub fn build_plan(profile: &QdiscProfile) -> Result<CommandPlan, QdiscPlanError>
                 gw_if.to_owned(),
                 "master".to_owned(),
                 "br0".to_owned(),
+            ],
+        );
+    }
+
+    for device in ["vag0", "vbg0"] {
+        add_owned(
+            &mut commands,
+            "setup",
+            None,
+            None,
+            "ip",
+            vec![
+                "-n".to_owned(),
+                gw.clone(),
+                "link".to_owned(),
+                "set".to_owned(),
+                device.to_owned(),
+                "up".to_owned(),
             ],
         );
     }
@@ -677,7 +692,7 @@ mod tests {
                 .commands
                 .iter()
                 .filter(|command| {
-                    command.args.iter().any(|arg| arg == "qdisc")
+                    command.args.windows(2).any(|pair| pair == ["qdisc", "replace"])
                         && command.args.iter().any(|arg| arg == "vwan")
                 })
                 .collect::<Vec<_>>();
