@@ -1369,6 +1369,18 @@ mod tests {
     }
 
     #[test]
+    fn full_schema_requires_explicit_sut_profile() {
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let mut example: serde_json::Value = serde_json::from_slice(
+            &fs::read(manifest.join("../decision-result.example.json")).unwrap()
+        ).unwrap();
+        example.as_object_mut().unwrap().remove("sut_profile");
+        let bytes = serde_json::to_vec(&example).unwrap();
+        let schema = fs::read(manifest.join("../decision-result.schema.json")).unwrap();
+        assert!(validate_draft2020_12(&bytes, &schema).is_err());
+    }
+
+    #[test]
     fn synthetic_result_example_matches_chg001_authority_handoff_contract() {
         let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
         let catalog: serde_json::Value = serde_json::from_slice(
