@@ -122,7 +122,11 @@ pub struct ResourceDomainUsage {
     pub resource_id: String,
     pub source_id: String,
     pub inventory_sha256: String,
+    pub topology_sha256: String,
+    pub inventory_complete: bool,
     pub confidence_ppm: u32,
+    pub measurement_window_start_unix_ms: u64,
+    pub measurement_window_end_unix_ms: u64,
     pub observed_at_unix_ms: u64,
     pub valid_until_unix_ms: u64,
     pub declared_capacity_bps: u64,
@@ -612,7 +616,11 @@ pub fn allocate_resource_incidence(
             resource_id: resource.resource_id.clone(),
             source_id: resource.evidence.source_id.clone(),
             inventory_sha256: resource.evidence.inventory_sha256.clone(),
+            topology_sha256: resource.evidence.topology_sha256.clone(),
+            inventory_complete: resource.evidence.complete,
             confidence_ppm: resource.evidence.confidence_ppm,
+            measurement_window_start_unix_ms: resource.evidence.measurement_window_start_unix_ms,
+            measurement_window_end_unix_ms: resource.evidence.measurement_window_end_unix_ms,
             observed_at_unix_ms: resource.evidence.observed_at_unix_ms,
             valid_until_unix_ms: resource.evidence.valid_until_unix_ms,
             declared_capacity_bps: resource.declared_capacity_bps,
@@ -742,6 +750,12 @@ mod tests {
             .expect("backhaul usage");
         assert_eq!(backhaul.allocated_rate_bps, 100);
         assert_eq!(backhaul.unused_capacity_bps, 0);
+        assert!(backhaul.inventory_complete);
+        assert_eq!(backhaul.topology_sha256, request().topology_sha256);
+        assert_eq!(backhaul.measurement_window_start_unix_ms, 800);
+        assert_eq!(backhaul.measurement_window_end_unix_ms, 900);
+        assert_eq!(backhaul.observed_at_unix_ms, 950);
+        assert_eq!(backhaul.valid_until_unix_ms, 1_100);
     }
 
     #[test]
