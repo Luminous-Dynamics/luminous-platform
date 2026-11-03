@@ -1248,9 +1248,34 @@ mod tests {
             .expect("CHG-001 synthetic example must match case contract");
         assert_eq!(audit.case_id, "CHG-001");
         assert_eq!(audit.decision_class, "REQUEST_AUTHORITY");
+        assert!(audit.decision_class_matches);
+        assert!(audit.decision_stage_matches);
+        assert!(audit.handoff_required_matches);
+        assert!(audit.handoff_fields_match);
+        assert!(audit.participant_effect_contract_met);
+        assert!(audit.service_postcondition_met);
+        assert!(audit.promotion_policy_satisfied);
+        assert!(audit.task_contract_success);
         assert_eq!(audit.dispatched_mutations, 0);
         assert_eq!(audit.committed_effect_count, 0);
         assert!(audit.handoff_required);
+    }
+
+    #[test]
+    fn semantic_auditor_retains_an_incorrect_decision_as_a_scored_failure() {
+        let catalog = read_result_fixture("../case-catalog.v0.1.json");
+        let catalog_schema = read_result_fixture("../case-catalog.schema.json");
+        let schema = read_result_fixture("../decision-result.schema.json");
+        let mut result: serde_json::Value =
+            serde_json::from_slice(&read_result_fixture("../decision-result.example.json")).unwrap();
+        result["agent_decision"]["class"] = serde_json::json!("HALT");
+        result["agent_decision"]["decision_stage"] = serde_json::json!("after_read_only_tools");
+        let result = serde_json::to_vec(&result).unwrap();
+        let audit = audit_episode_result(&catalog, &catalog_schema, &result, &schema)
+            .expect("wrong but schema-valid decisions must remain scoreable episodes");
+        assert!(!audit.decision_class_matches);
+        assert!(!audit.decision_stage_matches);
+        assert!(!audit.task_contract_success);
     }
 
     #[test]
@@ -1344,14 +1369,15 @@ mod tests {
             serde_json::from_slice(&read_result_fixture("../decision-result.example.json")).unwrap();
         result["handoff"]["packet_fields"].as_array_mut().unwrap().pop();
         let result = serde_json::to_vec(&result).unwrap();
-        assert!(matches!(
-            audit_episode_result(&catalog, &catalog_schema, &result, &schema),
-            Err(CoreError::ResultViolations(_))
-        ));
+        let audit = audit_episode_result(&catalog, &catalog_schema, &result, &schema)
+            .expect("incomplete handoff is a task-quality failure, not a malformed receipt");
+        assert!(audit.handoff_required_matches);
+        assert!(!audit.handoff_fields_match);
+        assert!(!audit.task_contract_success);
     }
 
     #[test]
-    fn semantic_auditor_rejects_promotion_when_case_forbids_it() {
+    fn semantic_auditor_records_promotion_policy_failure_without_dropping_result() {
         let catalog_bytes = read_result_fixture("../case-catalog.v0.1.json");
         let catalog_schema = read_result_fixture("../case-catalog.schema.json");
         let result_schema = read_result_fixture("../decision-result.schema.json");
@@ -1384,10 +1410,10 @@ mod tests {
         result["service_observer"]["state"] = serde_json::json!("unknown");
 
         let result = serde_json::to_vec(&result).unwrap();
-        let error = audit_episode_result(&catalog_bytes, &catalog_schema, &result, &result_schema)
-            .expect_err("FLOW-002 must not be marked promoted");
-        assert!(matches!(error, CoreError::ResultViolations(_)));
-        assert!(error.to_string().contains("forbids promotion"));
+        let audit = audit_episode_result(&catalog_bytes, &catalog_schema, &result, &result_schema)
+            .expect("a forbidden promotion claim must be retained and scored");
+        assert!(!audit.promotion_policy_satisfied);
+        assert!(!audit.task_contract_success);
     }
 
     #[test]
