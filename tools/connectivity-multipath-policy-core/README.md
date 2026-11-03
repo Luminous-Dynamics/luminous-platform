@@ -58,10 +58,12 @@ These are planning estimates. They do not model time-varying congestion or packe
 ## Capacity domains versus failure domains
 
 Every path declares both:
-- `shared_risk_group`: links expected to experience a common-cause failure;
-- `shared_capacity_group`: links consuming the same declared hard throughput bottleneck.
+- `shared_risk_group`: the operator-declared common-cause failure identity used by the current v1 model;
+- `capacity_domain_ids`: a non-empty, duplicate-free set of every known hard throughput bottleneck consumed by that path (maximum 32 IDs).
 
-These are not interchangeable. Two paths may fail independently but still share one backhaul. The current v1 aggregate and redundant controls conservatively select at most one path per declared capacity group. Redundant transmission requires both a distinct failure group and a distinct capacity group. Unknown/empty capacity groups are excluded. This can underuse real capacity within one group; a future group-level rate ceiling requires a separately qualified model.
+These are not interchangeable. Two paths may fail independently but still share one downstream backhaul. A path with `access-a + shared-backhaul` overlaps a path with `access-b + shared-backhaul` even though the access links differ. Unknown, blank, duplicate or oversized capacity-dependency sets are excluded with explicit reasons.
+
+For the default two-path case, the scheduler examines all pairs and selects the highest-effective-capacity pair whose capacity-domain sets are fully disjoint. For more than two paths it extends that pair deterministically, admitting only paths disjoint from the union already selected. Redundant transmission also requires distinct failure groups and disjoint capacity-domain sets. The conservative set rule may underuse real capacity when some bottlenecks are shared; a future resource-incidence model can allow coordinated use under a shared aggregate ceiling, but that requires a separately qualified allocator.
 
 ## Tenant fairness
 
