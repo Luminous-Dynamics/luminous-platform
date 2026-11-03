@@ -493,8 +493,8 @@ pub fn allocate_resource_incidence(
             let remaining =
                 remaining_scaled[domain_index].ok_or(ResourceAllocationError::InternalInvariant)?;
             if remaining < *active_weight {
-                for (index, item) in eligible.iter().enumerate() {
-                    if active[index] && item.domain_indexes.contains(&domain_index) {
+                for (index, path) in eligible.iter().enumerate() {
+                    if active[index] && path.domain_indexes.contains(&domain_index) {
                         freeze[index] = true;
                     }
                 }
