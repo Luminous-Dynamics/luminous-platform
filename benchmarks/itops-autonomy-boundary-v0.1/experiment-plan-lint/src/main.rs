@@ -58,6 +58,11 @@ struct PlanSummary {
     arms: usize,
     analysis_unit: String,
     zero_event_method: String,
+    planned_zero_event_weighted_upper_bound: Option<f64>,
+}
+
+fn exact_zero_event_upper_bound(alpha: f64, independent_units: u64) -> f64 {
+    -((alpha.ln() / independent_units as f64).exp_m1())
 }
 
 fn audit_plan(plan_bytes: &[u8], schema_bytes: &[u8]) -> Result<PlanSummary, String> {
@@ -159,7 +164,7 @@ fn audit_plan(plan_bytes: &[u8], schema_bytes: &[u8]) -> Result<PlanSummary, Str
     let zero_event_method = str_at(inference, "zero_event_method")
         .ok_or("inference.zero_event_method missing")?;
     let expected_method = match analysis_unit {
-        "episode" => "exact_clopper_pearson_one_sided",
+        "episode" => "stratified_clopper_pearson_bonferroni_one_sided",
         "cluster" => "cluster_conservative_one_sided",
         _ => return Err(format!("unsupported analysis unit {analysis_unit:?}")),
     };
@@ -183,6 +188,29 @@ fn audit_plan(plan_bytes: &[u8], schema_bytes: &[u8]) -> Result<PlanSummary, Str
         }
     }
 
+    let planned_zero_event_weighted_upper_bound = if analysis_unit == "episode" {
+        // Simultaneous one-sided stratum bounds use Bonferroni alpha/H.
+        // Their preregistered population-weighted sum is a conservative
+        // upper bound for the declared mixture, conditional on zero events
+        // in every stratum and independent episode draws within each stratum.
+        let alpha_per_stratum = 0.05 / strata.len() as f64;
+        let mut weighted_bound = 0.0_f64;
+        for stratum in strata {
+            let n = stratum
+                .get("minimum_episodes_per_arm")
+                .and_then(Value::as_u64)
+                .ok_or("invalid minimum_episodes_per_arm")?;
+            let weight = stratum
+                .get("population_weight")
+                .and_then(Value::as_f64)
+                .ok_or("invalid population_weight")?;
+            weighted_bound += weight * exact_zero_event_upper_bound(alpha_per_stratum, n);
+        }
+        Some(weighted_bound)
+    } else {
+        None
+    };
+
     let comparison = plan.get("comparison").ok_or("comparison missing")?;
     let block_keys = array_at(comparison, "block_keys").ok_or("comparison.block_keys missing")?;
     let block_keys = block_keys.iter().filter_map(Value::as_str).collect::<BTreeSet<_>>();
@@ -198,6 +226,7 @@ fn audit_plan(plan_bytes: &[u8], schema_bytes: &[u8]) -> Result<PlanSummary, Str
         arms: arms.len(),
         analysis_unit: analysis_unit.to_string(),
         zero_event_method: zero_event_method.to_string(),
+        planned_zero_event_weighted_upper_bound,
     })
 }
 
@@ -227,7 +256,10 @@ fn main() {
     println!("ARMS={}", summary.arms);
     println!("ANALYSIS_UNIT={}", summary.analysis_unit);
     println!("ZERO_EVENT_METHOD={}", summary.zero_event_method);
-    println!("NOTE=Schema and cross-field preregistration checks only; no experiment was executed.");
+    if let Some(bound) = summary.planned_zero_event_weighted_upper_bound {
+        println!("PLANNED_ZERO_EVENT_WEIGHTED_95_UPPER_BOUND_IF_ZERO_EVENTS={bound:.8}");
+    }
+    println!("NOTE=Plan-design calculation only; no experiment or observed confidence interval was executed.");
 }
 
 #[cfg(test)]
@@ -248,11 +280,17 @@ mod tests {
     #[test]
     fn preregistered_example_passes_schema_and_semantic_audit() {
         let result = audit_plan(PLAN, SCHEMA).expect("example plan should pass");
-        assert_eq!(result.target_episodes, 3000);
+        assert_eq!(result.target_episodes, 12500);
         assert_eq!(result.strata, 3);
         assert_eq!(result.arms, 3);
         assert_eq!(result.analysis_unit, "episode");
-        assert_eq!(result.zero_event_method, "exact_clopper_pearson_one_sided");
+        assert_eq!(
+            result.zero_event_method,
+            "stratified_clopper_pearson_bonferroni_one_sided"
+        );
+        let bound = result.planned_zero_event_weighted_upper_bound.unwrap();
+        assert!((bound - 0.0009821065).abs() < 1.0e-9);
+        assert!(bound < 0.001);
     }
 
     #[test]
