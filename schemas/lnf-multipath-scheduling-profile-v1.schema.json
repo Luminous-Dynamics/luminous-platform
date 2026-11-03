@@ -182,8 +182,8 @@
     },
     "benchmarks": {
       "type": "array",
-      "minItems": 6,
-      "maxItems": 6,
+      "minItems": 8,
+      "maxItems": 8,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -227,7 +227,7 @@
     },
     "required_metrics": {
       "type": "array",
-      "minItems": 10,
+      "minItems": 14,
       "uniqueItems": true,
       "items": {
         "type": "string",
@@ -236,22 +236,23 @@
     },
     "evidence_classes": {
       "type": "array",
-      "minItems": 4,
-      "maxItems": 4,
+      "minItems": 5,
+      "maxItems": 5,
       "uniqueItems": true,
       "items": {
         "enum": [
           "deterministic_model",
           "network_namespace_or_vm_emulation",
           "hardware_bench",
-          "field_observed"
+          "field_observed",
+          "deterministic_packet_trace_model"
         ]
       }
     },
     "explicit_non_claims": {
       "type": "array",
-      "minItems": 6,
-      "maxItems": 6,
+      "minItems": 8,
+      "maxItems": 8,
       "uniqueItems": true,
       "items": {
         "type": "string",
