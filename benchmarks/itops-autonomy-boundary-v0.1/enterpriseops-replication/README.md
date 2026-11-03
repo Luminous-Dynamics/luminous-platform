@@ -2,6 +2,12 @@
 
 This is the first reproducibility contract for [issue #221](https://github.com/Luminous-Dynamics/luminous-platform/issues/221).
 
+## Comparison target
+
+The manifest targets the ServiceNow NOWAI-Bench EnterpriseOps-Gym leaderboard snapshot synchronized 2026-07-23: Claude Fable 5 (with fallback), oracle mode, 51.1% strict task success. This is a dated published reference record, not a locally reproduced baseline. The separate Artificial Analysis page currently reports a related 1,117-task, three-repeat evaluation with the same 51.1% leader; it is not silently merged with this target.
+
+The schema requires a reference-reproduction record. Direct comparison is not eligible until the exact reference model/fallback/inference/tool configuration is reconstructed and pinned in a reference system-profile digest.
+
 ## Verified source pin
 
 The ServiceNow/EnterpriseOps-Gym GitHub default branch was fetched on
