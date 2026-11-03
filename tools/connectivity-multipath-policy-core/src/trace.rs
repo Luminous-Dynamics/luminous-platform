@@ -14,6 +14,8 @@ use super::{
 };
 use std::collections::{BTreeMap, BTreeSet};
 
+const MAX_TRACE_SEGMENTS: u32 = 1_000_000;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TraceStrategy {
     /// Send every segment on the eligible path with the lowest RTT.
