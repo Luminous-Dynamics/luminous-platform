@@ -151,7 +151,8 @@ pub struct MptcpEvidence {
     pub scheduler_supported: bool,
     /// True only when authoritative evidence verifies MPTCP at both endpoints.
     pub negotiation_verified_at_both_endpoints: bool,
-    pub negotiated_subflow_count: u16,
+    pub local_negotiated_subflow_count: u16,
+    pub remote_negotiated_subflow_count: u16,
     pub all_required_counters_present: bool,
     pub cleanup_verified: bool,
 }
@@ -257,15 +258,19 @@ fn evidence_disposition(
             target,
         ));
     }
-    if evidence.negotiated_subflow_count < 2 {
+    if evidence.local_negotiated_subflow_count < 2
+        || evidence.remote_negotiated_subflow_count < 2
+    {
         return Some(GateResult::new(
             gate_id,
             GateDisposition::Fail,
-            "fewer_than_two_negotiated_subflows",
+            "fewer_than_two_negotiated_subflows_at_each_endpoint",
             target,
         ));
     }
-    if evidence.negotiated_subflow_count > MAX_SUBFLOWS {
+    if evidence.local_negotiated_subflow_count > MAX_SUBFLOWS
+        || evidence.remote_negotiated_subflow_count > MAX_SUBFLOWS
+    {
         return Some(GateResult::new(
             gate_id,
             GateDisposition::Inconclusive,
@@ -442,8 +447,7 @@ pub fn evaluate_shared_bottleneck_do_no_harm(
 
     let control_total = u128::from(comparison.control.tcp_flow_a_goodput_bps)
         + u128::from(comparison.control.tcp_flow_b_goodput_bps);
-    let control_mean = control_total / 2;
-    if control_mean == 0 {
+    if control_total == 0 {
         return Ok(GateResult::new(
             gate_id,
             GateDisposition::Inconclusive,
@@ -452,13 +456,15 @@ pub fn evaluate_shared_bottleneck_do_no_harm(
         ));
     }
 
+    // Preserve the exact rational mean, including odd integer goodput sums:
+    // flow_goodput / (control_total / 2) == (2 * flow_goodput) / control_total.
     let mptcp_ratio = fixed_ratio_ppm(
-        u128::from(comparison.treatment.mptcp_goodput_bps),
-        control_mean,
+        u128::from(comparison.treatment.mptcp_goodput_bps) * 2,
+        control_total,
     )?;
     let companion_ratio = fixed_ratio_ppm(
-        u128::from(comparison.treatment.companion_tcp_goodput_bps),
-        control_mean,
+        u128::from(comparison.treatment.companion_tcp_goodput_bps) * 2,
+        control_total,
     )?;
     let treatment_total = u128::from(comparison.treatment.mptcp_goodput_bps)
         + u128::from(comparison.treatment.companion_tcp_goodput_bps);
@@ -515,7 +521,8 @@ mod tests {
             kernel_mptcp_supported: true,
             scheduler_supported: true,
             negotiation_verified_at_both_endpoints: true,
-            negotiated_subflow_count: 2,
+            local_negotiated_subflow_count: 2,
+            remote_negotiated_subflow_count: 2,
             all_required_counters_present: true,
             cleanup_verified: true,
         }
@@ -685,7 +692,7 @@ mod tests {
     #[test]
     fn single_subflow_is_not_qualified_as_multipath() {
         let mut comparison = shared_comparison();
-        comparison.treatment.evidence.negotiated_subflow_count = 1;
+        comparison.treatment.evidence.local_negotiated_subflow_count = 1;
         let result = evaluate_shared_bottleneck_do_no_harm(
             &comparison,
             1_100_000,
@@ -693,7 +700,27 @@ mod tests {
         )
         .expect("valid evidence");
         assert_eq!(result.disposition, GateDisposition::Fail);
-        assert_eq!(result.reason, "fewer_than_two_negotiated_subflows");
+        assert_eq!(
+            result.reason,
+            "fewer_than_two_negotiated_subflows_at_each_endpoint"
+        );
+    }
+
+    #[test]
+    fn remote_endpoint_single_subflow_is_not_qualified_as_multipath() {
+        let mut comparison = shared_comparison();
+        comparison.treatment.evidence.remote_negotiated_subflow_count = 1;
+        let result = evaluate_shared_bottleneck_do_no_harm(
+            &comparison,
+            1_100_000,
+            900_000,
+        )
+        .expect("valid evidence");
+        assert_eq!(result.disposition, GateDisposition::Fail);
+        assert_eq!(
+            result.reason,
+            "fewer_than_two_negotiated_subflows_at_each_endpoint"
+        );
     }
 
     #[test]
