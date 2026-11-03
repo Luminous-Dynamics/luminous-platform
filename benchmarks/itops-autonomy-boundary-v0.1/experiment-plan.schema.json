@@ -130,7 +130,7 @@
             },
             "uniqueItems": true
           },
-          "minimum_episodes": {
+          "minimum_episodes_per_arm": {
             "type": "integer",
             "minimum": 1
           },
@@ -161,7 +161,7 @@
             "blocked_randomized"
           ]
         },
-        "target_episode_count": {
+        "target_episode_count_per_arm": {
           "type": "integer",
           "minimum": 1
         },
