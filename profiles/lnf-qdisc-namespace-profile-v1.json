@@ -1,0 +1,219 @@
+{
+  "schema_version": "luminous.lnf-qdisc-namespace-profile.v1",
+  "profile_id": "lnf-qdisc-isolated-tenant-fairness-v1",
+  "status": "draft_targets_not_results",
+  "reviewed_on": "2026-11-03",
+  "objective": "Compare Linux fq_codel and CAKE tenant/flow isolation on the same isolated veth bottleneck with multiple namespaces and matched parallel TCP workloads.",
+  "execution_stage": "read_only_command_plan_only",
+  "topology": {
+    "namespaces": [
+      "gateway",
+      "server",
+      "tenant_a",
+      "tenant_b"
+    ],
+    "bottleneck": "gateway namespace veth WAN egress",
+    "tenant_addressing": "one stable source IP per tenant",
+    "gateway_bridge": true,
+    "host_default_route": false,
+    "host_interface_or_route_mutation": false,
+    "host_qdisc_mutation": false,
+    "public_network_access": false,
+    "nat_enabled": false,
+    "ipv4_prefixes": [
+      "10.77.0.0/24",
+      "10.77.1.0/30"
+    ]
+  },
+  "safety_contract": {
+    "explicit_execution_opt_in_required": true,
+    "default_mode_is_read_only_plan": true,
+    "argv_only_no_shell": true,
+    "unsupported_environment_is_not_pass": true,
+    "namespace_inventory_preflight_required": true,
+    "cleanup_only_for_namespaces_created_by_this_run": true,
+    "qdisc_is_installed_only_inside_gateway_namespace": true,
+    "qdisc_readback_required": true,
+    "raw_payload_capture": false,
+    "subscriber_data_or_provider_credentials": false
+  },
+  "qdisc_arms": [
+    {
+      "id": "fq_codel",
+      "type": "fq_codel",
+      "options": [
+        "limit 10240",
+        "flows 1024",
+        "target 5ms",
+        "interval 100ms",
+        "quantum 1514",
+        "ecn"
+      ],
+      "host_flow_isolation": "per_5_tuple_flow"
+    },
+    {
+      "id": "cake_besteffort_triple_isolate",
+      "type": "cake",
+      "tin": "besteffort",
+      "options": [
+        "triple-isolate",
+        "nonat"
+      ],
+      "host_flow_isolation": "source_destination_host_and_flow"
+    },
+    {
+      "id": "cake_diffserv3_triple_isolate",
+      "type": "cake",
+      "tin": "diffserv3",
+      "options": [
+        "triple-isolate",
+        "nonat"
+      ],
+      "host_flow_isolation": "source_destination_host_and_flow"
+    },
+    {
+      "id": "cake_diffserv4_triple_isolate",
+      "type": "cake",
+      "tin": "diffserv4",
+      "options": [
+        "triple-isolate",
+        "nonat"
+      ],
+      "host_flow_isolation": "source_destination_host_and_flow"
+    }
+  ],
+  "shaping_rate_bounds_bps": {
+    "minimum": 1000000,
+    "maximum": 1000000000
+  },
+  "workload_bounds": {
+    "duration_seconds": {
+      "minimum": 5,
+      "maximum": 300
+    },
+    "parallel_flows_per_tenant": {
+      "minimum": 1,
+      "maximum": 32
+    },
+    "total_flows_maximum": 64
+  },
+  "scenario_ids": [
+    "QDISC-00",
+    "QDISC-01",
+    "QDISC-02",
+    "QDISC-03",
+    "QDISC-04",
+    "QDISC-05",
+    "QDISC-06",
+    "QDISC-07",
+    "QDISC-08",
+    "QDISC-09",
+    "QDISC-10",
+    "QDISC-11"
+  ],
+  "baselines": [
+    "fq_codel_exact_kernel",
+    "cake_besteffort_triple_isolate_exact_kernel",
+    "cake_diffserv3_triple_isolate_exact_kernel",
+    "cake_diffserv4_triple_isolate_exact_kernel",
+    "cake_flows_ablation_if_supported",
+    "cake_dual_srchost_ablation_if_supported",
+    "cake_dual_dsthost_ablation_if_supported",
+    "naive_equal_per_flow_negative_control"
+  ],
+  "required_artifacts": [
+    "kernel_version",
+    "iproute2_version",
+    "tc_version",
+    "iperf3_version",
+    "namespace_inventory_before",
+    "command_plan_sha256",
+    "exact_qdisc_install_argv",
+    "qdisc_readback_json",
+    "qdisc_statistics_before_after_json",
+    "gateway_link_counters_json",
+    "gateway_routes_json",
+    "server_routes_json",
+    "tenant_a_iperf3_json",
+    "tenant_b_iperf3_json",
+    "cleanup_namespace_inventory_after"
+  ],
+  "required_metrics": [
+    "per_tenant_goodput_bps",
+    "per_flow_goodput_bps",
+    "aggregate_bottleneck_utilization",
+    "equal_weight_backlogged_tenant_jain_index_ppm",
+    "per_tenant_demand_satisfaction_ratio",
+    "flow_completion_time_p50_p95_p99",
+    "queue_delay_p50_p95_p99",
+    "rtt_inflation_p50_p95_p99",
+    "qdisc_backlog_bytes",
+    "qdisc_drop_count",
+    "qdisc_ecn_mark_count",
+    "qdisc_overlimit_count",
+    "memory_high_water_bytes",
+    "tenant_recovery_time_after_flow_churn",
+    "host_route_or_qdisc_mutation_count",
+    "namespace_cleanup_failure_count"
+  ],
+  "benchmarks": [
+    {
+      "id": "QDISC_ISOLATION_001",
+      "metric": "host_route_or_qdisc_changes",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "QDISC_ESCAPE_001",
+      "metric": "packets_escaping_lab_namespaces",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "QDISC_READBACK_001",
+      "metric": "requested_qdisc_configuration_matches_kernel_readback",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "QDISC_TENANT_FAIRNESS_001",
+      "metric": "equal_weight_symmetric_backlogged_tenant_jain_index_ppm",
+      "operator": ">=",
+      "target": 950000,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "QDISC_MULTIFLOW_CAPTURE_001",
+      "metric": "tenant_share_growth_when_increasing_own_flow_count_from_1_to_8_to_32",
+      "operator": "baseline_first",
+      "target": null,
+      "target_status": "baseline_first"
+    },
+    {
+      "id": "QDISC_QUEUE_DELAY_001",
+      "metric": "p95_queue_delay_under_matched_load",
+      "operator": "baseline_first",
+      "target": null,
+      "target_status": "baseline_first"
+    }
+  ],
+  "evidence_classes": [
+    "read_only_command_plan",
+    "network_namespace_or_vm_emulation",
+    "hardware_bench",
+    "field_observed"
+  ],
+  "explicit_non_claims": [
+    "A command plan is not an executed qdisc experiment",
+    "The planner does not execute privileged commands or authenticate tenant IDs",
+    "No host physical interface, root qdisc, host route or default route is intentionally changed",
+    "No NAT is used in the initial experiment and no NAT-awareness result is claimed",
+    "fq_codel is a flow-isolation baseline and is not equivalent to CAKE triple-isolate host fairness",
+    "No claim that CAKE or fq_codel is beaten before matched namespace and hardware runs",
+    "No claim of 5G RAN slicing or carrier scheduler equivalence",
+    "No claim of production deployment or public network authorization"
+  ]
+}
