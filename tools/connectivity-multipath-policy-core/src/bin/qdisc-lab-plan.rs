@@ -14,7 +14,7 @@ fn json_escape(value: &str) -> String {
         match character {
             '"' => output.push_str("\\\""),
             '\\' => output.push_str("\\\\"),
-            '\n' => output.push_str("\n"),
+            '\n' => output.push('\n'),
             '\r' => output.push_str("\\r"),
             '\t' => output.push_str("\\t"),
             character if character.is_control() => {
@@ -54,7 +54,7 @@ fn parse_args() -> Result<QdiscProfile, String> {
     }
 
     let mut values = BTreeMap::new();
-    for pair in args.chunks_exact(2) {
+    for pair in args.as_chunks::<2>().0 {
         let key = pair[0]
             .strip_prefix("--")
             .ok_or_else(|| format!("unexpected argument {}", pair[0]))?;
