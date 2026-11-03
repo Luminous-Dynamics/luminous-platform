@@ -12,6 +12,9 @@ use std::collections::BTreeSet;
 
 const PARTS_PER_MILLION: u128 = 1_000_000;
 const BYTES_PER_MIB: u128 = 1_048_576;
+const MAX_CAPACITY_DOMAINS_PER_PATH: usize = 32;
+const MAX_CAPACITY_DOMAIN_ID_BYTES: usize = 128;
+const MAX_CAPACITY_EVIDENCE_SOURCE_ID_BYTES: usize = 128;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TrafficIntent {
@@ -58,13 +61,41 @@ pub struct PathObservation {
     pub energy_uwh_per_mib: u64,
     /// Operator-declared common-cause failure group.
     pub shared_risk_group: String,
-    /// Operator-declared hard capacity bottleneck group; distinct from failure correlation.
-    pub shared_capacity_group: String,
+    /// Complete set of hard throughput bottlenecks consumed by this path.
+    pub capacity_domain_ids: Vec<String>,
+    /// Provenance and validity of the capacity dependency set.
+    pub capacity_domain_evidence: CapacityDomainEvidence,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CapacityDomainEvidence {
+    /// Stable identifier of the inventory/controller supplying the dependency set.
+    pub source_id: String,
+    /// Digest of the exact source inventory artifact.
+    pub inventory_sha256: String,
+    /// Frozen end-to-end topology snapshot this dependency evidence belongs to.
+    pub topology_sha256: String,
+    /// False means the inventory cannot attest that every bottleneck is enumerated.
+    pub complete: bool,
+    /// Operator-declared evidence confidence in parts per million (0..=1,000,000).
+    pub confidence_ppm: u32,
+    /// Unix epoch milliseconds at which this observation was made.
+    pub observed_at_unix_ms: u64,
+    /// Unix epoch milliseconds after which this observation must not be used.
+    pub valid_until_unix_ms: u64,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ScheduleRequest {
     pub task_id: String,
+    /// SHA-256 of the frozen topology/run snapshot expected by this decision.
+    pub topology_sha256: String,
+    /// Caller-supplied decision time; all capacity dependency evidence is
+    /// checked against this exact timestamp for deterministic replay.
+    pub now_unix_ms: u64,
+    /// Minimum operator-declared capacity-dependency evidence confidence in ppm.
+    /// This is an evidence-grade field, not a statistical probability.
+    pub minimum_capacity_domain_confidence_ppm: u32,
     pub intent: TrafficIntent,
     pub bytes: u64,
     pub deadline_us: Option<u64>,
@@ -92,7 +123,8 @@ pub struct PathAllocation {
     pub estimated_cost_micros: u64,
     pub estimated_energy_uwh: u64,
     pub shared_risk_group: String,
-    pub shared_capacity_group: String,
+    pub capacity_domain_ids: Vec<String>,
+    pub capacity_domain_evidence: CapacityDomainEvidence,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -104,6 +136,8 @@ pub struct PathExclusion {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ScheduleDecision {
     pub task_id: String,
+    pub topology_sha256: String,
+    pub decision_time_unix_ms: u64,
     pub strategy: Strategy,
     pub mode: DecisionMode,
     pub allocations: Vec<PathAllocation>,
@@ -114,7 +148,8 @@ pub struct ScheduleDecision {
     /// earliest allocation. This is not a packet-level reassembly simulation.
     pub reorder_exposure_bytes: u64,
     pub distinct_shared_risk_groups: usize,
-    pub distinct_capacity_groups: usize,
+    pub distinct_capacity_domains: usize,
+    pub capacity_domain_ids_used: Vec<String>,
     pub exclusions: Vec<PathExclusion>,
     pub explanation: Vec<String>,
 }
@@ -127,6 +162,9 @@ pub enum ScheduleError {
     InvalidLossBound,
     InvalidGainThreshold,
     InvalidCurrencyCode,
+    InvalidTopologyDigest,
+    InvalidCurrentTime,
+    InvalidCapacityDomainConfidenceFloor,
     InvalidPathId,
     DuplicatePathId,
     TooManyPaths,
@@ -145,7 +183,8 @@ struct Candidate {
     energy_uwh: u64,
     reorder_exposure_bytes: u64,
     distinct_shared_risk_groups: usize,
-    distinct_capacity_groups: usize,
+    distinct_capacity_domains: usize,
+    capacity_domain_ids_used: Vec<String>,
 }
 
 fn ceil_div(numerator: u128, denominator: u128) -> u128 {
@@ -185,6 +224,84 @@ fn finish_time_us(bytes: u64, path: &PathObservation) -> u64 {
         .saturating_add(transfer_time_us(bytes, effective_capacity(path)))
 }
 
+fn is_sha256(value: &str) -> bool {
+    value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
+}
+
+fn capacity_domain_ids_error(ids: &[String]) -> Option<&'static str> {
+    if ids.is_empty() {
+        return Some("capacity_domains_unknown");
+    }
+    if ids.len() > MAX_CAPACITY_DOMAINS_PER_PATH {
+        return Some("capacity_domain_set_too_large");
+    }
+    if ids.iter().any(|id| id.trim().is_empty()) {
+        return Some("capacity_domain_id_blank");
+    }
+    if ids.iter().any(|id| id.len() > MAX_CAPACITY_DOMAIN_ID_BYTES) {
+        return Some("capacity_domain_id_too_long");
+    }
+    if ids.iter().any(|id| id.chars().any(char::is_control)) {
+        return Some("capacity_domain_id_contains_control_character");
+    }
+    let unique = ids.iter().map(String::as_str).collect::<BTreeSet<_>>();
+    if unique.len() != ids.len() {
+        return Some("capacity_domain_id_duplicate");
+    }
+    None
+}
+
+fn capacity_domain_evidence_error(
+    request: &ScheduleRequest,
+    evidence: &CapacityDomainEvidence,
+) -> Option<&'static str> {
+    if evidence.source_id.trim().is_empty()
+        || evidence.source_id.len() > MAX_CAPACITY_EVIDENCE_SOURCE_ID_BYTES
+    {
+        return Some("capacity_domain_evidence_source_unknown");
+    }
+    if !is_sha256(&evidence.inventory_sha256) {
+        return Some("capacity_domain_inventory_digest_invalid");
+    }
+    if !is_sha256(&evidence.topology_sha256)
+        || evidence.topology_sha256 != request.topology_sha256
+    {
+        return Some("capacity_domain_topology_digest_mismatch");
+    }
+    if !evidence.complete {
+        return Some("capacity_domain_evidence_incomplete");
+    }
+    if evidence.confidence_ppm > 1_000_000 {
+        return Some("capacity_domain_evidence_confidence_invalid");
+    }
+    if evidence.confidence_ppm < request.minimum_capacity_domain_confidence_ppm {
+        return Some("capacity_domain_evidence_confidence_below_floor");
+    }
+    if evidence.observed_at_unix_ms == 0
+        || evidence.observed_at_unix_ms > request.now_unix_ms
+    {
+        return Some("capacity_domain_evidence_observation_time_invalid");
+    }
+    if evidence.valid_until_unix_ms <= evidence.observed_at_unix_ms {
+        return Some("capacity_domain_evidence_validity_window_invalid");
+    }
+    if evidence.valid_until_unix_ms <= request.now_unix_ms {
+        return Some("capacity_domain_evidence_stale_or_expired");
+    }
+    None
+}
+
+fn capacity_domains_disjoint(left: &[String], right: &[String]) -> bool {
+    left.iter()
+        .all(|left_id| right.iter().all(|right_id| left_id != right_id))
+}
+
+fn canonical_capacity_domain_ids(ids: &[String]) -> Vec<String> {
+    let mut canonical = ids.to_vec();
+    canonical.sort();
+    canonical
+}
+
 fn exclusion_reason(request: &ScheduleRequest, path: &PathObservation) -> Option<&'static str> {
     if !path.broker_eligible {
         return Some("broker_ineligible");
@@ -216,8 +333,11 @@ fn exclusion_reason(request: &ScheduleRequest, path: &PathObservation) -> Option
     if path.shared_risk_group.trim().is_empty() {
         return Some("shared_risk_group_unknown");
     }
-    if path.shared_capacity_group.trim().is_empty() {
-        return Some("shared_capacity_group_unknown");
+    if let Some(reason) = capacity_domain_ids_error(&path.capacity_domain_ids) {
+        return Some(reason);
+    }
+    if let Some(reason) = capacity_domain_evidence_error(request, &path.capacity_domain_evidence) {
+        return Some(reason);
     }
     None
 }
@@ -231,6 +351,17 @@ fn validate_request(request: &ScheduleRequest) -> Result<(), ScheduleError> {
     }
     if request.maximum_paths == 0 {
         return Err(ScheduleError::ZeroMaximumPaths);
+    }
+    if !is_sha256(&request.topology_sha256) {
+        return Err(ScheduleError::InvalidTopologyDigest);
+    }
+    if request.now_unix_ms == 0 {
+        return Err(ScheduleError::InvalidCurrentTime);
+    }
+    if request.minimum_capacity_domain_confidence_ppm == 0
+        || request.minimum_capacity_domain_confidence_ppm > 1_000_000
+    {
+        return Err(ScheduleError::InvalidCapacityDomainConfidenceFloor);
     }
     if request.minimum_gain_ppm > 1_000_000 {
         return Err(ScheduleError::InvalidGainThreshold);
@@ -285,8 +416,11 @@ fn single_candidate(request: &ScheduleRequest, path: &PathObservation) -> Option
 
     let mut groups = BTreeSet::new();
     groups.insert(path.shared_risk_group.as_str());
-    let mut capacity_groups = BTreeSet::new();
-    capacity_groups.insert(path.shared_capacity_group.as_str());
+    let capacity_domains = path
+        .capacity_domain_ids
+        .iter()
+        .map(String::as_str)
+        .collect::<BTreeSet<_>>();
     Some(Candidate {
         allocations: vec![PathAllocation {
             path_id: path.id.clone(),
@@ -296,14 +430,16 @@ fn single_candidate(request: &ScheduleRequest, path: &PathObservation) -> Option
             estimated_cost_micros: cost,
             estimated_energy_uwh: energy,
             shared_risk_group: path.shared_risk_group.clone(),
-            shared_capacity_group: path.shared_capacity_group.clone(),
+            capacity_domain_ids: canonical_capacity_domain_ids(&path.capacity_domain_ids),
+            capacity_domain_evidence: path.capacity_domain_evidence.clone(),
         }],
         finish_us: finish,
         cost_micros: cost,
         energy_uwh: energy,
         reorder_exposure_bytes: 0,
         distinct_shared_risk_groups: groups.len(),
-        distinct_capacity_groups: capacity_groups.len(),
+        distinct_capacity_domains: capacity_domains.len(),
+        capacity_domain_ids_used: canonical_capacity_domain_ids(&path.capacity_domain_ids),
     })
 }
 
@@ -325,24 +461,70 @@ fn aggregate_candidate(
         return None;
     }
 
-    let mut ordered: Vec<&PathObservation> = eligible.to_vec();
-    ordered.sort_by(|left, right| {
-        effective_capacity(right)
-            .cmp(&effective_capacity(left))
-            .then_with(|| left.id.cmp(&right.id))
-    });
-    let mut seen_capacity_groups = BTreeSet::new();
-    let mut selected = Vec::new();
-    for path in ordered {
-        if seen_capacity_groups.insert(path.shared_capacity_group.as_str()) {
-            selected.push(path);
-        }
-        if selected.len() >= usize::from(request.maximum_paths) {
-            break;
+    // Choose the highest-capacity disjoint pair exactly (O(n^2)); the
+    // default maximum_paths=2 is the common case and must not lose a valid
+    // independent pair merely because a higher-capacity middle path overlaps
+    // with both members. For larger path counts, extend that best pair using
+    // deterministic greedy admission and report the resulting dependency set.
+    let mut best_pair: Option<(u128, &PathObservation, &PathObservation)> = None;
+    for left_index in 0..eligible.len() {
+        for right_index in left_index + 1..eligible.len() {
+            let left = eligible[left_index];
+            let right = eligible[right_index];
+            if !capacity_domains_disjoint(&left.capacity_domain_ids, &right.capacity_domain_ids) {
+                continue;
+            }
+            let combined_capacity =
+                u128::from(effective_capacity(left)) + u128::from(effective_capacity(right));
+            let replace =
+                best_pair
+                    .as_ref()
+                    .is_none_or(|(best_capacity, best_left, best_right)| {
+                        combined_capacity > *best_capacity
+                            || (combined_capacity == *best_capacity
+                                && (left.id.as_str(), right.id.as_str())
+                                    < (best_left.id.as_str(), best_right.id.as_str()))
+                    });
+            if replace {
+                best_pair = Some((combined_capacity, left, right));
+            }
         }
     }
-    if selected.len() < 2 {
+    let Some((_, first, second)) = best_pair else {
         return None;
+    };
+    let mut selected = vec![first, second];
+    let mut seen_capacity_domains = first
+        .capacity_domain_ids
+        .iter()
+        .chain(second.capacity_domain_ids.iter())
+        .map(String::as_str)
+        .collect::<BTreeSet<_>>();
+    if selected.len() < usize::from(request.maximum_paths) {
+        let mut ordered: Vec<&PathObservation> = eligible
+            .iter()
+            .copied()
+            .filter(|path| path.id != first.id && path.id != second.id)
+            .collect();
+        ordered.sort_by(|left, right| {
+            effective_capacity(right)
+                .cmp(&effective_capacity(left))
+                .then_with(|| left.id.cmp(&right.id))
+        });
+        for path in ordered {
+            let path_domains = path
+                .capacity_domain_ids
+                .iter()
+                .map(String::as_str)
+                .collect::<BTreeSet<_>>();
+            if path_domains.is_disjoint(&seen_capacity_domains) {
+                seen_capacity_domains.extend(path_domains);
+                selected.push(path);
+            }
+            if selected.len() >= usize::from(request.maximum_paths) {
+                break;
+            }
+        }
     }
 
     let mut remaining = request.bytes;
@@ -371,7 +553,7 @@ fn aggregate_candidate(
                 estimated_cost_micros: estimated_cost(bytes, path.cost_micros_per_mib)?,
                 estimated_energy_uwh: estimated_cost(bytes, path.energy_uwh_per_mib)?,
                 shared_risk_group: path.shared_risk_group.clone(),
-                shared_capacity_group: path.shared_capacity_group.clone(),
+                capacity_domain_ids: canonical_capacity_domain_ids(&path.capacity_domain_ids),
             })
         })
         .collect::<Option<Vec<_>>>()?;
@@ -428,9 +610,13 @@ fn aggregate_candidate(
         .iter()
         .map(|allocation| allocation.shared_risk_group.as_str())
         .collect();
-    let capacity_groups: BTreeSet<&str> = allocations
+    let capacity_domains: BTreeSet<&str> = allocations
         .iter()
-        .map(|allocation| allocation.shared_capacity_group.as_str())
+        .flat_map(|allocation| allocation.capacity_domain_ids.iter().map(String::as_str))
+        .collect();
+    let capacity_domain_ids_used = capacity_domains
+        .iter()
+        .map(|domain| (*domain).to_owned())
         .collect();
 
     Some(Candidate {
@@ -440,7 +626,8 @@ fn aggregate_candidate(
         energy_uwh: energy,
         reorder_exposure_bytes: reorder_exposure,
         distinct_shared_risk_groups: groups.len(),
-        distinct_capacity_groups: capacity_groups.len(),
+        distinct_capacity_domains: capacity_domains.len(),
+        capacity_domain_ids_used,
     })
 }
 
@@ -511,6 +698,8 @@ fn to_decision(
     match candidate {
         Some(candidate) => ScheduleDecision {
             task_id: request.task_id.clone(),
+            topology_sha256: request.topology_sha256.clone(),
+            decision_time_unix_ms: request.now_unix_ms,
             strategy,
             mode: if candidate.allocations.len() > 1 {
                 DecisionMode::Multipath
@@ -523,12 +712,15 @@ fn to_decision(
             estimated_energy_uwh: candidate.energy_uwh,
             reorder_exposure_bytes: candidate.reorder_exposure_bytes,
             distinct_shared_risk_groups: candidate.distinct_shared_risk_groups,
-            distinct_capacity_groups: candidate.distinct_capacity_groups,
+            distinct_capacity_domains: candidate.distinct_capacity_domains,
+            capacity_domain_ids_used: candidate.capacity_domain_ids_used,
             exclusions,
             explanation,
         },
         None => ScheduleDecision {
             task_id: request.task_id.clone(),
+            topology_sha256: request.topology_sha256.clone(),
+            decision_time_unix_ms: request.now_unix_ms,
             strategy,
             mode: DecisionMode::NoRoute,
             allocations: Vec::new(),
@@ -537,7 +729,8 @@ fn to_decision(
             estimated_energy_uwh: 0,
             reorder_exposure_bytes: 0,
             distinct_shared_risk_groups: 0,
-            distinct_capacity_groups: 0,
+            distinct_capacity_domains: 0,
+            capacity_domain_ids_used: Vec::new(),
             exclusions,
             explanation: vec!["no candidate schedule satisfies hard constraints".to_owned()],
         },
@@ -675,13 +868,25 @@ mod tests {
             cost_micros_per_mib: cost,
             energy_uwh_per_mib: 10,
             shared_risk_group: risk.to_owned(),
-            shared_capacity_group: format!("capacity-{id}"),
+            capacity_domain_ids: vec![format!("capacity-{id}")],
+            capacity_domain_evidence: CapacityDomainEvidence {
+                source_id: "operator-inventory-1".to_owned(),
+                inventory_sha256: "a".repeat(64),
+                topology_sha256: "f".repeat(64),
+                complete: true,
+                confidence_ppm: 1_000_000,
+                observed_at_unix_ms: 900_000,
+                valid_until_unix_ms: 1_100_000,
+            },
         }
     }
 
     fn request() -> ScheduleRequest {
         ScheduleRequest {
             task_id: "task-1".to_owned(),
+            topology_sha256: "f".repeat(64),
+            now_unix_ms: 1_000_000,
+            minimum_capacity_domain_confidence_ppm: 950_000,
             intent: TrafficIntent::BulkTransfer,
             bytes: 8 * 1_048_576,
             deadline_us: Some(5_000_000),
@@ -725,25 +930,185 @@ mod tests {
     fn aggregate_never_counts_two_paths_in_one_capacity_domain() {
         let mut first = path("a", 10_000, 40_000_000, 10, "failure-a");
         let mut second = path("b", 20_000, 60_000_000, 10, "failure-b");
-        first.shared_capacity_group = "same-backhaul".to_owned();
-        second.shared_capacity_group = "same-backhaul".to_owned();
+        first.capacity_domain_ids = vec!["access-a".to_owned(), "shared-backhaul".to_owned()];
+        second.capacity_domain_ids = vec!["access-b".to_owned(), "shared-backhaul".to_owned()];
         let result = evaluate(&request(), &[first, second], Strategy::AggregateCapacity)
             .expect("valid observations");
         assert_eq!(result.mode, DecisionMode::SinglePath);
         assert_eq!(result.allocations.len(), 1);
         assert_eq!(result.distinct_shared_risk_groups, 1);
-        assert_eq!(result.distinct_capacity_groups, 1);
+        assert_eq!(result.distinct_capacity_domains, 2);
+    }
+
+    #[test]
+    fn chooses_the_best_independent_pair_when_highest_path_overlaps_both() {
+        let mut path_a = path("a", 10_000, 60_000_000, 10, "risk-a");
+        let mut path_b = path("b", 10_000, 100_000_000, 10, "risk-b");
+        let mut path_c = path("c", 10_000, 50_000_000, 10, "risk-c");
+        path_a.capacity_domain_ids = vec!["access-a".to_owned(), "shared-x".to_owned()];
+        path_b.capacity_domain_ids = vec!["shared-x".to_owned(), "shared-y".to_owned()];
+        path_c.capacity_domain_ids = vec!["access-c".to_owned(), "shared-y".to_owned()];
+        let result = evaluate(
+            &request(),
+            &[path_b, path_c, path_a],
+            Strategy::AggregateCapacity,
+        )
+        .expect("valid multi-domain observations");
+        assert_eq!(result.mode, DecisionMode::Multipath);
+        assert_eq!(
+            result
+                .allocations
+                .iter()
+                .map(|allocation| allocation.path_id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["a", "c"]
+        );
+        assert_eq!(result.distinct_capacity_domains, 4);
+    }
+
+    #[test]
+    fn blank_and_duplicate_capacity_domain_ids_exclude_only_the_invalid_path() {
+        let mut blank = path("blank", 1_000, 100_000_000, 1, "risk-blank");
+        blank.capacity_domain_ids = vec!["access".to_owned(), " ".to_owned()];
+        let mut duplicate = path("duplicate", 2_000, 90_000_000, 1, "risk-duplicate");
+        duplicate.capacity_domain_ids = vec!["access".to_owned(), "access".to_owned()];
+        let allowed_a = path("allowed-a", 20_000, 20_000_000, 10, "risk-a");
+        let allowed_b = path("allowed-b", 25_000, 25_000_000, 10, "risk-b");
+        let result = evaluate(
+            &request(),
+            &[blank, duplicate, allowed_a, allowed_b],
+            Strategy::AggregateCapacity,
+        )
+        .expect("invalid individual dependencies are excluded");
+        assert_eq!(result.mode, DecisionMode::Multipath);
+        assert_eq!(result.exclusions.len(), 2);
+        assert_eq!(result.exclusions[0].reason, "capacity_domain_id_blank");
+        assert_eq!(result.exclusions[1].reason, "capacity_domain_id_duplicate");
+    }
+
+    #[test]
+    fn incomplete_capacity_domain_inventory_is_excluded() {
+        let mut path = path("incomplete", 10_000, 20_000_000, 10, "risk-a");
+        path.capacity_domain_evidence.complete = false;
+        let result = evaluate(&request(), &[path], Strategy::BestRtt).expect("valid path");
+        assert_eq!(result.mode, DecisionMode::NoRoute);
+        assert_eq!(
+            result.exclusions[0].reason,
+            "capacity_domain_evidence_incomplete"
+        );
+    }
+
+    #[test]
+    fn expired_capacity_domain_inventory_is_excluded() {
+        let mut path = path("expired", 10_000, 20_000_000, 10, "risk-a");
+        path.capacity_domain_evidence.valid_until_unix_ms = request().now_unix_ms;
+        let result = evaluate(&request(), &[path], Strategy::BestRtt).expect("valid path");
+        assert_eq!(result.mode, DecisionMode::NoRoute);
+        assert_eq!(
+            result.exclusions[0].reason,
+            "capacity_domain_evidence_stale_or_expired"
+        );
+    }
+
+    #[test]
+    fn capacity_domain_inventory_from_another_topology_is_excluded() {
+        let mut path = path("wrong-topology", 10_000, 20_000_000, 10, "risk-a");
+        path.capacity_domain_evidence.topology_sha256 = "b".repeat(64);
+        let result = evaluate(&request(), &[path], Strategy::BestRtt).expect("valid path");
+        assert_eq!(result.mode, DecisionMode::NoRoute);
+        assert_eq!(
+            result.exclusions[0].reason,
+            "capacity_domain_topology_digest_mismatch"
+        );
+    }
+
+    #[test]
+    fn malformed_inventory_digest_is_excluded() {
+        let mut path = path("bad-inventory", 10_000, 20_000_000, 10, "risk-a");
+        path.capacity_domain_evidence.inventory_sha256 = "not-a-digest".to_owned();
+        let result = evaluate(&request(), &[path], Strategy::BestRtt).expect("valid path");
+        assert_eq!(result.mode, DecisionMode::NoRoute);
+        assert_eq!(
+            result.exclusions[0].reason,
+            "capacity_domain_inventory_digest_invalid"
+        );
+    }
+
+    #[test]
+    fn low_confidence_capacity_domain_inventory_is_excluded() {
+        let mut path = path("low-confidence", 10_000, 20_000_000, 10, "risk-a");
+        path.capacity_domain_evidence.confidence_ppm = 949_999;
+        let result = evaluate(&request(), &[path], Strategy::BestRtt).expect("valid path");
+        assert_eq!(result.mode, DecisionMode::NoRoute);
+        assert_eq!(
+            result.exclusions[0].reason,
+            "capacity_domain_evidence_confidence_below_floor"
+        );
+    }
+
+    #[test]
+    fn confidence_above_one_million_is_invalid() {
+        let mut path = path("invalid-confidence", 10_000, 20_000_000, 10, "risk-a");
+        path.capacity_domain_evidence.confidence_ppm = 1_000_001;
+        let result = evaluate(&request(), &[path], Strategy::BestRtt).expect("invalid evidence is excluded");
+        assert_eq!(result.mode, DecisionMode::NoRoute);
+        assert_eq!(
+            result.exclusions[0].reason,
+            "capacity_domain_evidence_confidence_invalid"
+        );
+    }
+
+    #[test]
+    fn future_capacity_domain_observation_is_excluded() {
+        let mut path = path("future", 10_000, 20_000_000, 10, "risk-a");
+        path.capacity_domain_evidence.observed_at_unix_ms = request().now_unix_ms + 1;
+        let result = evaluate(&request(), &[path], Strategy::BestRtt).expect("valid path");
+        assert_eq!(result.mode, DecisionMode::NoRoute);
+        assert_eq!(
+            result.exclusions[0].reason,
+            "capacity_domain_evidence_observation_time_invalid"
+        );
+    }
+
+    #[test]
+    fn capacity_domain_id_length_is_bounded() {
+        let mut path = path("too-long", 10_000, 20_000_000, 10, "risk-a");
+        path.capacity_domain_ids = vec!["x".repeat(MAX_CAPACITY_DOMAIN_ID_BYTES + 1)];
+        let result = evaluate(&request(), &[path], Strategy::BestRtt).expect("valid path");
+        assert_eq!(result.mode, DecisionMode::NoRoute);
+        assert_eq!(result.exclusions[0].reason, "capacity_domain_id_too_long");
+    }
+
+    #[test]
+    fn capacity_domain_ids_are_canonicalized_in_the_report() {
+        let mut first = path("a", 10_000, 20_000_000, 10, "risk-a");
+        first.capacity_domain_ids = vec!["z".to_owned(), "a".to_owned()];
+        let result = evaluate(&request(), &[first], Strategy::BestRtt).expect("valid path");
+        assert_eq!(
+            result.allocations[0].capacity_domain_ids,
+            vec!["a".to_owned(), "z".to_owned()]
+        );
+        assert_eq!(
+            result.capacity_domain_ids_used,
+            vec!["a".to_owned(), "z".to_owned()]
+        );
+        assert_eq!(result.topology_sha256, request().topology_sha256);
+        assert_eq!(result.decision_time_unix_ms, request().now_unix_ms);
+        assert_eq!(
+            result.allocations[0].capacity_domain_evidence.confidence_ppm,
+            1_000_000
+        );
     }
 
     #[test]
     fn unknown_capacity_domain_is_excluded_before_aggregation() {
         let mut unknown = path("unknown", 1_000, 100_000_000, 1, "failure-a");
-        unknown.shared_capacity_group.clear();
+        unknown.capacity_domain_ids.clear();
         let allowed = path("allowed", 20_000, 10_000_000, 10, "failure-b");
         let result = evaluate(&request(), &[unknown, allowed], Strategy::AggregateCapacity)
             .expect("valid observations");
         assert_eq!(result.mode, DecisionMode::SinglePath);
-        assert_eq!(result.exclusions[0].reason, "shared_capacity_group_unknown");
+        assert_eq!(result.exclusions[0].reason, "capacity_domains_unknown");
     }
 
     #[test]
