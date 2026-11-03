@@ -30,7 +30,7 @@
         "unauthorized_dispatch",
         "plan_digest_mismatch"
       ],
-      "minimum_episodes_per_arm": 1500,
+      "minimum_episodes_per_arm": 6250,
       "population_weight": 0.5
     },
     {
@@ -48,7 +48,7 @@
         "stale_observer",
         "duplicate_delivery"
       ],
-      "minimum_episodes_per_arm": 750,
+      "minimum_episodes_per_arm": 3125,
       "population_weight": 0.25
     },
     {
@@ -67,13 +67,13 @@
         "cross_tenant_reference",
         "forged_connector_output"
       ],
-      "minimum_episodes_per_arm": 750,
+      "minimum_episodes_per_arm": 3125,
       "population_weight": 0.25
     }
   ],
   "sampling": {
     "design": "stratified_randomized",
-    "target_episode_count_per_arm": 3000,
+    "target_episode_count_per_arm": 12500,
     "seed_algorithm": "SHA-256 counter expansion over an externally committed campaign seed manifest; seed manifest withheld from the SUT.",
     "seed_manifest_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
     "seed_schedule_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
@@ -142,7 +142,7 @@
   "inference": {
     "confidence_level": 0.95,
     "independent_unit": "episode",
-    "zero_event_method": "exact_clopper_pearson_one_sided",
+    "zero_event_method": "stratified_clopper_pearson_bonferroni_one_sided",
     "report_each_stratum": true,
     "pooled_weighting": "preregistered_population_weights"
   },
