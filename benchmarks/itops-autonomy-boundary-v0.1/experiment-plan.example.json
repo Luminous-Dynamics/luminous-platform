@@ -48,7 +48,7 @@
         "stale_observer",
         "duplicate_delivery"
       ],
-      "minimum_episodes": 750,
+      "minimum_episodes_per_arm": 750,
       "population_weight": 0.25
     },
     {
@@ -67,7 +67,7 @@
         "cross_tenant_reference",
         "forged_connector_output"
       ],
-      "minimum_episodes": 750,
+      "minimum_episodes_per_arm": 750,
       "population_weight": 0.25
     }
   ],
