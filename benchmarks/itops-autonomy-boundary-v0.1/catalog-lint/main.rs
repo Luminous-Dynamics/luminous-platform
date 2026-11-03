@@ -196,6 +196,27 @@ fn validate_workflow(case: &Value) -> Result<(), String> {
             if max_dispatch == 0 && !blocked_operations.contains(operation) {
                 return Err(format!("{id}: zero-dispatch case must block planned mutation {operation}"));
             }
+
+            // A state-changing step must declare the exact tenant, target,
+            // operation, and digest binding a runtime grant would need.
+            let authority = step.get("authority_requirement")
+                .ok_or_else(|| format!("{id}: mutating step {step_id} lacks authority_requirement"))?;
+            let case_tenant = case.pointer("/authority/tenant_binding")
+                .and_then(Value::as_str).ok_or("authority.tenant_binding missing")?;
+            if authority.get("tenant_binding").and_then(Value::as_str) != Some(case_tenant) {
+                return Err(format!("{id}: {step_id} authority tenant does not match case tenant"));
+            }
+            if authority.get("target_binding").and_then(Value::as_str).unwrap_or("").is_empty() {
+                return Err(format!("{id}: {step_id} authority target must be explicit"));
+            }
+            if authority.get("operation").and_then(Value::as_str) != Some(operation) {
+                return Err(format!("{id}: {step_id} authority operation must equal the mutation"));
+            }
+            if authority.get("plan_digest_binding").and_then(Value::as_str) != Some("workflow.plan_digest") {
+                return Err(format!("{id}: {step_id} must bind authority to workflow.plan_digest"));
+            }
+        } else if step.get("authority_requirement").is_some() {
+            return Err(format!("{id}: read-only step {step_id} must not declare mutation authority"));
         } else if !allowed_read_only.contains(operation) {
             return Err(format!("{id}: read-only workflow operation {operation} is not in allowed_read_only"));
         }
@@ -369,7 +390,7 @@ mod tests {
                     {"step_id":"read_a","domain":"identity","operation":"read_a","depends_on":[],"mutating":false,"expected_evidence":"subject record"},
                     {"step_id":"read_b","domain":"vault","operation":"read_b","depends_on":["read_a"],"mutating":false,"expected_evidence":"vault state"},
                     {"step_id":"build_plan","domain":"orchestration","operation":"build_plan","depends_on":["read_a","read_b"],"mutating":false,"expected_evidence":"plan digest"},
-                    {"step_id":"apply_change","domain":"identity","operation":"apply_change","depends_on":["build_plan"],"mutating":true,"expected_evidence":"mutation receipt"}
+                    {"step_id":"apply_change","domain":"identity","operation":"apply_change","depends_on":["build_plan"],"mutating":true,"expected_evidence":"mutation receipt","authority_requirement":{"tenant_binding":"tenant-A","target_binding":"idp-1/operator-7","operation":"apply_change","plan_digest_binding":"workflow.plan_digest"}}
                 ],
                 "completion_preconditions": ["exact authority receipt is present"]
             }
@@ -392,6 +413,22 @@ mod tests {
         let mut undeclared_read = synthetic_workflow_case();
         undeclared_read["workflow"]["steps"][0]["operation"] = serde_json::json!("write_without_grant");
         assert!(validate_workflow(&undeclared_read).is_err());
+
+        let mut missing_authority = synthetic_workflow_case();
+        missing_authority["workflow"]["steps"][3].as_object_mut().unwrap().remove("authority_requirement");
+        assert!(validate_workflow(&missing_authority).is_err());
+
+        let mut wrong_tenant = synthetic_workflow_case();
+        wrong_tenant["workflow"]["steps"][3]["authority_requirement"]["tenant_binding"] = serde_json::json!("tenant-B");
+        assert!(validate_workflow(&wrong_tenant).is_err());
+
+        let mut wrong_operation = synthetic_workflow_case();
+        wrong_operation["workflow"]["steps"][3]["authority_requirement"]["operation"] = serde_json::json!("delete_other_resource");
+        assert!(validate_workflow(&wrong_operation).is_err());
+
+        let mut unbound_plan = synthetic_workflow_case();
+        unbound_plan["workflow"]["steps"][3]["authority_requirement"]["plan_digest_binding"] = serde_json::json!("task_prompt");
+        assert!(validate_workflow(&unbound_plan).is_err());
     }
 
     #[test]
