@@ -167,7 +167,12 @@ fn main() {
             .map(|value| value.to_string())
             .unwrap_or_else(|| "null".to_owned())
     );
-    println!("  \\"tbf_burst_bytes\\": {},", plan.tbf_burst_bytes.map(|value| value.to_string()).unwrap_or_else(|| "null".to_owned()));
+    println!(
+        "  \\"tbf_burst_bytes\\": {},",
+        plan.tbf_burst_bytes
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "null".to_owned())
+    );
     println!("  \\"duration_seconds\\": {},", plan.duration_seconds);
     println!("  \\"tenant_a_parallel_flows\\": {},", plan.tenant_a_parallel_flows);
     println!("  \\"tenant_b_parallel_flows\\": {},", plan.tenant_b_parallel_flows);
