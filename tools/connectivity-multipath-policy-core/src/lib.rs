@@ -721,6 +721,39 @@ mod tests {
     }
 
     #[test]
+    fn aggregate_never_counts_two_paths_in_one_capacity_domain() {
+        let mut first = path("a", 10_000, 40_000_000, 10, "failure-a");
+        let mut second = path("b", 20_000, 60_000_000, 10, "failure-b");
+        first.shared_capacity_group = "same-backhaul".to_owned();
+        second.shared_capacity_group = "same-backhaul".to_owned();
+        let result = evaluate(
+            &request(),
+            &[first, second],
+            Strategy::AggregateCapacity,
+        )
+        .expect("valid observations");
+        assert_eq!(result.mode, DecisionMode::SinglePath);
+        assert_eq!(result.allocations.len(), 1);
+        assert_eq!(result.distinct_shared_risk_groups, 1);
+        assert_eq!(result.distinct_capacity_groups, 1);
+    }
+
+    #[test]
+    fn unknown_capacity_domain_is_excluded_before_aggregation() {
+        let mut unknown = path("unknown", 1_000, 100_000_000, 1, "failure-a");
+        unknown.shared_capacity_group.clear();
+        let allowed = path("allowed", 20_000, 10_000_000, 10, "failure-b");
+        let result = evaluate(
+            &request(),
+            &[unknown, allowed],
+            Strategy::AggregateCapacity,
+        )
+        .expect("valid observations");
+        assert_eq!(result.mode, DecisionMode::SinglePath);
+        assert_eq!(result.exclusions[0].reason, "shared_capacity_group_unknown");
+    }
+
+    #[test]
     fn broker_ineligible_path_is_never_scheduled() {
         let mut ineligible = path("blocked", 1, 1_000_000_000, 0, "blocked");
         ineligible.broker_eligible = false;
