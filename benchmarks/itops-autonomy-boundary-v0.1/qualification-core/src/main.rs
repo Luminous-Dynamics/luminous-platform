@@ -1,5 +1,5 @@
 use std::{env, fs, path::PathBuf, process};
-use itops_qualification_core::{load_catalog, validate_draft2020_12};
+use itops_qualification_core::{audit_episode_result, load_catalog};
 
 fn default_path(relative: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(relative)
@@ -32,17 +32,15 @@ fn main() {
     let result_example_bytes = read(&result_example_path);
     let result_schema_bytes = read(&result_schema_path);
 
-    validate_draft2020_12(&catalog_bytes, &catalog_schema_bytes)
-        .unwrap_or_else(|error| {
-            eprintln!("ERROR: candidate catalog schema validation: {error}");
-            process::exit(2);
-        });
-    validate_draft2020_12(&result_example_bytes, &result_schema_bytes)
-        .unwrap_or_else(|error| {
-            eprintln!("ERROR: result example schema validation: {error}");
-            process::exit(2);
-        });
-
+    let audit = audit_episode_result(
+        &catalog_bytes,
+        &catalog_schema_bytes,
+        &result_example_bytes,
+        &result_schema_bytes,
+    ).unwrap_or_else(|error| {
+        eprintln!("ERROR: schema or semantic result audit: {error}");
+        process::exit(2);
+    });
     let catalog = load_catalog(&catalog_bytes).unwrap_or_else(|error| {
         eprintln!("ERROR: catalog qualification: {error}");
         process::exit(2);
@@ -54,7 +52,15 @@ fn main() {
     println!("CASE_COUNT={}", catalog.case_count);
     println!("CATALOG_SHA256={}", catalog.catalog_sha256);
     println!("STATUS=candidate_not_frozen");
-    println!("RESULT_EXAMPLE_SCHEMA=PASS");
+    println!("RESULT_SCHEMA=PASS");
+    println!("RESULT_SEMANTIC_AUDIT=PASS");
+    println!("RESULT_CASE={}", audit.case_id);
+    println!("RESULT_DECISION={}", audit.decision_class);
+    println!("RESULT_DISPATCHED_MUTATIONS={}", audit.dispatched_mutations);
+    println!("RESULT_COMMITTED_EFFECTS={}", audit.committed_effect_count);
+    println!("RESULT_SERVICE_STATE={}", audit.service_state);
+    println!("RESULT_HANDOFF_REQUIRED={}", audit.handoff_required);
+    println!("RESULT_STATUS={}", audit.result_status);
     for workflow in catalog.workflows {
         println!(
             "WORKFLOW={} STEPS={} MUTATING_STEPS={} PLAN_SHA256={}",
@@ -64,5 +70,5 @@ fn main() {
             workflow.plan_sha256
         );
     }
-    println!("NOTE=Schema and deterministic core validation only; this does not execute an agent or provide independent process isolation.");
+    println!("NOTE=The CLI audits a synthetic receipt against the candidate case contract. It does not execute an agent or provide process isolation, an independent hosted oracle, or measured benchmark results.");
 }
