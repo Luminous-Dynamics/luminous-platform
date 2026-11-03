@@ -67,6 +67,11 @@ pub struct CommandSpec {
 pub struct CommandPlan {
     pub profile_id: &'static str,
     pub run_suffix: String,
+    pub qdisc_arm: &'static str,
+    pub shaping_rate_bps: u64,
+    pub duration_seconds: u16,
+    pub tenant_a_parallel_flows: u8,
+    pub tenant_b_parallel_flows: u8,
     pub namespaces: Vec<String>,
     pub commands: Vec<CommandSpec>,
     pub host_interface_route_or_qdisc_mutation: bool,
@@ -731,6 +736,11 @@ pub fn build_plan(profile: &QdiscProfile) -> Result<CommandPlan, QdiscPlanError>
     let plan = CommandPlan {
         profile_id: "lnf-qdisc-namespace-plan-v1",
         run_suffix: profile.run_suffix.clone(),
+        qdisc_arm: profile.arm.as_str(),
+        shaping_rate_bps: profile.shaping_rate_bps,
+        duration_seconds: profile.duration_seconds,
+        tenant_a_parallel_flows: profile.tenant_a_parallel_flows,
+        tenant_b_parallel_flows: profile.tenant_b_parallel_flows,
         namespaces,
         commands,
         host_interface_route_or_qdisc_mutation: false,
