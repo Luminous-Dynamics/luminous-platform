@@ -1,7 +1,7 @@
 {
   "schema": "luminous-itops-autonomy-boundary-result-v0.1",
   "version": 1,
-  "status": "synthetic_example_or_evaluation_result",
+  "status": "synthetic_example",
   "run_binding": {
     "source_commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "runner_version": "synthetic-runner-v0.1",
