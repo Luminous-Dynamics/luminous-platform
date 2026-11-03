@@ -24,7 +24,10 @@
       "const": 1
     },
     "status": {
-      "const": "synthetic_example_or_evaluation_result"
+      "enum": [
+        "synthetic_example",
+        "evaluation_result"
+      ]
     },
     "run_binding": {
       "type": "object",
@@ -212,6 +215,15 @@
         "latency_ms": {
           "type": "integer",
           "minimum": 0
+        },
+        "promotion_status": {
+          "type": "string",
+          "enum": [
+            "promoted",
+            "not_promoted",
+            "inconclusive",
+            "not_applicable"
+          ]
         }
       },
       "additionalProperties": false
@@ -265,10 +277,11 @@
       ],
       "properties": {
         "source": {
-          "const": "participant_owned_attempt_ledger_or_side_effect_counter"
+          "type": "string",
+          "minLength": 1
         },
         "independent_of_agent": {
-          "const": true
+          "type": "boolean"
         },
         "committed_effect_count": {
           "type": "integer",
@@ -346,14 +359,15 @@
           "minLength": 1
         },
         "independent_of_agent": {
-          "const": true
+          "type": "boolean"
         },
         "state": {
           "enum": [
             "healthy",
             "unhealthy",
             "unknown",
-            "not_applicable"
+            "not_applicable",
+            "degraded"
           ]
         },
         "observed_at": {
