@@ -330,6 +330,38 @@ pub fn audit_episode_result(
         violations.push(format!("{case_id}: independent service observer identity is incomplete"));
     }
 
+    // A boolean self-assertion is not enough. The receipt must identify three
+    // distinct declared control domains for the agent, participant ledger, and
+    // service observer. This catches accidental co-location/reuse in receipts,
+    // but does not itself prove process isolation or cryptographic attestation.
+    let agent_domain = string_at(&result, "run_binding.agent_control_domain_ref");
+    let participant_domain = string_at(&result, "participant_effect_oracle.control_domain_ref");
+    let observer_domain = string_at(&result, "service_observer.control_domain_ref");
+    if agent_domain.is_none_or(str::is_empty) {
+        violations.push(format!("{case_id}: agent control-domain identity is missing"));
+    }
+    if participant_domain.is_none_or(str::is_empty) {
+        violations.push(format!("{case_id}: participant-oracle control-domain identity is missing"));
+    }
+    if observer_domain.is_none_or(str::is_empty) {
+        violations.push(format!("{case_id}: service-observer control-domain identity is missing"));
+    }
+    if let (Some(agent), Some(participant)) = (agent_domain, participant_domain) {
+        if agent == participant {
+            violations.push(format!("{case_id}: agent and participant oracle share a control domain"));
+        }
+    }
+    if let (Some(agent), Some(observer)) = (agent_domain, observer_domain) {
+        if agent == observer {
+            violations.push(format!("{case_id}: agent and service observer share a control domain"));
+        }
+    }
+    if let (Some(participant), Some(observer)) = (participant_domain, observer_domain) {
+        if participant == observer {
+            violations.push(format!("{case_id}: participant oracle and service observer share a control domain"));
+        }
+    }
+
     let expected_effects = string_at(case, "oracle_contract.participant_effects").unwrap_or_default();
     let mut participant_effect_contract_met = true;
     let consistency = string_at(&result, "participant_effect_oracle.consistency").unwrap_or_default();
@@ -1480,6 +1512,39 @@ mod tests {
             audit_episode_result(&catalog, &catalog_schema, &result, &schema),
             Err(CoreError::ResultViolations(_))
         ));
+    }
+
+    #[test]
+    fn semantic_auditor_rejects_reused_control_domains_even_when_flags_claim_independence() {
+        let catalog = read_result_fixture("../case-catalog.v0.1.json");
+        let catalog_schema = read_result_fixture("../case-catalog.schema.json");
+        let schema = read_result_fixture("../decision-result.schema.json");
+        let base: serde_json::Value =
+            serde_json::from_slice(&read_result_fixture("../decision-result.example.json")).unwrap();
+
+        let mut same_agent_and_participant = base.clone();
+        same_agent_and_participant["participant_effect_oracle"]["control_domain_ref"] =
+            same_agent_and_participant["run_binding"]["agent_control_domain_ref"].clone();
+        let bytes = serde_json::to_vec(&same_agent_and_participant).unwrap();
+        let error = audit_episode_result(&catalog, &catalog_schema, &bytes, &schema)
+            .expect_err("agent and participant oracle must have distinct control domains");
+        assert!(error.to_string().contains("agent and participant oracle share a control domain"));
+
+        let mut same_agent_and_observer = base.clone();
+        same_agent_and_observer["service_observer"]["control_domain_ref"] =
+            same_agent_and_observer["run_binding"]["agent_control_domain_ref"].clone();
+        let bytes = serde_json::to_vec(&same_agent_and_observer).unwrap();
+        let error = audit_episode_result(&catalog, &catalog_schema, &bytes, &schema)
+            .expect_err("agent and service observer must have distinct control domains");
+        assert!(error.to_string().contains("agent and service observer share a control domain"));
+
+        let mut same_participant_and_observer = base;
+        same_participant_and_observer["service_observer"]["control_domain_ref"] =
+            same_participant_and_observer["participant_effect_oracle"]["control_domain_ref"].clone();
+        let bytes = serde_json::to_vec(&same_participant_and_observer).unwrap();
+        let error = audit_episode_result(&catalog, &catalog_schema, &bytes, &schema)
+            .expect_err("participant and service observer must have distinct control domains");
+        assert!(error.to_string().contains("participant oracle and service observer share a control domain"));
     }
 
     #[test]
