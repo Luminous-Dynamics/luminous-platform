@@ -11,6 +11,7 @@ use std::collections::BTreeSet;
 
 const PARTS_PER_MILLION: u128 = 1_000_000;
 const BYTES_PER_MIB: u128 = 1_048_576;
+const MAX_CAPACITY_DOMAINS_PER_PATH: usize = 32;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TrafficIntent {
@@ -58,7 +59,7 @@ pub struct PathObservation {
     /// Operator-declared common-cause failure group.
     pub shared_risk_group: String,
     /// Operator-declared hard capacity bottleneck group; distinct from failure correlation.
-    pub shared_capacity_group: String,
+    pub capacity_domain_ids: Vec<String>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -91,7 +92,7 @@ pub struct PathAllocation {
     pub estimated_cost_micros: u64,
     pub estimated_energy_uwh: u64,
     pub shared_risk_group: String,
-    pub shared_capacity_group: String,
+    pub capacity_domain_ids: Vec<String>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -113,7 +114,7 @@ pub struct ScheduleDecision {
     /// earliest allocation. This is not a packet-level reassembly simulation.
     pub reorder_exposure_bytes: u64,
     pub distinct_shared_risk_groups: usize,
-    pub distinct_capacity_groups: usize,
+    pub distinct_capacity_domains: usize,
     pub exclusions: Vec<PathExclusion>,
     pub explanation: Vec<String>,
 }
@@ -144,7 +145,7 @@ struct Candidate {
     energy_uwh: u64,
     reorder_exposure_bytes: u64,
     distinct_shared_risk_groups: usize,
-    distinct_capacity_groups: usize,
+    distinct_capacity_domains: usize,
 }
 
 fn ceil_div(numerator: u128, denominator: u128) -> u128 {
@@ -184,6 +185,33 @@ fn finish_time_us(bytes: u64, path: &PathObservation) -> u64 {
         .saturating_add(transfer_time_us(bytes, effective_capacity(path)))
 }
 
+fn capacity_domain_ids_error(ids: &[String]) -> Option<&'static str> {
+    if ids.is_empty() {
+        return Some("capacity_domains_unknown");
+    }
+    if ids.len() > MAX_CAPACITY_DOMAINS_PER_PATH {
+        return Some("capacity_domain_set_too_large");
+    }
+    if ids.iter().any(|id| id.trim().is_empty()) {
+        return Some("capacity_domain_id_blank");
+    }
+    let unique = ids.iter().map(String::as_str).collect::<BTreeSet<_>>();
+    if unique.len() != ids.len() {
+        return Some("capacity_domain_id_duplicate");
+    }
+    None
+}
+
+fn capacity_domains_disjoint(left: &[String], right: &[String]) -> bool {
+    left.iter().all(|left_id| right.iter().all(|right_id| left_id != right_id))
+}
+
+fn canonical_capacity_domain_ids(ids: &[String]) -> Vec<String> {
+    let mut canonical = ids.to_vec();
+    canonical.sort();
+    canonical
+}
+
 fn exclusion_reason(request: &ScheduleRequest, path: &PathObservation) -> Option<&'static str> {
     if !path.broker_eligible {
         return Some("broker_ineligible");
@@ -215,8 +243,8 @@ fn exclusion_reason(request: &ScheduleRequest, path: &PathObservation) -> Option
     if path.shared_risk_group.trim().is_empty() {
         return Some("shared_risk_group_unknown");
     }
-    if path.shared_capacity_group.trim().is_empty() {
-        return Some("shared_capacity_group_unknown");
+    if let Some(reason) = capacity_domain_ids_error(&path.capacity_domain_ids) {
+        return Some(reason);
     }
     None
 }
@@ -284,8 +312,11 @@ fn single_candidate(request: &ScheduleRequest, path: &PathObservation) -> Option
 
     let mut groups = BTreeSet::new();
     groups.insert(path.shared_risk_group.as_str());
-    let mut capacity_groups = BTreeSet::new();
-    capacity_groups.insert(path.shared_capacity_group.as_str());
+    let capacity_domains = path
+        .capacity_domain_ids
+        .iter()
+        .map(String::as_str)
+        .collect::<BTreeSet<_>>();
     Some(Candidate {
         allocations: vec![PathAllocation {
             path_id: path.id.clone(),
@@ -295,14 +326,14 @@ fn single_candidate(request: &ScheduleRequest, path: &PathObservation) -> Option
             estimated_cost_micros: cost,
             estimated_energy_uwh: energy,
             shared_risk_group: path.shared_risk_group.clone(),
-            shared_capacity_group: path.shared_capacity_group.clone(),
+            capacity_domain_ids: canonical_capacity_domain_ids(&path.capacity_domain_ids),
         }],
         finish_us: finish,
         cost_micros: cost,
         energy_uwh: energy,
         reorder_exposure_bytes: 0,
         distinct_shared_risk_groups: groups.len(),
-        distinct_capacity_groups: capacity_groups.len(),
+        distinct_capacity_domains: capacity_domains.len(),
     })
 }
 
@@ -330,10 +361,16 @@ fn aggregate_candidate(
             .cmp(&effective_capacity(left))
             .then_with(|| left.id.cmp(&right.id))
     });
-    let mut seen_capacity_groups = BTreeSet::new();
+    let mut seen_capacity_domains = BTreeSet::new();
     let mut selected = Vec::new();
     for path in ordered {
-        if seen_capacity_groups.insert(path.shared_capacity_group.as_str()) {
+        let path_domains = path
+            .capacity_domain_ids
+            .iter()
+            .map(String::as_str)
+            .collect::<BTreeSet<_>>();
+        if path_domains.is_disjoint(&seen_capacity_domains) {
+            seen_capacity_domains.extend(path_domains);
             selected.push(path);
         }
         if selected.len() >= usize::from(request.maximum_paths) {
@@ -370,7 +407,7 @@ fn aggregate_candidate(
                 estimated_cost_micros: estimated_cost(bytes, path.cost_micros_per_mib)?,
                 estimated_energy_uwh: estimated_cost(bytes, path.energy_uwh_per_mib)?,
                 shared_risk_group: path.shared_risk_group.clone(),
-                shared_capacity_group: path.shared_capacity_group.clone(),
+                capacity_domain_ids: canonical_capacity_domain_ids(&path.capacity_domain_ids),
             })
         })
         .collect::<Option<Vec<_>>>()?;
@@ -427,9 +464,9 @@ fn aggregate_candidate(
         .iter()
         .map(|allocation| allocation.shared_risk_group.as_str())
         .collect();
-    let capacity_groups: BTreeSet<&str> = allocations
+    let capacity_domains: BTreeSet<&str> = allocations
         .iter()
-        .map(|allocation| allocation.shared_capacity_group.as_str())
+        .flat_map(|allocation| allocation.capacity_domain_ids.iter().map(String::as_str))
         .collect();
 
     Some(Candidate {
@@ -439,7 +476,7 @@ fn aggregate_candidate(
         energy_uwh: energy,
         reorder_exposure_bytes: reorder_exposure,
         distinct_shared_risk_groups: groups.len(),
-        distinct_capacity_groups: capacity_groups.len(),
+        distinct_capacity_domains: capacity_domains.len(),
     })
 }
 
@@ -522,7 +559,7 @@ fn to_decision(
             estimated_energy_uwh: candidate.energy_uwh,
             reorder_exposure_bytes: candidate.reorder_exposure_bytes,
             distinct_shared_risk_groups: candidate.distinct_shared_risk_groups,
-            distinct_capacity_groups: candidate.distinct_capacity_groups,
+            distinct_capacity_domains: candidate.distinct_capacity_domains,
             exclusions,
             explanation,
         },
@@ -536,7 +573,7 @@ fn to_decision(
             estimated_energy_uwh: 0,
             reorder_exposure_bytes: 0,
             distinct_shared_risk_groups: 0,
-            distinct_capacity_groups: 0,
+            distinct_capacity_domains: 0,
             exclusions,
             explanation: vec!["no candidate schedule satisfies hard constraints".to_owned()],
         },
@@ -674,7 +711,7 @@ mod tests {
             cost_micros_per_mib: cost,
             energy_uwh_per_mib: 10,
             shared_risk_group: risk.to_owned(),
-            shared_capacity_group: format!("capacity-{id}"),
+            capacity_domain_ids: vec![format!("capacity-{id}")],
         }
     }
 
@@ -724,25 +761,27 @@ mod tests {
     fn aggregate_never_counts_two_paths_in_one_capacity_domain() {
         let mut first = path("a", 10_000, 40_000_000, 10, "failure-a");
         let mut second = path("b", 20_000, 60_000_000, 10, "failure-b");
-        first.shared_capacity_group = "same-backhaul".to_owned();
-        second.shared_capacity_group = "same-backhaul".to_owned();
+        first.capacity_domain_ids =
+            vec!["access-a".to_owned(), "shared-backhaul".to_owned()];
+        second.capacity_domain_ids =
+            vec!["access-b".to_owned(), "shared-backhaul".to_owned()];
         let result = evaluate(&request(), &[first, second], Strategy::AggregateCapacity)
             .expect("valid observations");
         assert_eq!(result.mode, DecisionMode::SinglePath);
         assert_eq!(result.allocations.len(), 1);
         assert_eq!(result.distinct_shared_risk_groups, 1);
-        assert_eq!(result.distinct_capacity_groups, 1);
+        assert_eq!(result.distinct_capacity_domains, 2);
     }
 
     #[test]
     fn unknown_capacity_domain_is_excluded_before_aggregation() {
         let mut unknown = path("unknown", 1_000, 100_000_000, 1, "failure-a");
-        unknown.shared_capacity_group.clear();
+        unknown.capacity_domain_ids.clear();
         let allowed = path("allowed", 20_000, 10_000_000, 10, "failure-b");
         let result = evaluate(&request(), &[unknown, allowed], Strategy::AggregateCapacity)
             .expect("valid observations");
         assert_eq!(result.mode, DecisionMode::SinglePath);
-        assert_eq!(result.exclusions[0].reason, "shared_capacity_group_unknown");
+        assert_eq!(result.exclusions[0].reason, "capacity_domains_unknown");
     }
 
     #[test]
