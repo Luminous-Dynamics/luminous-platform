@@ -377,7 +377,11 @@ pub fn allocate_tenant_weighted_max_min(
             tenant_id: tenant.tenant_id.clone(),
             backlogged_flow_count: u32::try_from(weighted_rates.len())
                 .map_err(|_| FairnessError::ArithmeticOverflow)?,
-            weighted_jain_index_ppm: jain_index_ppm(&weighted_rates),
+            weighted_jain_index_ppm: if weighted_rates.len() >= 2 {
+                jain_index_ppm(&weighted_rates)
+            } else {
+                None
+            },
         });
     }
     let worst_tenant_flow_weighted_jain_index_ppm = per_tenant_flow_fairness
@@ -543,10 +547,20 @@ mod tests {
             Some(1_000_000)
         );
         assert_eq!(result.per_tenant_flow_fairness.len(), 2);
-        assert!(result
+        let tenant_a = result
             .per_tenant_flow_fairness
             .iter()
-            .all(|item| item.weighted_jain_index_ppm == Some(1_000_000)));
+            .find(|item| item.tenant_id == "tenant-a")
+            .expect("tenant a flow fairness");
+        let tenant_b = result
+            .per_tenant_flow_fairness
+            .iter()
+            .find(|item| item.tenant_id == "tenant-b")
+            .expect("tenant b flow fairness");
+        assert_eq!(tenant_a.backlogged_flow_count, 2);
+        assert_eq!(tenant_a.weighted_jain_index_ppm, Some(1_000_000));
+        assert_eq!(tenant_b.backlogged_flow_count, 1);
+        assert_eq!(tenant_b.weighted_jain_index_ppm, None);
     }
 
     #[test]
