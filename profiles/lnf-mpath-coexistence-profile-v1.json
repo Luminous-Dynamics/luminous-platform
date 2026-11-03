@@ -30,11 +30,14 @@
       "measurement_duration_us",
       "tcp_congestion_control",
       "mptcp_congestion_control",
-      "mptcp_scheduler"
+      "mptcp_scheduler",
+      "mptcp_scheduler_provenance",
+      "mptcp_congestion_control_provenance"
     ],
     "all_arms_must_match_identity": true,
     "mismatched_identity_disposition": "inconclusive",
-    "implementation_identity_must_be_exact": true
+    "implementation_identity_must_be_exact": true,
+    "implementation_provenance_contract": "in_tree_implementation_is_bound_to_kernel_build_sha256; external_implementation_requires_its_own_artifact_sha256"
   },
   "evidence_requirements": {
     "mptcp_kernel_support_required": true,
@@ -46,7 +49,9 @@
     "cleanup_verification_required": true,
     "unsupported_or_missing_is_not_pass": true,
     "fixed_point_ratio_unit": "parts_per_million",
-    "statistical_confidence_intervals": "external analysis layer retains all repetitions and denominators"
+    "statistical_confidence_intervals": "external analysis layer retains all repetitions and denominators",
+    "paired_gate_scope": "single_paired_trial_only",
+    "programme_qualification_requires_external_repeated_trial_analysis": true
   },
   "scenarios": [
     "MPCX-00",
@@ -224,6 +229,7 @@
     "No claim that namespace-emulation results are physical radio or field results.",
     "No claim of beating LIA, OLIA, BALIA or the Linux default before matched experiments.",
     "No floating-point or statistical inference occurs inside the deterministic evaluator.",
-    "No missing counter, unsupported arm, failed cleanup or mismatched pair may be recorded as PASS."
+    "No missing counter, unsupported arm, failed cleanup or mismatched pair may be recorded as PASS.",
+    "A passing paired-trial verdict is not programme-level statistical qualification"
   ]
 }
