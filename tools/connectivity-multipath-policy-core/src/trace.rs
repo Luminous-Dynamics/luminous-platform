@@ -245,21 +245,25 @@ fn projected_reorder_bytes(
             .or_insert(transmission.arrival_at_us);
     }
 
-    let missing_earlier_bytes = (0..current_segment)
+    let first_gap = (0..current_segment).find(|segment| {
+        earliest_by_segment
+            .get(segment)
+            .is_none_or(|arrival| *arrival > candidate_arrival_us)
+    });
+    let Some(first_gap) = first_gap else {
+        return 0;
+    };
+
+    let already_buffered = (first_gap + 1..current_segment)
         .filter(|segment| {
             earliest_by_segment
                 .get(segment)
-                .is_none_or(|arrival| *arrival > candidate_arrival_us)
+                .is_some_and(|arrival| *arrival <= candidate_arrival_us)
         })
         .map(|segment| u64::from(segment_sizes[segment as usize]))
         .sum::<u64>();
 
-    if missing_earlier_bytes == 0 {
-        0
-    } else {
-        missing_earlier_bytes
-            .saturating_add(u64::from(segment_sizes[current_segment as usize]))
-    }
+    already_buffered.saturating_add(u64::from(segment_sizes[current_segment as usize]))
 }
 
 fn choose_candidate(
@@ -382,6 +386,7 @@ fn simulate_receiver(
     u32,
     u64,
     u64,
+    Vec<u64>,
 ) {
     let mut first_arrival: BTreeMap<u32, u64> = BTreeMap::new();
     for transmission in transmissions.iter().filter(|item| !item.lost) {
@@ -396,6 +401,7 @@ fn simulate_receiver(
         .keys()
         .map(|segment| u64::from(segment_sizes[*segment as usize]))
         .sum::<u64>();
+    let network_arrival_times = first_arrival.values().copied().collect::<Vec<_>>();
     let received_transmission_bytes = transmissions
         .iter()
         .filter(|item| !item.lost)
@@ -467,6 +473,7 @@ fn simulate_receiver(
         network_received_segments,
         network_received_unique_bytes,
         buffered_bytes,
+        network_arrival_times,
     )
 }
 
@@ -493,8 +500,11 @@ pub fn simulate(
 ) -> Result<TraceReport, ScheduleError> {
     validate_request(request)?;
     validate_path_set(paths)?;
-    if trace_request.segment_bytes == 0 || trace_request.reassembly_timeout_us == 0 {
-        return Err(ScheduleError::ZeroPayload);
+    if trace_request.segment_bytes == 0 {
+        return Err(ScheduleError::ZeroTraceSegmentSize);
+    }
+    if trace_request.reassembly_timeout_us == 0 {
+        return Err(ScheduleError::ZeroReassemblyTimeout);
     }
 
     let (mut states, exclusions) = eligible_states(request, paths);
@@ -558,7 +568,7 @@ pub fn simulate(
             let Some(first) = first else {
                 continue;
             };
-            record_transmission(
+            if record_transmission(
                 request,
                 trace_request,
                 &mut states[first.index],
@@ -568,7 +578,11 @@ pub fn simulate(
                 &mut aggregate_cost_used,
                 &mut aggregate_energy_used,
                 &mut transmissions,
-            );
+            )
+            .is_none()
+            {
+                return Err(ScheduleError::InternalInvariant);
+            }
             if let Some(second) = second {
                 if candidate_increment(
                     request,
@@ -579,7 +593,7 @@ pub fn simulate(
                 )
                 .is_some()
                 {
-                    let _ = record_transmission(
+                    if record_transmission(
                         request,
                         trace_request,
                         &mut states[second.index],
@@ -589,7 +603,11 @@ pub fn simulate(
                         &mut aggregate_cost_used,
                         &mut aggregate_energy_used,
                         &mut transmissions,
-                    );
+                    )
+                    .is_none()
+                    {
+                        return Err(ScheduleError::InternalInvariant);
+                    }
                 }
             }
             continue;
@@ -609,7 +627,7 @@ pub fn simulate(
             continue;
         };
 
-        let _ = record_transmission(
+        if record_transmission(
             request,
             trace_request,
             &mut states[selected.index],
@@ -619,7 +637,11 @@ pub fn simulate(
             &mut aggregate_cost_used,
             &mut aggregate_energy_used,
             &mut transmissions,
-        );
+        )
+        .is_none()
+        {
+            return Err(ScheduleError::InternalInvariant);
+        }
         if active_strategy == TraceStrategy::RoundRobin && !states.is_empty() {
             round_robin_cursor = (selected.index + 1) % states.len();
         }
@@ -640,6 +662,7 @@ pub fn simulate(
         network_received_segments,
         network_received_unique_bytes,
         unreleased_buffered_bytes,
+        mut network_arrival_times,
     ) = simulate_receiver(
         &transmissions,
         &segment_sizes,
@@ -658,11 +681,7 @@ pub fn simulate(
             .deadline_us
             .is_none_or(|deadline| completion_us.is_some_and(|finish| finish <= deadline));
 
-    let mut network_arrivals = delivered
-        .iter()
-        .map(|item| item.first_arrival_us)
-        .collect::<Vec<_>>();
-    network_arrivals.sort_unstable();
+    network_arrival_times.sort_unstable();
     let mut application_releases = delivered
         .iter()
         .map(|item| item.application_release_us)
@@ -706,15 +725,15 @@ pub fn simulate(
     let estimated_cost_micros = states
         .iter()
         .try_fold(0_u64, |sum, state| sum.checked_add(state.cost_used))
-        .unwrap_or(u64::MAX);
+        .ok_or(ScheduleError::ArithmeticOverflow)?;
     let estimated_energy_uwh = states
         .iter()
         .try_fold(0_u64, |sum, state| sum.checked_add(state.energy_used))
-        .unwrap_or(u64::MAX);
+        .ok_or(ScheduleError::ArithmeticOverflow)?;
     if estimated_cost_micros > request.max_cost_micros
         || estimated_energy_uwh > request.max_energy_uwh
     {
-        return Err(ScheduleError::InvalidGainThreshold);
+        return Err(ScheduleError::InternalInvariant);
     }
 
     Ok(TraceReport {
@@ -734,9 +753,9 @@ pub fn simulate(
         delivery_complete,
         delivered_by_deadline,
         completion_us,
-        network_arrival_p50_us: pctl(&network_arrivals, 50, 100),
-        network_arrival_p95_us: pctl(&network_arrivals, 95, 100),
-        network_arrival_p99_us: pctl(&network_arrivals, 99, 100),
+        network_arrival_p50_us: pctl(&network_arrival_times, 50, 100),
+        network_arrival_p95_us: pctl(&network_arrival_times, 95, 100),
+        network_arrival_p99_us: pctl(&network_arrival_times, 99, 100),
         application_release_p50_us: pctl(&application_releases, 50, 100),
         application_release_p95_us: pctl(&application_releases, 95, 100),
         application_release_p99_us: pctl(&application_releases, 99, 100),
@@ -1065,7 +1084,7 @@ mod tests {
                 TraceStrategy::MinRtt
             )
             .unwrap_err(),
-            ScheduleError::ZeroPayload
+            ScheduleError::ZeroReassemblyTimeout
         );
     }
 
@@ -1079,7 +1098,7 @@ mod tests {
         assert_eq!(
             simulate(&request(), &invalid, &[path("a", 1000, 1_000_000, "a")], TraceStrategy::MinRtt)
                 .unwrap_err(),
-            ScheduleError::ZeroPayload
+            ScheduleError::ZeroTraceSegmentSize
         );
     }
 }
