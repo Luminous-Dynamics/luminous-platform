@@ -48,7 +48,7 @@ jobs:
         uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # toolchain action pinned to immutable revision
         with:
           toolchain: "1.99.0"
-          components: clippy
+          components: clippy, rustfmt
 
       - name: Test connectivity policy core
         run: cargo test --manifest-path tools/connectivity-policy-core/Cargo.toml --all-targets
