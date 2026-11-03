@@ -87,7 +87,8 @@ struct ShareDemand {
 
 fn checked_sum(values: impl Iterator<Item = u64>) -> Result<u64, FairnessError> {
     values.try_fold(0_u64, |sum, value| {
-        sum.checked_add(value).ok_or(FairnessError::ArithmeticOverflow)
+        sum.checked_add(value)
+            .ok_or(FairnessError::ArithmeticOverflow)
     })
 }
 
@@ -129,8 +130,7 @@ fn weighted_max_min(
                 .get(&item.id)
                 .ok_or(FairnessError::InternalInvariant)?;
             let gap = item.demand_bps.saturating_sub(current);
-            let proportional_numerator =
-                u128::from(remaining) * u128::from(item.weight);
+            let proportional_numerator = u128::from(remaining) * u128::from(item.weight);
             let saturation_numerator = u128::from(gap) * total_weight;
             if proportional_numerator >= saturation_numerator {
                 saturated_ids.insert(item.id.clone());
@@ -164,19 +164,16 @@ fn weighted_max_min(
             let share = u64::try_from(numerator / total_weight)
                 .map_err(|_| FairnessError::ArithmeticOverflow)?;
             let remainder = numerator % total_weight;
-            used = used.checked_add(share).ok_or(FairnessError::ArithmeticOverflow)?;
+            used = used
+                .checked_add(share)
+                .ok_or(FairnessError::ArithmeticOverflow)?;
             increments.push((item.id.clone(), share, remainder));
         }
 
         let mut leftover = remaining
             .checked_sub(used)
             .ok_or(FairnessError::InternalInvariant)?;
-        increments.sort_by(|left, right| {
-            right
-                .2
-                .cmp(&left.2)
-                .then_with(|| left.0.cmp(&right.0))
-        });
+        increments.sort_by(|left, right| right.2.cmp(&left.2).then_with(|| left.0.cmp(&right.0)));
 
         for (id, mut increment, _) in increments {
             if leftover > 0 {
@@ -185,7 +182,9 @@ fn weighted_max_min(
                     .ok_or(FairnessError::ArithmeticOverflow)?;
                 leftover -= 1;
             }
-            let current = *allocations.get(&id).ok_or(FairnessError::InternalInvariant)?;
+            let current = *allocations
+                .get(&id)
+                .ok_or(FairnessError::InternalInvariant)?;
             let next = current
                 .checked_add(increment)
                 .ok_or(FairnessError::ArithmeticOverflow)?;
@@ -615,11 +614,9 @@ mod tests {
             flow("a-1", "tenant-a", 1, 1, 100, 0),
         ];
         let first = allocate_tenant_weighted_max_min(101, &inputs).expect("feasible");
-        let second = allocate_tenant_weighted_max_min(
-            101,
-            &inputs.into_iter().rev().collect::<Vec<_>>(),
-        )
-        .expect("feasible");
+        let second =
+            allocate_tenant_weighted_max_min(101, &inputs.into_iter().rev().collect::<Vec<_>>())
+                .expect("feasible");
         assert_eq!(first, second);
     }
 
@@ -678,11 +675,9 @@ mod tests {
         ];
         let forward_report =
             allocate_tenant_weighted_max_min(100, &forward).expect("feasible allocation");
-        let reverse_report = allocate_tenant_weighted_max_min(
-            100,
-            &forward.into_iter().rev().collect::<Vec<_>>(),
-        )
-        .expect("feasible allocation");
+        let reverse_report =
+            allocate_tenant_weighted_max_min(100, &forward.into_iter().rev().collect::<Vec<_>>())
+                .expect("feasible allocation");
         assert_eq!(forward_report, reverse_report);
         let shares = forward_report
             .flow_allocations
@@ -712,11 +707,8 @@ mod tests {
     #[test]
     fn flow_floor_above_demand_is_rejected() {
         assert_eq!(
-            allocate_tenant_weighted_max_min(
-                100,
-                &[flow("a", "tenant-a", 1, 1, 10, 11)],
-            )
-            .unwrap_err(),
+            allocate_tenant_weighted_max_min(100, &[flow("a", "tenant-a", 1, 1, 10, 11)],)
+                .unwrap_err(),
             FairnessError::MinimumExceedsDemand
         );
     }
@@ -724,22 +716,17 @@ mod tests {
     #[test]
     fn zero_weights_are_rejected() {
         assert_eq!(
-            allocate_tenant_weighted_max_min(
-                100,
-                &[flow("a", "tenant-a", 0, 1, 100, 0)],
-            )
-            .unwrap_err(),
+            allocate_tenant_weighted_max_min(100, &[flow("a", "tenant-a", 0, 1, 100, 0)],)
+                .unwrap_err(),
             FairnessError::InvalidWeight
         );
     }
 
     #[test]
     fn service_floor_may_equal_the_entire_capacity() {
-        let result = allocate_tenant_weighted_max_min(
-            100,
-            &[flow("a", "tenant-a", 1, 1, 100, 100)],
-        )
-        .expect("floor equals capacity");
+        let result =
+            allocate_tenant_weighted_max_min(100, &[flow("a", "tenant-a", 1, 1, 100, 100)])
+                .expect("floor equals capacity");
         assert_eq!(result.allocated_bps, 100);
         assert_eq!(result.unused_capacity_bps, 0);
     }
