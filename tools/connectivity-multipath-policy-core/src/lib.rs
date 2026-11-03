@@ -1,3 +1,5 @@
+pub mod trace;
+
 //! Deterministic, privilege-free multipath session scheduling model.
 //!
 //! The model consumes broker-admitted path observations. It does not discover
@@ -123,6 +125,7 @@ pub enum ScheduleError {
     InvalidPathId,
     DuplicatePathId,
     TooManyPaths,
+    TooManyTraceSegments,
 }
 
 #[derive(Clone, Debug)]
