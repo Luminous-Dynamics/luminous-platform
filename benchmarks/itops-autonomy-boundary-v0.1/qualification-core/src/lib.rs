@@ -388,7 +388,6 @@ pub enum AuthorityDenial {
     WrongOperation,
     WrongPlanDigest,
     MalformedRequirement,
-    GrantUseLimitReached,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -754,7 +753,7 @@ mod tests {
         let third_permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
         assert!(ledger.dispatch(third_permit, "idem-003").is_ok());
 
-        // The same exact grant is single-use even after reconciliation.
+        // The same exact grant cannot exceed its declared two-dispatch budget.
         let fourth_permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
         assert_eq!(
             ledger.dispatch(fourth_permit, "idem-004"),
