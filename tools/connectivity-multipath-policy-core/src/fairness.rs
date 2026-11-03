@@ -1,7 +1,8 @@
 //! Deterministic tenant-first weighted max-min sharing for one shared bottleneck.
 //!
-//! This allocates a declared bottleneck capacity among authenticated tenant
-//! principals and then among that tenant's flows. It is a resource allocator,
+//! This allocates a declared bottleneck capacity among caller-supplied tenant
+//! principal IDs and then among each tenant's flows. Authentication and principal
+//! binding are external to this module. It is a resource allocator,
 //! not a packet scheduler, qdisc or tenant-authentication system.
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -339,18 +340,24 @@ pub fn allocate_tenant_weighted_max_min(
         return Err(FairnessError::InternalInvariant);
     }
 
+    // Fairness indices consider only backlogged principals. Demand-limited
+    // tenants/flows should not be scored as unfair merely because they did not
+    // consume capacity they did not request.
     let tenant_weighted_rates = tenant_allocations
         .iter()
+        .filter(|item| item.allocated_bps < item.demand_bps)
         .map(|item| f64::from(item.allocated_bps) / f64::from(item.weight))
         .collect::<Vec<_>>();
+    let flow_weights: BTreeMap<&str, u32> = flows
+        .iter()
+        .map(|flow| (flow.flow_id.as_str(), flow.flow_weight))
+        .collect();
     let flow_weighted_rates = flow_allocations
         .iter()
+        .filter(|item| item.allocated_bps < item.demand_bps)
         .map(|item| {
             let tenant_weight = *tenant_weights.get(&item.tenant_id).unwrap_or(&1);
-            let flow = flows
-                .iter()
-                .find(|flow| flow.flow_id == item.flow_id);
-            let flow_weight = flow.map_or(1, |flow| flow.flow_weight);
+            let flow_weight = *flow_weights.get(item.flow_id.as_str()).unwrap_or(&1);
             f64::from(item.allocated_bps) / (f64::from(tenant_weight) * f64::from(flow_weight))
         })
         .collect::<Vec<_>>();
@@ -489,8 +496,8 @@ mod tests {
             .iter()
             .map(|flow| (flow.flow_id.as_str(), flow.allocated_bps))
             .collect::<BTreeMap<_, _>>();
-        assert_eq!(shares["a-1"], 12);
-        assert_eq!(shares["a-2"], 38);
+        assert_eq!(shares["a-1"], 13);
+        assert_eq!(shares["a-2"], 37);
         assert_eq!(shares["b-1"], 50);
     }
 
@@ -566,6 +573,101 @@ mod tests {
             )
             .unwrap_err(),
             FairnessError::InconsistentTenantWeight
+        );
+    }
+
+    #[test]
+    fn demand_limited_tenants_are_excluded_from_backlogged_fairness_index() {
+        let result = allocate_tenant_weighted_max_min(
+            100,
+            &[
+                flow("a", "tenant-a", 1, 1, 10, 0),
+                flow("b", "tenant-b", 1, 1, 100, 0),
+            ],
+        )
+        .expect("feasible allocation");
+        assert_eq!(result.unused_capacity_bps, 0);
+        assert_eq!(result.tenant_allocations[0].allocated_bps, 10);
+        assert_eq!(result.tenant_allocations[1].allocated_bps, 90);
+        assert_eq!(result.tenant_weighted_jain_index_ppm, Some(1_000_000));
+    }
+
+    #[test]
+    fn duplicate_flow_ids_are_rejected() {
+        assert_eq!(
+            allocate_tenant_weighted_max_min(
+                100,
+                &[
+                    flow("same", "tenant-a", 1, 1, 100, 0),
+                    flow("same", "tenant-b", 1, 1, 100, 0),
+                ],
+            )
+            .unwrap_err(),
+            FairnessError::DuplicateFlowId
+        );
+    }
+
+    #[test]
+    fn weighted_flow_rounding_uses_stable_largest_remainder() {
+        let forward = vec![
+            flow("a-1", "tenant-a", 1, 1, 100, 0),
+            flow("a-2", "tenant-a", 1, 3, 100, 0),
+            flow("b-1", "tenant-b", 1, 1, 100, 0),
+        ];
+        let forward_report =
+            allocate_tenant_weighted_max_min(100, &forward).expect("feasible allocation");
+        let reverse_report = allocate_tenant_weighted_max_min(
+            100,
+            &forward.into_iter().rev().collect::<Vec<_>>(),
+        )
+        .expect("feasible allocation");
+        assert_eq!(forward_report, reverse_report);
+        let shares = forward_report
+            .flow_allocations
+            .iter()
+            .map(|item| (item.flow_id.as_str(), item.allocated_bps))
+            .collect::<BTreeMap<_, _>>();
+        assert_eq!(shares["a-1"], 13);
+        assert_eq!(shares["a-2"], 37);
+        assert_eq!(shares["b-1"], 50);
+    }
+
+    #[test]
+    fn tenant_demand_sum_overflow_is_rejected() {
+        assert_eq!(
+            allocate_tenant_weighted_max_min(
+                u64::MAX,
+                &[
+                    flow("a-1", "tenant-a", 1, 1, u64::MAX, 0),
+                    flow("a-2", "tenant-a", 1, 1, u64::MAX, 0),
+                ],
+            )
+            .unwrap_err(),
+            FairnessError::ArithmeticOverflow
+        );
+    }
+
+    #[test]
+    fn flow_floor_above_demand_is_rejected() {
+        assert_eq!(
+            allocate_tenant_weighted_max_min(
+                100,
+                &[flow("a", "tenant-a", 1, 1, 10, 11)],
+            )
+            .unwrap_err(),
+            FairnessError::MinimumExceedsDemand
+        );
+    }
+
+    #[test]
+    fn zero_weights_are_rejected() {
+        assert_eq!(
+            allocate_tenant_weighted_max_min(
+                100,
+                &[flow("a", "tenant-a", 0, 1, 100, 0)],
+            )
+            .unwrap_err(),
+            FairnessError::InvalidWeight
         );
     }
 
