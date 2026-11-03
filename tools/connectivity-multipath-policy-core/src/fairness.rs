@@ -85,7 +85,7 @@ struct ShareDemand {
     minimum_bps: u64,
 }
 
-fn checked_sum(values: impl Iterator<Item = u64>) -> Result<u64, FairnessError> {
+fn checked_sum(mut values: impl Iterator<Item = u64>) -> Result<u64, FairnessError> {
     values.try_fold(0_u64, |sum, value| {
         sum.checked_add(value)
             .ok_or(FairnessError::ArithmeticOverflow)
@@ -354,7 +354,7 @@ pub fn allocate_tenant_weighted_max_min(
     let tenant_weighted_rates = tenant_allocations
         .iter()
         .filter(|item| item.allocated_bps < item.demand_bps)
-        .map(|item| f64::from(item.allocated_bps) / f64::from(item.weight))
+        .map(|item| item.allocated_bps as f64 / f64::from(item.weight))
         .collect::<Vec<_>>();
     let flow_weights: BTreeMap<&str, u32> = flows
         .iter()
@@ -369,7 +369,7 @@ pub fn allocate_tenant_weighted_max_min(
             })
             .map(|item| {
                 let weight = *flow_weights.get(item.flow_id.as_str()).unwrap_or(&1);
-                f64::from(item.allocated_bps) / f64::from(weight)
+                f64::from(item.allocated_bps) / weight as f64
             })
             .collect::<Vec<_>>();
         per_tenant_flow_fairness.push(TenantFlowFairness {
