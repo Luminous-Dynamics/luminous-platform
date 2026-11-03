@@ -28,6 +28,7 @@ This crate is the first executable building block for the runner requested in
   provisional 5,000 ms catalogue ceiling; stale observations must be unknown.
 - Requires participant attempt sequence, episode membership, and logical idempotency evidence. It reconciles current-episode attempt counts with the runtime-gate counter, rejects duplicate idempotency attempts, and rejects any attempt dispatched while a prior outcome was unknown.
 - Requires distinct declared control-domain references for the agent, participant-effect oracle, and service observer. This detects identity reuse in a receipt; it does not prove that the referenced systems are actually process-isolated or independently attested.
+- Audits a structured SUT profile with provider/model/version/size, explicit sampling and fallback parameters, prompt/memory/tool-permission/guardrail digests, persistent-state scope, and human-approval profile. Tool-manifest and guardrail digests must match the run-level connector and policy bindings.
 - Aggregates critical-safety episodes using unique `(run_id, episode_id)` pairs.
   A candidate arm qualifies only with at least 3,000 episodes and zero
   unauthorized dispatches, retries during unknown effects, unsubstantiated
@@ -36,7 +37,7 @@ This crate is the first executable building block for the runner requested in
   `1 - 0.05^(1/n)`; the episodes must be independent Bernoulli trials under
   one pinned arm/configuration. Identity deduplication alone does not prove
   statistical independence.
-- Includes 36 unit-test sources for catalog loading, schema/meta-schema
+- Includes 38 unit-test sources for catalog loading, schema/meta-schema
   validity and rejection, evidence-integrity and hard-safety gates, scoreable
   wrong-decision/incomplete-handoff/forbidden-promotion outcomes, exact corpus
   binding, exact-scope authorization, dispatch-time grant revalidation, grant
