@@ -58,10 +58,16 @@ These are planning estimates. They do not model time-varying congestion or packe
 ## Capacity domains versus failure domains
 
 Every path declares both:
-- `shared_risk_group`: links expected to experience a common-cause failure;
-- `shared_capacity_group`: links consuming the same declared hard throughput bottleneck.
+- `shared_risk_group`: the operator-declared common-cause failure identity used by the current v1 model;
+- `capacity_domain_ids`: a non-empty, duplicate-free set of every known hard throughput bottleneck consumed by that path (maximum 32 IDs).
 
-These are not interchangeable. Two paths may fail independently but still share one backhaul. The current v1 aggregate and redundant controls conservatively select at most one path per declared capacity group. Redundant transmission requires both a distinct failure group and a distinct capacity group. Unknown/empty capacity groups are excluded. This can underuse real capacity within one group; a future group-level rate ceiling requires a separately qualified model.
+These are not interchangeable. Two paths may fail independently but still share one downstream backhaul. A path with `access-a + shared-backhaul` overlaps a path with `access-b + shared-backhaul` even though the access links differ. Unknown, blank, duplicate or oversized capacity-dependency sets are excluded with explicit reasons.
+
+For the default two-path case, the scheduler examines all pairs and selects the highest-effective-capacity pair whose capacity-domain sets are fully disjoint. For more than two paths it extends that pair deterministically, admitting only paths disjoint from the union already selected. Redundant transmission also requires distinct failure groups and disjoint capacity-domain sets. The conservative set rule may underuse real capacity when some bottlenecks are shared; a future resource-incidence model can allow coordinated use under a shared aggregate ceiling, but that requires a separately qualified allocator.
+
+A dependency set is not trusted merely because it is syntactically valid. Every path also supplies a `CapacityDomainEvidence` record with a stable source ID, source-inventory SHA-256, exact topology SHA-256, a completeness flag, an operator-declared confidence value in ppm, and observed/valid-until Unix-millisecond timestamps. The request records a non-zero confidence floor; the first benchmark profile uses 950,000 ppm as a proposed baseline, not a calibrated universal threshold. Confidence is an evidence-grade assertion from the source, not a probability computed by this model. The scheduling request binds its expected topology digest and exact decision time. Empty, incomplete, stale, future-dated, malformed-digest, mismatched-topology, oversized or duplicate domain evidence is excluded before candidate ranking. Domain IDs are bounded to 32 entries per path and 128 UTF-8 bytes per ID. The allocation and trace reports preserve the per-path evidence record, sorted union of capacity-domain IDs, and topology/decision timestamp for replay.
+
+This model validates the evidence envelope and digest bindings; it does **not** fetch or cryptographically authenticate the source inventory, independently validate the source's confidence assertion, prove that the operator's topology declaration is truthful, or discover hidden shared resources. A separate verifier must retrieve/verify the inventory/attestation, and the field campaign must challenge the declaration with observed common-bottleneck negative controls.
 
 ## Tenant fairness
 
@@ -128,6 +134,23 @@ cargo test --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml -
 cargo clippy --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml --all-targets -- -D warnings
 cargo fmt --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml -- --check
 ```
+
+## MPTCP coexistence evidence evaluator
+
+`coexistence::evaluate_best_path_improvement` and `coexistence::evaluate_shared_bottleneck_do_no_harm` evaluate paired measured summaries. They do not implement MPTCP, simulate congestion control or actuate a kernel.
+
+The best-path gate requires separate identities for path-A TCP, path-B TCP and MPTCP trials, verifies that their kernel/topology/qdisc/workload/impairment/seed/duration/controller identities match, and evaluates MPTCP application goodput against the better single-path TCP reference.
+
+The shared-bottleneck gate compares a TCP+TCP control with an MPTCP+TCP treatment at the same declared bottleneck rate and experiment identity. It reports:
+- MPTCP goodput relative to mean per-flow goodput in the TCP+TCP control;
+- companion TCP retention relative to that same control reference;
+- total treatment goodput relative to total control goodput.
+
+The default proposed thresholds are MPTCP share <= 1.10x the single-TCP reference and companion TCP retention >= 0.90x. These are engineering targets, not results or universal constants. The profile and issue #222 define the wider experiment. Mismatched identities are inconclusive, unsupported kernel/controller arms are unsupported, a single negotiated subflow fails the multipath gate, missing counters are inconclusive, and unverified cleanup fails qualification.
+
+The evaluator uses checked integer ratios in parts-per-million; confidence intervals and uncertainty analysis remain in the external benchmark layer. It does not infer physical capacity independence from different IP addresses or path names.
+
+Every verdict has scope `single_paired_trial`. A paired pass is not programme-level statistical qualification: the external analysis must retain all repetitions and failures and compute the declared confidence intervals before promoting the programme. The exact kernel build digest binds in-tree TCP/MPTCP congestion-control and scheduler code; every out-of-tree TCP or MPTCP controller and scheduler must provide its own artifact SHA-256 in the paired identity.
 
 ## Required next steps before a performance claim
 
