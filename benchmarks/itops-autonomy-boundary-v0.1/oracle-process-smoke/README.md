@@ -34,6 +34,9 @@ excluded from the deterministic event digest.
 
 - The participant ledger and observer communicate over independent
   stdin/stdout channels in distinct child processes.
+- The first participant response is genuinely suppressed after the child
+  records an unresolved attempt; the runner does not receive a synthetic
+  response for that dispatch.
 - An unresolved outcome locks new dispatches; the rejected attempt is not
   recorded as a dispatched attempt.
 - A new dispatch is accepted only after explicit reconciliation.
