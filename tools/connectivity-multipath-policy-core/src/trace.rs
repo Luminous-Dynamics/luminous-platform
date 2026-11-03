@@ -8,7 +8,7 @@
 //! socket buffers, or real packet captures.
 
 use super::{
-    PathObservation, ScheduleError, ScheduleRequest, exclusion_reason, estimated_cost,
+    PathObservation, ScheduleError, ScheduleRequest, estimated_cost, exclusion_reason,
     validate_path_set, validate_request,
 };
 use std::collections::{BTreeMap, BTreeSet};
@@ -426,8 +426,8 @@ fn simulate_receiver(
 
     for (arrival, segment) in events {
         let delta = arrival.saturating_sub(previous_time);
-        byte_microseconds = byte_microseconds
-            .saturating_add(u128::from(buffered_bytes) * u128::from(delta));
+        byte_microseconds =
+            byte_microseconds.saturating_add(u128::from(buffered_bytes) * u128::from(delta));
         previous_time = arrival;
 
         if segment == next_expected {
@@ -460,9 +460,8 @@ fn simulate_receiver(
     }
 
     if buffered_bytes > 0 {
-        byte_microseconds = byte_microseconds.saturating_add(
-            u128::from(buffered_bytes) * u128::from(reassembly_timeout_us),
-        );
+        byte_microseconds = byte_microseconds
+            .saturating_add(u128::from(buffered_bytes) * u128::from(reassembly_timeout_us));
     }
 
     delivered.sort_by_key(|item| item.segment_index);
@@ -683,7 +682,10 @@ pub fn simulate(
     let delivered_segments = u32::try_from(delivered.len()).unwrap_or(u32::MAX);
     let delivery_complete = delivered_segments == total_segments;
     let completion_us = if delivery_complete {
-        delivered.iter().map(|item| item.application_release_us).max()
+        delivered
+            .iter()
+            .map(|item| item.application_release_us)
+            .max()
     } else {
         None
     };
@@ -758,7 +760,11 @@ pub fn simulate(
         network_received_unique_bytes,
         received_transmission_bytes: received_transmission_bytes(&transmissions),
         scheduled_segments: u32::try_from(
-            transmissions.iter().map(|item| item.segment_index).collect::<BTreeSet<_>>().len(),
+            transmissions
+                .iter()
+                .map(|item| item.segment_index)
+                .collect::<BTreeSet<_>>()
+                .len(),
         )
         .unwrap_or(u32::MAX),
         delivered_segments,
@@ -1052,17 +1058,15 @@ mod tests {
 
     #[test]
     fn reorder_projection_counts_bytes_already_buffered_behind_a_gap() {
-        let transmissions = vec![
-            TraceTransmission {
-                segment_index: 1,
-                path_id: "b".to_owned(),
-                send_at_us: 0,
-                arrival_at_us: 10,
-                payload_bytes: 1200,
-                lost: false,
-                redundant_copy: false,
-            },
-        ];
+        let transmissions = vec![TraceTransmission {
+            segment_index: 1,
+            path_id: "b".to_owned(),
+            send_at_us: 0,
+            arrival_at_us: 10,
+            payload_bytes: 1200,
+            lost: false,
+            redundant_copy: false,
+        }];
         assert_eq!(
             projected_reorder_bytes(&transmissions, &[1200, 1200, 1200], 2, 20),
             2400
@@ -1122,16 +1126,14 @@ mod tests {
         let path = path("one-path", 10_000, 100_000_000, "one-domain");
         let seed = (0..10_000)
             .find(|seed| {
-                is_lost(*seed, 0, &path)
-                    && (1..4).all(|segment| !is_lost(*seed, segment, &path))
+                is_lost(*seed, 0, &path) && (1..4).all(|segment| !is_lost(*seed, segment, &path))
             })
             .expect("a deterministic seed with a first-segment loss exists");
         let mut req = request();
         req.bytes = 4 * 1200;
         let mut tr = trace();
         tr.deterministic_seed = seed;
-        let report = simulate(&req, &tr, &[path], TraceStrategy::MinRtt)
-            .expect("valid trace");
+        let report = simulate(&req, &tr, &[path], TraceStrategy::MinRtt).expect("valid trace");
         assert_eq!(report.network_received_segments, 3);
         assert_eq!(report.network_received_unique_bytes, 3600);
         assert_eq!(report.delivered_segments, 0);
@@ -1181,8 +1183,13 @@ mod tests {
             reassembly_timeout_us: 500_000,
         };
         assert_eq!(
-            simulate(&request(), &invalid, &[path("a", 1000, 1_000_000, "a")], TraceStrategy::MinRtt)
-                .unwrap_err(),
+            simulate(
+                &request(),
+                &invalid,
+                &[path("a", 1000, 1_000_000, "a")],
+                TraceStrategy::MinRtt
+            )
+            .unwrap_err(),
             ScheduleError::ZeroTraceSegmentSize
         );
     }
