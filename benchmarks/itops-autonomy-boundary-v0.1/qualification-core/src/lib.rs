@@ -16,11 +16,42 @@ pub const BENCHMARK_ID: &str = "luminous-itops-autonomy-boundary";
 pub const CATALOG_VERSION: &str = "0.1";
 pub const CANDIDATE_CASE_COUNT: usize = 23;
 
+/// Validate a JSON document with a published Draft 2020-12 schema.
+///
+/// The validator is pinned to Draft 2020-12 and opts into `format` assertions,
+/// including date-time. The core is built without jsonschema's HTTP/file
+/// retrieval features: this benchmark's schemas use local in-document
+/// references only, so validation cannot fetch remote schema resources.
+pub fn validate_draft2020_12(
+    instance_bytes: &[u8],
+    schema_bytes: &[u8],
+) -> Result<(), CoreError> {
+    let instance: serde_json::Value = serde_json::from_slice(instance_bytes)?;
+    let schema: serde_json::Value = serde_json::from_slice(schema_bytes)?;
+    let validator = jsonschema::draft202012::options()
+        .should_validate_formats(true)
+        .build(&schema)
+        .map_err(|error| CoreError::InvalidSchema(error.to_string()))?;
+
+    let errors: Vec<String> = validator
+        .iter_errors(&instance)
+        .map(|error| format!("{} at {}", error, error.instance_path()))
+        .collect();
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(CoreError::SchemaViolations(errors))
+    }
+}
+
+
 #[derive(Debug)]
 pub enum CoreError {
     Json(serde_json::Error),
     InvalidCatalog(String),
     InvalidWorkflow(String),
+    InvalidSchema(String),
+    SchemaViolations(Vec<String>),
 }
 
 impl fmt::Display for CoreError {
@@ -29,6 +60,8 @@ impl fmt::Display for CoreError {
             Self::Json(error) => write!(f, "catalog JSON: {error}"),
             Self::InvalidCatalog(message) => write!(f, "invalid catalog: {message}"),
             Self::InvalidWorkflow(message) => write!(f, "invalid workflow: {message}"),
+            Self::InvalidSchema(message) => write!(f, "invalid JSON Schema: {message}"),
+            Self::SchemaViolations(errors) => write!(f, "JSON Schema validation failed: {}", errors.join("; ")),
         }
     }
 }
@@ -657,6 +690,50 @@ mod tests {
         assert_eq!(loaded.case_count, CANDIDATE_CASE_COUNT);
         assert_eq!(loaded.workflows.len(), 3);
         assert!(loaded.workflows.iter().all(|workflow| workflow.step_count >= 10));
+    }
+
+
+    #[test]
+    fn published_catalog_passes_complete_draft_2020_12_schema() {
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let catalog = fs::read(manifest.join("../case-catalog.v0.1.json"))
+            .expect("candidate catalog must be present");
+        let schema = fs::read(manifest.join("../case-catalog.schema.json"))
+            .expect("candidate catalog schema must be present");
+        validate_draft2020_12(&catalog, &schema)
+            .expect("catalog must satisfy the complete Draft 2020-12 schema");
+    }
+
+    #[test]
+    fn published_result_example_passes_complete_draft_2020_12_schema() {
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let example = fs::read(manifest.join("../decision-result.example.json"))
+            .expect("result example must be present");
+        let schema = fs::read(manifest.join("../decision-result.schema.json"))
+            .expect("result schema must be present");
+        validate_draft2020_12(&example, &schema)
+            .expect("result example must satisfy the complete Draft 2020-12 schema");
+    }
+
+    #[test]
+    fn full_schema_rejects_unknown_case_ids_and_invalid_date_time() {
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let mut catalog: serde_json::Value = serde_json::from_slice(
+            &fs::read(manifest.join("../case-catalog.v0.1.json")).unwrap()
+        ).unwrap();
+        let schema = fs::read(manifest.join("../case-catalog.schema.json")).unwrap();
+
+        catalog["cases"][0]["case_id"] = serde_json::json!("NOT-A-CASE");
+        let bytes = serde_json::to_vec(&catalog).unwrap();
+        assert!(validate_draft2020_12(&bytes, &schema).is_err());
+
+        let mut result: serde_json::Value = serde_json::from_slice(
+            &fs::read(manifest.join("../decision-result.example.json")).unwrap()
+        ).unwrap();
+        result["run_binding"]["started_at"] = serde_json::json!("not-a-date-time");
+        let result_schema = fs::read(manifest.join("../decision-result.schema.json")).unwrap();
+        let result_bytes = serde_json::to_vec(&result).unwrap();
+        assert!(validate_draft2020_12(&result_bytes, &result_schema).is_err());
     }
 
     #[test]
