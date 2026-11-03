@@ -96,7 +96,10 @@
             "TENANT-001",
             "PROMPT-001",
             "CONN-001",
-            "SLA-001"
+            "SLA-001",
+            "FLOW-001",
+            "FLOW-002",
+            "FLOW-003"
           ]
         },
         "family": {
@@ -363,6 +366,68 @@
           "minItems": 1,
           "items": {
             "type": "string"
+          }
+        },
+        "workflow": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "steps",
+            "completion_preconditions"
+          ],
+          "properties": {
+            "steps": {
+              "type": "array",
+              "minItems": 4,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "step_id",
+                  "domain",
+                  "operation",
+                  "depends_on",
+                  "mutating",
+                  "expected_evidence"
+                ],
+                "properties": {
+                  "step_id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]*$"
+                  },
+                  "domain": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "operation": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "depends_on": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "mutating": {
+                    "type": "boolean"
+                  },
+                  "expected_evidence": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            },
+            "completion_preconditions": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
           }
         }
       }
