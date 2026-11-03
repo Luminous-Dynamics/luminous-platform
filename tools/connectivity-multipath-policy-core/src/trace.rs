@@ -9,7 +9,7 @@
 
 use super::{
     PathObservation, ScheduleError, ScheduleRequest, estimated_cost, exclusion_reason,
-    validate_path_set, validate_request,
+    canonical_capacity_domain_ids, capacity_domains_disjoint, validate_path_set, validate_request,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -53,7 +53,7 @@ pub struct TraceTransmission {
 pub struct PathTraceSummary {
     pub path_id: String,
     pub failure_domain: String,
-    pub capacity_group: String,
+    pub capacity_domain_ids: Vec<String>,
     pub transmitted_bytes: u64,
     pub transmissions: u64,
     pub lost_transmissions: u64,
@@ -91,7 +91,7 @@ pub struct TraceReport {
     pub estimated_energy_uwh: u64,
     pub cost_currency: String,
     pub distinct_failure_domains_used: usize,
-    pub distinct_capacity_groups_used: usize,
+    pub distinct_capacity_domains_used: usize,
     pub path_summaries: Vec<PathTraceSummary>,
     pub transmissions: Vec<TraceTransmission>,
     pub exclusions: Vec<(String, &'static str)>,
@@ -571,8 +571,10 @@ pub fn simulate(
                 first.is_some_and(|first| {
                     states[first.index].path.shared_risk_group
                         != states[candidate.index].path.shared_risk_group
-                        && states[first.index].path.shared_capacity_group
-                            != states[candidate.index].path.shared_capacity_group
+                        && capacity_domains_disjoint(
+                            &states[first.index].path.capacity_domain_ids,
+                            &states[candidate.index].path.capacity_domain_ids,
+                        )
                 })
             });
             let Some(first) = first else {
@@ -721,7 +723,7 @@ pub fn simulate(
         .map(|state| PathTraceSummary {
             path_id: state.path.id.clone(),
             failure_domain: state.path.shared_risk_group.clone(),
-            capacity_group: state.path.shared_capacity_group.clone(),
+            capacity_domain_ids: canonical_capacity_domain_ids(&state.path.capacity_domain_ids),
             transmitted_bytes: state.bytes_used,
             transmissions: state.transmissions,
             lost_transmissions: state.lost_transmissions,
@@ -734,7 +736,7 @@ pub fn simulate(
     for summary in &path_summaries {
         if summary.transmissions > 0 {
             domains.insert(summary.failure_domain.as_str());
-            capacity_domains.insert(summary.capacity_group.as_str());
+            capacity_domains.extend(summary.capacity_domain_ids.iter().map(String::as_str));
         }
     }
 
@@ -790,7 +792,7 @@ pub fn simulate(
         estimated_energy_uwh,
         cost_currency: request.cost_currency.clone(),
         distinct_failure_domains_used: domains.len(),
-        distinct_capacity_groups_used: capacity_domains.len(),
+        distinct_capacity_domains_used: capacity_domains.len(),
         path_summaries,
         transmissions,
         exclusions,
@@ -825,7 +827,7 @@ mod tests {
             cost_micros_per_mib: 100,
             energy_uwh_per_mib: 10,
             shared_risk_group: risk.to_owned(),
-            shared_capacity_group: format!("capacity-{id}"),
+            capacity_domain_ids: vec![format!("capacity-{id}")],
         }
     }
 
@@ -913,7 +915,7 @@ mod tests {
         .expect("valid trace");
         assert!(report.redundant_bytes > 0);
         assert!(report.distinct_failure_domains_used >= 2);
-        assert!(report.distinct_capacity_groups_used >= 2);
+        assert!(report.distinct_capacity_domains_used >= 2);
         assert!(report.total_bytes_transmitted >= report.useful_bytes_delivered);
     }
 
@@ -937,8 +939,10 @@ mod tests {
     fn redundant_strategy_does_not_duplicate_same_capacity_group() {
         let mut first = path("a", 10_000, 20_000_000, "failure-a");
         let mut second = path("b", 20_000, 20_000_000, "failure-b");
-        first.shared_capacity_group = "same-backhaul".to_owned();
-        second.shared_capacity_group = "same-backhaul".to_owned();
+        first.capacity_domain_ids =
+            vec!["access-a".to_owned(), "shared-backhaul".to_owned()];
+        second.capacity_domain_ids =
+            vec!["access-b".to_owned(), "shared-backhaul".to_owned()];
         let report = simulate(
             &request(),
             &trace(),
@@ -948,7 +952,7 @@ mod tests {
         .expect("valid trace");
         assert_eq!(report.redundant_bytes, 0);
         assert_eq!(report.distinct_failure_domains_used, 2);
-        assert_eq!(report.distinct_capacity_groups_used, 1);
+        assert_eq!(report.distinct_capacity_domains_used, 2);
     }
 
     #[test]
@@ -964,7 +968,7 @@ mod tests {
         )
         .expect("valid trace");
         assert_eq!(report.distinct_failure_domains_used, 2);
-        assert_eq!(report.distinct_capacity_groups_used, 2);
+        assert_eq!(report.distinct_capacity_domains_used, 2);
     }
 
     #[test]
