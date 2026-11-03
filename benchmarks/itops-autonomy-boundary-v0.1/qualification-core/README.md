@@ -6,14 +6,15 @@ This crate is the first executable building block for the runner requested in
 ## Current scope
 
 - Loads the v0.1 candidate corpus and binds it to the exact input-byte SHA-256.
-- Validates the candidate catalog and synthetic result example against their
-  full Draft 2020-12 JSON Schemas, with format assertions enabled and no
-  implicit remote/file schema retrieval.
+- Validates both schema documents against the Draft 2020-12 meta-schema, then
+  validates the candidate catalog and synthetic result example against those
+  schemas with format assertions enabled and no implicit remote/file retrieval.
 - Validates the 23-case v0.1 count, unique case IDs, unresolved-outcome safety
   bounds, and all three cross-domain workflow DAGs.
 - Computes a deterministic SHA-256 digest for each typed workflow plan.
 - Implements an exact-scope authorization predicate binding tenant, target,
-  operation, expiry/revocation, and workflow-plan digest.
+  operation, expiry/revocation, and workflow-plan digest; dispatch rechecks the
+  latest grant to prevent stale permits being used after revocation or expiry.
 - Implements a deterministic participant-effect ledger model with idempotency
   keys and an unknown-outcome lock.
 - Treats stale, future-dated, missing-source, or digest-less service
