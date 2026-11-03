@@ -907,6 +907,7 @@ mod tests {
         .expect("valid trace");
         assert!(report.redundant_bytes > 0);
         assert!(report.distinct_failure_domains_used >= 2);
+        assert!(report.distinct_capacity_groups_used >= 2);
         assert!(report.total_bytes_transmitted >= report.useful_bytes_delivered);
     }
 
@@ -924,6 +925,40 @@ mod tests {
         .expect("valid trace");
         assert_eq!(report.redundant_bytes, 0);
         assert_eq!(report.distinct_failure_domains_used, 1);
+    }
+
+    #[test]
+    fn redundant_strategy_does_not_duplicate_same_capacity_group() {
+        let mut first = path("a", 10_000, 20_000_000, "failure-a");
+        let mut second = path("b", 20_000, 20_000_000, "failure-b");
+        first.shared_capacity_group = "same-backhaul".to_owned();
+        second.shared_capacity_group = "same-backhaul".to_owned();
+        let report = simulate(
+            &request(),
+            &trace(),
+            &[first, second],
+            TraceStrategy::RedundantDistinctDomains,
+        )
+        .expect("valid trace");
+        assert_eq!(report.redundant_bytes, 0);
+        assert_eq!(report.distinct_failure_domains_used, 2);
+        assert_eq!(report.distinct_capacity_groups_used, 1);
+    }
+
+    #[test]
+    fn two_paths_with_distinct_capacity_domains_are_reported_separately() {
+        let report = simulate(
+            &request(),
+            &trace(),
+            &[
+                path("a", 10_000, 20_000_000, "risk-a"),
+                path("b", 20_000, 20_000_000, "risk-b"),
+            ],
+            TraceStrategy::RedundantDistinctDomains,
+        )
+        .expect("valid trace");
+        assert_eq!(report.distinct_failure_domains_used, 2);
+        assert_eq!(report.distinct_capacity_groups_used, 2);
     }
 
     #[test]
