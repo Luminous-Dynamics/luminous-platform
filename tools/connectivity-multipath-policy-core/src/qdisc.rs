@@ -173,38 +173,57 @@ fn add_owned(
     });
 }
 
-fn qdisc_args(profile: &QdiscProfile) -> Vec<String> {
-    let mut args = vec![
-        "netns".to_owned(),
-        "exec".to_owned(),
-        ns_name(&profile.run_suffix, "gw"),
-        "tc".to_owned(),
-        "qdisc".to_owned(),
-        "replace".to_owned(),
-        "dev".to_owned(),
-        "vwan".to_owned(),
-        "root".to_owned(),
-    ];
+fn qdisc_args(profile: &QdiscProfile) -> Vec<(String, Vec<String>)> {
+    let prefix = || {
+        vec![
+            "netns".to_owned(),
+            "exec".to_owned(),
+            ns_name(&profile.run_suffix, "gw"),
+            "tc".to_owned(),
+            "qdisc".to_owned(),
+            "replace".to_owned(),
+            "dev".to_owned(),
+            "vwan".to_owned(),
+        ]
+    };
+
     match profile.arm {
-        QdiscArm::FqCodel => args.extend(
-            [
-                "fq_codel",
-                "limit",
-                "10240",
-                "flows",
-                "1024",
-                "target",
-                "5ms",
-                "interval",
-                "100ms",
-                "quantum",
-                "1514",
-                "ecn",
+        QdiscArm::FqCodel => {
+            // fq_codel is an AQM, not a shaper. Place it under TBF so the
+            // compared arm has the same configured bottleneck rate as CAKE.
+            let mut shaper = prefix();
+            shaper.extend(
+                [
+                    "root",
+                    "handle",
+                    "1:",
+                    "tbf",
+                    "rate",
+                ]
+                .into_iter()
+                .map(str::to_owned),
+            );
+            shaper.push(format!("{}bit", profile.shaping_rate_bps));
+            shaper.extend(
+                ["burst", "32kb", "latency", "400ms"]
+                    .into_iter()
+                    .map(str::to_owned),
+            );
+
+            let mut aqm = prefix();
+            aqm.extend(
+                ["parent", "1:1", "fq_codel", "limit", "10240", "flows", "1024", "target", "5ms", "interval", "100ms", "quantum", "1514", "ecn"]
+                    .into_iter()
+                    .map(str::to_owned),
+            );
+            vec![
+                ("tbf-shaper-install".to_owned(), shaper),
+                ("fq-codel-child-install".to_owned(), aqm),
             ]
-            .into_iter()
-            .map(str::to_owned),
-        ),
+        }
         arm => {
+            let mut args = prefix();
+            args.push("root".to_owned());
             args.extend(["cake", "bandwidth"].into_iter().map(str::to_owned));
             args.push(format!("{}bit", profile.shaping_rate_bps));
             args.push(arm.cake_tin().unwrap_or("besteffort").to_owned());
@@ -212,9 +231,9 @@ fn qdisc_args(profile: &QdiscProfile) -> Vec<String> {
             // No NAT exists in this topology. Explicit nonat keeps the tested
             // source/destination IP identities visible at the shaped egress.
             args.push("nonat".to_owned());
+            vec![("cake-shaper-install".to_owned(), args)]
         }
     }
-    args
 }
 
 fn validate_generated_plan(plan: &CommandPlan) -> Result<(), QdiscPlanError> {
@@ -553,14 +572,16 @@ pub fn build_plan(profile: &QdiscProfile) -> Result<CommandPlan, QdiscPlanError>
         ],
     );
 
-    add_owned(
-        &mut commands,
-        "setup",
-        None,
-        Some("exact_qdisc_install_argv".to_owned()),
-        "ip",
-        qdisc_args(profile),
-    );
+    for (artifact_id, argv) in qdisc_args(profile) {
+        add_owned(
+            &mut commands,
+            "setup",
+            None,
+            Some(artifact_id),
+            "ip",
+            argv,
+        );
+    }
     add_owned(
         &mut commands,
         "pre-load-capture",
@@ -809,10 +830,12 @@ mod tests {
                         && command.args.iter().any(|arg| arg == "vwan")
                 })
                 .collect::<Vec<_>>();
-            assert_eq!(qdisc_commands.len(), 1);
-            let command = qdisc_commands[0];
-            assert_eq!(command.program, "ip");
-            assert_eq!(&command.args[0..4], &["netns", "exec", "lnfq-test01-gw", "tc"]);
+            let expected_count = if arm == QdiscArm::FqCodel { 2 } else { 1 };
+            assert_eq!(qdisc_commands.len(), expected_count);
+            for command in qdisc_commands {
+                assert_eq!(command.program, "ip");
+                assert_eq!(&command.args[0..4], &["netns", "exec", "lnfq-test01-gw", "tc"]);
+            }
         }
     }
 
@@ -822,8 +845,8 @@ mod tests {
         let command = plan
             .commands
             .iter()
-            .find(|command| command.args.iter().any(|arg| arg == "qdisc"))
-            .expect("qdisc command");
+            .find(|command| command.args.iter().any(|arg| arg == "fq_codel"))
+            .expect("fq_codel child qdisc command");
         for expected in [
             "fq_codel",
             "limit",
@@ -840,6 +863,27 @@ mod tests {
         ] {
             assert!(command.args.iter().any(|arg| arg == expected));
         }
+    }
+
+
+    #[test]
+    fn fq_codel_baseline_has_same_rate_tbf_shaper_as_cake() {
+        let plan = build_plan(&profile(QdiscArm::FqCodel)).expect("valid plan");
+        let shaper = plan
+            .commands
+            .iter()
+            .find(|command| command.artifact_id.as_deref() == Some("tbf-shaper-install"))
+            .expect("TBF shaper command");
+        assert!(shaper.args.iter().any(|arg| arg == "tbf"));
+        assert!(shaper.args.iter().any(|arg| arg == "100000000bit"));
+        assert!(shaper.args.iter().any(|arg| arg == "burst"));
+        let aqm = plan
+            .commands
+            .iter()
+            .find(|command| command.artifact_id.as_deref() == Some("fq-codel-child-install"))
+            .expect("fq_codel child command");
+        assert!(aqm.args.iter().any(|arg| arg == "parent"));
+        assert!(aqm.args.iter().any(|arg| arg == "1:1"));
     }
 
     #[test]
