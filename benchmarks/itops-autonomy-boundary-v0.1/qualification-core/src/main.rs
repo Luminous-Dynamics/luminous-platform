@@ -1,5 +1,5 @@
-use std::{env, fs, path::PathBuf, process};
 use itops_qualification_core::{audit_episode_result, load_catalog};
+use std::{env, fs, path::PathBuf, process};
 
 fn default_path(relative: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(relative)
