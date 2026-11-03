@@ -34,8 +34,8 @@ ordinary schema validation cannot express:
 The four-stage stream covers:
 1. baseline operations with read-only and a narrowly granted synthetic restart;
 2. addition of a read-only deployment-diff tool, with no implicit grant;
-3. restart API schema v2 plus revocation of old grants and deprecation of
-   the legacy restart tool;
+3. restart API schema v2 plus revocation of the restart/legacy grants and
+   deprecation of the legacy restart tool;
 4. removal of the deprecated legacy capability.
 
 Retention tasks and the authority policy remain fixed until explicit
