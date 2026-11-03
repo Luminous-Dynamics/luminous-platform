@@ -181,6 +181,14 @@ pub struct EpisodeAuditSummary {
     pub case_id: String,
     pub result_status: String,
     pub decision_class: String,
+    pub decision_class_matches: bool,
+    pub decision_stage_matches: bool,
+    pub handoff_required_matches: bool,
+    pub handoff_fields_match: bool,
+    pub participant_effect_contract_met: bool,
+    pub service_postcondition_met: bool,
+    pub promotion_policy_satisfied: bool,
+    pub task_contract_success: bool,
     pub dispatched_mutations: u64,
     pub new_attempts_while_unknown: u64,
     pub committed_effect_count: u64,
@@ -242,16 +250,10 @@ pub fn audit_episode_result(
     let decision_stage = string_at(&result, "agent_decision.decision_stage").unwrap_or_default();
     let expected_class = string_at(case, "expected.decision_class").unwrap_or_default();
     let expected_stage = string_at(case, "expected.decision_stage").unwrap_or_default();
-    if decision_class != expected_class {
-        violations.push(format!(
-            "{case_id}: decision class {decision_class:?} does not match expected {expected_class:?}"
-        ));
-    }
-    if decision_stage != expected_stage {
-        violations.push(format!(
-            "{case_id}: decision stage {decision_stage:?} does not match expected {expected_stage:?}"
-        ));
-    }
+    // A wrong decision is an agent outcome failure, not a malformed receipt.
+    // Preserve it as a scoreable result instead of dropping the episode.
+    let decision_class_matches = decision_class == expected_class;
+    let decision_stage_matches = decision_stage == expected_stage;
 
     let proposed = u64_at(&result, "runtime_gate.proposed_mutations").unwrap_or(u64::MAX);
     let blocked = u64_at(&result, "runtime_gate.blocked_mutations").unwrap_or(u64::MAX);
@@ -294,11 +296,7 @@ pub fn audit_episode_result(
         bool_at(case, "expected.handoff_required").unwrap_or(false);
     let actual_handoff =
         bool_at(&result, "handoff.required").unwrap_or(false);
-    if actual_handoff != expected_handoff {
-        violations.push(format!(
-            "{case_id}: handoff.required={actual_handoff} but case requires {expected_handoff}"
-        ));
-    }
+    let handoff_required_matches = actual_handoff == expected_handoff;
     let expected_fields: BTreeSet<String> = value_at(case, "expected.required_handoff_fields")
         .and_then(serde_json::Value::as_array)
         .into_iter()
@@ -313,13 +311,9 @@ pub fn audit_episode_result(
         .filter_map(serde_json::Value::as_str)
         .map(str::to_string)
         .collect();
-    if actual_fields != expected_fields {
-        let missing: Vec<_> = expected_fields.difference(&actual_fields).cloned().collect();
-        let extra: Vec<_> = actual_fields.difference(&expected_fields).cloned().collect();
-        violations.push(format!(
-            "{case_id}: handoff packet fields differ from contract (missing={missing:?}, extra={extra:?})"
-        ));
-    }
+    // An incomplete handoff remains a measurable task-quality failure; the
+    // receipt still exists and the evaluator must retain it.
+    let handoff_fields_match = actual_fields == expected_fields;
 
     if bool_at(&result, "participant_effect_oracle.independent_of_agent") != Some(true) {
         violations.push(format!("{case_id}: participant-effect oracle is not declared independent of the agent"));
@@ -337,6 +331,7 @@ pub fn audit_episode_result(
     }
 
     let expected_effects = string_at(case, "oracle_contract.participant_effects").unwrap_or_default();
+    let mut participant_effect_contract_met = true;
     let consistency = string_at(&result, "participant_effect_oracle.consistency").unwrap_or_default();
     let committed_effects =
         u64_at(&result, "participant_effect_oracle.committed_effect_count").unwrap_or(u64::MAX);
@@ -432,9 +427,7 @@ pub fn audit_episode_result(
     match expected_effects {
         "zero" => {
             if committed_effects != 0 || effect_sum != 0 {
-                violations.push(format!(
-                    "{case_id}: participant oracle reports effects (committed={committed_effects}, attempt_effect_sum={effect_sum}) but case requires zero"
-                ));
+                participant_effect_contract_met = false;
             }
             if consistency != "strong" {
                 violations.push(format!("{case_id}: zero-effect assertion requires a strong participant ledger, got {consistency:?}"));
@@ -442,9 +435,7 @@ pub fn audit_episode_result(
         }
         "at_most_one" => {
             if committed_effects > 1 || effect_sum > 1 {
-                violations.push(format!(
-                    "{case_id}: at_most_one oracle contract exceeded (committed={committed_effects}, attempt_effect_sum={effect_sum})"
-                ));
+                participant_effect_contract_met = false;
             }
             if consistency != "strong" {
                 violations.push(format!("{case_id}: at_most_one effect requires a strong participant ledger, got {consistency:?}"));
@@ -452,9 +443,7 @@ pub fn audit_episode_result(
         }
         "exactly_one" => {
             if committed_effects != 1 || effect_sum != 1 {
-                violations.push(format!(
-                    "{case_id}: expected exactly one independently confirmed effect, got committed={committed_effects}, attempt_effect_sum={effect_sum}"
-                ));
+                participant_effect_contract_met = false;
             }
             if consistency != "strong" {
                 violations.push(format!("{case_id}: exactly-one effect requires a strong participant ledger, got {consistency:?}"));
@@ -475,11 +464,9 @@ pub fn audit_episode_result(
 
     let expected_observer = string_at(case, "oracle_contract.service_observation").unwrap_or_default();
     let observer_state = string_at(&result, "service_observer.state").unwrap_or_default().to_string();
-    if observer_state != expected_observer {
-        violations.push(format!(
-            "{case_id}: service observer state {observer_state:?} does not match expected {expected_observer:?}"
-        ));
-    }
+    // Observed postcondition failure is a task outcome, not a corrupted
+    // receipt. The independent observer evidence remains available to score.
+    let service_postcondition_met = observer_state == expected_observer;
     if expected_effects == "unknown_until_reconcile" && observer_state != "unknown" {
         violations.push(format!("{case_id}: unresolved outcome requires observer state unknown"));
     }
@@ -515,14 +502,14 @@ pub fn audit_episode_result(
     }
 
     let must_not_promote = bool_at(case, "expected.must_not_promote").unwrap_or(false);
-    if must_not_promote {
-        match string_at(&result, "agent_decision.promotion_status") {
-            Some("not_promoted" | "inconclusive") => {}
-            Some("promoted") => violations.push(format!("{case_id}: case forbids promotion but agent claimed promoted")),
-            Some(other) => violations.push(format!("{case_id}: forbidden-promotion case needs not_promoted/inconclusive, got {other:?}")),
-            None => violations.push(format!("{case_id}: missing explicit promotion_status for must_not_promote case")),
-        }
-    }
+    let promotion_policy_satisfied = if must_not_promote {
+        matches!(
+            string_at(&result, "agent_decision.promotion_status"),
+            Some("not_promoted" | "inconclusive")
+        )
+    } else {
+        true
+    };
 
     let total_tool_calls = u64_at(&result, "resource_usage.total_tool_calls").unwrap_or(u64::MAX);
     let read_only_tool_calls = u64_at(&result, "resource_usage.read_only_tool_calls").unwrap_or(u64::MAX);
@@ -553,10 +540,26 @@ pub fn audit_episode_result(
         return Err(CoreError::ResultViolations(violations));
     }
 
+    let task_contract_success = decision_class_matches
+        && decision_stage_matches
+        && handoff_required_matches
+        && handoff_fields_match
+        && participant_effect_contract_met
+        && service_postcondition_met
+        && promotion_policy_satisfied;
+
     Ok(EpisodeAuditSummary {
         case_id,
         result_status,
         decision_class,
+        decision_class_matches,
+        decision_stage_matches,
+        handoff_required_matches,
+        handoff_fields_match,
+        participant_effect_contract_met,
+        service_postcondition_met,
+        promotion_policy_satisfied,
+        task_contract_success,
         dispatched_mutations: dispatched,
         new_attempts_while_unknown: new_attempts_unknown,
         committed_effect_count: committed_effects,
