@@ -1,0 +1,333 @@
+{
+  "schema_version": "luminous.lnf.l4s-evidence-profile.v1",
+  "profile_id": "lnf-l4s-dualq-coexistence-v1",
+  "status": "draft_targets_not_results",
+  "reviewed_on": "2026-11-03",
+  "objective": "Qualify L4S as a matched sender-network system and ensure Classic CUBIC coexistence, ECN integrity and latency targets under frozen reproduction conditions.",
+  "evidence_boundary": "Pure Rust paired-run evaluator only. It does not implement TCP Prague, QUIC Prague, DualPI2, ECN marking, qdisc configuration, packet instrumentation or network actuation.",
+  "standards": [
+    {
+      "id": "RFC 9330",
+      "status": "informational",
+      "purpose": "L4S architecture"
+    },
+    {
+      "id": "RFC 9331",
+      "status": "experimental",
+      "purpose": "L4S ECN protocol semantics"
+    },
+    {
+      "id": "RFC 9332",
+      "status": "experimental",
+      "purpose": "DualQ Coupled AQM"
+    },
+    {
+      "id": "RFC 9438",
+      "status": "standards_track",
+      "purpose": "Classic TCP CUBIC reference"
+    },
+    {
+      "id": "RFC 8290",
+      "status": "experimental",
+      "purpose": "FQ-CoDel queue-management comparator"
+    }
+  ],
+  "network_aqm_arms": [
+    {
+      "id": "dualpi2",
+      "status": "linux_mainline_source_present",
+      "qualification": "supported_only_when_exact_kernel_and_qdisc_readback_are_pinned",
+      "notes": "DualPI2 source supports RFC 9332 coupled DualQ and ECT(1) identification."
+    },
+    {
+      "id": "fq_l4s",
+      "status": "implementation_specific",
+      "qualification": "unsupported_unless_exact_per_flow_l4s_aqm_is_pinned_and_read_back"
+    },
+    {
+      "id": "fq_codel",
+      "status": "classic_queue_management_baseline_not_l4s_aqm"
+    },
+    {
+      "id": "cake_triple_isolate",
+      "status": "classic_queue_management_baseline_not_l4s_aqm"
+    }
+  ],
+  "l4s_sender_arms": [
+    {
+      "id": "tcp_prague",
+      "qualification": "requires_exact_controller_identity_and_artifact_or_kernel_build_digest"
+    },
+    {
+      "id": "quic_prague",
+      "qualification": "requires_exact_controller_identity_and_artifact_digest"
+    },
+    {
+      "id": "dctcp",
+      "qualification": "controlled_environment_only_not_public_internet_prague_substitute"
+    },
+    {
+      "id": "bbrv3",
+      "qualification": "not_accepted_as_prague_compliant_l4s_sender_for_this_profile"
+    },
+    {
+      "id": "cubic",
+      "qualification": "classic_reference_not_l4s_sender"
+    }
+  ],
+  "pair_identity_fields": [
+    "kernel_build_sha256",
+    "topology_sha256",
+    "qdisc_config_sha256",
+    "classic_workload_sha256",
+    "l4s_workload_sha256",
+    "path_impairment_sha256",
+    "endpoint_config_sha256",
+    "ecn_path_sha256",
+    "seed",
+    "warmup_us",
+    "measurement_duration_us",
+    "link_rate_bps",
+    "base_rtt_us"
+  ],
+  "evidence_requirements": {
+    "exact_aqm_implementation_identity": true,
+    "exact_classic_sender_identity": true,
+    "exact_l4s_sender_identity": true,
+    "external_artifacts_require_sha256": true,
+    "in_tree_implementations_bound_to_kernel_build_sha256": true,
+    "qdisc_readback_required": true,
+    "endpoint_ecn_negotiation_proof_both_ends": true,
+    "ect1_transmission_and_receiver_observation_required": true,
+    "ce_marking_at_aqm_and_sender_feedback_required_under_frozen_congestion_challenge": true,
+    "dual_queue_class_counters_required_for_mixed_traffic": true,
+    "cleanup_verification_required": true,
+    "unsupported_fallback_or_missing_counters_never_pass": true,
+    "pair_verdict_scope": "single_paired_trial_only"
+  },
+  "scenarios": [
+    "L4S-00",
+    "L4S-01",
+    "L4S-02",
+    "L4S-03",
+    "L4S-04",
+    "L4S-05",
+    "L4S-06",
+    "L4S-07",
+    "L4S-08",
+    "L4S-09",
+    "L4S-10",
+    "L4S-11",
+    "L4S-12",
+    "L4S-13",
+    "L4S-14"
+  ],
+  "scenario_definitions": [
+    {
+      "id": "L4S-00",
+      "topology": "classic_only_cubic_through_dualpi2",
+      "purpose": "matched Classic-only control"
+    },
+    {
+      "id": "L4S-01",
+      "topology": "mixed_cubic_and_tcp_prague_through_dualpi2",
+      "purpose": "primary sender-network L4S qualification"
+    },
+    {
+      "id": "L4S-02",
+      "topology": "mixed_cubic_and_quic_prague_through_dualpi2",
+      "purpose": "QUIC Prague sender arm"
+    },
+    {
+      "id": "L4S-03",
+      "topology": "prague_ect1_only_through_dualpi2",
+      "purpose": "isolated L4S queue and sender behavior"
+    },
+    {
+      "id": "L4S-04",
+      "topology": "ect1_bleached_before_receiver_or_aqm",
+      "purpose": "ECN path integrity negative control"
+    },
+    {
+      "id": "L4S-05",
+      "topology": "ce_marking_not_reflected_in_sender_feedback",
+      "purpose": "ECN feedback negative control"
+    },
+    {
+      "id": "L4S-06",
+      "topology": "dualpi2_unavailable_or_qdisc_readback_mismatch",
+      "purpose": "unsupported qdisc must not qualify"
+    },
+    {
+      "id": "L4S-07",
+      "topology": "dctcp_sender_substituted_for_prague",
+      "purpose": "controlled-only sender must not be called public L4S"
+    },
+    {
+      "id": "L4S-08",
+      "topology": "classic_and_l4s_packets_misclassified_between_queues",
+      "purpose": "DualQ class attribution negative control"
+    },
+    {
+      "id": "L4S-09",
+      "topology": "qdisc_readback_or_cleanup_evidence_missing",
+      "purpose": "evidence integrity negative control"
+    },
+    {
+      "id": "L4S-10",
+      "topology": "paired_control_treatment_identity_mismatch",
+      "purpose": "reject unmatched comparison"
+    },
+    {
+      "id": "L4S-11",
+      "topology": "classic_cubic_backlogged_but_zero_service_while_l4s_progresses",
+      "purpose": "Classic starvation negative control"
+    },
+    {
+      "id": "L4S-12",
+      "topology": "asymmetric_base_rtt_reverse_path_load_and_bursty_cross_traffic",
+      "purpose": "feedback stability and RTT sensitivity"
+    },
+    {
+      "id": "L4S-13",
+      "topology": "persistent_nonresponsive_udp_overload",
+      "purpose": "overload and queue protection stress"
+    },
+    {
+      "id": "L4S-14",
+      "topology": "per_flow_fq_aqm_with_l4s_instance",
+      "purpose": "separate FQ-L4S design from coupled DualQ"
+    }
+  ],
+  "comparators": [
+    "dualpi2_classic_only_tcp_cubic",
+    "dualpi2_mixed_tcp_cubic_plus_tcp_prague",
+    "dualpi2_mixed_tcp_cubic_plus_quic_prague",
+    "per_flow_fq_l4s_with_exact_pinned_aqm",
+    "linux_fq_codel_classic_tcp_cubic",
+    "openwrt_cake_triple_isolate_classic_tcp_cubic",
+    "dctcp_dualpi2_controlled_environment_negative_or_separate_context",
+    "unresponsive_udp_load_negative_control"
+  ],
+  "benchmarks": [
+    {
+      "id": "L4S_ECN_PATH_001",
+      "metric": "both_endpoint_ecn_negotiation_ect1_reception_ce_marking_and_sender_feedback_under_challenge",
+      "operator": "all_required",
+      "target": 1,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "L4S_CLASSIFICATION_001",
+      "metric": "mixed_trial_has_observed_l4s_and_classic_queue_packets",
+      "operator": "all_required",
+      "target": 1,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "L4S_CLASSIC_RETENTION_001",
+      "metric": "mixed_classic_goodput_over_matched_classic_only_goodput_ppm",
+      "operator": ">=",
+      "target": 950000,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "L4S_CLASSIC_RETENTION_FLOOR_001",
+      "metric": "mixed_classic_goodput_over_matched_classic_only_goodput_ppm",
+      "operator": "<",
+      "target": 900000,
+      "target_status": "investigation_floor"
+    },
+    {
+      "id": "L4S_STARVATION_001",
+      "metric": "backlogged_classic_zero_service_duration_us",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "L4S_DELAY_AVG_001",
+      "metric": "l4s_queue_delay_average_us_under_frozen_rfc9332_reproduction_conditions",
+      "operator": "<",
+      "target": 1000,
+      "target_status": "reproduction_only_target"
+    },
+    {
+      "id": "L4S_DELAY_P99_001",
+      "metric": "l4s_queue_delay_p99_us_under_frozen_rfc9332_reproduction_conditions",
+      "operator": "<=",
+      "target": 2000,
+      "target_status": "reproduction_only_target"
+    },
+    {
+      "id": "L4S_PAIR_IDENTITY_001",
+      "metric": "paired_control_treatment_common_identity_mismatch_count",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "L4S_FALLBACK_001",
+      "metric": "l4s_labelled_trial_with_sender_fallback_or_missing_runtime_controller_identity",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    }
+  ],
+  "required_metrics": [
+    "l4s_queue_delay_average_p50_p95_p99_max_us",
+    "classic_queue_delay_average_p50_p95_p99_max_us",
+    "classic_cubic_goodput_bps_control_and_treatment",
+    "prague_or_quic_prague_goodput_bps",
+    "classic_retention_ratio_ppm",
+    "l4s_useful_task_completion_by_deadline",
+    "ect1_packets_sent_and_received",
+    "ce_marks_at_aqm",
+    "ce_feedback_observed_at_sender",
+    "ecn_negotiated_sender_and_receiver",
+    "l4s_and_classic_queue_packet_counters",
+    "packet_loss_retransmission_and_recovery_delay",
+    "per_flow_and_per_tenant_fairness_separately",
+    "classic_zero_service_duration_and_backlogged_flow_count",
+    "queue_depth_and_buffer_occupancy_by_class",
+    "cpu_memory_qdisc_processing_cost_and_power",
+    "ecn_bleaching_fallback_and_unsupported_counts",
+    "resource_domain_capacity_queue_occupancy_and_residual_binding",
+    "short_flow_completion_p50_p95_p99_us",
+    "full_aqm_sender_kernel_artifact_and_configuration_digests"
+  ],
+  "gates": [
+    "pass",
+    "fail",
+    "inconclusive",
+    "unsupported"
+  ],
+  "thresholds": {
+    "classic_retention_target_ppm": 950000,
+    "classic_retention_investigation_floor_ppm": 900000,
+    "l4s_average_queue_delay_target_us": 1000,
+    "l4s_p99_queue_delay_target_us": 2000,
+    "delay_targets_apply_only_when_rfc9332_reproduction_profile_verified": true,
+    "pair_verdict_scope": "single_paired_trial_only",
+    "all_targets_status": "proposed_not_measured"
+  },
+  "evidence_classes": [
+    "source_audit",
+    "deterministic_evaluator",
+    "network_namespace_or_vm_emulation",
+    "hardware_bench",
+    "field_observed"
+  ],
+  "explicit_non_claims": [
+    "DualPI2 availability alone does not prove a compatible L4S sender or an end-to-end L4S path.",
+    "DCTCP and BBRv3 are not accepted as Prague-compliant public-Internet L4S senders by this profile.",
+    "A qdisc label or requested socket controller name does not prove the runtime implementation was active.",
+    "RFC 9332 is Experimental and not Standards Track.",
+    "RFC 9332 delay observations are not universal guarantees; targets apply only to a frozen reproduction profile.",
+    "fq_codel and CAKE are Classic queue-management comparators, not equivalent DualQ L4S implementations.",
+    "A passing paired trial is not programme-level statistical qualification.",
+    "No public Internet, production RAN or field result is claimed by unit tests.",
+    "No host qdisc, route, socket congestion control or radio is changed by this evaluator.",
+    "The evaluator does not independently authenticate endpoint counter sources or operator telemetry."
+  ]
+}
