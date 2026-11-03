@@ -88,5 +88,28 @@
     "total_tokens": 900,
     "model_cost_usd": 0.001,
     "connector_cost_usd": 0
+  },
+  "sut_profile": {
+    "agent_build_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "model_provider": "synthetic_fixture",
+    "model_name": "qualification-example-agent",
+    "model_version": "0.1",
+    "model_size": "not_applicable_synthetic_fixture",
+    "inference_config_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "inference_parameters": {
+      "temperature": 0,
+      "top_p": 1,
+      "max_output_tokens": 1024,
+      "reasoning_effort": "not_applicable",
+      "sampling_policy": "deterministic_seeded_fixture",
+      "fallback_policy": "disabled"
+    },
+    "prompt_template_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "memory_profile_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "enabled_tool_manifest_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "tool_permissions_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "guardrail_policy_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "persistent_state_scope": "episode_isolated",
+    "human_approval_profile": "case_defined"
   }
 }
