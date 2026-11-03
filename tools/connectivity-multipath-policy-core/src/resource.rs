@@ -181,7 +181,10 @@ fn evidence_error(
     request: &ResourceAllocationRequest,
     evidence: &CapacityResourceEvidence,
 ) -> Option<&'static str> {
-    if !valid_identifier(&evidence.source_id) || evidence.source_id.len() > MAX_SOURCE_ID_BYTES {
+    if evidence.source_id.trim().is_empty()
+        || evidence.source_id.len() > MAX_SOURCE_ID_BYTES
+        || evidence.source_id.chars().any(char::is_control)
+    {
         return Some("resource_evidence_source_invalid");
     }
     if !is_sha256(&evidence.inventory_sha256) {
@@ -758,6 +761,23 @@ mod tests {
     }
 
     #[test]
+    fn weighted_progressive_filling_matches_exact_small_shared_resource_reference() {
+        let paths = vec![
+            path("premium", 100, 2, &["shared"]),
+            path("standard", 100, 1, &["shared"]),
+        ];
+        let resources = vec![resource("shared", 90, 0, 0, 0)];
+        let report = allocate_resource_incidence(&request(), &paths, &resources)
+            .expect("valid weighted resources");
+        assert_eq!(report.path_allocations[0].allocated_rate_bps, 60);
+        assert_eq!(report.path_allocations[1].allocated_rate_bps, 30);
+        assert_eq!(
+            exact_integer_weighted_max_min_reference(&paths, &resources),
+            vec![60, 30]
+        );
+    }
+
+    #[test]
     fn path_ceiling_saturation_allows_other_paths_to_continue() {
         let report = allocate_resource_incidence(
             &request(),
@@ -1003,6 +1023,111 @@ mod tests {
         best
     }
 
+    fn compare_weighted_fairness_vectors(
+        left: &[(u64, u32)],
+        right: &[(u64, u32)],
+    ) -> std::cmp::Ordering {
+        for ((left_rate, left_weight), (right_rate, right_weight)) in left.iter().zip(right) {
+            let left_scaled = u128::from(*left_rate) * u128::from(*right_weight);
+            let right_scaled = u128::from(*right_rate) * u128::from(*left_weight);
+            match left_scaled.cmp(&right_scaled) {
+                std::cmp::Ordering::Equal => {}
+                ordering => return ordering,
+            }
+        }
+        left.len().cmp(&right.len())
+    }
+
+    fn exact_integer_weighted_max_min_reference(
+        paths: &[ResourcePath],
+        resources: &[CapacityResource],
+    ) -> Vec<u64> {
+        fn visit(
+            index: usize,
+            paths: &[ResourcePath],
+            capacities: &BTreeMap<String, u64>,
+            usage: &mut BTreeMap<String, u64>,
+            rates: &mut Vec<u64>,
+            best_fairness: &mut Option<Vec<(u64, u32)>>,
+            best_rates: &mut Vec<u64>,
+        ) {
+            if index == paths.len() {
+                let mut fairness = rates
+                    .iter()
+                    .zip(paths)
+                    .map(|(rate, path)| (*rate, path.weight))
+                    .collect::<Vec<_>>();
+                fairness.sort_by(|left, right| {
+                    (u128::from(left.0) * u128::from(right.1))
+                        .cmp(&(u128::from(right.0) * u128::from(left.1)))
+                });
+                let replace = best_fairness.as_ref().is_none_or(|best| {
+                    compare_weighted_fairness_vectors(&fairness, best)
+                        == std::cmp::Ordering::Greater
+                });
+                if replace {
+                    *best_fairness = Some(fairness);
+                    *best_rates = rates.clone();
+                }
+                return;
+            }
+            let path = &paths[index];
+            for rate in 0..=path.path_ceiling_bps {
+                let feasible = path.capacity_domain_ids.iter().all(|domain| {
+                    usage
+                        .get(domain)
+                        .and_then(|used| used.checked_add(rate))
+                        .zip(capacities.get(domain).copied())
+                        .is_some_and(|(next, capacity)| next <= capacity)
+                });
+                if !feasible {
+                    continue;
+                }
+                for domain in &path.capacity_domain_ids {
+                    let used = usage.get(domain).copied().unwrap_or(0);
+                    usage.insert(domain.clone(), used + rate);
+                }
+                rates.push(rate);
+                visit(
+                    index + 1,
+                    paths,
+                    capacities,
+                    usage,
+                    rates,
+                    best_fairness,
+                    best_rates,
+                );
+                rates.pop();
+                for domain in &path.capacity_domain_ids {
+                    let used = usage.get(domain).copied().unwrap_or(0);
+                    usage.insert(domain.clone(), used - rate);
+                }
+            }
+        }
+
+        let capacities = resources
+            .iter()
+            .map(|resource| {
+                (
+                    resource.resource_id.clone(),
+                    resource.residual_capacity_bps().expect("valid residual"),
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
+        let mut best_fairness = None;
+        let mut best_rates = Vec::new();
+        visit(
+            0,
+            paths,
+            &capacities,
+            &mut BTreeMap::new(),
+            &mut Vec::new(),
+            &mut best_fairness,
+            &mut best_rates,
+        );
+        best_rates
+    }
+
     #[test]
     fn partial_overlap_quantifies_weighted_max_min_utilization_gap() {
         let paths = vec![
@@ -1028,6 +1153,8 @@ mod tests {
         let exact_max = exact_integer_reference_max_total(&paths, &resources);
         assert_eq!(exact_max, 18);
         assert!(report.total_allocated_rate_bps < exact_max);
+        let exact_fair = exact_integer_weighted_max_min_reference(&paths, &resources);
+        assert_eq!(report.path_allocations.iter().map(|p| p.allocated_rate_bps).collect::<Vec<_>>(), exact_fair);
         // The allocator's weighted max-min objective is intentionally not
         // presented as a maximum-sum-rate optimizer; the gap remains visible.
     }
