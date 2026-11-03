@@ -114,7 +114,9 @@
         "validity_window_required",
         "unknown_or_invalid_resource_excludes_dependent_paths",
         "resource_capacity_underflow",
-        "residual_capacity_must_be_nonnegative"
+        "residual_capacity_must_be_nonnegative",
+        "required_request_fields",
+        "resource_snapshot_digest_contract"
       ],
       "properties": {
         "required_resource_fields": {
@@ -165,6 +167,17 @@
         },
         "residual_capacity_must_be_nonnegative": {
           "const": true
+        },
+        "required_request_fields": {
+          "const": [
+            "topology_sha256",
+            "resource_snapshot_sha256",
+            "now_unix_ms",
+            "minimum_evidence_confidence_ppm"
+          ]
+        },
+        "resource_snapshot_digest_contract": {
+          "const": "caller_computed_digest_of_canonical_frozen_path_and_resource_input_snapshot_echoed_in_every_report; not_authentication_or_independent_hash_recomputation"
         }
       }
     },
@@ -290,8 +303,8 @@
     },
     "explicit_non_claims": {
       "type": "array",
-      "minItems": 10,
-      "maxItems": 10,
+      "minItems": 11,
+      "maxItems": 11,
       "uniqueItems": true,
       "items": {
         "type": "string",
