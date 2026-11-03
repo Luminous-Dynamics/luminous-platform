@@ -57,6 +57,8 @@ pub struct CommandSpec {
     pub phase: &'static str,
     pub parallel_group: Option<&'static str>,
     pub artifact_id: Option<String>,
+    /// Cleanup-only guard interpreted by a future executor; never an unconditional delete.
+    pub guard: Option<&'static str>,
     pub program: String,
     pub args: Vec<String>,
 }
@@ -67,7 +69,7 @@ pub struct CommandPlan {
     pub run_suffix: String,
     pub namespaces: Vec<String>,
     pub commands: Vec<CommandSpec>,
-    pub host_network_mutation: bool,
+    pub host_interface_route_or_qdisc_mutation: bool,
     pub public_network_access: bool,
     pub nat_enabled: bool,
     pub execution_conducted: bool,
@@ -129,6 +131,7 @@ fn add(
         phase,
         parallel_group,
         artifact_id: artifact_id.map(str::to_owned),
+        guard: None,
         program: program.to_owned(),
         args: args.iter().map(|arg| (*arg).to_owned()).collect(),
     });
@@ -146,6 +149,7 @@ fn add_owned(
         phase,
         parallel_group,
         artifact_id,
+        guard: None,
         program: program.to_owned(),
         args,
     });
@@ -183,15 +187,8 @@ fn qdisc_args(profile: &QdiscProfile) -> Vec<String> {
             .map(str::to_owned),
         ),
         arm => {
-            args.extend(
-                [
-                    "cake",
-                    "bandwidth",
-                    &format!("{}bit", profile.shaping_rate_bps),
-                ]
-                .into_iter()
-                .map(str::to_owned),
-            );
+            args.extend(["cake", "bandwidth"].into_iter().map(str::to_owned));
+            args.push(format!("{}bit", profile.shaping_rate_bps));
             args.push(arm.cake_tin().unwrap_or("besteffort").to_owned());
             args.push("triple-isolate".to_owned());
             // No NAT exists in this topology. Explicit nonat keeps the tested
@@ -207,7 +204,7 @@ fn validate_generated_plan(plan: &CommandPlan) -> Result<(), QdiscPlanError> {
     if expected.len() != plan.namespaces.len() {
         return Err(QdiscPlanError::DuplicateNamespace);
     }
-    if plan.host_network_mutation || plan.public_network_access || plan.nat_enabled {
+    if plan.host_interface_route_or_qdisc_mutation || plan.public_network_access || plan.nat_enabled {
         return Err(QdiscPlanError::InvalidGeneratedPlan);
     }
 
@@ -220,6 +217,12 @@ fn validate_generated_plan(plan: &CommandPlan) -> Result<(), QdiscPlanError> {
             if command.args.len() < 3 || !expected.contains(&command.args[1]) {
                 return Err(QdiscPlanError::InvalidGeneratedPlan);
             }
+        }
+        if command.phase == "cleanup"
+            && command.args.windows(2).any(|pair| pair == ["netns", "del"])
+            && command.guard != Some("namespace-created-by-this-run")
+        {
+            return Err(QdiscPlanError::InvalidGeneratedPlan);
         }
         if command.args.windows(2).any(|pair| {
             pair[0] == "exec" && !expected.contains(&pair[1])
@@ -640,12 +643,21 @@ pub fn build_plan(profile: &QdiscProfile) -> Result<CommandPlan, QdiscPlanError>
         );
     }
 
+    // A future executor may delete only namespace handles that this exact run
+    // successfully created; a name collision must never authorize deleting an
+    // existing namespace owned by another process.
+    for command in &mut commands {
+        if command.phase == "cleanup" {
+            command.guard = Some("namespace-created-by-this-run");
+        }
+    }
+
     let plan = CommandPlan {
         profile_id: "lnf-qdisc-namespace-plan-v1",
         run_suffix: profile.run_suffix.clone(),
         namespaces,
         commands,
-        host_network_mutation: false,
+        host_interface_route_or_qdisc_mutation: false,
         public_network_access: false,
         nat_enabled: false,
         execution_conducted: false,
@@ -672,7 +684,7 @@ mod tests {
     #[test]
     fn plan_is_read_only_and_has_no_host_or_public_network_mutation() {
         let plan = build_plan(&profile(QdiscArm::FqCodel)).expect("valid plan");
-        assert!(!plan.host_network_mutation);
+        assert!(!plan.host_interface_route_or_qdisc_mutation);
         assert!(!plan.public_network_access);
         assert!(!plan.nat_enabled);
         assert!(!plan.execution_conducted);
@@ -819,6 +831,29 @@ mod tests {
             .map(|command| command.args[2].clone())
             .collect::<BTreeSet<_>>();
         assert_eq!(deleted, plan.namespaces.into_iter().collect());
+    }
+
+    #[test]
+    fn cleanup_commands_are_guarded_by_namespace_ownership() {
+        let plan = build_plan(&profile(QdiscArm::FqCodel)).expect("valid plan");
+        for command in plan.commands.iter().filter(|command| command.phase == "cleanup") {
+            if command.args.windows(2).any(|pair| pair == ["netns", "del"]) {
+                assert_eq!(command.guard, Some("namespace-created-by-this-run"));
+            }
+        }
+    }
+
+    #[test]
+    fn plan_checks_existing_namespace_inventory_before_setup() {
+        let plan = build_plan(&profile(QdiscArm::FqCodel)).expect("valid plan");
+        let inventory = plan
+            .commands
+            .iter()
+            .find(|command| command.artifact_id.as_deref() == Some("existing-netns-inventory"))
+            .expect("read-only namespace inventory");
+        assert_eq!(inventory.program, "ip");
+        assert_eq!(inventory.args, vec!["netns", "list"]);
+        assert_eq!(inventory.phase, "preflight");
     }
 
     #[test]
