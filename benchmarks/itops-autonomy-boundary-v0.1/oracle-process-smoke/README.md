@@ -60,7 +60,7 @@ The smoke receipt is not an instance of the decision-result schema and is
 not a benchmark episode result. It does not qualify the 23-case corpus, execute
 the full workflow DAGs, measure an agent, or establish a production safety
 rate. The next steps are an untrusted agent adapter, per-episode environment
-reset, externally administered oracle services, real transport-fault
+reset, externally administered oracle services, network transport-fault
 injection, signed receipts, schema-bound result emission through the
 qualification core, and adversarial integration tests.
 
