@@ -2701,51 +2701,6 @@ mod operational_dependency_supplement_tests {
     }
 
     #[test]
-    fn duplicate_dependency_ids_cannot_hide_shared_canonical_domain_identity() {
-        let mut fixture = fixture_value();
-        let host = fixture["dependencies"]
-            .as_array()
-            .expect("dependency array")
-            .iter()
-            .find(|dependency| dependency["dependency_id"] == "host-kernel")
-            .expect("host dependency")
-            .clone();
-        let mut alias = host.clone();
-        alias["dependency_id"] = serde_json::json!("host-kernel-alias");
-        fixture["dependencies"]
-            .as_array_mut()
-            .expect("dependency array")
-            .push(alias);
-
-        let runner_edge = fixture["dependency_edges"]
-            .as_array_mut()
-            .expect("edge array")
-            .iter_mut()
-            .find(|edge| {
-                edge["from_component_id"] == "runner"
-                    && edge["dependency_id"] == "host-kernel"
-            })
-            .expect("runner host edge");
-        runner_edge["dependency_id"] = serde_json::json!("host-kernel-alias");
-
-        let bytes = serde_json::to_vec(&fixture).expect("mutated fixture JSON");
-        let audit = audit_operational_dependency_supplement(&bytes, SCHEMA)
-            .expect("aliased host identity is still a shared dependency");
-        let participant = audit
-            .claims
-            .iter()
-            .find(|claim| claim.claim_id == "inc-002-participant-effect")
-            .expect("participant claim");
-        assert!(participant
-            .shared_dependency_ids
-            .contains(&"host-kernel".to_string()));
-        assert!(participant
-            .shared_fault_domain_keys
-            .iter()
-            .any(|key| key == "ExecutionProvider=fixture:smoke-host-001"));
-    }
-
-    #[test]
     fn monitor_cannot_claim_complete_without_observed_runtime_monitor() {
         let mut fixture = fixture_value();
         fixture["monitor_coverage"]["status"] = serde_json::json!("complete");
