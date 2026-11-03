@@ -8,8 +8,9 @@
 //! socket buffers, or real packet captures.
 
 use super::{
-    PathObservation, ScheduleError, ScheduleRequest, estimated_cost, exclusion_reason,
-    canonical_capacity_domain_ids, capacity_domains_disjoint, validate_path_set, validate_request,
+    PathObservation, ScheduleError, ScheduleRequest, canonical_capacity_domain_ids,
+    capacity_domains_disjoint, estimated_cost, exclusion_reason, validate_path_set,
+    validate_request,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -939,10 +940,8 @@ mod tests {
     fn redundant_strategy_does_not_duplicate_same_capacity_group() {
         let mut first = path("a", 10_000, 20_000_000, "failure-a");
         let mut second = path("b", 20_000, 20_000_000, "failure-b");
-        first.capacity_domain_ids =
-            vec!["access-a".to_owned(), "shared-backhaul".to_owned()];
-        second.capacity_domain_ids =
-            vec!["access-b".to_owned(), "shared-backhaul".to_owned()];
+        first.capacity_domain_ids = vec!["access-a".to_owned(), "shared-backhaul".to_owned()];
+        second.capacity_domain_ids = vec!["access-b".to_owned(), "shared-backhaul".to_owned()];
         let report = simulate(
             &request(),
             &trace(),
