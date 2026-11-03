@@ -63,7 +63,7 @@ It returns no route when no candidate fits. It rejects duplicate path IDs, empty
 
 ## Tests
 
-The byte-allocation model and packet-trace simulator have separate tests. Trace tests cover MinRTT, Round Robin, redundancy only across distinct declared risk domains, deterministic replay, broker-ineligible path exclusion, per-path cost rounding, aggregate cost ceilings, failure-domain correlated loss, reorder-aware buffer behavior and input bounds.
+The byte-allocation model and packet-trace simulator have separate tests. Trace tests cover MinRTT, Round Robin, redundancy only across distinct declared risk domains, deterministic replay, broker-ineligible path exclusion, per-path cost rounding, aggregate cost ceilings, common-domain loss correlation, separate synthetic loss streams, out-of-order application release, lost-gap timeout accounting, existing-buffer-aware reorder prediction and input bounds.
 
 Unit tests cover:
 - two eligible paths used for multipath;
