@@ -135,6 +135,8 @@ pub struct PathExclusion {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ScheduleDecision {
     pub task_id: String,
+    pub topology_sha256: String,
+    pub decision_time_unix_ms: u64,
     pub strategy: Strategy,
     pub mode: DecisionMode,
     pub allocations: Vec<PathAllocation>,
@@ -146,6 +148,7 @@ pub struct ScheduleDecision {
     pub reorder_exposure_bytes: u64,
     pub distinct_shared_risk_groups: usize,
     pub distinct_capacity_domains: usize,
+    pub capacity_domain_ids_used: Vec<String>,
     pub exclusions: Vec<PathExclusion>,
     pub explanation: Vec<String>,
 }
@@ -180,6 +183,7 @@ struct Candidate {
     reorder_exposure_bytes: u64,
     distinct_shared_risk_groups: usize,
     distinct_capacity_domains: usize,
+    capacity_domain_ids_used: Vec<String>,
 }
 
 fn ceil_div(numerator: u128, denominator: u128) -> u128 {
@@ -434,6 +438,7 @@ fn single_candidate(request: &ScheduleRequest, path: &PathObservation) -> Option
         reorder_exposure_bytes: 0,
         distinct_shared_risk_groups: groups.len(),
         distinct_capacity_domains: capacity_domains.len(),
+        capacity_domain_ids_used: canonical_capacity_domain_ids(&path.capacity_domain_ids),
     })
 }
 
@@ -608,6 +613,10 @@ fn aggregate_candidate(
         .iter()
         .flat_map(|allocation| allocation.capacity_domain_ids.iter().map(String::as_str))
         .collect();
+    let capacity_domain_ids_used = capacity_domains
+        .iter()
+        .map(|domain| (*domain).to_owned())
+        .collect();
 
     Some(Candidate {
         allocations,
@@ -617,6 +626,7 @@ fn aggregate_candidate(
         reorder_exposure_bytes: reorder_exposure,
         distinct_shared_risk_groups: groups.len(),
         distinct_capacity_domains: capacity_domains.len(),
+        capacity_domain_ids_used,
     })
 }
 
@@ -687,6 +697,8 @@ fn to_decision(
     match candidate {
         Some(candidate) => ScheduleDecision {
             task_id: request.task_id.clone(),
+            topology_sha256: request.topology_sha256.clone(),
+            decision_time_unix_ms: request.now_unix_ms,
             strategy,
             mode: if candidate.allocations.len() > 1 {
                 DecisionMode::Multipath
@@ -700,11 +712,14 @@ fn to_decision(
             reorder_exposure_bytes: candidate.reorder_exposure_bytes,
             distinct_shared_risk_groups: candidate.distinct_shared_risk_groups,
             distinct_capacity_domains: candidate.distinct_capacity_domains,
+            capacity_domain_ids_used: candidate.capacity_domain_ids_used,
             exclusions,
             explanation,
         },
         None => ScheduleDecision {
             task_id: request.task_id.clone(),
+            topology_sha256: request.topology_sha256.clone(),
+            decision_time_unix_ms: request.now_unix_ms,
             strategy,
             mode: DecisionMode::NoRoute,
             allocations: Vec::new(),
@@ -714,6 +729,7 @@ fn to_decision(
             reorder_exposure_bytes: 0,
             distinct_shared_risk_groups: 0,
             distinct_capacity_domains: 0,
+            capacity_domain_ids_used: Vec::new(),
             exclusions,
             explanation: vec!["no candidate schedule satisfies hard constraints".to_owned()],
         },
