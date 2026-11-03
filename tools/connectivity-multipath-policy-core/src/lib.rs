@@ -726,12 +726,8 @@ mod tests {
         let mut second = path("b", 20_000, 60_000_000, 10, "failure-b");
         first.shared_capacity_group = "same-backhaul".to_owned();
         second.shared_capacity_group = "same-backhaul".to_owned();
-        let result = evaluate(
-            &request(),
-            &[first, second],
-            Strategy::AggregateCapacity,
-        )
-        .expect("valid observations");
+        let result = evaluate(&request(), &[first, second], Strategy::AggregateCapacity)
+            .expect("valid observations");
         assert_eq!(result.mode, DecisionMode::SinglePath);
         assert_eq!(result.allocations.len(), 1);
         assert_eq!(result.distinct_shared_risk_groups, 1);
@@ -743,12 +739,8 @@ mod tests {
         let mut unknown = path("unknown", 1_000, 100_000_000, 1, "failure-a");
         unknown.shared_capacity_group.clear();
         let allowed = path("allowed", 20_000, 10_000_000, 10, "failure-b");
-        let result = evaluate(
-            &request(),
-            &[unknown, allowed],
-            Strategy::AggregateCapacity,
-        )
-        .expect("valid observations");
+        let result = evaluate(&request(), &[unknown, allowed], Strategy::AggregateCapacity)
+            .expect("valid observations");
         assert_eq!(result.mode, DecisionMode::SinglePath);
         assert_eq!(result.exclusions[0].reason, "shared_capacity_group_unknown");
     }
