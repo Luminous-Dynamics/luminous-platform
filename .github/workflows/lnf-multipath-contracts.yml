@@ -1,0 +1,62 @@
+name: lnf-multipath-contracts
+
+on:
+  pull_request:
+    paths:
+      - "tools/connectivity-multipath-policy-core/**"
+      - "profiles/lnf-multipath-scheduling-benchmark-v1.json"
+      - "schemas/lnf-multipath-scheduling-profile-v1.schema.json"
+      - "tools/connectivity-benchmark-profile-validator/src/bin/json-schema-verify.rs"
+      - "tools/connectivity-benchmark-profile-validator/Cargo.toml"
+      - ".github/workflows/lnf-multipath-contracts.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lnf-multipath-contracts-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  multipath-contracts:
+    name: Deterministic multipath model and profile validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
+        with:
+          toolchain: "1.99.0"
+          components: clippy, rustfmt
+
+      - name: Check multipath model formatting
+        run: cargo fmt --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml -- --check
+
+      - name: Test deterministic multipath scheduling model
+        run: cargo test --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml --all-targets
+
+      - name: Lint multipath model with warnings denied
+        run: cargo clippy --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml --all-targets -- -D warnings
+
+      - name: Check generic profile schema verifier formatting
+        run: rustfmt --edition 2024 --check tools/connectivity-benchmark-profile-validator/src/bin/json-schema-verify.rs
+
+      - name: Test generic profile schema verifier
+        run: cargo test --manifest-path tools/connectivity-benchmark-profile-validator/Cargo.toml --bin json-schema-verify
+
+      - name: Lint generic profile schema verifier with warnings denied
+        run: cargo clippy --manifest-path tools/connectivity-benchmark-profile-validator/Cargo.toml --bin json-schema-verify -- -D warnings
+
+      - name: Validate multipath benchmark profile
+        run: >-
+          cargo run
+          --manifest-path tools/connectivity-benchmark-profile-validator/Cargo.toml
+          --bin json-schema-verify
+          --
+          schemas/lnf-multipath-scheduling-profile-v1.schema.json
+          profiles/lnf-multipath-scheduling-benchmark-v1.json
