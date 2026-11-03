@@ -110,15 +110,8 @@ fn main() {
         Ok(profile) => profile,
         Err(error) if error == "help" => {
             println!(
-                "Usage: qdisc-lab-plan \\\n\
-                 --run-suffix <1-8-lowercase-alphanumeric> \\\n\
-                 --arm <fq_codel|cake_besteffort_triple_isolate|cake_diffserv3_triple_isolate|cake_diffserv4_triple_isolate> \\\n\
-                 --rate-bps <1000000..1000000000> \\\n\
-                 --duration-seconds <5..300> \\\n\
-                 --tenant-a-flows <1..32> \\\n\
-                 --tenant-b-flows <1..32>\n\
-                 Emits a deterministic JSON argv plan only. No command is executed,\n\
-                 no host route/qdisc/interface is changed, and no public network is accessed."
+                "Usage: qdisc-lab-plan\\n  --run-suffix <1-8-lowercase-alphanumeric>\\n  --arm <fq_codel|cake_besteffort_triple_isolate|cake_diffserv3_triple_isolate|cake_diffserv4_triple_isolate>\\n  --rate-bps <1000000..1000000000>\\n  --duration-seconds <5..300>\\n  --tenant-a-flows <1..32>\\n  --tenant-b-flows <1..32>\\nEmits a deterministic JSON argv plan only. No command is executed, no host interface/route/qdisc is changed, and no public network is accessed."
+
             );
             return;
         }
@@ -178,11 +171,16 @@ fn main() {
             .as_deref()
             .map(|value| format!("\"{}\"", json_escape(value)))
             .unwrap_or_else(|| "null".to_owned());
+        let guard = command
+            .guard
+            .map(|value| format!("\"{}\"", json_escape(value)))
+            .unwrap_or_else(|| "null".to_owned());
         println!(
-            "    {{\"phase\":\"{}\",\"parallel_group\":{},\"artifact_id\":{},\"program\":\"{}\",\"args\":[{}]}}{}",
+            "    {{\"phase\":\"{}\",\"parallel_group\":{},\"artifact_id\":{},\"guard\":{},\"program\":\"{}\",\"args\":[{}]}}{}",
             json_escape(command.phase),
             group,
             artifact,
+            guard,
             json_escape(&command.program),
             args,
             comma
