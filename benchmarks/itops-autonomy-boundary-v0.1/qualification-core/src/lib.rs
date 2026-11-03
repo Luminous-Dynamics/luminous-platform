@@ -522,6 +522,7 @@ pub enum LedgerError {
     UnknownOutcomeLocked,
     DuplicateIdempotencyKey,
     GrantBindingMismatch,
+    GrantUseLimitReached,
     GrantRevoked,
     PermitNotYetValid,
     PermitExpired,
@@ -928,7 +929,8 @@ mod tests {
 
         ledger.reconcile_no_effect(first).unwrap();
         let third_permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
-        assert!(ledger.dispatch(third_permit, &grant, 150, "idem-003").is_ok());
+        let third = ledger.dispatch(third_permit, &grant, 150, "idem-003").unwrap();
+        ledger.commit_effect(third).unwrap();
 
         // The same exact grant cannot exceed its declared two-dispatch budget.
         let fourth_permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
@@ -946,7 +948,8 @@ mod tests {
         let mut ledger = ParticipantEffectLedger::default();
 
         let first = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
-        ledger.dispatch(first, &grant, 150, "idem-grant-001").unwrap();
+        let first_attempt = ledger.dispatch(first, &grant, 150, "idem-grant-001").unwrap();
+        ledger.commit_effect(first_attempt).unwrap();
 
         let second = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
         assert_eq!(
