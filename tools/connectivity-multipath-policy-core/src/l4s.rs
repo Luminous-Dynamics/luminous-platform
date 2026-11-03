@@ -542,6 +542,16 @@ pub fn evaluate_l4s_ecn_and_aqm(
     Ok((ecn_result, classification_result))
 }
 
+fn latency_placeholder() -> GateResult {
+    gate(
+        "L4S_QUEUE_DELAY_001",
+        GateDisposition::Inconclusive,
+        "paired_classic_flow_evidence_invalid",
+        None,
+        None,
+    )
+}
+
 /// Evaluate latency and Classic-flow coexistence against a matched
 /// Classic-only control. Delay targets only apply to an explicitly verified
 /// RFC 9332-like reproduction profile; they are not universal guarantees.
@@ -670,8 +680,10 @@ pub fn evaluate_l4s_pair(
             queue_classification: failure.clone(),
             l4s_queue_delay: failure.clone(),
             classic_retention: failure.clone(),
+            classic_flow_retention: failure.clone(),
             classic_starvation: failure,
             classic_retention_ratio_ppm: None,
+            worst_backlogged_classic_flow_retention_ppm: None,
         });
     }
     if control.classic_goodput_bps == 0
