@@ -125,6 +125,9 @@ pub struct BestPathComparison {
     pub path_a_identity: ExperimentIdentity,
     pub path_b_identity: ExperimentIdentity,
     pub mptcp_identity: ExperimentIdentity,
+    pub path_a_counters_present: bool,
+    pub path_b_counters_present: bool,
+    pub reference_cleanup_verified: bool,
     pub evidence: MptcpEvidence,
 }
 
@@ -258,6 +261,22 @@ pub fn evaluate_best_path_improvement(
             "MPTCP_GOAL1_BEST_PATH",
             GateDisposition::Inconclusive,
             "single_path_and_mptcp_experiment_identity_mismatch",
+            Some(minimum_ratio_ppm),
+        ));
+    }
+    if !comparison.path_a_counters_present || !comparison.path_b_counters_present {
+        return Ok(GateResult::new(
+            "MPTCP_GOAL1_BEST_PATH",
+            GateDisposition::Inconclusive,
+            "single_path_tcp_reference_counters_missing",
+            Some(minimum_ratio_ppm),
+        ));
+    }
+    if !comparison.reference_cleanup_verified {
+        return Ok(GateResult::new(
+            "MPTCP_GOAL1_BEST_PATH",
+            GateDisposition::Fail,
+            "single_path_tcp_reference_cleanup_not_verified",
             Some(minimum_ratio_ppm),
         ));
     }
@@ -489,6 +508,9 @@ mod tests {
                 path_a_identity: identity(),
                 path_b_identity: identity(),
                 mptcp_identity: identity(),
+                path_a_counters_present: true,
+                path_b_counters_present: true,
+                reference_cleanup_verified: true,
                 evidence: evidence(),
             },
             1_000_000,
@@ -496,6 +518,28 @@ mod tests {
         .expect("valid evidence");
         assert_eq!(result.disposition, GateDisposition::Pass);
         assert_eq!(result.primary_ratio_ppm, Some(1_058_823));
+    }
+
+    #[test]
+    fn missing_single_path_tcp_counter_is_inconclusive() {
+        let result = evaluate_best_path_improvement(
+            &BestPathComparison {
+                path_a_tcp_goodput_bps: 70_000_000,
+                path_b_tcp_goodput_bps: 85_000_000,
+                mptcp_goodput_bps: 90_000_000,
+                path_a_identity: identity(),
+                path_b_identity: identity(),
+                mptcp_identity: identity(),
+                path_a_counters_present: false,
+                path_b_counters_present: true,
+                reference_cleanup_verified: true,
+                evidence: evidence(),
+            },
+            1_000_000,
+        )
+        .expect("missing reference counters are inconclusive");
+        assert_eq!(result.disposition, GateDisposition::Inconclusive);
+        assert_eq!(result.reason, "single_path_tcp_reference_counters_missing");
     }
 
     #[test]
