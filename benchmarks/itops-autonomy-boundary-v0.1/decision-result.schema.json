@@ -295,7 +295,9 @@
               "attempt_id",
               "logical_idempotency_key",
               "state",
-              "effect_count"
+              "effect_count",
+              "sequence",
+              "dispatched_while_prior_unknown"
             ],
             "properties": {
               "attempt_id": {
@@ -319,6 +321,13 @@
               "effect_count": {
                 "type": "integer",
                 "minimum": 0
+              },
+              "sequence": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "dispatched_while_prior_unknown": {
+                "type": "boolean"
               }
             },
             "additionalProperties": false
