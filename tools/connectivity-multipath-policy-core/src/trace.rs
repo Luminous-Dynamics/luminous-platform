@@ -751,7 +751,10 @@ pub fn simulate(
     application_releases.sort_unstable();
     let mut reassembly_waits = delivered
         .iter()
-        .map(|item| item.application_release_us.saturating_sub(item.first_arrival_us))
+        .map(|item| {
+            item.application_release_us
+                .saturating_sub(item.first_arrival_us)
+        })
         .collect::<Vec<_>>();
     reassembly_waits.sort_unstable();
 
