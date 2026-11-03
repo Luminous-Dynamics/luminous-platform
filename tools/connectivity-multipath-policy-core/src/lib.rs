@@ -220,7 +220,11 @@ fn validate_request(request: &ScheduleRequest) -> Result<(), ScheduleError> {
         return Err(ScheduleError::InvalidGainThreshold);
     }
     if request.cost_currency.len() != 3
-        || !request.cost_currency.as_bytes().iter().all(|byte| byte.is_ascii_uppercase())
+        || !request
+            .cost_currency
+            .as_bytes()
+            .iter()
+            .all(|byte| byte.is_ascii_uppercase())
     {
         return Err(ScheduleError::InvalidCurrencyCode);
     }
@@ -442,7 +446,11 @@ fn best_single_by_cost(candidates: &[Candidate]) -> Option<Candidate> {
         left.cost_micros
             .cmp(&right.cost_micros)
             .then_with(|| left.finish_us.cmp(&right.finish_us))
-            .then_with(|| left.allocations[0].path_id.cmp(&right.allocations[0].path_id))
+            .then_with(|| {
+                left.allocations[0]
+                    .path_id
+                    .cmp(&right.allocations[0].path_id)
+            })
     })
 }
 
@@ -536,15 +544,13 @@ pub fn evaluate(
         Strategy::BestRtt => (
             best_rtt_single,
             vec![
-                "selected eligible single path with the lowest estimated completion time".to_owned(),
+                "selected eligible single path with the lowest estimated completion time"
+                    .to_owned(),
             ],
         ),
         Strategy::LowestCost => (
             cheapest_single,
-            vec![
-                "selected lowest-cost eligible single path within hard limits"
-                    .to_owned(),
-            ],
+            vec!["selected lowest-cost eligible single path within hard limits".to_owned()],
         ),
         Strategy::AggregateCapacity => {
             if let Some(candidate) = multi {
@@ -566,18 +572,18 @@ pub fn evaluate(
             }
         }
         Strategy::IntentAware => {
-            let use_multi = best_single
-                .as_ref()
-                .zip(multi.as_ref())
-                .is_some_and(|(single, parallel)| {
-                    enough_improvement(single, parallel, request.minimum_gain_ppm)
-                });
+            let use_multi =
+                best_single
+                    .as_ref()
+                    .zip(multi.as_ref())
+                    .is_some_and(|(single, parallel)| {
+                        enough_improvement(single, parallel, request.minimum_gain_ppm)
+                    });
             if use_multi {
                 (
                     multi,
                     vec![
-                        "multipath cleared the gain threshold and all hard constraints"
-                            .to_owned(),
+                        "multipath cleared the gain threshold and all hard constraints".to_owned(),
                     ],
                 )
             } else {
@@ -788,12 +794,8 @@ mod tests {
         let mut usd = path("usd", 1_000, 100_000_000, 1, "usd");
         usd.cost_currency = "USD".to_owned();
         let zar = path("zar", 10_000, 10_000_000, 10, "zar");
-        let result = evaluate(
-            &request(),
-            &[usd, zar],
-            Strategy::LowestCost,
-        )
-        .expect("valid inputs");
+        let result = evaluate(&request(), &[usd, zar], Strategy::LowestCost)
+            .expect("valid inputs");
         assert_eq!(result.mode, DecisionMode::SinglePath);
         assert_eq!(result.allocations[0].path_id, "zar");
         assert_eq!(result.exclusions[0].reason, "cost_currency_mismatch");
@@ -804,8 +806,12 @@ mod tests {
         let mut req = request();
         req.cost_currency = "zar".to_owned();
         assert_eq!(
-            evaluate(&req, &[path("a", 1_000, 10_000_000, 1, "a")], Strategy::BestRtt)
-                .unwrap_err(),
+            evaluate(
+                &req,
+                &[path("a", 1_000, 10_000_000, 1, "a")],
+                Strategy::BestRtt
+            )
+            .unwrap_err(),
             ScheduleError::InvalidCurrencyCode
         );
     }
