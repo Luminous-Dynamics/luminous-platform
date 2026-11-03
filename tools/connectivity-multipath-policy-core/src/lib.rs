@@ -551,6 +551,7 @@ fn aggregate_candidate(
                 estimated_energy_uwh: estimated_cost(bytes, path.energy_uwh_per_mib)?,
                 shared_risk_group: path.shared_risk_group.clone(),
                 capacity_domain_ids: canonical_capacity_domain_ids(&path.capacity_domain_ids),
+                capacity_domain_evidence: path.capacity_domain_evidence.clone(),
             })
         })
         .collect::<Option<Vec<_>>>()?;
