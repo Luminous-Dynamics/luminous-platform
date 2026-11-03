@@ -139,7 +139,7 @@ fn structural_audit(profile: &Value) -> (BTreeMap<String, Value>, BTreeMap<Strin
     }
 
     let mut components = BTreeMap::new();
-    let mut identities = BTreeMap::<String, String>::new();
+    let mut identities = BTreeMap::<(String, String), String>::new();
     let component_items = profile
         .get("components")
         .and_then(Value::as_array)
@@ -160,14 +160,17 @@ fn structural_audit(profile: &Value) -> (BTreeMap<String, Value>, BTreeMap<Strin
             continue;
         }
 
-        let identity = component
-            .get("identity")
-            .and_then(|v| text(v, "value"))
-            .map(ToOwned::to_owned);
+        let identity = component.get("identity").and_then(|v| {
+            Some((
+                text(v, "kind")?.to_string(),
+                text(v, "value")?.to_string(),
+            ))
+        });
         if let Some(identity) = identity {
             if let Some(previous) = identities.insert(identity.clone(), id.clone()) {
                 issues.insert(format!(
-                    "duplicate_component_identity:{previous}:{id}:{identity}"
+                    "duplicate_component_identity:{previous}:{id}:{}:{}",
+                    identity.0, identity.1
                 ));
             }
         } else {
@@ -282,7 +285,7 @@ fn evaluate_dimension(
     )
 }
 
-fn audit(profile: &Value, raw: &[u8]) -> Value {
+fn audit(profile: &Value, raw: &[u8], schema_sha256: Option<String>) -> Value {
     let (components, adjacency, structural_issues) = structural_audit(profile);
     let cycles = cycle_report(&adjacency);
     let mut all_issues = structural_issues.clone();
@@ -413,6 +416,7 @@ fn audit(profile: &Value, raw: &[u8]) -> Value {
         "profile_id": text(profile, "profile_id"),
         "profile_schema_version": text(profile, "schema_version"),
         "input_sha256": digest,
+        "schema_sha256": schema_sha256,
         "schema_validation": "not_performed_by_semantic_auditor",
         "overall_claim_ceiling": overall,
         "structurally_valid": all_issues.is_empty(),
@@ -432,11 +436,12 @@ fn audit(profile: &Value, raw: &[u8]) -> Value {
 fn main() {
     let mut args = env::args().skip(1);
     let Some(path) = args.next() else {
-        eprintln!("usage: eip-audit <profile.json>");
+        eprintln!("usage: eip-audit <profile.json> [profile.schema.json]");
         process::exit(2);
     };
+    let schema_path = args.next();
     if args.next().is_some() {
-        eprintln!("usage: eip-audit <profile.json>");
+        eprintln!("usage: eip-audit <profile.json> [profile.schema.json]");
         process::exit(2);
     }
 
@@ -454,7 +459,32 @@ fn main() {
             process::exit(2);
         }
     };
-    let report = audit(&profile, &raw);
+    let schema_sha256 = if let Some(schema_path) = schema_path {
+        let schema_raw = match fs::read(&schema_path) {
+            Ok(bytes) => bytes,
+            Err(error) => {
+                eprintln!("cannot read schema {schema_path}: {error}");
+                process::exit(2);
+            }
+        };
+        let schema_value: Value = match serde_json::from_slice(&schema_raw) {
+            Ok(value) => value,
+            Err(error) => {
+                eprintln!("invalid schema JSON: {error}");
+                process::exit(2);
+            }
+        };
+        if text(&schema_value, "$schema")
+            != Some("https://json-schema.org/draft/2020-12/schema")
+        {
+            eprintln!("schema must declare Draft 2020-12");
+            process::exit(2);
+        }
+        Some(format!("{:x}", Sha256::digest(&schema_raw)))
+    } else {
+        None
+    };
+    let report = audit(&profile, &raw, schema_sha256);
     let structurally_valid = report["structurally_valid"].as_bool() == Some(true);
     match serde_json::to_string_pretty(&report) {
         Ok(encoded) => println!("{encoded}"),
@@ -524,7 +554,7 @@ mod tests {
     fn process_smoke_fixture_fails_stronger_independence_claims() {
         let value = profile();
         let raw = serde_json::to_vec(&value).expect("serialize");
-        let report = audit(&value, &raw);
+        let report = audit(&value, &raw, None);
         assert_eq!(report["structurally_valid"], true);
 
         let participant = claim_report(&report, "participant_effect_independently_observed");
@@ -642,6 +672,22 @@ mod tests {
             dimension_report(claim, "administration")["shared_domain_ids"][0],
             "admin:common-root"
         );
+    }
+
+    #[test]
+    fn duplicate_component_identity_invalidates_profile() {
+        let mut value = profile();
+        let identity = value["components"][0]["identity"].clone();
+        value["components"][1]["identity"] = identity;
+        let raw = serde_json::to_vec(&value).expect("serialize");
+        let report = audit(&value, &raw, None);
+        assert_eq!(report["structurally_valid"], false);
+        assert_eq!(report["overall_claim_ceiling"], "invalid_profile");
+        assert!(report["structural_issues"]
+            .as_array()
+            .expect("issues")
+            .iter()
+            .any(|item| item.as_str().is_some_and(|text| text.starts_with("duplicate_component_identity:"))));
     }
 
     #[test]
