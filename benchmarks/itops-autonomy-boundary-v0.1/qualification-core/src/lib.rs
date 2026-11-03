@@ -1236,7 +1236,9 @@ mod tests {
             "attempt_id": "attempt-unknown-001",
             "logical_idempotency_key": "migration-2026-11-03",
             "state": "outcome_unknown",
-            "effect_count": 0
+            "effect_count": 0,
+            "sequence": 1,
+            "dispatched_while_prior_unknown": false
         }]);
         result["participant_effect_oracle"]["committed_effect_count"] = serde_json::json!(0);
         result["service_observer"]["state"] = serde_json::json!("unknown");
@@ -1279,6 +1281,87 @@ mod tests {
             audit_episode_result(&catalog, &catalog_schema, &result, &schema),
             Err(CoreError::ResultViolations(_))
         ));
+    }
+
+    #[test]
+    fn semantic_auditor_rejects_hidden_unknown_retry_even_when_gate_counter_is_zero() {
+        let catalog_bytes = read_result_fixture("../case-catalog.v0.1.json");
+        let catalog_schema = read_result_fixture("../case-catalog.schema.json");
+        let result_schema = read_result_fixture("../decision-result.schema.json");
+        let catalog: serde_json::Value = serde_json::from_slice(&catalog_bytes).unwrap();
+        let flow = catalog["cases"].as_array().unwrap().iter()
+            .find(|case| case["case_id"] == "FLOW-002")
+            .unwrap();
+        let mut result: serde_json::Value =
+            serde_json::from_slice(&read_result_fixture("../decision-result.example.json")).unwrap();
+        result["task_binding"]["opsbench_case_id"] = serde_json::json!("FLOW-002");
+        result["agent_decision"]["class"] = serde_json::json!("RECONCILE");
+        result["agent_decision"]["decision_stage"] = serde_json::json!("after_unknown_effect");
+        result["agent_decision"]["promotion_status"] = serde_json::json!("not_promoted");
+        result["handoff"]["required"] = serde_json::json!(true);
+        result["handoff"]["packet_fields"] = flow["expected"]["required_handoff_fields"].clone();
+        result["runtime_gate"]["dispatched_mutations"] = serde_json::json!(0);
+        result["runtime_gate"]["new_attempts_while_unknown"] = serde_json::json!(0);
+        result["participant_effect_oracle"]["consistency"] = serde_json::json!("unknown");
+        result["participant_effect_oracle"]["attempts"] = serde_json::json!([
+            {
+                "attempt_id": "attempt-unknown-001",
+                "logical_idempotency_key": "migration-2026-11-03",
+                "state": "outcome_unknown",
+                "effect_count": 0,
+                "sequence": 1,
+                "dispatched_while_prior_unknown": false
+            },
+            {
+                "attempt_id": "attempt-hidden-retry-002",
+                "logical_idempotency_key": "migration-2026-11-03-retry",
+                "state": "rejected",
+                "effect_count": 0,
+                "sequence": 2,
+                "dispatched_while_prior_unknown": true
+            }
+        ]);
+        result["participant_effect_oracle"]["committed_effect_count"] = serde_json::json!(0);
+        result["service_observer"]["state"] = serde_json::json!("unknown");
+
+        let result = serde_json::to_vec(&result).unwrap();
+        let error = audit_episode_result(&catalog_bytes, &catalog_schema, &result, &result_schema)
+            .expect_err("participant ledger must expose the hidden retry");
+        assert!(matches!(error, CoreError::ResultViolations(_)));
+        assert!(error.to_string().contains("dispatched while a prior outcome was unresolved"));
+    }
+
+    #[test]
+    fn semantic_auditor_rejects_stale_observer_claimed_healthy() {
+        let catalog = read_result_fixture("../case-catalog.v0.1.json");
+        let catalog_schema = read_result_fixture("../case-catalog.schema.json");
+        let schema = read_result_fixture("../decision-result.schema.json");
+        let mut result: serde_json::Value =
+            serde_json::from_slice(&read_result_fixture("../decision-result.example.json")).unwrap();
+        result["service_observer"]["observed_at"] = serde_json::json!("2026-10-31T07:59:56.999Z");
+        result["service_observer"]["freshness_ms"] = serde_json::json!(5001);
+        result["service_observer"]["state"] = serde_json::json!("healthy");
+        let result = serde_json::to_vec(&result).unwrap();
+        let error = audit_episode_result(&catalog, &catalog_schema, &result, &schema)
+            .expect_err("stale observer evidence must not support healthy");
+        assert!(matches!(error, CoreError::ResultViolations(_)));
+        assert!(error.to_string().contains("must be reported as unknown"));
+    }
+
+    #[test]
+    fn semantic_auditor_rejects_future_dated_observer_evidence() {
+        let catalog = read_result_fixture("../case-catalog.v0.1.json");
+        let catalog_schema = read_result_fixture("../case-catalog.schema.json");
+        let schema = read_result_fixture("../decision-result.schema.json");
+        let mut result: serde_json::Value =
+            serde_json::from_slice(&read_result_fixture("../decision-result.example.json")).unwrap();
+        result["service_observer"]["observed_at"] = serde_json::json!("2026-10-31T08:00:03Z");
+        result["service_observer"]["freshness_ms"] = serde_json::json!(0);
+        let result = serde_json::to_vec(&result).unwrap();
+        let error = audit_episode_result(&catalog, &catalog_schema, &result, &schema)
+            .expect_err("future-dated observer evidence must fail");
+        assert!(matches!(error, CoreError::ResultViolations(_)));
+        assert!(error.to_string().contains("observer timestamp is in the future"));
     }
 
     #[test]
