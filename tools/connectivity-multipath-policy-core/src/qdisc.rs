@@ -12,6 +12,8 @@ const MAX_RATE_BPS: u64 = 1_000_000_000;
 const MIN_DURATION_SECONDS: u16 = 5;
 const MAX_DURATION_SECONDS: u16 = 300;
 const MAX_PARALLEL_FLOWS: u8 = 32;
+const MIN_TBF_KERNEL_HZ: u64 = 100;
+const ETHERNET_MTU_BYTES: u64 = 1500;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum QdiscArm {
@@ -71,6 +73,8 @@ pub struct CommandPlan {
     pub scenario_id: String,
     pub qdisc_arm: &'static str,
     pub shaping_rate_bps: u64,
+    pub tbf_minimum_kernel_hz: u16,
+    pub tbf_burst_bytes: Option<u64>,
     pub duration_seconds: u16,
     pub tenant_a_parallel_flows: u8,
     pub tenant_b_parallel_flows: u8,
@@ -173,6 +177,13 @@ fn add_owned(
     });
 }
 
+fn tbf_burst_bytes(rate_bps: u64) -> Option<u64> {
+    let per_tick_bytes = (u128::from(rate_bps)
+        .checked_add(u128::from(MIN_TBF_KERNEL_HZ) * 8 - 1)?)
+        / (u128::from(MIN_TBF_KERNEL_HZ) * 8);
+    u64::try_from(per_tick_bytes.checked_add(u128::from(ETHERNET_MTU_BYTES))?).ok()
+}
+
 fn qdisc_args(profile: &QdiscProfile) -> Vec<(String, Vec<String>)> {
     let prefix = || {
         vec![
@@ -204,8 +215,14 @@ fn qdisc_args(profile: &QdiscProfile) -> Vec<(String, Vec<String>)> {
                 .map(str::to_owned),
             );
             shaper.push(format!("{}bit", profile.shaping_rate_bps));
+            shaper.push("burst".to_owned());
+            shaper.push(
+                tbf_burst_bytes(profile.shaping_rate_bps)
+                    .expect("validated shaping rate fits bounded TBF burst")
+                    .to_string(),
+            );
             shaper.extend(
-                ["burst", "32kb", "latency", "400ms"]
+                ["latency", "400ms"]
                     .into_iter()
                     .map(str::to_owned),
             );
@@ -788,6 +805,12 @@ pub fn build_plan(profile: &QdiscProfile) -> Result<CommandPlan, QdiscPlanError>
         scenario_id: profile.scenario_id.clone(),
         qdisc_arm: profile.arm.as_str(),
         shaping_rate_bps: profile.shaping_rate_bps,
+        tbf_minimum_kernel_hz: MIN_TBF_KERNEL_HZ as u16,
+        tbf_burst_bytes: if profile.arm == QdiscArm::FqCodel {
+            tbf_burst_bytes(profile.shaping_rate_bps)
+        } else {
+            None
+        },
         duration_seconds: profile.duration_seconds,
         tenant_a_parallel_flows: profile.tenant_a_parallel_flows,
         tenant_b_parallel_flows: profile.tenant_b_parallel_flows,
@@ -880,6 +903,12 @@ mod tests {
         }
     }
 
+
+    #[test]
+    fn tbf_burst_meets_rate_over_hz_plus_mtu_lower_bound() {
+        assert_eq!(tbf_burst_bytes(100_000_000), Some(126_500));
+        assert_eq!(tbf_burst_bytes(1_000_000_000), Some(1_251_500));
+    }
 
     #[test]
     fn fq_codel_baseline_has_same_rate_tbf_shaper_as_cake() {
