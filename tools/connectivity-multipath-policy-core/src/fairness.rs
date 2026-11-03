@@ -47,9 +47,18 @@ pub struct FairnessReport {
     pub allocated_bps: u64,
     pub unused_capacity_bps: u64,
     pub tenant_weighted_jain_index_ppm: Option<u32>,
-    pub flow_weighted_jain_index_ppm: Option<u32>,
+    /// Worst weighted Jain index among tenants with at least two backlogged flows.
+    pub worst_tenant_flow_weighted_jain_index_ppm: Option<u32>,
+    pub per_tenant_flow_fairness: Vec<TenantFlowFairness>,
     pub tenant_allocations: Vec<TenantRateAllocation>,
     pub flow_allocations: Vec<FlowRateAllocation>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TenantFlowFairness {
+    pub tenant_id: String,
+    pub backlogged_flow_count: u32,
+    pub weighted_jain_index_ppm: Option<u32>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -352,22 +361,42 @@ pub fn allocate_tenant_weighted_max_min(
         .iter()
         .map(|flow| (flow.flow_id.as_str(), flow.flow_weight))
         .collect();
-    let flow_weighted_rates = flow_allocations
+    let mut per_tenant_flow_fairness = Vec::with_capacity(tenants.len());
+    for tenant in &tenant_allocations {
+        let weighted_rates = flow_allocations
+            .iter()
+            .filter(|item| {
+                item.tenant_id == tenant.tenant_id && item.allocated_bps < item.demand_bps
+            })
+            .map(|item| {
+                let weight = *flow_weights.get(item.flow_id.as_str()).unwrap_or(&1);
+                f64::from(item.allocated_bps) / f64::from(weight)
+            })
+            .collect::<Vec<_>>();
+        per_tenant_flow_fairness.push(TenantFlowFairness {
+            tenant_id: tenant.tenant_id.clone(),
+            backlogged_flow_count: u32::try_from(weighted_rates.len())
+                .map_err(|_| FairnessError::ArithmeticOverflow)?,
+            weighted_jain_index_ppm: if weighted_rates.len() >= 2 {
+                jain_index_ppm(&weighted_rates)
+            } else {
+                None
+            },
+        });
+    }
+    let worst_tenant_flow_weighted_jain_index_ppm = per_tenant_flow_fairness
         .iter()
-        .filter(|item| item.allocated_bps < item.demand_bps)
-        .map(|item| {
-            let tenant_weight = *tenant_weights.get(&item.tenant_id).unwrap_or(&1);
-            let flow_weight = *flow_weights.get(item.flow_id.as_str()).unwrap_or(&1);
-            f64::from(item.allocated_bps) / (f64::from(tenant_weight) * f64::from(flow_weight))
-        })
-        .collect::<Vec<_>>();
+        .filter(|item| item.backlogged_flow_count >= 2)
+        .filter_map(|item| item.weighted_jain_index_ppm)
+        .min();
 
     Ok(FairnessReport {
         capacity_bps,
         allocated_bps,
         unused_capacity_bps: capacity_bps - allocated_bps,
         tenant_weighted_jain_index_ppm: jain_index_ppm(&tenant_weighted_rates),
-        flow_weighted_jain_index_ppm: jain_index_ppm(&flow_weighted_rates),
+        worst_tenant_flow_weighted_jain_index_ppm,
+        per_tenant_flow_fairness,
         tenant_allocations,
         flow_allocations,
     })
@@ -499,6 +528,39 @@ mod tests {
         assert_eq!(shares["a-1"], 13);
         assert_eq!(shares["a-2"], 37);
         assert_eq!(shares["b-1"], 50);
+    }
+
+    #[test]
+    fn flow_fairness_is_measured_within_each_tenant_budget() {
+        let result = allocate_tenant_weighted_max_min(
+            100,
+            &[
+                flow("a-1", "tenant-a", 1, 1, 100, 0),
+                flow("a-2", "tenant-a", 1, 1, 100, 0),
+                flow("b-1", "tenant-b", 1, 1, 100, 0),
+            ],
+        )
+        .expect("feasible allocation");
+        assert_eq!(result.tenant_weighted_jain_index_ppm, Some(1_000_000));
+        assert_eq!(
+            result.worst_tenant_flow_weighted_jain_index_ppm,
+            Some(1_000_000)
+        );
+        assert_eq!(result.per_tenant_flow_fairness.len(), 2);
+        let tenant_a = result
+            .per_tenant_flow_fairness
+            .iter()
+            .find(|item| item.tenant_id == "tenant-a")
+            .expect("tenant a flow fairness");
+        let tenant_b = result
+            .per_tenant_flow_fairness
+            .iter()
+            .find(|item| item.tenant_id == "tenant-b")
+            .expect("tenant b flow fairness");
+        assert_eq!(tenant_a.backlogged_flow_count, 2);
+        assert_eq!(tenant_a.weighted_jain_index_ppm, Some(1_000_000));
+        assert_eq!(tenant_b.backlogged_flow_count, 1);
+        assert_eq!(tenant_b.weighted_jain_index_ppm, None);
     }
 
     #[test]
