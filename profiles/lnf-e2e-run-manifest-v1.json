@@ -1,0 +1,226 @@
+{
+  "schema_version": "luminous.lnf-e2e-run-manifest.v1",
+  "profile_id": "lnf-edge-dtn-e2e-v1",
+  "status": "design_fixture_only",
+  "run_id": "fixture-lnf-edge-dtn-first-campaign",
+  "run_generation": 1,
+  "created_on": "2026-11-02",
+  "source_bindings": [
+    {
+      "id": "broker-profile",
+      "repository": "Luminous-Dynamics/luminous-platform",
+      "path": "profiles/connectivity-broker-benchmark-profile-v1.json",
+      "commit_sha": "85f1d9aa93457dab5b4c4aa372353799ee0984f8",
+      "git_blob_sha": "2693cc12985d8612d2f86c049862fec4ca800aaf",
+      "role": "policy and outcome benchmark hypotheses",
+      "source_state": "draft_pr",
+      "verification_method": "local_git_blob_at_pinned_commit"
+    },
+    {
+      "id": "broker-profile-schema",
+      "repository": "Luminous-Dynamics/luminous-platform",
+      "path": "schemas/connectivity-broker-benchmark-profile-v1.schema.json",
+      "commit_sha": "85f1d9aa93457dab5b4c4aa372353799ee0984f8",
+      "git_blob_sha": "a3887217b4505fe38e5b25aba8967ed2e79af415",
+      "role": "strict benchmark profile schema",
+      "source_state": "draft_pr",
+      "verification_method": "local_git_blob_at_pinned_commit"
+    },
+    {
+      "id": "measurement-receipt-schema",
+      "repository": "Luminous-Dynamics/luminous-platform",
+      "path": "schemas/connectivity-measurement-receipt-v1.schema.json",
+      "commit_sha": "85f1d9aa93457dab5b4c4aa372353799ee0984f8",
+      "git_blob_sha": "1e81ae82d1d9082e4d19ff0ed69f6595a62f55b2",
+      "role": "existing machine-verifiable measurement receipt contract",
+      "source_state": "draft_pr",
+      "verification_method": "local_git_blob_at_pinned_commit"
+    },
+    {
+      "id": "mycelix-f0-topology",
+      "repository": "Luminous-Dynamics/mycelix",
+      "path": "docs/interoperability/fixtures/MYC_INT_007F_F0_FEDERATION.json",
+      "commit_sha": "006f7da146b4d1c781967c3ee8a6161b411b633c",
+      "git_blob_sha": "537c6f299be47565c26d30f294c1518b5e8debb1",
+      "role": "external federation topology and fault-manifest semantics",
+      "source_state": "draft_pr",
+      "verification_method": "remote_git_blob_pinned_not_materialized"
+    }
+  ],
+  "selected_benchmarks": [
+    "POLICY_HARD_CONSTRAINTS_001",
+    "POLICY_EXPLANATION_001",
+    "POLICY_REPLAY_001",
+    "POLICY_DATA_MINIMIZATION_001",
+    "GATEWAY_FAILOVER_001",
+    "LOCAL_CONTINUITY_001",
+    "STORE_FORWARD_001",
+    "ENERGY_PER_USEFUL_TASK_001"
+  ],
+  "topology": {
+    "semantic_identity_is_separate_from_runtime_identity": true,
+    "nodes": [
+      {
+        "id": "client",
+        "role": "synthetic user workload generator",
+        "provenance": "synthetic",
+        "runtime_id_policy": "ephemeral_locator_not_semantic_identity"
+      },
+      {
+        "id": "gateway",
+        "role": "community gateway and deterministic connectivity broker adapter",
+        "provenance": "synthetic",
+        "runtime_id_policy": "ephemeral_locator_not_semantic_identity"
+      },
+      {
+        "id": "local_service",
+        "role": "local DNS, cached resource and local message endpoint",
+        "provenance": "synthetic",
+        "runtime_id_policy": "ephemeral_locator_not_semantic_identity"
+      },
+      {
+        "id": "dtn_sender",
+        "role": "BPv7 sender and bounded durable outbox",
+        "provenance": "synthetic",
+        "runtime_id_policy": "ephemeral_locator_not_semantic_identity"
+      },
+      {
+        "id": "dtn_receiver",
+        "role": "delayed BPv7 receiver and idempotent reference consumer",
+        "provenance": "synthetic",
+        "runtime_id_policy": "ephemeral_locator_not_semantic_identity"
+      },
+      {
+        "id": "observer",
+        "role": "independent probe, fault scheduler and evidence collector",
+        "provenance": "synthetic",
+        "runtime_id_policy": "ephemeral_locator_not_semantic_identity"
+      }
+    ],
+    "links": [
+      {
+        "id": "lan-client-gateway",
+        "source": "client",
+        "destination": "gateway",
+        "network_class": "local_virtual",
+        "impairment_profile": "fixed-low-delay-local-lab-v1",
+        "failure_domain": "lan-veth-01",
+        "physical_technology_claimed": false
+      },
+      {
+        "id": "wan-a",
+        "source": "gateway",
+        "destination": "remote-test-endpoint",
+        "network_class": "virtual_wan_impairment",
+        "impairment_profile": "primary-wan-healthy-then-loss-blackhole-dns-v1",
+        "failure_domain": "wan-a-independent-netem",
+        "physical_technology_claimed": false
+      },
+      {
+        "id": "wan-b",
+        "source": "gateway",
+        "destination": "remote-test-endpoint",
+        "network_class": "virtual_wan_impairment",
+        "impairment_profile": "secondary-wan-independent-delay-loss-v1",
+        "failure_domain": "wan-b-independent-netem",
+        "physical_technology_claimed": false
+      },
+      {
+        "id": "dtn-delay-path",
+        "source": "dtn_sender",
+        "destination": "dtn_receiver",
+        "network_class": "virtual_dtn_contact",
+        "impairment_profile": "partition-carry-forward-reconnect-duplicate-reorder-v1",
+        "failure_domain": "dtn-contact-schedule-01",
+        "physical_technology_claimed": false
+      }
+    ]
+  },
+  "workloads": [
+    {
+      "id": "local-cache-read",
+      "intent": "LocalOnly",
+      "path_semantics": "local_only",
+      "success_condition": "client retrieves exact cache fixture digest while all WAN paths are disabled",
+      "raw_payload_capture": false
+    },
+    {
+      "id": "remote-resource-fetch",
+      "intent": "GeneralBrowsing",
+      "path_semantics": "live_only",
+      "success_condition": "client receives the named remote resource only when an authorized live route is available; no false delivery is reported while WANs are absent",
+      "raw_payload_capture": false
+    },
+    {
+      "id": "durable-message",
+      "intent": "Messaging",
+      "path_semantics": "durable_store_forward",
+      "success_condition": "reference consumer commits each stable message ID at most once using its durable inbox/idempotency transaction; expiry and delivery disposition remain separately observable",
+      "raw_payload_capture": false
+    }
+  ],
+  "scenario_ids": [
+    "E2E-00",
+    "E2E-01",
+    "E2E-02",
+    "E2E-03",
+    "E2E-04",
+    "E2E-05",
+    "E2E-06",
+    "E2E-07",
+    "E2E-08",
+    "E2E-09",
+    "E2E-10",
+    "E2E-11"
+  ],
+  "comparison_arms": [
+    {
+      "id": "baseline-openwrt-mwan3",
+      "role": "matched commodity gateway policy baseline",
+      "status": "planned_unpinned",
+      "same_workload_required": true
+    },
+    {
+      "id": "lnf-broker-same-gateway",
+      "role": "LNF broker decision core on the same gateway and links",
+      "status": "planned",
+      "same_workload_required": true
+    },
+    {
+      "id": "local-only-no-wan",
+      "role": "local-service floor with all WAN links absent",
+      "status": "planned",
+      "same_workload_required": true
+    },
+    {
+      "id": "dtn-selected-implementation",
+      "role": "selected BPv7 implementation after capability and durability audit",
+      "status": "blocked_pending_bpsec_audit",
+      "same_workload_required": true
+    },
+    {
+      "id": "ion-dtn-independent-reference",
+      "role": "independent BPv7 and BPSec interoperability comparator",
+      "status": "conditional_interoperability_comparator",
+      "same_workload_required": true
+    }
+  ],
+  "execution_profile": {
+    "execution_class": "network_namespace_or_vm_emulation",
+    "external_network_access": false,
+    "production_routes_present": false,
+    "public_rf_transmission": false,
+    "real_subscriber_data": false,
+    "provider_credentials": false,
+    "simulation_is_not_field_evidence": true
+  },
+  "claim_ceiling": {
+    "execution_conducted": false,
+    "measurement_truth_established": false,
+    "hardware_qualified": false,
+    "field_observed": false,
+    "production_ready": false,
+    "deployment_authorized": false,
+    "carrier_equivalence_established": false
+  }
+}

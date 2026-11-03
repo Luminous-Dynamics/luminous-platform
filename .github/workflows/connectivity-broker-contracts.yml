@@ -6,8 +6,10 @@ on:
       - "tools/connectivity-policy-core/**"
       - "tools/connectivity-benchmark-profile-validator/**"
       - "profiles/connectivity-broker-benchmark-profile-v1.json"
+      - "profiles/lnf-e2e-run-manifest-v1.json"
       - "schemas/connectivity-broker-benchmark-profile-v1.schema.json"
       - "schemas/connectivity-measurement-receipt-v1.schema.json"
+      - "schemas/lnf-e2e-run-manifest-v1.schema.json"
       - "docs/CONNECTIVITY_OUTCOME_BENCHMARKS_V1.md"
       - ".github/workflows/connectivity-broker-contracts.yml"
   push:
@@ -16,8 +18,10 @@ on:
       - "tools/connectivity-policy-core/**"
       - "tools/connectivity-benchmark-profile-validator/**"
       - "profiles/connectivity-broker-benchmark-profile-v1.json"
+      - "profiles/lnf-e2e-run-manifest-v1.json"
       - "schemas/connectivity-broker-benchmark-profile-v1.schema.json"
       - "schemas/connectivity-measurement-receipt-v1.schema.json"
+      - "schemas/lnf-e2e-run-manifest-v1.schema.json"
       - "docs/CONNECTIVITY_OUTCOME_BENCHMARKS_V1.md"
       - ".github/workflows/connectivity-broker-contracts.yml"
 
@@ -37,13 +41,14 @@ jobs:
       - name: Checkout exact revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Install pinned Rust toolchain and Clippy
         uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # toolchain action pinned to immutable revision
         with:
           toolchain: "1.99.0"
-          components: clippy
+          components: clippy, rustfmt
 
       - name: Test connectivity policy core
         run: cargo test --manifest-path tools/connectivity-policy-core/Cargo.toml --all-targets
@@ -65,3 +70,19 @@ jobs:
           --
           schemas/connectivity-broker-benchmark-profile-v1.schema.json
           profiles/connectivity-broker-benchmark-profile-v1.json
+
+      - name: Check formatting for new LNF Rust targets
+        run: >-
+          rustfmt --edition 2024 --check
+          tools/connectivity-benchmark-profile-validator/src/bin/lnf-run-manifest-verify.rs
+          tools/connectivity-benchmark-profile-validator/tests/lnf_run_manifest_cli.rs
+
+      - name: Validate LNF end-to-end run manifest and exact source pins
+        run: >-
+          cargo run
+          --manifest-path tools/connectivity-benchmark-profile-validator/Cargo.toml
+          --bin lnf-run-manifest-verify
+          --
+          schemas/lnf-e2e-run-manifest-v1.schema.json
+          profiles/lnf-e2e-run-manifest-v1.json
+          .
