@@ -976,6 +976,17 @@ mod tests {
         assert_eq!(report.redundant_bytes, 0);
         assert_eq!(report.distinct_failure_domains_used, 2);
         assert_eq!(report.distinct_capacity_domains_used, 2);
+        assert_eq!(
+            report.capacity_domain_ids_used,
+            vec!["capacity-a".to_owned(), "capacity-b".to_owned()]
+        );
+        assert_eq!(report.topology_sha256, request().topology_sha256);
+        assert_eq!(report.decision_time_unix_ms, request().now_unix_ms);
+        assert!(report.path_summaries.iter().all(|summary| {
+            summary.capacity_domain_evidence.complete
+                && summary.capacity_domain_evidence.confidence_ppm == 1_000_000
+                && summary.capacity_domain_evidence.topology_sha256 == report.topology_sha256
+        }));
     }
 
     #[test]
