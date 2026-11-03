@@ -416,6 +416,33 @@
                   "expected_evidence": {
                     "type": "string",
                     "minLength": 1
+                  },
+                  "authority_requirement": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "tenant_binding",
+                      "target_binding",
+                      "operation",
+                      "plan_digest_binding"
+                    ],
+                    "properties": {
+                      "tenant_binding": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "target_binding": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "operation": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "plan_digest_binding": {
+                        "const": "workflow.plan_digest"
+                      }
+                    }
                   }
                 }
               }
