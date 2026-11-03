@@ -95,5 +95,21 @@
     "native_scorer_unchanged": true,
     "instrumentation_is_supplemental": true,
     "no_private_tasks": true
+  },
+  "target_result_surface": "servicenow_nowai_bench_snapshot_2026-07-23",
+  "published_reference": {
+    "model_name": "Claude Fable 5 (with fallback)",
+    "organization": "Anthropic",
+    "published_score_fraction": 0.511,
+    "execution_mode": "oracle",
+    "reported_snapshot_date": "2026-07-23",
+    "task_split": "ServiceNow NOWAI-Bench synchronized EnterpriseOps-Gym leaderboard snapshot; public/full split details must be pinned from the selected source release.",
+    "fallback_configuration": "with fallback; exact fallback route and inference profile must be reconstructed from the source leaderboard configuration before direct comparison.",
+    "source_url": "https://github.com/ServiceNow/NOWAI-Bench"
+  },
+  "reference_reproduction": {
+    "required_for_direct_comparison": true,
+    "reproduced": false,
+    "system_profile_digest": null
   }
 }
