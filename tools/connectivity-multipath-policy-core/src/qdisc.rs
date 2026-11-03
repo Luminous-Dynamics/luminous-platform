@@ -212,9 +212,24 @@ fn qdisc_args(profile: &QdiscProfile) -> Vec<(String, Vec<String>)> {
 
             let mut aqm = prefix();
             aqm.extend(
-                ["parent", "1:1", "fq_codel", "limit", "10240", "flows", "1024", "target", "5ms", "interval", "100ms", "quantum", "1514", "ecn"]
-                    .into_iter()
-                    .map(str::to_owned),
+                [
+                    "parent",
+                    "1:1",
+                    "fq_codel",
+                    "limit",
+                    "10240",
+                    "flows",
+                    "1024",
+                    "target",
+                    "5ms",
+                    "interval",
+                    "100ms",
+                    "quantum",
+                    "1514",
+                    "ecn",
+                ]
+                .into_iter()
+                .map(str::to_owned),
             );
             vec![
                 ("tbf_shaper_install_argv".to_owned(), shaper),
