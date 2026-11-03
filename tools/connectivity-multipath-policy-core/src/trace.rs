@@ -86,6 +86,10 @@ pub struct TraceReport {
     pub application_release_p50_us: Option<u64>,
     pub application_release_p95_us: Option<u64>,
     pub application_release_p99_us: Option<u64>,
+    /// Time between first network arrival and in-order application release.
+    pub reassembly_wait_p50_us: Option<u64>,
+    pub reassembly_wait_p95_us: Option<u64>,
+    pub reassembly_wait_p99_us: Option<u64>,
     pub total_bytes_transmitted: u64,
     pub useful_bytes_delivered: u64,
     pub redundant_bytes: u64,
@@ -271,16 +275,28 @@ fn projected_reorder_bytes(
     already_buffered.saturating_add(u64::from(segment_sizes[current_segment as usize]))
 }
 
-fn choose_candidate(
+struct CandidateSelection<'a> {
     strategy: TraceStrategy,
-    candidates: &[CandidatePath],
-    states: &[PathState],
-    transmissions: &[TraceTransmission],
+    candidates: &'a [CandidatePath],
+    states: &'a [PathState],
+    transmissions: &'a [TraceTransmission],
     segment_index: u32,
-    segment_sizes: &[u32],
+    segment_sizes: &'a [u32],
     reorder_limit: u64,
     round_robin_cursor: usize,
-) -> Option<CandidatePath> {
+}
+
+fn choose_candidate(selection: CandidateSelection<'_>) -> Option<CandidatePath> {
+    let CandidateSelection {
+        strategy,
+        candidates,
+        states,
+        transmissions,
+        segment_index,
+        segment_sizes,
+        reorder_limit,
+        round_robin_cursor,
+    } = selection;
     match strategy {
         TraceStrategy::MinRtt => candidates.iter().copied().min_by(|left, right| {
             states[left.index]
@@ -331,26 +347,42 @@ fn choose_candidate(
     }
 }
 
+struct TransmissionAccounting<'a> {
+    request: &'a ScheduleRequest,
+    trace_request: &'a TraceRequest,
+    aggregate_cost_used: &'a mut u64,
+    aggregate_energy_used: &'a mut u64,
+    records: &'a mut Vec<TraceTransmission>,
+}
+
+struct TransmissionAccounting<'a> {
+    request: &'a ScheduleRequest,
+    trace_request: &'a TraceRequest,
+    aggregate_cost_used: &'a mut u64,
+    aggregate_energy_used: &'a mut u64,
+    records: &'a mut Vec<TraceTransmission>,
+}
+
 fn record_transmission(
-    request: &ScheduleRequest,
-    trace_request: &TraceRequest,
     state: &mut PathState,
     segment_index: u32,
     bytes: u32,
     redundant_copy: bool,
-    aggregate_cost_used: &mut u64,
-    aggregate_energy_used: &mut u64,
-    records: &mut Vec<TraceTransmission>,
+    accounting: &mut TransmissionAccounting<'_>,
 ) -> Option<()> {
     let (cost, energy) = candidate_increment(
-        request,
+        accounting.request,
         state,
         bytes,
-        *aggregate_cost_used,
-        *aggregate_energy_used,
+        *accounting.aggregate_cost_used,
+        *accounting.aggregate_energy_used,
     )?;
     let path_candidate = candidate_path(state, 0, bytes)?;
-    let loss = is_lost(trace_request.deterministic_seed, segment_index, &state.path);
+    let loss = is_lost(
+        accounting.trace_request.deterministic_seed,
+        segment_index,
+        &state.path,
+    );
     state.ready_at_us = path_candidate.send_at_us.saturating_add(serialization_us(
         bytes,
         super::effective_capacity(&state.path),
@@ -358,13 +390,13 @@ fn record_transmission(
     state.bytes_used = state.bytes_used.checked_add(u64::from(bytes))?;
     state.cost_used = state.cost_used.checked_add(cost)?;
     state.energy_used = state.energy_used.checked_add(energy)?;
-    *aggregate_cost_used = aggregate_cost_used.checked_add(cost)?;
-    *aggregate_energy_used = aggregate_energy_used.checked_add(energy)?;
+    *accounting.aggregate_cost_used = accounting.aggregate_cost_used.checked_add(cost)?;
+    *accounting.aggregate_energy_used = accounting.aggregate_energy_used.checked_add(energy)?;
     state.transmissions = state.transmissions.checked_add(1)?;
     if loss {
         state.lost_transmissions = state.lost_transmissions.checked_add(1)?;
     }
-    records.push(TraceTransmission {
+    accounting.records.push(TraceTransmission {
         segment_index,
         path_id: state.path.id.clone(),
         send_at_us: path_candidate.send_at_us,
@@ -587,23 +619,26 @@ pub fn simulate(
             let Some(first) = first else {
                 continue;
             };
-            if record_transmission(
+            let mut accounting = TransmissionAccounting {
                 request,
                 trace_request,
+                aggregate_cost_used: &mut aggregate_cost_used,
+                aggregate_energy_used: &mut aggregate_energy_used,
+                records: &mut transmissions,
+            };
+            if record_transmission(
                 &mut states[first.index],
                 segment_index,
                 bytes,
                 false,
-                &mut aggregate_cost_used,
-                &mut aggregate_energy_used,
-                &mut transmissions,
+                &mut accounting,
             )
             .is_none()
             {
                 return Err(ScheduleError::InternalInvariant);
             }
-            if let Some(second) = second {
-                if candidate_increment(
+            if let Some(second) = second
+                && candidate_increment(
                     request,
                     &states[second.index],
                     bytes,
@@ -611,51 +646,56 @@ pub fn simulate(
                     aggregate_energy_used,
                 )
                 .is_some()
+            {
+                let mut accounting = TransmissionAccounting {
+                    request,
+                    trace_request,
+                    aggregate_cost_used: &mut aggregate_cost_used,
+                    aggregate_energy_used: &mut aggregate_energy_used,
+                    records: &mut transmissions,
+                };
+                if record_transmission(
+                    &mut states[second.index],
+                    segment_index,
+                    bytes,
+                    true,
+                    &mut accounting,
+                )
+                .is_none()
                 {
-                    if record_transmission(
-                        request,
-                        trace_request,
-                        &mut states[second.index],
-                        segment_index,
-                        bytes,
-                        true,
-                        &mut aggregate_cost_used,
-                        &mut aggregate_energy_used,
-                        &mut transmissions,
-                    )
-                    .is_none()
-                    {
-                        return Err(ScheduleError::InternalInvariant);
-                    }
+                    return Err(ScheduleError::InternalInvariant);
                 }
             }
             continue;
         }
 
-        let selected = choose_candidate(
-            active_strategy,
-            &candidates,
-            &states,
-            &transmissions,
+        let selected = choose_candidate(CandidateSelection {
+            strategy: active_strategy,
+            candidates: &candidates,
+            states: &states,
+            transmissions: &transmissions,
             segment_index,
-            &segment_sizes,
-            request.reorder_buffer_limit_bytes,
+            segment_sizes: &segment_sizes,
+            reorder_limit: request.reorder_buffer_limit_bytes,
             round_robin_cursor,
-        );
+        });
         let Some(selected) = selected else {
             continue;
         };
 
-        if record_transmission(
+        let mut accounting = TransmissionAccounting {
             request,
             trace_request,
+            aggregate_cost_used: &mut aggregate_cost_used,
+            aggregate_energy_used: &mut aggregate_energy_used,
+            records: &mut transmissions,
+        };
+        if record_transmission(
             &mut states[selected.index],
             segment_index,
             bytes,
             false,
-            &mut aggregate_cost_used,
-            &mut aggregate_energy_used,
-            &mut transmissions,
+            &mut accounting,
         )
         .is_none()
         {
@@ -709,6 +749,11 @@ pub fn simulate(
         .map(|item| item.application_release_us)
         .collect::<Vec<_>>();
     application_releases.sort_unstable();
+    let mut reassembly_waits = delivered
+        .iter()
+        .map(|item| item.application_release_us.saturating_sub(item.first_arrival_us))
+        .collect::<Vec<_>>();
+    reassembly_waits.sort_unstable();
 
     let total_bytes_transmitted = transmissions
         .iter()
@@ -795,6 +840,9 @@ pub fn simulate(
         application_release_p50_us: pctl(&application_releases, 50, 100),
         application_release_p95_us: pctl(&application_releases, 95, 100),
         application_release_p99_us: pctl(&application_releases, 99, 100),
+        reassembly_wait_p50_us: pctl(&reassembly_waits, 50, 100),
+        reassembly_wait_p95_us: pctl(&reassembly_waits, 95, 100),
+        reassembly_wait_p99_us: pctl(&reassembly_waits, 99, 100),
         total_bytes_transmitted,
         useful_bytes_delivered,
         redundant_bytes,
@@ -977,10 +1025,16 @@ mod tests {
         .expect("valid trace");
         assert_eq!(report.redundant_bytes, 0);
         assert_eq!(report.distinct_failure_domains_used, 2);
-        assert_eq!(report.distinct_capacity_domains_used, 2);
+        // Both links may carry primary segments, but the shared backhaul may
+        // not be treated as independent capacity for redundant copies.
+        assert_eq!(report.distinct_capacity_domains_used, 3);
         assert_eq!(
             report.capacity_domain_ids_used,
-            vec!["capacity-a".to_owned(), "capacity-b".to_owned()]
+            vec![
+                "access-a".to_owned(),
+                "access-b".to_owned(),
+                "shared-backhaul".to_owned()
+            ]
         );
         assert_eq!(report.topology_sha256, request().topology_sha256);
         assert_eq!(report.decision_time_unix_ms, request().now_unix_ms);
@@ -1085,8 +1139,10 @@ mod tests {
 
     #[test]
     fn independent_failure_domains_use_different_loss_streams() {
-        let first = path("a", 10_000, 20_000_000, "wan-a");
-        let second = path("b", 10_000, 20_000_000, "wan-b");
+        let mut first = path("a", 10_000, 20_000_000, "wan-a");
+        let mut second = path("b", 10_000, 20_000_000, "wan-b");
+        first.loss_ppm = 500_000;
+        second.loss_ppm = 500_000;
         let disagreements = (0..1_000)
             .filter(|segment| {
                 is_lost(trace().deterministic_seed, *segment, &first)
@@ -1163,6 +1219,13 @@ mod tests {
         assert_eq!(delivered.len(), 3);
         assert_eq!(delivered[2].first_arrival_us, 20);
         assert_eq!(delivered[2].application_release_us, 30);
+        let release_waits = delivered
+            .iter()
+            .map(|item| item.application_release_us.saturating_sub(item.first_arrival_us))
+            .collect::<Vec<_>>();
+        assert_eq!(pctl(&release_waits, 50, 100), Some(0));
+        assert_eq!(pctl(&release_waits, 95, 100), Some(10));
+        assert_eq!(pctl(&release_waits, 99, 100), Some(10));
         assert_eq!(peak, 1200);
         assert_eq!(byte_us, 12_000);
         assert!(!exceeded);
@@ -1171,7 +1234,8 @@ mod tests {
 
     #[test]
     fn lost_gap_keeps_later_segments_out_of_useful_delivery_until_timeout() {
-        let path = path("one-path", 10_000, 100_000_000, "one-domain");
+        let mut path = path("one-path", 10_000, 100_000_000, "one-domain");
+        path.loss_ppm = 250_000;
         let seed = (0..10_000)
             .find(|seed| {
                 is_lost(*seed, 0, &path) && (1..4).all(|segment| !is_lost(*seed, segment, &path))
