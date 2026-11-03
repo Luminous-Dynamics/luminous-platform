@@ -8,8 +8,9 @@
 //! socket buffers, or real packet captures.
 
 use super::{
-    PathObservation, ScheduleError, ScheduleRequest, estimated_cost, exclusion_reason,
-    validate_path_set, validate_request,
+    PathObservation, ScheduleError, ScheduleRequest, canonical_capacity_domain_ids,
+    capacity_domains_disjoint, estimated_cost, exclusion_reason, validate_path_set,
+    validate_request,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -53,7 +54,8 @@ pub struct TraceTransmission {
 pub struct PathTraceSummary {
     pub path_id: String,
     pub failure_domain: String,
-    pub capacity_group: String,
+    pub capacity_domain_ids: Vec<String>,
+    pub capacity_domain_evidence: CapacityDomainEvidence,
     pub transmitted_bytes: u64,
     pub transmissions: u64,
     pub lost_transmissions: u64,
@@ -62,6 +64,8 @@ pub struct PathTraceSummary {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TraceReport {
     pub task_id: String,
+    pub topology_sha256: String,
+    pub decision_time_unix_ms: u64,
     pub strategy: TraceStrategy,
     pub total_segments: u32,
     pub scheduled_segments: u32,
@@ -91,7 +95,8 @@ pub struct TraceReport {
     pub estimated_energy_uwh: u64,
     pub cost_currency: String,
     pub distinct_failure_domains_used: usize,
-    pub distinct_capacity_groups_used: usize,
+    pub distinct_capacity_domains_used: usize,
+    pub capacity_domain_ids_used: Vec<String>,
     pub path_summaries: Vec<PathTraceSummary>,
     pub transmissions: Vec<TraceTransmission>,
     pub exclusions: Vec<(String, &'static str)>,
@@ -571,8 +576,10 @@ pub fn simulate(
                 first.is_some_and(|first| {
                     states[first.index].path.shared_risk_group
                         != states[candidate.index].path.shared_risk_group
-                        && states[first.index].path.shared_capacity_group
-                            != states[candidate.index].path.shared_capacity_group
+                        && capacity_domains_disjoint(
+                            &states[first.index].path.capacity_domain_ids,
+                            &states[candidate.index].path.capacity_domain_ids,
+                        )
                 })
             });
             let Some(first) = first else {
@@ -721,7 +728,8 @@ pub fn simulate(
         .map(|state| PathTraceSummary {
             path_id: state.path.id.clone(),
             failure_domain: state.path.shared_risk_group.clone(),
-            capacity_group: state.path.shared_capacity_group.clone(),
+            capacity_domain_ids: canonical_capacity_domain_ids(&state.path.capacity_domain_ids),
+            capacity_domain_evidence: state.path.capacity_domain_evidence.clone(),
             transmitted_bytes: state.bytes_used,
             transmissions: state.transmissions,
             lost_transmissions: state.lost_transmissions,
@@ -734,9 +742,13 @@ pub fn simulate(
     for summary in &path_summaries {
         if summary.transmissions > 0 {
             domains.insert(summary.failure_domain.as_str());
-            capacity_domains.insert(summary.capacity_group.as_str());
+            capacity_domains.extend(summary.capacity_domain_ids.iter().map(String::as_str));
         }
     }
+    let capacity_domain_ids_used = capacity_domains
+        .iter()
+        .map(|domain| (*domain).to_owned())
+        .collect();
 
     let estimated_cost_micros = states
         .iter()
@@ -754,6 +766,8 @@ pub fn simulate(
 
     Ok(TraceReport {
         task_id: request.task_id.clone(),
+        topology_sha256: request.topology_sha256.clone(),
+        decision_time_unix_ms: request.now_unix_ms,
         strategy,
         total_segments,
         network_received_segments,
@@ -790,7 +804,8 @@ pub fn simulate(
         estimated_energy_uwh,
         cost_currency: request.cost_currency.clone(),
         distinct_failure_domains_used: domains.len(),
-        distinct_capacity_groups_used: capacity_domains.len(),
+        distinct_capacity_domains_used: capacity_domains.len(),
+        capacity_domain_ids_used,
         path_summaries,
         transmissions,
         exclusions,
@@ -825,13 +840,25 @@ mod tests {
             cost_micros_per_mib: 100,
             energy_uwh_per_mib: 10,
             shared_risk_group: risk.to_owned(),
-            shared_capacity_group: format!("capacity-{id}"),
+            capacity_domain_ids: vec![format!("capacity-{id}")],
+            capacity_domain_evidence: CapacityDomainEvidence {
+                source_id: "operator-inventory-1".to_owned(),
+                inventory_sha256: "a".repeat(64),
+                topology_sha256: "f".repeat(64),
+                complete: true,
+                confidence_ppm: 1_000_000,
+                observed_at_unix_ms: 900_000,
+                valid_until_unix_ms: 1_100_000,
+            },
         }
     }
 
     fn request() -> ScheduleRequest {
         ScheduleRequest {
             task_id: "trace-task".to_owned(),
+            topology_sha256: "f".repeat(64),
+            now_unix_ms: 1_000_000,
+            minimum_capacity_domain_confidence_ppm: 950_000,
             intent: TrafficIntent::BulkTransfer,
             bytes: 128 * 1024,
             deadline_us: Some(5_000_000),
@@ -913,7 +940,7 @@ mod tests {
         .expect("valid trace");
         assert!(report.redundant_bytes > 0);
         assert!(report.distinct_failure_domains_used >= 2);
-        assert!(report.distinct_capacity_groups_used >= 2);
+        assert!(report.distinct_capacity_domains_used >= 2);
         assert!(report.total_bytes_transmitted >= report.useful_bytes_delivered);
     }
 
@@ -937,8 +964,8 @@ mod tests {
     fn redundant_strategy_does_not_duplicate_same_capacity_group() {
         let mut first = path("a", 10_000, 20_000_000, "failure-a");
         let mut second = path("b", 20_000, 20_000_000, "failure-b");
-        first.shared_capacity_group = "same-backhaul".to_owned();
-        second.shared_capacity_group = "same-backhaul".to_owned();
+        first.capacity_domain_ids = vec!["access-a".to_owned(), "shared-backhaul".to_owned()];
+        second.capacity_domain_ids = vec!["access-b".to_owned(), "shared-backhaul".to_owned()];
         let report = simulate(
             &request(),
             &trace(),
@@ -948,7 +975,18 @@ mod tests {
         .expect("valid trace");
         assert_eq!(report.redundant_bytes, 0);
         assert_eq!(report.distinct_failure_domains_used, 2);
-        assert_eq!(report.distinct_capacity_groups_used, 1);
+        assert_eq!(report.distinct_capacity_domains_used, 2);
+        assert_eq!(
+            report.capacity_domain_ids_used,
+            vec!["capacity-a".to_owned(), "capacity-b".to_owned()]
+        );
+        assert_eq!(report.topology_sha256, request().topology_sha256);
+        assert_eq!(report.decision_time_unix_ms, request().now_unix_ms);
+        assert!(report.path_summaries.iter().all(|summary| {
+            summary.capacity_domain_evidence.complete
+                && summary.capacity_domain_evidence.confidence_ppm == 1_000_000
+                && summary.capacity_domain_evidence.topology_sha256 == report.topology_sha256
+        }));
     }
 
     #[test]
@@ -964,7 +1002,7 @@ mod tests {
         )
         .expect("valid trace");
         assert_eq!(report.distinct_failure_domains_used, 2);
-        assert_eq!(report.distinct_capacity_groups_used, 2);
+        assert_eq!(report.distinct_capacity_domains_used, 2);
     }
 
     #[test]
