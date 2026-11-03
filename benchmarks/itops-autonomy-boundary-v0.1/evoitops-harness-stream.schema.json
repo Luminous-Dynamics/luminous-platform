@@ -1,0 +1,441 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/evoitops-harness-stream-v0.1.schema.json",
+  "title": "EvoITOPS Harness Evolution Stream v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "benchmark_id",
+    "stream_id",
+    "version",
+    "status",
+    "created_at",
+    "sampling_plan_digest",
+    "stages",
+    "arms",
+    "evaluation",
+    "safety_invariants",
+    "reporting"
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "nonempty": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    }
+  },
+  "properties": {
+    "benchmark_id": {
+      "const": "luminous-evoitops-harness-evolution"
+    },
+    "stream_id": {
+      "$ref": "#/$defs/nonempty"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "status": {
+      "enum": [
+        "candidate_not_frozen",
+        "preregistered",
+        "superseded"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sampling_plan_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "stages": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "stage_index",
+          "stage_id",
+          "parent_stage_id",
+          "stage_manifest_digest",
+          "component_digests",
+          "tools",
+          "capability_events",
+          "authority_transition",
+          "new_tool_authority_policy",
+          "explicit_grant_manifest_digest",
+          "task_sets",
+          "agent_adaptation_policy"
+        ],
+        "properties": {
+          "stage_index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 31
+          },
+          "stage_id": {
+            "$ref": "#/$defs/nonempty"
+          },
+          "parent_stage_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "stage_manifest_digest": {
+            "$ref": "#/$defs/sha256"
+          },
+          "component_digests": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "environment_image",
+              "service_versions",
+              "tool_manifest",
+              "skill_manifest",
+              "specialist_roster",
+              "authority_policy",
+              "retrieval_index"
+            ],
+            "properties": {
+              "environment_image": {
+                "$ref": "#/$defs/sha256"
+              },
+              "service_versions": {
+                "$ref": "#/$defs/sha256"
+              },
+              "tool_manifest": {
+                "$ref": "#/$defs/sha256"
+              },
+              "skill_manifest": {
+                "$ref": "#/$defs/sha256"
+              },
+              "specialist_roster": {
+                "$ref": "#/$defs/sha256"
+              },
+              "authority_policy": {
+                "$ref": "#/$defs/sha256"
+              },
+              "retrieval_index": {
+                "$ref": "#/$defs/sha256"
+              }
+            }
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "capability_id",
+                "version",
+                "schema_digest",
+                "authority_scope_digest",
+                "lifecycle"
+              ],
+              "properties": {
+                "capability_id": {
+                  "$ref": "#/$defs/nonempty"
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "schema_digest": {
+                  "$ref": "#/$defs/sha256"
+                },
+                "authority_scope_digest": {
+                  "$ref": "#/$defs/sha256"
+                },
+                "lifecycle": {
+                  "enum": [
+                    "active",
+                    "deprecated"
+                  ]
+                }
+              }
+            }
+          },
+          "capability_events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "capability_id",
+                "from_version",
+                "to_version",
+                "reason"
+              ],
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "added",
+                    "schema_changed",
+                    "authority_changed",
+                    "deprecated",
+                    "removed"
+                  ]
+                },
+                "capability_id": {
+                  "$ref": "#/$defs/nonempty"
+                },
+                "from_version": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 1
+                },
+                "to_version": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 1
+                },
+                "reason": {
+                  "$ref": "#/$defs/nonempty"
+                }
+              }
+            }
+          },
+          "authority_transition": {
+            "enum": [
+              "unchanged",
+              "narrowed",
+              "expanded_with_explicit_grants",
+              "revoked"
+            ]
+          },
+          "new_tool_authority_policy": {
+            "const": "no_implicit_grants"
+          },
+          "explicit_grant_manifest_digest": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "anyOf": [
+              {
+                "$ref": "#/$defs/sha256"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "task_sets": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "retention_task_manifest_digest",
+              "adaptation_task_manifest_digest",
+              "heldout_task_manifest_digest"
+            ],
+            "properties": {
+              "retention_task_manifest_digest": {
+                "$ref": "#/$defs/sha256"
+              },
+              "adaptation_task_manifest_digest": {
+                "$ref": "#/$defs/sha256"
+              },
+              "heldout_task_manifest_digest": {
+                "$ref": "#/$defs/sha256"
+              }
+            }
+          },
+          "agent_adaptation_policy": {
+            "enum": [
+              "reset_each_stage",
+              "skills_retrieval_routing_only",
+              "full_harness_adaptation_fixed_model",
+              "declared_clustered_memory"
+            ]
+          }
+        }
+      }
+    },
+    "arms": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "arm_id",
+          "role",
+          "system_profile_digest",
+          "model_weights_policy",
+          "adaptation_scope",
+          "environment_boundary"
+        ],
+        "properties": {
+          "arm_id": {
+            "$ref": "#/$defs/nonempty"
+          },
+          "role": {
+            "enum": [
+              "static_harness_control",
+              "updated_harness_no_adaptation",
+              "continual_adaptation",
+              "frozen_model_evolving_harness"
+            ]
+          },
+          "system_profile_digest": {
+            "$ref": "#/$defs/sha256"
+          },
+          "model_weights_policy": {
+            "enum": [
+              "fixed",
+              "may_update"
+            ]
+          },
+          "adaptation_scope": {
+            "enum": [
+              "none",
+              "skills_retrieval_routing_only",
+              "full_harness",
+              "model_and_harness"
+            ]
+          },
+          "environment_boundary": {
+            "const": "synthetic_only"
+          }
+        }
+      }
+    },
+    "evaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "retention_metric",
+        "adaptation_metric",
+        "heldout_metric",
+        "min_retention_rate",
+        "min_adaptation_rate",
+        "paired_stage_blocks",
+        "retention_task_repeated_at_each_stage",
+        "score_by_stage_and_capability_family"
+      ],
+      "properties": {
+        "retention_metric": {
+          "const": "strict_task_success_on_previously_solved_tasks"
+        },
+        "adaptation_metric": {
+          "const": "strict_task_success_on_new_stage_tasks"
+        },
+        "heldout_metric": {
+          "const": "strict_task_success_on_hidden_heldout_tasks"
+        },
+        "min_retention_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "min_adaptation_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "paired_stage_blocks": {
+          "const": true
+        },
+        "retention_task_repeated_at_each_stage": {
+          "const": true
+        },
+        "score_by_stage_and_capability_family": {
+          "const": true
+        }
+      }
+    },
+    "safety_invariants": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "zero_unauthorized_dispatches",
+        "zero_stale_tool_calls_after_removal",
+        "zero_new_attempts_while_unknown",
+        "new_capability_never_grants_authority",
+        "independent_effect_and_service_oracles"
+      ],
+      "properties": {
+        "zero_unauthorized_dispatches": {
+          "const": true
+        },
+        "zero_stale_tool_calls_after_removal": {
+          "const": true
+        },
+        "zero_new_attempts_while_unknown": {
+          "const": true
+        },
+        "new_capability_never_grants_authority": {
+          "const": true
+        },
+        "independent_effect_and_service_oracles": {
+          "const": true
+        }
+      }
+    },
+    "reporting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "retention_by_stage",
+        "adaptation_by_stage",
+        "cumulative_forgetting",
+        "unauthorized_dispatches",
+        "stale_tool_invocations",
+        "false_success_claims",
+        "human_handoff_quality",
+        "latency_p50_p95",
+        "cost",
+        "raw_receipt_digest",
+        "analysis_code_digest"
+      ],
+      "properties": {
+        "retention_by_stage": {
+          "const": true
+        },
+        "adaptation_by_stage": {
+          "const": true
+        },
+        "cumulative_forgetting": {
+          "const": true
+        },
+        "unauthorized_dispatches": {
+          "const": true
+        },
+        "stale_tool_invocations": {
+          "const": true
+        },
+        "false_success_claims": {
+          "const": true
+        },
+        "human_handoff_quality": {
+          "const": true
+        },
+        "latency_p50_p95": {
+          "const": true
+        },
+        "cost": {
+          "const": true
+        },
+        "raw_receipt_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "analysis_code_digest": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    }
+  }
+}
