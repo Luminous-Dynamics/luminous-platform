@@ -117,6 +117,7 @@
             "warmup_us",
             "measurement_duration_us",
             "tcp_congestion_control",
+            "tcp_congestion_control_provenance",
             "mptcp_congestion_control",
             "mptcp_scheduler",
             "mptcp_scheduler_provenance",
@@ -133,7 +134,7 @@
           "const": true
         },
         "implementation_provenance_contract": {
-          "const": "in_tree_implementation_is_bound_to_kernel_build_sha256; external_implementation_requires_its_own_artifact_sha256"
+          "const": "in_tree_implementations_are_bound_to_kernel_build_sha256; each_out_of_tree_tcp_or_mptcp_controller_and_scheduler_requires_its_own_artifact_sha256"
         }
       }
     },
