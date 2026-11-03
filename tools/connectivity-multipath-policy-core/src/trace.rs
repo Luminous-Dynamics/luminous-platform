@@ -173,16 +173,26 @@ fn candidate_increment(
     request: &ScheduleRequest,
     state: &PathState,
     bytes: u32,
+    aggregate_cost_used: u64,
+    aggregate_energy_used: u64,
 ) -> Option<(u64, u64)> {
-    let cost = estimated_cost(u64::from(bytes), state.path.cost_micros_per_mib)?;
-    let energy = estimated_cost(u64::from(bytes), state.path.energy_uwh_per_mib)?;
-    if state.cost_used.checked_add(cost)? > request.max_cost_micros {
+    let next_bytes = state.bytes_used.checked_add(u64::from(bytes))?;
+    if next_bytes > state.path.data_remaining_bytes {
         return None;
     }
-    if state.energy_used.checked_add(energy)? > request.max_energy_uwh {
+    let next_cost = estimated_cost(next_bytes, state.path.cost_micros_per_mib)?;
+    let previous_cost = estimated_cost(state.bytes_used, state.path.cost_micros_per_mib).unwrap_or(0);
+    let cost_delta = next_cost.checked_sub(previous_cost)?;
+    let next_energy = estimated_cost(next_bytes, state.path.energy_uwh_per_mib)?;
+    let previous_energy = estimated_cost(state.bytes_used, state.path.energy_uwh_per_mib).unwrap_or(0);
+    let energy_delta = next_energy.checked_sub(previous_energy)?;
+    if aggregate_cost_used.checked_add(cost_delta)? > request.max_cost_micros {
         return None;
     }
-    Some((cost, energy))
+    if aggregate_energy_used.checked_add(energy_delta)? > request.max_energy_uwh {
+        return None;
+    }
+    Some((cost_delta, energy_delta))
 }
 
 fn eligible_states(
@@ -213,10 +223,9 @@ fn eligible_states(
 
 fn projected_reorder_bytes(
     transmissions: &[TraceTransmission],
+    segment_sizes: &[u32],
     current_segment: u32,
     candidate_arrival_us: u64,
-    current_bytes: u32,
-    total_segments: u32,
 ) -> u64 {
     let mut earliest_by_segment: BTreeMap<u32, u64> = BTreeMap::new();
     for transmission in transmissions.iter().filter(|item| !item.lost) {
@@ -232,33 +241,15 @@ fn projected_reorder_bytes(
                 .get(segment)
                 .is_none_or(|arrival| *arrival > candidate_arrival_us)
         })
-        .map(|segment| {
-            if segment + 1 == total_segments {
-                0_u64
-            } else {
-                0_u64
-            }
-        })
+        .map(|segment| u64::from(segment_sizes[segment as usize]))
         .sum::<u64>();
 
-    // For prior segments, exact tail-segment sizes are held in the transmission
-    // log; missing prior segments with no successful transmission retain their
-    // configured nominal size in this conservative planning estimate.
-    let missing_from_log = (0..current_segment)
-        .filter(|segment| {
-            earliest_by_segment
-                .get(segment)
-                .is_none_or(|arrival| *arrival > candidate_arrival_us)
-        })
-        .map(|segment| {
-            transmissions
-                .iter()
-                .find(|item| item.segment_index == segment)
-                .map_or(u64::from(current_bytes), |item| u64::from(item.payload_bytes))
-        })
-        .sum::<u64>();
-    let _ = missing_earlier_bytes;
-    missing_from_log.saturating_add(u64::from(current_bytes))
+    if missing_earlier_bytes == 0 {
+        0
+    } else {
+        missing_earlier_bytes
+            .saturating_add(u64::from(segment_sizes[current_segment as usize]))
+    }
 }
 
 fn choose_candidate(
@@ -268,7 +259,7 @@ fn choose_candidate(
     transmissions: &[TraceTransmission],
     segment_index: u32,
     segment_bytes: u32,
-    total_segments: u32,
+    segment_sizes: &[u32],
     reorder_limit: u64,
     round_robin_cursor: usize,
 ) -> Option<CandidatePath> {
@@ -296,17 +287,15 @@ fn choose_candidate(
         TraceStrategy::ReorderAware => candidates.iter().copied().min_by(|left, right| {
             let left_reorder = projected_reorder_bytes(
                 transmissions,
+                segment_sizes,
                 segment_index,
                 left.arrival_at_us,
-                segment_bytes,
-                total_segments,
             );
             let right_reorder = projected_reorder_bytes(
                 transmissions,
+                segment_sizes,
                 segment_index,
                 right.arrival_at_us,
-                segment_bytes,
-                total_segments,
             );
             let left_exceeds = left_reorder > reorder_limit;
             let right_exceeds = right_reorder > reorder_limit;
@@ -331,9 +320,17 @@ fn record_transmission(
     segment_index: u32,
     bytes: u32,
     redundant_copy: bool,
+    aggregate_cost_used: &mut u64,
+    aggregate_energy_used: &mut u64,
     records: &mut Vec<TraceTransmission>,
 ) -> Option<()> {
-    let (cost, energy) = candidate_increment(request, state, bytes)?;
+    let (cost, energy) = candidate_increment(
+        request,
+        state,
+        bytes,
+        *aggregate_cost_used,
+        *aggregate_energy_used,
+    )?;
     let path_candidate = candidate_path(state, 0, bytes)?;
     let loss = is_lost(trace_request.deterministic_seed, segment_index, &state.path);
     state.ready_at_us = path_candidate
@@ -342,6 +339,8 @@ fn record_transmission(
     state.bytes_used = state.bytes_used.checked_add(u64::from(bytes))?;
     state.cost_used = state.cost_used.checked_add(cost)?;
     state.energy_used = state.energy_used.checked_add(energy)?;
+    *aggregate_cost_used = aggregate_cost_used.checked_add(cost)?;
+    *aggregate_energy_used = aggregate_energy_used.checked_add(energy)?;
     state.transmissions = state.transmissions.checked_add(1)?;
     if loss {
         state.lost_transmissions = state.lost_transmissions.checked_add(1)?;
@@ -473,6 +472,8 @@ pub fn simulate(
     };
 
     let mut round_robin_cursor = 0_usize;
+    let mut aggregate_cost_used = 0_u64;
+    let mut aggregate_energy_used = 0_u64;
     for segment_index in 0..total_segments {
         let bytes = segment_sizes[segment_index as usize];
         let candidates = states
@@ -480,7 +481,7 @@ pub fn simulate(
             .enumerate()
             .filter_map(|(index, state)| {
                 let path = candidate_path(state, index, bytes)?;
-                candidate_increment(request, state, bytes)?;
+                candidate_increment(request, state, bytes, aggregate_cost_used, aggregate_energy_used)?;
                 Some(path)
             })
             .collect::<Vec<_>>();
@@ -509,10 +510,20 @@ pub fn simulate(
                 segment_index,
                 bytes,
                 false,
+                &mut aggregate_cost_used,
+                &mut aggregate_energy_used,
                 &mut transmissions,
             );
             if let Some(second) = second {
-                if candidate_increment(request, &states[second.index], bytes).is_some() {
+                if candidate_increment(
+                    request,
+                    &states[second.index],
+                    bytes,
+                    aggregate_cost_used,
+                    aggregate_energy_used,
+                )
+                .is_some()
+                {
                     let _ = record_transmission(
                         request,
                         trace_request,
@@ -520,6 +531,8 @@ pub fn simulate(
                         segment_index,
                         bytes,
                         true,
+                        &mut aggregate_cost_used,
+                        &mut aggregate_energy_used,
                         &mut transmissions,
                     );
                 }
@@ -549,6 +562,8 @@ pub fn simulate(
             segment_index,
             bytes,
             false,
+            &mut aggregate_cost_used,
+            &mut aggregate_energy_used,
             &mut transmissions,
         );
         if active_strategy == TraceStrategy::RoundRobin && !states.is_empty() {
