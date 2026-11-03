@@ -9,7 +9,7 @@
 
 use super::{
     PathObservation, ScheduleError, ScheduleRequest, exclusion_reason, estimated_cost,
-    finish_time_us, validate_path_set, validate_request,
+    validate_path_set, validate_request,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -34,6 +34,8 @@ pub enum TraceStrategy {
 pub struct TraceRequest {
     pub segment_bytes: u32,
     pub deterministic_seed: u64,
+    /// Maximum time to retain out-of-order bytes after the final observed arrival.
+    pub reassembly_timeout_us: u64,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -62,8 +64,12 @@ pub struct TraceReport {
     pub strategy: TraceStrategy,
     pub total_segments: u32,
     pub scheduled_segments: u32,
+    pub network_received_segments: u32,
+    pub network_received_unique_bytes: u64,
+    pub received_transmission_bytes: u64,
     pub delivered_segments: u32,
     pub failed_segments: u32,
+    pub receiver_unreleased_buffered_bytes_at_timeout: u64,
     pub delivery_complete: bool,
     pub delivered_by_deadline: bool,
     pub completion_us: Option<u64>,
@@ -110,6 +116,7 @@ struct SegmentDelivery {
     segment_index: u32,
     bytes: u32,
     first_arrival_us: u64,
+    application_release_us: u64,
 }
 
 fn mix64(mut value: u64) -> u64 {
@@ -363,7 +370,16 @@ fn simulate_receiver(
     transmissions: &[TraceTransmission],
     segment_sizes: &[u32],
     reorder_limit: u64,
-) -> (Vec<SegmentDelivery>, u64, u128, bool) {
+    reassembly_timeout_us: u64,
+) -> (
+    Vec<SegmentDelivery>,
+    u64,
+    u128,
+    bool,
+    u32,
+    u64,
+    u64,
+) {
     let mut first_arrival: BTreeMap<u32, u64> = BTreeMap::new();
     for transmission in transmissions.iter().filter(|item| !item.lost) {
         first_arrival
@@ -372,6 +388,17 @@ fn simulate_receiver(
             .or_insert(transmission.arrival_at_us);
     }
 
+    let network_received_segments = u32::try_from(first_arrival.len()).unwrap_or(u32::MAX);
+    let network_received_unique_bytes = first_arrival
+        .keys()
+        .map(|segment| u64::from(segment_sizes[*segment as usize]))
+        .sum::<u64>();
+    let received_transmission_bytes = transmissions
+        .iter()
+        .filter(|item| !item.lost)
+        .map(|item| u64::from(item.payload_bytes))
+        .sum::<u64>();
+
     let mut events = first_arrival
         .iter()
         .map(|(segment, arrival)| (*arrival, *segment))
@@ -379,29 +406,42 @@ fn simulate_receiver(
     events.sort_by_key(|(arrival, segment)| (*arrival, *segment));
 
     let mut next_expected = 0_u32;
-    let mut buffered = BTreeSet::new();
+    let mut buffered: BTreeMap<u32, u64> = BTreeMap::new();
     let mut buffered_bytes = 0_u64;
     let mut peak_buffered_bytes = 0_u64;
     let mut byte_microseconds = 0_u128;
     let mut previous_time = 0_u64;
     let mut exceeded = false;
+    let mut delivered = Vec::new();
 
     for (arrival, segment) in events {
         let delta = arrival.saturating_sub(previous_time);
-        byte_microseconds = byte_microseconds.saturating_add(
-            u128::from(buffered_bytes) * u128::from(delta),
-        );
+        byte_microseconds = byte_microseconds
+            .saturating_add(u128::from(buffered_bytes) * u128::from(delta));
         previous_time = arrival;
 
         if segment == next_expected {
+            delivered.push(SegmentDelivery {
+                segment_index: segment,
+                bytes: segment_sizes[segment as usize],
+                first_arrival_us: arrival,
+                application_release_us: arrival,
+            });
             next_expected = next_expected.saturating_add(1);
-            while buffered.remove(&next_expected) {
-                buffered_bytes = buffered_bytes.saturating_sub(
-                    u64::from(segment_sizes[next_expected as usize]),
-                );
+
+            while let Some(first_arrival_us) = buffered.remove(&next_expected) {
+                let bytes = segment_sizes[next_expected as usize];
+                buffered_bytes = buffered_bytes.saturating_sub(u64::from(bytes));
+                delivered.push(SegmentDelivery {
+                    segment_index: next_expected,
+                    bytes,
+                    first_arrival_us,
+                    application_release_us: arrival,
+                });
                 next_expected = next_expected.saturating_add(1);
             }
-        } else if segment > next_expected && buffered.insert(segment) {
+        } else if segment > next_expected && !buffered.contains_key(&segment) {
+            buffered.insert(segment, arrival);
             buffered_bytes = buffered_bytes
                 .saturating_add(u64::from(segment_sizes[segment as usize]));
             peak_buffered_bytes = peak_buffered_bytes.max(buffered_bytes);
@@ -409,15 +449,30 @@ fn simulate_receiver(
         }
     }
 
-    let delivered = first_arrival
-        .into_iter()
-        .map(|(segment_index, first_arrival_us)| SegmentDelivery {
-            segment_index,
-            bytes: segment_sizes[segment_index as usize],
-            first_arrival_us,
-        })
-        .collect::<Vec<_>>();
-    (delivered, peak_buffered_bytes, byte_microseconds, exceeded)
+    if buffered_bytes > 0 {
+        byte_microseconds = byte_microseconds.saturating_add(
+            u128::from(buffered_bytes) * u128::from(reassembly_timeout_us),
+        );
+    }
+
+    delivered.sort_by_key(|item| item.segment_index);
+    (
+        delivered,
+        peak_buffered_bytes,
+        byte_microseconds,
+        exceeded,
+        network_received_segments,
+        network_received_unique_bytes,
+        buffered_bytes,
+    )
+}
+
+fn received_transmission_bytes(transmissions: &[TraceTransmission]) -> u64 {
+    transmissions
+        .iter()
+        .filter(|item| !item.lost)
+        .map(|item| u64::from(item.payload_bytes))
+        .sum()
 }
 
 /// Run a deterministic packet-trace schedule over broker-admitted path observations.
@@ -435,7 +490,7 @@ pub fn simulate(
 ) -> Result<TraceReport, ScheduleError> {
     validate_request(request)?;
     validate_path_set(paths)?;
-    if trace_request.segment_bytes == 0 {
+    if trace_request.segment_bytes == 0 || trace_request.reassembly_timeout_us == 0 {
         return Err(ScheduleError::ZeroPayload);
     }
 
@@ -574,12 +629,24 @@ pub fn simulate(
             .then_with(|| left.send_at_us.cmp(&right.send_at_us))
     });
 
-    let (delivered, reorder_peak, reorder_byte_us, reorder_exceeded) =
-        simulate_receiver(&transmissions, &segment_sizes, request.reorder_buffer_limit_bytes);
+    let (
+        delivered,
+        reorder_peak,
+        reorder_byte_us,
+        reorder_exceeded,
+        network_received_segments,
+        network_received_unique_bytes,
+        unreleased_buffered_bytes,
+    ) = simulate_receiver(
+        &transmissions,
+        &segment_sizes,
+        request.reorder_buffer_limit_bytes,
+        trace_request.reassembly_timeout_us,
+    );
     let delivered_segments = u32::try_from(delivered.len()).unwrap_or(u32::MAX);
     let delivery_complete = delivered_segments == total_segments;
     let completion_us = if delivery_complete {
-        delivered.iter().map(|item| item.first_arrival_us).max()
+        delivered.iter().map(|item| item.application_release_us).max()
     } else {
         None
     };
@@ -590,7 +657,7 @@ pub fn simulate(
 
     let mut latencies = delivered
         .iter()
-        .map(|item| item.first_arrival_us)
+        .map(|item| item.application_release_us)
         .collect::<Vec<_>>();
     latencies.sort_unstable();
 
@@ -646,12 +713,16 @@ pub fn simulate(
         task_id: request.task_id.clone(),
         strategy,
         total_segments,
+        network_received_segments,
+        network_received_unique_bytes,
+        received_transmission_bytes: received_transmission_bytes(&transmissions),
         scheduled_segments: u32::try_from(
             transmissions.iter().map(|item| item.segment_index).collect::<BTreeSet<_>>().len(),
         )
         .unwrap_or(u32::MAX),
         delivered_segments,
         failed_segments: total_segments.saturating_sub(delivered_segments),
+        receiver_unreleased_buffered_bytes_at_timeout: unreleased_buffered_bytes,
         delivery_complete,
         delivered_by_deadline,
         completion_us,
@@ -729,6 +800,7 @@ mod tests {
         TraceRequest {
             segment_bytes: 1200,
             deterministic_seed: 0x4c4e_462d_5452_4143,
+            reassembly_timeout_us: 500_000,
         }
     }
 
@@ -921,6 +993,7 @@ mod tests {
         let invalid = TraceRequest {
             segment_bytes: 0,
             deterministic_seed: 1,
+            reassembly_timeout_us: 500_000,
         };
         assert_eq!(
             simulate(&request(), &invalid, &[path("a", 1000, 1_000_000, "a")], TraceStrategy::MinRtt)
