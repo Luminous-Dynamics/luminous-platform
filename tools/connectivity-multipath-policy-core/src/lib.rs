@@ -1087,6 +1087,16 @@ mod tests {
             result.allocations[0].capacity_domain_ids,
             vec!["a".to_owned(), "z".to_owned()]
         );
+        assert_eq!(
+            result.capacity_domain_ids_used,
+            vec!["a".to_owned(), "z".to_owned()]
+        );
+        assert_eq!(result.topology_sha256, request().topology_sha256);
+        assert_eq!(result.decision_time_unix_ms, request().now_unix_ms);
+        assert_eq!(
+            result.allocations[0].capacity_domain_evidence.confidence_ppm,
+            1_000_000
+        );
     }
 
     #[test]
