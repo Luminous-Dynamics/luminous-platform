@@ -604,18 +604,15 @@ fn aggregate_candidate(
     let energy = allocations.iter().try_fold(0_u64, |sum, allocation| {
         sum.checked_add(allocation.estimated_energy_uwh)
     })?;
-    let groups: BTreeSet<&str> = allocations
+    let groups: BTreeSet<String> = allocations
         .iter()
-        .map(|allocation| allocation.shared_risk_group.as_str())
+        .map(|allocation| allocation.shared_risk_group.clone())
         .collect();
-    let capacity_domains: BTreeSet<&str> = allocations
+    let capacity_domains: BTreeSet<String> = allocations
         .iter()
-        .flat_map(|allocation| allocation.capacity_domain_ids.iter().map(String::as_str))
+        .flat_map(|allocation| allocation.capacity_domain_ids.iter().cloned())
         .collect();
-    let capacity_domain_ids_used = capacity_domains
-        .iter()
-        .map(|domain| (*domain).to_owned())
-        .collect();
+    let capacity_domain_ids_used = capacity_domains.iter().cloned().collect();
 
     Some(Candidate {
         allocations,
