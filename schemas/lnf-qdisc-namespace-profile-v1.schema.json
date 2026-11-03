@@ -25,7 +25,8 @@
     "evidence_classes",
     "explicit_non_claims",
     "qdisc_comparison_note",
-    "supported_scenario_ids"
+    "supported_scenario_ids",
+    "tbf_shaping"
   ],
   "properties": {
     "schema_version": {
@@ -303,8 +304,8 @@
     },
     "required_artifacts": {
       "type": "array",
-      "minItems": 18,
-      "maxItems": 18,
+      "minItems": 19,
+      "maxItems": 19,
       "uniqueItems": true,
       "items": {
         "type": "string",
@@ -382,8 +383,8 @@
     },
     "explicit_non_claims": {
       "type": "array",
-      "minItems": 9,
-      "maxItems": 9,
+      "minItems": 10,
+      "maxItems": 10,
       "uniqueItems": true,
       "items": {
         "type": "string",
@@ -405,6 +406,38 @@
           "QDISC-02",
           "QDISC-03"
         ]
+      }
+    },
+    "tbf_shaping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimum_kernel_hz_assumption",
+        "burst_formula",
+        "mtu_compensation_bytes",
+        "plan_verifies_actual_kernel_hz",
+        "future_executor_must_verify_actual_config_hz_at_least_assumption",
+        "mismatch_or_unavailable"
+      ],
+      "properties": {
+        "minimum_kernel_hz_assumption": {
+          "const": 100
+        },
+        "burst_formula": {
+          "const": "ceil(shaping_rate_bps / (8 * 100)) + 1500 bytes"
+        },
+        "mtu_compensation_bytes": {
+          "const": 1500
+        },
+        "plan_verifies_actual_kernel_hz": {
+          "const": false
+        },
+        "future_executor_must_verify_actual_config_hz_at_least_assumption": {
+          "const": true
+        },
+        "mismatch_or_unavailable": {
+          "const": "unsupported_environment_no_qdisc_install"
+        }
       }
     }
   }
