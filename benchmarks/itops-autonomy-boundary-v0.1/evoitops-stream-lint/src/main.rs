@@ -217,6 +217,9 @@ fn audit_stage_chain(stream: &Value) -> Result<(usize, usize), String> {
 
         if let Some(previous_tools) = prior_tools.as_ref() {
             let mut any_tool_manifest_change = previous_tools.len() != current_tools.len();
+            let mut authority_expanded = false;
+            let mut authority_narrowed = false;
+            let mut authority_scope_changed = false;
             for (id, current) in &current_tools {
                 match previous_tools.get(id) {
                     None => {
@@ -259,6 +262,24 @@ fn audit_stage_chain(stream: &Value) -> Result<(usize, usize), String> {
                                 stage, "authority_changed", id,
                                 Some(previous.version), Some(current.version)
                             )?;
+                            if current.authority_scope_digest != previous.authority_scope_digest {
+                                authority_scope_changed = true;
+                            }
+                            match (
+                                previous.authorization_state.as_str(),
+                                current.authorization_state.as_str()
+                            ) {
+                                ("no_grant", "explicit_grant") => authority_expanded = true,
+                                ("explicit_grant", "no_grant") => authority_narrowed = true,
+                                _ => {}
+                            }
+                        }
+                        if current.lifecycle == "deprecated"
+                            && current.authorization_state == "explicit_grant"
+                        {
+                            return Err(format!(
+                                "deprecated capability {id:?} must not retain an active explicit grant"
+                            ));
                         }
 
                         if previous.lifecycle == "active" && current.lifecycle == "deprecated" {
@@ -279,6 +300,29 @@ fn audit_stage_chain(stream: &Value) -> Result<(usize, usize), String> {
                     any_tool_manifest_change = true;
                     require_event(stage, "removed", id, Some(previous.version), None)?;
                 }
+            }
+
+            if authority_expanded && transition != "expanded_with_explicit_grants" {
+                return Err(format!(
+                    "grant addition at stage {stage_id:?} requires expanded_with_explicit_grants"
+                ));
+            }
+            if authority_narrowed && !matches!(transition, "narrowed" | "revoked") {
+                return Err(format!(
+                    "grant removal at stage {stage_id:?} requires narrowed or revoked transition"
+                ));
+            }
+            if authority_scope_changed && transition == "unchanged" {
+                return Err(format!(
+                    "authority scope digest changed at stage {stage_id:?} under unchanged transition"
+                ));
+            }
+            if transition == "expanded_with_explicit_grants"
+                && stage.get("explicit_grant_manifest_digest").is_none_or(Value::is_null)
+            {
+                return Err(format!(
+                    "authority expansion at stage {stage_id:?} requires an explicit grant manifest digest"
+                ));
             }
 
             if any_tool_manifest_change
@@ -504,6 +548,35 @@ mod tests {
     fn stale_tool_removal_requires_explicit_event() {
         let mut stream = parsed();
         stream["stages"][3]["capability_events"] = serde_json::json!([]);
+        assert!(audit(&encode(&stream), SCHEMA).is_err());
+    }
+
+    #[test]
+    fn existing_tool_grant_cannot_expand_under_unchanged_transition() {
+        let mut stream = parsed();
+        stream["stages"][1]["tools"][0]["authorization_state"] =
+            serde_json::json!("explicit_grant");
+        stream["stages"][1]["tools"][0]["grant_binding_digest"] =
+            serde_json::json!("sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
+        stream["stages"][1]["capability_events"].as_array_mut().unwrap().push(
+            serde_json::json!({
+                "kind":"authority_changed",
+                "capability_id":"read_health",
+                "from_version":1,
+                "to_version":1,
+                "reason":"negative control"
+            })
+        );
+        assert!(audit(&encode(&stream), SCHEMA).is_err());
+    }
+
+    #[test]
+    fn deprecated_tool_cannot_keep_an_explicit_grant() {
+        let mut stream = parsed();
+        stream["stages"][2]["tools"][3]["authorization_state"] =
+            serde_json::json!("explicit_grant");
+        stream["stages"][2]["tools"][3]["grant_binding_digest"] =
+            serde_json::json!("sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
         assert!(audit(&encode(&stream), SCHEMA).is_err());
     }
 
