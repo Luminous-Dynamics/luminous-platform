@@ -8,7 +8,11 @@ This note records the external evaluation surfaces used to design the ITOPS Auto
 
 ServiceNow Research's EnterpriseOps-Gym contains 1,150 expert-curated stateful tasks across eight enterprise domains, with 164 database tables and 512 functional tools. Its current repository documentation reports 9.15 average steps per task (up to 34), 5.3 average verification conditions, and approximately 89k average context tokens. The 2026 PMLR paper reports 34.1% success for Claude Sonnet 4.5 in its original evaluation and discusses failures in planning consistency, error recovery, and policy adherence.
 
-**Current repository leaderboard snapshot (read 3 November 2026):** the ServiceNow repository README's full-benchmark, oracle-mode table lists Claude Opus 4.6 at 45.9% average task success, Claude Sonnet 4.6 at 42.2%, Claude Opus 4.5 at 39.4%, and GPT-5 at 30.9%. The same table lists 33.3% for Opus 4.6 on ITSM. The README separately reports that the public split contains 60% of the benchmark samples. These current leaderboard figures are not the same experiment as the original paper's 34.1% Sonnet 4.5 result: model version, run profile and potentially benchmark revision differ. Do not read the two figures as a controlled longitudinal improvement.
+**ServiceNow NOWAI-Bench snapshot:** the [NOWAI-Bench README](https://github.com/ServiceNow/NOWAI-Bench) says its synchronized EnterpriseOps-Gym leaderboard snapshot is dated 23 July 2026 and lists Claude Fable 5 (with fallback) at 51.1%, Gemini 3.5 Flash at 50.1%, Muse Spark 1.1 at 47.2%, GPT-5.5 at 46.6%, and Kimi K3 at 45.3%. The note says the live leaderboard contains the full, always-current rankings; the README table is a dated snapshot, not a live query.
+
+**Artificial Analysis EnterpriseOps-Gym-AA, current page read 3 November 2026:** the independent evaluation page currently identifies Claude Fable 5 (Max, Opus 4.8 fallback) at 51.1%, Gemini 3.7 Flash at 50.4%, and Gemini 3.5 Flash at 50.1%. Its methodology states that it uses 1,117 oracle-mode tasks, three repeats per task, and strict task success: all final database-state verifiers must pass. This is a separately run evaluation surface and should not be silently combined with ServiceNow's own repository or NOWAI-Bench snapshots.
+
+The older ServiceNow EnterpriseOps-Gym repository README table read on 3 November lists a separate Opus 4.6/Sonnet 4.6 configuration set (45.9%/42.2%). Preserve it as an archived source snapshot only; it is not the current top-line comparator. None of these figures is a controlled longitudinal comparison with the PMLR paper's 34.1% Sonnet 4.5 result. Model versions, runner profiles, dataset revisions, and scoring snapshots differ.
 
 Artificial Analysis' independent EnterpriseOps-Gym-AA run uses a related but separately evaluated task suite and protocol. Its current public page reports a 51.1% leading strict task-success rate. A task passes only when every database-state verifier passes; there is no partial task credit. This is a different evaluation surface and must not be merged with ServiceNow's repository leaderboard.
 
@@ -17,6 +21,7 @@ Sources:
 - [ServiceNow EnterpriseOps-Gym repository and live README leaderboard](https://github.com/ServiceNow/EnterpriseOps-Gym)
 - [EnterpriseOps-Gym-AA current evaluation and methodology](https://artificialanalysis.ai/evaluations/enterprise-ops-gym-aa)
 - [EnterpriseOps-Gym-AA launch and result interpretation](https://artificialanalysis.ai/articles/announcing-enterpriseops-gym-aa)
+- [ServiceNow NOWAI-Bench dated leaderboard snapshot](https://github.com/ServiceNow/NOWAI-Bench)
 
 **What we adopt:** persistent state, long-horizon multi-tool work, executable final-state verification, cross-domain workflows, all-verifiers task-level success, repeated model snapshots, and per-domain reporting.
 
