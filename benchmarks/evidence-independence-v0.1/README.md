@@ -33,7 +33,7 @@ An unknown required dimension makes the relevant claim indeterminate. A not-appl
 
 A claim identifies one evidence-producing component, the components from which it must be independent, and the dimensions required by that claim. Any shared domain ID in a required dimension fails the claim. A common dependency discovered transitively must also be treated as shared. The initial schema does not define exceptions for shared domains; any future exception must be explicit, narrowly scoped, evidence-backed, and separately reviewed.
 
-The auditor must validate component references, duplicate IDs, dependency cycles, domain intersections and transitive dependencies. It must not trust an assessor-supplied pass flag. It must derive its result from the input profile and independently verified evidence references.
+The auditor must also require an explicit dependency-inventory declaration per component. `complete_asserted` means the profile author asserts that the closed-world dependency list is complete; it is not independently authenticated by this initial slice. The auditor must validate component references, duplicate IDs, dependency cycles, domain intersections and transitive dependencies. It must not trust an assessor-supplied pass flag. A non-shared result can therefore be no stronger than `declared_separate_unverified` until the referenced evidence has been authenticated by the existing evidence-verification stack.
 
 The eight dimensions are not a universal checklist for every claim. For example, a reproducible analytical calculation may require independent construction and execution provenance; a service-health claim additionally requires independent observation and communication paths. The claim-specific requirement is part of the threat model, not a score.
 
@@ -53,7 +53,7 @@ The expected result is therefore **process-separated prototype only**. It must f
 - **Symtropy:** declare solver, scenario generator, reference engine, observation adapter, build and host dependencies. Solver disagreement remains evidence to investigate, not physical truth.
 - **Mycelix:** declare verifier, challenge issuer, authoritative registry, key controller, storage/failover and transparency domains. A signature or challenge equality is not a substitute for consume-once semantics.
 
-The profile does not replace ITOPS source-evidence receipts, Symtropy's SCITT-aligned evidence work, Mycelix's credential/signature profiles, or their domain-specific verifiers. It introduces no new signature format, key hierarchy, policy engine, ledger, or transparency service.
+The profile does not replace ITOPS source-evidence receipts, Symtropy's SCITT-aligned evidence work, Mycelix's credential/signature profiles, or their domain-specific verifiers. A claim with shared declared domains fails; an unknown or incomplete required dependency dimension is indeterminate; a disjoint declaration is reported only as `declared_separate_unverified`, never as independently verified. It introduces no new signature format, key hierarchy, policy engine, ledger, or transparency service.
 
 ## Verification boundary
 
