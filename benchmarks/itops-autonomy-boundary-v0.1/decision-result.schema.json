@@ -8,6 +8,7 @@
     "version",
     "status",
     "run_binding",
+    "sut_profile",
     "task_binding",
     "agent_decision",
     "runtime_gate",
@@ -507,6 +508,137 @@
         "connector_cost_usd": {
           "type": "number",
           "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "sut_profile": {
+      "type": "object",
+      "required": [
+        "agent_build_digest",
+        "model_provider",
+        "model_name",
+        "model_version",
+        "model_size",
+        "inference_config_digest",
+        "inference_parameters",
+        "prompt_template_digest",
+        "memory_profile_digest",
+        "enabled_tool_manifest_digest",
+        "tool_permissions_digest",
+        "guardrail_policy_digest",
+        "persistent_state_scope",
+        "human_approval_profile"
+      ],
+      "properties": {
+        "agent_build_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "model_provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_size": {
+          "type": "string",
+          "minLength": 1
+        },
+        "inference_config_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "inference_parameters": {
+          "type": "object",
+          "required": [
+            "temperature",
+            "top_p",
+            "max_output_tokens",
+            "reasoning_effort",
+            "sampling_policy",
+            "fallback_policy"
+          ],
+          "properties": {
+            "temperature": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 2
+            },
+            "top_p": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1
+            },
+            "max_output_tokens": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1
+            },
+            "reasoning_effort": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sampling_policy": {
+              "type": "string",
+              "minLength": 1
+            },
+            "fallback_policy": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "prompt_template_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "memory_profile_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "enabled_tool_manifest_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "tool_permissions_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "guardrail_policy_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "persistent_state_scope": {
+          "enum": [
+            "episode_isolated",
+            "run_scoped",
+            "arm_scoped",
+            "persistent_external"
+          ]
+        },
+        "human_approval_profile": {
+          "enum": [
+            "none",
+            "case_defined",
+            "required_for_mutations",
+            "human_in_loop"
+          ]
         }
       },
       "additionalProperties": false
