@@ -27,7 +27,8 @@ This v0.1 directory currently contains:
 - [decision-result.example.json](decision-result.example.json) — a synthetic example showing a request for authority before dispatch.
 - [case-catalog.schema.json](case-catalog.schema.json) — the JSON Schema for scenario definitions.
 - [case-catalog.v0.1.json](case-catalog.v0.1.json) — 23 candidate synthetic scenarios spanning operational safety cases plus three multi-step cross-domain workflows; the long-horizon cases encode ordered dependencies, system domains, expected evidence, and blocked mutation stages.
-- [catalog-lint/](catalog-lint/) — a small Rust CLI for cross-field catalog invariants and exact corpus SHA-256 output. It does not execute agents or implement full JSON Schema validation.\n- [qualification-core/](qualification-core/) — a Rust prototype for candidate-catalog loading, workflow-DAG validation, exact-scope plan-digest authorization, unresolved-attempt locking, and service-observation freshness. It is not a complete runner or process-isolated oracle.
+- [catalog-lint/](catalog-lint/) — a small Rust CLI for cross-field catalog invariants and exact corpus SHA-256 output. It does not execute agents or implement full JSON Schema validation.
+- [qualification-core/](qualification-core/) — a Rust prototype that also validates the candidate catalog and example result against their full Draft 2020-12 schemas (including meta-schema validity and format assertions), alongside workflow-DAG validation, exact-scope plan-digest authorization, dispatch-time grant revalidation, unresolved-attempt locking, and service-observation freshness. It is not a complete runner or process-isolated oracle.
 
 The scenario catalog is marked `candidate_not_frozen`. It is a starting corpus for review, not yet an authoritative benchmark set. Every case needs independent review of task clarity, oracle observability, permissions, state transitions, expected action, and negative-control behavior before freezing.
 
