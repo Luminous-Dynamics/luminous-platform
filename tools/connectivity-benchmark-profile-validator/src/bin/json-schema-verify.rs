@@ -4,7 +4,7 @@
 //! filesystem resources. A valid document is structural evidence only.
 
 use jsonschema::draft202012;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::env;
 use std::fs::File;
@@ -15,8 +15,8 @@ use std::process;
 const MAX_INPUT_BYTES: usize = 2 * 1024 * 1024;
 
 fn read_bounded(path: &Path) -> Result<Vec<u8>, String> {
-    let file = File::open(path)
-        .map_err(|error| format!("cannot open {}: {error}", path.display()))?;
+    let file =
+        File::open(path).map_err(|error| format!("cannot open {}: {error}", path.display()))?;
     let mut limited = file.take((MAX_INPUT_BYTES + 1) as u64);
     let mut bytes = Vec::new();
     limited
@@ -195,7 +195,11 @@ mod tests {
         schema["properties"]["status"]["$ref"] =
             serde_json::json!("https://example.invalid/remote.json");
         let errors = validate(&schema, &profile);
-        assert!(errors.iter().any(|error| error.contains("only local fragment references")));
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("only local fragment references"))
+        );
     }
 
     #[test]
