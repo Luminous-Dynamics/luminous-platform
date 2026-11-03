@@ -130,14 +130,27 @@ pub struct ClassicOnlyControl {
     pub classic_backlogged_flow_count: u32,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum EcnFeedbackMode {
+    /// TCP AccECN negotiated and observed at both endpoints.
+    TcpAccEcn,
+    /// QUIC ECN validation and per-codepoint feedback observed on the path.
+    QuicEcnCounts,
+    /// Classic RFC 3168 feedback is not sufficient evidence for scalable TCP.
+    ClassicEcnOnly,
+    Unknown,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EcnPathEvidence {
     /// Negotiation is recorded independently at sender and receiver.
     pub ecn_negotiated_at_sender: bool,
     pub ecn_negotiated_at_receiver: bool,
+    pub feedback_mode: EcnFeedbackMode,
     /// Packet/mark counters are taken at the named observation points.
     pub ect1_packets_sent_by_sender: u64,
     pub ect1_packets_received_at_receiver: u64,
+    pub ect1_packets_observed_at_aqm: u64,
     pub ce_marks_at_aqm: u64,
     pub ce_feedback_received_at_sender: u64,
     /// A frozen offered-load challenge is required before zero CE marks
@@ -145,6 +158,15 @@ pub struct EcnPathEvidence {
     pub congestion_challenge_verified: bool,
     pub counters_complete: bool,
     pub sender_fallback_detected: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ClassicFlowPair {
+    pub flow_id: String,
+    pub backlogged: bool,
+    pub control_goodput_bps: u64,
+    pub treatment_goodput_bps: u64,
+    pub zero_service_duration_us: u64,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -159,9 +181,12 @@ pub struct MixedL4sTreatment {
     pub qdisc_readback_verified: bool,
     pub cleanup_verified: bool,
     pub queue_counters_present: bool,
-    pub l4s_queue_packets: u64,
-    pub classic_queue_packets: u64,
+    /// ECT(1) packets observed in the L4S queue, not merely total queue depth.
+    pub ect1_packets_classified_to_l4s_queue: u64,
+    /// Classic packets observed in the Classic queue.
+    pub classic_packets_classified_to_classic_queue: u64,
     pub classic_backlogged_flow_count: u32,
+    pub classic_flow_pairs: Vec<ClassicFlowPair>,
     pub ecn: EcnPathEvidence,
     pub classic_goodput_bps: u64,
     pub l4s_goodput_bps: u64,
@@ -210,8 +235,10 @@ pub struct L4sPairReport {
     pub queue_classification: GateResult,
     pub l4s_queue_delay: GateResult,
     pub classic_retention: GateResult,
+    pub classic_flow_retention: GateResult,
     pub classic_starvation: GateResult,
     pub classic_retention_ratio_ppm: Option<u64>,
+    pub worst_backlogged_classic_flow_retention_ppm: Option<u64>,
 }
 
 fn is_sha256(value: &str) -> bool {
@@ -287,6 +314,7 @@ pub fn evaluate_l4s_ecn_and_aqm(
 ) -> Result<(GateResult, GateResult), L4sEvidenceError> {
     treatment.identity.validate()?;
     treatment.aqm.validate()?;
+    treatment.classic_sender.validate()?;
     treatment.l4s_sender.validate()?;
 
     let aqm_supported = matches!(treatment.aqm_kind, AqmKind::DualPi2 | AqmKind::FqL4s);
@@ -308,21 +336,22 @@ pub fn evaluate_l4s_ecn_and_aqm(
         return Ok((ecn, unsupported));
     }
     if unsupported_sender(treatment.l4s_sender_kind) {
-        let unsupported = gate(
-            "L4S_SENDER_SUPPORT_001",
-            GateDisposition::Unsupported,
-            "sender_is_not_a_prague_compliant_scalable_sender",
-            None,
-            None,
-        );
-        let ecn = gate(
-            "L4S_ECN_PATH_001",
-            GateDisposition::Unsupported,
-            "l4s_sender_arm_unsupported",
-            None,
-            None,
-        );
-        return Ok((ecn, unsupported));
+        return Ok((
+            gate(
+                "L4S_ECN_PATH_001",
+                GateDisposition::Unsupported,
+                "sender_is_not_a_prague_compliant_scalable_sender",
+                None,
+                None,
+            ),
+            gate(
+                "L4S_AQM_SUPPORT_001",
+                GateDisposition::Inconclusive,
+                "queue_classification_cannot_qualify_without_supported_scalable_sender",
+                None,
+                None,
+            ),
+        ));
     }
 
     let aqm_pinned = implementation_is_pinned(&treatment.aqm, &treatment.identity.kernel_build_sha256)?;
@@ -405,11 +434,24 @@ pub fn evaluate_l4s_ecn_and_aqm(
 
     let sender_and_receiver_negotiated =
         treatment.ecn.ecn_negotiated_at_sender && treatment.ecn.ecn_negotiated_at_receiver;
+    let feedback_mode_matches = match treatment.l4s_sender_kind {
+        SenderKind::TcpPrague => treatment.ecn.feedback_mode == EcnFeedbackMode::TcpAccEcn,
+        SenderKind::QuicPrague => treatment.ecn.feedback_mode == EcnFeedbackMode::QuicEcnCounts,
+        _ => false,
+    };
     let ect1_reached_receiver = treatment.ecn.ect1_packets_sent_by_sender > 0
         && treatment.ecn.ect1_packets_received_at_receiver > 0;
+    let ect1_reached_aqm = treatment.ecn.ect1_packets_observed_at_aqm > 0;
     let ce_feedback_path = treatment.ecn.ce_marks_at_aqm > 0
         && treatment.ecn.ce_feedback_received_at_sender > 0;
-    let ecn_ok = sender_and_receiver_negotiated && ect1_reached_receiver && ce_feedback_path;
+    let ecn_counters_consistent =
+        treatment.ecn.ce_marks_at_aqm <= treatment.ecn.ect1_packets_observed_at_aqm;
+    let ecn_ok = sender_and_receiver_negotiated
+        && feedback_mode_matches
+        && ect1_reached_receiver
+        && ect1_reached_aqm
+        && ce_feedback_path
+        && ecn_counters_consistent;
 
     let ecn_result = if !sender_and_receiver_negotiated {
         gate(
@@ -419,11 +461,35 @@ pub fn evaluate_l4s_ecn_and_aqm(
             None,
             None,
         )
-    } else if !ect1_reached_receiver {
+    } else if !feedback_mode_matches {
+        let (disposition, reason) = match treatment.ecn.feedback_mode {
+            EcnFeedbackMode::Unknown => (
+                GateDisposition::Inconclusive,
+                "transport_specific_accurate_ecn_feedback_evidence_missing",
+            ),
+            EcnFeedbackMode::ClassicEcnOnly => (
+                GateDisposition::Fail,
+                "classic_ecn_feedback_is_not_sufficient_for_scalable_sender",
+            ),
+            _ => (
+                GateDisposition::Fail,
+                "ecn_feedback_mode_does_not_match_sender_transport",
+            ),
+        };
+        gate("L4S_ECN_PATH_001", disposition, reason, None, None)
+    } else if !ect1_reached_receiver || !ect1_reached_aqm {
         gate(
             "L4S_ECN_PATH_001",
             GateDisposition::Fail,
-            "ect1_not_observed_at_both_sender_and_receiver",
+            "ect1_not_observed_at_receiver_and_aqm",
+            None,
+            None,
+        )
+    } else if !ecn_counters_consistent {
+        gate(
+            "L4S_ECN_PATH_001",
+            GateDisposition::Fail,
+            "ce_marks_exceed_ect1_packets_observed_at_aqm",
             None,
             None,
         )
@@ -453,10 +519,9 @@ pub fn evaluate_l4s_ecn_and_aqm(
         )
     };
 
-    let classification_ok =
-        treatment.l4s_queue_packets > 0
-            && treatment.classic_queue_packets > 0
-            && treatment.classic_backlogged_flow_count > 0;
+    let classification_ok = treatment.ect1_packets_classified_to_l4s_queue > 0
+        && treatment.classic_packets_classified_to_classic_queue > 0
+        && treatment.classic_backlogged_flow_count > 0;
     let classification_result = if classification_ok {
         gate(
             "L4S_AQM_SUPPORT_001",
@@ -500,8 +565,10 @@ pub fn evaluate_l4s_pair(
             queue_classification: mismatch.clone(),
             l4s_queue_delay: mismatch.clone(),
             classic_retention: mismatch.clone(),
+            classic_flow_retention: mismatch.clone(),
             classic_starvation: mismatch,
             classic_retention_ratio_ppm: None,
+            worst_backlogged_classic_flow_retention_ppm: None,
         });
     }
 
@@ -523,10 +590,45 @@ pub fn evaluate_l4s_pair(
             queue_classification: mismatch.clone(),
             l4s_queue_delay: mismatch.clone(),
             classic_retention: mismatch.clone(),
+            classic_flow_retention: mismatch.clone(),
             classic_starvation: mismatch,
             classic_retention_ratio_ppm: None,
+            worst_backlogged_classic_flow_retention_ppm: None,
         });
     }
+    let implementations_pinned = implementation_is_pinned(
+        &control.aqm,
+        &control.identity.kernel_build_sha256,
+    )? && implementation_is_pinned(
+        &control.classic_sender,
+        &control.identity.kernel_build_sha256,
+    )? && implementation_is_pinned(
+        &treatment.aqm,
+        &treatment.identity.kernel_build_sha256,
+    )? && implementation_is_pinned(
+        &treatment.classic_sender,
+        &treatment.identity.kernel_build_sha256,
+    )?;
+    if !implementations_pinned {
+        let mismatch = gate(
+            "L4S_PAIR_IMPLEMENTATION_001",
+            GateDisposition::Inconclusive,
+            "in_tree_or_external_classic_aqm_implementation_not_pinned",
+            None,
+            None,
+        );
+        return Ok(L4sPairReport {
+            ecn_path: mismatch.clone(),
+            queue_classification: mismatch.clone(),
+            l4s_queue_delay: mismatch.clone(),
+            classic_retention: mismatch.clone(),
+            classic_flow_retention: mismatch.clone(),
+            classic_starvation: mismatch,
+            classic_retention_ratio_ppm: None,
+            worst_backlogged_classic_flow_retention_ppm: None,
+        });
+    }
+
     if control.aqm_kind != treatment.aqm_kind
         || control.aqm != treatment.aqm
         || control.classic_sender != treatment.classic_sender
@@ -543,8 +645,10 @@ pub fn evaluate_l4s_pair(
             queue_classification: mismatch.clone(),
             l4s_queue_delay: mismatch.clone(),
             classic_retention: mismatch.clone(),
+            classic_flow_retention: mismatch.clone(),
             classic_starvation: mismatch,
             classic_retention_ratio_ppm: None,
+            worst_backlogged_classic_flow_retention_ppm: None,
         });
     }
     if !control.qdisc_readback_verified
@@ -570,7 +674,10 @@ pub fn evaluate_l4s_pair(
             classic_retention_ratio_ppm: None,
         });
     }
-    if control.classic_goodput_bps == 0 || control.classic_backlogged_flow_count == 0 {
+    if control.classic_goodput_bps == 0
+        || control.classic_backlogged_flow_count == 0
+        || control.classic_backlogged_flow_count != treatment.classic_backlogged_flow_count
+    {
         let failure = gate(
             "L4S_CLASSIC_RETENTION_001",
             GateDisposition::Inconclusive,
@@ -601,8 +708,10 @@ pub fn evaluate_l4s_pair(
                 None,
             ),
             classic_retention: failure.clone(),
+            classic_flow_retention: failure.clone(),
             classic_starvation: failure,
             classic_retention_ratio_ppm: None,
+            worst_backlogged_classic_flow_retention_ppm: None,
         });
     }
 
@@ -640,8 +749,137 @@ pub fn evaluate_l4s_pair(
         )
     };
 
-    let starvation = if treatment.classic_backlogged_flow_count > 0
-        && treatment.classic_zero_service_duration_us > 0
+    let mut seen_classic_flow_ids = std::collections::BTreeSet::new();
+    let mut paired_control_goodput = 0_u64;
+    let mut paired_treatment_goodput = 0_u64;
+    let mut worst_backlogged_classic_flow_retention_ppm: Option<u64> = None;
+    let mut per_flow_starvation = false;
+    for flow in &treatment.classic_flow_pairs {
+        if flow.flow_id.trim().is_empty() || !seen_classic_flow_ids.insert(flow.flow_id.as_str()) {
+            let failure = gate(
+                "L4S_CLASSIC_FLOW_RETENTION_001",
+                GateDisposition::Inconclusive,
+                "classic_flow_pair_identity_missing_or_duplicated",
+                None,
+                None,
+            );
+            return Ok(L4sPairReport {
+                ecn_path: ecn_path.clone(),
+                queue_classification: queue_classification.clone(),
+                l4s_queue_delay: gate(
+                    "L4S_QUEUE_DELAY_001",
+                    GateDisposition::Inconclusive,
+                    "classic_flow_pair_identity_invalid",
+                    None,
+                    None,
+                ),
+                classic_retention: retention.clone(),
+                classic_flow_retention: failure.clone(),
+                classic_starvation: failure,
+                classic_retention_ratio_ppm: Some(retention_ratio),
+                worst_backlogged_classic_flow_retention_ppm: None,
+            });
+        }
+        paired_control_goodput = paired_control_goodput
+            .checked_add(flow.control_goodput_bps)
+            .ok_or(L4sEvidenceError::ArithmeticOverflow)?;
+        paired_treatment_goodput = paired_treatment_goodput
+            .checked_add(flow.treatment_goodput_bps)
+            .ok_or(L4sEvidenceError::ArithmeticOverflow)?;
+        if flow.backlogged {
+            if flow.control_goodput_bps == 0 {
+                let failure = gate(
+                    "L4S_CLASSIC_FLOW_RETENTION_001",
+                    GateDisposition::Inconclusive,
+                    "backlogged_classic_flow_has_no_control_goodput_reference",
+                    Some(thresholds.classic_retention_target_ppm),
+                    None,
+                );
+                return Ok(L4sPairReport {
+                    ecn_path: ecn_path.clone(),
+                    queue_classification: queue_classification.clone(),
+                    l4s_queue_delay: latency_placeholder(),
+                    classic_retention: retention.clone(),
+                    classic_flow_retention: failure.clone(),
+                    classic_starvation: failure,
+                    classic_retention_ratio_ppm: Some(retention_ratio),
+                    worst_backlogged_classic_flow_retention_ppm: None,
+                });
+            }
+            let ratio = u64::try_from(
+                u128::from(flow.treatment_goodput_bps)
+                    .checked_mul(PPM)
+                    .ok_or(L4sEvidenceError::ArithmeticOverflow)?
+                    / u128::from(flow.control_goodput_bps),
+            )
+            .map_err(|_| L4sEvidenceError::ArithmeticOverflow)?;
+            worst_backlogged_classic_flow_retention_ppm =
+                Some(worst_backlogged_classic_flow_retention_ppm.map_or(ratio, |current| current.min(ratio)));
+            per_flow_starvation |= flow.zero_service_duration_us > 0;
+        } else if flow.zero_service_duration_us > 0 {
+            per_flow_starvation = true;
+        }
+    }
+
+    if paired_control_goodput != control.classic_goodput_bps
+        || paired_treatment_goodput != treatment.classic_goodput_bps
+        || treatment.classic_flow_pairs
+            .iter()
+            .filter(|flow| flow.backlogged)
+            .count() as u32
+            != control.classic_backlogged_flow_count
+    {
+        let failure = gate(
+            "L4S_CLASSIC_FLOW_RETENTION_001",
+            GateDisposition::Inconclusive,
+            "per_flow_records_do_not_reconcile_to_aggregate_goodput_or_backlog",
+            None,
+            None,
+        );
+        return Ok(L4sPairReport {
+            ecn_path: ecn_path.clone(),
+            queue_classification: queue_classification.clone(),
+            l4s_queue_delay: latency_placeholder(),
+            classic_retention: retention.clone(),
+            classic_flow_retention: failure.clone(),
+            classic_starvation: failure,
+            classic_retention_ratio_ppm: Some(retention_ratio),
+            worst_backlogged_classic_flow_retention_ppm,
+        });
+    }
+
+    let classic_flow_retention = match worst_backlogged_classic_flow_retention_ppm {
+        Some(ratio) if ratio >= thresholds.classic_retention_target_ppm => gate(
+            "L4S_CLASSIC_FLOW_RETENTION_001",
+            GateDisposition::Pass,
+            "worst_backlogged_classic_flow_retention_meets_target",
+            Some(thresholds.classic_retention_target_ppm),
+            Some(ratio),
+        ),
+        Some(ratio) if ratio < thresholds.classic_retention_investigation_floor_ppm => gate(
+            "L4S_CLASSIC_FLOW_RETENTION_001",
+            GateDisposition::Fail,
+            "worst_backlogged_classic_flow_retention_below_investigation_floor",
+            Some(thresholds.classic_retention_target_ppm),
+            Some(ratio),
+        ),
+        Some(ratio) => gate(
+            "L4S_CLASSIC_FLOW_RETENTION_001",
+            GateDisposition::Inconclusive,
+            "worst_backlogged_classic_flow_retention_below_target",
+            Some(thresholds.classic_retention_target_ppm),
+            Some(ratio),
+        ),
+        None => gate(
+            "L4S_CLASSIC_FLOW_RETENTION_001",
+            GateDisposition::Inconclusive,
+            "no_backlogged_classic_flow_measurements",
+            Some(thresholds.classic_retention_target_ppm),
+            None,
+        ),
+    };
+
+    let starvation = if per_flow_starvation || treatment.classic_zero_service_duration_us > 0
     {
         gate(
             "L4S_CLASSIC_STARVATION_001",
@@ -694,8 +932,10 @@ pub fn evaluate_l4s_pair(
         queue_classification,
         l4s_queue_delay: latency,
         classic_retention: retention,
+        classic_flow_retention,
         classic_starvation: starvation,
         classic_retention_ratio_ppm: Some(retention_ratio),
+        worst_backlogged_classic_flow_retention_ppm,
     })
 }
 
@@ -764,14 +1004,32 @@ mod tests {
             qdisc_readback_verified: true,
             cleanup_verified: true,
             queue_counters_present: true,
-            l4s_queue_packets: 10_000,
-            classic_queue_packets: 12_000,
+            ect1_packets_classified_to_l4s_queue: 10_000,
+            classic_packets_classified_to_classic_queue: 12_000,
             classic_backlogged_flow_count: 2,
+            classic_flow_pairs: vec![
+                ClassicFlowPair {
+                    flow_id: "classic-a".to_owned(),
+                    backlogged: true,
+                    control_goodput_bps: 22_500_000,
+                    treatment_goodput_bps: 22_000_000,
+                    zero_service_duration_us: 0,
+                },
+                ClassicFlowPair {
+                    flow_id: "classic-b".to_owned(),
+                    backlogged: true,
+                    control_goodput_bps: 22_500_000,
+                    treatment_goodput_bps: 22_000_000,
+                    zero_service_duration_us: 0,
+                },
+            ],
             ecn: EcnPathEvidence {
                 ecn_negotiated_at_sender: true,
                 ecn_negotiated_at_receiver: true,
+                feedback_mode: EcnFeedbackMode::TcpAccEcn,
                 ect1_packets_sent_by_sender: 10_000,
                 ect1_packets_received_at_receiver: 9_950,
+                ect1_packets_observed_at_aqm: 9_900,
                 ce_marks_at_aqm: 1_000,
                 ce_feedback_received_at_sender: 950,
                 congestion_challenge_verified: true,
@@ -797,7 +1055,9 @@ mod tests {
         assert_eq!(result.queue_classification.disposition, GateDisposition::Pass);
         assert_eq!(result.l4s_queue_delay.disposition, GateDisposition::Pass);
         assert_eq!(result.classic_retention.disposition, GateDisposition::Pass);
+        assert_eq!(result.classic_flow_retention.disposition, GateDisposition::Pass);
         assert_eq!(result.classic_retention_ratio_ppm, Some(977_777));
+        assert_eq!(result.worst_backlogged_classic_flow_retention_ppm, Some(977_777));
         assert_eq!(result.classic_starvation.disposition, GateDisposition::Pass);
     }
 
@@ -858,7 +1118,7 @@ mod tests {
     #[test]
     fn one_missing_queue_class_fails_mixed_classification() {
         let mut trial = treatment();
-        trial.l4s_queue_packets = 0;
+        trial.ect1_packets_classified_to_l4s_queue = 0;
         let (_, classification) =
             evaluate_l4s_ecn_and_aqm(&trial).expect("valid evidence shape");
         assert_eq!(classification.disposition, GateDisposition::Fail);
@@ -880,6 +1140,8 @@ mod tests {
     fn classic_retention_between_target_and_floor_is_inconclusive() {
         let mut mixed = treatment();
         mixed.classic_goodput_bps = 42_000_000;
+        mixed.classic_flow_pairs[0].treatment_goodput_bps = 21_000_000;
+        mixed.classic_flow_pairs[1].treatment_goodput_bps = 21_000_000;
         let result = evaluate_l4s_pair(&control(), &mixed, QualificationThresholds::default())
             .expect("valid pair");
         assert_eq!(
@@ -892,6 +1154,8 @@ mod tests {
     fn classic_retention_below_investigation_floor_fails() {
         let mut mixed = treatment();
         mixed.classic_goodput_bps = 30_000_000;
+        mixed.classic_flow_pairs[0].treatment_goodput_bps = 15_000_000;
+        mixed.classic_flow_pairs[1].treatment_goodput_bps = 15_000_000;
         let result = evaluate_l4s_pair(&control(), &mixed, QualificationThresholds::default())
             .expect("valid pair");
         assert_eq!(result.classic_retention.disposition, GateDisposition::Fail);
@@ -901,6 +1165,7 @@ mod tests {
     fn no_zero_service_is_required_for_backlogged_classic_flows() {
         let mut mixed = treatment();
         mixed.classic_zero_service_duration_us = 10;
+        mixed.classic_flow_pairs[0].zero_service_duration_us = 10;
         let result = evaluate_l4s_pair(&control(), &mixed, QualificationThresholds::default())
             .expect("valid pair");
         assert_eq!(result.classic_starvation.disposition, GateDisposition::Fail);
@@ -926,6 +1191,63 @@ mod tests {
         };
         assert_eq!(
             evaluate_l4s_ecn_and_aqm(&mixed),
+            Err(L4sEvidenceError::InvalidImplementationArtifact)
+        );
+    }
+
+    #[test]
+    fn tcp_prague_requires_accurate_ecn_feedback_not_only_classic_ecn() {
+        let mut trial = treatment();
+        trial.ecn.feedback_mode = EcnFeedbackMode::ClassicEcnOnly;
+        let (ecn, _) = evaluate_l4s_ecn_and_aqm(&trial).expect("feedback mode classified");
+        assert_eq!(ecn.disposition, GateDisposition::Fail);
+        assert_eq!(
+            ecn.reason,
+            "classic_ecn_feedback_is_not_sufficient_for_scalable_sender"
+        );
+    }
+
+    #[test]
+    fn ce_counter_cannot_exceed_ect1_packets_observed_at_aqm() {
+        let mut trial = treatment();
+        trial.ecn.ce_marks_at_aqm = 10_001;
+        let (ecn, _) = evaluate_l4s_ecn_and_aqm(&trial).expect("counter consistency checked");
+        assert_eq!(ecn.disposition, GateDisposition::Fail);
+        assert_eq!(ecn.reason, "ce_marks_exceed_ect1_packets_observed_at_aqm");
+    }
+
+    #[test]
+    fn per_flow_retention_catches_starvation_hidden_by_aggregate_goodput() {
+        let mut mixed = treatment();
+        mixed.classic_goodput_bps = 44_000_000;
+        mixed.classic_flow_pairs[0].treatment_goodput_bps = 0;
+        mixed.classic_flow_pairs[0].zero_service_duration_us = 100_000;
+        mixed.classic_flow_pairs[1].treatment_goodput_bps = 44_000_000;
+        let result = evaluate_l4s_pair(&control(), &mixed, QualificationThresholds::default())
+            .expect("paired per-flow evidence");
+        assert_eq!(result.classic_retention.disposition, GateDisposition::Pass);
+        assert_eq!(result.classic_flow_retention.disposition, GateDisposition::Fail);
+        assert_eq!(result.classic_starvation.disposition, GateDisposition::Fail);
+    }
+
+    #[test]
+    fn quic_prague_requires_quic_ecn_count_feedback() {
+        let mut trial = treatment();
+        trial.l4s_sender_kind = SenderKind::QuicPrague;
+        trial.ecn.feedback_mode = EcnFeedbackMode::QuicEcnCounts;
+        let (ecn, aqm) = evaluate_l4s_ecn_and_aqm(&trial).expect("QUIC feedback mode");
+        assert_eq!(ecn.disposition, GateDisposition::Pass);
+        assert_eq!(aqm.disposition, GateDisposition::Pass);
+    }
+
+    #[test]
+    fn in_tree_classic_sender_and_aqm_provenance_is_checked_on_both_arms() {
+        let mut control_trial = control();
+        control_trial.aqm.provenance = ImplementationProvenance::ExternalArtifact {
+            artifact_sha256: "bad".to_owned(),
+        };
+        assert_eq!(
+            evaluate_l4s_pair(&control_trial, &treatment(), QualificationThresholds::default()),
             Err(L4sEvidenceError::InvalidImplementationArtifact)
         );
     }
