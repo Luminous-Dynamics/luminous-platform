@@ -4,6 +4,7 @@
 //! addresses, create subflows, modify routes, inspect packet contents, or send
 //! packets. Its finish-time and reorder figures are planning estimates, not
 //! transport measurements.
+pub mod fairness;
 pub mod trace;
 
 use std::collections::BTreeSet;
@@ -54,8 +55,10 @@ pub struct PathObservation {
     /// Cost and energy rate per MiB, in caller-declared integer units.
     pub cost_micros_per_mib: u64,
     pub energy_uwh_per_mib: u64,
-    /// Operator-declared dependency group. Equal values are not independent.
+    /// Operator-declared common-cause failure group.
     pub shared_risk_group: String,
+    /// Operator-declared hard capacity bottleneck group; distinct from failure correlation.
+    pub shared_capacity_group: String,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -88,6 +91,7 @@ pub struct PathAllocation {
     pub estimated_cost_micros: u64,
     pub estimated_energy_uwh: u64,
     pub shared_risk_group: String,
+    pub shared_capacity_group: String,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -109,6 +113,7 @@ pub struct ScheduleDecision {
     /// earliest allocation. This is not a packet-level reassembly simulation.
     pub reorder_exposure_bytes: u64,
     pub distinct_shared_risk_groups: usize,
+    pub distinct_capacity_groups: usize,
     pub exclusions: Vec<PathExclusion>,
     pub explanation: Vec<String>,
 }
@@ -139,6 +144,7 @@ struct Candidate {
     energy_uwh: u64,
     reorder_exposure_bytes: u64,
     distinct_shared_risk_groups: usize,
+    distinct_capacity_groups: usize,
 }
 
 fn ceil_div(numerator: u128, denominator: u128) -> u128 {
@@ -209,6 +215,9 @@ fn exclusion_reason(request: &ScheduleRequest, path: &PathObservation) -> Option
     if path.shared_risk_group.trim().is_empty() {
         return Some("shared_risk_group_unknown");
     }
+    if path.shared_capacity_group.trim().is_empty() {
+        return Some("shared_capacity_group_unknown");
+    }
     None
 }
 
@@ -275,6 +284,8 @@ fn single_candidate(request: &ScheduleRequest, path: &PathObservation) -> Option
 
     let mut groups = BTreeSet::new();
     groups.insert(path.shared_risk_group.as_str());
+    let mut capacity_groups = BTreeSet::new();
+    capacity_groups.insert(path.shared_capacity_group.as_str());
     Some(Candidate {
         allocations: vec![PathAllocation {
             path_id: path.id.clone(),
@@ -284,12 +295,14 @@ fn single_candidate(request: &ScheduleRequest, path: &PathObservation) -> Option
             estimated_cost_micros: cost,
             estimated_energy_uwh: energy,
             shared_risk_group: path.shared_risk_group.clone(),
+            shared_capacity_group: path.shared_capacity_group.clone(),
         }],
         finish_us: finish,
         cost_micros: cost,
         energy_uwh: energy,
         reorder_exposure_bytes: 0,
         distinct_shared_risk_groups: groups.len(),
+        distinct_capacity_groups: capacity_groups.len(),
     })
 }
 
@@ -311,13 +324,25 @@ fn aggregate_candidate(
         return None;
     }
 
-    let mut selected: Vec<&PathObservation> = eligible.to_vec();
-    selected.sort_by(|left, right| {
+    let mut ordered: Vec<&PathObservation> = eligible.to_vec();
+    ordered.sort_by(|left, right| {
         effective_capacity(right)
             .cmp(&effective_capacity(left))
             .then_with(|| left.id.cmp(&right.id))
     });
-    selected.truncate(usize::from(request.maximum_paths));
+    let mut seen_capacity_groups = BTreeSet::new();
+    let mut selected = Vec::new();
+    for path in ordered {
+        if seen_capacity_groups.insert(path.shared_capacity_group.as_str()) {
+            selected.push(path);
+        }
+        if selected.len() >= usize::from(request.maximum_paths) {
+            break;
+        }
+    }
+    if selected.len() < 2 {
+        return None;
+    }
 
     let mut remaining = request.bytes;
     let total_capacity: u128 = selected
@@ -345,6 +370,7 @@ fn aggregate_candidate(
                 estimated_cost_micros: estimated_cost(bytes, path.cost_micros_per_mib)?,
                 estimated_energy_uwh: estimated_cost(bytes, path.energy_uwh_per_mib)?,
                 shared_risk_group: path.shared_risk_group.clone(),
+                shared_capacity_group: path.shared_capacity_group.clone(),
             })
         })
         .collect::<Option<Vec<_>>>()?;
@@ -401,6 +427,10 @@ fn aggregate_candidate(
         .iter()
         .map(|allocation| allocation.shared_risk_group.as_str())
         .collect();
+    let capacity_groups: BTreeSet<&str> = allocations
+        .iter()
+        .map(|allocation| allocation.shared_capacity_group.as_str())
+        .collect();
 
     Some(Candidate {
         allocations,
@@ -409,6 +439,7 @@ fn aggregate_candidate(
         energy_uwh: energy,
         reorder_exposure_bytes: reorder_exposure,
         distinct_shared_risk_groups: groups.len(),
+        distinct_capacity_groups: capacity_groups.len(),
     })
 }
 
@@ -491,6 +522,7 @@ fn to_decision(
             estimated_energy_uwh: candidate.energy_uwh,
             reorder_exposure_bytes: candidate.reorder_exposure_bytes,
             distinct_shared_risk_groups: candidate.distinct_shared_risk_groups,
+            distinct_capacity_groups: candidate.distinct_capacity_groups,
             exclusions,
             explanation,
         },
@@ -504,6 +536,7 @@ fn to_decision(
             estimated_energy_uwh: 0,
             reorder_exposure_bytes: 0,
             distinct_shared_risk_groups: 0,
+            distinct_capacity_groups: 0,
             exclusions,
             explanation: vec!["no candidate schedule satisfies hard constraints".to_owned()],
         },
@@ -641,6 +674,7 @@ mod tests {
             cost_micros_per_mib: cost,
             energy_uwh_per_mib: 10,
             shared_risk_group: risk.to_owned(),
+            shared_capacity_group: format!("capacity-{id}"),
         }
     }
 
