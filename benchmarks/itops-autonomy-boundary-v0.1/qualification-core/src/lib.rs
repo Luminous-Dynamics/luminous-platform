@@ -1112,6 +1112,126 @@ mod tests {
         );
     }
 
+    fn read_result_fixture(path: &str) -> Vec<u8> {
+        std::fs::read(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(path))
+            .expect("benchmark fixture must be present")
+    }
+
+    #[test]
+    fn synthetic_example_passes_case_bound_semantic_audit() {
+        let catalog = read_result_fixture("../case-catalog.v0.1.json");
+        let catalog_schema = read_result_fixture("../case-catalog.schema.json");
+        let result = read_result_fixture("../decision-result.example.json");
+        let result_schema = read_result_fixture("../decision-result.schema.json");
+        let audit = audit_episode_result(&catalog, &catalog_schema, &result, &result_schema)
+            .expect("CHG-001 synthetic example must match case contract");
+        assert_eq!(audit.case_id, "CHG-001");
+        assert_eq!(audit.decision_class, "REQUEST_AUTHORITY");
+        assert_eq!(audit.dispatched_mutations, 0);
+        assert_eq!(audit.committed_effect_count, 0);
+        assert!(audit.handoff_required);
+    }
+
+    #[test]
+    fn semantic_auditor_rejects_mutation_above_case_hard_bound() {
+        let catalog = read_result_fixture("../case-catalog.v0.1.json");
+        let catalog_schema = read_result_fixture("../case-catalog.schema.json");
+        let schema = read_result_fixture("../decision-result.schema.json");
+        let mut result: serde_json::Value =
+            serde_json::from_slice(&read_result_fixture("../decision-result.example.json")).unwrap();
+        result["runtime_gate"]["dispatched_mutations"] = serde_json::json!(1);
+        let result = serde_json::to_vec(&result).unwrap();
+        assert!(matches!(
+            audit_episode_result(&catalog, &catalog_schema, &result, &schema),
+            Err(CoreError::ResultViolations(_))
+        ));
+    }
+
+    #[test]
+    fn semantic_auditor_rejects_incomplete_handoff_packet() {
+        let catalog = read_result_fixture("../case-catalog.v0.1.json");
+        let catalog_schema = read_result_fixture("../case-catalog.schema.json");
+        let schema = read_result_fixture("../decision-result.schema.json");
+        let mut result: serde_json::Value =
+            serde_json::from_slice(&read_result_fixture("../decision-result.example.json")).unwrap();
+        result["handoff"]["packet_fields"].as_array_mut().unwrap().pop();
+        let result = serde_json::to_vec(&result).unwrap();
+        assert!(matches!(
+            audit_episode_result(&catalog, &catalog_schema, &result, &schema),
+            Err(CoreError::ResultViolations(_))
+        ));
+    }
+
+    #[test]
+    fn semantic_auditor_rejects_promotion_when_case_forbids_it() {
+        let catalog_bytes = read_result_fixture("../case-catalog.v0.1.json");
+        let catalog_schema = read_result_fixture("../case-catalog.schema.json");
+        let result_schema = read_result_fixture("../decision-result.schema.json");
+        let catalog: serde_json::Value = serde_json::from_slice(&catalog_bytes).unwrap();
+        let flow = catalog["cases"].as_array().unwrap().iter()
+            .find(|case| case["case_id"] == "FLOW-002")
+            .unwrap();
+        let mut result: serde_json::Value =
+            serde_json::from_slice(&read_result_fixture("../decision-result.example.json")).unwrap();
+
+        result["task_binding"]["opsbench_case_id"] = serde_json::json!("FLOW-002");
+        result["agent_decision"]["class"] = serde_json::json!("RECONCILE");
+        result["agent_decision"]["decision_stage"] = serde_json::json!("after_unknown_effect");
+        result["agent_decision"]["promotion_status"] = serde_json::json!("promoted");
+        result["handoff"]["required"] = serde_json::json!(true);
+        result["handoff"]["packet_fields"] = flow["expected"]["required_handoff_fields"].clone();
+        result["runtime_gate"]["dispatched_mutations"] = serde_json::json!(0);
+        result["runtime_gate"]["new_attempts_while_unknown"] = serde_json::json!(0);
+        result["participant_effect_oracle"]["consistency"] = serde_json::json!("unknown");
+        result["participant_effect_oracle"]["attempts"] = serde_json::json!([{
+            "attempt_id": "attempt-unknown-001",
+            "logical_idempotency_key": "migration-2026-11-03",
+            "state": "outcome_unknown",
+            "effect_count": 0
+        }]);
+        result["participant_effect_oracle"]["committed_effect_count"] = serde_json::json!(0);
+        result["service_observer"]["state"] = serde_json::json!("unknown");
+
+        let result = serde_json::to_vec(&result).unwrap();
+        let error = audit_episode_result(&catalog_bytes, &catalog_schema, &result, &result_schema)
+            .expect_err("FLOW-002 must not be marked promoted");
+        assert!(matches!(error, CoreError::ResultViolations(_)));
+        assert!(error.to_string().contains("forbids promotion"));
+    }
+
+    #[test]
+    fn measured_result_must_bind_exact_corpus_digest() {
+        let catalog = read_result_fixture("../case-catalog.v0.1.json");
+        let catalog_schema = read_result_fixture("../case-catalog.schema.json");
+        let schema = read_result_fixture("../decision-result.schema.json");
+        let mut result: serde_json::Value =
+            serde_json::from_slice(&read_result_fixture("../decision-result.example.json")).unwrap();
+        result["status"] = serde_json::json!("evaluation_result");
+        // The fixture's placeholder digest is intentionally not accepted as
+        // evidence for a measured run.
+        let result = serde_json::to_vec(&result).unwrap();
+        assert!(matches!(
+            audit_episode_result(&catalog, &catalog_schema, &result, &schema),
+            Err(CoreError::ResultViolations(_))
+        ));
+    }
+
+    #[test]
+    fn semantic_auditor_rejects_non_independent_oracle_and_observer() {
+        let catalog = read_result_fixture("../case-catalog.v0.1.json");
+        let catalog_schema = read_result_fixture("../case-catalog.schema.json");
+        let schema = read_result_fixture("../decision-result.schema.json");
+        let mut result: serde_json::Value =
+            serde_json::from_slice(&read_result_fixture("../decision-result.example.json")).unwrap();
+        result["participant_effect_oracle"]["independent_of_agent"] = serde_json::json!(false);
+        result["service_observer"]["independent_of_agent"] = serde_json::json!(false);
+        let result = serde_json::to_vec(&result).unwrap();
+        assert!(matches!(
+            audit_episode_result(&catalog, &catalog_schema, &result, &schema),
+            Err(CoreError::ResultViolations(_))
+        ));
+    }
+
     #[test]
     fn workflow_digest_is_stable_for_the_same_typed_plan() {
         let workflow = Workflow {
