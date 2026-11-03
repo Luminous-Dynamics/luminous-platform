@@ -99,6 +99,8 @@ Supported arms are `fq_codel`, `cake_besteffort`, `cake_diffserv3` and `cake_dif
 
 Cleanup commands carry a `namespace-created-by-this-run` guard. A future executor must parse the preflight namespace inventory, refuse name collisions, track which namespace creations succeeded, and delete only those exact namespaces. The plan's cleanup section is not permission to delete arbitrary namespaces.
 
+The TBF burst uses a conservative minimum `HZ=100` assumption and adds one Ethernet MTU to the rate-per-jiffy byte requirement. The plan emits the assumption and computed burst, but it does not verify the actual host kernel configuration. A future executor must read the exact `CONFIG_HZ` and refuse installation if it is unavailable or less than 100; the HZ assumption is not a kernel measurement.
+
 The current stage is deliberately plan-only. Namespace creation, qdisc execution, iperf3 runs, counter capture, ownership-aware cleanup and artifact receipt generation remain a separate opt-in executor task. A valid plan is not a benchmark result.
 
 ## Tests
