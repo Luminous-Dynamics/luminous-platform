@@ -95,7 +95,7 @@ cargo run --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml --
   --tenant-b-flows 1
 ```
 
-Supported arms are `fq_codel`, `cake_besteffort`, `cake_diffserv3` and `cake_diffserv4`. The CAKE arms use explicit `triple-isolate nonat`; the initial lab has no NAT. The two tenant iperf3 commands are marked as a concurrent group so a future executor cannot serialize away the contention being measured.
+Supported arms are `fq_codel`, `cake_besteffort`, `cake_diffserv3` and `cake_diffserv4`. The CAKE arms use explicit `bandwidth <rate>bit triple-isolate nonat`; the initial lab has no NAT. fq_codel uses TBF plus fq_codel child at the same configured rate. Rate matching controls the bottleneck capacity, but the AQM/shaper semantics remain different and are analyzed as separate arms. The two tenant iperf3 commands are marked as a concurrent group so a future executor cannot serialize away the contention being measured.
 
 Cleanup commands carry a `namespace-created-by-this-run` guard. A future executor must parse the preflight namespace inventory, refuse name collisions, track which namespace creations succeeded, and delete only those exact namespaces. The plan's cleanup section is not permission to delete arbitrary namespaces.
 
