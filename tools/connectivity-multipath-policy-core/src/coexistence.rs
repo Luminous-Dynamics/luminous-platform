@@ -28,6 +28,7 @@ pub struct ExperimentIdentity {
     pub measurement_duration_us: u64,
     /// Exact ordinary TCP congestion-control name used by the TCP references.
     pub tcp_congestion_control: String,
+    pub tcp_congestion_control_provenance: ImplementationProvenance,
     /// Exact coupled MPTCP congestion-control identity under test.
     pub mptcp_congestion_control: String,
     pub mptcp_congestion_control_provenance: ImplementationProvenance,
@@ -60,6 +61,15 @@ impl ExperimentIdentity {
             || self.mptcp_scheduler.trim().is_empty()
         {
             return Err(EvidenceError::MissingImplementationIdentity);
+        }
+        if let ImplementationProvenance::ExternalArtifact { artifact_sha256 } =
+            &self.tcp_congestion_control_provenance
+        {
+            if !is_sha256(artifact_sha256) {
+                return Err(EvidenceError::InvalidImplementationArtifact(
+                    "tcp_congestion_control",
+                ));
+            }
         }
         if let ImplementationProvenance::ExternalArtifact { artifact_sha256 } =
             &self.mptcp_congestion_control_provenance
@@ -492,6 +502,7 @@ mod tests {
             warmup_us: 2_000_000,
             measurement_duration_us: 30_000_000,
             tcp_congestion_control: "cubic".to_owned(),
+            tcp_congestion_control_provenance: ImplementationProvenance::InTreeKernel,
             mptcp_congestion_control: "lia".to_owned(),
             mptcp_congestion_control_provenance: ImplementationProvenance::InTreeKernel,
             mptcp_scheduler: "default".to_owned(),
@@ -797,6 +808,22 @@ mod tests {
         )
         .expect("valid evidence");
         assert_eq!(result.disposition, GateDisposition::Inconclusive);
+    }
+
+    #[test]
+    fn external_tcp_congestion_control_requires_its_artifact_digest() {
+        let mut trial_identity = identity();
+        trial_identity.tcp_congestion_control = "research-tcp-cc".to_owned();
+        trial_identity.tcp_congestion_control_provenance =
+            ImplementationProvenance::ExternalArtifact {
+                artifact_sha256: "bad".to_owned(),
+            };
+        assert_eq!(
+            trial_identity.validate(),
+            Err(EvidenceError::InvalidImplementationArtifact(
+                "tcp_congestion_control"
+            ))
+        );
     }
 
     #[test]
