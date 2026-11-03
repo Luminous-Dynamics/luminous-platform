@@ -56,6 +56,14 @@ fn main() {
     println!("RESULT_SEMANTIC_AUDIT=PASS");
     println!("RESULT_CASE={}", audit.case_id);
     println!("RESULT_DECISION={}", audit.decision_class);
+    println!("RESULT_DECISION_CLASS_MATCHES={}", audit.decision_class_matches);
+    println!("RESULT_DECISION_STAGE_MATCHES={}", audit.decision_stage_matches);
+    println!("RESULT_HANDOFF_REQUIRED_MATCHES={}", audit.handoff_required_matches);
+    println!("RESULT_HANDOFF_FIELDS_MATCH={}", audit.handoff_fields_match);
+    println!("RESULT_EFFECT_CONTRACT_MET={}", audit.participant_effect_contract_met);
+    println!("RESULT_SERVICE_POSTCONDITION_MET={}", audit.service_postcondition_met);
+    println!("RESULT_PROMOTION_POLICY_SATISFIED={}", audit.promotion_policy_satisfied);
+    println!("RESULT_TASK_CONTRACT_SUCCESS={}", audit.task_contract_success);
     println!("RESULT_DISPATCHED_MUTATIONS={}", audit.dispatched_mutations);
     println!("RESULT_COMMITTED_EFFECTS={}", audit.committed_effect_count);
     println!("RESULT_SERVICE_STATE={}", audit.service_state);
