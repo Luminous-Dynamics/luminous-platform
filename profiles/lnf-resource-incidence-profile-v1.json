@@ -46,7 +46,14 @@
     "validity_window_required": true,
     "unknown_or_invalid_resource_excludes_dependent_paths": true,
     "resource_capacity_underflow": "hard_error",
-    "residual_capacity_must_be_nonnegative": true
+    "residual_capacity_must_be_nonnegative": true,
+    "required_request_fields": [
+      "topology_sha256",
+      "resource_snapshot_sha256",
+      "now_unix_ms",
+      "minimum_evidence_confidence_ppm"
+    ],
+    "resource_snapshot_digest_contract": "caller_computed_digest_of_canonical_frozen_path_and_resource_input_snapshot_echoed_in_every_report; not_authentication_or_independent_hash_recomputation"
   },
   "scenario_ids": [
     "RIA-00",
@@ -277,6 +284,7 @@
     "No namespace, hardware or field performance result is claimed by deterministic unit tests.",
     "No MPTCP best-path or do-no-harm result is implied by this allocator's output.",
     "CAKE and fq_codel are queue-management baselines, not equivalent path-level resource allocators.",
-    "The exact integer reference is bounded to small topologies and is not a production optimizer."
+    "The exact integer reference is bounded to small topologies and is not a production optimizer.",
+    "The resource snapshot digest is caller-computed and echoed; this module does not independently hash or authenticate the source inventory"
   ]
 }
