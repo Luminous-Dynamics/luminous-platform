@@ -67,6 +67,7 @@ pub enum L4sEvidenceError {
     InvalidThreshold,
     MissingImplementationIdentity,
     InvalidImplementationArtifact,
+    TooManyClassicFlows,
     ArithmeticOverflow,
 }
 
@@ -773,7 +774,7 @@ pub fn evaluate_l4s_pair(
     let mut worst_backlogged_classic_flow_retention_ppm: Option<u64> = None;
     let mut per_flow_starvation = false;
     if treatment.classic_flow_pairs.len() > 512 {
-        return Err(L4sEvidenceError::InvalidDecisionDuration);
+        return Err(L4sEvidenceError::TooManyClassicFlows);
     }
     for flow in &treatment.classic_flow_pairs {
         if flow.flow_id.trim().is_empty()
