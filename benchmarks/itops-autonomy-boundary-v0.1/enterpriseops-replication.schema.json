@@ -653,7 +653,8 @@
       "required": [
         "required_for_direct_comparison",
         "reproduced",
-        "system_profile_digest"
+        "system_profile_digest",
+        "profile_artifact_uri"
       ],
       "properties": {
         "required_for_direct_comparison": {
@@ -675,6 +676,13 @@
               "type": "null"
             }
           ]
+        },
+        "profile_artifact_uri": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
         }
       }
     }
@@ -816,6 +824,10 @@
               },
               "system_profile_digest": {
                 "$ref": "#/$defs/sha256"
+              },
+              "profile_artifact_uri": {
+                "type": "string",
+                "format": "uri"
               }
             }
           }
