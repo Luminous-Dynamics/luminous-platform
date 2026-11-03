@@ -77,6 +77,30 @@ The model excludes paths that are broker-ineligible, unauthorized, stale, below 
 
 It returns no route when no candidate fits. It rejects duplicate path IDs, empty IDs, invalid loss bounds, zero payloads, zero path count, invalid improvement thresholds and more than 64 candidate paths. Cost/energy conversions and aggregation use checked integer bounds; overflow rejects the candidate rather than saturating into a false fit.
 
+## Isolated qdisc command planning
+
+`qdisc::build_plan` creates a deterministic argv-only topology plan for fq_codel and CAKE tenant-fairness experiments. It does **not** execute the plan, create namespaces, change routes or install qdiscs.
+
+The plan uses four disposable namespaces (tenant A, tenant B, gateway and server), an in-gateway bridge, separate tenant source IPs and one shaped WAN egress veth. Only the two tenant namespaces receive a default route; the gateway and server have no default route. There is no NAT, host bridge, physical NIC, or public route in the plan.
+
+The read-only CLI emits the complete plan as JSON:
+
+```sh
+cargo run --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml --bin qdisc-lab-plan -- \
+  --run-suffix demo001 \
+  --arm cake_besteffort \
+  --rate-bps 100000000 \
+  --duration-seconds 30 \
+  --tenant-a-flows 8 \
+  --tenant-b-flows 1
+```
+
+Supported arms are `fq_codel`, `cake_besteffort`, `cake_diffserv3` and `cake_diffserv4`. The CAKE arms use explicit `triple-isolate nonat`; the initial lab has no NAT. The two tenant iperf3 commands are marked as a concurrent group so a future executor cannot serialize away the contention being measured.
+
+Cleanup commands carry a `namespace-created-by-this-run` guard. A future executor must parse the preflight namespace inventory, refuse name collisions, track which namespace creations succeeded, and delete only those exact namespaces. The plan's cleanup section is not permission to delete arbitrary namespaces.
+
+The current stage is deliberately plan-only. Namespace creation, qdisc execution, iperf3 runs, counter capture, ownership-aware cleanup and artifact receipt generation remain a separate opt-in executor task. A valid plan is not a benchmark result.
+
 ## Tests
 
 The byte-allocation model and packet-trace simulator have separate tests. Trace tests cover MinRTT, Round Robin, redundancy only across distinct declared risk domains, deterministic replay, broker-ineligible path exclusion, per-path cost rounding, aggregate cost ceilings, common-domain loss correlation, separate synthetic loss streams, out-of-order application release, lost-gap timeout accounting, existing-buffer-aware reorder prediction and input bounds.
