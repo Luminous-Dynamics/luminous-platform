@@ -2678,8 +2678,6 @@ mod operational_dependency_supplement_tests {
             .expect_err("unsupported source promotion must fail semantic audit");
         assert!(error.to_string().contains("claim_findings_mismatch:inc-002-participant-effect"));
     }
-}
-
 
     #[test]
     fn fixture_explicitly_reports_unexercised_agent_comparator() {
