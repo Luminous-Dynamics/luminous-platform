@@ -6,10 +6,10 @@ This crate audits the declared control-domain graph in an EIP v0.1 profile. It d
 
 ```sh
 cargo test
-cargo run --release -- ../fixtures/itops-process-smoke.profile.json
+cargo run --release -- ../fixtures/itops-process-smoke.profile.json ../profile.schema.json
 ```
 
-The command emits deterministic JSON with the exact input SHA-256, structural issues, dependency cycles, per-claim/per-dimension outcomes, and the resulting claim ceiling.
+The command emits deterministic JSON with the exact profile SHA-256, optional schema SHA-256, structural issues, dependency cycles, per-claim/per-dimension outcomes, and the resulting claim ceiling. Passing the schema records its digest and checks that it declares Draft 2020-12; it does not execute JSON Schema validation.
 
 ## Outcome meanings
 
