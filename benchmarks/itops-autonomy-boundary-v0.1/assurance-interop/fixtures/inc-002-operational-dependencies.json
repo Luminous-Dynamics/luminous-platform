@@ -554,8 +554,11 @@
         "participant_state_store",
         "participant_effect_sink"
       ],
-      "expected_claim_disposition": "shared_dependencies_present",
-      "claim_ceiling": "no_independent_effect_claim"
+      "claim_ceiling": "no_independent_effect_claim",
+      "expected_claim_findings": [
+        "shared_dependencies_present",
+        "required_source_not_exercised"
+      ]
     },
     {
       "claim_id": "inc-002-service-health",
@@ -575,8 +578,11 @@
         "service_probe_source",
         "telemetry_collector"
       ],
-      "expected_claim_disposition": "required_source_not_exercised",
-      "claim_ceiling": "no_independent_service_health_claim"
+      "claim_ceiling": "no_independent_service_health_claim",
+      "expected_claim_findings": [
+        "shared_dependencies_present",
+        "required_source_not_exercised"
+      ]
     }
   ],
   "monitor_coverage": {
