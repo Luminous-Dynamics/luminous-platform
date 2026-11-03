@@ -32,12 +32,13 @@
       "mptcp_congestion_control",
       "mptcp_scheduler",
       "mptcp_scheduler_provenance",
-      "mptcp_congestion_control_provenance"
+      "mptcp_congestion_control_provenance",
+      "tcp_congestion_control_provenance"
     ],
     "all_arms_must_match_identity": true,
     "mismatched_identity_disposition": "inconclusive",
     "implementation_identity_must_be_exact": true,
-    "implementation_provenance_contract": "in_tree_implementation_is_bound_to_kernel_build_sha256; external_implementation_requires_its_own_artifact_sha256"
+    "implementation_provenance_contract": "in_tree_implementations_are_bound_to_kernel_build_sha256; each_out_of_tree_tcp_or_mptcp_controller_and_scheduler_requires_its_own_artifact_sha256"
   },
   "evidence_requirements": {
     "mptcp_kernel_support_required": true,
