@@ -810,9 +810,19 @@ mod tests {
         )
         .expect("valid path ceilings");
         assert_eq!(report.total_allocated_rate_bps, 100);
-        assert_eq!(report.path_allocations[0].allocated_rate_bps, 10);
-        assert_eq!(report.path_allocations[1].allocated_rate_bps, 90);
-        assert!(report.path_allocations[0].saturated);
+        let small = report
+            .path_allocations
+            .iter()
+            .find(|item| item.path_id == "small")
+            .expect("small path allocation");
+        let large = report
+            .path_allocations
+            .iter()
+            .find(|item| item.path_id == "large")
+            .expect("large path allocation");
+        assert_eq!(small.allocated_rate_bps, 10);
+        assert_eq!(large.allocated_rate_bps, 90);
+        assert!(small.saturated);
         assert!(report.saturated_resource_ids.contains(&"shared".to_owned()));
     }
 
@@ -1027,7 +1037,9 @@ mod tests {
                 let feasible = path.capacity_domain_ids.iter().all(|domain| {
                     usage
                         .get(domain)
-                        .and_then(|used| used.checked_add(rate))
+                        .copied()
+                        .unwrap_or(0)
+                        .checked_add(rate)
                         .zip(capacities.get(domain).copied())
                         .is_some_and(|(next, capacity)| next <= capacity)
                 });
@@ -1113,7 +1125,9 @@ mod tests {
                 let feasible = path.capacity_domain_ids.iter().all(|domain| {
                     usage
                         .get(domain)
-                        .and_then(|used| used.checked_add(rate))
+                        .copied()
+                        .unwrap_or(0)
+                        .checked_add(rate)
                         .zip(capacities.get(domain).copied())
                         .is_some_and(|(next, capacity)| next <= capacity)
                 });
