@@ -55,6 +55,7 @@ pub struct PathTraceSummary {
     pub path_id: String,
     pub failure_domain: String,
     pub capacity_domain_ids: Vec<String>,
+    pub capacity_domain_evidence: CapacityDomainEvidence,
     pub transmitted_bytes: u64,
     pub transmissions: u64,
     pub lost_transmissions: u64,
@@ -63,6 +64,8 @@ pub struct PathTraceSummary {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TraceReport {
     pub task_id: String,
+    pub topology_sha256: String,
+    pub decision_time_unix_ms: u64,
     pub strategy: TraceStrategy,
     pub total_segments: u32,
     pub scheduled_segments: u32,
@@ -725,6 +728,7 @@ pub fn simulate(
             path_id: state.path.id.clone(),
             failure_domain: state.path.shared_risk_group.clone(),
             capacity_domain_ids: canonical_capacity_domain_ids(&state.path.capacity_domain_ids),
+            capacity_domain_evidence: state.path.capacity_domain_evidence.clone(),
             transmitted_bytes: state.bytes_used,
             transmissions: state.transmissions,
             lost_transmissions: state.lost_transmissions,
@@ -757,6 +761,8 @@ pub fn simulate(
 
     Ok(TraceReport {
         task_id: request.task_id.clone(),
+        topology_sha256: request.topology_sha256.clone(),
+        decision_time_unix_ms: request.now_unix_ms,
         strategy,
         total_segments,
         network_received_segments,
@@ -829,12 +835,22 @@ mod tests {
             energy_uwh_per_mib: 10,
             shared_risk_group: risk.to_owned(),
             capacity_domain_ids: vec![format!("capacity-{id}")],
+            capacity_domain_evidence: CapacityDomainEvidence {
+                source_id: "operator-inventory-1".to_owned(),
+                inventory_sha256: "a".repeat(64),
+                topology_sha256: "f".repeat(64),
+                complete: true,
+                observed_at_unix_ms: 900_000,
+                valid_until_unix_ms: 1_100_000,
+            },
         }
     }
 
     fn request() -> ScheduleRequest {
         ScheduleRequest {
             task_id: "trace-task".to_owned(),
+            topology_sha256: "f".repeat(64),
+            now_unix_ms: 1_000_000,
             intent: TrafficIntent::BulkTransfer,
             bytes: 128 * 1024,
             deadline_us: Some(5_000_000),
