@@ -117,6 +117,15 @@ pub struct PathRateAllocation {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ResourceDomainUsage {
     pub resource_id: String,
+    pub source_id: String,
+    pub inventory_sha256: String,
+    pub confidence_ppm: u32,
+    pub observed_at_unix_ms: u64,
+    pub valid_until_unix_ms: u64,
+    pub declared_capacity_bps: u64,
+    pub measured_background_load_bps: u64,
+    pub committed_reservations_bps: u64,
+    pub safety_margin_bps: u64,
     pub residual_capacity_bps: u64,
     pub allocated_rate_bps: u64,
     pub unused_capacity_bps: u64,
@@ -588,6 +597,15 @@ pub fn allocate_resource_incidence(
         }
         resource_usage.push(ResourceDomainUsage {
             resource_id: resource.resource_id.clone(),
+            source_id: resource.evidence.source_id.clone(),
+            inventory_sha256: resource.evidence.inventory_sha256.clone(),
+            confidence_ppm: resource.evidence.confidence_ppm,
+            observed_at_unix_ms: resource.evidence.observed_at_unix_ms,
+            valid_until_unix_ms: resource.evidence.valid_until_unix_ms,
+            declared_capacity_bps: resource.declared_capacity_bps,
+            measured_background_load_bps: resource.measured_background_load_bps,
+            committed_reservations_bps: resource.committed_reservations_bps,
+            safety_margin_bps: resource.safety_margin_bps,
             residual_capacity_bps: residual,
             allocated_rate_bps: allocated,
             unused_capacity_bps: unused,
@@ -915,6 +933,103 @@ mod tests {
             report.exclusions[0].reason,
             "capacity_resource_evidence_invalid"
         );
+    }
+
+    fn exact_integer_reference_max_total(
+        paths: &[ResourcePath],
+        resources: &[CapacityResource],
+    ) -> u64 {
+        fn visit(
+            index: usize,
+            paths: &[ResourcePath],
+            capacities: &BTreeMap<String, u64>,
+            usage: &mut BTreeMap<String, u64>,
+            total: u64,
+            best: &mut u64,
+        ) {
+            if index == paths.len() {
+                *best = (*best).max(total);
+                return;
+            }
+            let path = &paths[index];
+            for rate in 0..=path.path_ceiling_bps {
+                let feasible = path.capacity_domain_ids.iter().all(|domain| {
+                    usage
+                        .get(domain)
+                        .and_then(|used| used.checked_add(rate))
+                        .zip(capacities.get(domain).copied())
+                        .is_some_and(|(next, capacity)| next <= capacity)
+                });
+                if !feasible {
+                    continue;
+                }
+                for domain in &path.capacity_domain_ids {
+                    let used = usage.get(domain).copied().unwrap_or(0);
+                    usage.insert(domain.clone(), used + rate);
+                }
+                visit(
+                    index + 1,
+                    paths,
+                    capacities,
+                    usage,
+                    total + rate,
+                    best,
+                );
+                for domain in &path.capacity_domain_ids {
+                    let used = usage.get(domain).copied().unwrap_or(0);
+                    usage.insert(domain.clone(), used - rate);
+                }
+            }
+        }
+
+        let capacities = resources
+            .iter()
+            .map(|resource| {
+                (
+                    resource.resource_id.clone(),
+                    resource.residual_capacity_bps().expect("valid residual"),
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
+        let mut best = 0;
+        visit(
+            0,
+            paths,
+            &capacities,
+            &mut BTreeMap::new(),
+            0,
+            &mut best,
+        );
+        best
+    }
+
+    #[test]
+    fn partial_overlap_quantifies_weighted_max_min_utilization_gap() {
+        let paths = vec![
+            path("a", 10, 1, &["x"]),
+            path("b", 10, 1, &["x", "y"]),
+            path("c", 10, 1, &["y"]),
+        ];
+        let resources = vec![
+            resource("x", 10, 0, 0, 0),
+            resource("y", 8, 0, 0, 0),
+        ];
+        let report = allocate_resource_incidence(&request(), &paths, &resources)
+            .expect("valid overlapping topology");
+        assert_eq!(report.total_allocated_rate_bps, 14);
+        assert_eq!(
+            report
+                .path_allocations
+                .iter()
+                .map(|item| item.allocated_rate_bps)
+                .collect::<Vec<_>>(),
+            vec![6, 4, 4]
+        );
+        let exact_max = exact_integer_reference_max_total(&paths, &resources);
+        assert_eq!(exact_max, 18);
+        assert!(report.total_allocated_rate_bps < exact_max);
+        // The allocator's weighted max-min objective is intentionally not
+        // presented as a maximum-sum-rate optimizer; the gap remains visible.
     }
 
     #[test]
