@@ -258,7 +258,6 @@ fn choose_candidate(
     states: &[PathState],
     transmissions: &[TraceTransmission],
     segment_index: u32,
-    segment_bytes: u32,
     segment_sizes: &[u32],
     reorder_limit: u64,
     round_robin_cursor: usize,
@@ -451,8 +450,11 @@ pub fn simulate(
         request.bytes.div_ceil(u64::from(trace_request.segment_bytes)),
     )
     .unwrap_or(u32::MAX);
-    if total_segments == 0 || total_segments == u32::MAX {
+    if total_segments == 0 {
         return Err(ScheduleError::ZeroPayload);
+    }
+    if total_segments == u32::MAX {
+        return Err(ScheduleError::TooManyTraceSegments);
     }
 
     let mut segment_sizes = Vec::with_capacity(total_segments as usize);
@@ -843,6 +845,81 @@ mod tests {
         )
         .expect("valid trace");
         assert_eq!(report.redundant_bytes, 0);
+    }
+
+    #[test]
+    fn trace_cost_is_rounded_per_path_not_per_packet() {
+        let mut req = request();
+        req.bytes = 1_048_576;
+        req.max_cost_micros = 1_000;
+        let paths = [path("a", 10_000, 100_000_000, "a")];
+        let mut costed = paths[0].clone();
+        costed.cost_micros_per_mib = 1_000;
+        let mut tr = trace();
+        tr.segment_bytes = 1200;
+        let report = simulate(&req, &tr, &[costed], TraceStrategy::MinRtt)
+            .expect("valid trace");
+        assert_eq!(report.estimated_cost_micros, 1_000);
+    }
+
+    #[test]
+    fn trace_enforces_cost_budget_across_all_paths() {
+        let mut req = request();
+        req.bytes = 1_048_576;
+        req.max_cost_micros = 50;
+        let mut first = path("a", 10_000, 20_000_000, "a");
+        let mut second = path("b", 20_000, 20_000_000, "b");
+        first.cost_micros_per_mib = 100;
+        second.cost_micros_per_mib = 100;
+        let report = simulate(
+            &req,
+            &trace(),
+            &[first, second],
+            TraceStrategy::RoundRobin,
+        )
+        .expect("valid trace can be partial");
+        assert!(report.estimated_cost_micros <= req.max_cost_micros);
+        assert!(!report.delivery_complete);
+    }
+
+    #[test]
+    fn shared_failure_domain_has_correlated_segment_loss() {
+        let mut req = request();
+        req.bytes = 64 * 1200;
+        let mut first = path("a", 10_000, 20_000_000, "shared");
+        let mut second = path("b", 10_000, 20_000_000, "shared");
+        first.loss_ppm = 500_000;
+        second.loss_ppm = 500_000;
+        let report = simulate(
+            &req,
+            &trace(),
+            &[first, second],
+            TraceStrategy::RoundRobin,
+        )
+        .expect("valid trace");
+        let by_segment: BTreeMap<u32, bool> = report
+            .transmissions
+            .iter()
+            .map(|item| (item.segment_index, item.lost))
+            .collect();
+        assert!(by_segment.values().any(|lost| *lost));
+        assert!(by_segment.values().any(|lost| !*lost));
+    }
+
+    #[test]
+    fn reorder_aware_schedule_respects_small_buffer_when_feasible() {
+        let mut req = request();
+        req.bytes = 64 * 1200;
+        req.reorder_buffer_limit_bytes = 1200;
+        let paths = [
+            path("low-latency", 1_000, 20_000_000, "a"),
+            path("high-latency", 250_000, 20_000_000, "b"),
+        ];
+        let rr = simulate(&req, &trace(), &paths, TraceStrategy::RoundRobin)
+            .expect("valid trace");
+        let aware = simulate(&req, &trace(), &paths, TraceStrategy::ReorderAware)
+            .expect("valid trace");
+        assert!(aware.receiver_reorder_peak_bytes <= rr.receiver_reorder_peak_bytes);
     }
 
     #[test]
