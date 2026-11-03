@@ -161,7 +161,12 @@ fn main() {
         json_escape(plan.qdisc_arm)
     );
     println!("  \\"shaping_rate_bps\\": {},", plan.shaping_rate_bps);
-    println!("  \\"tbf_minimum_kernel_hz\\": {},", plan.tbf_minimum_kernel_hz);
+    println!(
+        "  \\"tbf_minimum_kernel_hz\\": {},",
+        plan.tbf_minimum_kernel_hz
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "null".to_owned())
+    );
     println!("  \\"tbf_burst_bytes\\": {},", plan.tbf_burst_bytes.map(|value| value.to_string()).unwrap_or_else(|| "null".to_owned()));
     println!("  \\"duration_seconds\\": {},", plan.duration_seconds);
     println!("  \\"tenant_a_parallel_flows\\": {},", plan.tenant_a_parallel_flows);
