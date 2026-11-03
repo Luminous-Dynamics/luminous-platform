@@ -35,12 +35,9 @@ fn strings(value: Option<&Value>) -> Vec<String> {
 }
 
 fn dependency_inventory_complete(component: &Value) -> bool {
-    text(
-        component
-            .get("dependency_inventory")
-            .unwrap_or(&Value::Null),
-        "status",
-    ) == Some("complete_asserted")
+    component
+        .get("dependency_inventory")
+        .is_some_and(|inventory| text(inventory, "status") == Some("complete_asserted"))
         && !strings(
             component
                 .get("dependency_inventory")
@@ -476,7 +473,7 @@ mod tests {
     use super::*;
 
     const FIXTURE: &str =
-        include_str!("../fixtures/itops-process-smoke.profile.json");
+        include_str!("../../fixtures/itops-process-smoke.profile.json");
 
     fn profile() -> Value {
         serde_json::from_str(FIXTURE).expect("fixture JSON")
