@@ -578,7 +578,7 @@ mod tests {
         let mut value = profile();
         make_declared_separation(&mut value);
         let raw = serde_json::to_vec(&value).expect("serialize");
-        let report = audit(&value, &raw);
+        let report = audit(&value, &raw, None);
         assert_eq!(report["structurally_valid"], true);
         assert_eq!(report["overall_claim_ceiling"], "declaration_only");
         let claim = claim_report(&report, "participant_effect_independently_observed");
@@ -596,7 +596,7 @@ mod tests {
             "evidence_refs": []
         });
         let raw = serde_json::to_vec(&value).expect("serialize");
-        let report = audit(&value, &raw);
+        let report = audit(&value, &raw, None);
         let claim = claim_report(&report, "participant_effect_independently_observed");
         assert_eq!(dimension_report(claim, "authority")["status"], "indeterminate");
         assert_eq!(claim["status"], "indeterminate");
@@ -611,7 +611,7 @@ mod tests {
             "evidence_refs": []
         });
         let raw = serde_json::to_vec(&value).expect("serialize");
-        let report = audit(&value, &raw);
+        let report = audit(&value, &raw, None);
         let claim = claim_report(&report, "participant_effect_independently_observed");
         assert_eq!(claim["status"], "indeterminate");
         assert_eq!(claim["claim_ceiling"], "indeterminate");
@@ -664,7 +664,7 @@ mod tests {
         value["claims"][0]["required_dimensions"] = json!(["administration"]);
 
         let raw = serde_json::to_vec(&value).expect("serialize");
-        let report = audit(&value, &raw);
+        let report = audit(&value, &raw, None);
         let claim = claim_report(&report, "participant_effect_independently_observed");
         assert_eq!(claim["status"], "fail");
         assert_eq!(dimension_report(claim, "administration")["status"], "fail");
@@ -698,7 +698,7 @@ mod tests {
             "relation": "observes_input_from"
         }]);
         let raw = serde_json::to_vec(&value).expect("serialize");
-        let report = audit(&value, &raw);
+        let report = audit(&value, &raw, None);
         assert_eq!(report["structurally_valid"], false);
         assert_eq!(report["overall_claim_ceiling"], "invalid_profile");
         assert!(!report["dependency_cycles"].as_array().expect("cycles").is_empty());
