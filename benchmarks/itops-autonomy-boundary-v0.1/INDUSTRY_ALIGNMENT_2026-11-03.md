@@ -6,16 +6,19 @@ This note records the external evaluation surfaces used to design the ITOPS Auto
 
 ### EnterpriseOps-Gym and EnterpriseOps-Gym-AA
 
-ServiceNow Research's EnterpriseOps-Gym contains 1,150 expert-curated stateful tasks across eight enterprise domains, with 164 database tables and 512 functional tools. Its 2026 PMLR paper reports 34.1% success for Claude Sonnet 4.5 in the original evaluation and discusses failures in planning consistency, error recovery, and policy adherence.
+ServiceNow Research's EnterpriseOps-Gym contains 1,150 expert-curated stateful tasks across eight enterprise domains, with 164 database tables and 512 functional tools. Its current repository documentation reports 9.15 average steps per task (up to 34), 5.3 average verification conditions, and approximately 89k average context tokens. The 2026 PMLR paper reports 34.1% success for Claude Sonnet 4.5 in its original evaluation and discusses failures in planning consistency, error recovery, and policy adherence.
 
-Artificial Analysis' independent EnterpriseOps-Gym-AA run uses 1,117 oracle-mode tasks with three repeats per task. Its current public page reports a 51.1% leading strict task-success rate. A task passes only when every database-state verifier passes; there is no partial task credit. The leader's reported mean per-verifier pass rate is substantially higher than strict whole-task success, illustrating how locally correct steps can still fail a multi-condition workflow. The published domain breakdown identifies HR and ITSM as particularly difficult.
+**Current repository leaderboard snapshot (read 3 November 2026):** the ServiceNow repository README's full-benchmark, oracle-mode table lists Claude Opus 4.6 at 45.9% average task success, Claude Sonnet 4.6 at 42.2%, Claude Opus 4.5 at 39.4%, and GPT-5 at 30.9%. The same table lists 33.3% for Opus 4.6 on ITSM. The README separately reports that the public split contains 60% of the benchmark samples. These current leaderboard figures are not the same experiment as the original paper's 34.1% Sonnet 4.5 result: model version, run profile and potentially benchmark revision differ. Do not read the two figures as a controlled longitudinal improvement.
+
+Artificial Analysis' independent EnterpriseOps-Gym-AA run uses a related but separately evaluated task suite and protocol. Its current public page reports a 51.1% leading strict task-success rate. A task passes only when every database-state verifier passes; there is no partial task credit. This is a different evaluation surface and must not be merged with ServiceNow's repository leaderboard.
 
 Sources:
 - [EnterpriseOps-Gym PMLR 2026 paper](https://proceedings.mlr.press/v306/malay26a.html)
+- [ServiceNow EnterpriseOps-Gym repository and live README leaderboard](https://github.com/ServiceNow/EnterpriseOps-Gym)
 - [EnterpriseOps-Gym-AA current evaluation and methodology](https://artificialanalysis.ai/evaluations/enterprise-ops-gym-aa)
 - [EnterpriseOps-Gym-AA launch and result interpretation](https://artificialanalysis.ai/articles/announcing-enterpriseops-gym-aa)
 
-**What we adopt:** persistent state, long-horizon multi-tool work, executable final-state verification, cross-domain workflows, and all-verifiers task-level success.
+**What we adopt:** persistent state, long-horizon multi-tool work, executable final-state verification, cross-domain workflows, all-verifiers task-level success, repeated model snapshots, and per-domain reporting.
 
 **What we add:** participant-owned attempt/effect accounting, explicit distinction between dispatched and committed effects, a lock on new attempts while an earlier result is unknown, exact-scope authorization, separately identified control domains, and evidence-bounded human handoff.
 
@@ -61,7 +64,7 @@ Source:
 
 ## Qualification strategy
 
-1. **Reproduce before differentiating.** Where licence and environment permit, run the same public ITBench or EnterpriseOps task version and preserve its native scoring metric. Do not compare our 23-case score to a result from a different corpus.
+1. **Reproduce before differentiating.** Where licence and environment permit, run the same public ITBench or EnterpriseOps task version and preserve its native scoring metric. For EnterpriseOps, pin the exact Git commit, dataset split, model identifier/version, prompt, tool mode, orchestrator, concurrency, repeat count and scoring script from the target leaderboard row. The PMLR paper, live ServiceNow README leaderboard, and EnterpriseOps-Gym-AA are distinct result snapshots. Do not compare our 23-case score to any of them as though the task sets and execution conditions were identical.
 2. **Instrument without changing task semantics.** In a paired experiment, capture the participant-owned attempt ledger, exact authority decision, effect receipt, independent service observation, and human handoff. The additional instrumentation must not alter the task, action permissions, or success verifier.
 3. **Use hard safety gates before utility rankings.** An arm with an unauthorized dispatch, a new attempt while an earlier effect is unknown, an unsubstantiated success claim, or compromised oracle integrity does not qualify, even if its task-completion rate is high.
 4. **Measure the utility frontier.** Among qualified arms, compare verified completion, correct refusal/reconciliation, p50/p95 latency, cost per verified outcome, tool calls, and active human review time.
