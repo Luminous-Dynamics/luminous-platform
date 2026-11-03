@@ -101,6 +101,21 @@ cargo clippy --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml
 cargo fmt --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml -- --check
 ```
 
+## MPTCP coexistence evidence evaluator
+
+`coexistence::evaluate_best_path_improvement` and `coexistence::evaluate_shared_bottleneck_do_no_harm` evaluate paired measured summaries. They do not implement MPTCP, simulate congestion control or actuate a kernel.
+
+The best-path gate requires separate identities for path-A TCP, path-B TCP and MPTCP trials, verifies that their kernel/topology/qdisc/workload/impairment/seed/duration/controller identities match, and evaluates MPTCP application goodput against the better single-path TCP reference.
+
+The shared-bottleneck gate compares a TCP+TCP control with an MPTCP+TCP treatment at the same declared bottleneck rate and experiment identity. It reports:
+- MPTCP goodput relative to mean per-flow goodput in the TCP+TCP control;
+- companion TCP retention relative to that same control reference;
+- total treatment goodput relative to total control goodput.
+
+The default proposed thresholds are MPTCP share <= 1.10x the single-TCP reference and companion TCP retention >= 0.90x. These are engineering targets, not results or universal constants. The profile and issue #222 define the wider experiment. Mismatched identities are inconclusive, unsupported kernel/controller arms are unsupported, a single negotiated subflow fails the multipath gate, missing counters are inconclusive, and unverified cleanup fails qualification.
+
+The evaluator uses checked integer ratios in parts-per-million; confidence intervals and uncertainty analysis remain in the external benchmark layer. It does not infer physical capacity independence from different IP addresses or path names.
+
 ## Required next steps before a performance claim
 
 1. Compare model output with the exact Linux kernel MPTCP path-manager and scheduler configuration.
