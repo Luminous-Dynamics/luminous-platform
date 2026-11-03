@@ -268,12 +268,13 @@
     },
     "required_metrics": {
       "type": "array",
-      "minItems": 18,
+      "minItems": 19,
       "uniqueItems": true,
       "items": {
         "type": "string",
         "minLength": 1
-      }
+      },
+      "maxItems": 19
     },
     "evidence_classes": {
       "type": "array",
