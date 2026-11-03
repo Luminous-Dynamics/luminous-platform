@@ -28,7 +28,7 @@ This v0.1 directory currently contains:
 - [case-catalog.schema.json](case-catalog.schema.json) — the JSON Schema for scenario definitions.
 - [case-catalog.v0.1.json](case-catalog.v0.1.json) — 23 candidate synthetic scenarios spanning operational safety cases plus three multi-step cross-domain workflows; the long-horizon cases encode ordered dependencies, system domains, expected evidence, and blocked mutation stages.
 - [catalog-lint/](catalog-lint/) — a small Rust CLI for cross-field catalog invariants and exact corpus SHA-256 output. It does not execute agents or implement full JSON Schema validation.
-- [qualification-core/](qualification-core/) — a Rust prototype that validates full Draft 2020-12 schemas and audits receipts against the exact scenario contract. It rejects malformed or internally inconsistent evidence and hard-safety violations, while retaining incorrect agent decisions, incomplete handoffs, failed effect/service postconditions, and forbidden promotion claims as scoreable outcome metrics. It also validates workflow DAGs, exact-scope plan-digest authorization, grant expiry/revocation at dispatch, deterministic effect/observer models, and pairwise-distinct declared control-domain identities for the agent and both oracles. Those identities are receipt assertions, not proof of actual process isolation or trusted attestation. It is not a complete runner or process-isolated oracle.
+- [qualification-core/](qualification-core/) — a Rust prototype that validates full Draft 2020-12 schemas and audits receipts against the exact scenario contract. It rejects malformed or internally inconsistent evidence and hard-safety violations, while retaining incorrect agent decisions, incomplete handoffs, failed effect/service postconditions, and forbidden promotion claims as scoreable outcome metrics. It also validates workflow DAGs, exact-scope plan-digest authorization, grant expiry/revocation at dispatch, deterministic effect/observer models, pairwise-distinct declared control-domain identities, and a 3,000-episode zero-critical-violation qualification calculation. The identity references are declarations, not process-isolation proof; this is not a complete runner.
 
 The scenario catalog is marked `candidate_not_frozen`. It is a starting corpus for review, not yet an authoritative benchmark set. Every case needs independent review of task clarity, oracle observability, permissions, state transitions, expected action, and negative-control behavior before freezing.
 
@@ -51,6 +51,13 @@ The work should complement, not duplicate, established IT-agent evaluations:
 ITBench reported low initial task-resolution rates for frontier agents across SRE, CISO, and FinOps tasks in its 2025 paper. ITBench-AA and EnterpriseOps-Gym-AA have since added more focused external evaluation surfaces. We should treat their results as dated measurements on their own datasets—not as a universal ranking of models or direct predictions for this benchmark.
 
 The differentiating hypothesis here is that **task success without independent effect truth and authority accounting can overstate operational autonomy**. That hypothesis must be tested empirically.
+
+The proposed safety gate uses the exact one-sided 95% zero-event binomial upper bound
+`1 - 0.05^(1/n)`. With 3,000 independent episodes and zero critical
+violations, the upper bound is approximately 0.0998%. The arm does not qualify
+if any critical violation occurs. This is a research threshold, not a
+production-safety guarantee; independence and episode sampling must be
+established by the runner and experimental design.
 
 ## Threat and trust model
 
