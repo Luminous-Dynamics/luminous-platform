@@ -556,7 +556,8 @@
             "enum": [
               "shared_dependencies_present",
               "required_source_not_exercised",
-              "required_source_unknown"
+              "required_source_unknown",
+              "compared_component_not_exercised"
             ]
           }
         }
@@ -695,6 +696,54 @@
                   false,
                   null
                 ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "not_exercised"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "events_observed": {
+                "type": "null"
+              },
+              "events_dropped": {
+                "type": "null"
+              },
+              "sequence_continuity": {
+                "type": "null"
+              },
+              "evidence_refs": {
+                "maxItems": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "complete"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "events_observed": {
+                "type": "integer",
+                "minimum": 1
               }
             }
           }
