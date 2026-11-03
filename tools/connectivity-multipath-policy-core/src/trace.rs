@@ -53,6 +53,7 @@ pub struct TraceTransmission {
 pub struct PathTraceSummary {
     pub path_id: String,
     pub failure_domain: String,
+    pub capacity_group: String,
     pub transmitted_bytes: u64,
     pub transmissions: u64,
     pub lost_transmissions: u64,
@@ -90,6 +91,7 @@ pub struct TraceReport {
     pub estimated_energy_uwh: u64,
     pub cost_currency: String,
     pub distinct_failure_domains_used: usize,
+    pub distinct_capacity_groups_used: usize,
     pub path_summaries: Vec<PathTraceSummary>,
     pub transmissions: Vec<TraceTransmission>,
     pub exclusions: Vec<(String, &'static str)>,
@@ -570,6 +572,8 @@ pub fn simulate(
                 first.is_some_and(|first| {
                     states[first.index].path.shared_risk_group
                         != states[candidate.index].path.shared_risk_group
+                        && states[first.index].path.shared_capacity_group
+                            != states[candidate.index].path.shared_capacity_group
                 })
             });
             let Some(first) = first else {
@@ -715,6 +719,7 @@ pub fn simulate(
         .map(|state| PathTraceSummary {
             path_id: state.path.id.clone(),
             failure_domain: state.path.shared_risk_group.clone(),
+            capacity_group: state.path.shared_capacity_group.clone(),
             transmitted_bytes: state.bytes_used,
             transmissions: state.transmissions,
             lost_transmissions: state.lost_transmissions,
@@ -723,9 +728,11 @@ pub fn simulate(
     path_summaries.sort_by(|left, right| left.path_id.cmp(&right.path_id));
 
     let mut domains = BTreeSet::new();
+    let mut capacity_domains = BTreeSet::new();
     for summary in &path_summaries {
         if summary.transmissions > 0 {
             domains.insert(summary.failure_domain.as_str());
+            capacity_domains.insert(summary.capacity_group.as_str());
         }
     }
 
@@ -777,6 +784,7 @@ pub fn simulate(
         estimated_energy_uwh,
         cost_currency: request.cost_currency.clone(),
         distinct_failure_domains_used: domains.len(),
+        distinct_capacity_groups_used: capacity_domains.len(),
         path_summaries,
         transmissions,
         exclusions,
@@ -811,6 +819,7 @@ mod tests {
             cost_micros_per_mib: 100,
             energy_uwh_per_mib: 10,
             shared_risk_group: risk.to_owned(),
+            shared_capacity_group: format!("capacity-{id}"),
         }
     }
 
