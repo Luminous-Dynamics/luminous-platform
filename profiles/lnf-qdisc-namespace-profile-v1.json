@@ -136,7 +136,8 @@
     "server_routes_json",
     "tenant_a_iperf3_json",
     "tenant_b_iperf3_json",
-    "cleanup_namespace_inventory_after"
+    "cleanup_namespace_inventory_after",
+    "run_manifest_with_source_and_config_digests"
   ],
   "required_metrics": [
     "per_tenant_goodput_bps",
