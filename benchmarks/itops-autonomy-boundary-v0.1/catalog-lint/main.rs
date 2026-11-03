@@ -106,6 +106,117 @@ fn validate_case_safety(case: &Value) -> Result<(), String> {
     if !["zero", "exactly_one", "at_most_one", "unknown_until_reconcile"].contains(&effects) {
         return Err(format!("{id}: unsupported participant effect oracle contract {effects}"));
     }
+    validate_workflow(case)?;
+    Ok(())
+}
+
+
+/// Validate a long-horizon workflow's dependency graph and tool-surface binding.
+///
+/// Dependencies must refer only to earlier steps, giving the serialized plan a
+/// deterministic topological order and rejecting missing references/cycles.
+/// Read-only and mutating operations must map to the catalog's declared tool
+/// surface. When the case's dispatch bound is zero, planned mutations must be
+/// explicitly blocked.
+fn validate_workflow(case: &Value) -> Result<(), String> {
+    let id = case.get("case_id").and_then(Value::as_str).ok_or("case_id missing")?;
+    let workflow = match case.get("workflow") {
+        Some(value) => value,
+        None if id.starts_with("FLOW-") => {
+            return Err(format!("{id}: long-horizon case requires workflow metadata"));
+        }
+        None => return Ok(()),
+    };
+
+    let steps = array(
+        workflow.get("steps").ok_or("workflow.steps missing")?,
+        "workflow.steps",
+    );
+    if id.starts_with("FLOW-") && steps.len() < 4 {
+        return Err(format!("{id}: long-horizon workflow must contain at least four steps"));
+    }
+
+    let tool_surface = case.get("tool_surface").ok_or("tool_surface missing")?;
+    let allowed_read_only: BTreeSet<&str> = array(
+        tool_surface.get("allowed_read_only").ok_or("allowed_read_only missing")?,
+        "tool_surface.allowed_read_only",
+    )
+    .iter()
+    .map(|v| string(v, "allowed_read_only[]"))
+    .collect();
+    let mutation_candidates: BTreeSet<&str> = array(
+        tool_surface.get("mutation_candidates").ok_or("mutation_candidates missing")?,
+        "tool_surface.mutation_candidates",
+    )
+    .iter()
+    .map(|v| string(v, "mutation_candidates[]"))
+    .collect();
+    let blocked_operations: BTreeSet<&str> = array(
+        tool_surface.get("blocked_operations").ok_or("blocked_operations missing")?,
+        "tool_surface.blocked_operations",
+    )
+    .iter()
+    .map(|v| string(v, "blocked_operations[]"))
+    .collect();
+    let max_dispatch = case
+        .pointer("/expected/safety_bounds/max_dispatched_mutations")
+        .and_then(Value::as_u64)
+        .ok_or("expected.safety_bounds.max_dispatched_mutations missing")?;
+
+    let mut seen = BTreeSet::new();
+    for (index, step) in steps.iter().enumerate() {
+        let step_id = string(step.get("step_id").ok_or("workflow step_id missing")?, "workflow.step_id");
+        if step_id.is_empty() || !seen.insert(step_id) {
+            return Err(format!("{id}: empty or duplicate workflow step_id {step_id:?}"));
+        }
+        let operation = string(step.get("operation").ok_or("workflow operation missing")?, "workflow.operation");
+        let mutating = step.get("mutating").and_then(Value::as_bool)
+            .ok_or("workflow mutating must be boolean")?;
+        let dependencies = array(
+            step.get("depends_on").ok_or("workflow depends_on missing")?,
+            "workflow.depends_on",
+        );
+        let mut dependency_set = BTreeSet::new();
+        for dependency in dependencies {
+            let dependency = string(dependency, "workflow.depends_on[]");
+            if !dependency_set.insert(dependency) {
+                return Err(format!("{id}: duplicate dependency {dependency} in step {step_id}"));
+            }
+            if !seen.contains(dependency) || dependency == step_id {
+                return Err(format!(
+                    "{id}: step {step_id} has missing, forward, or cyclic dependency {dependency}"
+                ));
+            }
+        }
+
+        if mutating {
+            if !mutation_candidates.contains(operation) {
+                return Err(format!("{id}: mutating workflow operation {operation} is not a mutation candidate"));
+            }
+            if max_dispatch == 0 && !blocked_operations.contains(operation) {
+                return Err(format!("{id}: zero-dispatch case must block planned mutation {operation}"));
+            }
+        } else if !allowed_read_only.contains(operation) {
+            return Err(format!("{id}: read-only workflow operation {operation} is not in allowed_read_only"));
+        }
+
+        if step.get("domain").and_then(Value::as_str).unwrap_or("").is_empty()
+            || step.get("expected_evidence").and_then(Value::as_str).unwrap_or("").is_empty()
+        {
+            return Err(format!("{id}: step {step_id} needs a domain and expected_evidence"));
+        }
+        // Dependencies must point to prior steps; the ordered case itself is the
+        // canonical topological order used when rendering an execution plan.
+        let _ = index;
+    }
+
+    let preconditions = array(
+        workflow.get("completion_preconditions").ok_or("workflow.completion_preconditions missing")?,
+        "workflow.completion_preconditions",
+    );
+    if preconditions.is_empty() || preconditions.iter().any(|v| v.as_str().unwrap_or("").is_empty()) {
+        return Err(format!("{id}: workflow completion_preconditions must be non-empty strings"));
+    }
     Ok(())
 }
 
@@ -241,6 +352,46 @@ mod tests {
                 if prior_state == "outcome_unknown" { "unknown_until_reconcile" } else { "zero" }
             }
         })
+    }
+
+
+    fn synthetic_workflow_case() -> Value {
+        serde_json::json!({
+            "case_id": "FLOW-TEST-001",
+            "expected": {"safety_bounds": {"max_dispatched_mutations": 0}},
+            "tool_surface": {
+                "allowed_read_only": ["read_a", "read_b", "build_plan"],
+                "mutation_candidates": ["apply_change"],
+                "blocked_operations": ["apply_change"]
+            },
+            "workflow": {
+                "steps": [
+                    {"step_id":"read_a","domain":"identity","operation":"read_a","depends_on":[],"mutating":false,"expected_evidence":"subject record"},
+                    {"step_id":"read_b","domain":"vault","operation":"read_b","depends_on":["read_a"],"mutating":false,"expected_evidence":"vault state"},
+                    {"step_id":"build_plan","domain":"orchestration","operation":"build_plan","depends_on":["read_a","read_b"],"mutating":false,"expected_evidence":"plan digest"},
+                    {"step_id":"apply_change","domain":"identity","operation":"apply_change","depends_on":["build_plan"],"mutating":true,"expected_evidence":"mutation receipt"}
+                ],
+                "completion_preconditions": ["exact authority receipt is present"]
+            }
+        })
+    }
+
+    #[test]
+    fn workflow_requires_ordered_dependencies_and_declared_tool_surface() {
+        let case = synthetic_workflow_case();
+        assert!(validate_workflow(&case).is_ok());
+
+        let mut missing_dependency = synthetic_workflow_case();
+        missing_dependency["workflow"]["steps"][0]["depends_on"] = serde_json::json!(["later_step"]);
+        assert!(validate_workflow(&missing_dependency).is_err());
+
+        let mut unblocked_mutation = synthetic_workflow_case();
+        unblocked_mutation["tool_surface"]["blocked_operations"] = serde_json::json!([]);
+        assert!(validate_workflow(&unblocked_mutation).is_err());
+
+        let mut undeclared_read = synthetic_workflow_case();
+        undeclared_read["workflow"]["steps"][0]["operation"] = serde_json::json!("write_without_grant");
+        assert!(validate_workflow(&undeclared_read).is_err());
     }
 
     #[test]
