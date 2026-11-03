@@ -155,6 +155,48 @@
       "operator": "==",
       "target": 0,
       "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_CAPACITY_SET_OVERLAP_001",
+      "metric": "selected_paths_with_any_shared_capacity_domain_overlap",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_CAPACITY_SET_INVALID_001",
+      "metric": "paths_with_empty_blank_duplicate_or_oversized_capacity_domain_sets_scheduled",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_CAPACITY_EVIDENCE_001",
+      "metric": "capacity_domains_scheduled_without_complete_fresh_evidence",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_CAPACITY_TOPOLOGY_BINDING_001",
+      "metric": "paths_scheduled_with_topology_digest_mismatch",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_CAPACITY_INVENTORY_DIGEST_001",
+      "metric": "paths_scheduled_with_invalid_inventory_digest_or_source_id",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_CAPACITY_CONFIDENCE_001",
+      "metric": "capacity_domains_scheduled_below_the_declared_evidence_confidence_floor",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
     }
   ],
   "required_metrics": [
@@ -177,9 +219,23 @@
     "in_order_application_release_latency_p50_p95_p99",
     "network_received_unique_bytes_vs_in_order_useful_application_bytes",
     "out_of_order_bytes_retained_at_reassembly_timeout",
-    "declared_shared_capacity_group_per_path",
+    "declared_capacity_domain_ids_set_per_path",
     "independent_failure_domain_count_vs_capacity_domain_count",
-    "scheduled_bytes_from_paths_sharing_one_capacity_domain"
+    "scheduled_bytes_from_paths_sharing_one_capacity_domain",
+    "capacity_domain_set_size_per_path",
+    "pairwise_capacity_domain_overlap_exclusions",
+    "capacity_domain_inventory_sha256_per_path",
+    "capacity_domain_topology_digest_match_count",
+    "stale_or_expired_capacity_dependency_observation_count",
+    "incomplete_capacity_dependency_observation_count",
+    "capacity_domain_source_id_per_path",
+    "capacity_domains_scheduled_without_verified_dependency_evidence",
+    "capacity_domain_evidence_confidence_ppm_per_path",
+    "minimum_capacity_domain_confidence_floor_ppm_per_run",
+    "capacity_domains_scheduled_below_confidence_floor",
+    "invalid_capacity_domain_evidence_window_count",
+    "future_capacity_domain_observation_count",
+    "capacity_domain_dependency_ids_over_128_bytes_count"
   ],
   "evidence_classes": [
     "deterministic_model",
@@ -198,7 +254,12 @@
     "No claim that deterministic segment traces reproduce ACK clocks, congestion control, retransmission or real radio propagation",
     "No claim that shared-risk-group synthetic loss is a calibrated common-cause failure distribution",
     "No claim that links in distinct failure domains provide independent bottleneck capacity",
-    "The v1 scheduler permits only one path per declared capacity group and may underuse real capacity within that group"
+    "The v1 scheduler permits only one path per declared capacity group and may underuse real capacity within that group",
+    "The v1 disjoint-set rule is conservative and is not a general multi-commodity flow optimizer",
+    "For more than two paths, deterministic greedy extension may underuse some globally feasible disjoint path sets",
+    "Capacity-domain evidence-envelope validation does not cryptographically authenticate the inventory or prove the declared topology is truthful",
+    "The scheduler does not discover hidden shared bottlenecks; field negative controls must challenge declared dependency sets",
+    "Capacity-domain confidence ppm is a source-declared evidence grade, not a calibrated statistical probability"
   ],
   "baseline_methodology": {
     "scheduler_implementation_pinning_required": true,
@@ -209,5 +270,9 @@
     "redundant_transmission_is_separate_reliability_energy_control": true,
     "same_workload_and_path_trace_required": true,
     "same_cost_currency_required": true
+  },
+  "target_defaults": {
+    "minimum_capacity_domain_confidence_floor_ppm": 950000,
+    "capacity_domain_evidence_floor_status": "proposed_not_calibrated"
   }
 }
