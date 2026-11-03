@@ -181,10 +181,10 @@ fn candidate_increment(
         return None;
     }
     let next_cost = estimated_cost(next_bytes, state.path.cost_micros_per_mib)?;
-    let previous_cost = estimated_cost(state.bytes_used, state.path.cost_micros_per_mib).unwrap_or(0);
+    let previous_cost = estimated_cost(state.bytes_used, state.path.cost_micros_per_mib)?;
     let cost_delta = next_cost.checked_sub(previous_cost)?;
     let next_energy = estimated_cost(next_bytes, state.path.energy_uwh_per_mib)?;
-    let previous_energy = estimated_cost(state.bytes_used, state.path.energy_uwh_per_mib).unwrap_or(0);
+    let previous_energy = estimated_cost(state.bytes_used, state.path.energy_uwh_per_mib)?;
     let energy_delta = next_energy.checked_sub(previous_energy)?;
     if aggregate_cost_used.checked_add(cost_delta)? > request.max_cost_micros {
         return None;
@@ -283,27 +283,22 @@ fn choose_candidate(
                     .then_with(|| states[left.index].path.id.cmp(&states[right.index].path.id))
             })
         }
-        TraceStrategy::ReorderAware => candidates.iter().copied().min_by(|left, right| {
-            let left_reorder = projected_reorder_bytes(
-                transmissions,
-                segment_sizes,
-                segment_index,
-                left.arrival_at_us,
-            );
-            let right_reorder = projected_reorder_bytes(
-                transmissions,
-                segment_sizes,
-                segment_index,
-                right.arrival_at_us,
-            );
-            let left_exceeds = left_reorder > reorder_limit;
-            let right_exceeds = right_reorder > reorder_limit;
-            left_exceeds
-                .cmp(&right_exceeds)
-                .then_with(|| left_reorder.cmp(&right_reorder))
-                .then_with(|| left.arrival_at_us.cmp(&right.arrival_at_us))
-                .then_with(|| states[left.index].path.id.cmp(&states[right.index].path.id))
-        }),
+        TraceStrategy::ReorderAware => candidates
+            .iter()
+            .copied()
+            .filter(|candidate| {
+                projected_reorder_bytes(
+                    transmissions,
+                    segment_sizes,
+                    segment_index,
+                    candidate.arrival_at_us,
+                ) <= reorder_limit
+            })
+            .min_by(|left, right| {
+                left.arrival_at_us
+                    .cmp(&right.arrival_at_us)
+                    .then_with(|| states[left.index].path.id.cmp(&states[right.index].path.id))
+            }),
         TraceStrategy::RedundantDistinctDomains => candidates.iter().copied().min_by(|left, right| {
             left.arrival_at_us
                 .cmp(&right.arrival_at_us)
@@ -453,7 +448,7 @@ pub fn simulate(
     if total_segments == 0 {
         return Err(ScheduleError::ZeroPayload);
     }
-    if total_segments == u32::MAX {
+    if total_segments > MAX_TRACE_SEGMENTS {
         return Err(ScheduleError::TooManyTraceSegments);
     }
 
@@ -548,8 +543,7 @@ pub fn simulate(
             &states,
             &transmissions,
             segment_index,
-            bytes,
-            total_segments,
+            &segment_sizes,
             request.reorder_buffer_limit_bytes,
             round_robin_cursor,
         );
