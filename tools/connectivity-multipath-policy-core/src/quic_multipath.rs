@@ -25,6 +25,7 @@ pub enum TrialDisposition {
 pub enum ApplicationDisposition {
     DeadlineMet,
     DeadlineMissed,
+    Incomplete,
     CompletedWithoutDeadline,
     NotMeasured,
 }
@@ -874,11 +875,39 @@ pub fn evaluate_multipath_quic_trial(evidence: &PairedTrialEvidence) -> QuicEvid
         );
     }
 
+    if outcome
+        .completion_after_start_us
+        .is_some_and(|completion| completion > evidence.identity.measurement_duration_us)
+    {
+        return result(
+            TrialDisposition::Inconclusive,
+            ApplicationDisposition::NotMeasured,
+            "application_completion_outside_measurement_window",
+            client.active_path_ids.iter().copied().collect(),
+            evidence.ack_path_samples.len(),
+            cross_path_ack_samples,
+            Some(outcome),
+        );
+    }
+    if outcome.deadline_after_start_us.is_some_and(|deadline| {
+        deadline > evidence.identity.measurement_duration_us
+    }) {
+        return result(
+            TrialDisposition::Inconclusive,
+            ApplicationDisposition::NotMeasured,
+            "application_deadline_outside_measurement_window",
+            client.active_path_ids.iter().copied().collect(),
+            evidence.ack_path_samples.len(),
+            cross_path_ack_samples,
+            Some(outcome),
+        );
+    }
+
     let application_disposition = if outcome.in_order_application_released_bytes
         != outcome.source_bytes
         || outcome.completion_after_start_us.is_none()
     {
-        ApplicationDisposition::DeadlineMissed
+        ApplicationDisposition::Incomplete
     } else if let Some(deadline) = outcome.deadline_after_start_us {
         if outcome.completion_after_start_us.is_some_and(|value| value <= deadline) {
             ApplicationDisposition::DeadlineMet
@@ -892,6 +921,7 @@ pub fn evaluate_multipath_quic_trial(evidence: &PairedTrialEvidence) -> QuicEvid
     let reason = match application_disposition {
         ApplicationDisposition::DeadlineMet => "protocol_and_application_deadline_qualified_for_this_pair",
         ApplicationDisposition::DeadlineMissed => "protocol_qualified_but_useful_application_delivery_missed_deadline",
+        ApplicationDisposition::Incomplete => "protocol_qualified_but_application_stream_incomplete",
         ApplicationDisposition::CompletedWithoutDeadline => "protocol_qualified_and_application_completed_without_deadline",
         ApplicationDisposition::NotMeasured => "application_outcome_not_measured",
     };
@@ -1246,6 +1276,32 @@ mod tests {
         assert_eq!(report.protocol_disposition, TrialDisposition::Pass);
         assert_eq!(report.application_disposition, ApplicationDisposition::DeadlineMissed);
         assert_eq!(report.disposition, TrialDisposition::Fail);
+    }
+
+    #[test]
+    fn incomplete_application_stream_is_not_mislabeled_as_deadline_miss() {
+        let mut evidence = trial();
+        evidence.stream_outcome.as_mut().unwrap().in_order_application_released_bytes = 900_000;
+        evidence.stream_outcome.as_mut().unwrap().completion_after_start_us = None;
+        let report = evaluate_multipath_quic_trial(&evidence);
+        assert_eq!(report.protocol_disposition, TrialDisposition::Pass);
+        assert_eq!(report.application_disposition, ApplicationDisposition::Incomplete);
+        assert_eq!(report.disposition, TrialDisposition::Fail);
+        assert_eq!(
+            report.reason,
+            "protocol_qualified_but_application_stream_incomplete"
+        );
+    }
+
+    #[test]
+    fn deadline_beyond_measurement_window_is_inconclusive() {
+        let mut evidence = trial();
+        evidence.stream_outcome.as_mut().unwrap().deadline_after_start_us =
+            Some(evidence.identity.measurement_duration_us + 1);
+        let report = evaluate_multipath_quic_trial(&evidence);
+        assert_eq!(report.disposition, TrialDisposition::Inconclusive);
+        assert_eq!(report.application_disposition, ApplicationDisposition::NotMeasured);
+        assert_eq!(report.reason, "application_deadline_outside_measurement_window");
     }
 
     #[test]
