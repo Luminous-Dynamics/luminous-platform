@@ -70,10 +70,12 @@ The controller trait is an in-process policy seam, not a live LLM integration. M
 The controller harness also accepts multiple policies in one run. Each declares a stable unique controller ID and controller class; policies are sorted by ID before each tick and receive the same permitted observation. Their actions are then arbitrated by the evaluator-owned precedence rule. The resulting action and decision traces are invariant to the order in which the caller supplies the controller slice. This supports paired competition between an agent policy, deterministic runbook, and autoscaler baseline without giving any policy access to evaluator truth.
 
 
-## Noise-thrashing baseline policies
+## Deterministic autoscaling baselines
 
-The reference plant includes two deterministic autoscaler policies:
+The reference plant now includes three deterministic policies:
+
 - `BangBangCapacityController`: one threshold switches between normal and elevated capacity.
 - `HysteresisCapacityController`: separate scale-up and scale-down thresholds create a deadband.
+- `PersistentHysteresisCapacityController`: queue-aware debounce; overload must persist for N delivered observations before scale-up, while both failure and queue signals must remain healthy for M observations before scale-down. An intermediate observation breaks the streak.
 
-Both consume the same `PlantObservation` stream and share the same action budget/delay/arbitration. The conformance fixture alternates noisy failure-rate observations while the actual plant remains healthy: the bang-bang policy repeatedly reverses its setpoint, whereas the hysteresis policy scales once and holds. Both must produce the same zero SLO-violation integral and healthy no-intervention tail. This isolates reduced action churn from a service-quality trade-off; it is not yet a live cloud autoscaling benchmark.
+All policies consume the same `PlantObservation` stream and share the same action budget, causal actuation delay, and deterministic arbitration. The paired noise fixture makes bang-bang repeatedly reverse its setpoint, while two-threshold hysteresis scales once and holds. The persistence-filtered controller additionally refuses to act on alternating single-sample spikes. Tests assert that all these differences are evaluated against the same plant truth and SLO contract; these are synthetic policy comparisons, not production autoscaling results.
