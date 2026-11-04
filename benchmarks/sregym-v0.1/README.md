@@ -68,6 +68,18 @@ SREGym's public native scores remain scored by the pinned upstream evaluator. An
 See [leaderboard-snapshot-2026-11-04.md](leaderboard-snapshot-2026-11-04.md). The official SREGym-Lite-1004 snapshot lists five configurations at 100% E2E on 17 faults. Treat Lite as a compatibility/smoke cohort rather than a differentiating frontier score; retain full-suite and supplemental sealed challenge results separately.
 
 
+## Frozen built-in full-selection snapshot (4 Nov 2026)
+
+For the pinned commit, the default executable full selection is now derived exactly with `SREGYM_FAULT_DIRS` unset:
+
+- 117 explicit `ProblemRegistry` keys (`registry.py` blob `4f5e9b8774fd39a65342d4aaa997f20418092524`);
+- 84 distinct `PORTED_PROBLEMS` identifiers, derived from the three Frappe/Saleor/Slack Spine `SOURCE_PORTS` maps (blobs recorded in the manifest);
+- 16 built-in SLO artifacts discovered from `fault.json` beneath `sregym/conductor/problems/apps/` (each artifact metadata blob is present in the upstream Git tree).
+
+These sets are disjoint and yield **217 unique built-in problem IDs**. The sorted ID list is stored in `replication-manifest.json`; the SHA-256 is `20c5addc02d3d2d6a2c74ea190c35101ddde8c2ecb24b96573ba671da8cf681d` over compact UTF-8 JSON (`JSON.stringify`-equivalent array encoding).
+
+The previously advertised 90 full-suite problems remains a *published reference count*, not the actual default executable selection at this newer source commit. The runnable snapshot is 217 when `tasklist.yml` is absent and `SREGYM_FAULT_DIRS` is unset. Any external fault directory changes the selection and must be separately inventoried and hashed. The manifest schema now pins the 217-entry built-in count and digest; readiness stays blocked pending runtime/image/scorer/contamination qualification.
+
 ## Newly verified upstream tree and runtime-selection details (4 Nov 2026)
 
 The candidate root commit `51964ce0a911be3e71d9e1e75551bb0089dc70c7` resolves to tree `0a0d4df0b2176d04bad6efeaebbad4905d7977d1`. Its `SREGym-applications` gitlink is pinned at commit `b2006cb6458785c1b353d0fd1753db7fe3a30795`, whose tree is `3c41a3399abeff90abbbe3a8ed68e84b7af36d82`. These identifiers are now recorded in the manifest.
