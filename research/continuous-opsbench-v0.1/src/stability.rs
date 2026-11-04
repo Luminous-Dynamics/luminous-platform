@@ -136,6 +136,31 @@ pub struct PlantObservation {
     pub observed_failed_ppm: u32,
 }
 
+/// A controller policy receives only the current delayed/noisy observation.
+/// It does not receive evaluator fault truth, plant state, oracle results, or
+/// future samples. A production agent adapter must preserve this boundary.
+pub trait StabilityController {
+    fn controller(&self) -> Controller;
+    fn propose(&mut self, observation: &PlantObservation) -> Vec<ControlOperation>;
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ControllerDecision {
+    pub decision_tick: u32,
+    pub observation_source_tick: u32,
+    pub observed_queue_depth: u64,
+    pub observed_latency_ms: u64,
+    pub observed_failed_ppm: u32,
+    pub proposed_action_ids: Vec<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ClosedLoopRun {
+    pub actions: Vec<ControlAction>,
+    pub decisions: Vec<ControllerDecision>,
+    pub stability: StabilityRun,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct StabilityMetrics {
     pub slo_violation_integral_request_ms: u128,
@@ -238,6 +263,67 @@ fn validate_config(config: &StabilityConfig) -> Result<(), StabilityError> {
         return Err(StabilityError::NoiseLengthMismatch);
     }
     Ok(())
+}
+
+/// Execute a deterministic closed-loop controller over the synthetic plant.
+///
+/// The controller is called once per actionable tick and receives only the
+/// delayed/noisy observation available at that tick. The evaluator replays the
+/// already-issued action prefix to produce the next observation; this O(T^2)
+/// reference runner prioritizes a clear information boundary over throughput.
+/// It is suitable for small conformance scenarios, not performance benchmarking.
+///
+/// No controller may issue an action whose delayed effect would occur in the
+/// reserved no-intervention tail.
+pub fn run_stability_closed_loop<C: StabilityController>(
+    config: &StabilityConfig,
+    controller: &mut C,
+) -> Result<ClosedLoopRun, StabilityError> {
+    validate_config(config)?;
+    let tail_start = config.ticks - config.no_intervention_tail_ticks;
+    let controller_kind = controller.controller();
+    let mut actions: Vec<ControlAction> = Vec::new();
+    let mut decisions: Vec<ControllerDecision> = Vec::new();
+
+    for tick in 0..config.ticks {
+        let partial_run = run_stability_scenario(config, &actions)?;
+        let observation = partial_run.observations[tick as usize].clone();
+
+        let effect_tick = tick.checked_add(config.actuation_delay_ticks);
+        let can_act = effect_tick.is_some_and(|due| due < tail_start);
+        if !can_act {
+            continue;
+        }
+
+        let proposals = controller.propose(&observation);
+        let mut proposed_action_ids = Vec::with_capacity(proposals.len());
+        for (index, operation) in proposals.into_iter().enumerate() {
+            let action_id = format!("closed-loop-{tick}-{index}");
+            proposed_action_ids.push(action_id.clone());
+            actions.push(ControlAction {
+                action_id,
+                controller: controller_kind,
+                issued_at_tick: tick,
+                observation_source_tick: observation.source_tick,
+                operation,
+            });
+        }
+        decisions.push(ControllerDecision {
+            decision_tick: tick,
+            observation_source_tick: observation.source_tick,
+            observed_queue_depth: observation.observed_queue_depth,
+            observed_latency_ms: observation.observed_latency_ms,
+            observed_failed_ppm: observation.observed_failed_ppm,
+            proposed_action_ids,
+        });
+    }
+
+    let stability = run_stability_scenario(config, &actions)?;
+    Ok(ClosedLoopRun {
+        actions,
+        decisions,
+        stability,
+    })
 }
 
 /// Run a deterministic plant against an externally supplied controller action
@@ -611,6 +697,79 @@ mod tests {
             queue_latency_ms_per_request: 1,
             queue_noise_by_tick: vec![0; 16],
         }
+    }
+
+    struct OneShotReactiveScaleUp {
+        issued: bool,
+        calls: Vec<(u32, u64, u32)>,
+        threshold_ppm: u32,
+        capacity: u64,
+    }
+
+    impl StabilityController for OneShotReactiveScaleUp {
+        fn controller(&self) -> Controller {
+            Controller::Agent
+        }
+
+        fn propose(&mut self, observation: &PlantObservation) -> Vec<ControlOperation> {
+            self.calls.push((
+                observation.source_tick,
+                observation.observed_queue_depth,
+                observation.observed_failed_ppm,
+            ));
+            if !self.issued && observation.observed_failed_ppm >= self.threshold_ppm {
+                self.issued = true;
+                vec![ControlOperation::SetApiCapacity(self.capacity)]
+            } else {
+                Vec::new()
+            }
+        }
+    }
+
+    #[test]
+    fn controller_loop_acts_only_on_delivered_observations_and_recovers() {
+        let config = config();
+        let baseline = run_stability_scenario(&config, &[]).unwrap();
+        let mut controller = OneShotReactiveScaleUp {
+            issued: false,
+            calls: Vec::new(),
+            threshold_ppm: 300_000,
+            capacity: 140,
+        };
+        let run = run_stability_closed_loop(&config, &mut controller).unwrap();
+
+        assert_eq!(run.actions.len(), 1);
+        assert_eq!(run.actions[0].issued_at_tick, 3);
+        assert_eq!(run.actions[0].observation_source_tick, 2);
+        assert_eq!(run.decisions[3].decision_tick, 3);
+        assert_eq!(run.decisions[3].observation_source_tick, 2);
+        assert_eq!(run.decisions[3].proposed_action_ids, vec!["closed-loop-3-0"]);
+        assert!(run.stability.metrics.slo_violation_integral_request_ms
+            < baseline.metrics.slo_violation_integral_request_ms);
+        assert!(run.stability.metrics.final_no_intervention_tail_healthy);
+        assert!(controller.calls.iter().all(|(source_tick, _, _)| *source_tick <= 14));
+        assert_eq!(run.stability.action_outcomes.len(), 1);
+        assert_eq!(run.stability.action_outcomes[0].disposition, ActionDisposition::Applied);
+    }
+
+    #[test]
+    fn closed_loop_controller_is_never_invoked_for_the_no_intervention_tail() {
+        let mut config = config();
+        config.actuation_delay_ticks = 1;
+        let mut controller = OneShotReactiveScaleUp {
+            issued: false,
+            calls: Vec::new(),
+            threshold_ppm: u32::MAX,
+            capacity: 140,
+        };
+        let run = run_stability_closed_loop(&config, &mut controller).unwrap();
+        let tail_start = config.ticks - config.no_intervention_tail_ticks;
+        assert!(run.decisions.iter().all(|decision| {
+            decision.decision_tick + config.actuation_delay_ticks < tail_start
+        }));
+        assert!(run.actions.iter().all(|action| {
+            action.issued_at_tick + config.actuation_delay_ticks < tail_start
+        }));
     }
 
     #[test]
