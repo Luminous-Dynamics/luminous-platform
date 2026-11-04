@@ -23,14 +23,10 @@
     "observer_adapter_digest",
     "maximum_observation_age_ms",
     "maximum_target_time_skew_ms",
-    "minimum_observations_per_metric",
-    "maximum_interval_width",
-    "residual_scale",
-    "cusum_allowance",
-    "cusum_warning_threshold",
-    "cusum_quarantine_threshold",
     "forecasts",
-    "observations"
+    "observations",
+    "metric_policy_set_digest",
+    "metric_policies"
   ],
   "properties": {
     "run_id": {
@@ -106,35 +102,6 @@
     "maximum_target_time_skew_ms": {
       "type": "integer",
       "minimum": 0,
-      "maximum": 18446744073709552000
-    },
-    "minimum_observations_per_metric": {
-      "type": "integer",
-      "minimum": 1
-    },
-    "maximum_interval_width": {
-      "type": "integer",
-      "minimum": 0,
-      "maximum": 18446744073709552000
-    },
-    "residual_scale": {
-      "type": "integer",
-      "minimum": 1,
-      "maximum": 18446744073709552000
-    },
-    "cusum_allowance": {
-      "type": "integer",
-      "minimum": 0,
-      "maximum": 18446744073709552000
-    },
-    "cusum_warning_threshold": {
-      "type": "integer",
-      "minimum": 1,
-      "maximum": 18446744073709552000
-    },
-    "cusum_quarantine_threshold": {
-      "type": "integer",
-      "minimum": 2,
       "maximum": 18446744073709552000
     },
     "forecasts": {
@@ -341,6 +308,67 @@
           "topology_digest": {
             "type": "string",
             "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "metric_policy_set_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "metric_policies": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "metric_id",
+          "units",
+          "minimum_observations",
+          "maximum_interval_width",
+          "residual_scale",
+          "cusum_allowance",
+          "cusum_warning_threshold",
+          "cusum_quarantine_threshold"
+        ],
+        "properties": {
+          "metric_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "units": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minimum_observations": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "maximum_interval_width": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 18446744073709552000
+          },
+          "residual_scale": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 18446744073709552000
+          },
+          "cusum_allowance": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 18446744073709552000
+          },
+          "cusum_warning_threshold": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 18446744073709552000
+          },
+          "cusum_quarantine_threshold": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 18446744073709552000
           }
         }
       }
