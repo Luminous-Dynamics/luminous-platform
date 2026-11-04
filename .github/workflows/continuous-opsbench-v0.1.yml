@@ -52,6 +52,8 @@ jobs:
               "predictive-safety-filter-appraisal.schema.json",
               "predictive-viability-request.schema.json",
               "predictive-viability-appraisal.schema.json",
+              "risk-trajectory-request.schema.json",
+              "risk-trajectory-result.schema.json",
           ]
           schemas = {}
           for name in schema_names:
@@ -68,6 +70,10 @@ jobs:
                "examples/predictive-viability-request.example.json"),
               ("predictive-viability-appraisal.schema.json",
                "examples/predictive-viability-appraisal.example.json"),
+              ("risk-trajectory-request.schema.json",
+               "examples/risk-trajectory-request.example.json"),
+              ("risk-trajectory-result.schema.json",
+               "examples/risk-trajectory-result.example.json"),
           ]
           for schema_name, fixture_name in fixtures:
               fixture = json.loads((root / fixture_name).read_text(encoding="utf-8"))
