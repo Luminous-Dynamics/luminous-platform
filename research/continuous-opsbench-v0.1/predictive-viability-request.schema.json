@@ -257,5 +257,191 @@
       "minimum": 1,
       "maximum": 16
     }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "critical_queue",
+        "bulk_queue",
+        "api_capacity",
+        "database_capacity",
+        "retry_multiplier_ppm"
+      ],
+      "properties": {
+        "critical_queue": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "bulk_queue": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "api_capacity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "database_capacity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "retry_multiplier_ppm": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        }
+      }
+    },
+    "capacity_uncertainty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "api_capacity_loss",
+        "database_capacity_loss"
+      ],
+      "properties": {
+        "api_capacity_loss": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "database_capacity_loss": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        }
+      }
+    },
+    "disturbance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "critical_demand",
+        "bulk_demand"
+      ],
+      "properties": {
+        "critical_demand": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "bulk_demand": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        }
+      }
+    },
+    "envelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maximum_critical_queue",
+        "maximum_bulk_queue",
+        "maximum_total_queue",
+        "maximum_api_capacity",
+        "maximum_database_capacity",
+        "maximum_retry_multiplier_ppm",
+        "minimum_spare_capacity"
+      ],
+      "properties": {
+        "maximum_critical_queue": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "maximum_bulk_queue": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "maximum_total_queue": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709552000
+        },
+        "maximum_api_capacity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "maximum_database_capacity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "maximum_retry_multiplier_ppm": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "minimum_spare_capacity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        }
+      }
+    },
+    "candidate_operation": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "noop"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "set_api_capacity"
+            },
+            "value": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 4294967295
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "set_retry_multiplier_ppm"
+            },
+            "value": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 4294967295
+            }
+          }
+        }
+      ]
+    }
   }
 }
