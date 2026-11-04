@@ -8,8 +8,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 const RATE_SCALE: u128 = 1_000_000;
 const MAX_PATHS: usize = 64;
-const MAX_RESOURCES: usize = 64;
-const MAX_DOMAINS_PER_PATH: usize = 32;
+pub(crate) const MAX_RESOURCES: usize = 64;
+pub(crate) const MAX_DOMAINS_PER_PATH: usize = 32;
 const MAX_ID_BYTES: usize = 128;
 const MAX_SOURCE_ID_BYTES: usize = 256;
 
@@ -160,15 +160,15 @@ struct EligiblePath {
     domain_indexes: Vec<usize>,
 }
 
-fn is_sha256(value: &str) -> bool {
+pub(crate) fn is_sha256(value: &str) -> bool {
     value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
 }
 
-fn valid_identifier(value: &str) -> bool {
+pub(crate) fn valid_identifier(value: &str) -> bool {
     !value.trim().is_empty() && value.len() <= MAX_ID_BYTES && !value.chars().any(char::is_control)
 }
 
-fn validate_request(request: &ResourceAllocationRequest) -> Result<(), ResourceAllocationError> {
+pub(crate) fn validate_request(request: &ResourceAllocationRequest) -> Result<(), ResourceAllocationError> {
     if !is_sha256(&request.topology_sha256) {
         return Err(ResourceAllocationError::InvalidTopologyDigest);
     }
@@ -186,7 +186,7 @@ fn validate_request(request: &ResourceAllocationRequest) -> Result<(), ResourceA
     Ok(())
 }
 
-fn evidence_error(
+pub(crate) fn evidence_error(
     request: &ResourceAllocationRequest,
     evidence: &CapacityResourceEvidence,
 ) -> Option<&'static str> {
@@ -226,10 +226,41 @@ fn evidence_error(
     None
 }
 
-fn canonical_ids(ids: &[String]) -> Vec<String> {
+pub(crate) fn canonical_ids(ids: &[String]) -> Vec<String> {
     let mut result = ids.to_vec();
     result.sort();
     result
+}
+
+pub(crate) fn validate_resource_inventory(
+    request: &ResourceAllocationRequest,
+    resources: &[CapacityResource],
+) -> Result<(BTreeMap<String, usize>, Vec<Option<u64>>), ResourceAllocationError> {
+    if resources.len() > MAX_RESOURCES {
+        return Err(ResourceAllocationError::TooManyResources);
+    }
+    let mut resource_index = BTreeMap::new();
+    let mut resource_residuals = Vec::with_capacity(resources.len());
+    for (index, resource) in resources.iter().enumerate() {
+        if !valid_identifier(&resource.resource_id) {
+            return Err(ResourceAllocationError::InvalidResourceId);
+        }
+        if resource_index
+            .insert(resource.resource_id.clone(), index)
+            .is_some()
+        {
+            return Err(ResourceAllocationError::DuplicateResourceId);
+        }
+        if resource.declared_capacity_bps == 0 {
+            return Err(ResourceAllocationError::InvalidResourceCapacity);
+        }
+        if evidence_error(request, &resource.evidence).is_some() {
+            resource_residuals.push(None);
+        } else {
+            resource_residuals.push(Some(resource.residual_capacity_bps()?));
+        }
+    }
+    Ok((resource_index, resource_residuals))
 }
 
 /// Allocate path rates with deterministic weighted max-min progressive filling.
@@ -250,29 +281,8 @@ pub fn allocate_resource_incidence(
         return Err(ResourceAllocationError::TooManyResources);
     }
 
-    let mut resource_index = BTreeMap::new();
-    let mut resource_residuals = Vec::with_capacity(resources.len());
-    let mut resource_ids = BTreeSet::new();
-    for (index, resource) in resources.iter().enumerate() {
-        if !valid_identifier(&resource.resource_id) {
-            return Err(ResourceAllocationError::InvalidResourceId);
-        }
-        if !resource_ids.insert(resource.resource_id.as_str()) {
-            return Err(ResourceAllocationError::DuplicateResourceId);
-        }
-        if resource.declared_capacity_bps == 0 {
-            return Err(ResourceAllocationError::InvalidResourceCapacity);
-        }
-        if evidence_error(request, &resource.evidence).is_some() {
-            // Invalid resource evidence is not a global failure: paths using
-            // this resource are excluded below, while independent resources
-            // remain eligible.
-            resource_residuals.push(None);
-        } else {
-            resource_residuals.push(Some(resource.residual_capacity_bps()?));
-        }
-        resource_index.insert(resource.resource_id.as_str(), index);
-    }
+    let (resource_index, resource_residuals) =
+        validate_resource_inventory(request, resources)?;
 
     let mut seen_path_ids = BTreeSet::new();
     let mut exclusions = Vec::new();
@@ -342,7 +352,7 @@ pub fn allocate_resource_incidence(
         let mut domain_indexes = Vec::with_capacity(path.capacity_domain_ids.len());
         let mut exclusion_reason = None;
         for domain_id in &path.capacity_domain_ids {
-            let Some(index) = resource_index.get(domain_id.as_str()).copied() else {
+            let Some(index) = resource_index.get(domain_id).copied() else {
                 exclusion_reason = Some("capacity_resource_unknown");
                 break;
             };
