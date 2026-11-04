@@ -179,58 +179,183 @@ fn validate_inputs(
     Ok(())
 }
 
-fn allocations_at_level(
-    level_scaled: u128,
-    paths: &[&PathRateDemand],
-) -> Result<Vec<u64>, ResourceAllocationError> {
-    paths
-        .iter()
-        .map(|path| {
-            let weighted_level = u128::from(path.weight)
-                .checked_mul(level_scaled)
-                .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
-            let rate = (weighted_level / LEVEL_SCALE).min(u128::from(path.demand_bps));
-            u64::try_from(rate).map_err(|_| ResourceAllocationError::ArithmeticOverflow)
-        })
-        .collect()
-}
-
-fn resource_loads(
-    allocations: &[u64],
+fn resource_loads_scaled(
+    allocations_scaled: &[u128],
     path_resource_indices: &[Vec<usize>],
     resource_count: usize,
 ) -> Result<Vec<u128>, ResourceAllocationError> {
-    if allocations.len() != path_resource_indices.len() {
+    if allocations_scaled.len() != path_resource_indices.len() {
         return Err(ResourceAllocationError::InternalInvariant);
     }
     let mut loads = vec![0_u128; resource_count];
-    for (allocation, indices) in allocations.iter().zip(path_resource_indices) {
+    for (allocation, indices) in allocations_scaled.iter().zip(path_resource_indices) {
         for index in indices {
             let load = loads
                 .get_mut(*index)
                 .ok_or(ResourceAllocationError::InternalInvariant)?;
             *load = load
-                .checked_add(u128::from(*allocation))
+                .checked_add(*allocation)
                 .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
         }
     }
     Ok(loads)
 }
 
-fn feasible(
-    allocations: &[u64],
+fn progressive_fill(
+    paths: &[&PathRateDemand],
     path_resource_indices: &[Vec<usize>],
     resource_capacities: &[u64],
-) -> Result<bool, ResourceAllocationError> {
-    let loads = resource_loads(
-        allocations,
-        path_resource_indices,
-        resource_capacities.len(),
-    )?;
-    Ok(loads
+) -> Result<Vec<u64>, ResourceAllocationError> {
+    let resource_capacities_scaled = resource_capacities
         .iter()
-        .zip(resource_capacities)
-        .all(|(load, capacity)| *load <= u128::from(*capacity)))
+        .map(|capacity| {
+            u128::from(*capacity)
+                .checked_mul(LEVEL_SCALE)
+                .ok_or(ResourceAllocationError::ArithmeticOverflow)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let demand_limits_scaled = paths
+        .iter()
+        .map(|path| {
+            u128::from(path.demand_bps)
+                .checked_mul(LEVEL_SCALE)
+                .ok_or(ResourceAllocationError::ArithmeticOverflow)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+
+    let mut allocations_scaled = vec![0_u128; paths.len()];
+    let mut active = (0..paths.len()).collect::<Vec<_>>();
+    let mut iterations = 0_usize;
+
+    while !active.is_empty() {
+        iterations += 1;
+        if iterations > paths.len() + 1 {
+            return Err(ResourceAllocationError::InternalInvariant);
+        }
+
+        let loads_scaled = resource_loads_scaled(
+            &allocations_scaled,
+            path_resource_indices,
+            resource_capacities.len(),
+        )?;
+
+        // Freeze paths already at their demand, and paths that consume a
+        // resource whose remaining capacity is below one fixed-point step for
+        // all active consumers of that resource.
+        let mut active_weight_by_resource = vec![0_u128; resource_capacities.len()];
+        for path_index in &active {
+            for resource_index in &path_resource_indices[*path_index] {
+                active_weight_by_resource[*resource_index] = active_weight_by_resource
+                    [*resource_index]
+                    .checked_add(u128::from(paths[*path_index].weight))
+                    .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
+            }
+        }
+        let mut blocked_resources = BTreeSet::new();
+        for resource_index in 0..resource_capacities.len() {
+            let remaining = resource_capacities_scaled[resource_index]
+                .checked_sub(loads_scaled[resource_index])
+                .ok_or(ResourceAllocationError::InternalInvariant)?;
+            let active_weight = active_weight_by_resource[resource_index];
+            if active_weight > 0 && remaining < active_weight {
+                blocked_resources.insert(resource_index);
+            }
+        }
+
+        let mut newly_frozen = BTreeSet::new();
+        for path_index in &active {
+            let remaining_demand = demand_limits_scaled[*path_index]
+                .checked_sub(allocations_scaled[*path_index])
+                .ok_or(ResourceAllocationError::InternalInvariant)?;
+            if remaining_demand < u128::from(paths[*path_index].weight)
+                || path_resource_indices[*path_index]
+                    .iter()
+                    .any(|resource_index| blocked_resources.contains(resource_index))
+            {
+                newly_frozen.insert(*path_index);
+            }
+        }
+        if !newly_frozen.is_empty() {
+            active.retain(|index| !newly_frozen.contains(index));
+            continue;
+        }
+
+        // Increase each active path in proportion to its weight until the
+        // next path demand or shared resource reaches its next event.
+        let mut delta_level: Option<u128> = None;
+        for path_index in &active {
+            let remaining_demand = demand_limits_scaled[*path_index]
+                .checked_sub(allocations_scaled[*path_index])
+                .ok_or(ResourceAllocationError::InternalInvariant)?;
+            let path_delta = remaining_demand / u128::from(paths[*path_index].weight);
+            delta_level = Some(delta_level.map_or(path_delta, |current| current.min(path_delta)));
+        }
+        for resource_index in 0..resource_capacities.len() {
+            let active_weight = active_weight_by_resource[resource_index];
+            if active_weight == 0 {
+                continue;
+            }
+            let remaining = resource_capacities_scaled[resource_index]
+                .checked_sub(loads_scaled[resource_index])
+                .ok_or(ResourceAllocationError::InternalInvariant)?;
+            let resource_delta = remaining / active_weight;
+            delta_level = Some(
+                delta_level.map_or(resource_delta, |current| current.min(resource_delta)),
+            );
+        }
+        let delta = delta_level.ok_or(ResourceAllocationError::InternalInvariant)?;
+        if delta == 0 {
+            return Err(ResourceAllocationError::InternalInvariant);
+        }
+
+        for path_index in &active {
+            let increment = u128::from(paths[*path_index].weight)
+                .checked_mul(delta)
+                .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
+            allocations_scaled[*path_index] = allocations_scaled[*path_index]
+                .checked_add(increment)
+                .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
+            if allocations_scaled[*path_index] > demand_limits_scaled[*path_index] {
+                return Err(ResourceAllocationError::InternalInvariant);
+            }
+        }
+
+        let updated_loads = resource_loads_scaled(
+            &allocations_scaled,
+            path_resource_indices,
+            resource_capacities.len(),
+        )?;
+        let mut frozen_after_event = BTreeSet::new();
+        for path_index in &active {
+            let at_demand = demand_limits_scaled[*path_index]
+                .saturating_sub(allocations_scaled[*path_index])
+                < u128::from(paths[*path_index].weight);
+            let uses_saturated_resource = path_resource_indices[*path_index]
+                .iter()
+                .any(|resource_index| {
+                    let remaining = resource_capacities_scaled[*resource_index]
+                        .saturating_sub(updated_loads[*resource_index]);
+                    remaining < active_weight_by_resource[*resource_index]
+                });
+            if at_demand || uses_saturated_resource {
+                frozen_after_event.insert(*path_index);
+            }
+        }
+        if frozen_after_event.is_empty() {
+            return Err(ResourceAllocationError::InternalInvariant);
+        }
+        active.retain(|index| !frozen_after_event.contains(index));
+    }
+
+    allocations_scaled
+        .iter()
+        .zip(paths)
+        .map(|(allocation, path)| {
+            let rounded_down = allocation / LEVEL_SCALE;
+            u64::try_from(rounded_down.min(u128::from(path.demand_bps)))
+                .map_err(|_| ResourceAllocationError::ArithmeticOverflow)
+        })
+        .collect()
 }
 
 fn jain_index_ppm(normalized_rates: &[f64]) -> Option<u32> {
@@ -300,36 +425,19 @@ pub fn allocate_weighted_max_min(
         .map(|resource| resource.capacity_bps)
         .collect::<Vec<_>>();
 
-    let maximum_demand = ordered_paths
-        .iter()
-        .map(|path| path.demand_bps)
-        .max()
-        .ok_or(ResourceAllocationError::EmptyPaths)?;
-    let mut low = 0_u128;
-    let mut high = u128::from(maximum_demand)
-        .checked_mul(LEVEL_SCALE)
-        .and_then(|value| value.checked_add(1))
-        .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
-
-    while low + 1 < high {
-        let middle = low + (high - low) / 2;
-        let candidate = allocations_at_level(middle, &ordered_paths)?;
-        if feasible(&candidate, &path_resource_indices, &resource_capacities)? {
-            low = middle;
-        } else {
-            high = middle;
-        }
-    }
-
-    let mut rates = allocations_at_level(low, &ordered_paths)?;
+    let mut rates = progressive_fill(
+        &ordered_paths,
+        &path_resource_indices,
+        &resource_capacities,
+    )?;
     let mut loads = resource_loads(
         &rates,
         &path_resource_indices,
         ordered_resources.len(),
     )?;
 
-    // Resolve fixed-point rounding deterministically. A single +1 bps pass is
-    // sufficient because weights are bounded by LEVEL_SCALE.
+    // Resolve sub-bit fixed-point residue deterministically. This gives no
+    // path more than one extra bit/s and never violates a resource ceiling.
     for path_index in 0..ordered_paths.len() {
         let path = ordered_paths[path_index];
         if rates[path_index] >= path.demand_bps {
@@ -350,6 +458,7 @@ pub fn allocate_weighted_max_min(
             }
         }
     }
+
 
     let path_allocations = ordered_paths
         .iter()
@@ -463,6 +572,21 @@ mod tests {
         assert_eq!(rate(&result, "path-b"), 100);
         assert_eq!(result.total_allocated_bps, 200);
         assert_eq!(result.backlogged_weighted_jain_index_ppm, None);
+    }
+
+    #[test]
+    fn saturated_independent_resource_does_not_freeze_unrelated_path() {
+        let result = allocate_weighted_max_min(
+            &[resource("small", 10), resource("large", 100)],
+            &[
+                path("path-small", &["small"], 1, 100),
+                path("path-large", &["large"], 1, 100),
+            ],
+        )
+        .expect("independent resources progress separately");
+        assert_eq!(rate(&result, "path-small"), 10);
+        assert_eq!(rate(&result, "path-large"), 100);
+        assert_eq!(result.total_allocated_bps, 110);
     }
 
     #[test]
