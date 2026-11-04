@@ -925,6 +925,24 @@ mod tests {
     }
 
     #[test]
+    fn forecast_policy_digest_mismatch_is_rejected() {
+        let mut evidence = input(3);
+        evidence.forecasts[1].metric_policy_set_digest = digest(99);
+        let result = evaluate_model_assumptions(&evidence).unwrap();
+        assert_eq!(result.disposition, ModelDisposition::Indeterminate);
+        assert!(result.findings.contains(&ModelFinding::InvalidForecast));
+    }
+
+    #[test]
+    fn observation_policy_digest_mismatch_is_rejected() {
+        let mut evidence = input(3);
+        evidence.observations[1].metric_policy_set_digest = digest(99);
+        let result = evaluate_model_assumptions(&evidence).unwrap();
+        assert_eq!(result.disposition, ModelDisposition::Indeterminate);
+        assert!(result.findings.contains(&ModelFinding::ModelIdentityMismatch));
+    }
+
+    #[test]
     fn model_revision_change_is_not_silently_recalibrated() {
         let mut evidence = input(3);
         evidence.forecasts[1].model_revision = "model-v2".into();
