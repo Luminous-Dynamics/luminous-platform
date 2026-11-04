@@ -735,11 +735,7 @@ mod tests {
     #[test]
     fn empty_path_resource_incidence_is_rejected() {
         assert_eq!(
-            maximize_total_rate(
-                &[resource("x", 10)],
-                &[path("empty", &[], 10)],
-            )
-            .unwrap_err(),
+            maximize_total_rate(&[resource("x", 10)], &[path("empty", &[], 10)],).unwrap_err(),
             ExactMaxSumError::EmptyResourceSet
         );
     }
