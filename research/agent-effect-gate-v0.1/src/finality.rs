@@ -49,6 +49,7 @@ pub struct CandidateAct {
 pub struct ExecutionHandleClaims {
     pub handle_id: String,
     pub nonce_digest: Digest,
+    pub handle_digest: Digest,
     pub issuer_id: String,
     pub audience: String,
     pub act: CandidateAct,
@@ -73,21 +74,10 @@ impl AuthenticatedExecutionHandle {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FinalityEffectReceipt {
     pub effect_id: String,
-    pub participant_id: String,
-    pub tenant_id: String,
-    pub principal_id: String,
-    pub episode_id: String,
-    pub plan_digest: Digest,
-    pub step_id: String,
-    pub tool_id: String,
-    pub operation_id: String,
-    pub target_digest: Digest,
-    pub request_digest: Digest,
-    pub attempt_id: String,
-    pub logical_action_key: String,
+    pub act: CandidateAct,
     pub consumed_handle_id: String,
+    pub consumed_handle_digest: Digest,
     pub consumed_nonce_digest: Digest,
-    pub policy_epoch: u64,
     pub committed_at_ms: u64,
     pub participant_sequence: u64,
 }
@@ -99,6 +89,7 @@ pub enum FinalityDisposition { Committed, IdempotentReplay }
 pub struct FinalityResult {
     pub disposition: FinalityDisposition,
     pub consumed_handle_id: String,
+    pub consumed_handle_digest: Digest,
     pub effect_receipt: FinalityEffectReceipt,
 }
 
@@ -183,6 +174,7 @@ struct StoredEffect {
 struct ConsumedHandle {
     act: CandidateAct,
     nonce_digest: Digest,
+    handle_digest: Digest,
     result: FinalityResult,
 }
 
@@ -253,6 +245,9 @@ impl FinalitySink {
         if claims.nonce_digest == Digest::ZERO {
             return Err(FinalityError::InvalidHandle("zero nonce"));
         }
+        if claims.handle_digest == Digest::ZERO {
+            return Err(FinalityError::InvalidHandle("zero handle digest"));
+        }
         if claims.act != *act {
             return Err(FinalityError::HandleActMismatch);
         }
@@ -267,7 +262,8 @@ impl FinalitySink {
         // Exact replay is a receipt lookup, not a second commit. Permit this
         // read-only reconciliation even after expiry or policy rotation.
         if let Some(consumed) = ledger.consumed_handles.get(&claims.handle_id) {
-            if consumed.act != *act || consumed.nonce_digest != claims.nonce_digest {
+            if consumed.act != *act || consumed.nonce_digest != claims.nonce_digest
+                || consumed.handle_digest != claims.handle_digest {
                 return Err(FinalityError::HandleReplayConflict);
             }
             let mut replay = consumed.result.clone();
@@ -301,12 +297,14 @@ impl FinalitySink {
             let result = FinalityResult {
                 disposition: FinalityDisposition::IdempotentReplay,
                 consumed_handle_id: claims.handle_id.clone(),
+                consumed_handle_digest: claims.handle_digest.clone(),
                 effect_receipt: existing.receipt.clone(),
             };
             ledger.consumed_nonces.insert(claims.nonce_digest.clone(), claims.handle_id.clone());
             ledger.consumed_handles.insert(claims.handle_id.clone(), ConsumedHandle {
                 act: act.clone(),
                 nonce_digest: claims.nonce_digest.clone(),
+                handle_digest: claims.handle_digest.clone(),
                 result: result.clone(),
             });
             return Ok(result);
@@ -316,27 +314,17 @@ impl FinalitySink {
         let next_sequence = sequence.checked_add(1).ok_or(FinalityError::SequenceExhausted)?;
         let receipt = FinalityEffectReceipt {
             effect_id: format!("{}/effect/{sequence}", self.participant_id),
-            participant_id: self.participant_id.clone(),
-            tenant_id: act.tenant_id.clone(),
-            principal_id: act.principal_id.clone(),
-            episode_id: act.episode_id.clone(),
-            plan_digest: act.plan_digest.clone(),
-            step_id: act.step_id.clone(),
-            tool_id: act.tool_id.clone(),
-            operation_id: act.operation_id.clone(),
-            target_digest: act.target_digest.clone(),
-            request_digest: act.request_digest.clone(),
-            attempt_id: act.attempt_id.clone(),
-            logical_action_key: act.logical_action_key.clone(),
+            act: act.clone(),
             consumed_handle_id: claims.handle_id.clone(),
+            consumed_handle_digest: claims.handle_digest.clone(),
             consumed_nonce_digest: claims.nonce_digest.clone(),
-            policy_epoch: act.policy_epoch,
             committed_at_ms: now_ms,
             participant_sequence: sequence,
         };
         let result = FinalityResult {
             disposition: FinalityDisposition::Committed,
             consumed_handle_id: claims.handle_id.clone(),
+            consumed_handle_digest: claims.handle_digest.clone(),
             effect_receipt: receipt.clone(),
         };
 
@@ -348,6 +336,7 @@ impl FinalitySink {
         ledger.consumed_handles.insert(claims.handle_id.clone(), ConsumedHandle {
             act: act.clone(),
             nonce_digest: claims.nonce_digest.clone(),
+            handle_digest: claims.handle_digest.clone(),
             result: result.clone(),
         });
         Ok(result)
@@ -432,6 +421,7 @@ mod tests {
         AuthenticatedExecutionHandle::from_verified_claims(ExecutionHandleClaims {
             handle_id: id.into(),
             nonce_digest: d(nonce),
+            handle_digest: d(nonce.wrapping_add(100)),
             issuer_id: "finality-authority-a".into(),
             audience: "participant-a".into(),
             act,
@@ -449,9 +439,9 @@ mod tests {
         let act = act();
         let result = sink.commit_exact_act(&act, &handle(act.clone(), "h1", 9), 100).unwrap();
         assert_eq!(result.disposition, FinalityDisposition::Committed);
-        assert_eq!(result.effect_receipt.request_digest, act.request_digest);
+        assert_eq!(result.effect_receipt.act.request_digest, act.request_digest);
         assert_eq!(result.effect_receipt.consumed_handle_id, "h1");
-        assert_eq!(result.effect_receipt.policy_epoch, 7);
+        assert_eq!(result.effect_receipt.act.policy_epoch, 7);
         assert_eq!(sink.effect_count().unwrap(), 1);
         assert_eq!(sink.consumed_handle_count().unwrap(), 1);
     }
@@ -509,7 +499,7 @@ mod tests {
         let sink = sink();
         let act = act();
         let claims = ExecutionHandleClaims {
-            handle_id: "h1".into(), nonce_digest: d(9),
+            handle_id: "h1".into(), nonce_digest: d(9), handle_digest: d(109),
             issuer_id: "finality-authority-a".into(), audience: "participant-b".into(),
             act: act.clone(), issued_at_ms: 10, not_before_ms: 10, expires_at_ms: 500,
         };
@@ -637,7 +627,7 @@ mod tests {
         );
         let act = act();
         let handle = AuthenticatedExecutionHandle::from_verified_claims(ExecutionHandleClaims {
-            handle_id: "bad-interval".into(), nonce_digest: d(12),
+            handle_id: "bad-interval".into(), nonce_digest: d(12), handle_digest: d(112),
             issuer_id: "finality-authority-a".into(), audience: "participant-a".into(),
             act: act.clone(), issued_at_ms: 20, not_before_ms: 10, expires_at_ms: 10,
         });
