@@ -29,11 +29,11 @@
       "warmup_us",
       "measurement_duration_us",
       "tcp_congestion_control",
+      "tcp_congestion_control_provenance",
       "mptcp_congestion_control",
       "mptcp_scheduler",
       "mptcp_scheduler_provenance",
-      "mptcp_congestion_control_provenance",
-      "tcp_congestion_control_provenance"
+      "mptcp_congestion_control_provenance"
     ],
     "all_arms_must_match_identity": true,
     "mismatched_identity_disposition": "inconclusive",
