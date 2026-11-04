@@ -1,0 +1,104 @@
+name: opsbench challenge evolution v0.1
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/opsbench-challenge-evolution-v0.1/**"
+      - ".github/workflows/opsbench-challenge-evolution-v0.1.yml"
+  push:
+    branches: [main]
+    paths:
+      - "benchmarks/opsbench-challenge-evolution-v0.1/**"
+      - ".github/workflows/opsbench-challenge-evolution-v0.1.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: opsbench-challenge-evolution-v0.1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  challenge-manifest:
+    name: Challenge successor manifest and negative controls
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Validate challenge successor schema and fixtures
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/challenge-evolution-venv
+          /tmp/challenge-evolution-venv/bin/python -m pip install --disable-pip-version-check "jsonschema==4.23.0"
+          /tmp/challenge-evolution-venv/bin/python - <<'PY'
+          import copy
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator, ValidationError
+
+          root = Path("benchmarks/opsbench-challenge-evolution-v0.1")
+          schema = json.loads((root / "challenge-successor.schema.json").read_text(encoding="utf-8"))
+          Draft202012Validator.check_schema(schema)
+          validator = Draft202012Validator(schema)
+          fixture = json.loads((root / "challenge-successor.example.json").read_text(encoding="utf-8"))
+          validator.validate(fixture)
+
+          if fixture["scenario_id"] == fixture["parent_scenario_id"]:
+              raise SystemExit("successor identity must differ from its parent")
+          if fixture["parent_manifest_sha256"] == fixture["generator"]["output_payload_sha256"]:
+              raise SystemExit("parent manifest and successor payload identities must differ")
+          if fixture["change"]["parent_parameters_sha256"] == fixture["change"]["successor_parameters_sha256"]:
+              raise SystemExit("successor parameter digest must differ from parent when a change is declared")
+
+          axis_prefixes = {
+              "fault_multiplicity": ("fault_count",),
+              "fault_overlap": ("overlapping_faults",),
+              "causal_interaction_depth": ("causal_interaction_depth",),
+              "observability_degradation": ("observation_loss_", "maximum_event_delay_", "clock_uncertainty_"),
+              "topology_churn": ("topology_transitions",),
+              "demand_pressure": ("demand_burst_factor_",),
+              "recovery_horizon": ("recovery_tail_ticks",),
+              "harness_evolution": ("harness_",),
+              "metastability": ("metastable_",),
+          }
+          axis = fixture["change"]["primary_axis"]
+          allowed = axis_prefixes[axis]
+          for path in fixture["change"]["changed_parameter_paths"]:
+              leaf = path.rsplit("/", 1)[-1]
+              if not leaf.startswith(allowed):
+                  raise SystemExit(f"parameter path {path!r} does not match primary axis {axis!r}")
+
+          mutations = []
+          mutated = copy.deepcopy(fixture)
+          mutated["native_comparability"] = True
+          mutations.append(("native comparability promotion", mutated))
+          mutated = copy.deepcopy(fixture)
+          mutated["anchor_immutable"] = False
+          mutations.append(("anchor mutation", mutated))
+          mutated = copy.deepcopy(fixture)
+          mutated["lane"] = "sealed"
+          mutations.append(("sealed lane without contamination receipts", mutated))
+          mutated = copy.deepcopy(fixture)
+          mutated["release_state"] = "confirmatory"
+          mutations.append(("confirmatory promotion from screening", mutated))
+          mutated = copy.deepcopy(fixture)
+          mutated["construct"]["semantics_preserved"] = False
+          mutations.append(("semantic-preservation bypass", mutated))
+          mutated = copy.deepcopy(fixture)
+          mutated["change"]["single_axis_change"] = False
+          mutations.append(("multi-axis mutation", mutated))
+
+          for label, candidate in mutations:
+              try:
+                  validator.validate(candidate)
+              except ValidationError:
+                  continue
+              raise SystemExit(f"unsafe negative control accepted: {label}")
+
+          print("challenge successor Draft 2020-12 schema: valid")
+          print("screening fixture: valid")
+          print(f"negative controls rejected: {len(mutations)}/{len(mutations)}")
+          PY
