@@ -26,6 +26,10 @@ pub struct StabilityConfig {
     pub maximum_observation_age_ticks: u32,
     pub maximum_failed_ppm: u32,
     pub maximum_latency_ms: u64,
+    pub maximum_critical_failed_ppm: u32,
+    pub maximum_bulk_failed_ppm: u32,
+    pub maximum_critical_latency_ms: u64,
+    pub maximum_bulk_latency_ms: u64,
     pub consecutive_healthy_ticks: u32,
     /// Final ticks are reserved for recovery after all controller actions stop.
     pub no_intervention_tail_ticks: u32,
@@ -110,10 +114,16 @@ pub struct PlantSample {
     pub total_failed: u64,
     pub total_attempts: u64,
     pub failed_ppm: u32,
+    pub critical_failed_ppm: u32,
+    pub bulk_failed_ppm: u32,
     pub critical_queue: u64,
     pub bulk_queue: u64,
     pub queue_depth: u64,
     pub latency_ms: u64,
+    pub critical_latency_ms: u64,
+    pub bulk_latency_ms: u64,
+    pub critical_slo_healthy: bool,
+    pub bulk_slo_healthy: bool,
     pub slo_healthy: bool,
 }
 
@@ -129,6 +139,8 @@ pub struct PlantObservation {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct StabilityMetrics {
     pub slo_violation_integral_request_ms: u128,
+    pub critical_slo_violation_integral_request_ms: u128,
+    pub bulk_slo_violation_integral_request_ms: u128,
     pub settling_time_ticks_after_fault: Option<u32>,
     pub action_count: usize,
     pub action_churn_count: usize,
@@ -140,6 +152,8 @@ pub struct StabilityMetrics {
     pub bulk_failed_requests: u64,
     pub maximum_queue_depth: u64,
     pub maximum_latency_ms: u64,
+    pub maximum_critical_latency_ms: u64,
+    pub maximum_bulk_latency_ms: u64,
     pub queue_range_after_fault: u64,
     pub api_capacity_range_after_fault: u64,
     pub api_database_capacity_gap_request_units: u128,
