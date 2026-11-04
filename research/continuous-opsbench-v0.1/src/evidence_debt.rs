@@ -7,7 +7,6 @@
 //!
 //! Superseded, not-observed, contradicted and observer-gap states remain debt
 //! until a terminal confirmation or explicit resolution receipt closes them.
-
 use crate::Digest;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -19,9 +18,7 @@ pub const MAX_REFERENCES_PER_EVENT: usize = 64;
 pub const MAX_WEIGHT_MILLI: u32 = 1_000_000;
 
 fn valid_text(value: &str, max_bytes: usize) -> bool {
-    !value.trim().is_empty()
-        && value.len() <= max_bytes
-        && !value.chars().any(char::is_control)
+    !value.trim().is_empty() && value.len() <= max_bytes && !value.chars().any(char::is_control)
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -216,14 +213,10 @@ fn validate_event(
     if !valid_text(&event.operation_id, MAX_ID_BYTES) {
         return Err(EvidenceDebtError::InvalidOperationId);
     }
-    if event.occurred_at_ms < contract.run_start_ms
-        || event.occurred_at_ms > contract.run_end_ms
-    {
+    if event.occurred_at_ms < contract.run_start_ms || event.occurred_at_ms > contract.run_end_ms {
         return Err(EvidenceDebtError::EventOutsideRun);
     }
-    if event.consequence_weight_milli == 0
-        || event.consequence_weight_milli > MAX_WEIGHT_MILLI
-    {
+    if event.consequence_weight_milli == 0 || event.consequence_weight_milli > MAX_WEIGHT_MILLI {
         return Err(EvidenceDebtError::InvalidConsequenceWeight);
     }
     if event.evidence_refs.len() > MAX_REFERENCES_PER_EVENT {
@@ -368,10 +361,7 @@ pub fn evaluate_evidence_debt(
                 )?;
 
                 if item.kind == EvidenceDebtKind::RecoveryClaim {
-                    add_duration(
-                        &mut unsubstantiated_recovery_claim_duration_ms,
-                        duration,
-                    )?;
+                    add_duration(&mut unsubstantiated_recovery_claim_duration_ms, duration)?;
                     add_weighted(
                         &mut unsubstantiated_recovery_claim_exposure_milli_ms,
                         duration,
@@ -433,10 +423,7 @@ pub fn evaluate_evidence_debt(
             item.weight_milli,
         )?;
         if item.kind == EvidenceDebtKind::RecoveryClaim {
-            add_duration(
-                &mut unsubstantiated_recovery_claim_duration_ms,
-                duration,
-            )?;
+            add_duration(&mut unsubstantiated_recovery_claim_duration_ms, duration)?;
             add_weighted(
                 &mut unsubstantiated_recovery_claim_exposure_milli_ms,
                 duration,
@@ -530,53 +517,119 @@ mod tests {
     #[test]
     fn weighted_and_unweighted_exposure_integrates_exactly() {
         let events = vec![
-            event("e1", "effect-1", 1, 100, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::PendingReconciliation, 2_000),
-            event("e2", "effect-1", 2, 150, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::ObserverGap, 2_000),
-            event("e3", "effect-1", 3, 300, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::Confirmed, 2_000),
+            event(
+                "e1",
+                "effect-1",
+                1,
+                100,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::PendingReconciliation,
+                2_000,
+            ),
+            event(
+                "e2",
+                "effect-1",
+                2,
+                150,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::ObserverGap,
+                2_000,
+            ),
+            event(
+                "e3",
+                "effect-1",
+                3,
+                300,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::Confirmed,
+                2_000,
+            ),
         ];
         let report = evaluate_evidence_debt(&contract(), &events).expect("valid debt trace");
         assert_eq!(report.total_unresolved_duration_ms, 200);
         assert_eq!(report.total_weighted_exposure_milli_ms, 400_000);
         assert_eq!(report.confirmed_items, 1);
         assert_eq!(report.unresolved_items_at_end, 0);
-        assert_eq!(report.by_state[&EvidenceDebtState::PendingReconciliation], 50);
+        assert_eq!(
+            report.by_state[&EvidenceDebtState::PendingReconciliation],
+            50
+        );
         assert_eq!(report.by_state[&EvidenceDebtState::ObserverGap], 150);
     }
 
     #[test]
     fn unresolved_items_accrue_through_the_run_horizon() {
         let events = vec![event(
-            "e1", "recovery-1", 1, 100, EvidenceDebtKind::RecoveryClaim,
-            EvidenceDebtState::PendingReconciliation, 3_000,
+            "e1",
+            "recovery-1",
+            1,
+            100,
+            EvidenceDebtKind::RecoveryClaim,
+            EvidenceDebtState::PendingReconciliation,
+            3_000,
         )];
         let report = evaluate_evidence_debt(&contract(), &events).expect("open debt");
         assert_eq!(report.unresolved_items_at_end, 1);
         assert_eq!(report.total_unresolved_duration_ms, 900);
         assert_eq!(report.total_weighted_exposure_milli_ms, 2_700_000);
         assert_eq!(report.unsubstantiated_recovery_claim_duration_ms, 900);
-        assert_eq!(report.unsubstantiated_recovery_claim_exposure_milli_ms, 2_700_000);
-        assert_eq!(report.open_items[0].current_state, EvidenceDebtState::PendingReconciliation);
+        assert_eq!(
+            report.unsubstantiated_recovery_claim_exposure_milli_ms,
+            2_700_000
+        );
+        assert_eq!(
+            report.open_items[0].current_state,
+            EvidenceDebtState::PendingReconciliation
+        );
     }
 
     #[test]
     fn superseded_not_observed_and_contradicted_states_do_not_close_debt() {
         let events = vec![
-            event("e1", "effect-1", 1, 0, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::PendingReconciliation, 1_000),
-            event("e2", "effect-1", 2, 100, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::Superseded, 1_000),
-            event("e3", "effect-1", 3, 200, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::NotObserved, 1_000),
-            event("e4", "effect-1", 4, 300, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::Contradicted, 1_000),
+            event(
+                "e1",
+                "effect-1",
+                1,
+                0,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::PendingReconciliation,
+                1_000,
+            ),
+            event(
+                "e2",
+                "effect-1",
+                2,
+                100,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::Superseded,
+                1_000,
+            ),
+            event(
+                "e3",
+                "effect-1",
+                3,
+                200,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::NotObserved,
+                1_000,
+            ),
+            event(
+                "e4",
+                "effect-1",
+                4,
+                300,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::Contradicted,
+                1_000,
+            ),
         ];
         let report = evaluate_evidence_debt(&contract(), &events).expect("unresolved transitions");
         assert_eq!(report.unresolved_items_at_end, 1);
         assert_eq!(report.total_unresolved_duration_ms, 1_000);
-        assert_eq!(report.by_state[&EvidenceDebtState::PendingReconciliation], 100);
+        assert_eq!(
+            report.by_state[&EvidenceDebtState::PendingReconciliation],
+            100
+        );
         assert_eq!(report.by_state[&EvidenceDebtState::Superseded], 100);
         assert_eq!(report.by_state[&EvidenceDebtState::NotObserved], 100);
         assert_eq!(report.by_state[&EvidenceDebtState::Contradicted], 700);
@@ -585,10 +638,24 @@ mod tests {
     #[test]
     fn explicit_negative_resolution_closes_but_does_not_count_as_confirmation() {
         let events = vec![
-            event("e1", "attempt-1", 1, 10, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::PendingReconciliation, 1_000),
-            event("e2", "attempt-1", 2, 60, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::ResolvedWithoutConfirmation, 1_000),
+            event(
+                "e1",
+                "attempt-1",
+                1,
+                10,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::PendingReconciliation,
+                1_000,
+            ),
+            event(
+                "e2",
+                "attempt-1",
+                2,
+                60,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::ResolvedWithoutConfirmation,
+                1_000,
+            ),
         ];
         let report = evaluate_evidence_debt(&contract(), &events).expect("negative receipt");
         assert_eq!(report.resolved_without_confirmation_items, 1);
@@ -599,31 +666,86 @@ mod tests {
     #[test]
     fn peak_concurrent_unresolved_items_and_kind_totals_are_reported() {
         let events = vec![
-            event("a1", "effect-a", 1, 0, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::PendingReconciliation, 1_000),
-            event("b1", "claim-b", 2, 100, EvidenceDebtKind::RecoveryClaim,
-                EvidenceDebtState::PendingReconciliation, 2_000),
-            event("a2", "effect-a", 3, 300, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::Confirmed, 1_000),
-            event("b2", "claim-b", 4, 500, EvidenceDebtKind::RecoveryClaim,
-                EvidenceDebtState::Confirmed, 2_000),
+            event(
+                "a1",
+                "effect-a",
+                1,
+                0,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::PendingReconciliation,
+                1_000,
+            ),
+            event(
+                "b1",
+                "claim-b",
+                2,
+                100,
+                EvidenceDebtKind::RecoveryClaim,
+                EvidenceDebtState::PendingReconciliation,
+                2_000,
+            ),
+            event(
+                "a2",
+                "effect-a",
+                3,
+                300,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::Confirmed,
+                1_000,
+            ),
+            event(
+                "b2",
+                "claim-b",
+                4,
+                500,
+                EvidenceDebtKind::RecoveryClaim,
+                EvidenceDebtState::Confirmed,
+                2_000,
+            ),
         ];
         let report = evaluate_evidence_debt(&contract(), &events).expect("overlapping debt");
         assert_eq!(report.peak_concurrent_unresolved_items, 2);
-        assert_eq!(report.by_kind[&EvidenceDebtKind::ParticipantEffect].unresolved_duration_ms, 300);
-        assert_eq!(report.by_kind[&EvidenceDebtKind::RecoveryClaim].unresolved_duration_ms, 400);
+        assert_eq!(
+            report.by_kind[&EvidenceDebtKind::ParticipantEffect].unresolved_duration_ms,
+            300
+        );
+        assert_eq!(
+            report.by_kind[&EvidenceDebtKind::RecoveryClaim].unresolved_duration_ms,
+            400
+        );
         assert_eq!(report.total_unresolved_duration_ms, 700);
     }
 
     #[test]
     fn evaluator_sequence_not_input_order_determines_the_result() {
         let events = vec![
-            event("e3", "effect-1", 3, 300, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::Confirmed, 1_000),
-            event("e1", "effect-1", 1, 100, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::PendingReconciliation, 1_000),
-            event("e2", "effect-1", 2, 200, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::ObserverGap, 1_000),
+            event(
+                "e3",
+                "effect-1",
+                3,
+                300,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::Confirmed,
+                1_000,
+            ),
+            event(
+                "e1",
+                "effect-1",
+                1,
+                100,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::PendingReconciliation,
+                1_000,
+            ),
+            event(
+                "e2",
+                "effect-1",
+                2,
+                200,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::ObserverGap,
+                1_000,
+            ),
         ];
         let report = evaluate_evidence_debt(&contract(), &events).expect("sorted event sequence");
         assert_eq!(report.total_unresolved_duration_ms, 200);
@@ -633,10 +755,24 @@ mod tests {
     #[test]
     fn duplicate_ids_sequences_and_operation_weight_changes_are_rejected() {
         let duplicate_id = vec![
-            event("same", "a", 1, 0, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::PendingReconciliation, 1_000),
-            event("same", "b", 2, 10, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::PendingReconciliation, 1_000),
+            event(
+                "same",
+                "a",
+                1,
+                0,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::PendingReconciliation,
+                1_000,
+            ),
+            event(
+                "same",
+                "b",
+                2,
+                10,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::PendingReconciliation,
+                1_000,
+            ),
         ];
         assert_eq!(
             evaluate_evidence_debt(&contract(), &duplicate_id),
@@ -644,10 +780,24 @@ mod tests {
         );
 
         let duplicate_sequence = vec![
-            event("a", "a", 1, 0, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::PendingReconciliation, 1_000),
-            event("b", "b", 1, 10, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::PendingReconciliation, 1_000),
+            event(
+                "a",
+                "a",
+                1,
+                0,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::PendingReconciliation,
+                1_000,
+            ),
+            event(
+                "b",
+                "b",
+                1,
+                10,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::PendingReconciliation,
+                1_000,
+            ),
         ];
         assert_eq!(
             evaluate_evidence_debt(&contract(), &duplicate_sequence),
@@ -655,10 +805,24 @@ mod tests {
         );
 
         let changed_weight = vec![
-            event("a1", "a", 1, 0, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::PendingReconciliation, 1_000),
-            event("a2", "a", 2, 10, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::Confirmed, 2_000),
+            event(
+                "a1",
+                "a",
+                1,
+                0,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::PendingReconciliation,
+                1_000,
+            ),
+            event(
+                "a2",
+                "a",
+                2,
+                10,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::Confirmed,
+                2_000,
+            ),
         ];
         assert_eq!(
             evaluate_evidence_debt(&contract(), &changed_weight),
@@ -669,8 +833,13 @@ mod tests {
     #[test]
     fn terminal_states_require_an_authoritative_reference_and_cannot_reopen() {
         let mut missing_confirmation = event(
-            "a", "effect-a", 1, 0, EvidenceDebtKind::ParticipantEffect,
-            EvidenceDebtState::Confirmed, 1_000,
+            "a",
+            "effect-a",
+            1,
+            0,
+            EvidenceDebtKind::ParticipantEffect,
+            EvidenceDebtState::Confirmed,
+            1_000,
         );
         missing_confirmation.evidence_refs.clear();
         assert_eq!(
@@ -679,8 +848,13 @@ mod tests {
         );
 
         let mut missing_resolution = event(
-            "a", "effect-a", 1, 0, EvidenceDebtKind::ParticipantEffect,
-            EvidenceDebtState::ResolvedWithoutConfirmation, 1_000,
+            "a",
+            "effect-a",
+            1,
+            0,
+            EvidenceDebtKind::ParticipantEffect,
+            EvidenceDebtState::ResolvedWithoutConfirmation,
+            1_000,
         );
         missing_resolution.resolution_ref = None;
         assert_eq!(
@@ -689,12 +863,33 @@ mod tests {
         );
 
         let events = vec![
-            event("a1", "effect-a", 1, 0, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::PendingReconciliation, 1_000),
-            event("a2", "effect-a", 2, 10, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::Confirmed, 1_000),
-            event("a3", "effect-a", 3, 20, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::ObserverGap, 1_000),
+            event(
+                "a1",
+                "effect-a",
+                1,
+                0,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::PendingReconciliation,
+                1_000,
+            ),
+            event(
+                "a2",
+                "effect-a",
+                2,
+                10,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::Confirmed,
+                1_000,
+            ),
+            event(
+                "a3",
+                "effect-a",
+                3,
+                20,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::ObserverGap,
+                1_000,
+            ),
         ];
         assert_eq!(
             evaluate_evidence_debt(&contract(), &events),
@@ -705,8 +900,13 @@ mod tests {
     #[test]
     fn run_bounds_resource_limits_and_invalid_references_fail_closed() {
         let outside = event(
-            "a", "effect-a", 1, 1_001, EvidenceDebtKind::ParticipantEffect,
-            EvidenceDebtState::PendingReconciliation, 1_000,
+            "a",
+            "effect-a",
+            1,
+            1_001,
+            EvidenceDebtKind::ParticipantEffect,
+            EvidenceDebtState::PendingReconciliation,
+            1_000,
         );
         assert_eq!(
             evaluate_evidence_debt(&contract(), &[outside.clone()]),
@@ -723,10 +923,24 @@ mod tests {
         let mut tiny = contract();
         tiny.maximum_events = 1;
         let two = vec![
-            event("a", "a", 1, 0, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::PendingReconciliation, 1_000),
-            event("b", "b", 2, 0, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::PendingReconciliation, 1_000),
+            event(
+                "a",
+                "a",
+                1,
+                0,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::PendingReconciliation,
+                1_000,
+            ),
+            event(
+                "b",
+                "b",
+                2,
+                0,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::PendingReconciliation,
+                1_000,
+            ),
         ];
         assert_eq!(
             evaluate_evidence_debt(&tiny, &two),
@@ -737,10 +951,24 @@ mod tests {
     #[test]
     fn non_monotonic_event_time_within_one_operation_is_rejected() {
         let events = vec![
-            event("a1", "effect-a", 1, 100, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::PendingReconciliation, 1_000),
-            event("a2", "effect-a", 2, 90, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::Confirmed, 1_000),
+            event(
+                "a1",
+                "effect-a",
+                1,
+                100,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::PendingReconciliation,
+                1_000,
+            ),
+            event(
+                "a2",
+                "effect-a",
+                2,
+                90,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::Confirmed,
+                1_000,
+            ),
         ];
         assert_eq!(
             evaluate_evidence_debt(&contract(), &events),
@@ -752,10 +980,24 @@ mod tests {
     #[test]
     fn global_evaluator_sequence_must_have_monotonic_event_time() {
         let events = vec![
-            event("a1", "effect-a", 1, 200, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::PendingReconciliation, 1_000),
-            event("b1", "effect-b", 2, 100, EvidenceDebtKind::ParticipantEffect,
-                EvidenceDebtState::PendingReconciliation, 1_000),
+            event(
+                "a1",
+                "effect-a",
+                1,
+                200,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::PendingReconciliation,
+                1_000,
+            ),
+            event(
+                "b1",
+                "effect-b",
+                2,
+                100,
+                EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::PendingReconciliation,
+                1_000,
+            ),
         ];
         assert_eq!(
             evaluate_evidence_debt(&contract(), &events),
