@@ -5,6 +5,7 @@
 //! It does not run agents or infrastructure and does not authenticate publishers.
 
 pub mod breakpoint;
+pub mod evidence_debt;
 pub mod stability;
 pub mod temporal;
 
