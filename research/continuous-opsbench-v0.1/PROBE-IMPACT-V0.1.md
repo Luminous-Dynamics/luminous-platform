@@ -28,7 +28,7 @@ The candidate and control may have distinct run and arm IDs, but they must be pa
 
 Every exact probe execution must have one complete, independently sourced impact receipt. The receipt binds execution ID, probe ID, tenant, target, operation digest, run/scenario/arm/pair, observer identity/control domain/adapter digest, measurement interval, evidence digest and resource use.
 
-The observer control domain must differ from the executor's. Missing, duplicated, stale, incomplete or substituted receipts are indeterminate; absence of a receipt is never interpreted as zero impact.
+The resource-impact observer and service-outcome observer are separate trust domains, and both differ from the probe executor. Their adapter digests are frozen in the contract. The impact observer also supplies a contiguous source sequence; missing, duplicated, gapped, stale, incomplete or substituted receipts are indeterminate. Absence of an impact receipt is never interpreted as zero impact.
 
 The resource sidecar totals CPU millicore-ms, memory byte-ms, disk reads/writes, network bytes, query rows and duration. A declared read-only capability is checked separately from measured resource impact; read-only permission does not imply zero impact.
 
