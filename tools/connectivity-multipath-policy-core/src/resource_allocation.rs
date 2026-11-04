@@ -299,9 +299,8 @@ fn progressive_fill(
                 .checked_sub(loads_scaled[resource_index])
                 .ok_or(ResourceAllocationError::InternalInvariant)?;
             let resource_delta = remaining / active_weight;
-            delta_level = Some(
-                delta_level.map_or(resource_delta, |current| current.min(resource_delta)),
-            );
+            delta_level =
+                Some(delta_level.map_or(resource_delta, |current| current.min(resource_delta)));
         }
         let delta = delta_level.ok_or(ResourceAllocationError::InternalInvariant)?;
         if delta == 0 {
@@ -330,13 +329,14 @@ fn progressive_fill(
             let at_demand = demand_limits_scaled[*path_index]
                 .saturating_sub(allocations_scaled[*path_index])
                 < u128::from(paths[*path_index].weight);
-            let uses_saturated_resource = path_resource_indices[*path_index]
-                .iter()
-                .any(|resource_index| {
-                    let remaining = resource_capacities_scaled[*resource_index]
-                        .saturating_sub(updated_loads[*resource_index]);
-                    remaining < active_weight_by_resource[*resource_index]
-                });
+            let uses_saturated_resource =
+                path_resource_indices[*path_index]
+                    .iter()
+                    .any(|resource_index| {
+                        let remaining = resource_capacities_scaled[*resource_index]
+                            .saturating_sub(updated_loads[*resource_index]);
+                        remaining < active_weight_by_resource[*resource_index]
+                    });
             if at_demand || uses_saturated_resource {
                 frozen_after_event.insert(*path_index);
             }
@@ -363,10 +363,7 @@ fn jain_index_ppm(normalized_rates: &[f64]) -> Option<u32> {
         return None;
     }
     let sum = normalized_rates.iter().sum::<f64>();
-    let sum_squares = normalized_rates
-        .iter()
-        .map(|rate| rate * rate)
-        .sum::<f64>();
+    let sum_squares = normalized_rates.iter().map(|rate| rate * rate).sum::<f64>();
     if sum_squares == 0.0 {
         return Some(1_000_000);
     }
@@ -425,16 +422,8 @@ pub fn allocate_weighted_max_min(
         .map(|resource| resource.capacity_bps)
         .collect::<Vec<_>>();
 
-    let mut rates = progressive_fill(
-        &ordered_paths,
-        &path_resource_indices,
-        &resource_capacities,
-    )?;
-    let mut loads = resource_loads(
-        &rates,
-        &path_resource_indices,
-        ordered_resources.len(),
-    )?;
+    let mut rates = progressive_fill(&ordered_paths, &path_resource_indices, &resource_capacities)?;
+    let mut loads = resource_loads(&rates, &path_resource_indices, ordered_resources.len())?;
 
     // Resolve sub-bit fixed-point residue deterministically. This gives no
     // path more than one extra bit/s and never violates a resource ceiling.
@@ -443,10 +432,11 @@ pub fn allocate_weighted_max_min(
         if rates[path_index] >= path.demand_bps {
             continue;
         }
-        let fits = path_resource_indices[path_index].iter().all(|resource_index| {
-            loads[*resource_index] + 1
-                <= u128::from(resource_capacities[*resource_index])
-        });
+        let fits = path_resource_indices[path_index]
+            .iter()
+            .all(|resource_index| {
+                loads[*resource_index] + 1 <= u128::from(resource_capacities[*resource_index])
+            });
         if fits {
             rates[path_index] = rates[path_index]
                 .checked_add(1)
@@ -458,7 +448,6 @@ pub fn allocate_weighted_max_min(
             }
         }
     }
-
 
     let path_allocations = ordered_paths
         .iter()
@@ -511,9 +500,7 @@ pub fn allocate_weighted_max_min(
     let normalized_backlogged_rates = path_allocations
         .iter()
         .filter(|allocation| allocation.backlogged)
-        .map(|allocation| {
-            allocation.allocated_bps as f64 / f64::from(allocation.weight)
-        })
+        .map(|allocation| allocation.allocated_bps as f64 / f64::from(allocation.weight))
         .collect::<Vec<_>>();
 
     Ok(ResourceAllocationReport {
@@ -538,12 +525,7 @@ mod tests {
         }
     }
 
-    fn path(
-        id: &str,
-        resources: &[&str],
-        weight: u32,
-        demand_bps: u64,
-    ) -> PathRateDemand {
+    fn path(id: &str, resources: &[&str], weight: u32, demand_bps: u64) -> PathRateDemand {
         PathRateDemand {
             path_id: id.to_owned(),
             resource_ids: resources.iter().map(|value| (*value).to_owned()).collect(),
@@ -565,7 +547,10 @@ mod tests {
     fn independent_paths_each_receive_their_own_resource_capacity() {
         let result = allocate_weighted_max_min(
             &[resource("a", 100), resource("b", 100)],
-            &[path("path-a", &["a"], 1, 100), path("path-b", &["b"], 1, 100)],
+            &[
+                path("path-a", &["a"], 1, 100),
+                path("path-b", &["b"], 1, 100),
+            ],
         )
         .expect("feasible independent resources");
         assert_eq!(rate(&result, "path-a"), 100);
@@ -621,7 +606,10 @@ mod tests {
     fn weighted_max_min_respects_path_weights() {
         let result = allocate_weighted_max_min(
             &[resource("shared", 90)],
-            &[path("light", &["shared"], 1, 100), path("heavy", &["shared"], 2, 100)],
+            &[
+                path("light", &["shared"], 1, 100),
+                path("heavy", &["shared"], 2, 100),
+            ],
         )
         .expect("weighted allocation");
         assert_eq!(rate(&result, "light"), 30);
@@ -633,7 +621,10 @@ mod tests {
     fn demand_limited_path_releases_unused_share_to_backlogged_peer() {
         let result = allocate_weighted_max_min(
             &[resource("shared", 100)],
-            &[path("small", &["shared"], 1, 10), path("large", &["shared"], 1, 100)],
+            &[
+                path("small", &["shared"], 1, 10),
+                path("large", &["shared"], 1, 100),
+            ],
         )
         .expect("demand-limited allocation");
         assert_eq!(rate(&result, "small"), 10);
@@ -675,8 +666,8 @@ mod tests {
         .expect("resource incidence allocation");
         let exact_lp_max_sum_bps = 20_u128;
         assert_eq!(result.total_allocated_bps, 15);
-        let gap_ppm = (exact_lp_max_sum_bps - result.total_allocated_bps) * 1_000_000
-            / exact_lp_max_sum_bps;
+        let gap_ppm =
+            (exact_lp_max_sum_bps - result.total_allocated_bps) * 1_000_000 / exact_lp_max_sum_bps;
         assert_eq!(gap_ppm, 250_000);
     }
 
@@ -741,11 +732,8 @@ mod tests {
     #[test]
     fn duplicate_resource_within_one_path_is_rejected() {
         assert_eq!(
-            allocate_weighted_max_min(
-                &[resource("a", 100)],
-                &[path("path", &["a", "a"], 1, 100)],
-            )
-            .unwrap_err(),
+            allocate_weighted_max_min(&[resource("a", 100)], &[path("path", &["a", "a"], 1, 100)],)
+                .unwrap_err(),
             ResourceAllocationError::DuplicateResourceInPath
         );
     }
@@ -765,20 +753,14 @@ mod tests {
     #[test]
     fn empty_and_oversized_resource_sets_are_rejected() {
         assert_eq!(
-            allocate_weighted_max_min(
-                &[resource("a", 100)],
-                &[path("empty", &[], 1, 100)],
-            )
-            .unwrap_err(),
+            allocate_weighted_max_min(&[resource("a", 100)], &[path("empty", &[], 1, 100)],)
+                .unwrap_err(),
             ResourceAllocationError::EmptyResourceSet
         );
         let many = (0..=MAX_RESOURCES_PER_PATH)
             .map(|index| format!("r{index}"))
             .collect::<Vec<_>>();
-        let resources = many
-            .iter()
-            .map(|id| resource(id, 100))
-            .collect::<Vec<_>>();
+        let resources = many.iter().map(|id| resource(id, 100)).collect::<Vec<_>>();
         assert_eq!(
             allocate_weighted_max_min(
                 &resources,
@@ -805,11 +787,8 @@ mod tests {
             ResourceAllocationError::ZeroWeight
         );
         assert_eq!(
-            allocate_weighted_max_min(
-                &[resource("a", 100)],
-                &[path("zero-demand", &["a"], 1, 0)],
-            )
-            .unwrap_err(),
+            allocate_weighted_max_min(&[resource("a", 100)], &[path("zero-demand", &["a"], 1, 0)],)
+                .unwrap_err(),
             ResourceAllocationError::ZeroDemand
         );
         assert_eq!(
@@ -837,9 +816,11 @@ mod tests {
             ],
         )
         .expect("bounded resource allocation");
-        assert!(result
-            .resource_usage
-            .iter()
-            .all(|usage| usage.allocated_bps <= usage.capacity_bps));
+        assert!(
+            result
+                .resource_usage
+                .iter()
+                .all(|usage| usage.allocated_bps <= usage.capacity_bps)
+        );
     }
 }
