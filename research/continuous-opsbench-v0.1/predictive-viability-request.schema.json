@@ -14,7 +14,133 @@
   ],
   "properties": {
     "base": {
-      "$ref": "predictive-safety-filter-request.schema.json#/properties/filter_input"
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "scenario_id",
+        "arm_id",
+        "observation_id",
+        "observation_source_id",
+        "observation_digest",
+        "observed_at_ms",
+        "appraisal_at_ms",
+        "maximum_observation_age_ms",
+        "receipt_validity_ms",
+        "topology_epoch",
+        "topology_digest",
+        "model_revision",
+        "model_digest",
+        "uncertainty_set_digest",
+        "disturbance_set_digest",
+        "envelope_digest",
+        "state_belief",
+        "capacity_uncertainty",
+        "disturbances",
+        "envelope",
+        "observation_clock_uncertainty_ms"
+      ],
+      "properties": {
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scenario_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "arm_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observation_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observation_source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observation_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "observed_at_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709552000
+        },
+        "appraisal_at_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709552000
+        },
+        "maximum_observation_age_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709552000
+        },
+        "receipt_validity_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 18446744073709552000
+        },
+        "topology_epoch": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709552000
+        },
+        "topology_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "model_revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "uncertainty_set_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "disturbance_set_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "envelope_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "state_belief": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/state"
+          }
+        },
+        "capacity_uncertainty": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/capacity_uncertainty"
+          }
+        },
+        "disturbances": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/disturbance"
+          }
+        },
+        "envelope": {
+          "$ref": "#/$defs/envelope"
+        },
+        "observation_clock_uncertainty_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709552000
+        }
+      }
     },
     "state_space_digest": {
       "type": "string",
@@ -30,7 +156,42 @@
       "maxItems": 512,
       "uniqueItems": true,
       "items": {
-        "$ref": "predictive-safety-filter-request.schema.json#/$defs/state"
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "critical_queue",
+          "bulk_queue",
+          "api_capacity",
+          "database_capacity",
+          "retry_multiplier_ppm"
+        ],
+        "properties": {
+          "critical_queue": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4294967295
+          },
+          "bulk_queue": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4294967295
+          },
+          "api_capacity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4294967295
+          },
+          "database_capacity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4294967295
+          },
+          "retry_multiplier_ppm": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4294967295
+          }
+        }
       }
     },
     "fallback_actions": {
@@ -39,7 +200,56 @@
       "maxItems": 32,
       "uniqueItems": true,
       "items": {
-        "$ref": "predictive-safety-filter-request.schema.json#/$defs/candidate_operation"
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "const": "noop"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "value"
+            ],
+            "properties": {
+              "kind": {
+                "const": "set_api_capacity"
+              },
+              "value": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 4294967295
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "value"
+            ],
+            "properties": {
+              "kind": {
+                "const": "set_retry_multiplier_ppm"
+              },
+              "value": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 4294967295
+              }
+            }
+          }
+        ]
       }
     },
     "horizon": {
