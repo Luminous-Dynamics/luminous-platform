@@ -431,6 +431,18 @@ pub fn run_stability_scenario(
             ((total_failed as u128 * PPM as u128) / total_attempts as u128)
                 .min(PPM as u128) as u32
         };
+        let critical_failed_ppm = if critical_attempts == 0 {
+            0
+        } else {
+            ((critical_failed as u128 * PPM as u128) / critical_attempts as u128)
+                .min(PPM as u128) as u32
+        };
+        let bulk_failed_ppm = if bulk_attempts == 0 {
+            0
+        } else {
+            ((bulk_failed as u128 * PPM as u128) / bulk_attempts as u128)
+                .min(PPM as u128) as u32
+        };
         let queue_depth = critical_queue.saturating_add(bulk_queue);
         let critical_latency_ms = config.base_latency_ms.saturating_add(
             critical_queue.saturating_mul(config.queue_latency_ms_per_request),
