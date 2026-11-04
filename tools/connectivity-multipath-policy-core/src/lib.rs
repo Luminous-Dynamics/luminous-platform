@@ -6,6 +6,7 @@
 //! transport measurements.
 pub mod fairness;
 pub mod resource;
+pub mod service_utility;
 pub mod trace;
 
 use std::collections::BTreeSet;
