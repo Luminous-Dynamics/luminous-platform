@@ -240,7 +240,6 @@ pub fn run_stability_scenario(
     let mut samples = Vec::with_capacity(config.ticks as usize);
     let mut tail_capacity_min = u64::MAX;
     let mut tail_capacity_max = 0u64;
-    let mut healthy_streak = 0u32;
 
     for tick in 0..config.ticks {
         while cursor < scheduled.len() && scheduled[cursor].0 == tick {
@@ -351,17 +350,6 @@ pub fn run_stability_scenario(
         if tick >= config.fault_end_tick {
             tail_capacity_min = tail_capacity_min.min(actual_api_capacity);
             tail_capacity_max = tail_capacity_max.max(actual_api_capacity);
-            if slo_healthy {
-                healthy_streak = healthy_streak.saturating_add(1);
-                if metrics.settling_time_ticks_after_fault.is_none()
-                    && healthy_streak >= config.consecutive_healthy_ticks
-                {
-                    metrics.settling_time_ticks_after_fault =
-                        Some(tick + 1 - config.fault_end_tick);
-                }
-            } else {
-                healthy_streak = 0;
-            }
         }
 
         previous_failed = total_failed;
@@ -383,6 +371,21 @@ pub fn run_stability_scenario(
             latency_ms,
             slo_healthy,
         });
+    }
+
+    // Settlement is the first post-fault tick after which the service stays
+    // healthy for the remainder of this run, not merely the first transient
+    // healthy streak. This prevents recovery/re-degradation from looking settled.
+    metrics.settling_time_ticks_after_fault = None;
+    let post_fault = &samples[config.fault_end_tick as usize..];
+    for (offset, _) in post_fault.iter().enumerate() {
+        let suffix = &post_fault[offset..];
+        if suffix.len() >= config.consecutive_healthy_ticks as usize
+            && suffix.iter().all(|sample| sample.slo_healthy)
+        {
+            metrics.settling_time_ticks_after_fault = Some(offset as u32);
+            break;
+        }
     }
 
     metrics.api_capacity_range_after_fault = tail_capacity_max.saturating_sub(tail_capacity_min);
@@ -544,6 +547,52 @@ mod tests {
         let run = run_stability_scenario(&config, &[]).unwrap();
         assert!(run.metrics.final_no_intervention_tail_healthy);
         assert!(run.metrics.settling_time_ticks_after_fault.is_some());
+    }
+
+    #[test]
+    fn settling_time_ignores_transient_recovery_before_later_degradation() {
+        let mut config = config();
+        config.fault_api_capacity_reduction = 10;
+        config.actuation_delay_ticks = 0;
+        let actions = [
+            ControlAction {
+                action_id: "temporary-capacity-drop".into(),
+                controller: Controller::Agent,
+                issued_at_tick: 8,
+                observation_source_tick: 7,
+                operation: ControlOperation::SetApiCapacity(40),
+            },
+            ControlAction {
+                action_id: "restore-capacity".into(),
+                controller: Controller::Agent,
+                issued_at_tick: 9,
+                observation_source_tick: 8,
+                operation: ControlOperation::SetApiCapacity(100),
+            },
+        ];
+        let run = run_stability_scenario(&config, &actions).unwrap();
+        assert_eq!(run.metrics.settling_time_ticks_after_fault, Some(5));
+        assert!(run.metrics.final_no_intervention_tail_healthy);
+    }
+
+    #[test]
+    fn runaway_retries_are_worse_than_no_retry_baseline_and_fail_recovery_tail() {
+        let mut config = config();
+        config.actuation_delay_ticks = 0;
+        let baseline = run_stability_scenario(&config, &[]).unwrap();
+        let retry_actions = [ControlAction {
+            action_id: "enable-retry-amplification".into(),
+            controller: Controller::Agent,
+            issued_at_tick: 5,
+            observation_source_tick: 4,
+            operation: ControlOperation::SetRetryMultiplierPpm(2_000_000),
+        }];
+        let retry_run = run_stability_scenario(&config, &retry_actions).unwrap();
+        assert!(retry_run.metrics.bulk_failed_requests > baseline.metrics.bulk_failed_requests);
+        assert!(retry_run.metrics.slo_violation_integral_request_ms
+            > baseline.metrics.slo_violation_integral_request_ms);
+        assert!(baseline.metrics.final_no_intervention_tail_healthy);
+        assert!(!retry_run.metrics.final_no_intervention_tail_healthy);
     }
 
     #[test]
