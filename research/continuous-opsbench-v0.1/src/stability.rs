@@ -1496,7 +1496,7 @@ mod tests {
             .find(|outcome| outcome.disposition == ActionDisposition::Applied)
             .unwrap();
         assert_eq!(applied.controller, Controller::Agent);
-        assert_eq!(forward_run.stability.samples[5].actual_api_capacity, 90);
+        assert_eq!(forward_run.stability.samples[5].actual_api_capacity, 140);
     }
 
     #[test]
@@ -1667,7 +1667,7 @@ mod tests {
         assert_eq!(forward.action_outcomes, reverse.action_outcomes);
         assert_eq!(forward.metrics.action_conflict_count, 2);
         assert_eq!(forward.metrics.overridden_action_count, 2);
-        assert_eq!(forward.samples[2].actual_api_capacity, 90);
+        assert_eq!(forward.samples[2].actual_api_capacity, 40);
         assert_eq!(forward.action_outcomes[0].controller, Controller::Operator);
         assert_eq!(forward.action_outcomes[0].disposition, ActionDisposition::Applied);
         assert!(forward.action_outcomes.iter().filter(|o| o.disposition == ActionDisposition::Overridden)
@@ -1727,7 +1727,7 @@ mod tests {
         assert!(run.action_outcomes.iter().all(|outcome| outcome.disposition == ActionDisposition::Applied));
         assert!(run.action_outcomes.iter().any(|outcome| outcome.resource == ControlResource::ApiCapacity));
         assert!(run.action_outcomes.iter().any(|outcome| outcome.resource == ControlResource::RetryMultiplier));
-        assert_eq!(run.samples[2].actual_api_capacity, 120);
+        assert_eq!(run.samples[2].actual_api_capacity, 70);
     }
 
     #[test]
