@@ -318,6 +318,8 @@ pub enum StabilityError {
     ObservationNotYetAvailable(String),
     InvalidSetpoint(String),
     InvalidControllerConfig,
+    EmptyControllerId,
+    DuplicateControllerId(String),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -409,8 +411,11 @@ pub fn run_stability_multi_controller_loop(
     let mut controller_ids = BTreeSet::new();
     for controller in controllers.iter() {
         let id = controller.controller_id();
-        if id.is_empty() || !controller_ids.insert(id.to_owned()) {
-            return Err(StabilityError::EmptyActionIdentity);
+        if id.is_empty() {
+            return Err(StabilityError::EmptyControllerId);
+        }
+        if !controller_ids.insert(id.to_owned()) {
+            return Err(StabilityError::DuplicateControllerId(id.to_owned()));
         }
     }
     controllers.sort_by(|a, b| a.controller_id().cmp(b.controller_id()));
@@ -923,6 +928,53 @@ mod tests {
         assert!(run.actions.iter().all(|action| {
             action.issued_at_tick + config.actuation_delay_ticks < tail_start
         }));
+    }
+
+    #[test]
+    fn duplicate_controller_ids_are_rejected_before_any_policy_invocation() {
+        let config = config();
+        let mut first = OneShotReactiveScaleUp {
+            id: "duplicate",
+            kind: Controller::Agent,
+            issued: false,
+            calls: Vec::new(),
+            threshold_ppm: 300_000,
+            capacity: 140,
+        };
+        let mut second = OneShotReactiveScaleUp {
+            id: "duplicate",
+            kind: Controller::Autoscaler,
+            issued: false,
+            calls: Vec::new(),
+            threshold_ppm: 300_000,
+            capacity: 120,
+        };
+        let mut controllers: [&mut dyn StabilityController; 2] = [&mut first, &mut second];
+        assert_eq!(
+            run_stability_multi_controller_loop(&config, &mut controllers),
+            Err(StabilityError::DuplicateControllerId("duplicate".into()))
+        );
+        assert!(first.calls.is_empty());
+        assert!(second.calls.is_empty());
+    }
+
+    #[test]
+    fn empty_controller_id_is_rejected_before_any_policy_invocation() {
+        let config = config();
+        let mut controller = OneShotReactiveScaleUp {
+            id: "",
+            kind: Controller::Agent,
+            issued: false,
+            calls: Vec::new(),
+            threshold_ppm: 300_000,
+            capacity: 140,
+        };
+        let mut controllers: [&mut dyn StabilityController; 1] = [&mut controller];
+        assert_eq!(
+            run_stability_multi_controller_loop(&config, &mut controllers),
+            Err(StabilityError::EmptyControllerId)
+        );
+        assert!(controller.calls.is_empty());
     }
 
     #[test]
