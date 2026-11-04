@@ -1,0 +1,41 @@
+{
+  "schema": "continuous-opsbench-probe-impact-v0.1",
+  "disposition": "Pass",
+  "probe_run_id": "probe-run",
+  "no_probe_run_id": "control-run",
+  "scenario_id": "scenario-1",
+  "paired_block_id": "pair-1",
+  "execution_count": 1,
+  "receipt_count": 1,
+  "total_resource_usage": {
+    "cpu_millicore_ms": 500,
+    "memory_byte_ms": 50000,
+    "disk_read_bytes": 1000,
+    "disk_write_bytes": 100,
+    "network_bytes": 2000,
+    "query_rows": 20,
+    "duration_ms": 50
+  },
+  "service_impacts": [
+    {
+      "service": "api",
+      "workload_class": "critical",
+      "offered_requests": 1000,
+      "failure_delta_ppm": 0,
+      "slow_delta_ppm": 0,
+      "incorrect_delta_ppm": 0
+    }
+  ],
+  "findings": [],
+  "probe_arm_id": "probe",
+  "no_probe_arm_id": "no-probe",
+  "tenant_id": "tenant-1",
+  "executor_control_domain": "executor",
+  "impact_observer_control_domain": "impact-observer",
+  "impact_observer_adapter_digest": "0101010101010101010101010101010101010101010101010101010101010101",
+  "service_observer_control_domain": "service-observer-domain",
+  "service_observer_adapter_digest": "0707070707070707070707070707070707070707070707070707070707070707",
+  "workload_profile_digest": "0202020202020202020202020202020202020202020202020202020202020202",
+  "environment_digest": "0303030303030303030303030303030303030303030303030303030303030303",
+  "fault_schedule_digest": "0404040404040404040404040404040404040404040404040404040404040404"
+}

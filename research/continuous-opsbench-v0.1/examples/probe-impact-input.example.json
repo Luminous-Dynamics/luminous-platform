@@ -1,0 +1,135 @@
+{
+  "contract": {
+    "probe_run_id": "probe-run",
+    "no_probe_run_id": "control-run",
+    "scenario_id": "scenario-1",
+    "paired_block_id": "pair-1",
+    "probe_arm_id": "probe",
+    "no_probe_arm_id": "no-probe",
+    "tenant_id": "tenant-1",
+    "executor_control_domain": "executor",
+    "workload_profile_digest": "0202020202020202020202020202020202020202020202020202020202020202",
+    "environment_digest": "0303030303030303030303030303030303030303030303030303030303030303",
+    "fault_schedule_digest": "0404040404040404040404040404040404040404040404040404040404040404",
+    "maximum_probe_duration_ms": 100,
+    "maximum_total_resource_usage": {
+      "cpu_millicore_ms": 10000,
+      "memory_byte_ms": 1000000,
+      "disk_read_bytes": 100000,
+      "disk_write_bytes": 10000,
+      "network_bytes": 100000,
+      "query_rows": 10000,
+      "duration_ms": 100
+    },
+    "service_limits": [
+      {
+        "service": "api",
+        "workload_class": "critical",
+        "maximum_failure_delta_ppm": 10000,
+        "maximum_slow_delta_ppm": 10000,
+        "maximum_incorrect_delta_ppm": 0
+      }
+    ],
+    "impact_observer_control_domain": "observer",
+    "impact_observer_adapter_digest": "0101010101010101010101010101010101010101010101010101010101010101",
+    "service_observer_control_domain": "service-observer-domain",
+    "service_observer_adapter_digest": "0707070707070707070707070707070707070707070707070707070707070707"
+  },
+  "executions": [
+    {
+      "execution_id": "exec-1",
+      "probe_id": "probe-1",
+      "tenant_id": "tenant-1",
+      "target": "api",
+      "operation_digest": "0505050505050505050505050505050505050505050505050505050505050505",
+      "capability": "ReadOnly",
+      "executor_id": "agent-adapter",
+      "executor_control_domain": "executor",
+      "run_id": "probe-run",
+      "scenario_id": "scenario-1",
+      "arm_id": "probe",
+      "paired_block_id": "pair-1",
+      "started_at_ms": 100,
+      "ended_at_ms": 150
+    }
+  ],
+  "receipts": [
+    {
+      "receipt_id": "receipt-1",
+      "execution_id": "exec-1",
+      "probe_id": "probe-1",
+      "tenant_id": "tenant-1",
+      "target": "api",
+      "operation_digest": "0505050505050505050505050505050505050505050505050505050505050505",
+      "run_id": "probe-run",
+      "scenario_id": "scenario-1",
+      "arm_id": "probe",
+      "paired_block_id": "pair-1",
+      "measured_start_ms": 90,
+      "measured_end_ms": 160,
+      "evidence_digest": "0606060606060606060606060606060606060606060606060606060606060606",
+      "complete": true,
+      "resource_usage": {
+        "cpu_millicore_ms": 500,
+        "memory_byte_ms": 50000,
+        "disk_read_bytes": 1000,
+        "disk_write_bytes": 100,
+        "network_bytes": 2000,
+        "query_rows": 20,
+        "duration_ms": 50
+      },
+      "impact_observer_id": "observer-agent",
+      "impact_observer_control_domain": "observer",
+      "impact_observer_adapter_digest": "0101010101010101010101010101010101010101010101010101010101010101",
+      "source_sequence": 1
+    }
+  ],
+  "probe_windows": [
+    {
+      "window_id": "probe-window",
+      "run_id": "probe-run",
+      "scenario_id": "scenario-1",
+      "arm_id": "probe",
+      "paired_block_id": "pair-1",
+      "service": "api",
+      "workload_class": "critical",
+      "starts_at_ms": 100,
+      "ends_at_ms": 200,
+      "offered_requests": 1000,
+      "failed_requests": 1,
+      "slow_requests": 10,
+      "incorrect_business_results": 0,
+      "workload_profile_digest": "0202020202020202020202020202020202020202020202020202020202020202",
+      "environment_digest": "0303030303030303030303030303030303030303030303030303030303030303",
+      "fault_schedule_digest": "0404040404040404040404040404040404040404040404040404040404040404",
+      "complete": true,
+      "service_observer_id": "service-observer",
+      "service_observer_control_domain": "service-observer-domain",
+      "service_observer_adapter_digest": "0707070707070707070707070707070707070707070707070707070707070707"
+    }
+  ],
+  "no_probe_windows": [
+    {
+      "window_id": "control-window",
+      "run_id": "control-run",
+      "scenario_id": "scenario-1",
+      "arm_id": "no-probe",
+      "paired_block_id": "pair-1",
+      "service": "api",
+      "workload_class": "critical",
+      "starts_at_ms": 100,
+      "ends_at_ms": 200,
+      "offered_requests": 1000,
+      "failed_requests": 1,
+      "slow_requests": 10,
+      "incorrect_business_results": 0,
+      "workload_profile_digest": "0202020202020202020202020202020202020202020202020202020202020202",
+      "environment_digest": "0303030303030303030303030303030303030303030303030303030303030303",
+      "fault_schedule_digest": "0404040404040404040404040404040404040404040404040404040404040404",
+      "complete": true,
+      "service_observer_id": "service-observer",
+      "service_observer_control_domain": "service-observer-domain",
+      "service_observer_adapter_digest": "0707070707070707070707070707070707070707070707070707070707070707"
+    }
+  ]
+}

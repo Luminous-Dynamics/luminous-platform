@@ -79,3 +79,12 @@ The reference plant now includes three deterministic policies:
 - `PersistentHysteresisCapacityController`: queue-aware debounce; overload must persist for N delivered observations before scale-up, while both failure and queue signals must remain healthy for M observations before scale-down. An intermediate observation breaks the streak.
 
 All policies consume the same `PlantObservation` stream and share the same action budget, causal actuation delay, and deterministic arbitration. The paired noise fixture makes bang-bang repeatedly reverse its setpoint, while two-threshold hysteresis scales once and holds. The persistence-filtered controller additionally refuses to act on alternating single-sample spikes. Tests assert that all these differences are evaluated against the same plant truth and SLO contract; these are synthetic policy comparisons, not production autoscaling results.
+
+
+## Diagnostic probe interference v0.1
+
+The additive `src/probe_impact.rs` module evaluates whether diagnostic probes perturb the service. It requires an exact paired no-probe twin, a complete independent impact receipt per execution, distinct executor/observer control domains, and matching workload/environment/fault schedule and time windows.
+
+It reports service failure, slowness and business-correctness deltas separately by protected workload class, plus total probe resource use (CPU, memory, disk, network, query rows and duration). "Read-only" capability does not imply zero side effects. Missing receipts or incomplete observer windows are indeterminate, never zero impact.
+
+This is an operational externality sidecar for #185 VOI; it does not calculate VOI, authorize a tool, or change native SRE benchmark scores. See `PROBE-IMPACT-V0.1.md` and the strict input/report schemas and example fixtures.

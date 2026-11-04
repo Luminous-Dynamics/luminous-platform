@@ -4,6 +4,7 @@
 //! participant effect receipts, and independent observer windows as distinct inputs.
 //! It does not run agents or infrastructure and does not authenticate publishers.
 
+pub mod probe_impact;
 pub mod stability;
 pub mod temporal;
 
