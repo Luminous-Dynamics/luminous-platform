@@ -483,7 +483,6 @@ pub fn run_stability_closed_loop<C: StabilityController>(
 struct StreamingPlantState {
     api_setpoint: u64,
     retry_multiplier_ppm: u32,
-    previous_direction: BTreeMap<Resource, i8>,
     critical_queue: u64,
     bulk_queue: u64,
     previous_failed: u64,
@@ -494,7 +493,6 @@ impl StreamingPlantState {
         Self {
             api_setpoint: config.api_capacity,
             retry_multiplier_ppm: PPM as u32,
-            previous_direction: BTreeMap::new(),
             critical_queue: 0,
             bulk_queue: 0,
             previous_failed: 0,
@@ -585,28 +583,10 @@ fn apply_stream_actions(
 
             match &winner.operation {
                 ControlOperation::SetApiCapacity(value) => {
-                    if *value != state.api_setpoint {
-                        let direction = if *value > state.api_setpoint { 1 } else { -1 };
-                        if state.previous_direction.get(&Resource::ApiCapacity)
-                            .is_some_and(|previous| *previous != direction)
-                        {
-                        }
-                        state.previous_direction.insert(Resource::ApiCapacity, direction);
-                        state.api_setpoint = *value;
-                    }
+                    state.api_setpoint = *value;
                 }
                 ControlOperation::SetRetryMultiplierPpm(value) => {
-                    if *value != state.retry_multiplier_ppm {
-                        arbitration_metrics.action_churn_count += 1;
-                        let direction = if *value > state.retry_multiplier_ppm { 1 } else { -1 };
-                        if state.previous_direction.get(&Resource::RetryMultiplier)
-                            .is_some_and(|previous| *previous != direction)
-                        {
-                            arbitration_metrics.action_reversal_count += 1;
-                        }
-                        state.previous_direction.insert(Resource::RetryMultiplier, direction);
-                        state.retry_multiplier_ppm = *value;
-                    }
+                    state.retry_multiplier_ppm = *value;
                 }
             }
         }
