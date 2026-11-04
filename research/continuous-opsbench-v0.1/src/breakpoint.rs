@@ -471,7 +471,7 @@ pub fn evaluate_breakpoints(
                 let decision_was_invalid = action.map(|a| a.decision_invalid).unwrap_or(true);
                 let eligible_for_recovery = action_bound
                     && !ledger_cursor.is_empty()
-                    && gate_authorized
+                    && *gate_authorized
                     && !action_disallowed
                     && !gate_previously_blocked
                     && !decision_was_invalid;
