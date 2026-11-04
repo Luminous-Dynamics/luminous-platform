@@ -657,6 +657,56 @@ pub fn allocate_resource_incidence(
 mod tests {
     use super::*;
 
+    const MAX_EXACT_REFERENCE_PATHS: usize = 4;
+    const MAX_EXACT_REFERENCE_RESOURCES: usize = 6;
+    const MAX_EXACT_REFERENCE_ASSIGNMENTS: u128 = 1_000_000;
+
+    /// The exact integer oracles intentionally cover only bounded micro-topologies.
+    /// The product of each path's feasible integer-rate choices is capped, so an
+    /// accidental call with production-scale bps/capacity cannot explode test time.
+    fn assert_exact_reference_bounds(
+        paths: &[ResourcePath],
+        resources: &[CapacityResource],
+    ) -> BTreeMap<String, u64> {
+        assert!(
+            paths.len() <= MAX_EXACT_REFERENCE_PATHS,
+            "exact reference is limited to {MAX_EXACT_REFERENCE_PATHS} paths"
+        );
+        assert!(
+            resources.len() <= MAX_EXACT_REFERENCE_RESOURCES,
+            "exact reference is limited to {MAX_EXACT_REFERENCE_RESOURCES} resources"
+        );
+
+        let capacities = resources
+            .iter()
+            .map(|resource| {
+                (
+                    resource.resource_id.clone(),
+                    resource.residual_capacity_bps().expect("valid residual"),
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
+
+        let mut assignment_count = 1_u128;
+        for path in paths {
+            let feasible_ceiling = path
+                .capacity_domain_ids
+                .iter()
+                .try_fold(path.path_ceiling_bps, |ceiling, domain| {
+                    capacities.get(domain).map(|capacity| ceiling.min(*capacity))
+                })
+                .expect("exact reference paths must use known resources");
+            assignment_count = assignment_count
+                .checked_mul(u128::from(feasible_ceiling) + 1)
+                .expect("bounded reference assignment count fits u128");
+        }
+        assert!(
+            assignment_count <= MAX_EXACT_REFERENCE_ASSIGNMENTS,
+            "exact reference assignment count {assignment_count} exceeds bound              {MAX_EXACT_REFERENCE_ASSIGNMENTS}"
+        );
+        capacities
+    }
+
     fn evidence() -> CapacityResourceEvidence {
         CapacityResourceEvidence {
             source_id: "operator-inventory".to_owned(),
@@ -1034,6 +1084,10 @@ mod tests {
         paths: &[ResourcePath],
         resources: &[CapacityResource],
     ) -> u64 {
+        let capacities = assert_exact_reference_bounds(paths, resources);
+        let mut canonical_paths = paths.to_vec();
+        canonical_paths.sort_by(|left, right| left.path_id.cmp(&right.path_id));
+
         fn visit(
             index: usize,
             paths: &[ResourcePath],
@@ -1072,17 +1126,15 @@ mod tests {
             }
         }
 
-        let capacities = resources
-            .iter()
-            .map(|resource| {
-                (
-                    resource.resource_id.clone(),
-                    resource.residual_capacity_bps().expect("valid residual"),
-                )
-            })
-            .collect::<BTreeMap<_, _>>();
         let mut best = 0;
-        visit(0, paths, &capacities, &mut BTreeMap::new(), 0, &mut best);
+        visit(
+            0,
+            &canonical_paths,
+            &capacities,
+            &mut BTreeMap::new(),
+            0,
+            &mut best,
+        );
         best
     }
 
@@ -1105,6 +1157,10 @@ mod tests {
         paths: &[ResourcePath],
         resources: &[CapacityResource],
     ) -> Vec<u64> {
+        let capacities = assert_exact_reference_bounds(paths, resources);
+        let mut canonical_paths = paths.to_vec();
+        canonical_paths.sort_by(|left, right| left.path_id.cmp(&right.path_id));
+
         fn visit(
             index: usize,
             paths: &[ResourcePath],
@@ -1124,10 +1180,17 @@ mod tests {
                     (u128::from(left.0) * u128::from(right.1))
                         .cmp(&(u128::from(right.0) * u128::from(left.1)))
                 });
-                let replace = best_fairness.as_ref().is_none_or(|best| {
-                    compare_weighted_fairness_vectors(&fairness, best)
-                        == std::cmp::Ordering::Greater
-                });
+                let fairness_order = best_fairness.as_ref().map_or(
+                    std::cmp::Ordering::Greater,
+                    |best| compare_weighted_fairness_vectors(&fairness, best),
+                );
+                // Equal weighted-fairness vectors can have multiple equivalent
+                // integer assignments. Prefer the lexicographically larger rate
+                // vector in canonical path-ID order to match the allocator's
+                // deterministic remainder convention.
+                let replace = fairness_order == std::cmp::Ordering::Greater
+                    || (fairness_order == std::cmp::Ordering::Equal
+                        && rates.as_slice() > best_rates.as_slice());
                 if replace {
                     *best_fairness = Some(fairness);
                     *best_rates = rates.clone();
@@ -1170,20 +1233,11 @@ mod tests {
             }
         }
 
-        let capacities = resources
-            .iter()
-            .map(|resource| {
-                (
-                    resource.resource_id.clone(),
-                    resource.residual_capacity_bps().expect("valid residual"),
-                )
-            })
-            .collect::<BTreeMap<_, _>>();
         let mut best_fairness = None;
         let mut best_rates = Vec::new();
         visit(
             0,
-            paths,
+            &canonical_paths,
             &capacities,
             &mut BTreeMap::new(),
             &mut Vec::new(),
@@ -1226,6 +1280,82 @@ mod tests {
         );
         // The allocator's weighted max-min objective is intentionally not
         // presented as a maximum-sum-rate optimizer; the gap remains visible.
+    }
+
+    #[test]
+    fn exhaustive_two_resource_microtopologies_match_exact_weighted_reference() {
+        // Every one of the 3^3 non-empty incidence assignments over {x, y}
+        // is checked at all 4x4 small residual-capacity combinations. Weights
+        // differ deliberately so this exercises weighted progressive filling.
+        let incidence_sets: [&[&str]; 3] = [&["x"], &["y"], &["x", "y"]];
+        let mut fixture_count = 0_u32;
+
+        for incidence_code in 0_u32..27 {
+            let mut code = incidence_code;
+            let mut selected_sets = Vec::with_capacity(3);
+            for _ in 0..3 {
+                selected_sets.push(incidence_sets[(code % 3) as usize]);
+                code /= 3;
+            }
+
+            for x_capacity in 1_u64..=4 {
+                for y_capacity in 1_u64..=4 {
+                    let paths = vec![
+                        path("a", 4, 1, selected_sets[0]),
+                        path("b", 4, 2, selected_sets[1]),
+                        path("c", 4, 3, selected_sets[2]),
+                    ];
+                    let resources = vec![
+                        resource("x", x_capacity, 0, 0, 0),
+                        resource("y", y_capacity, 0, 0, 0),
+                    ];
+                    let report = allocate_resource_incidence(&request(), &paths, &resources)
+                        .expect("valid micro-topology");
+                    let actual = report
+                        .path_allocations
+                        .iter()
+                        .map(|allocation| allocation.allocated_rate_bps)
+                        .collect::<Vec<_>>();
+                    let expected =
+                        exact_integer_weighted_max_min_reference(&paths, &resources);
+                    assert_eq!(
+                        actual, expected,
+                        "resource incidence code {incidence_code}, capacities x={x_capacity} y={y_capacity}"
+                    );
+                    for usage in &report.resource_usage {
+                        assert!(
+                            usage.allocated_rate_bps <= usage.residual_capacity_bps,
+                            "resource {} exceeded its residual capacity",
+                            usage.resource_id
+                        );
+                    }
+                    fixture_count += 1;
+                }
+            }
+        }
+        assert_eq!(fixture_count, 27 * 16);
+    }
+
+    #[test]
+    fn exact_reference_rejects_unbounded_microtopology_inputs() {
+        let too_many_paths = (0..=MAX_EXACT_REFERENCE_PATHS)
+            .map(|index| path(&format!("p{index}"), 1, 1, &["x"]))
+            .collect::<Vec<_>>();
+        let resources = vec![resource("x", 1, 0, 0, 0)];
+        let panic = std::panic::catch_unwind(|| {
+            exact_integer_weighted_max_min_reference(&too_many_paths, &resources)
+        });
+        assert!(panic.is_err());
+
+        let too_many_assignments = vec![
+            path("a", 100, 1, &["x"]),
+            path("b", 100, 1, &["x"]),
+        ];
+        let larger_resource = vec![resource("x", 100, 0, 0, 0)];
+        let panic = std::panic::catch_unwind(|| {
+            exact_integer_reference_max_total(&too_many_assignments, &larger_resource)
+        });
+        assert!(panic.is_err());
     }
 
     #[test]
