@@ -773,7 +773,6 @@ pub fn run_stability_multi_controller_loop_streaming(
             let proposals = controller.propose(&observation);
             let mut proposed_action_ids = Vec::with_capacity(proposals.len());
             let mut proposed_actions = Vec::with_capacity(proposals.len());
-            let mut proposed_actions = Vec::with_capacity(proposals.len());
             for (index, operation) in proposals.into_iter().enumerate() {
                 let action = ControlAction {
                     action_id: format!("closed-loop-{controller_id}-{tick}-{index}"),
@@ -820,11 +819,13 @@ pub fn run_stability_multi_controller_loop_streaming(
         return Err(StabilityError::StreamingActionOutcomesDiverged);
     }
 
-    Ok(ClosedLoopRun {
+    let result = ClosedLoopRun {
         actions,
         decisions,
         stability: replay,
-    })
+    };
+    validate_closed_loop_evidence(config, &result)?;
+    Ok(result)
 }
 
 pub fn run_stability_multi_controller_loop_reference(
@@ -864,6 +865,7 @@ pub fn run_stability_multi_controller_loop_reference(
             let controller_kind = controller.controller();
             let proposals = controller.propose(&observation);
             let mut proposed_action_ids = Vec::with_capacity(proposals.len());
+            let mut proposed_actions = Vec::with_capacity(proposals.len());
             for (index, operation) in proposals.into_iter().enumerate() {
                 let action_id = format!("closed-loop-{controller_id}-{tick}-{index}");
                 proposed_action_ids.push(action_id.clone());
@@ -893,11 +895,96 @@ pub fn run_stability_multi_controller_loop_reference(
     }
 
     let stability = run_stability_scenario(config, &actions)?;
-    Ok(ClosedLoopRun {
+    let result = ClosedLoopRun {
         actions,
         decisions,
         stability,
-    })
+    };
+    validate_closed_loop_evidence(config, &result)?;
+    Ok(result)
+}
+
+/// Independently verify that each controller decision is bound to the exact
+/// observation delivered at that tick, that its action list is complete, and
+/// that the final scored trace is exactly the concatenation of those proposals.
+/// This rejects post-hoc action substitution, invented observation values,
+/// missing action rows, and orphan actions.
+pub fn validate_closed_loop_evidence(
+    config: &StabilityConfig,
+    run: &ClosedLoopRun,
+) -> Result<(), StabilityError> {
+    validate_config(config)?;
+    if run.stability.samples.len() != config.ticks as usize
+        || run.stability.observations.len() != config.ticks as usize
+    {
+        return Err(StabilityError::ClosedLoopEvidenceMismatch);
+    }
+
+    let tail_start = config.ticks - config.no_intervention_tail_ticks;
+    let mut decision_keys = BTreeSet::new();
+    let mut action_ids = BTreeSet::new();
+    let mut flattened_actions = Vec::new();
+
+    for decision in &run.decisions {
+        if decision.controller_id.is_empty()
+            || decision.decision_tick >= config.ticks
+            || !decision_keys.insert((decision.controller_id.as_str(), decision.decision_tick))
+        {
+            return Err(StabilityError::ClosedLoopEvidenceMismatch);
+        }
+        if !scheduled_effect_tick(decision.decision_tick, config.actuation_delay_ticks)
+            .is_some_and(|effect_tick| effect_tick < tail_start)
+        {
+            return Err(StabilityError::ClosedLoopEvidenceMismatch);
+        }
+
+        let observation = &decision.observation;
+        let replayed_observation = run.stability.observations
+            .get(decision.decision_tick as usize)
+            .ok_or(StabilityError::ClosedLoopEvidenceMismatch)?;
+
+        if observation != replayed_observation
+            || observation.tick != decision.decision_tick
+            || observation.source_tick != decision.observation_source_tick
+            || observation.source_tick
+                != decision.decision_tick.saturating_sub(config.observation_delay_ticks)
+            || observation.observed_queue_depth != decision.observed_queue_depth
+            || observation.observed_latency_ms != decision.observed_latency_ms
+            || observation.observed_failed_ppm != decision.observed_failed_ppm
+        {
+            return Err(StabilityError::ClosedLoopEvidenceMismatch);
+        }
+
+        if decision.proposed_action_ids.len() != decision.proposed_actions.len() {
+            return Err(StabilityError::ClosedLoopEvidenceMismatch);
+        }
+        for (index, action) in decision.proposed_actions.iter().enumerate() {
+            if decision.proposed_action_ids[index] != action.action_id
+                || action.controller != decision.controller
+                || action.issued_at_tick != decision.decision_tick
+                || action.observation_source_tick != observation.source_tick
+                || !action_ids.insert(action.action_id.as_str())
+            {
+                return Err(StabilityError::ClosedLoopEvidenceMismatch);
+            }
+            // Preserve the same time, scope, setpoint and tail checks used by
+            // the streaming policy boundary.
+            validate_stream_action(config, action)?;
+            flattened_actions.push(action.clone());
+        }
+    }
+
+    if flattened_actions != run.actions {
+        return Err(StabilityError::ClosedLoopEvidenceMismatch);
+    }
+
+    // Recompute the scorer output from the trace. This binds the closed-loop
+    // receipt to the same independent evaluator used for offline action arms.
+    let replay = run_stability_scenario(config, &run.actions)?;
+    if replay != run.stability {
+        return Err(StabilityError::ClosedLoopEvidenceMismatch);
+    }
+    Ok(())
 }
 
 /// Run a deterministic plant against an externally supplied controller action
