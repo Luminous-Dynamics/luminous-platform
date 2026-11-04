@@ -113,3 +113,12 @@ Wire contracts/fixtures:
 - `examples/model-assumption-monitor-report.example.json`
 
 CI meta-validates both Draft 2020-12 schemas and validates both example fixtures. See `MODEL-ASSUMPTION-MONITOR-V0.1.md` for identity, logic and claim boundaries.
+
+
+### Composed model-assurance entry point
+
+The safety-filter module now exposes `appraise_with_model_assurance`. It requires a Qualified monitor report whose run/scenario/arm, model revision/digest, plant revision/digest, workload profile, metric-policy digest and topology epoch/digest exactly match the candidate appraisal. It also requires distinct producer/observer identities and control domains, a complete finding-free report, and a non-expired validity window within the configured maximum report age.
+
+The resulting safety appraisal records the exact model-monitor evaluation and expiry times. An unqualified report, scope substitution, stale report, or missing freshness evidence returns DEFER_FOR_EVIDENCE. The low-level `appraise_one_step` remains available for filter-only differential tests; the composed entry point is the intended full research path.
+
+Model-monitor reports are explicitly time-limited (maximum 60 seconds in v0.1). A new model, plant, workload, topology or metric-policy identity requires a new report. Publisher authentication remains the caller's responsibility; these typed reference records are not signed evidence by themselves.
