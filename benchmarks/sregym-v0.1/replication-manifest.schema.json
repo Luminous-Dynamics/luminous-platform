@@ -18,7 +18,8 @@
     "blockers",
     "arms",
     "experimental_design",
-    "instrumentation_noninterference"
+    "instrumentation_noninterference",
+    "contamination"
   ],
   "properties": {
     "schema": {
@@ -358,7 +359,8 @@
           "max_tool_calls",
           "max_tokens",
           "retry_policy",
-          "concurrency"
+          "concurrency",
+          "access_profile_sha256"
         ],
         "properties": {
           "arm_id": {
@@ -477,6 +479,13 @@
               "null"
             ],
             "minimum": 1
+          },
+          "access_profile_sha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{64}$"
           }
         }
       }
@@ -541,6 +550,77 @@
         "failed",
         "proven"
       ]
+    },
+    "contamination": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "result",
+        "scanner_revision",
+        "scanner_config_sha256",
+        "report_sha256",
+        "scanned_at",
+        "examined_sources"
+      ],
+      "properties": {
+        "result": {
+          "enum": [
+            "not_run",
+            "passed",
+            "failed"
+          ]
+        },
+        "scanner_revision": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "scanner_config_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "report_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "scanned_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "examined_sources": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "agent_source",
+              "system_prompt",
+              "developer_prompt",
+              "tool_surface",
+              "access_profile",
+              "scenario_source",
+              "scenario_ids",
+              "expected_answers",
+              "runbooks",
+              "issue_pr_text",
+              "logs",
+              "network_filesystem_access",
+              "cross_run_artifacts",
+              "judge_scorer"
+            ]
+          }
+        }
+      }
     }
   },
   "allOf": [
@@ -675,7 +755,15 @@
                   ]
                 }
               }
-            ]
+            ],
+            "items": {
+              "properties": {
+                "access_profile_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            }
           },
           "experimental_design": {
             "properties": {
@@ -702,6 +790,32 @@
           },
           "instrumentation_noninterference": {
             "const": "proven"
+          },
+          "contamination": {
+            "properties": {
+              "result": {
+                "const": "passed"
+              },
+              "scanner_revision": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "scanner_config_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "report_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "scanned_at": {
+                "type": "string",
+                "format": "date"
+              },
+              "examined_sources": {
+                "minItems": 8
+              }
+            }
           }
         },
         "allOf": [
