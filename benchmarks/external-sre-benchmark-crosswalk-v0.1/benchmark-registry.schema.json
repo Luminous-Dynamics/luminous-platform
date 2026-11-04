@@ -1,0 +1,422 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/opsbench-external-benchmark-registry-v0.1.schema.json",
+  "title": "OpsBench External Benchmark Evidence Registry v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "snapshot_date",
+    "comparison_policy",
+    "entries"
+  ],
+  "properties": {
+    "schema": {
+      "const": "opsbench-external-benchmark-registry-v0.1"
+    },
+    "snapshot_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "comparison_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "composite_score",
+        "cross_benchmark_score_translation",
+        "native_scoreboards_unchanged"
+      ],
+      "properties": {
+        "composite_score": {
+          "const": false
+        },
+        "cross_benchmark_score_translation": {
+          "const": false
+        },
+        "native_scoreboards_unchanged": {
+          "const": true
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "benchmark_id",
+          "name",
+          "version",
+          "publisher",
+          "evaluation_status",
+          "observed_on",
+          "comparability_group",
+          "construct_summary",
+          "task_unit",
+          "metrics",
+          "results",
+          "scale",
+          "limitations",
+          "what_not_established",
+          "sources"
+        ],
+        "properties": {
+          "benchmark_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "publisher": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evaluation_status": {
+            "enum": [
+              "native_paper_result",
+              "native_live_leaderboard",
+              "independent_implementation",
+              "vendor_published_evaluation",
+              "research_dataset",
+              "benchmark_description_only"
+            ]
+          },
+          "observed_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "comparability_group": {
+            "enum": [
+              "sregym_native",
+              "sre_marathon_native",
+              "enterpriseops_original",
+              "enterpriseops_aa",
+              "itbench_aa",
+              "ai_sre_arena",
+              "traceway_ai_sre_bench",
+              "hintbench",
+              "agentrx",
+              "evoharnessbench",
+              "none"
+            ]
+          },
+          "construct_summary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "task_unit": {
+            "type": "string",
+            "minLength": 1
+          },
+          "metrics": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "metric_id",
+                "name",
+                "construct",
+                "unit",
+                "aggregation",
+                "denominator_definition"
+              ],
+              "properties": {
+                "metric_id": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9_.-]{1,63}$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "construct": {
+                  "enum": [
+                    "end_to_end_task_success",
+                    "diagnosis_localization",
+                    "root_cause_entity_attribution",
+                    "detection",
+                    "mitigation",
+                    "unsafe_advice",
+                    "evidence_grounding",
+                    "hidden_test_repair",
+                    "risk_step_localization",
+                    "failure_attribution",
+                    "harness_retention",
+                    "latency",
+                    "token_cost",
+                    "trajectory_count",
+                    "scenario_count",
+                    "other"
+                  ]
+                },
+                "unit": {
+                  "enum": [
+                    "percent",
+                    "percentage_points",
+                    "score_out_of_100",
+                    "seconds",
+                    "tokens",
+                    "usd",
+                    "count",
+                    "relative_percent_improvement",
+                    "strict_f1",
+                    "other"
+                  ]
+                },
+                "scale": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "aggregation": {
+                  "enum": [
+                    "per_task",
+                    "per_fault",
+                    "per_run",
+                    "macro_average",
+                    "micro_average",
+                    "scenario_weighted",
+                    "paired_delta",
+                    "publisher_reported",
+                    "not_applicable"
+                  ]
+                },
+                "denominator_definition": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "evaluator_type": {
+                  "enum": [
+                    "deterministic",
+                    "independent_human",
+                    "ai_judge",
+                    "vendor_self_evaluation",
+                    "mixed",
+                    "not_applicable"
+                  ]
+                },
+                "repeat_design": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "limitations": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "configuration",
+                "metric_id",
+                "value",
+                "unit",
+                "result_context"
+              ],
+              "properties": {
+                "configuration": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "metric_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "value": {
+                  "type": "number"
+                },
+                "unit": {
+                  "enum": [
+                    "percent",
+                    "percentage_points",
+                    "score_out_of_100",
+                    "seconds",
+                    "tokens",
+                    "usd",
+                    "count",
+                    "relative_percent_improvement",
+                    "strict_f1",
+                    "other"
+                  ]
+                },
+                "numerator": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "denominator": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "result_context": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "experiment_date": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date"
+                },
+                "uncertainty_or_repeat_note": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "scale": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task_count_description",
+              "trial_design"
+            ],
+            "properties": {
+              "task_count_description": {
+                "type": "string",
+                "minLength": 1
+              },
+              "tasks": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "scenarios": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "trajectories": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "runs_per_model": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "repeats_per_task": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "trial_design": {
+                "type": "string",
+                "minLength": 1
+              },
+              "average_trajectory_steps": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              }
+            }
+          },
+          "limitations": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          },
+          "what_not_established": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          },
+          "sources": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "title",
+                "url",
+                "source_type",
+                "retrieved_on"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "source_type": {
+                  "enum": [
+                    "primary_publication",
+                    "official_leaderboard",
+                    "official_benchmark_report",
+                    "publisher_blog",
+                    "official_methodology"
+                  ]
+                },
+                "published_on": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date"
+                },
+                "retrieved_on": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "source_revision": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "notes": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
