@@ -257,6 +257,162 @@ pub enum ResourceOracleError {
     InternalInvariant,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ResourceVerificationError {
+    InvalidInput(ResourceOracleError),
+    MissingFlowAllocation,
+    DuplicateFlowAllocation,
+    UnexpectedFlowAllocation,
+    FlowIdentityMismatch,
+    InvalidRateFraction,
+    DemandFloorViolation,
+    DemandCeilingViolation,
+    ResourceCapacityViolation,
+    ResourceUsageMismatch,
+    ResourceUsageSetMismatch,
+    ActiveBottleneckSetMismatch,
+    ProgressiveRoundBoundExceeded,
+    ArithmeticOverflow,
+}
+
+/// Independently verify feasibility and report integrity without re-running the
+/// progressive-filling allocator. The verifier reconstructs each resource load
+/// from the per-flow exact fractions and checks every hard constraint.
+pub fn verify_allocation_report(
+    resources: &[ResourceCapacity],
+    flows: &[ResourceFlowDemand],
+    report: &ResourceAllocationReport,
+) -> Result<(), ResourceVerificationError> {
+    let (validated, sorted_resources) =
+        validate_inputs(resources, flows).map_err(ResourceVerificationError::InvalidInput)?;
+    if report.flow_allocations.len() != validated.len() {
+        return Err(ResourceVerificationError::MissingFlowAllocation);
+    }
+    if report.progressive_filling_rounds as usize > validated.len() {
+        return Err(ResourceVerificationError::ProgressiveRoundBoundExceeded);
+    }
+
+    let mut returned_flows = BTreeMap::new();
+    for allocation in &report.flow_allocations {
+        if returned_flows
+            .insert(allocation.flow_id.as_str(), allocation)
+            .is_some()
+        {
+            return Err(ResourceVerificationError::DuplicateFlowAllocation);
+        }
+    }
+
+    let mut rates_by_flow = BTreeMap::new();
+    for flow in &validated {
+        let allocation = returned_flows
+            .get(flow.demand.flow_id.as_str())
+            .copied()
+            .ok_or(ResourceVerificationError::MissingFlowAllocation)?;
+        if allocation.tenant_id != flow.demand.tenant_id
+            || allocation.demand_bps != flow.demand.demand_bps
+            || allocation.minimum_bps != flow.demand.minimum_bps
+            || allocation.resource_ids != flow.demand.resource_ids
+        {
+            return Err(ResourceVerificationError::FlowIdentityMismatch);
+        }
+        let rate = Fraction::new(
+            allocation.allocated.numerator_bps,
+            allocation.allocated.denominator,
+        )
+        .map_err(|_| ResourceVerificationError::InvalidRateFraction)?;
+        if rate.numerator != allocation.allocated.numerator_bps
+            || rate.denominator != allocation.allocated.denominator
+        {
+            return Err(ResourceVerificationError::InvalidRateFraction);
+        }
+        if rate
+            .checked_cmp(Fraction::from_u64(flow.demand.minimum_bps))
+            .map_err(|_| ResourceVerificationError::ArithmeticOverflow)?
+            == Ordering::Less
+        {
+            return Err(ResourceVerificationError::DemandFloorViolation);
+        }
+        if rate
+            .checked_cmp(Fraction::from_u64(flow.demand.demand_bps))
+            .map_err(|_| ResourceVerificationError::ArithmeticOverflow)?
+            == Ordering::Greater
+        {
+            return Err(ResourceVerificationError::DemandCeilingViolation);
+        }
+        rates_by_flow.insert(flow.demand.flow_id.as_str(), rate);
+    }
+    if returned_flows
+        .keys()
+        .any(|flow_id| !validated.iter().any(|flow| flow.demand.flow_id == *flow_id))
+    {
+        return Err(ResourceVerificationError::UnexpectedFlowAllocation);
+    }
+
+    let mut recomputed_usage = vec![Fraction::ZERO; sorted_resources.len()];
+    for flow in &validated {
+        let rate = *rates_by_flow
+            .get(flow.demand.flow_id.as_str())
+            .ok_or(ResourceVerificationError::MissingFlowAllocation)?;
+        for resource_index in &flow.resource_indices {
+            recomputed_usage[*resource_index] = recomputed_usage[*resource_index]
+                .checked_add(rate)
+                .map_err(|_| ResourceVerificationError::ArithmeticOverflow)?;
+        }
+    }
+
+    let mut expected_bottlenecks = Vec::new();
+    for (index, resource) in sorted_resources.iter().enumerate() {
+        let capacity = Fraction::from_u64(resource.capacity_bps);
+        if recomputed_usage[index]
+            .checked_cmp(capacity)
+            .map_err(|_| ResourceVerificationError::ArithmeticOverflow)?
+            == Ordering::Greater
+        {
+            return Err(ResourceVerificationError::ResourceCapacityViolation);
+        }
+        if recomputed_usage[index]
+            .checked_cmp(capacity)
+            .map_err(|_| ResourceVerificationError::ArithmeticOverflow)?
+            == Ordering::Equal
+        {
+            expected_bottlenecks.push(resource.resource_id.clone());
+        }
+    }
+
+    if report.resource_usage.len() != sorted_resources.len() {
+        return Err(ResourceVerificationError::ResourceUsageSetMismatch);
+    }
+    for (index, (actual, expected)) in report
+        .resource_usage
+        .iter()
+        .zip(sorted_resources.iter())
+        .enumerate()
+    {
+        let normalized = Fraction::new(
+            actual.allocated.numerator_bps,
+            actual.allocated.denominator,
+        )
+        .map_err(|_| ResourceVerificationError::InvalidRateFraction)?;
+        let should_be_saturated = recomputed_usage[index]
+            .checked_cmp(Fraction::from_u64(expected.capacity_bps))
+            .map_err(|_| ResourceVerificationError::ArithmeticOverflow)?
+            == Ordering::Equal;
+        if actual.resource_id != expected.resource_id
+            || actual.capacity_bps != expected.capacity_bps
+            || normalized != recomputed_usage[index]
+            || actual.allocated.numerator_bps != normalized.numerator
+            || actual.allocated.denominator != normalized.denominator
+            || actual.saturated != should_be_saturated
+        {
+            return Err(ResourceVerificationError::ResourceUsageMismatch);
+        }
+    }
+    if report.active_bottleneck_resources != expected_bottlenecks {
+        return Err(ResourceVerificationError::ActiveBottleneckSetMismatch);
+    }
+    Ok(())
+}
+
 #[derive(Clone, Debug)]
 struct ValidatedFlow {
     demand: ResourceFlowDemand,
@@ -638,6 +794,53 @@ mod tests {
         assert_eq!(result.flow_allocations[1].allocated, rate(50, 1));
         assert_eq!(result.resource_usage[2].allocated, rate(100, 1));
         assert!(result.resource_usage[2].saturated);
+    }
+
+    #[test]
+    fn independent_verifier_accepts_a_feasible_exact_report() {
+        let resources = [
+            resource("access-a", 60),
+            resource("access-b", 80),
+            resource("backhaul", 100),
+        ];
+        let flows = [
+            flow("flow-a", "tenant-a", 1, 1, 1_000, 0, &["access-a", "backhaul"]),
+            flow("flow-b", "tenant-b", 1, 1, 1_000, 0, &["access-b", "backhaul"]),
+        ];
+        let report =
+            allocate_exact_weighted_max_min(&resources, &flows).expect("feasible");
+        verify_allocation_report(&resources, &flows, &report)
+            .expect("independent feasibility verifier accepts the exact report");
+    }
+
+    #[test]
+    fn independent_verifier_rejects_resource_capacity_overrun() {
+        let resources = [resource("shared", 100)];
+        let flows = [
+            flow("a", "tenant-a", 1, 1, 100, 0, &["shared"]),
+            flow("b", "tenant-b", 1, 1, 100, 0, &["shared"]),
+        ];
+        let mut report =
+            allocate_exact_weighted_max_min(&resources, &flows).expect("feasible");
+        report.flow_allocations[0].allocated = rate(80, 1);
+        report.flow_allocations[1].allocated = rate(80, 1);
+        assert_eq!(
+            verify_allocation_report(&resources, &flows, &report),
+            Err(ResourceVerificationError::ResourceCapacityViolation)
+        );
+    }
+
+    #[test]
+    fn independent_verifier_rejects_reported_resource_usage_mismatch() {
+        let resources = [resource("shared", 100)];
+        let flows = [flow("a", "tenant-a", 1, 1, 100, 0, &["shared"])];
+        let mut report =
+            allocate_exact_weighted_max_min(&resources, &flows).expect("feasible");
+        report.resource_usage[0].allocated = rate(1, 1);
+        assert_eq!(
+            verify_allocation_report(&resources, &flows, &report),
+            Err(ResourceVerificationError::ResourceUsageMismatch)
+        );
     }
 
     #[test]
