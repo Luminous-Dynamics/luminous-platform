@@ -128,6 +128,7 @@ pub enum StabilityError {
     ActionOutsideRun(String),
     ActionInNoInterventionTail(String),
     ObservationFromFuture(String),
+    ObservationNotYetAvailable(String),
     InvalidSetpoint(String),
 }
 
@@ -195,6 +196,15 @@ pub fn run_stability_scenario(
         }
         if action.observation_source_tick > action.issued_at_tick {
             return Err(StabilityError::ObservationFromFuture(action.action_id.clone()));
+        }
+        // Tick zero is the initial observation and is available from run start.
+        // Later source ticks become observable only after the configured delay.
+        let observation_available = action.observation_source_tick == 0
+            || action.observation_source_tick
+                .checked_add(config.observation_delay_ticks)
+                .is_some_and(|available_at| available_at <= action.issued_at_tick);
+        if !observation_available {
+            return Err(StabilityError::ObservationNotYetAvailable(action.action_id.clone()));
         }
         if action.issued_at_tick - action.observation_source_tick
             > config.maximum_observation_age_ticks
@@ -478,6 +488,24 @@ mod tests {
         assert_eq!(run.samples[0].actual_api_capacity, 100);
         assert_eq!(run.samples[1].actual_api_capacity, 100);
         assert_eq!(run.samples[2].actual_api_capacity, 140);
+    }
+
+    #[test]
+    fn action_cannot_use_an_observation_before_its_delivery_delay() {
+        let mut config = config();
+        let actions = [ControlAction {
+            action_id: "future-observation".into(),
+            controller: Controller::Agent,
+            issued_at_tick: 2,
+            observation_source_tick: 2,
+            operation: ControlOperation::SetApiCapacity(120),
+        }];
+        assert_eq!(
+            run_stability_scenario(&config, &actions),
+            Err(StabilityError::ObservationNotYetAvailable("future-observation".into()))
+        );
+        config.observation_delay_ticks = 0;
+        assert!(run_stability_scenario(&config, &actions).is_ok());
     }
 
     #[test]
