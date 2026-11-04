@@ -95,7 +95,7 @@ pub struct TenantResourceAllocationReport {
     pub flow_allocations: Vec<TenantFlowRateAllocation>,
     pub path_allocations: Vec<TenantPathRateAllocation>,
     pub resource_usage: Vec<ResourceDomainUsage>,
-    pub saturated_tenant_ids: Vec<String>,
+    pub minimum_service_met_tenant_ids: Vec<String>,
     pub saturated_flow_ids: Vec<String>,
     pub saturated_path_ids: Vec<String>,
     pub saturated_resource_ids: Vec<String>,
@@ -355,16 +355,13 @@ fn sum_weights_by_resource(
 }
 
 fn any_pending_tenant_floor(
-    tenants: &[TenantEntry],
+    minimum_tenant_rates: &[u128],
     tenant_totals: &[u128],
-) -> Result<bool, TenantResourceAllocationError> {
-    for (index, tenant) in tenants.iter().enumerate() {
-        let minimum = rate_scaled(tenant.principal.minimum_service_bps)?;
-        if tenant_totals[index] < minimum {
-            return Ok(true);
-        }
-    }
-    Ok(false)
+) -> bool {
+    minimum_tenant_rates
+        .iter()
+        .zip(tenant_totals)
+        .any(|(minimum, total)| total < minimum)
 }
 
 /// Hierarchical weighted max-min over tenant principals, flows and path
@@ -563,6 +560,11 @@ pub fn allocate_tenant_resource_incidence(
         flow_entries[flow_index].path_indexes.push(path_index);
     }
 
+    let minimum_tenant_rates_scaled = tenant_entries
+        .iter()
+        .map(|tenant| rate_scaled(tenant.principal.minimum_service_bps))
+        .collect::<Result<Vec<_>, _>>()?;
+
     let mut rates_scaled = vec![0_u128; eligible_paths.len()];
     let mut active_paths = vec![true; eligible_paths.len()];
     let mut remaining_scaled = resource_residuals
@@ -584,7 +586,7 @@ pub fn allocate_tenant_resource_incidence(
             flow_totals_scaled(&flow_entries, &eligible_paths, &rates_scaled)?;
         let current_tenant_rates =
             tenant_totals_scaled(&tenant_entries, &flow_entries, &current_flow_rates)?;
-        let floor_phase = any_pending_tenant_floor(&tenant_entries, &current_tenant_rates)?;
+        let floor_phase = any_pending_tenant_floor(&minimum_tenant_rates_scaled, &current_tenant_rates);
 
         // Path ceilings and per-flow demands are permanent upper bounds.
         for (path_index, path) in eligible_paths.iter().enumerate() {
@@ -604,9 +606,7 @@ pub fn allocate_tenant_resource_incidence(
             .iter()
             .enumerate()
             .map(|(index, tenant)| {
-                !floor_phase
-                    || current_tenant_rates[index]
-                        < rate_scaled(tenant.principal.minimum_service_bps).unwrap_or(u128::MAX)
+                !floor_phase || current_tenant_rates[index] < minimum_tenant_rates_scaled[index]
             })
             .collect::<Vec<_>>();
         let effective_weights = compute_effective_path_weights(
@@ -659,7 +659,7 @@ pub fn allocate_tenant_resource_incidence(
                 if weight == 0 {
                     continue;
                 }
-                let minimum = rate_scaled(tenant.principal.minimum_service_bps)?;
+                let minimum = minimum_tenant_rates_scaled[tenant_index];
                 if current_tenant_rates[tenant_index] >= minimum {
                     continue;
                 }
@@ -743,7 +743,7 @@ pub fn allocate_tenant_resource_incidence(
                     &flow_totals_scaled(&flow_entries, &eligible_paths, &rates_scaled)?,
                 )?;
                 for (tenant_index, tenant) in tenant_entries.iter().enumerate() {
-                    let minimum = rate_scaled(tenant.principal.minimum_service_bps)?;
+                    let minimum = minimum_tenant_rates_scaled[tenant_index];
                     if totals[tenant_index] < minimum
                         && !eligible_paths.iter().enumerate().any(|(path_index, path)| {
                             active_paths[path_index]
@@ -828,16 +828,16 @@ pub fn allocate_tenant_resource_incidence(
         }
         let updated_tenant_rates =
             tenant_totals_scaled(&tenant_entries, &flow_entries, &updated_flow_rates)?;
-        let floors_complete = tenant_entries.iter().enumerate().all(|(index, tenant)| {
-            updated_tenant_rates[index]
-                >= rate_scaled(tenant.principal.minimum_service_bps).unwrap_or(u128::MAX)
-        });
+        let floors_complete = updated_tenant_rates
+            .iter()
+            .zip(&minimum_tenant_rates_scaled)
+            .all(|(actual, minimum)| actual >= minimum);
         if !any_frozen && !(floor_phase && floors_complete) {
             return Err(TenantResourceAllocationError::InternalInvariant);
         }
         if floor_phase && !floors_complete {
             for (tenant_index, tenant) in tenant_entries.iter().enumerate() {
-                let minimum = rate_scaled(tenant.principal.minimum_service_bps)?;
+                let minimum = minimum_tenant_rates_scaled[tenant_index];
                 if updated_tenant_rates[tenant_index] < minimum
                     && !eligible_paths.iter().enumerate().any(|(path_index, path)| {
                         active_paths[path_index]
@@ -852,9 +852,6 @@ pub fn allocate_tenant_resource_incidence(
 
     let final_flow_rates =
         flow_totals_scaled(&flow_entries, &eligible_paths, &rates_scaled)?;
-    let final_tenant_rates =
-        tenant_totals_scaled(&tenant_entries, &flow_entries, &final_flow_rates)?;
-
     let mut integer_path_rates = rates_scaled
         .iter()
         .map(|value| {
@@ -979,7 +976,7 @@ pub fn allocate_tenant_resource_incidence(
     }
 
     let mut tenant_allocations = Vec::with_capacity(tenant_entries.len());
-    let mut saturated_tenant_ids = Vec::new();
+    let mut minimum_service_met_tenant_ids = Vec::new();
     for (tenant_index, tenant) in tenant_entries.iter().enumerate() {
         let demand_bps = tenant_demands[tenant_index];
         let allocated_rate_bps = integer_tenant_rates[tenant_index];
@@ -993,7 +990,7 @@ pub fn allocate_tenant_resource_incidence(
         .map_err(|_| TenantResourceAllocationError::ArithmeticOverflow)?;
         let minimum_service_met = allocated_rate_bps >= tenant.principal.minimum_service_bps;
         if minimum_service_met {
-            saturated_tenant_ids.push(tenant.principal.tenant_id.clone());
+            minimum_service_met_tenant_ids.push(tenant.principal.tenant_id.clone());
         }
         tenant_allocations.push(TenantRateAllocation {
             tenant_id: tenant.principal.tenant_id.clone(),
@@ -1052,7 +1049,7 @@ pub fn allocate_tenant_resource_incidence(
     tenant_allocations.sort_by(|left, right| left.tenant_id.cmp(&right.tenant_id));
     resource_usage.sort_by(|left, right| left.resource_id.cmp(&right.resource_id));
     exclusions.sort_by(|left, right| left.path_id.cmp(&right.path_id));
-    saturated_tenant_ids.sort();
+    minimum_service_met_tenant_ids.sort();
     saturated_flow_ids.sort();
     saturated_path_ids.sort();
     saturated_resource_ids.sort();
@@ -1066,7 +1063,7 @@ pub fn allocate_tenant_resource_incidence(
         flow_allocations,
         path_allocations,
         resource_usage,
-        saturated_tenant_ids,
+        minimum_service_met_tenant_ids,
         saturated_flow_ids,
         saturated_path_ids,
         saturated_resource_ids,
@@ -1309,7 +1306,6 @@ mod tests {
             .map(|flow| flow.allocated_rate_bps)
             .collect::<Vec<_>>();
         actual.sort();
-        let mut oracle_best = Vec::new();
         let mut best: Option<Vec<u64>> = None;
         for a in 0..=10_u64 {
             for b in 0..=10_u64 {
@@ -1325,7 +1321,7 @@ mod tests {
                 }
             }
         }
-        oracle_best = best.expect("at least zero allocation is feasible");
+        let oracle_best = best.expect("at least zero allocation is feasible");
         assert_eq!(actual, oracle_best);
         assert_eq!(oracle_best, vec![5, 5, 5]);
     }
