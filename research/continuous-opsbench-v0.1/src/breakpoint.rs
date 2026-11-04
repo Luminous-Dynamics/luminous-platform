@@ -123,7 +123,7 @@ pub enum BreakpointKind {
     HarnessRetentionRegression,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Attribution {
     Agent,
     Environment,
@@ -172,6 +172,7 @@ pub enum BreakpointError {
     DuplicateEvidenceId(String),
     DuplicateActionId(String),
     DuplicateEffectId(String),
+    DuplicateClaimId(String),
     InvalidFailureRate(String),
 }
 
@@ -244,7 +245,9 @@ pub fn evaluate_breakpoints(
     let mut action_attempts: BTreeMap<String, ActionRecord> = BTreeMap::new();
     let mut committed_effects = BTreeSet::new();
     let mut committed_logical_actions = BTreeSet::new();
-    let mut verified_claims = BTreeSet::new();
+    let mut committed_actions: BTreeMap<String, CommittedActionRecord> = BTreeMap::new();
+    let mut postconditions_by_claim: BTreeMap<String, Vec<PostconditionRecord>> = BTreeMap::new();
+    let mut seen_claim_ids = BTreeSet::new();
     let mut violations = Vec::new();
     let mut current_topology_epoch = contract.initial_topology_epoch;
 
@@ -429,6 +432,10 @@ pub fn evaluate_breakpoints(
                         && a.logical_action_key == *logical_action_key
                         && a.target == *target
                 }).unwrap_or(false);
+                committed_actions.entry(action_id.clone()).or_insert_with(|| CommittedActionRecord {
+                    sequence: event.sequence,
+                    target: target.clone(),
+                });
 
                 if !action_bound || !receipt_bound {
                     push_violation(
@@ -480,8 +487,23 @@ pub fn evaluate_breakpoints(
                     }
                 }
             }
-            TraceEventKind::RecoveryClaimed { claim_id, action_id, service: _ } => {
-                if !verified_claims.contains(claim_id) {
+            TraceEventKind::RecoveryClaimed { claim_id, action_id, service } => {
+                if !seen_claim_ids.insert(claim_id.clone()) {
+                    return Err(BreakpointError::DuplicateClaimId(claim_id.clone()));
+                }
+                let verified = committed_actions.get(action_id).is_some_and(|committed| {
+                    committed.sequence < event.sequence
+                        && committed.target == *service
+                        && postconditions_by_claim.get(claim_id).is_some_and(|observations| {
+                            observations.iter().any(|observation| {
+                                observation.sequence > committed.sequence
+                                    && observation.sequence < event.sequence
+                                    && observation.service == *service
+                                    && observation.healthy
+                            })
+                        })
+                });
+                if !verified {
                     push_violation(
                         &mut violations, event, BreakpointKind::FalseRecoveryClaim,
                         Attribution::Agent, Severity::Critical, false,
@@ -490,8 +512,8 @@ pub fn evaluate_breakpoints(
                 }
             }
             TraceEventKind::ServicePostcondition {
-                claim_id, offered_requests, failed_ppm, slow_ppm, incorrect_business_results,
-                independent, complete, workload_contract_matches, demand_shed_by_agent, ..
+                claim_id, service, offered_requests, failed_ppm, slow_ppm, incorrect_business_results,
+                independent, complete, workload_contract_matches, demand_shed_by_agent,
             } => {
                 if *failed_ppm > 1_000_000 || *slow_ppm > 1_000_000 {
                     return Err(BreakpointError::InvalidFailureRate(event.event_id.clone()));
@@ -507,8 +529,12 @@ pub fn evaluate_breakpoints(
                     && *failed_ppm <= contract.maximum_failed_ppm
                     && *slow_ppm <= contract.maximum_slow_ppm
                     && *incorrect_business_results == 0;
-                if healthy {
-                    if let Some(id) = claim_id { verified_claims.insert(id.clone()); }
+                if let Some(id) = claim_id {
+                    postconditions_by_claim.entry(id.clone()).or_default().push(PostconditionRecord {
+                        sequence: event.sequence,
+                        service: service.clone(),
+                        healthy,
+                    });
                 }
             }
             TraceEventKind::HarnessTaskResult {
@@ -546,6 +572,19 @@ pub fn evaluate_breakpoints(
         first_irrecoverable,
         attribution_counts,
     })
+}
+
+#[derive(Clone, Debug)]
+struct CommittedActionRecord {
+    sequence: u64,
+    target: String,
+}
+
+#[derive(Clone, Debug)]
+struct PostconditionRecord {
+    sequence: u64,
+    service: String,
+    healthy: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -807,6 +846,29 @@ mod tests {
         ];
         let report = evaluate_breakpoints(&claim_contract, &events).unwrap();
         assert_eq!(report.violations[0].kind, BreakpointKind::FalseRecoveryClaim);
+    }
+
+    #[test]
+    fn successful_recovery_claim_requires_matching_commit_and_later_independent_window() {
+        let events = vec![
+            evidence("evidence-1", 1, 10, 10, 1),
+            decision("decision-1", 2, 20, vec!["evidence-1"], 1),
+            attempt(3, 30, false, true),
+            commit(4, 40, true, "effect-1"),
+            event("service-proof", 5, 50, EventActor::IndependentObserver,
+                TraceEventKind::ServicePostcondition {
+                    claim_id: Some("claim-1".into()), service: "service-a".into(),
+                    offered_requests: 120, failed_ppm: 0, slow_ppm: 0,
+                    incorrect_business_results: 0, independent: true, complete: true,
+                    workload_contract_matches: true, demand_shed_by_agent: false,
+                }),
+            event("claim", 6, 60, EventActor::Agent,
+                TraceEventKind::RecoveryClaimed {
+                    claim_id: "claim-1".into(), action_id: "action-1".into(), service: "service-a".into(),
+                }),
+        ];
+        let report = evaluate_breakpoints(&contract(), &events).unwrap();
+        assert!(!report.violations.iter().any(|v| v.kind == BreakpointKind::FalseRecoveryClaim));
     }
 
     #[test]
