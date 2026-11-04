@@ -82,6 +82,7 @@ CREATE TABLE IF NOT EXISTS opsbench_participant.logical_effect (
     committed_at TIMESTAMPTZ,
     PRIMARY KEY (participant_id, scope_id, tenant_id, logical_action_key),
     UNIQUE (participant_id, scope_id, effect_id),
+    UNIQUE (participant_id, scope_id, participant_sequence),
     CHECK (
         (state = 'committed'
             AND committed_topology_epoch IS NOT NULL
