@@ -64,30 +64,27 @@ impl ExperimentIdentity {
         }
         if let ImplementationProvenance::ExternalArtifact { artifact_sha256 } =
             &self.tcp_congestion_control_provenance
+            && !is_sha256(artifact_sha256)
         {
-            if !is_sha256(artifact_sha256) {
-                return Err(EvidenceError::InvalidImplementationArtifact(
-                    "tcp_congestion_control",
-                ));
-            }
+            return Err(EvidenceError::InvalidImplementationArtifact(
+                "tcp_congestion_control",
+            ));
         }
         if let ImplementationProvenance::ExternalArtifact { artifact_sha256 } =
             &self.mptcp_congestion_control_provenance
+            && !is_sha256(artifact_sha256)
         {
-            if !is_sha256(artifact_sha256) {
-                return Err(EvidenceError::InvalidImplementationArtifact(
-                    "mptcp_congestion_control",
-                ));
-            }
+            return Err(EvidenceError::InvalidImplementationArtifact(
+                "mptcp_congestion_control",
+            ));
         }
         if let ImplementationProvenance::ExternalArtifact { artifact_sha256 } =
             &self.mptcp_scheduler_provenance
+            && !is_sha256(artifact_sha256)
         {
-            if !is_sha256(artifact_sha256) {
-                return Err(EvidenceError::InvalidImplementationArtifact(
-                    "mptcp_scheduler",
-                ));
-            }
+            return Err(EvidenceError::InvalidImplementationArtifact(
+                "mptcp_scheduler",
+            ));
         }
         Ok(())
     }
