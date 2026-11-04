@@ -62,7 +62,8 @@
         "max_resources",
         "max_resources_per_path",
         "max_weight",
-        "objective_non_claim"
+        "objective_non_claim",
+        "rounding"
       ],
       "properties": {
         "decision_unit": {
@@ -106,6 +107,9 @@
         },
         "level_search": {
           "const": "event_driven_weighted_progressive_filling"
+        },
+        "rounding": {
+          "const": "floor_fixed_point_rates_then_sorted_one_bit_per_path_if_resource_feasible"
         }
       }
     },
