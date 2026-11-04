@@ -76,9 +76,10 @@ pub struct ProbeImpactReceipt {
     pub scenario_id: String,
     pub arm_id: String,
     pub paired_block_id: String,
-    pub observer_id: String,
-    pub observer_control_domain: String,
-    pub observer_adapter_digest: Digest,
+    pub impact_observer_id: String,
+    pub impact_observer_control_domain: String,
+    pub impact_observer_adapter_digest: Digest,
+    pub source_sequence: u64,
     pub measured_start_ms: u64,
     pub measured_end_ms: u64,
     pub evidence_digest: Digest,
@@ -104,8 +105,9 @@ pub struct ServiceWindow {
     pub workload_profile_digest: Digest,
     pub environment_digest: Digest,
     pub fault_schedule_digest: Digest,
-    pub observer_id: String,
-    pub observer_control_domain: String,
+    pub service_observer_id: String,
+    pub service_observer_control_domain: String,
+    pub service_observer_adapter_digest: Digest,
     pub complete: bool,
 }
 
@@ -128,8 +130,10 @@ pub struct ProbeImpactContract {
     pub no_probe_arm_id: String,
     pub tenant_id: String,
     pub executor_control_domain: String,
-    pub observer_control_domain: String,
-    pub observer_adapter_digest: Digest,
+    pub impact_observer_control_domain: String,
+    pub impact_observer_adapter_digest: Digest,
+    pub service_observer_control_domain: String,
+    pub service_observer_adapter_digest: Digest,
     pub workload_profile_digest: Digest,
     pub environment_digest: Digest,
     pub fault_schedule_digest: Digest,
@@ -230,8 +234,9 @@ fn valid_window(w: &ServiceWindow, run: &str, arm: &str, c: &ProbeImpactContract
         && w.workload_profile_digest == c.workload_profile_digest
         && w.environment_digest == c.environment_digest
         && w.fault_schedule_digest == c.fault_schedule_digest
-        && w.observer_control_domain == c.observer_control_domain
-        && !w.observer_id.is_empty() && !w.service.is_empty() && !w.workload_class.is_empty()
+        && w.service_observer_control_domain == c.service_observer_control_domain
+        && w.service_observer_adapter_digest == c.service_observer_adapter_digest
+        && !w.service_observer_id.is_empty() && !w.service.is_empty() && !w.workload_class.is_empty()
         && w.starts_at_ms < w.ends_at_ms
 }
 
@@ -255,8 +260,11 @@ pub fn evaluate_probe_interference(
         c.tenant_id.as_str(), c.executor_control_domain.as_str(), c.observer_control_domain.as_str(),
     ].iter().any(|v| v.is_empty())
         || c.probe_run_id == c.no_probe_run_id || c.probe_arm_id == c.no_probe_arm_id
-        || c.executor_control_domain == c.observer_control_domain
-        || !nonzero(&c.observer_adapter_digest) || !nonzero(&c.workload_profile_digest)
+        || c.executor_control_domain == c.impact_observer_control_domain
+        || c.executor_control_domain == c.service_observer_control_domain
+        || c.impact_observer_control_domain == c.service_observer_control_domain
+        || !nonzero(&c.impact_observer_adapter_digest)
+        || !nonzero(&c.service_observer_adapter_digest) || !nonzero(&c.workload_profile_digest)
         || !nonzero(&c.environment_digest) || !nonzero(&c.fault_schedule_digest)
     { findings.insert(ProbeImpactFinding::InvalidIdentity); }
     if c.maximum_probe_duration_ms == 0 || c.service_limits.is_empty() {
@@ -314,9 +322,10 @@ pub fn evaluate_probe_interference(
             || r.operation_digest != e.operation_digest || r.run_id != e.run_id
             || r.scenario_id != e.scenario_id || r.arm_id != e.arm_id
             || r.paired_block_id != e.paired_block_id
-            || r.observer_id.is_empty() || r.observer_control_domain != c.observer_control_domain
-            || r.observer_control_domain == e.executor_control_domain
-            || r.observer_adapter_digest != c.observer_adapter_digest
+            || r.impact_observer_id.is_empty()
+            || r.impact_observer_control_domain != c.impact_observer_control_domain
+            || r.impact_observer_control_domain == e.executor_control_domain
+            || r.impact_observer_adapter_digest != c.impact_observer_adapter_digest
             || r.measured_start_ms > e.started_at_ms || r.measured_end_ms < e.ended_at_ms
             || r.measured_start_ms >= r.measured_end_ms
         { findings.insert(ProbeImpactFinding::ImpactIdentityMismatch); continue; }
@@ -438,7 +447,8 @@ mod tests {
             scenario_id: "scenario-1".into(), paired_block_id: "pair-1".into(),
             probe_arm_id: "probe".into(), no_probe_arm_id: "no-probe".into(),
             tenant_id: "tenant-1".into(), executor_control_domain: "executor".into(),
-            observer_control_domain: "observer".into(), observer_adapter_digest: d(1),
+            impact_observer_control_domain: "impact-observer".into(), impact_observer_adapter_digest: d(1),
+            service_observer_control_domain: "service-observer-domain".into(), service_observer_adapter_digest: d(7),
             workload_profile_digest: d(2), environment_digest: d(3), fault_schedule_digest: d(4),
             maximum_probe_duration_ms: 100,
             maximum_total_resource_usage: ProbeResourceUsage {
@@ -467,8 +477,8 @@ mod tests {
             receipt_id: "receipt-1".into(), execution_id: "exec-1".into(), probe_id: "probe-1".into(),
             tenant_id: "tenant-1".into(), target: "api".into(), operation_digest: d(5),
             run_id: "probe-run".into(), scenario_id: "scenario-1".into(), arm_id: "probe".into(),
-            paired_block_id: "pair-1".into(), observer_id: "observer-agent".into(),
-            observer_control_domain: "observer".into(), observer_adapter_digest: d(1),
+            paired_block_id: "pair-1".into(), impact_observer_id: "observer-agent".into(),
+            impact_observer_control_domain: "impact-observer".into(), impact_observer_adapter_digest: d(1), source_sequence: 1,
             measured_start_ms: 90, measured_end_ms: 160, evidence_digest: d(6), complete: true,
             resource_usage: usage,
         }
@@ -533,7 +543,7 @@ mod tests {
     #[test]
     fn observer_must_be_independent_from_executor() {
         let mut c = contract();
-        c.observer_control_domain = c.executor_control_domain.clone();
+        c.impact_observer_control_domain = c.executor_control_domain.clone();
         let r = evaluate_probe_interference(
             &c, &[execution(ProbeCapability::ReadOnly)], &[receipt(ProbeResourceUsage::default())],
             &[window("probe", "probe-run", 1, 10, 0)], &[window("no-probe", "control-run", 1, 10, 0)]
