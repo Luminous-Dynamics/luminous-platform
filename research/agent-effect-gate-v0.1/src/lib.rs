@@ -7,6 +7,8 @@
 //! are implemented here. Participant attempt state belongs to the participant ledger.
 //! Nixward remains the sole host-transaction authority.
 
+pub mod finality;
+
 use std::collections::HashSet;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
