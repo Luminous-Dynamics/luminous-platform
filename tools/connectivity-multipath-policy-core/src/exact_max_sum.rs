@@ -598,13 +598,13 @@ mod tests {
         let report = maximize_total_rate(
             &[resource("shared", 10)],
             &[
-                path("small", &["shared"], 2),
-                path("large", &["shared"], 10),
+                path("a-small", &["shared"], 2),
+                path("b-large", &["shared"], 10),
             ],
         )
         .expect("demand limited max-sum");
-        assert_eq!(rate(&report, "small"), 2);
-        assert_eq!(rate(&report, "large"), 8);
+        assert_eq!(rate(&report, "a-small"), 2);
+        assert_eq!(rate(&report, "b-large"), 8);
         assert_eq!(report.total_allocated_bps, 10);
     }
 
