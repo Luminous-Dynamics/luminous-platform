@@ -120,21 +120,16 @@ struct EffectFingerprint {
     episode_id: String,
     plan_digest: Digest,
     step_id: String,
-    authorization_scope: String,
     tool_id: String,
     operation_id: String,
     manifest_version: String,
     manifest_digest: Digest,
     toolchain_id: String,
     toolchain_digest: Digest,
-    policy_version: String,
-    policy_digest: Digest,
-    policy_epoch: u64,
     target_digest: Digest,
     request_digest: Digest,
     logical_action_key: String,
     environment_profile_digest: Digest,
-    risk_level: u8,
 }
 
 impl EffectFingerprint {
