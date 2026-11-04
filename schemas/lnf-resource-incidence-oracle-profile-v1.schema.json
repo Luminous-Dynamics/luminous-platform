@@ -1,0 +1,329 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/lnf-resource-incidence-oracle-profile-v1.schema.json",
+  "title": "LNF Shared Resource Incidence Oracle Profile v1",
+  "description": "Strict benchmark and evidence contract for the exact fixed-route resource incidence reference allocator.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "status",
+    "reviewed_on",
+    "parent_issue",
+    "prerequisite_issue",
+    "objective",
+    "ownership_boundary",
+    "design",
+    "bounds",
+    "scenarios",
+    "benchmarks",
+    "required_metrics",
+    "comparators",
+    "evidence_classes",
+    "baseline_methodology",
+    "target_defaults",
+    "explicit_non_claims"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.lnf-resource-incidence-oracle-profile.v1"
+    },
+    "profile_id": {
+      "const": "lnf-resource-incidence-oracle-v1"
+    },
+    "status": {
+      "const": "draft_targets_not_results"
+    },
+    "reviewed_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "parent_issue": {
+      "const": 247
+    },
+    "prerequisite_issue": {
+      "const": 226
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ownership_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "inputs",
+        "outputs",
+        "excludes"
+      ],
+      "properties": {
+        "inputs": {
+          "type": "string",
+          "minLength": 1
+        },
+        "outputs": {
+          "type": "string",
+          "minLength": 1
+        },
+        "excludes": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "design": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "paradigm",
+        "allocation",
+        "arithmetic",
+        "path_semantics",
+        "unknown_resource_semantics",
+        "tenant_semantics"
+      ],
+      "properties": {
+        "paradigm": {
+          "type": "string",
+          "minLength": 1
+        },
+        "allocation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "arithmetic": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path_semantics": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unknown_resource_semantics": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant_semantics": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "bounds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_resources",
+        "max_flows",
+        "max_resources_per_flow",
+        "max_identifier_utf8_bytes",
+        "max_tenant_weight",
+        "max_flow_weight",
+        "arithmetic"
+      ],
+      "properties": {
+        "max_resources": {
+          "const": 64
+        },
+        "max_flows": {
+          "const": 128
+        },
+        "max_resources_per_flow": {
+          "const": 32
+        },
+        "max_identifier_utf8_bytes": {
+          "const": 128
+        },
+        "max_tenant_weight": {
+          "const": 1000000
+        },
+        "max_flow_weight": {
+          "const": 1000000
+        },
+        "arithmetic": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 14,
+      "maxItems": 14,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "topology",
+          "purpose"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^RI-[0-9]{2}$"
+          },
+          "topology": {
+            "type": "string",
+            "minLength": 1
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "benchmarks": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "metric",
+          "operator",
+          "target",
+          "target_status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^RESOURCE_[A-Z0-9_]{3,80}$"
+          },
+          "metric": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operator": {
+            "const": "=="
+          },
+          "target": {
+            "type": "number"
+          },
+          "target_status": {
+            "const": "proposed_target"
+          }
+        }
+      }
+    },
+    "required_metrics": {
+      "type": "array",
+      "minItems": 18,
+      "maxItems": 18,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "comparators": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "evidence_classes": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "baseline_methodology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "topology_and_resource_ids_must_be_frozen",
+        "every_flow_must_list_every_resource_on_its_fixed_route",
+        "resource_inventory_provenance_must_be_verified_before_authorizing_scheduling",
+        "tenant_principal_binding_is_external",
+        "exact_rational_arithmetic_required",
+        "capacity_and_floor_invariants_must_be_checked_by_an_independent_verifier",
+        "live_qdisc_results_must_not_be_mixed_with_model_outputs",
+        "multi_path_splitting_for_one_flow_is_out_of_scope"
+      ],
+      "properties": {
+        "topology_and_resource_ids_must_be_frozen": {
+          "const": true
+        },
+        "every_flow_must_list_every_resource_on_its_fixed_route": {
+          "const": true
+        },
+        "resource_inventory_provenance_must_be_verified_before_authorizing_scheduling": {
+          "const": true
+        },
+        "tenant_principal_binding_is_external": {
+          "const": true
+        },
+        "exact_rational_arithmetic_required": {
+          "const": true
+        },
+        "capacity_and_floor_invariants_must_be_checked_by_an_independent_verifier": {
+          "const": true
+        },
+        "live_qdisc_results_must_not_be_mixed_with_model_outputs": {
+          "const": true
+        },
+        "multi_path_splitting_for_one_flow_is_out_of_scope": {
+          "const": true
+        }
+      }
+    },
+    "target_defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_resources",
+        "max_flows",
+        "max_resources_per_flow",
+        "arithmetic_overflow_disposition",
+        "target_status"
+      ],
+      "properties": {
+        "max_resources": {
+          "const": 64
+        },
+        "max_flows": {
+          "const": 128
+        },
+        "max_resources_per_flow": {
+          "const": 32
+        },
+        "arithmetic_overflow_disposition": {
+          "const": "explicit_error"
+        },
+        "target_status": {
+          "const": "proposed_not_measured"
+        }
+      }
+    },
+    "explicit_non_claims": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}
