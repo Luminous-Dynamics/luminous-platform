@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/lnf-qdisc-command-plan-v1.schema.json",
+  "title": "LNF Qdisc Isolated Command Plan v1",
+  "description": "Read-only argv plan for future namespace-isolated qdisc testing. A valid plan is not an executed experiment.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "run_suffix",
+    "tenant_b_parallel_flows",
+    "tenant_a_parallel_flows",
+    "duration_seconds",
+    "shaping_rate_bps",
+    "tbf_minimum_kernel_hz",
+    "tbf_burst_bytes",
+    "scenario_id",
+    "qdisc_arm",
+    "host_interface_route_or_qdisc_mutation",
+    "public_network_access",
+    "nat_enabled",
+    "execution_conducted",
+    "namespaces",
+    "commands"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.lnf-qdisc-command-plan.v1"
+    },
+    "profile_id": {
+      "const": "lnf-qdisc-namespace-plan-v1"
+    },
+    "run_suffix": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{1,8}$"
+    },
+    "host_interface_route_or_qdisc_mutation": {
+      "const": false
+    },
+    "public_network_access": {
+      "const": false
+    },
+    "nat_enabled": {
+      "const": false
+    },
+    "execution_conducted": {
+      "const": false
+    },
+    "namespaces": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^lnfq-[a-z0-9]{1,8}-(gw|srv|a|b)$"
+      }
+    },
+    "commands": {
+      "type": "array",
+      "minItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "phase",
+          "parallel_group",
+          "artifact_id",
+          "guard",
+          "program",
+          "args"
+        ],
+        "properties": {
+          "phase": {
+            "enum": [
+              "preflight",
+              "setup",
+              "pre-load-capture",
+              "workload-server",
+              "workload-client",
+              "capture",
+              "cleanup",
+              "post-cleanup-capture"
+            ]
+          },
+          "parallel_group": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "artifact_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "guard": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "program": {
+            "enum": [
+              "uname",
+              "ip",
+              "tc",
+              "iperf3"
+            ]
+          },
+          "args": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "qdisc_arm": {
+      "enum": [
+        "fq_codel",
+        "cake_besteffort_triple_isolate",
+        "cake_diffserv3_triple_isolate",
+        "cake_diffserv4_triple_isolate"
+      ]
+    },
+    "shaping_rate_bps": {
+      "type": "integer",
+      "minimum": 1000000,
+      "maximum": 1000000000
+    },
+    "duration_seconds": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 300
+    },
+    "tenant_a_parallel_flows": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 32
+    },
+    "tenant_b_parallel_flows": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 32
+    },
+    "scenario_id": {
+      "enum": [
+        "QDISC-01",
+        "QDISC-02",
+        "QDISC-03"
+      ]
+    },
+    "tbf_minimum_kernel_hz": {
+      "enum": [
+        100,
+        null
+      ]
+    },
+    "tbf_burst_bytes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    }
+  }
+}

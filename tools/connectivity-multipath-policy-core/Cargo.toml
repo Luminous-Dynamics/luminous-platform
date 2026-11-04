@@ -14,3 +14,7 @@ unsafe_code = "forbid"
 
 [lints.clippy]
 all = "warn"
+
+[[bin]]
+name = "qdisc-lab-plan"
+path = "src/bin/qdisc-lab-plan.rs"

@@ -6,8 +6,11 @@ on:
       - "tools/connectivity-multipath-policy-core/**"
       - "profiles/lnf-multipath-scheduling-benchmark-v1.json"
       - "profiles/lnf-multipath-fairness-profile-v1.json"
+      - "profiles/lnf-qdisc-namespace-profile-v1.json"
       - "schemas/lnf-multipath-scheduling-profile-v1.schema.json"
       - "schemas/lnf-multipath-fairness-profile-v1.schema.json"
+      - "schemas/lnf-qdisc-namespace-profile-v1.schema.json"
+      - "schemas/lnf-qdisc-command-plan-v1.schema.json"
       - "tools/connectivity-benchmark-profile-validator/src/bin/json-schema-verify.rs"
       - "tools/connectivity-benchmark-profile-validator/Cargo.toml"
       - ".github/workflows/lnf-multipath-contracts.yml"
@@ -71,3 +74,36 @@ jobs:
           --
           schemas/lnf-multipath-fairness-profile-v1.schema.json
           profiles/lnf-multipath-fairness-profile-v1.json
+
+      - name: Validate isolated qdisc benchmark profile
+        run: >-
+          cargo run
+          --manifest-path tools/connectivity-benchmark-profile-validator/Cargo.toml
+          --bin json-schema-verify
+          --
+          schemas/lnf-qdisc-namespace-profile-v1.schema.json
+          profiles/lnf-qdisc-namespace-profile-v1.json
+
+      - name: Generate a read-only qdisc command plan
+        run: >-
+          cargo run
+          --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml
+          --bin qdisc-lab-plan
+          --
+          --run-suffix ci0001
+          --scenario-id QDISC-02
+          --arm cake_besteffort
+          --rate-bps 100000000
+          --duration-seconds 5
+          --tenant-a-flows 8
+          --tenant-b-flows 1
+          > "$RUNNER_TEMP/qdisc-plan.json"
+
+      - name: Validate generated qdisc command plan
+        run: >-
+          cargo run
+          --manifest-path tools/connectivity-benchmark-profile-validator/Cargo.toml
+          --bin json-schema-verify
+          --
+          schemas/lnf-qdisc-command-plan-v1.schema.json
+          "$RUNNER_TEMP/qdisc-plan.json"
