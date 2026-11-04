@@ -507,7 +507,7 @@ pub fn evaluate_risk_trajectory(
             None => None,
         };
 
-        if let Some(action_id) = step.action_id.as_deref() {
+        if step.action_id.is_some() {
             match action {
                 None => {
                     evidence_complete = false;
@@ -540,7 +540,6 @@ pub fn evaluate_risk_trajectory(
                 }
                 Some(_) => {}
             }
-            let _ = action_id;
         }
 
         for (service_id, post) in &after {
@@ -933,6 +932,7 @@ mod tests {
             Err(RiskEvaluationError::DuplicateStepId)
         );
         let mut reverse = first.clone();
+        reverse.step_id = "reverse".into();
         reverse.sequence = 0;
         assert_eq!(
             evaluate_risk_trajectory(&contract(), &[first, reverse], &[], &[]),
