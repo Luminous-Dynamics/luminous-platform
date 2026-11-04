@@ -8,7 +8,7 @@
 use crate::safety_filter::{
     appraise_one_step, transition, CandidateAct, CandidateOperation, CapacityUncertainty,
     DemandDisturbance, FilterDisposition, OperationalState, SafetyAppraisal, SafetyEnvelope,
-    SafetyFilterInput, Successor, PPM,
+    SafetyFilterInput, Successor,
 };
 use crate::Digest;
 use std::collections::{BTreeMap, BTreeSet};
@@ -219,34 +219,38 @@ fn break_viability(
     )
 }
 
+struct ViabilityStep<'a> {
+    models: &'a [CapacityUncertainty],
+    disturbances: &'a [DemandDisturbance],
+    envelope: &'a SafetyEnvelope,
+    state_indexes: &'a BTreeMap<OperationalState, usize>,
+    prior_kernel: &'a [bool],
+    evaluations: &'a mut usize,
+}
+
 fn bounded_transition(
     state: &OperationalState,
     operation: &CandidateOperation,
-    models: &[CapacityUncertainty],
-    disturbances: &[DemandDisturbance],
-    envelope: &SafetyEnvelope,
-    state_indexes: &BTreeMap<OperationalState, usize>,
-    prior_kernel: &[bool],
-    evaluations: &mut usize,
+    step: &mut ViabilityStep<'_>,
 ) -> Result<bool, ViabilityFinding> {
-    for model in models {
-        for disturbance in disturbances {
-            *evaluations = evaluations
+    for model in step.models {
+        for disturbance in step.disturbances {
+            *step.evaluations = step.evaluations
                 .checked_add(1)
                 .ok_or(ViabilityFinding::ArithmeticOverflow)?;
-            if *evaluations > MAX_VIABILITY_TRANSITION_EVALUATIONS {
+            if *step.evaluations > MAX_VIABILITY_TRANSITION_EVALUATIONS {
                 return Err(ViabilityFinding::TransitionEvaluationLimitExceeded);
             }
             let successor = transition(state, model, disturbance, operation)
                 .ok_or(ViabilityFinding::ArithmeticOverflow)?;
-            if !successor_is_safe(&successor, envelope) {
+            if !successor_is_safe(&successor, step.envelope) {
                 return Ok(false);
             }
             let next_state = successor_state(&successor);
-            let next_index = state_indexes
+            let next_index = step.state_indexes
                 .get(&next_state)
                 .ok_or(ViabilityFinding::SafeSuccessorOutsideStateSpace)?;
-            if !prior_kernel[*next_index] {
+            if !step.prior_kernel[*next_index] {
                 return Ok(false);
             }
         }
@@ -398,16 +402,15 @@ pub fn appraise_with_viability(
                 continue;
             }
             for fallback in &request.fallback_actions {
-                let robust = match bounded_transition(
-                    state,
-                    fallback,
-                    &request.base.capacity_uncertainty,
-                    &request.base.disturbances,
-                    &request.base.envelope,
-                    &state_indexes,
-                    &kernel,
-                    &mut evaluations,
-                ) {
+                let mut step = ViabilityStep {
+                    models: &request.base.capacity_uncertainty,
+                    disturbances: &request.base.disturbances,
+                    envelope: &request.base.envelope,
+                    state_indexes: &state_indexes,
+                    prior_kernel: &kernel,
+                    evaluations: &mut evaluations,
+                };
+                let robust = match bounded_transition(state, fallback, &mut step) {
                     Ok(value) => value,
                     Err(finding) => return defer(request, candidate, one_step, finding),
                 };
@@ -492,6 +495,7 @@ pub fn appraise_with_viability(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::safety_filter::PPM;
     use crate::safety_filter::{
         CandidateAct, CandidateOperation, CapacityUncertainty, DemandDisturbance,
         OperationalState, SafetyEnvelope, SafetyFilterInput,
