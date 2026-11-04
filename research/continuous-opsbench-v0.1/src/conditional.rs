@@ -53,6 +53,9 @@ pub struct AuthorizationReceipt {
     pub decision_id: String,
     pub decision: AuthorizationDecision,
     pub binding: ActionBinding,
+    /// The authorization is bound to this exact topology precondition.
+    pub expected_topology_epoch: u64,
+    pub expected_topology_digest: Digest,
     pub not_before_ms: u64,
     pub expires_at_ms: u64,
 }
@@ -219,7 +222,10 @@ impl Participant {
         {
             return Err(MutationError::InvalidAuthorization);
         }
-        if authorization.binding != request.binding {
+        if authorization.binding != request.binding
+            || authorization.expected_topology_epoch != request.expected_topology_epoch
+            || authorization.expected_topology_digest != request.expected_topology_digest
+        {
             return Err(MutationError::AuthorizationMismatch);
         }
         if authorization.decision == AuthorizationDecision::Deny {
@@ -364,6 +370,8 @@ mod tests {
             decision_id: "policy-decision-1".into(),
             decision: AuthorizationDecision::Allow,
             binding: request.binding.clone(),
+            expected_topology_epoch: request.expected_topology_epoch,
+            expected_topology_digest: request.expected_topology_digest.clone(),
             not_before_ms: 0,
             expires_at_ms: 1_000,
         }
@@ -441,6 +449,38 @@ mod tests {
             Err(MutationError::AuthorizationMismatch)
         );
         assert_eq!(participant.effect_count().unwrap(), 0);
+    }
+
+    #[test]
+    fn authorization_cannot_be_retargeted_to_a_new_topology_epoch() {
+        let participant = participant();
+        let originally_authorized = request("attempt-1", d(9));
+        let authorization = permit(&originally_authorized);
+
+        participant.publish_topology(TopologyVersion {
+            scope_id: "prod/zone-a".into(),
+            epoch: 8,
+            digest: d(8),
+        }).unwrap();
+
+        // A caller cannot update the CAS precondition to the new epoch while
+        // reusing the authorization that was issued for epoch 7.
+        let mut retargeted = originally_authorized;
+        retargeted.expected_topology_epoch = 8;
+        retargeted.expected_topology_digest = d(8);
+        assert_eq!(
+            participant.commit(&retargeted, &authorization, 100),
+            Err(MutationError::AuthorizationMismatch)
+        );
+        assert_eq!(participant.effect_count().unwrap(), 0);
+
+        // A fresh authorization explicitly bound to epoch 8 can proceed.
+        let fresh_authorization = permit(&retargeted);
+        assert_eq!(
+            participant.commit(&retargeted, &fresh_authorization, 100).unwrap().disposition,
+            MutationDisposition::Committed
+        );
+        assert_eq!(participant.effect_count().unwrap(), 1);
     }
 
     #[test]
