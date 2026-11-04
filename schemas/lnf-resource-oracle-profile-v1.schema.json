@@ -1,0 +1,257 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/lnf-resource-oracle-profile-v1.schema.json",
+  "title": "LNF bounded exact max-sum oracle profile v1",
+  "description": "Strict contract for a bounded exhaustive integer reference; schema validation is not an oracle or network benchmark result.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "status",
+    "reviewed_on",
+    "parent_issue",
+    "parent_allocator_pr",
+    "related_evidence_pr",
+    "objective",
+    "implementation",
+    "input_contract",
+    "scenarios",
+    "comparators",
+    "benchmarks",
+    "required_metrics",
+    "evidence_classes",
+    "explicit_non_claims"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.lnf-resource-oracle-profile.v1"
+    },
+    "profile_id": {
+      "const": "lnf-resource-oracle-v1"
+    },
+    "status": {
+      "const": "draft_targets_not_results"
+    },
+    "reviewed_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "parent_issue": {
+      "const": 234
+    },
+    "parent_allocator_pr": {
+      "const": 226
+    },
+    "related_evidence_pr": {
+      "const": 233
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "implementation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "module",
+        "method",
+        "objective",
+        "path_limit",
+        "resource_limit",
+        "per_path_rate_bound_bps",
+        "resource_capacity_bound_bps",
+        "maximum_enumerated_rate_vectors",
+        "unsupported_over_budget",
+        "tie_break",
+        "arithmetic",
+        "floating_point_in_decision",
+        "production_scheduler_usage"
+      ],
+      "properties": {
+        "module": {
+          "const": "tools/connectivity-multipath-policy-core/src/exact_max_sum.rs"
+        },
+        "method": {
+          "const": "exhaustive_integer_rate_vector_enumeration"
+        },
+        "objective": {
+          "const": "maximize_sum_of_path_rates_subject_to_all_resource_capacities_and_optional_per_path_floors"
+        },
+        "path_limit": {
+          "const": 8
+        },
+        "resource_limit": {
+          "const": 16
+        },
+        "per_path_rate_bound_bps": {
+          "const": 1000
+        },
+        "resource_capacity_bound_bps": {
+          "const": 1000
+        },
+        "maximum_enumerated_rate_vectors": {
+          "const": 2000000
+        },
+        "unsupported_over_budget": {
+          "const": true
+        },
+        "tie_break": {
+          "const": "lexicographically_larger_rate_vector_by_sorted_path_id"
+        },
+        "arithmetic": {
+          "const": "checked_integer_only"
+        },
+        "floating_point_in_decision": {
+          "const": false
+        },
+        "production_scheduler_usage": {
+          "const": false
+        }
+      }
+    },
+    "input_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resources",
+        "paths",
+        "floors",
+        "constraints",
+        "result_if_infeasible_floors",
+        "result_if_state_space_exceeds_bound"
+      ],
+      "properties": {
+        "resources": {
+          "type": "string",
+          "minLength": 1
+        },
+        "paths": {
+          "type": "string",
+          "minLength": 1
+        },
+        "floors": {
+          "type": "string",
+          "minLength": 1
+        },
+        "constraints": {
+          "type": "string",
+          "minLength": 1
+        },
+        "result_if_infeasible_floors": {
+          "const": "infeasible_minimums"
+        },
+        "result_if_state_space_exceeds_bound": {
+          "const": "search_space_too_large_not_exact"
+        }
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "topology",
+          "expected"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^ORACLE-[0-9]{2}$"
+          },
+          "topology": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expected": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "comparators": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "benchmarks": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "metric",
+          "operator",
+          "target",
+          "target_status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^ORACLE_[A-Z0-9_]{3,80}$"
+          },
+          "metric": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operator": {
+            "const": "=="
+          },
+          "target": {
+            "type": "number"
+          },
+          "target_status": {
+            "const": "proposed_target"
+          }
+        }
+      }
+    },
+    "required_metrics": {
+      "type": "array",
+      "minItems": 16,
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "evidence_classes": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "deterministic_unit_test",
+          "bounded_exact_reference",
+          "namespace_or_vm_emulation",
+          "hardware_or_field_observed"
+        ]
+      }
+    },
+    "explicit_non_claims": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}
