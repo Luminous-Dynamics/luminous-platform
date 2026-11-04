@@ -97,6 +97,7 @@ pub enum TrustVerificationError {
     SigningKeyNotAuthorized,
     AuthorityScopeInsufficient,
     StatementDigestMismatch,
+    CanonicalStatementMismatch,
     ReplayDetected,
     ScittReceiptInvalid,
     CalibrationProfileUnknown,
@@ -257,6 +258,17 @@ impl VerifiedCapacityInventory {
 /// must bind the calibration profile to the issuer/evidence class and must not
 /// accept a caller-supplied digest without checking its trust.
 pub trait CapacityInventoryTrustVerifier {
+    /// Decode the canonical bytes using the versioned statement schema and
+    /// prove that every semantic field passed separately in the typed object
+    /// (issuer, key, topology, inventory digest, claims, incidence, coverage,
+    /// confidence, timestamps, sequence and optional receipts) equals the
+    /// decoded signed content. This prevents valid signed bytes being paired
+    /// with substituted in-memory claims.
+    fn verify_canonical_statement_binding(
+        &self,
+        statement: &SignedCapacityDependencyStatement,
+    ) -> Result<(), TrustVerificationError>;
+
     fn verify_statement_signature_and_authority(
         &self,
         statement: &SignedCapacityDependencyStatement,
@@ -442,6 +454,8 @@ pub fn verify_capacity_inventory<V: CapacityInventoryTrustVerifier>(
     verifier: &V,
 ) -> Result<VerifiedCapacityInventory, CapacityEvidenceError> {
     validate_statement(statement, now_unix_ms, policy)?;
+    verifier.verify_canonical_statement_binding(statement)
+        .map_err(CapacityEvidenceError::Trust)?;
     verifier.verify_statement_signature_and_authority(statement)
         .map_err(CapacityEvidenceError::Trust)?;
 
@@ -508,6 +522,13 @@ mod tests {
     }
 
     impl CapacityInventoryTrustVerifier for MockVerifier {
+        fn verify_canonical_statement_binding(
+            &self,
+            _statement: &SignedCapacityDependencyStatement,
+        ) -> Result<(), TrustVerificationError> {
+            Ok(())
+        }
+
         fn verify_statement_signature_and_authority(
             &self,
             _statement: &SignedCapacityDependencyStatement,
@@ -627,6 +648,51 @@ mod tests {
         assert_eq!(
             verified.path_dependency_evidence("path-a", 1_200_000, 60_000).unwrap_err(),
             CapacityEvidenceError::EvidenceExpiredAtUse
+        );
+    }
+
+    #[test]
+    fn semantic_fields_not_bound_to_canonical_bytes_are_rejected() {
+        struct MismatchedCanonicalVerifier;
+        impl CapacityInventoryTrustVerifier for MismatchedCanonicalVerifier {
+            fn verify_canonical_statement_binding(
+                &self,
+                _statement: &SignedCapacityDependencyStatement,
+            ) -> Result<(), TrustVerificationError> {
+                Err(TrustVerificationError::CanonicalStatementMismatch)
+            }
+            fn verify_statement_signature_and_authority(
+                &self,
+                _statement: &SignedCapacityDependencyStatement,
+            ) -> Result<(), TrustVerificationError> {
+                Ok(())
+            }
+            fn verify_scitt_receipt(
+                &self,
+                _statement_sha256: &str,
+                _receipt: &[u8],
+            ) -> Result<(), TrustVerificationError> {
+                Ok(())
+            }
+            fn verify_calibration_profile(
+                &self,
+                _issuer_id: &str,
+                _profile_sha256: &str,
+                _confidence_ppm: u32,
+            ) -> Result<(), TrustVerificationError> {
+                Ok(())
+            }
+        }
+
+        let result = verify_capacity_inventory(
+            &statement(),
+            1_050_000,
+            policy(),
+            &MismatchedCanonicalVerifier,
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            CapacityEvidenceError::Trust(TrustVerificationError::CanonicalStatementMismatch)
         );
     }
 
