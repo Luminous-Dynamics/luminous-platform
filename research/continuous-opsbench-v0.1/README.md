@@ -66,3 +66,12 @@ The controller trait is an in-process policy seam, not a live LLM integration. M
 
 
 The controller harness also accepts multiple policies in one run. Each declares a stable unique controller ID and controller class; policies are sorted by ID before each tick and receive the same permitted observation. Their actions are then arbitrated by the evaluator-owned precedence rule. The resulting action and decision traces are invariant to the order in which the caller supplies the controller slice. This supports paired competition between an agent policy, deterministic runbook, and autoscaler baseline without giving any policy access to evaluator truth.
+
+
+## Noise-thrashing baseline policies
+
+The reference plant includes two deterministic autoscaler policies:
+- `BangBangCapacityController`: one threshold switches between normal and elevated capacity.
+- `HysteresisCapacityController`: separate scale-up and scale-down thresholds create a deadband.
+
+Both consume the same `PlantObservation` stream and share the same action budget/delay/arbitration. The conformance fixture alternates noisy failure-rate observations while the actual plant remains healthy: the bang-bang policy repeatedly reverses its setpoint, whereas the hysteresis policy scales once and holds. Both must produce the same zero SLO-violation integral and healthy no-intervention tail. This isolates reduced action churn from a service-quality trade-off; it is not yet a live cloud autoscaling benchmark.
