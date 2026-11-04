@@ -119,6 +119,23 @@ cargo clippy --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml
 cargo fmt --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml -- --check
 ```
 
+## Bounded exact max-sum oracle
+
+`exact_max_sum::maximize_total_rate` and `exact_max_sum::maximize_total_rate_with_floors` provide an independent exhaustive integer reference for small path/resource-incidence graphs. They are benchmark oracles, not a production scheduler and not an alternative implementation of the progressive-filling allocator.
+
+The oracle enumerates every integer rate vector between each path's minimum and demand, then accepts only vectors whose aggregate load on every resource is at or below that resource's capacity. It maximizes the total allocated rate. Equal-sum witnesses are resolved deterministically by preferring the lexicographically larger rate vector in ascending path-ID order.
+
+Hard bounds are eight paths, sixteen resources, 1,000 bit/s per path demand/resource capacity and at most 2,000,000 complete rate vectors. Exceeding a bound returns an explicit error; the oracle never samples or truncates a large problem and labels the result exact. A zero-residual resource is valid and correctly forces paths that traverse it to zero. Optional minimum-rate floors are keyed by path ID; infeasible floors return `InfeasibleMinimums` without weakening them.
+
+The known A→X, B→X+Y, C→Y fixture with capacity 10 on X and Y demonstrates why fairness and utilization must remain separate:
+- weighted max-min progressive filling: 5/5/5, total rate 15;
+- exact maximum-sum reference: 10/0/10, total rate 20;
+- max-sum witness: one zero-rate path and an unweighted Jain index of 666,667 ppm.
+
+The 25% total-rate gap is a property of this specific small topology, not a universal estimate. The throughput-maximizing witness starves a path. It is an upper bound for comparison, not a universal recommendation. The profile in `profiles/lnf-resource-oracle-profile-v1.json` preserves fairness, zero-rate count, resource utilization and max-min-to-max-sum gaps as separate metrics.
+
+The oracle's independent search logic does not authenticate or validate the truth of resource capacities. Resource identity, capacity evidence and topology provenance remain the responsibility of the capacity-evidence layer. A passing unit fixture is not a measured network result.
+
 ## MPTCP coexistence evidence evaluator
 
 `coexistence::evaluate_best_path_improvement` and `coexistence::evaluate_shared_bottleneck_do_no_harm` evaluate paired measured summaries. They do not implement MPTCP, simulate congestion control or actuate a kernel.
