@@ -46,7 +46,8 @@
       "maximum_database_capacity": 10,
       "maximum_retry_multiplier_ppm": 1000000,
       "minimum_spare_capacity": 5
-    }
+    },
+    "observation_clock_uncertainty_ms": 0
   },
   "candidate_act": {
     "action_id": "action-1",
