@@ -735,7 +735,7 @@ mod tests {
             metric_policy_set_digest: digest(6),
             evaluation_at_ms: 110 + count as u64 * 100,
             valid_until_ms: 210 + count as u64 * 100,
-            maximum_observation_age_ms: 20,
+            maximum_observation_age_ms: 500,
             maximum_target_time_skew_ms: 5,
             metric_policies: vec![MetricAssumptionPolicy {
                 metric_id: "critical_queue".into(),
