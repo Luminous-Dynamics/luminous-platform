@@ -10,6 +10,7 @@ on:
     branches: [main]
     paths:
       - "research/continuous-opsbench-v0.1/**"
+      - "benchmarks/sregym-v0.1/**"
       - ".github/workflows/continuous-opsbench-v0.1.yml"
 
 permissions:
