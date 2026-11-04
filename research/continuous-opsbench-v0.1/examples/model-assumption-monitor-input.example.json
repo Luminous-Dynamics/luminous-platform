@@ -15,7 +15,7 @@
   "observer_id": "service-observer",
   "observer_control_domain": "observer-domain",
   "observer_adapter_digest": "0505050505050505050505050505050505050505050505050505050505050505",
-  "maximum_observation_age_ms": 10,
+  "maximum_observation_age_ms": 20,
   "maximum_target_time_skew_ms": 5,
   "forecasts": [
     {
