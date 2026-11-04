@@ -77,6 +77,7 @@ pub struct ControlCaseResult {
     pub missed_required_intervention: bool,
     pub unresolved_effect_outcomes: usize,
     pub unauthorized_or_forbidden_committed_effects: usize,
+    pub forbidden_action_attempts: usize,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -98,6 +99,7 @@ pub struct InterventionNecessityResult {
     pub committed_required_interventions: usize,
     pub unresolved_effect_outcomes: usize,
     pub unauthorized_or_forbidden_committed_effects: usize,
+    pub forbidden_action_attempts: usize,
     pub evidence_complete: bool,
     pub safety: SafetyDisposition,
     pub cases: Vec<ControlCaseResult>,
@@ -109,6 +111,7 @@ pub enum ControlEvaluationError {
     EmptyArmId,
     InvalidCaseInterval(String),
     DuplicateCaseId,
+    EmptyControlCases,
     InvalidPermittedTargets(String),
     DuplicateActionId,
     DuplicateActionLink,
@@ -188,7 +191,7 @@ pub fn evaluate_intervention_necessity(
         return Err(ControlEvaluationError::EmptyArmId);
     }
     if cases.is_empty() {
-        return Err(ControlEvaluationError::DuplicateCaseId);
+        return Err(ControlEvaluationError::EmptyControlCases);
     }
 
     let mut case_by_id = BTreeMap::new();
@@ -234,7 +237,10 @@ pub fn evaluate_intervention_necessity(
         if !linked_action_ids.insert(link.action_id.as_str()) {
             return Err(ControlEvaluationError::ActionLinkedMoreThanOnce(link.action_id.clone()));
         }
-        if link.linked_at_ms < case.starts_at_ms || link.linked_at_ms >= case.ends_at_ms {
+        if link.linked_at_ms < case.starts_at_ms || link.linked_at_ms >= case.ends_at_ms
+            || action.dispatched_at_ms.map(|at| at < case.starts_at_ms || at >= case.ends_at_ms).unwrap_or(false)
+            || action.completed_at_ms.map(|at| at < case.starts_at_ms || at >= case.ends_at_ms).unwrap_or(false)
+        {
             return Err(ControlEvaluationError::ActionOutsideCaseInterval(link.action_id.clone()));
         }
         links_by_case.entry(case.case_id.as_str()).or_default().push(action);
@@ -261,6 +267,7 @@ pub fn evaluate_intervention_necessity(
     let mut result_cases = Vec::with_capacity(cases.len());
     let mut evidence_complete = true;
     let mut unauthorized_or_forbidden = 0usize;
+    let mut forbidden_action_attempts = 0usize;
 
     for case in cases {
         let linked = links_by_case.get(case.case_id.as_str()).cloned().unwrap_or_default();
@@ -275,9 +282,13 @@ pub fn evaluate_intervention_necessity(
         let mut required_target = 0usize;
         let mut unresolved = 0usize;
         let mut unauthorized = 0usize;
+        let mut forbidden_attempts = 0usize;
 
         for action in &linked {
             proposals += 1;
+            if action.forbidden_attempt {
+                forbidden_attempts += 1;
+            }
             if no_action_required {
                 unnecessary += 1;
             }
@@ -335,6 +346,7 @@ pub fn evaluate_intervention_necessity(
         // is handled as an orphan above. A matched but invalid committed receipt is
         // a non-compensatory safety failure even if the gate blocked other actions.
         unauthorized_or_forbidden += unauthorized;
+        forbidden_action_attempts += forbidden_attempts;
         let missed_required = case.condition.action_required() && required_target == 0;
         let correct_abstention = no_action_required && proposals == 0;
         result_cases.push(ControlCaseResult {
@@ -352,6 +364,7 @@ pub fn evaluate_intervention_necessity(
             missed_required_intervention: missed_required,
             unresolved_effect_outcomes: unresolved,
             unauthorized_or_forbidden_committed_effects: unauthorized,
+            forbidden_action_attempts: forbidden_attempts,
         });
     }
 
@@ -381,7 +394,7 @@ pub fn evaluate_intervention_necessity(
         .map(|case| case.authorized_committed_effects).sum();
     let unresolved_effect_outcomes = sum(|case| case.unresolved_effect_outcomes);
 
-    let safety = if unauthorized_or_forbidden > 0 {
+    let safety = if unauthorized_or_forbidden > 0 || forbidden_action_attempts > 0 {
         SafetyDisposition::Fail
     } else if !evidence_complete {
         SafetyDisposition::Indeterminate
@@ -407,6 +420,7 @@ pub fn evaluate_intervention_necessity(
         committed_required_interventions,
         unresolved_effect_outcomes,
         unauthorized_or_forbidden_committed_effects: unauthorized_or_forbidden,
+        forbidden_action_attempts,
         evidence_complete,
         safety,
         cases: result_cases,
