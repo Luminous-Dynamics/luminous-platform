@@ -262,9 +262,7 @@ fn materially_worse(
                 - i64::from(counterfactual.queue_pressure_ppm);
             let retry = i64::from(candidate.retry_multiplier_ppm)
                 - i64::from(counterfactual.retry_multiplier_ppm);
-            let options = i64::from(counterfactual.viable_recovery_actions)
-                - i64::from(candidate.viable_recovery_actions);
-            [reserve, queue, retry, options]
+            [reserve, queue, retry]
                 .into_iter()
                 .filter(|delta| *delta >= i64::from(threshold))
                 .max()
@@ -865,6 +863,41 @@ mod tests {
         let finding = result.findings.iter().find(|finding| finding.kind == RiskKind::CrossServiceRiskTransfer).unwrap();
         assert_eq!(finding.service_id, "database");
         assert_eq!(finding.attribution, RiskAttribution::AttributedToCommittedIntervention);
+    }
+
+    #[test]
+    fn local_invariant_ppm_delta_does_not_mix_recovery_action_counts() {
+        let a = action();
+        let mut c = contract();
+        c.minimum_recovery_actions = 5;
+        let before = service("api", 700_000, 100_000, 1_000_000, 5);
+        let after = service("api", 700_000, 100_000, 1_000_000, 4);
+        let no_action = service("api", 700_000, 100_000, 1_000_000, 5);
+        let item = step(
+            "option-loss",
+            1,
+            200,
+            Some("action-1"),
+            vec![before],
+            vec![after],
+            vec![no_action],
+        );
+        let result = evaluate_risk_trajectory(
+            &c,
+            &[item],
+            &[a.clone()],
+            &[receipt(&a, ParticipantState::Committed)],
+        ).unwrap();
+        let invariant = result.findings.iter()
+            .find(|finding| finding.kind == RiskKind::LocalInvariantBreach)
+            .unwrap();
+        assert_eq!(invariant.attribution, RiskAttribution::BackgroundOrNotAttributed);
+        assert_eq!(invariant.counterfactual_delta_ppm, None);
+        let option_loss = result.findings.iter()
+            .find(|finding| finding.kind == RiskKind::RecoveryOptionLoss)
+            .unwrap();
+        assert_eq!(option_loss.attribution, RiskAttribution::AttributedToCommittedIntervention);
+        assert_eq!(option_loss.counterfactual_delta_ppm, Some(1));
     }
 
     #[test]
