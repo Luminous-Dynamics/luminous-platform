@@ -85,6 +85,16 @@ The model excludes paths that are broker-ineligible, unauthorized, stale, below 
 
 It returns no route when no candidate fits. It rejects duplicate path IDs, empty IDs, invalid loss bounds, zero payloads, zero path count, invalid improvement thresholds and more than 64 candidate paths. Cost/energy conversions and aggregation use checked integer bounds; overflow rejects the candidate rather than saturating into a false fit.
 
+## Shared-resource incidence allocator
+
+`resource_allocation::allocate_weighted_max_min` models each candidate path as consuming every resource in its `resource_ids` set. Paths with different access links but a common backhaul or provider egress therefore share one aggregate capacity ceiling.
+
+The allocator uses weighted max-min progressive filling with **per-resource freezing**: when one bottleneck saturates, only paths that consume that resource freeze; paths on unrelated resources continue increasing. It uses a fixed-point level scale of `10^12`, integer bit/s output and a deterministic sorted-path-ID residual pass. It reports per-resource utilization, remaining capacity, total requested/allocated rate and weighted Jain fairness for backlogged paths.
+
+This is not a maximum-sum throughput optimizer. For the simple incidence graph A→X, B→X+Y, C→Y with capacity 10 on X and Y, weighted max-min gives 5/5/5 (total 15), while the exact maximum-sum LP gives A=10, B=0, C=10 (total 20). The 25% gap is an intentional fairness/utilization trade-off, not a hidden success. Compare both on a Pareto frontier. The general exact LP reference remains a benchmark comparator; only this closed-form fixture is embedded as a known-answer test.
+
+The allocator consumes already-qualified resource capacities; it does not verify inventory provenance, infer hidden topology, authenticate domain IDs, schedule packets or modify the kernel. The capacity evidence gate in the path-policy model remains a separate requirement.
+
 ## Tests
 
 The byte-allocation model and packet-trace simulator have separate tests. Trace tests cover MinRTT, Round Robin, redundancy only across distinct declared risk domains, deterministic replay, broker-ineligible path exclusion, per-path cost rounding, aggregate cost ceilings, common-domain loss correlation, separate synthetic loss streams, out-of-order application release, lost-gap timeout accounting, existing-buffer-aware reorder prediction and input bounds.
