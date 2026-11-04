@@ -208,6 +208,7 @@ DECLARE
     head opsbench_participant.participant_scope_head%ROWTYPE;
     logical opsbench_participant.logical_effect%ROWTYPE;
     current_time_utc TIMESTAMPTZ := clock_timestamp();
+    logical_exists BOOLEAN := FALSE;
 BEGIN
     IF p_effect_id IS NULL OR length(p_effect_id) = 0
        OR p_participant_id IS NULL OR length(p_participant_id) = 0
@@ -276,7 +277,9 @@ BEGIN
        AND action.logical_action_key = p_logical_action_key
      FOR UPDATE;
 
-    IF FOUND THEN
+    logical_exists := FOUND;
+
+    IF logical_exists THEN
         IF logical.operation <> p_operation
            OR logical.target <> p_target
            OR logical.request_sha256 <> p_request_sha256
@@ -319,7 +322,7 @@ BEGIN
             USING ERRCODE = '40001';
     END IF;
 
-    IF FOUND THEN
+    IF logical_exists THEN
         UPDATE opsbench_participant.logical_effect
            SET current_attempt_id = p_attempt_id,
                state = 'accepted_pending',
