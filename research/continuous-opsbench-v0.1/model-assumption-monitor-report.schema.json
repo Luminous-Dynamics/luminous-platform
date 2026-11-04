@@ -32,7 +32,9 @@
     "metric_policy_set_digest",
     "model_producer_id",
     "observer_id",
-    "observer_adapter_digest"
+    "observer_adapter_digest",
+    "evaluated_at_ms",
+    "valid_until_ms"
   ],
   "properties": {
     "schema": {
@@ -227,6 +229,16 @@
     "observer_adapter_digest": {
       "type": "string",
       "pattern": "^[0-9a-f]{64}$"
+    },
+    "evaluated_at_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "valid_until_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
     }
   }
 }
