@@ -26,6 +26,19 @@ pub const EXECUTION_HANDLE_PAYLOAD_TYPE: &str =
     "application/vnd.luminous.execution-handle.v1+json";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ExecutionHandleVerificationReceipt {
+    pub payload_type: String,
+    pub envelope_digest: Digest,
+    pub canonical_payload_digest: Digest,
+    pub verified_signer_key_ids: Vec<String>,
+    pub required_signer_threshold: usize,
+    pub verifier_spiffe_id: String,
+    pub verifier_trust_bundle_digest: Digest,
+    pub signing_policy_digest: Digest,
+    pub verified_at_ms: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HandleVerificationPolicy {
     pub expected_payload_type: String,
     pub allowed_issuer_ids: Vec<String>,
@@ -96,7 +109,7 @@ pub trait ExecutionHandleEnvelopeVerifier: Send + Sync {
     ) -> Result<VerifiedExecutionHandleEnvelope, EnvelopeAdapterError>;
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum HandleVerificationError {
     EmptyEnvelope,
     InvalidPolicy(&'static str),
