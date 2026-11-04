@@ -1134,6 +1134,7 @@ mod tests {
             sequence: 5,
             occurred_at_unix_ms: 1_040,
             path_id: 1,
+            maximum_path_id: None,
             kind: LifecycleEventKind::Created,
         });
         let report = evaluate_multipath_quic_trial(&evidence);
@@ -1294,6 +1295,31 @@ mod tests {
         let report = evaluate_multipath_quic_trial(&evidence);
         assert_eq!(report.disposition, TrialDisposition::Inconclusive);
         assert_eq!(report.reason, "client_and_server_endpoint_ids_are_not_distinct");
+    }
+
+    #[test]
+    fn endpoint_without_ack_samples_is_not_treated_as_observed() {
+        let mut evidence = trial();
+        evidence.ack_path_samples
+            .retain(|sample| sample.endpoint_id == evidence.client.endpoint_id);
+        let report = evaluate_multipath_quic_trial(&evidence);
+        assert_eq!(report.disposition, TrialDisposition::Inconclusive);
+        assert_eq!(report.reason, "ack_path_samples_missing_for_one_endpoint");
+    }
+
+    #[test]
+    fn duplicate_path_validation_event_is_rejected() {
+        let mut evidence = trial();
+        evidence.client.lifecycle_events.push(PathLifecycleEvent {
+            sequence: 5,
+            occurred_at_unix_ms: 1_040,
+            path_id: 1,
+            maximum_path_id: None,
+            kind: LifecycleEventKind::Validated,
+        });
+        let report = evaluate_multipath_quic_trial(&evidence);
+        assert_eq!(report.disposition, TrialDisposition::Fail);
+        assert_eq!(report.reason, "path_validation_event_out_of_lifecycle_order");
     }
 
     #[test]
