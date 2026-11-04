@@ -529,8 +529,11 @@ pub fn evaluate_breakpoints(
                 if !seen_claim_ids.insert(claim_id.clone()) {
                     return Err(BreakpointError::DuplicateClaimId(claim_id.clone()));
                 }
-                let committed = committed_actions.get(action_id)
-                    .filter(|record| record.sequence < event.sequence && record.target == *service);
+                let committed = committed_actions.get(action_id).filter(|record| {
+                    record.sequence < event.sequence
+                        && record.target == *service
+                        && record.eligible_for_recovery
+                });
                 let observations = postconditions_by_claim.get(claim_id);
                 let verified = committed.is_some_and(|commit| observations.is_some_and(|rows| {
                     rows.iter().any(|row| {
