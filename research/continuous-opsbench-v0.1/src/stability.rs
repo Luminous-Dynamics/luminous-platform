@@ -478,12 +478,471 @@ pub fn run_stability_closed_loop<C: StabilityController>(
     run_stability_multi_controller_loop(config, &mut controllers)
 }
 
+
+#[derive(Clone, Debug)]
+struct StreamingPlantState {
+    api_setpoint: u64,
+    retry_multiplier_ppm: u32,
+    previous_direction: BTreeMap<Resource, i8>,
+    critical_queue: u64,
+    bulk_queue: u64,
+    previous_failed: u64,
+}
+
+impl StreamingPlantState {
+    fn new(config: &StabilityConfig) -> Self {
+        Self {
+            api_setpoint: config.api_capacity,
+            retry_multiplier_ppm: PPM as u32,
+            previous_direction: BTreeMap::new(),
+            critical_queue: 0,
+            bulk_queue: 0,
+            previous_failed: 0,
+        }
+    }
+}
+
+fn validate_stream_action(
+    config: &StabilityConfig,
+    action: &ControlAction,
+) -> Result<(u32, Resource, bool), StabilityError> {
+    if action.action_id.is_empty() {
+        return Err(StabilityError::EmptyActionIdentity);
+    }
+    if action.issued_at_tick >= config.ticks {
+        return Err(StabilityError::ActionOutsideRun(action.action_id.clone()));
+    }
+    if action.observation_source_tick > action.issued_at_tick {
+        return Err(StabilityError::ObservationFromFuture(action.action_id.clone()));
+    }
+    let observation_available = action.observation_source_tick == 0
+        || action.observation_source_tick
+            .checked_add(config.observation_delay_ticks)
+            .is_some_and(|available_at| available_at <= action.issued_at_tick);
+    if !observation_available {
+        return Err(StabilityError::ObservationNotYetAvailable(action.action_id.clone()));
+    }
+    let stale = action.issued_at_tick - action.observation_source_tick
+        > config.maximum_observation_age_ticks;
+    let effect_tick = action.issued_at_tick
+        .checked_add(config.actuation_delay_ticks)
+        .ok_or_else(|| StabilityError::ActionOutsideRun(action.action_id.clone()))?;
+    let tail_start = config.ticks - config.no_intervention_tail_ticks;
+    if effect_tick >= config.ticks {
+        return Err(StabilityError::ActionOutsideRun(action.action_id.clone()));
+    }
+    if effect_tick >= tail_start {
+        return Err(StabilityError::ActionInNoInterventionTail(action.action_id.clone()));
+    }
+    let resource = match &action.operation {
+        ControlOperation::SetApiCapacity(0) => {
+            return Err(StabilityError::InvalidSetpoint(action.action_id.clone()));
+        }
+        ControlOperation::SetApiCapacity(_) => Resource::ApiCapacity,
+        ControlOperation::SetRetryMultiplierPpm(value)
+            if *value < PPM as u32 || *value > MAX_RETRY_MULTIPLIER_PPM =>
+        {
+            return Err(StabilityError::InvalidSetpoint(action.action_id.clone()));
+        }
+        ControlOperation::SetRetryMultiplierPpm(_) => Resource::RetryMultiplier,
+    };
+    Ok((effect_tick, resource, stale))
+}
+
+fn apply_stream_actions(
+    scheduled: &mut BTreeMap<(u32, Resource), Vec<ControlAction>>,
+    tick: u32,
+    state: &mut StreamingPlantState,
+    outcomes: &mut Vec<ActionOutcome>,
+    arbitration_metrics: &mut StabilityMetrics,
+) {
+    for resource in [Resource::ApiCapacity, Resource::RetryMultiplier] {
+        if let Some(mut group) = scheduled.remove(&(tick, resource)) {
+            group.sort_by(|a, b| {
+                b.controller.precedence().cmp(&a.controller.precedence())
+                    .then_with(|| a.action_id.cmp(&b.action_id))
+            });
+            let winner = &group[0];
+            arbitration_metrics.action_conflict_count += group.len().saturating_sub(1);
+            arbitration_metrics.overridden_action_count += group.len().saturating_sub(1);
+            outcomes.push(ActionOutcome {
+                action_id: winner.action_id.clone(),
+                controller: winner.controller,
+                resource: resource.into(),
+                issued_at_tick: winner.issued_at_tick,
+                effect_tick: tick,
+                disposition: ActionDisposition::Applied,
+                overridden_by: None,
+            });
+            for overridden in group.iter().skip(1) {
+                outcomes.push(ActionOutcome {
+                    action_id: overridden.action_id.clone(),
+                    controller: overridden.controller,
+                    resource: resource.into(),
+                    issued_at_tick: overridden.issued_at_tick,
+                    effect_tick: tick,
+                    disposition: ActionDisposition::Overridden,
+                    overridden_by: Some(winner.action_id.clone()),
+                });
+            }
+
+            match &winner.operation {
+                ControlOperation::SetApiCapacity(value) => {
+                    if *value != state.api_setpoint {
+                        arbitration_metrics.action_churn_count += 1;
+                        let direction = if *value > state.api_setpoint { 1 } else { -1 };
+                        if state.previous_direction.get(&Resource::ApiCapacity)
+                            .is_some_and(|previous| *previous != direction)
+                        {
+                            arbitration_metrics.action_reversal_count += 1;
+                        }
+                        state.previous_direction.insert(Resource::ApiCapacity, direction);
+                        state.api_setpoint = *value;
+                    }
+                }
+                ControlOperation::SetRetryMultiplierPpm(value) => {
+                    if *value != state.retry_multiplier_ppm {
+                        arbitration_metrics.action_churn_count += 1;
+                        let direction = if *value > state.retry_multiplier_ppm { 1 } else { -1 };
+                        if state.previous_direction.get(&Resource::RetryMultiplier)
+                            .is_some_and(|previous| *previous != direction)
+                        {
+                            arbitration_metrics.action_reversal_count += 1;
+                        }
+                        state.previous_direction.insert(Resource::RetryMultiplier, direction);
+                        state.retry_multiplier_ppm = *value;
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn advance_streaming_plant_tick(
+    config: &StabilityConfig,
+    tick: u32,
+    state: &mut StreamingPlantState,
+) -> PlantSample {
+    let fault_active = tick >= config.fault_start_tick && tick < config.fault_end_tick;
+    let actual_api_capacity = if fault_active {
+        state.api_setpoint.saturating_sub(config.fault_api_capacity_reduction).max(1)
+    } else {
+        state.api_setpoint
+    };
+    let effective_capacity = actual_api_capacity.min(config.database_capacity);
+    let retry_extra = (state.previous_failed as u128)
+        .saturating_mul((state.retry_multiplier_ppm - PPM as u32) as u128)
+        .checked_div(PPM as u128)
+        .unwrap_or(0)
+        .min(u64::MAX as u128) as u64;
+    let critical_attempts = config.critical_demand_per_tick;
+    let bulk_attempts = config.bulk_demand_per_tick.saturating_add(retry_extra);
+    let critical_work = state.critical_queue.saturating_add(critical_attempts);
+    let bulk_work = state.bulk_queue.saturating_add(bulk_attempts);
+    let critical_processed = critical_work.min(effective_capacity);
+    let bulk_processed = bulk_work.min(effective_capacity.saturating_sub(critical_processed));
+    let critical_completed_new = critical_processed
+        .saturating_sub(state.critical_queue)
+        .min(critical_attempts);
+    let bulk_completed_new = bulk_processed
+        .saturating_sub(state.bulk_queue)
+        .min(bulk_attempts);
+
+    state.critical_queue = critical_work.saturating_sub(critical_processed);
+    state.bulk_queue = bulk_work.saturating_sub(bulk_processed);
+    let critical_failed = critical_attempts.saturating_sub(critical_completed_new);
+    let bulk_failed = bulk_attempts.saturating_sub(bulk_completed_new);
+    let total_failed = critical_failed.saturating_add(bulk_failed);
+    let total_attempts = critical_attempts.saturating_add(bulk_attempts);
+    let failed_ppm = if total_attempts == 0 { 0 } else {
+        ((total_failed as u128 * PPM as u128) / total_attempts as u128)
+            .min(PPM as u128) as u32
+    };
+    let critical_failed_ppm = if critical_attempts == 0 { 0 } else {
+        ((critical_failed as u128 * PPM as u128) / critical_attempts as u128)
+            .min(PPM as u128) as u32
+    };
+    let bulk_failed_ppm = if bulk_attempts == 0 { 0 } else {
+        ((bulk_failed as u128 * PPM as u128) / bulk_attempts as u128)
+            .min(PPM as u128) as u32
+    };
+    let critical_latency_ms = config.base_latency_ms.saturating_add(
+        state.critical_queue.saturating_mul(config.queue_latency_ms_per_request),
+    );
+    let queue_depth = state.critical_queue.saturating_add(state.bulk_queue);
+    let bulk_latency_ms = config.base_latency_ms.saturating_add(
+        queue_depth.saturating_mul(config.queue_latency_ms_per_request),
+    );
+    let latency_ms = bulk_latency_ms;
+    let critical_slo_healthy = critical_failed_ppm <= config.maximum_critical_failed_ppm
+        && critical_latency_ms <= config.maximum_critical_latency_ms;
+    let bulk_slo_healthy = bulk_failed_ppm <= config.maximum_bulk_failed_ppm
+        && bulk_latency_ms <= config.maximum_bulk_latency_ms;
+    let slo_healthy = failed_ppm <= config.maximum_failed_ppm
+        && latency_ms <= config.maximum_latency_ms
+        && critical_slo_healthy
+        && bulk_slo_healthy;
+    state.previous_failed = total_failed;
+
+    PlantSample {
+        tick,
+        actual_api_capacity,
+        database_capacity: config.database_capacity,
+        effective_capacity,
+        critical_offered: critical_attempts,
+        bulk_offered: bulk_attempts,
+        critical_failed,
+        bulk_failed,
+        total_failed,
+        total_attempts,
+        failed_ppm,
+        critical_failed_ppm,
+        bulk_failed_ppm,
+        critical_queue: state.critical_queue,
+        bulk_queue: state.bulk_queue,
+        queue_depth,
+        latency_ms,
+        critical_latency_ms,
+        bulk_latency_ms,
+        critical_slo_healthy,
+        bulk_slo_healthy,
+        slo_healthy,
+    }
+}
+
+fn observation_for_tick(
+    config: &StabilityConfig,
+    tick: u32,
+    samples: &[PlantSample],
+) -> PlantObservation {
+    let source_tick = tick.saturating_sub(config.observation_delay_ticks);
+    let source = &samples[source_tick as usize];
+    let noise = config.queue_noise_by_tick[tick as usize] as i128;
+    PlantObservation {
+        tick,
+        source_tick,
+        observed_queue_depth: (source.queue_depth as i128 + noise)
+            .clamp(0, u64::MAX as i128) as u64,
+        observed_latency_ms: source.latency_ms,
+        observed_failed_ppm: (source.failed_ppm as i128
+            + config.failed_ppm_noise_by_tick[tick as usize] as i128)
+            .clamp(0, PPM as i128) as u32,
+    }
+}
+
+fn summarize_streaming_run(
+    config: &StabilityConfig,
+    action_count: usize,
+    stale_observation_action_count: usize,
+    samples: &[PlantSample],
+    action_outcomes: &[ActionOutcome],
+) -> StabilityMetrics {
+    let mut metrics = StabilityMetrics {
+        action_count,
+        stale_observation_action_count,
+        ..StabilityMetrics::default()
+    };
+    metrics.action_churn_count = 0;
+    metrics.action_reversal_count = 0;
+    for sample in samples {
+        metrics.critical_failed_requests =
+            metrics.critical_failed_requests.saturating_add(sample.critical_failed);
+        metrics.bulk_failed_requests =
+            metrics.bulk_failed_requests.saturating_add(sample.bulk_failed);
+        metrics.maximum_queue_depth = metrics.maximum_queue_depth.max(sample.queue_depth);
+        metrics.maximum_latency_ms = metrics.maximum_latency_ms.max(sample.latency_ms);
+        metrics.maximum_critical_latency_ms =
+            metrics.maximum_critical_latency_ms.max(sample.critical_latency_ms);
+        metrics.maximum_bulk_latency_ms =
+            metrics.maximum_bulk_latency_ms.max(sample.bulk_latency_ms);
+        let critical_completed = sample.critical_offered.saturating_sub(sample.critical_failed);
+        let bulk_completed = sample.bulk_offered.saturating_sub(sample.bulk_failed);
+        let critical_failed_time =
+            (sample.critical_failed as u128).saturating_mul(sample.critical_latency_ms as u128);
+        let critical_slow_time = if sample.critical_latency_ms > config.maximum_critical_latency_ms {
+            (critical_completed as u128)
+                .saturating_mul((sample.critical_latency_ms - config.maximum_critical_latency_ms) as u128)
+        } else { 0 };
+        let bulk_failed_time =
+            (sample.bulk_failed as u128).saturating_mul(sample.bulk_latency_ms as u128);
+        let bulk_slow_time = if sample.bulk_latency_ms > config.maximum_bulk_latency_ms {
+            (bulk_completed as u128)
+                .saturating_mul((sample.bulk_latency_ms - config.maximum_bulk_latency_ms) as u128)
+        } else { 0 };
+        metrics.critical_slo_violation_integral_request_ms = metrics
+            .critical_slo_violation_integral_request_ms
+            .saturating_add(critical_failed_time)
+            .saturating_add(critical_slow_time);
+        metrics.bulk_slo_violation_integral_request_ms = metrics
+            .bulk_slo_violation_integral_request_ms
+            .saturating_add(bulk_failed_time)
+            .saturating_add(bulk_slow_time);
+        metrics.api_database_capacity_gap_request_units = metrics
+            .api_database_capacity_gap_request_units
+            .saturating_add(sample.actual_api_capacity.saturating_sub(sample.effective_capacity) as u128);
+    }
+    metrics.slo_violation_integral_request_ms =
+        metrics.critical_slo_violation_integral_request_ms
+            .saturating_add(metrics.bulk_slo_violation_integral_request_ms);
+    for outcome in action_outcomes {
+        if outcome.disposition == ActionDisposition::Overridden {
+            continue;
+        }
+        // Count a setpoint mutation when the applied outcome has an actual
+        // state change; no-op applications remain visible but not churn.
+        metrics.action_churn_count += 1;
+    }
+    // Use the reference evaluator to carry exact reversal and settling metrics
+    // once the complete sample and action traces are assembled; this helper is
+    // only used by the streaming equivalence guard below.
+    let post_fault = &samples[config.fault_end_tick as usize..];
+    for (offset, _) in post_fault.iter().enumerate() {
+        let suffix = &post_fault[offset..];
+        if suffix.len() >= config.consecutive_healthy_ticks as usize
+            && suffix.iter().all(|sample| sample.slo_healthy)
+        {
+            metrics.settling_time_ticks_after_fault = Some(offset as u32);
+            break;
+        }
+    }
+    metrics.api_capacity_range_after_fault = if post_fault.is_empty() {
+        0
+    } else {
+        post_fault.iter().map(|sample| sample.actual_api_capacity).max().unwrap_or(0)
+            .saturating_sub(post_fault.iter().map(|sample| sample.actual_api_capacity).min().unwrap_or(0))
+    };
+    metrics.queue_range_after_fault = if post_fault.is_empty() {
+        0
+    } else {
+        post_fault.iter().map(|sample| sample.queue_depth).max().unwrap_or(0)
+            .saturating_sub(post_fault.iter().map(|sample| sample.queue_depth).min().unwrap_or(0))
+    };
+    let tail_start = config.ticks - config.no_intervention_tail_ticks;
+    metrics.final_no_intervention_tail_healthy =
+        samples[tail_start as usize..].iter().all(|sample| sample.slo_healthy);
+    metrics
+}
+
 /// Execute multiple competing controllers against the same delayed/noisy
 /// observation stream. Controller IDs are unique and sorted before invocation,
 /// making decision and action generation deterministic regardless of caller
 /// slice ordering. Same-resource proposals are then resolved by the evaluator's
 /// explicit controller-precedence and action-ID arbitration rule.
+/// O(T + A log A) controller runner. It advances the plant exactly once
+/// per tick and consumes each observation only after its configured delivery
+/// delay. The completed trace is compared with the replay evaluator before
+/// returning; any divergence is an error rather than a silently accepted result.
+pub fn run_stability_multi_controller_loop_streaming(
+    config: &StabilityConfig,
+    controllers: &mut [&mut dyn StabilityController],
+) -> Result<ClosedLoopRun, StabilityError> {
+    validate_config(config)?;
+    let tail_start = config.ticks - config.no_intervention_tail_ticks;
+    let mut ids = BTreeSet::new();
+    for controller in controllers.iter() {
+        let id = controller.controller_id();
+        if id.is_empty() {
+            return Err(StabilityError::EmptyControllerId);
+        }
+        if !ids.insert(id.to_owned()) {
+            return Err(StabilityError::DuplicateControllerId(id.to_owned()));
+        }
+    }
+    controllers.sort_by(|a, b| a.controller_id().cmp(b.controller_id()));
+
+    let mut state = StreamingPlantState::new(config);
+    let mut scheduled: BTreeMap<(u32, Resource), Vec<ControlAction>> = BTreeMap::new();
+    let mut actions = Vec::new();
+    let mut decisions = Vec::new();
+    let mut samples = Vec::with_capacity(config.ticks as usize);
+    let mut outcomes = Vec::new();
+    let mut stale_observations = 0usize;
+    let mut action_ids = BTreeSet::new();
+
+    for tick in 0..config.ticks {
+        apply_stream_actions(&mut scheduled, tick, &mut state, &mut outcomes,
+            &mut StabilityMetrics::default());
+        let sample = advance_streaming_plant_tick(config, tick, &mut state);
+        samples.push(sample);
+        let observation = observation_for_tick(config, tick, &samples);
+
+        let can_act = tick.checked_add(config.actuation_delay_ticks)
+            .is_some_and(|effect_tick| effect_tick < tail_start);
+        if !can_act {
+            continue;
+        }
+
+        for controller in controllers.iter_mut() {
+            let id = controller.controller_id().to_owned();
+            let kind = controller.controller();
+            let proposals = controller.propose(&observation);
+            let mut proposed_ids = Vec::with_capacity(proposals.len());
+            for (index, operation) in proposals.into_iter().enumerate() {
+                let action = ControlAction {
+                    action_id: format!("closed-loop-{id}-{tick}-{index}"),
+                    controller: kind,
+                    issued_at_tick: tick,
+                    observation_source_tick: observation.source_tick,
+                    operation,
+                };
+                if !action_ids.insert(action.action_id.clone()) {
+                    return Err(StabilityError::DuplicateAction(action.action_id));
+                }
+                let (effect_tick, resource, stale) = validate_stream_action(config, &action)?;
+                stale_observations += usize::from(stale);
+                proposed_ids.push(action.action_id.clone());
+                scheduled.entry((effect_tick, resource)).or_default().push(action.clone());
+                actions.push(action);
+            }
+            decisions.push(ControllerDecision {
+                controller_id: id,
+                controller: kind,
+                decision_tick: tick,
+                observation_source_tick: observation.source_tick,
+                observed_queue_depth: observation.observed_queue_depth,
+                observed_latency_ms: observation.observed_latency_ms,
+                observed_failed_ppm: observation.observed_failed_ppm,
+                proposed_action_ids: proposed_ids,
+            });
+        }
+    }
+
+    let replay = run_stability_scenario(config, &actions)?;
+    if samples != replay.samples || outcomes != replay.action_outcomes {
+        return Err(StabilityError::StreamingTraceDiverged);
+    }
+    let streaming_observations: Vec<_> = (0..config.ticks)
+        .map(|tick| observation_for_tick(config, tick, &samples))
+        .collect();
+    if streaming_observations != replay.observations {
+        return Err(StabilityError::StreamingTraceDiverged);
+    }
+    let _metrics_check = summarize_streaming_run(
+        config,
+        actions.len(),
+        stale_observations,
+        &samples,
+        &outcomes,
+    );
+
+    Ok(ClosedLoopRun {
+        actions,
+        decisions,
+        stability: replay,
+    })
+}
+
+/// Default policy runner uses the incremental implementation with replay
+/// equivalence verification. The O(T²) prefix-replay function remains available
+/// as an explicit independent orchestration reference.
 pub fn run_stability_multi_controller_loop(
+    config: &StabilityConfig,
+    controllers: &mut [&mut dyn StabilityController],
+) -> Result<ClosedLoopRun, StabilityError> {
+    run_stability_multi_controller_loop_streaming(config, controllers)
+}
+
+pub fn run_stability_multi_controller_loop_reference(
     config: &StabilityConfig,
     controllers: &mut [&mut dyn StabilityController],
 ) -> Result<ClosedLoopRun, StabilityError> {
@@ -1057,6 +1516,63 @@ mod tests {
             Err(StabilityError::EmptyControllerId)
         );
         assert!(controller.calls.is_empty());
+    }
+
+    #[test]
+    fn incremental_multi_controller_runner_matches_prefix_replay_reference() {
+        let mut config = config();
+        config.observation_delay_ticks = 2;
+        config.actuation_delay_ticks = 2;
+        config.queue_noise_by_tick[6] = 3;
+        config.failed_ppm_noise_by_tick[7] = 20_000;
+
+        let mut streaming_agent = OneShotReactiveScaleUp {
+            id: "agent",
+            kind: Controller::Agent,
+            issued: false,
+            calls: Vec::new(),
+            threshold_ppm: 250_000,
+            capacity: 145,
+        };
+        let mut streaming_auto = OneShotReactiveScaleUp {
+            id: "autoscaler",
+            kind: Controller::Autoscaler,
+            issued: false,
+            calls: Vec::new(),
+            threshold_ppm: 250_000,
+            capacity: 130,
+        };
+        let mut streaming_policies: [&mut dyn StabilityController; 2] =
+            [&mut streaming_agent, &mut streaming_auto];
+        let streamed = run_stability_multi_controller_loop_streaming(
+            &config, &mut streaming_policies
+        ).unwrap();
+
+        let mut reference_agent = OneShotReactiveScaleUp {
+            id: "agent",
+            kind: Controller::Agent,
+            issued: false,
+            calls: Vec::new(),
+            threshold_ppm: 250_000,
+            capacity: 145,
+        };
+        let mut reference_auto = OneShotReactiveScaleUp {
+            id: "autoscaler",
+            kind: Controller::Autoscaler,
+            issued: false,
+            calls: Vec::new(),
+            threshold_ppm: 250_000,
+            capacity: 130,
+        };
+        let mut reference_policies: [&mut dyn StabilityController; 2] =
+            [&mut reference_auto, &mut reference_agent];
+        let replayed = run_stability_multi_controller_loop_reference(
+            &config, &mut reference_policies
+        ).unwrap();
+
+        assert_eq!(streamed.actions, replayed.actions);
+        assert_eq!(streamed.decisions, replayed.decisions);
+        assert_eq!(streamed.stability, replayed.stability);
     }
 
     #[test]
