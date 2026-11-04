@@ -53,6 +53,18 @@ pub struct IndependentObservation {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MetricAssumptionPolicy {
+    pub metric_id: String,
+    pub units: String,
+    pub minimum_observations: usize,
+    pub maximum_interval_width: u64,
+    pub residual_scale: u64,
+    pub cusum_allowance: u64,
+    pub cusum_warning_threshold: u64,
+    pub cusum_quarantine_threshold: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ModelAssumptionInput {
     pub run_id: String,
     pub scenario_id: String,
@@ -70,15 +82,10 @@ pub struct ModelAssumptionInput {
     pub observer_id: String,
     pub observer_control_domain: String,
     pub observer_adapter_digest: Digest,
+    pub metric_policy_set_digest: Digest,
     pub maximum_observation_age_ms: u64,
     pub maximum_target_time_skew_ms: u64,
-    pub minimum_observations_per_metric: usize,
-    pub maximum_interval_width: u64,
-    /// Positive integer normalizer for signed point-forecast residuals.
-    pub residual_scale: u64,
-    pub cusum_allowance: u64,
-    pub cusum_warning_threshold: u64,
-    pub cusum_quarantine_threshold: u64,
+    pub metric_policies: Vec<MetricAssumptionPolicy>,
     pub forecasts: Vec<Forecast>,
     /// Must be in authoritative source-sequence order.
     pub observations: Vec<IndependentObservation>,
@@ -284,6 +291,7 @@ pub fn evaluate_model_assumptions(
         || !nonzero(&input.workload_profile_digest)
         || !nonzero(&input.topology_digest)
         || !nonzero(&input.observer_adapter_digest)
+        || !nonzero(&input.metric_policy_set_digest)
     {
         findings.insert(ModelFinding::InvalidIdentity);
     }
@@ -292,12 +300,21 @@ pub fn evaluate_model_assumptions(
     {
         findings.insert(ModelFinding::TrustDomainNotSeparated);
     }
-    if input.residual_scale == 0
-        || input.minimum_observations_per_metric == 0
-        || input.cusum_warning_threshold == 0
-        || input.cusum_quarantine_threshold <= input.cusum_warning_threshold
-    {
+    let mut policy_by_metric = BTreeMap::new();
+    if input.metric_policies.is_empty() {
         findings.insert(ModelFinding::InvalidThresholds);
+    }
+    for policy in &input.metric_policies {
+        if policy.metric_id.is_empty()
+            || policy.units.is_empty()
+            || policy.minimum_observations == 0
+            || policy.residual_scale == 0
+            || policy.cusum_warning_threshold == 0
+            || policy.cusum_quarantine_threshold <= policy.cusum_warning_threshold
+            || policy_by_metric.insert(policy.metric_id.as_str(), policy).is_some()
+        {
+            findings.insert(ModelFinding::InvalidThresholds);
+        }
     }
     if findings.contains(&ModelFinding::InvalidIdentity)
         || findings.contains(&ModelFinding::TrustDomainNotSeparated)
@@ -319,9 +336,17 @@ pub fn evaluate_model_assumptions(
     let mut forecast_by_id = BTreeMap::new();
     let mut accumulators: BTreeMap<String, MetricAccumulator> = BTreeMap::new();
     for forecast in &input.forecasts {
+        let policy = match policy_by_metric.get(forecast.metric_id.as_str()) {
+            Some(policy) => *policy,
+            None => {
+                findings.insert(ModelFinding::InvalidForecast);
+                continue;
+            }
+        };
         if forecast.forecast_id.is_empty()
             || forecast.metric_id.is_empty()
             || forecast.units.is_empty()
+            || forecast.units != policy.units
             || forecast.model_revision.is_empty()
             || forecast.plant_revision.is_empty()
             || forecast.issued_at_ms >= forecast.target_at_ms
@@ -350,7 +375,7 @@ pub fn evaluate_model_assumptions(
         let metric = accumulators.entry(forecast.metric_id.clone()).or_default();
         metric.forecast_count += 1;
         metric.worst_width = metric.worst_width.max(width);
-        if width > u128::from(input.maximum_interval_width) {
+        if width > u128::from(policy.maximum_interval_width) {
             metric.too_wide += 1;
             findings.insert(ModelFinding::IntervalTooWide);
         }
@@ -470,6 +495,13 @@ pub fn evaluate_model_assumptions(
             continue;
         }
 
+        let policy = match policy_by_metric.get(observation.metric_id.as_str()) {
+            Some(policy) => *policy,
+            None => {
+                findings.insert(ModelFinding::ObservationBindingMismatch);
+                continue;
+            }
+        };
         let metric = accumulators
             .entry(observation.metric_id.clone())
             .or_default();
@@ -485,8 +517,8 @@ pub fn evaluate_model_assumptions(
         }
 
         let residual = i128::from(observation.actual) - i128::from(forecast.point);
-        let normalized = residual / i128::from(input.residual_scale);
-        let allowance = i128::from(input.cusum_allowance);
+        let normalized = residual / i128::from(policy.residual_scale);
+        let allowance = i128::from(policy.cusum_allowance);
         metric.positive_cusum = metric
             .positive_cusum
             .checked_add(normalized)
@@ -501,12 +533,12 @@ pub fn evaluate_model_assumptions(
             .max(0);
         max_positive = max_positive.max(metric.positive_cusum);
         max_negative = max_negative.max(metric.negative_cusum);
-        if metric.positive_cusum >= i128::from(input.cusum_quarantine_threshold)
-            || metric.negative_cusum >= i128::from(input.cusum_quarantine_threshold)
+        if metric.positive_cusum >= i128::from(policy.cusum_quarantine_threshold)
+            || metric.negative_cusum >= i128::from(policy.cusum_quarantine_threshold)
         {
             hard_drift = true;
-        } else if metric.positive_cusum >= i128::from(input.cusum_warning_threshold)
-            || metric.negative_cusum >= i128::from(input.cusum_warning_threshold)
+        } else if metric.positive_cusum >= i128::from(policy.cusum_warning_threshold)
+            || metric.negative_cusum >= i128::from(policy.cusum_warning_threshold)
         {
             warning_drift = true;
         }
@@ -543,8 +575,11 @@ pub fn evaluate_model_assumptions(
     .iter()
     .any(|finding| findings.contains(finding));
 
-    let insufficient = accumulators.values().any(|metric| {
-        metric.matched < input.minimum_observations_per_metric
+    let insufficient = accumulators.iter().any(|(metric_id, metric)| {
+        policy_by_metric
+            .get(metric_id.as_str())
+            .map(|policy| metric.matched < policy.minimum_observations)
+            .unwrap_or(true)
     }) || accumulators.is_empty();
 
     let disposition = if misses > 0 || hard_drift {
@@ -669,14 +704,19 @@ mod tests {
             observer_id: "service-observer".into(),
             observer_control_domain: "observer-domain".into(),
             observer_adapter_digest: digest(5),
+            metric_policy_set_digest: digest(6),
             maximum_observation_age_ms: 10,
             maximum_target_time_skew_ms: 5,
-            minimum_observations_per_metric: 3,
-            maximum_interval_width: 10,
-            residual_scale: 1,
-            cusum_allowance: 1,
-            cusum_warning_threshold: 3,
-            cusum_quarantine_threshold: 6,
+            metric_policies: vec![MetricAssumptionPolicy {
+                metric_id: "critical_queue".into(),
+                units: "requests".into(),
+                minimum_observations: 3,
+                maximum_interval_width: 10,
+                residual_scale: 1,
+                cusum_allowance: 1,
+                cusum_warning_threshold: 3,
+                cusum_quarantine_threshold: 6,
+            }],
             forecasts,
             observations,
         }
