@@ -50,6 +50,7 @@ pub struct IndependentObservation {
     pub model_digest: Digest,
     pub plant_digest: Digest,
     pub workload_profile_digest: Digest,
+    pub metric_policy_set_digest: Digest,
     pub topology_epoch: u64,
     pub topology_digest: Digest,
 }
@@ -382,6 +383,7 @@ pub fn evaluate_model_assumptions(
                 forecast.topology_epoch,
                 &forecast.topology_digest,
             )
+            || forecast.metric_policy_set_digest != input.metric_policy_set_digest
         {
             findings.insert(ModelFinding::InvalidForecast);
             continue;
@@ -488,6 +490,8 @@ pub fn evaluate_model_assumptions(
             || forecast.model_digest != observation.model_digest
             || forecast.plant_digest != observation.plant_digest
             || forecast.workload_profile_digest != observation.workload_profile_digest
+            || forecast.metric_policy_set_digest != observation.metric_policy_set_digest
+            || observation.metric_policy_set_digest != input.metric_policy_set_digest
             || forecast.topology_epoch != observation.topology_epoch
             || forecast.topology_digest != observation.topology_digest
         {
@@ -665,6 +669,7 @@ mod tests {
             plant_revision: "plant-v1".into(),
             plant_digest: digest(2),
             workload_profile_digest: digest(3),
+            metric_policy_set_digest: digest(6),
             topology_epoch: 7,
             topology_digest: digest(4),
         }
@@ -689,6 +694,7 @@ mod tests {
             model_digest: digest(1),
             plant_digest: digest(2),
             workload_profile_digest: digest(3),
+            metric_policy_set_digest: digest(6),
             topology_epoch: 7,
             topology_digest: digest(4),
         }
