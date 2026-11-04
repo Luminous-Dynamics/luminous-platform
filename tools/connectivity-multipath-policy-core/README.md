@@ -141,6 +141,9 @@ Every verdict has scope `single_paired_trial`. A paired pass is not programme-le
 `capacity_evidence::verify_capacity_inventory` enforces the semantic and temporal envelope for an issuer-signed capacity dependency statement, then delegates cryptographic and trust operations to a configured `CapacityInventoryTrustVerifier` implementation.
 
 The verifier boundary requires the adapter to:
+- decode the canonical statement using the exact versioned schema and prove that every typed field supplied to the policy core equals the signed decoded field;
+- recompute the statement digest over those canonical bytes before trusting any semantic field;
+
 - recompute the statement digest over the exact canonical signed bytes;
 - verify the issuer signature and that the issuer/key are authorized for the declared topology/resource scope;
 - enforce issuer/key sequence and replay policy;
