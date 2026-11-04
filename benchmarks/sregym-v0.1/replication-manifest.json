@@ -64,6 +64,19 @@
     "Identify and pin the native scorer path and Git blob SHA.",
     "Reproduce the upstream test suite and classify the 30 reported failures and 8 collection errors.",
     "Freeze and hash native prompts, agent adapter, tool surface, judge configuration, budgets, and retry policy.",
-    "Run a no-instrumentation baseline before proving supplemental evidence collection is non-interfering."
-  ]
+    "Run a no-instrumentation baseline before proving supplemental evidence collection is non-interfering.",
+    "Freeze at least one baseline and one candidate arm, including model/provider/version, agent revision, prompt/tool/memory/inference digests, and equal declared budgets.",
+    "Preregister at least five paired seed IDs, randomized arm order, cluster-level inference, and missing-run handling.",
+    "Demonstrate supplemental instrumentation non-interference against a native no-instrumentation run."
+  ],
+  "arms": [],
+  "experimental_design": {
+    "seed_ids": [],
+    "paired_seed_blocks": null,
+    "randomized_arm_order": null,
+    "missing_run_policy": null,
+    "inference_unit": null,
+    "preregistration_sha256": null
+  },
+  "instrumentation_noninterference": "not_tested"
 }
