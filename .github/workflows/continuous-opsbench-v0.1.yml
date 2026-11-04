@@ -39,6 +39,7 @@ jobs:
           python3 -m venv /tmp/opsbench-schema-venv
           /tmp/opsbench-schema-venv/bin/python -m pip install --disable-pip-version-check "jsonschema==4.23.0"
           /tmp/opsbench-schema-venv/bin/python - <<'PY'
+          import copy
           import json
           from pathlib import Path
           from jsonschema import Draft202012Validator
@@ -79,6 +80,82 @@ jobs:
               fixture = json.loads((root / fixture_name).read_text(encoding="utf-8"))
               schemas[schema_name].validate(fixture)
               print(f"valid: {fixture_name} against {schema_name}")
+          risk_request = json.loads(
+              (root / "examples/risk-trajectory-request.example.json").read_text(encoding="utf-8")
+          )
+          risk_result = json.loads(
+              (root / "examples/risk-trajectory-result.example.json").read_text(encoding="utf-8")
+          )
+
+          def pair_binding_errors(request):
+              errors = []
+              contract = request["contract"]
+              pair = request["counterfactual_pair_manifest"]
+              if pair["scenario_id"] != contract["scenario_id"]:
+                  errors.append("pair scenario mismatch")
+              if pair["candidate_arm_id"] != contract["arm_id"]:
+                  errors.append("pair candidate arm mismatch")
+              if pair["candidate_run_id"] == pair["no_action_run_id"]:
+                  errors.append("candidate and no-action run IDs must differ")
+              if pair["candidate_run_id"] == "" or pair["no_action_run_id"] == "":
+                  errors.append("empty pair run ID")
+              equal_pairs = [
+                  ("candidate_model_digest", "no_action_model_digest"),
+                  ("candidate_initial_state_digest", "no_action_initial_state_digest"),
+                  ("candidate_exogenous_input_digest", "no_action_exogenous_input_digest"),
+                  ("candidate_seed_bundle_digest", "no_action_seed_bundle_digest"),
+                  ("candidate_scenario_truth_digest", "no_action_scenario_truth_digest"),
+                  ("candidate_policy_epoch", "no_action_policy_epoch"),
+                  ("candidate_policy_digest", "no_action_policy_digest"),
+              ]
+              for candidate_key, no_action_key in equal_pairs:
+                  if pair[candidate_key] != pair[no_action_key]:
+                      errors.append(f"counterfactual mismatch: {candidate_key}")
+              for step in request["steps"]:
+                  if step["counterfactual_pair_id"] != pair["pair_id"]:
+                      errors.append("step pair ID mismatch")
+                  if step["pair_manifest_digest"] != pair["manifest_digest"]:
+                      errors.append("step pair manifest digest mismatch")
+                  if step["model_digest"] != pair["candidate_model_digest"]:
+                      errors.append("step plant model digest mismatch")
+              return errors
+
+          if pair_binding_errors(risk_request):
+              raise SystemExit(f"invalid matched-twin fixture: {pair_binding_errors(risk_request)}")
+          if (risk_result["counterfactual_pair_id"] != risk_request["counterfactual_pair_manifest"]["pair_id"]
+              or risk_result["pair_manifest_digest"] != risk_request["counterfactual_pair_manifest"]["manifest_digest"]):
+              raise SystemExit("risk result is not bound to the request counterfactual pair")
+
+          pair_negative_controls = []
+          bad = copy.deepcopy(risk_request)
+          bad["counterfactual_pair_manifest"]["no_action_exogenous_input_digest"] = "ff" * 32
+          pair_negative_controls.append(("different exogenous input", bad))
+          bad = copy.deepcopy(risk_request)
+          bad["counterfactual_pair_manifest"]["no_action_model_digest"] = "ee" * 32
+          pair_negative_controls.append(("different plant model", bad))
+          bad = copy.deepcopy(risk_request)
+          bad["counterfactual_pair_manifest"]["no_action_initial_state_digest"] = "dd" * 32
+          pair_negative_controls.append(("different initial state", bad))
+          bad = copy.deepcopy(risk_request)
+          bad["counterfactual_pair_manifest"]["no_action_seed_bundle_digest"] = "cc" * 32
+          pair_negative_controls.append(("different seed bundle", bad))
+          bad = copy.deepcopy(risk_request)
+          bad["steps"][0]["pair_manifest_digest"] = "bb" * 32
+          pair_negative_controls.append(("substituted step pair digest", bad))
+          bad = copy.deepcopy(risk_request)
+          bad["steps"][0]["counterfactual_pair_id"] = "other-pair"
+          pair_negative_controls.append(("substituted pair ID", bad))
+
+          for label, candidate in pair_negative_controls:
+              try:
+                  schemas["risk-trajectory-request.schema.json"].validate(candidate)
+                  errors = pair_binding_errors(candidate)
+              except Exception:
+                  continue
+              if not errors:
+                  raise SystemExit(f"counterfactual pair negative control accepted: {label}")
+
+          print(f"counterfactual twin negative controls rejected: {len(pair_negative_controls)}/{len(pair_negative_controls)}")
           PY
       - name: Run dependency-locked tests
         run: cargo test --manifest-path research/continuous-opsbench-v0.1/Cargo.toml --locked
