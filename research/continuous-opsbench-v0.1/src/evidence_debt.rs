@@ -909,7 +909,7 @@ mod tests {
             1_000,
         );
         assert_eq!(
-            evaluate_evidence_debt(&contract(), &[outside.clone()]),
+            evaluate_evidence_debt(&contract(), std::slice::from_ref(&outside)),
             Err(EvidenceDebtError::EventOutsideRun)
         );
         let mut invalid_ref = outside;
