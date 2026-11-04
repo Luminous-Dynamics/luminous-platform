@@ -1,0 +1,185 @@
+{
+  "schema_version": "luminous.lnf-resource-oracle-profile.v1",
+  "profile_id": "lnf-resource-oracle-v1",
+  "status": "draft_targets_not_results",
+  "reviewed_on": "2026-11-04",
+  "parent_issue": 234,
+  "parent_allocator_pr": 226,
+  "related_evidence_pr": 233,
+  "objective": "Provide an independent, exact, bounded integer maximum-sum reference for small path/resource incidence graphs, then measure the utilization and fairness trade-off against weighted max-min and constrained max-sum allocations.",
+  "implementation": {
+    "module": "tools/connectivity-multipath-policy-core/src/exact_max_sum.rs",
+    "method": "exhaustive_integer_rate_vector_enumeration",
+    "objective": "maximize_sum_of_path_rates_subject_to_all_resource_capacities_and_optional_per_path_floors",
+    "path_limit": 8,
+    "resource_limit": 16,
+    "per_path_rate_bound_bps": 1000,
+    "resource_capacity_bound_bps": 1000,
+    "maximum_enumerated_rate_vectors": 2000000,
+    "unsupported_over_budget": true,
+    "tie_break": "lexicographically_larger_rate_vector_by_sorted_path_id",
+    "arithmetic": "checked_integer_only",
+    "floating_point_in_decision": false,
+    "production_scheduler_usage": false
+  },
+  "input_contract": {
+    "resources": "stable_unique_resource_ids_with_integer_capacity_bps; zero_residual_capacity_is_valid",
+    "paths": "stable_unique_path_ids; nonempty_duplicate_free_resource_incidence; positive demand and weight",
+    "floors": "optional path-id keyed minimum rate; omitted means zero; floor cannot exceed demand",
+    "constraints": "each path rate is bounded by demand; every resource load is the sum of rates of all paths incident on it",
+    "result_if_infeasible_floors": "infeasible_minimums",
+    "result_if_state_space_exceeds_bound": "search_space_too_large_not_exact"
+  },
+  "scenarios": [
+    {
+      "id": "ORACLE-01",
+      "topology": "A->X; B->X+Y; C->Y; capacity(X)=10; capacity(Y)=10",
+      "expected": "weighted_max_min_total=15; exact_max_sum_total=20; witness=(10,0,10)"
+    },
+    {
+      "id": "ORACLE-02",
+      "topology": "two_paths_share_one_resource_of_capacity_10",
+      "expected": "max_sum_total=10; deterministic_tie_break_and_zero_rate_count_reported"
+    },
+    {
+      "id": "ORACLE-03",
+      "topology": "two_independent_resources_of_capacity_10_and_12",
+      "expected": "independent_demand_10_each_reaches_total_20"
+    },
+    {
+      "id": "ORACLE-04",
+      "topology": "one_path_demand_2_and_peer_demand_10_share_capacity_10",
+      "expected": "demand_limited_path_gets_2_and_peer_borrows_8"
+    },
+    {
+      "id": "ORACLE-05",
+      "topology": "chain_fixture_with_minimum_2_rate_floor_on_every_path",
+      "expected": "constrained_max_sum_total=18_and_all_floors_preserved"
+    },
+    {
+      "id": "ORACLE-06",
+      "topology": "minimum_floors_overbook_a_shared_resource",
+      "expected": "explicit_infeasible_minimums"
+    },
+    {
+      "id": "ORACLE-07",
+      "topology": "same_graph_with_reversed_resource_path_and_floor_input_order",
+      "expected": "byte_identical_report_and_witness"
+    },
+    {
+      "id": "ORACLE-08",
+      "topology": "rate_vector_state_space_exceeds_two_million",
+      "expected": "search_space_too_large_and_no_approximate_result"
+    },
+    {
+      "id": "ORACLE-09",
+      "topology": "duplicate_unknown_or_empty_path_resource_incidence",
+      "expected": "explicit_invalid_input_error"
+    },
+    {
+      "id": "ORACLE-10",
+      "topology": "maximum_sum_witness_leaves_at_least_one_path_at_zero",
+      "expected": "zero_rate_count_and_unweighted_jain_index_reported_separately"
+    }
+  ],
+  "comparators": [
+    "weighted_max_min_progressive_filling_pr_226",
+    "exact_bounded_integer_max_sum_reference",
+    "constrained_max_sum_with_declared_path_floors",
+    "conservative_disjoint_capacity_set_scheduler_pr_215",
+    "naive_sum_of_per_path_capacities_negative_control",
+    "single_best_path_reference"
+  ],
+  "benchmarks": [
+    {
+      "id": "ORACLE_EXACTNESS_001",
+      "metric": "supported_instances_fully_enumerated_and_exact",
+      "operator": "==",
+      "target": 1000000,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "ORACLE_RESOURCE_FEASIBILITY_001",
+      "metric": "returned_witness_resource_capacity_violations",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "ORACLE_DEMAND_FEASIBILITY_001",
+      "metric": "returned_witness_path_demand_violations",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "ORACLE_FLOOR_FEASIBILITY_001",
+      "metric": "returned_witness_minimum_floor_violations",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "ORACLE_BUDGET_001",
+      "metric": "over_budget_instances_falsely_labelled_exact",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "ORACLE_DETERMINISM_001",
+      "metric": "input_permutation_identical_report_fraction_ppm",
+      "operator": "==",
+      "target": 1000000,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "ORACLE_GAP_REPORTING_001",
+      "metric": "weighted_max_min_to_exact_max_sum_rate_gap_reported_for_supported_pairs",
+      "operator": "==",
+      "target": 1000000,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "ORACLE_STARVATION_001",
+      "metric": "zero_rate_path_count_and_unweighted_jain_index_reported",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
+    }
+  ],
+  "required_metrics": [
+    "search_space_size",
+    "assignments_examined",
+    "feasible_allocations_examined",
+    "exact_max_sum_total_allocated_bps",
+    "weighted_max_min_total_allocated_bps",
+    "weighted_max_min_to_exact_max_sum_gap_ppm",
+    "per_path_demand_and_minimum_floor_bps",
+    "per_path_exact_allocated_bps",
+    "per_resource_capacity_and_exact_allocated_bps",
+    "per_resource_remaining_capacity_bps",
+    "zero_rate_path_count",
+    "unweighted_jain_index_ppm_including_zero_rate_paths",
+    "total_requested_and_unserved_bps",
+    "constrained_max_sum_total_bps",
+    "oracle_runtime_p50_p95_p99_us",
+    "unsupported_or_infeasible_disposition"
+  ],
+  "evidence_classes": [
+    "deterministic_unit_test",
+    "bounded_exact_reference",
+    "namespace_or_vm_emulation",
+    "hardware_or_field_observed"
+  ],
+  "explicit_non_claims": [
+    "The oracle is exact only inside the declared path, resource, rate and state-space bounds.",
+    "An over-budget instance is unsupported; it is never truncated and presented as exact.",
+    "Maximum-sum throughput is not the universally correct objective and may starve a path.",
+    "The weighted max-min allocator remains a distinct fairness objective and is not replaced by the oracle.",
+    "The oracle is not a production scheduler and must not be called on the packet-forwarding fast path.",
+    "A unit-tested integer witness is not measured network behavior.",
+    "Resource identities and capacities must already be supplied by the capacity-evidence gate.",
+    "No claim of outperforming CAKE, fq_codel, Linux MPTCP, LIA, OLIA or BALIA is made."
+  ]
+}
