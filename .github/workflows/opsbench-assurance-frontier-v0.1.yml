@@ -33,13 +33,13 @@ jobs:
           import copy
           import json
           from pathlib import Path
-          from jsonschema import Draft202012Validator, ValidationError
+          from jsonschema import Draft202012Validator, FormatChecker, ValidationError
 
           root = Path("benchmarks/opsbench-assurance-frontier-v0.1")
           schema = json.loads((root / "assurance-frontier.schema.json").read_text(encoding="utf-8"))
           charter = json.loads((root / "charter-2026-11-05.json").read_text(encoding="utf-8"))
           Draft202012Validator.check_schema(schema)
-          validator = Draft202012Validator(schema)
+          validator = Draft202012Validator(schema, format_checker=FormatChecker())
           validator.validate(charter)
 
           ids = [target["target_id"] for target in charter["benchmark_targets"]]
