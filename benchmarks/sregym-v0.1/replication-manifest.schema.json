@@ -19,7 +19,8 @@
     "arms",
     "experimental_design",
     "instrumentation_noninterference",
-    "contamination"
+    "contamination",
+    "image_lock"
   ],
   "properties": {
     "schema": {
@@ -46,7 +47,8 @@
         "readme_blob_sha",
         "pyproject_blob_sha",
         "uv_lock_blob_sha",
-        "gitmodules_blob_sha"
+        "gitmodules_blob_sha",
+        "tree_sha"
       ],
       "properties": {
         "repository": {
@@ -79,6 +81,10 @@
         "gitmodules_blob_sha": {
           "type": "string",
           "pattern": "^[0-9a-f]{40}$"
+        },
+        "tree_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
         }
       }
     },
@@ -91,7 +97,8 @@
           "path",
           "repository",
           "commit",
-          "state"
+          "state",
+          "tree_sha"
         ],
         "properties": {
           "path": {
@@ -114,6 +121,13 @@
               "pinned",
               "unresolved"
             ]
+          },
+          "tree_sha": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{40}$"
           }
         }
       }
@@ -195,7 +209,21 @@
         "scenario_ids_sha256",
         "native_scorer_path",
         "native_scorer_blob_sha",
-        "native_score_axes"
+        "native_score_axes",
+        "count_semantics",
+        "explicit_registry_key_count",
+        "registry_blob_sha",
+        "tasklist_file_present",
+        "tasklist_example_blob_sha",
+        "default_full_selection_rule",
+        "full_selection_ids_sha256",
+        "lite_problem_set_blob_sha",
+        "lite_problem_ids",
+        "lite_problem_ids_sha256",
+        "port_registry_blobs",
+        "slo_problem_blob_sha",
+        "artifact_discovery_blob_sha",
+        "native_scorer_files"
       ],
       "properties": {
         "full_suite_published_count": {
@@ -242,6 +270,106 @@
               "mitigation",
               "end_to_end"
             ]
+          }
+        },
+        "count_semantics": {
+          "enum": [
+            "published_reference_only",
+            "active_runnable_inventory"
+          ]
+        },
+        "explicit_registry_key_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "registry_blob_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "tasklist_file_present": {
+          "type": "boolean"
+        },
+        "tasklist_example_blob_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "default_full_selection_rule": {
+          "type": "string",
+          "minLength": 1
+        },
+        "full_selection_ids_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "lite_problem_set_blob_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "lite_problem_ids": {
+          "type": "array",
+          "minItems": 17,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "lite_problem_ids_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "port_registry_blobs": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "blob_sha"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "blob_sha": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              }
+            }
+          }
+        },
+        "slo_problem_blob_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "artifact_discovery_blob_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "native_scorer_files": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "blob_sha"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "blob_sha": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              }
+            }
           }
         }
       }
@@ -621,6 +749,55 @@
           }
         }
       }
+    },
+    "image_lock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "blob_sha",
+        "entry_count",
+        "digest_pinned_count",
+        "external_reference_scan_state",
+        "unlocked_reference_examples"
+      ],
+      "properties": {
+        "path": {
+          "const": "docker/images.lock.json"
+        },
+        "blob_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "entry_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "digest_pinned_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "external_reference_scan_state": {
+          "enum": [
+            "not_started",
+            "partial",
+            "passed"
+          ]
+        },
+        "external_reference_scan_report_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "unlocked_reference_examples": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
     }
   },
   "allOf": [
@@ -650,6 +827,10 @@
                 },
                 "state": {
                   "const": "pinned"
+                },
+                "tree_sha": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{40}$"
                 }
               }
             }
@@ -704,6 +885,17 @@
               "native_scorer_blob_sha": {
                 "type": "string",
                 "pattern": "^[0-9a-f]{40}$"
+              },
+              "full_selection_ids_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "lite_problem_ids_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "native_scorer_files": {
+                "minItems": 5
               }
             }
           },
@@ -814,6 +1006,29 @@
               },
               "examined_sources": {
                 "minItems": 8
+              }
+            }
+          },
+          "upstream": {
+            "properties": {
+              "tree_sha": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              }
+            }
+          },
+          "image_lock": {
+            "properties": {
+              "external_reference_scan_state": {
+                "const": "passed"
+              },
+              "external_reference_scan_report_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "digest_pinned_count": {
+                "type": "integer",
+                "minimum": 1
               }
             }
           }
