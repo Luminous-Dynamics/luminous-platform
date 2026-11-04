@@ -1036,6 +1036,36 @@ mod tests {
     }
 
     #[test]
+    fn counterfactual_replay_of_fresh_evidence_removes_the_irreversible_breakpoint() {
+        let events = vec![
+            evidence("evidence-1", 1, 10, 10, 1),
+            decision("decision-1", 2, 200, vec!["evidence-1"], 1),
+            attempt(3, 210, false, true),
+            commit(4, 220, true, "effect-1"),
+        ];
+        let original = evaluate_breakpoints(&contract(), &events).unwrap();
+        assert!(original.first_irrecoverable.is_some());
+
+        let mut replay_events = events;
+        if let TraceEventKind::EvidenceObserved { observed_at_ms, .. } =
+            &mut replay_events[0].kind
+        {
+            *observed_at_ms = 180;
+            replay_events[0].occurred_at_ms = 180;
+        } else {
+            panic!("first event must be the evaluator-owned evidence observation");
+        }
+        let counterfactual = evaluate_breakpoints(&contract(), &replay_events).unwrap();
+        assert!(counterfactual.first_irrecoverable.is_none());
+
+        let assessment = assess_counterfactual(
+            "event-evidence-1", &original, &counterfactual
+        );
+        assert_eq!(assessment.verdict, CounterfactualVerdict::Material);
+        assert_eq!(assessment.original_first_irrecoverable.as_deref(), Some("commit-event-effect-1"));
+    }
+
+    #[test]
     fn counterfactual_traces_decision_and_evidence_events_through_the_breakpoint() {
         let original = BreakpointReport {
             scenario_id: "episode-1".into(),
