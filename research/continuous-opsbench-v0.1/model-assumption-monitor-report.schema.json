@@ -119,13 +119,11 @@
     },
     "maximum_positive_cusum": {
       "type": "integer",
-      "minimum": -9223372036854776000,
-      "maximum": 9223372036854776000
+      "minimum": 0
     },
     "maximum_negative_cusum": {
       "type": "integer",
-      "minimum": -9223372036854776000,
-      "maximum": 9223372036854776000
+      "minimum": 0
     },
     "findings": {
       "type": "array",
@@ -198,18 +196,15 @@
           },
           "final_positive_cusum": {
             "type": "integer",
-            "minimum": -9223372036854776000,
-            "maximum": 9223372036854776000
+            "minimum": 0
           },
           "final_negative_cusum": {
             "type": "integer",
-            "minimum": -9223372036854776000,
-            "maximum": 9223372036854776000
+            "minimum": 0
           },
           "worst_interval_width": {
             "type": "integer",
-            "minimum": 0,
-            "maximum": 18446744073709552000
+            "minimum": 0
           }
         }
       }
