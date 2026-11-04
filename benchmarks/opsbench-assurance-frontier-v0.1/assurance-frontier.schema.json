@@ -126,7 +126,8 @@
               "effect_integrity",
               "sustained_recovery",
               "viability_preservation",
-              "resource_efficiency"
+              "resource_efficiency",
+              "diagnosis_localization"
             ]
           },
           "operator": {
