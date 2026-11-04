@@ -63,3 +63,6 @@ The initial implementation replays the already-issued action prefix at each tick
 Two controller-loop tests prove that a threshold policy reacts only after the fault observation arrives and improves the paired no-action synthetic trace, and that the controller is never invoked for the no-intervention tail.
 
 The controller trait is an in-process policy seam, not a live LLM integration. Model/provider, prompt, tool, memory, policy and action budgets still need to be supplied by the external runner manifest and hashed into each arm.
+
+
+The controller harness also accepts multiple policies in one run. Each declares a stable unique controller ID and controller class; policies are sorted by ID before each tick and receive the same permitted observation. Their actions are then arbitrated by the evaluator-owned precedence rule. The resulting action and decision traces are invariant to the order in which the caller supplies the controller slice. This supports paired competition between an agent policy, deterministic runbook, and autoscaler baseline without giving any policy access to evaluator truth.
