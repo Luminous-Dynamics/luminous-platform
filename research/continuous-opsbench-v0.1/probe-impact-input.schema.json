@@ -1,0 +1,649 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/probe-impact-input-v0.1.schema.json",
+  "title": "Probe Interference Evaluator Input v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "executions",
+    "receipts",
+    "probe_windows",
+    "no_probe_windows"
+  ],
+  "properties": {
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "probe_run_id",
+        "no_probe_run_id",
+        "scenario_id",
+        "paired_block_id",
+        "probe_arm_id",
+        "no_probe_arm_id",
+        "tenant_id",
+        "executor_control_domain",
+        "observer_control_domain",
+        "observer_adapter_digest",
+        "workload_profile_digest",
+        "environment_digest",
+        "fault_schedule_digest",
+        "maximum_probe_duration_ms",
+        "maximum_total_resource_usage",
+        "service_limits"
+      ],
+      "properties": {
+        "probe_run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "no_probe_run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scenario_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "paired_block_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "probe_arm_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "no_probe_arm_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "executor_control_domain": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observer_control_domain": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observer_adapter_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "workload_profile_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "environment_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "fault_schedule_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "maximum_probe_duration_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "maximum_total_resource_usage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "cpu_millicore_ms",
+            "memory_byte_ms",
+            "disk_read_bytes",
+            "disk_write_bytes",
+            "network_bytes",
+            "query_rows",
+            "duration_ms"
+          ],
+          "properties": {
+            "cpu_millicore_ms": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "memory_byte_ms": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "disk_read_bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "disk_write_bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "network_bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "query_rows": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "duration_ms": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "service_limits": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "service",
+              "workload_class",
+              "maximum_failure_delta_ppm",
+              "maximum_slow_delta_ppm",
+              "maximum_incorrect_delta_ppm"
+            ],
+            "properties": {
+              "service": {
+                "type": "string",
+                "minLength": 1
+              },
+              "workload_class": {
+                "type": "string",
+                "minLength": 1
+              },
+              "maximum_failure_delta_ppm": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000
+              },
+              "maximum_slow_delta_ppm": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000
+              },
+              "maximum_incorrect_delta_ppm": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000
+              }
+            }
+          }
+        }
+      }
+    },
+    "executions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "execution_id",
+          "probe_id",
+          "tenant_id",
+          "target",
+          "operation_digest",
+          "capability",
+          "executor_id",
+          "executor_control_domain",
+          "run_id",
+          "scenario_id",
+          "arm_id",
+          "paired_block_id",
+          "started_at_ms",
+          "ended_at_ms"
+        ],
+        "properties": {
+          "execution_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "probe_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tenant_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "target": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operation_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "capability": {
+            "enum": [
+              "ReadOnly",
+              "Mutating"
+            ]
+          },
+          "executor_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "executor_control_domain": {
+            "type": "string",
+            "minLength": 1
+          },
+          "run_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scenario_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "arm_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "paired_block_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "started_at_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "ended_at_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        }
+      }
+    },
+    "receipts": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "receipt_id",
+          "execution_id",
+          "probe_id",
+          "tenant_id",
+          "target",
+          "operation_digest",
+          "run_id",
+          "scenario_id",
+          "arm_id",
+          "paired_block_id",
+          "observer_id",
+          "observer_control_domain",
+          "observer_adapter_digest",
+          "measured_start_ms",
+          "measured_end_ms",
+          "evidence_digest",
+          "complete",
+          "resource_usage"
+        ],
+        "properties": {
+          "receipt_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "execution_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "probe_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tenant_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "target": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operation_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "run_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scenario_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "arm_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "paired_block_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "observer_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "observer_control_domain": {
+            "type": "string",
+            "minLength": 1
+          },
+          "observer_adapter_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "measured_start_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "measured_end_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "evidence_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "resource_usage": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "cpu_millicore_ms",
+              "memory_byte_ms",
+              "disk_read_bytes",
+              "disk_write_bytes",
+              "network_bytes",
+              "query_rows",
+              "duration_ms"
+            ],
+            "properties": {
+              "cpu_millicore_ms": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "memory_byte_ms": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "disk_read_bytes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "disk_write_bytes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "network_bytes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "query_rows": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "duration_ms": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            }
+          }
+        }
+      }
+    },
+    "probe_windows": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "window_id",
+          "run_id",
+          "scenario_id",
+          "arm_id",
+          "paired_block_id",
+          "service",
+          "workload_class",
+          "starts_at_ms",
+          "ends_at_ms",
+          "offered_requests",
+          "failed_requests",
+          "slow_requests",
+          "incorrect_business_results",
+          "workload_profile_digest",
+          "environment_digest",
+          "fault_schedule_digest",
+          "observer_id",
+          "observer_control_domain",
+          "complete"
+        ],
+        "properties": {
+          "window_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "run_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scenario_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "arm_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "paired_block_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "service": {
+            "type": "string",
+            "minLength": 1
+          },
+          "workload_class": {
+            "type": "string",
+            "minLength": 1
+          },
+          "starts_at_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "ends_at_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "offered_requests": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "failed_requests": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "slow_requests": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "incorrect_business_results": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "workload_profile_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "environment_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "fault_schedule_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "observer_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "observer_control_domain": {
+            "type": "string",
+            "minLength": 1
+          },
+          "complete": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "no_probe_windows": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "window_id",
+          "run_id",
+          "scenario_id",
+          "arm_id",
+          "paired_block_id",
+          "service",
+          "workload_class",
+          "starts_at_ms",
+          "ends_at_ms",
+          "offered_requests",
+          "failed_requests",
+          "slow_requests",
+          "incorrect_business_results",
+          "workload_profile_digest",
+          "environment_digest",
+          "fault_schedule_digest",
+          "observer_id",
+          "observer_control_domain",
+          "complete"
+        ],
+        "properties": {
+          "window_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "run_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scenario_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "arm_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "paired_block_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "service": {
+            "type": "string",
+            "minLength": 1
+          },
+          "workload_class": {
+            "type": "string",
+            "minLength": 1
+          },
+          "starts_at_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "ends_at_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "offered_requests": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "failed_requests": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "slow_requests": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "incorrect_business_results": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "workload_profile_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "environment_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "fault_schedule_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "observer_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "observer_control_domain": {
+            "type": "string",
+            "minLength": 1
+          },
+          "complete": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}
