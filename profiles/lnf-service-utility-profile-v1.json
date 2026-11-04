@@ -93,7 +93,9 @@
     "failed_cleanup": "fail",
     "max_companion_flows": 256,
     "fixed_point_ratio_unit": "parts_per_million",
-    "statistical_analysis": "external repeated-trial layer; preserve all pair outcomes and denominators"
+    "statistical_analysis": "external repeated-trial layer; preserve all pair outcomes and denominators",
+    "companion_flow_identity_or_offered_load_mismatch": "inconclusive",
+    "paired_verdict_must_retain_both_environment_and_arm_identities": true
   },
   "scenario_ids": [
     "UTL-00",
@@ -289,7 +291,9 @@
     "redundant_bytes_per_on_time_byte_ppm",
     "companion_min_retention_ppm",
     "local_and_remote_active_path_counts",
-    "exact_arm_and_environment_digests"
+    "exact_arm_and_environment_digests",
+    "baseline_environment_and_arm_identity",
+    "treatment_environment_and_arm_identity"
   ],
   "verdicts": [
     "pass",
