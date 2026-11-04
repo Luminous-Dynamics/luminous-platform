@@ -1,0 +1,239 @@
+{
+  "schema_version": "luminous.lnf-resource-incidence-oracle-profile.v1",
+  "profile_id": "lnf-resource-incidence-oracle-v1",
+  "status": "draft_targets_not_results",
+  "reviewed_on": "2026-11-04",
+  "parent_issue": 247,
+  "prerequisite_issue": 226,
+  "objective": "Qualify an exact rational tenant-normalized weighted max-min reference allocator for fixed routes constrained by multiple shared resource capacities.",
+  "ownership_boundary": {
+    "inputs": "caller-supplied verified resource inventory, frozen topology identity, fixed flow routes, tenant principals and declared demand/floors",
+    "outputs": "exact per-flow rates, exact per-resource usage, active bottlenecks and deterministic infeasibility outcomes",
+    "excludes": [
+      "topology discovery",
+      "inventory authentication",
+      "route selection",
+      "packet scheduling",
+      "kernel qdisc actuation",
+      "live congestion-control feedback",
+      "multi-path splitting for one flow"
+    ]
+  },
+  "design": {
+    "paradigm": "resource-constrained cooperation rather than path independence",
+    "allocation": "progressive filling over fixed-route flows with each tenant's entitlement normalized across its active flow weights",
+    "arithmetic": "checked reduced rational arithmetic; no floating-point allocation decisions",
+    "path_semantics": "each flow uses every resource ID in its declared fixed route; each such resource enforces one aggregate capacity ceiling",
+    "unknown_resource_semantics": "unknown, missing, duplicate or unverified resource identities must not be converted into independent capacity",
+    "tenant_semantics": "the sum of active per-flow normalized weights for a tenant equals its tenant weight in each progressive-filling round"
+  },
+  "bounds": {
+    "max_resources": 64,
+    "max_flows": 128,
+    "max_resources_per_flow": 32,
+    "max_identifier_utf8_bytes": 128,
+    "max_tenant_weight": 1000000,
+    "max_flow_weight": 1000000,
+    "arithmetic": "u128 checked numerator/denominator; overflow returns explicit error"
+  },
+  "scenarios": [
+    {
+      "id": "RI-00",
+      "topology": "two_disjoint_paths",
+      "purpose": "two flows use fully disjoint path resources and are limited only by their private access capacities"
+    },
+    {
+      "id": "RI-01",
+      "topology": "two_access_one_shared_backhaul",
+      "purpose": "two access links share one 100-Mbit/s backhaul and combined allocation must remain at or below 100 Mbit/s"
+    },
+    {
+      "id": "RI-02",
+      "topology": "private_last_mile_shared_aggregation",
+      "purpose": "private access capacities coexist with one aggregate shared aggregation ceiling"
+    },
+    {
+      "id": "RI-03",
+      "topology": "three_path_overlap_chain",
+      "purpose": "A shares x with B, B shares y with C, and the allocator respects both simultaneous resource constraints"
+    },
+    {
+      "id": "RI-04",
+      "topology": "multiple_sequential_bottlenecks",
+      "purpose": "each flow consumes every resource in its fixed route; the most restrictive shared resource limits total rates"
+    },
+    {
+      "id": "RI-05",
+      "topology": "tenant_opens_many_flows",
+      "purpose": "one tenant opening more flows does not increase aggregate tenant entitlement"
+    },
+    {
+      "id": "RI-06",
+      "topology": "within_tenant_flow_weights",
+      "purpose": "flows inside one tenant divide that tenant's share according to flow weights"
+    },
+    {
+      "id": "RI-07",
+      "topology": "feasible_and_infeasible_minimum_floors",
+      "purpose": "feasible floors are satisfied first and infeasible floors return explicit infeasibility"
+    },
+    {
+      "id": "RI-08",
+      "topology": "demand_saturation_redistribution",
+      "purpose": "a demand-limited flow freezes and residual shared capacity is reallocated to active flows"
+    },
+    {
+      "id": "RI-09",
+      "topology": "zero_capacity_resource",
+      "purpose": "a zero-capacity resource blocks only flows that use it"
+    },
+    {
+      "id": "RI-10",
+      "topology": "unknown_and_duplicate_resource_ids",
+      "purpose": "unknown resource IDs and duplicate resource IDs in a flow are rejected"
+    },
+    {
+      "id": "RI-11",
+      "topology": "input_permutation",
+      "purpose": "permuting resource and flow input order leaves the exact report unchanged"
+    },
+    {
+      "id": "RI-12",
+      "topology": "non_integer_weighted_rates",
+      "purpose": "weighted allocations preserve exact rational bits per second without rounding"
+    },
+    {
+      "id": "RI-13",
+      "topology": "tenant_weight_consistency",
+      "purpose": "inconsistent tenant weights across a tenant's flows are rejected"
+    }
+  ],
+  "benchmarks": [
+    {
+      "id": "RESOURCE_CAPACITY_001",
+      "metric": "resource_capacity_violation_count",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RESOURCE_FLOOR_001",
+      "metric": "minimum_floor_violation_count_when_feasible",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RESOURCE_FLOOR_INFEASIBLE_001",
+      "metric": "infeasible_floor_sets_return_explicit_error_count",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RESOURCE_TENANT_WEIGHT_001",
+      "metric": "tenant_aggregate_entitlement_weight_violation_count_when_all_tenants_backlogged",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RESOURCE_DETERMINISM_001",
+      "metric": "identical_report_under_input_permutation",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RESOURCE_EXACTNESS_001",
+      "metric": "exact_rational_known_answer_fixture_match_count",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RESOURCE_ZERO_CAPACITY_001",
+      "metric": "flows_using_zero_capacity_resource_allocated_above_zero_bps",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RESOURCE_BOUNDS_001",
+      "metric": "input_sets_exceeding_declared_bounds_accepted",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RESOURCE_OVERFLOW_001",
+      "metric": "arithmetic_overflow_silently_saturated_or_wrapped",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    }
+  ],
+  "required_metrics": [
+    "per_flow_allocated_rate_exact_fraction",
+    "per_flow_minimum_floor_satisfaction",
+    "per_resource_aggregate_usage_exact_fraction",
+    "per_resource_capacity_bps",
+    "per_resource_saturated_flag",
+    "active_bottleneck_resource_ids",
+    "tenant_aggregate_allocated_rate_bps",
+    "normalized_tenant_weight_sum_per_progressive_round",
+    "within_tenant_flow_weight_share",
+    "total_unserved_demand_bps",
+    "resource_capacity_violation_count",
+    "minimum_floor_violation_count",
+    "infeasible_floor_disposition_count",
+    "progressive_filling_round_count",
+    "input_permutation_determinism",
+    "exact_known_answer_fixture_match",
+    "arithmetic_overflow_rejection_count",
+    "zero_capacity_blocked_flow_count"
+  ],
+  "comparators": [
+    "independent_resource_per_path_capacity_sum_negative_control",
+    "equal_per_flow_max_min",
+    "unweighted_flow_max_min",
+    "weighted_flow_max_min_without_tenant_normalization",
+    "current_v1_disjoint_capacity_domain_path_selector",
+    "tenant_first_weighted_max_min_without_explicit_resource_incidence",
+    "exact_rational_fixed_route_progressive_filling_reference_oracle"
+  ],
+  "evidence_classes": [
+    "deterministic_unit_contract",
+    "exact_rational_reference_model",
+    "network_namespace_or_vm_emulation",
+    "hardware_or_field_observation"
+  ],
+  "baseline_methodology": {
+    "topology_and_resource_ids_must_be_frozen": true,
+    "every_flow_must_list_every_resource_on_its_fixed_route": true,
+    "resource_inventory_provenance_must_be_verified_before_authorizing_scheduling": true,
+    "tenant_principal_binding_is_external": true,
+    "exact_rational_arithmetic_required": true,
+    "capacity_and_floor_invariants_must_be_checked_by_an_independent_verifier": true,
+    "live_qdisc_results_must_not_be_mixed_with_model_outputs": true,
+    "multi_path_splitting_for_one_flow_is_out_of_scope": true
+  },
+  "target_defaults": {
+    "max_resources": 64,
+    "max_flows": 128,
+    "max_resources_per_flow": 32,
+    "arithmetic_overflow_disposition": "explicit_error",
+    "target_status": "proposed_not_measured"
+  },
+  "explicit_non_claims": [
+    "This is a fixed-route resource allocator, not a route discovery or path selection algorithm.",
+    "This is not a production multi-commodity flow solver.",
+    "This first tranche does not split one flow across multiple paths.",
+    "A passing oracle test does not prove inventory truth or topology completeness.",
+    "Tenant principal authentication and binding are external to this crate.",
+    "Model allocations are not observed MPTCP, QUIC, TCP, qdisc or RAN behavior.",
+    "Exact rational outputs do not imply measured throughput or end-to-end task completion.",
+    "No online path churn or real-time actuation is qualified in this tranche.",
+    "The two-level normalized progressive filling contract is specific to active fixed-route flows and the declared resource incidence matrix."
+  ]
+}
