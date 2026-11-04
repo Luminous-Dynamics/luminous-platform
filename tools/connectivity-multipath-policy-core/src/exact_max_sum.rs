@@ -316,7 +316,7 @@ fn validate_and_index(
             return Err(ExactMaxSumError::WeightTooLarge);
         }
         if path.resource_ids.is_empty() {
-            return Err(ExactMaxSumError::TooManyResourcesPerPath);
+            return Err(ExactMaxSumError::EmptyResourceSet);
         }
         if path.resource_ids.len() > MAX_ORACLE_RESOURCES {
             return Err(ExactMaxSumError::TooManyResourcesPerPath);
