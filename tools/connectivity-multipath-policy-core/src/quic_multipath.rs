@@ -10,6 +10,8 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const MULTIPATH_QUIC_DRAFT: &str = "draft-ietf-quic-multipath-21";
 pub const MAX_MULTIPATH_PATHS: u8 = 64;
 const MIN_PATH_VALIDATION_PROBE_BYTES: u16 = 1200;
+const MAX_PATH_HISTORY_RECORDS: usize = 4096;
+const MAX_ACK_PATH_SAMPLES: usize = 1_000_000;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TrialDisposition {
@@ -192,6 +194,11 @@ pub struct EndpointEvidence {
     pub initial_max_path_id: Option<u32>,
     /// Configured concurrent path ceiling, including the handshake path.
     pub configured_max_paths: u8,
+    /// Highest peer-advertised MAX_PATH_ID observed so far. This may exceed
+    /// initial_max_path_id after path churn, but must never decrease.
+    pub maximum_path_id_limit_observed: u32,
+    /// Complete path history is retained by the adapter even after Conn.Paths()
+    /// removes long-abandoned path state.
     pub paths: Vec<PathObservation>,
     pub lifecycle_events: Vec<PathLifecycleEvent>,
 }
@@ -312,6 +319,9 @@ fn validate_lifecycle(
     if endpoint.lifecycle_events.is_empty() {
         return Err("path_lifecycle_events_missing");
     }
+    if endpoint.lifecycle_events.len() > MAX_PATH_HISTORY_RECORDS {
+        return Err("path_lifecycle_history_exceeds_bound");
+    }
     let mut created = BTreeSet::new();
     let mut validated = BTreeSet::new();
     let mut abandoned = BTreeSet::new();
@@ -413,20 +423,17 @@ fn validate_endpoint(
     if !endpoint.multipath_negotiated {
         return Err(EndpointFailure::Fail("multipath_extension_not_negotiated"));
     }
-    let max_path_id = endpoint
+    let initial_max_path_id = endpoint
         .initial_max_path_id
         .ok_or(EndpointFailure::Fail("initial_max_path_id_missing"))?;
     if endpoint.configured_max_paths == 0
         || endpoint.configured_max_paths > MAX_MULTIPATH_PATHS
-        || max_path_id > u32::MAX
+        || endpoint.maximum_path_id_limit_observed < initial_max_path_id
     {
         return Err(EndpointFailure::Fail("configured_path_limit_out_of_range"));
     }
-    if endpoint.paths.is_empty() || endpoint.paths.len() > usize::from(endpoint.configured_max_paths) {
-        return Err(EndpointFailure::Fail("observed_path_count_exceeds_configured_limit"));
-    }
-    if endpoint.paths.len() > usize::from(MAX_MULTIPATH_PATHS) {
-        return Err(EndpointFailure::Fail("observed_path_count_exceeds_protocol_bound"));
+    if endpoint.paths.is_empty() || endpoint.paths.len() > MAX_PATH_HISTORY_RECORDS {
+        return Err(EndpointFailure::Fail("path_history_exceeds_bound"));
     }
 
     let mut seen = BTreeSet::new();
@@ -435,8 +442,8 @@ fn validate_endpoint(
         if !seen.insert(path.path_id) {
             return Err(EndpointFailure::Fail("duplicate_path_observation"));
         }
-        if path.path_id > max_path_id {
-            return Err(EndpointFailure::Fail("path_id_exceeds_advertised_maximum"));
+        if path.path_id > endpoint.maximum_path_id_limit_observed {
+            return Err(EndpointFailure::Fail("path_id_exceeds_observed_advertised_maximum"));
         }
         if path.path_id != 0
             && matches!(path.state, PathState::Active | PathState::Backup)
@@ -467,6 +474,12 @@ fn validate_endpoint(
     }
     if !seen.contains(&0) || !active_path_ids.contains(&0) {
         return Err(EndpointFailure::Fail("initial_handshake_path_not_active"));
+    }
+    if active_path_ids.len() > usize::from(endpoint.configured_max_paths) {
+        return Err(EndpointFailure::Fail("concurrent_path_count_exceeds_configured_limit"));
+    }
+    if active_path_ids.len() > usize::from(MAX_MULTIPATH_PATHS) {
+        return Err(EndpointFailure::Fail("concurrent_path_count_exceeds_protocol_bound"));
     }
     if active_path_ids.len() < 2 {
         return Err(EndpointFailure::Fail("fewer_than_two_active_validated_paths"));
@@ -656,6 +669,17 @@ pub fn evaluate_multipath_quic_trial(evidence: &PairedTrialEvidence) -> QuicEvid
         );
     }
 
+    if evidence.ack_path_samples.len() > MAX_ACK_PATH_SAMPLES {
+        return result(
+            TrialDisposition::Inconclusive,
+            ApplicationDisposition::NotMeasured,
+            "ack_path_sample_count_exceeds_bound",
+            client.active_path_ids.iter().copied().collect(),
+            0,
+            0,
+            evidence.stream_outcome.as_ref(),
+        );
+    }
     let mut seen_sample_ids = BTreeSet::new();
     let mut cross_path_ack_samples = 0_usize;
     for sample in &evidence.ack_path_samples {
@@ -839,6 +863,7 @@ mod tests {
             multipath_negotiated: true,
             initial_max_path_id: Some(2),
             configured_max_paths: 3,
+            maximum_path_id_limit_observed: 2,
             paths: vec![
                 PathObservation {
                     path_id: 0,
