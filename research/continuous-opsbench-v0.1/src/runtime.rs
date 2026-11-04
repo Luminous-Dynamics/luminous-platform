@@ -549,7 +549,7 @@ fn validate_runtime_attestations(
         for sensor in &receipt.sensor_coverage {
             if !runtime_identity_digests.insert(sensor.sensor_instance_digest.clone()) {
                 return Err(RuntimeAttestationError::SensorCoverageInstanceCollision(
-                    receipt.trial_id.clone(), receipt.arm,
+                    receipt.trial_id.clone(), receipt.arm, sensor.role,
                 ));
             }
         }
@@ -2338,7 +2338,7 @@ mod tests {
         assert_eq!(
             validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::SensorCoverageInstanceCollision(
-                "trial-a".into(), EvaluationArm::Baseline
+                "trial-a".into(), EvaluationArm::Baseline, RuntimeSensorRole::ProcessTree
             ))
         );
     }
