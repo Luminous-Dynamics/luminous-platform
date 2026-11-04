@@ -8,6 +8,7 @@ pub mod impact;
 pub mod sealed;
 pub mod runtime;
 pub mod observer_fitness;
+pub mod temporal;
 
 use std::collections::{BTreeMap, BTreeSet};
 
