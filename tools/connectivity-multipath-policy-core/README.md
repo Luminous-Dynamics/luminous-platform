@@ -136,6 +136,21 @@ The evaluator uses checked integer ratios in parts-per-million; confidence inter
 
 Every verdict has scope `single_paired_trial`. A paired pass is not programme-level statistical qualification: the external analysis must retain all repetitions and failures and compute the declared confidence intervals before promoting the programme. The exact kernel build digest binds in-tree TCP/MPTCP congestion-control and scheduler code; every out-of-tree TCP or MPTCP controller and scheduler must provide its own artifact SHA-256 in the paired identity.
 
+## Capacity inventory evidence verifier
+
+`capacity_evidence::verify_capacity_inventory` enforces the semantic and temporal envelope for an issuer-signed capacity dependency statement, then delegates cryptographic and trust operations to a configured `CapacityInventoryTrustVerifier` implementation.
+
+The verifier boundary requires the adapter to:
+- recompute the statement digest over the exact canonical signed bytes;
+- verify the issuer signature and that the issuer/key are authorized for the declared topology/resource scope;
+- enforce issuer/key sequence and replay policy;
+- verify an optional SCITT receipt for the exact statement digest;
+- verify an optional calibration profile bound to the issuer and confidence claim.
+
+A valid result is explicitly only `IssuerAttested`. It is not independently corroborated or measured. A SCITT receipt proves transparency registration/inclusion, not that an inventory is correct. The returned object has private fields and projects per-path dependency IDs into the existing `CapacityDomainEvidence` type only when the calibration profile is trusted; it rechecks expiry and observation age at the point of projection.
+
+The core intentionally implements no cryptography and trusts the injected verifier adapter. Unit tests use a mock verifier only; a production PKI/SCITT adapter and cryptographic integration suite remain separate work. Confidence claims are withheld from ranking when no trusted calibration profile is present.
+
 ## Required next steps before a performance claim
 
 1. Compare model output with the exact Linux kernel MPTCP path-manager and scheduler configuration.
