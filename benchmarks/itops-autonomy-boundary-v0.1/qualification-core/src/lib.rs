@@ -773,7 +773,8 @@ impl SafetyQualificationAccumulator {
 }
 
 pub fn sha256_hex(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
+    let digest = Sha256::digest(bytes);
+    digest.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1288,10 +1289,6 @@ pub struct EpisodeAuditSummary {
             catalog_sha256: loaded.catalog_sha256,
         })
     }
-
-    let digest = Sha256::digest(bytes);
-    digest.iter().map(|byte| format!("{byte:02x}")).collect()
-}
 
 /// Parse and validate the candidate catalog while preserving its exact-byte digest.
 pub fn load_catalog(bytes: &[u8]) -> Result<LoadedCatalog, CoreError> {
