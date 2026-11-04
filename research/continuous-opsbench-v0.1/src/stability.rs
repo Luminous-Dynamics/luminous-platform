@@ -1658,6 +1658,81 @@ mod tests {
     }
 
     #[test]
+    fn closed_loop_decision_binds_exact_observation_and_proposed_actions() {
+        let mut config = config();
+        config.actuation_delay_ticks = 0;
+        let mut controller = OneShotReactiveScaleUp {
+            id: "evidence-bound-agent",
+            kind: Controller::Agent,
+            issued: false,
+            calls: Vec::new(),
+            threshold_ppm: 300_000,
+            capacity: 140,
+        };
+        let run = run_stability_closed_loop(&config, &mut controller).unwrap();
+        assert!(validate_closed_loop_evidence(&config, &run).is_ok());
+        assert_eq!(run.decisions[3].observation, run.stability.observations[3]);
+        assert_eq!(
+            run.decisions[3].proposed_actions,
+            run.actions.iter()
+                .filter(|action| action.issued_at_tick == run.decisions[3].decision_tick)
+                .cloned()
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn closed_loop_evidence_rejects_tampered_observation_snapshot() {
+        let mut config = config();
+        config.actuation_delay_ticks = 0;
+        let mut controller = OneShotReactiveScaleUp {
+            id: "evidence-bound-agent",
+            kind: Controller::Agent,
+            issued: false,
+            calls: Vec::new(),
+            threshold_ppm: 300_000,
+            capacity: 140,
+        };
+        let mut run = run_stability_closed_loop(&config, &mut controller).unwrap();
+        run.decisions[3].observation.observed_queue_depth =
+            run.decisions[3].observation.observed_queue_depth.saturating_add(1);
+        assert_eq!(
+            validate_closed_loop_evidence(&config, &run),
+            Err(StabilityError::ClosedLoopEvidenceMismatch)
+        );
+    }
+
+    #[test]
+    fn closed_loop_evidence_rejects_changed_operation_and_orphan_action() {
+        let mut config = config();
+        config.actuation_delay_ticks = 0;
+        let mut controller = OneShotReactiveScaleUp {
+            id: "evidence-bound-agent",
+            kind: Controller::Agent,
+            issued: false,
+            calls: Vec::new(),
+            threshold_ppm: 300_000,
+            capacity: 140,
+        };
+        let run = run_stability_closed_loop(&config, &mut controller).unwrap();
+
+        let mut changed_operation = run.clone();
+        changed_operation.decisions[3].proposed_actions[0].operation =
+            ControlOperation::SetApiCapacity(141);
+        assert_eq!(
+            validate_closed_loop_evidence(&config, &changed_operation),
+            Err(StabilityError::ClosedLoopEvidenceMismatch)
+        );
+
+        let mut orphan_action = run;
+        orphan_action.actions.pop();
+        assert_eq!(
+            validate_closed_loop_evidence(&config, &orphan_action),
+            Err(StabilityError::ClosedLoopEvidenceMismatch)
+        );
+    }
+
+    #[test]
     fn observation_trace_preserves_source_time_and_deterministic_noise() {
         let mut config = config();
         config.queue_noise_by_tick[3] = 9;
