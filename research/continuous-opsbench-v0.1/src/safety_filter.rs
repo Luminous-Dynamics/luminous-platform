@@ -5,6 +5,7 @@
 //! authorize or execute an action. A positive result means only that every
 //! enumerated successor passes this versioned one-step envelope.
 
+use crate::model_assumption::{ModelAssumptionReport, ModelDisposition};
 use crate::Digest;
 use std::collections::BTreeSet;
 
@@ -72,11 +73,16 @@ pub struct SafetyFilterInput {
     pub observed_at_ms: u64,
     pub appraisal_at_ms: u64,
     pub maximum_observation_age_ms: u64,
+    pub maximum_model_report_age_ms: u64,
     pub receipt_validity_ms: u64,
     pub topology_epoch: u64,
     pub topology_digest: Digest,
     pub model_revision: String,
     pub model_digest: Digest,
+    pub plant_revision: String,
+    pub plant_digest: Digest,
+    pub workload_profile_digest: Digest,
+    pub metric_policy_set_digest: Digest,
     pub uncertainty_set_digest: Digest,
     pub disturbance_set_digest: Digest,
     pub envelope_digest: Digest,
@@ -109,6 +115,9 @@ pub enum SafetyFinding {
     IncompleteEvidence,
     StaleObservation,
     InvalidInputSet,
+    ModelAssumptionNotQualified,
+    ModelAssumptionIdentityMismatch,
+    ModelAssumptionReportStale,
     EnumerationLimitExceeded,
     ArithmeticOverflow,
 }
@@ -131,6 +140,10 @@ pub struct SafetyAppraisal {
     pub observation_digest: Digest,
     pub model_revision: String,
     pub model_digest: Digest,
+    pub plant_revision: String,
+    pub plant_digest: Digest,
+    pub workload_profile_digest: Digest,
+    pub metric_policy_set_digest: Digest,
     pub uncertainty_set_digest: Digest,
     pub disturbance_set_digest: Digest,
     pub envelope_digest: Digest,
@@ -140,6 +153,8 @@ pub struct SafetyAppraisal {
     /// Minimum signed distance to any declared invariant over enumerated successors.
     /// Negative means at least one declared invariant was violated.
     pub minimum_invariant_margin: Option<i64>,
+    pub model_assumption_evaluated_at_ms: Option<u64>,
+    pub model_assumption_valid_until_ms: Option<u64>,
     pub findings: Vec<SafetyFinding>,
 }
 
@@ -186,6 +201,10 @@ fn base_appraisal(
         observation_digest: input.observation_digest.clone(),
         model_revision: input.model_revision.clone(),
         model_digest: input.model_digest.clone(),
+        plant_revision: input.plant_revision.clone(),
+        plant_digest: input.plant_digest.clone(),
+        workload_profile_digest: input.workload_profile_digest.clone(),
+        metric_policy_set_digest: input.metric_policy_set_digest.clone(),
         uncertainty_set_digest: input.uncertainty_set_digest.clone(),
         disturbance_set_digest: input.disturbance_set_digest.clone(),
         envelope_digest: input.envelope_digest.clone(),
@@ -193,6 +212,8 @@ fn base_appraisal(
         valid_until_ms,
         evaluated_combinations: 0,
         minimum_invariant_margin: None,
+        model_assumption_evaluated_at_ms: None,
+        model_assumption_valid_until_ms: None,
         findings,
     }
 }
@@ -293,7 +314,7 @@ fn margin(limit: u64, observed: u64) -> i64 {
 ///
 /// Horizon is exactly one transition. A future multi-step viability kernel must
 /// be separately implemented and must not relabel this result as a stability proof.
-pub fn appraise_one_step(
+pub(crate) fn appraise_one_step(
     input: &SafetyFilterInput,
     action: &CandidateAct,
 ) -> SafetyAppraisal {
@@ -309,6 +330,7 @@ pub fn appraise_one_step(
         || input.capacity_uncertainty.is_empty()
         || input.disturbances.is_empty()
         || input.receipt_validity_ms == 0
+        || input.maximum_model_report_age_ms == 0
         || input.envelope.maximum_api_capacity == 0
         || input.envelope.maximum_database_capacity == 0
         || input.envelope.maximum_retry_multiplier_ppm == 0
@@ -472,6 +494,90 @@ pub fn appraise_one_step(
     result
 }
 
+/// Require an exact, qualified model-assumption report before applying the
+/// one-step safety appraisal. This is the composed research entry point; the
+/// low-level appraise_one_step function remains available for filter-only
+/// differential tests and must not be used as the full assurance decision.
+///
+/// The caller must source-authenticate the report before constructing this
+/// typed value. This wrapper checks identity and disposition; it does not
+/// authenticate publisher signatures or recompute external evidence digests.
+pub fn appraise_with_model_assurance(
+    input: &SafetyFilterInput,
+    action: &CandidateAct,
+    report: &ModelAssumptionReport,
+) -> SafetyAppraisal {
+    let identity_matches = report.run_id == input.run_id
+        && report.scenario_id == input.scenario_id
+        && report.arm_id == input.arm_id
+        && report.model_revision == input.model_revision
+        && report.model_digest == input.model_digest
+        && report.plant_revision == input.plant_revision
+        && report.plant_digest == input.plant_digest
+        && report.workload_profile_digest == input.workload_profile_digest
+        && report.metric_policy_set_digest == input.metric_policy_set_digest
+        && report.topology_epoch == input.topology_epoch
+        && report.topology_digest == input.topology_digest
+        && !report.model_producer_id.is_empty()
+        && !report.observer_id.is_empty()
+        && !report.observer_adapter_digest.0.iter().all(|byte| *byte == 0)
+        && report.model_producer_id != report.observer_id
+        && !report.model_control_domain.is_empty()
+        && !report.observer_control_domain.is_empty()
+        && report.model_control_domain != report.observer_control_domain
+        && report.forecast_count > 0
+        && report.observation_count == report.forecast_count
+        && report.matched_observation_count == report.forecast_count
+        && report.envelope_miss_count == 0
+        && report.too_wide_count == 0
+        && report.findings.is_empty()
+        && !report.metrics.is_empty()
+        && report.valid_until_ms > report.evaluated_at_ms
+        && report.valid_until_ms.saturating_sub(report.evaluated_at_ms)
+            <= crate::model_assumption::MAX_REPORT_VALIDITY_MS;
+
+    if !identity_matches {
+        return base_appraisal(
+            input,
+            action,
+            FilterDisposition::DeferForEvidence,
+            None,
+            vec![SafetyFinding::ModelAssumptionIdentityMismatch],
+        );
+    }
+    if report.disposition != ModelDisposition::Qualified {
+        return base_appraisal(
+            input,
+            action,
+            FilterDisposition::DeferForEvidence,
+            None,
+            vec![SafetyFinding::ModelAssumptionNotQualified],
+        );
+    }
+    let report_fresh = input.appraisal_at_ms < report.valid_until_ms
+        && input.appraisal_at_ms
+            .checked_sub(report.evaluated_at_ms)
+            .map(|age| age <= input.maximum_model_report_age_ms)
+            .unwrap_or(false);
+    if !report_fresh {
+        return base_appraisal(
+            input,
+            action,
+            FilterDisposition::DeferForEvidence,
+            None,
+            vec![SafetyFinding::ModelAssumptionReportStale],
+        );
+    }
+
+    let mut appraisal = appraise_one_step(input, action);
+    if let Some(action_expiry) = appraisal.valid_until_ms {
+        appraisal.valid_until_ms = Some(action_expiry.min(report.valid_until_ms));
+    }
+    appraisal.model_assumption_evaluated_at_ms = Some(report.evaluated_at_ms);
+    appraisal.model_assumption_valid_until_ms = Some(report.valid_until_ms);
+    appraisal
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -501,11 +607,16 @@ mod tests {
             observed_at_ms: 100,
             appraisal_at_ms: 110,
             maximum_observation_age_ms: 20,
+            maximum_model_report_age_ms: 20,
             receipt_validity_ms: 50,
             topology_epoch: 7,
             topology_digest: digest(2),
-            model_revision: "plant-v1".into(),
+            model_revision: "model-v1".into(),
             model_digest: digest(3),
+            plant_revision: "plant-v1".into(),
+            plant_digest: digest(8),
+            workload_profile_digest: digest(9),
+            metric_policy_set_digest: digest(10),
             uncertainty_set_digest: digest(4),
             disturbance_set_digest: digest(5),
             envelope_digest: digest(6),
@@ -539,6 +650,121 @@ mod tests {
             action_digest: digest(7),
             operation,
         }
+    }
+
+    fn qualified_model_report() -> ModelAssumptionReport {
+        ModelAssumptionReport {
+            schema: crate::model_assumption::MODEL_ASSUMPTION_SCHEMA.into(),
+            disposition: ModelDisposition::Qualified,
+            run_id: "run-1".into(),
+            scenario_id: "scenario-1".into(),
+            arm_id: "candidate".into(),
+            dependence_cluster_id: "cluster-1".into(),
+            model_revision: "model-v1".into(),
+            model_digest: digest(3),
+            plant_revision: "plant-v1".into(),
+            plant_digest: digest(8),
+            workload_profile_digest: digest(9),
+            metric_policy_set_digest: digest(10),
+            topology_epoch: 7,
+            topology_digest: digest(2),
+            model_producer_id: "model-builder".into(),
+            model_control_domain: "model-domain".into(),
+            observer_id: "service-observer".into(),
+            observer_control_domain: "observer-domain".into(),
+            observer_adapter_digest: digest(11),
+            evaluated_at_ms: 100,
+            valid_until_ms: 160,
+            forecast_count: 3,
+            observation_count: 3,
+            matched_observation_count: 3,
+            envelope_miss_count: 0,
+            too_wide_count: 0,
+            maximum_positive_cusum: 0,
+            maximum_negative_cusum: 0,
+            findings: Vec::new(),
+            metrics: vec![crate::model_assumption::MetricAssumptionSummary {
+                metric_id: "critical_queue".into(),
+                forecast_count: 3,
+                matched_observation_count: 3,
+                covered_count: 3,
+                envelope_miss_count: 0,
+                too_wide_count: 0,
+                final_positive_cusum: 0,
+                final_negative_cusum: 0,
+                worst_interval_width: 10,
+            }],
+        }
+    }
+
+    #[test]
+    fn composed_filter_requires_exact_qualified_model_report() {
+        let evidence = input();
+        let result = appraise_with_model_assurance(
+            &evidence,
+            &act(CandidateOperation::Noop),
+            &qualified_model_report(),
+        );
+        assert_eq!(result.disposition, FilterDisposition::AdmitForAuthorization);
+    }
+
+    #[test]
+    fn composed_appraisal_expires_no_later_than_model_report() {
+        let mut evidence = input();
+        evidence.receipt_validity_ms = 100;
+        let mut report = qualified_model_report();
+        report.valid_until_ms = 160;
+        let result = appraise_with_model_assurance(
+            &evidence,
+            &act(CandidateOperation::Noop),
+            &report,
+        );
+        assert_eq!(result.disposition, FilterDisposition::AdmitForAuthorization);
+        assert_eq!(result.valid_until_ms, Some(160));
+        assert_eq!(result.model_assumption_valid_until_ms, Some(160));
+    }
+
+    #[test]
+    fn composed_filter_defers_when_model_is_not_qualified() {
+        let evidence = input();
+        let mut report = qualified_model_report();
+        report.disposition = ModelDisposition::DriftSuspected;
+        let result = appraise_with_model_assurance(
+            &evidence,
+            &act(CandidateOperation::Noop),
+            &report,
+        );
+        assert_eq!(result.disposition, FilterDisposition::DeferForEvidence);
+        assert!(result.findings.contains(&SafetyFinding::ModelAssumptionNotQualified));
+    }
+
+    #[test]
+    fn composed_filter_defers_when_qualified_model_report_is_expired() {
+        let mut evidence = input();
+        evidence.appraisal_at_ms = 170;
+        let mut report = qualified_model_report();
+        report.valid_until_ms = 160;
+        let result = appraise_with_model_assurance(
+            &evidence,
+            &act(CandidateOperation::Noop),
+            &report,
+        );
+        assert_eq!(result.disposition, FilterDisposition::DeferForEvidence);
+        assert!(result.findings.contains(&SafetyFinding::ModelAssumptionReportStale));
+    }
+
+    #[test]
+    fn composed_filter_defers_on_model_scope_substitution() {
+        let evidence = input();
+        let mut report = qualified_model_report();
+        report.plant_digest = digest(99);
+        let result = appraise_with_model_assurance(
+            &evidence,
+            &act(CandidateOperation::Noop),
+            &report,
+        );
+        assert_eq!(result.disposition, FilterDisposition::DeferForEvidence);
+        assert!(result.findings.contains(&SafetyFinding::ModelAssumptionIdentityMismatch));
     }
 
     #[test]

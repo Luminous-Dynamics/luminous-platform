@@ -219,7 +219,12 @@
         "state_belief",
         "capacity_uncertainty",
         "disturbances",
-        "envelope"
+        "envelope",
+        "plant_revision",
+        "plant_digest",
+        "workload_profile_digest",
+        "metric_policy_set_digest",
+        "maximum_model_report_age_ms"
       ],
       "properties": {
         "run_id": {
@@ -315,6 +320,24 @@
         },
         "envelope": {
           "$ref": "#/$defs/envelope"
+        },
+        "plant_revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "plant_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "workload_profile_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "metric_policy_set_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "maximum_model_report_age_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
         }
       }
     },

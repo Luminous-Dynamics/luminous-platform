@@ -1,0 +1,244 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/model-assumption-monitor-report-v0.1.schema.json",
+  "title": "Operational Model Assumption Monitor Report v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "disposition",
+    "run_id",
+    "scenario_id",
+    "arm_id",
+    "dependence_cluster_id",
+    "model_revision",
+    "model_digest",
+    "plant_revision",
+    "plant_digest",
+    "workload_profile_digest",
+    "topology_epoch",
+    "topology_digest",
+    "model_control_domain",
+    "observer_control_domain",
+    "forecast_count",
+    "observation_count",
+    "matched_observation_count",
+    "envelope_miss_count",
+    "too_wide_count",
+    "maximum_positive_cusum",
+    "maximum_negative_cusum",
+    "findings",
+    "metrics",
+    "metric_policy_set_digest",
+    "model_producer_id",
+    "observer_id",
+    "observer_adapter_digest",
+    "evaluated_at_ms",
+    "valid_until_ms"
+  ],
+  "properties": {
+    "schema": {
+      "const": "continuous-opsbench-model-assumption-monitor-v0.1"
+    },
+    "disposition": {
+      "enum": [
+        "UNQUALIFIED",
+        "QUALIFIED",
+        "DRIFT_SUSPECTED",
+        "QUARANTINED",
+        "INDETERMINATE"
+      ]
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scenario_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "arm_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "dependence_cluster_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "plant_revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "plant_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "workload_profile_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "topology_epoch": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 18446744073709552000
+    },
+    "topology_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "model_control_domain": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observer_control_domain": {
+      "type": "string",
+      "minLength": 1
+    },
+    "forecast_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "observation_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "matched_observation_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "envelope_miss_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "too_wide_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "maximum_positive_cusum": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "maximum_negative_cusum": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "findings": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "INVALID_IDENTITY",
+          "TRUST_DOMAIN_NOT_SEPARATED",
+          "INVALID_THRESHOLDS",
+          "INVALID_FORECAST",
+          "DUPLICATE_FORECAST",
+          "MISSING_OBSERVATION",
+          "DUPLICATE_OBSERVATION",
+          "DUPLICATE_EVIDENCE_DIGEST",
+          "SEQUENCE_REGRESSION",
+          "SEQUENCE_GAP",
+          "INCOMPLETE_OBSERVATION",
+          "OBSERVATION_BINDING_MISMATCH",
+          "MODEL_IDENTITY_MISMATCH",
+          "FUTURE_OBSERVATION",
+          "STALE_OBSERVATION",
+          "ENVELOPE_MISS",
+          "INTERVAL_TOO_WIDE",
+          "INSUFFICIENT_SAMPLES",
+          "DRIFT_WARNING",
+          "DRIFT_QUARANTINE"
+        ]
+      }
+    },
+    "metrics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "metric_id",
+          "forecast_count",
+          "matched_observation_count",
+          "covered_count",
+          "envelope_miss_count",
+          "too_wide_count",
+          "final_positive_cusum",
+          "final_negative_cusum",
+          "worst_interval_width"
+        ],
+        "properties": {
+          "metric_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "forecast_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "matched_observation_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "covered_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "envelope_miss_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "too_wide_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "final_positive_cusum": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "final_negative_cusum": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "worst_interval_width": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "metric_policy_set_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "model_producer_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observer_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observer_adapter_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "evaluated_at_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "valid_until_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    }
+  }
+}

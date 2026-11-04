@@ -1,0 +1,399 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/model-assumption-monitor-input-v0.1.schema.json",
+  "title": "Operational Model Assumption Monitor Input v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "scenario_id",
+    "arm_id",
+    "dependence_cluster_id",
+    "model_revision",
+    "model_digest",
+    "plant_revision",
+    "plant_digest",
+    "workload_profile_digest",
+    "topology_epoch",
+    "topology_digest",
+    "model_producer_id",
+    "model_control_domain",
+    "observer_id",
+    "observer_control_domain",
+    "observer_adapter_digest",
+    "maximum_observation_age_ms",
+    "maximum_target_time_skew_ms",
+    "forecasts",
+    "observations",
+    "metric_policy_set_digest",
+    "metric_policies",
+    "evaluation_at_ms",
+    "valid_until_ms"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scenario_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "arm_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "dependence_cluster_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "plant_revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "plant_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "workload_profile_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "topology_epoch": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "topology_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "model_producer_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_control_domain": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observer_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observer_control_domain": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observer_adapter_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "maximum_observation_age_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "maximum_target_time_skew_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "forecasts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "forecast_id",
+          "metric_id",
+          "units",
+          "issued_at_ms",
+          "target_at_ms",
+          "source_tick",
+          "target_tick",
+          "lower",
+          "point",
+          "upper",
+          "model_revision",
+          "model_digest",
+          "plant_revision",
+          "plant_digest",
+          "workload_profile_digest",
+          "topology_epoch",
+          "topology_digest",
+          "metric_policy_set_digest"
+        ],
+        "properties": {
+          "forecast_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "metric_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "units": {
+            "type": "string",
+            "minLength": 1
+          },
+          "issued_at_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "target_at_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "source_tick": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "target_tick": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "lower": {
+            "type": "integer",
+            "minimum": -9223372036854776000,
+            "maximum": 9007199254740991
+          },
+          "point": {
+            "type": "integer",
+            "minimum": -9223372036854776000,
+            "maximum": 9007199254740991
+          },
+          "upper": {
+            "type": "integer",
+            "minimum": -9223372036854776000,
+            "maximum": 9007199254740991
+          },
+          "model_revision": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "plant_revision": {
+            "type": "string",
+            "minLength": 1
+          },
+          "plant_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "workload_profile_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "topology_epoch": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "topology_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "metric_policy_set_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "observations": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "observation_id",
+          "forecast_id",
+          "metric_id",
+          "units",
+          "target_tick",
+          "observed_at_ms",
+          "ingested_at_ms",
+          "clock_uncertainty_ms",
+          "source_sequence",
+          "actual",
+          "evidence_digest",
+          "complete",
+          "model_digest",
+          "plant_digest",
+          "workload_profile_digest",
+          "topology_epoch",
+          "topology_digest",
+          "metric_policy_set_digest"
+        ],
+        "properties": {
+          "observation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "forecast_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "metric_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "units": {
+            "type": "string",
+            "minLength": 1
+          },
+          "target_tick": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "observed_at_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "ingested_at_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "clock_uncertainty_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "source_sequence": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "actual": {
+            "type": "integer",
+            "minimum": -9223372036854776000,
+            "maximum": 9007199254740991
+          },
+          "evidence_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "model_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "plant_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "workload_profile_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "topology_epoch": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "topology_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "metric_policy_set_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "metric_policy_set_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "metric_policies": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "metric_id",
+          "units",
+          "minimum_observations",
+          "maximum_interval_width",
+          "residual_scale",
+          "cusum_allowance",
+          "cusum_warning_threshold",
+          "cusum_quarantine_threshold"
+        ],
+        "properties": {
+          "metric_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "units": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minimum_observations": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "maximum_interval_width": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "residual_scale": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "cusum_allowance": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "cusum_warning_threshold": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "cusum_quarantine_threshold": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 9007199254740991
+          }
+        }
+      }
+    },
+    "evaluation_at_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "valid_until_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    }
+  }
+}

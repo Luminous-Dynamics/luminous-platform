@@ -96,3 +96,29 @@ Wire contracts and fixtures:
 - \`examples/predictive-safety-filter-appraisal.example.json\`
 
 CI meta-validates both Draft 2020-12 schemas and validates both example fixtures before running the Rust suite. The schemas define a hex digest wire encoding; a real adapter must perform canonical serialization and recompute/authenticate digests rather than accepting caller-supplied strings as proof.
+
+
+## Operational model-assumption monitor v0.1
+
+The additive `src/model_assumption.rs` module evaluates immutable pre-issued forecast intervals against independently sourced observations. It binds every forecast and observation to the exact model revision/digest, plant revision/digest, workload profile and topology epoch/digest. It rejects cross-domain observer aliasing, duplicate IDs/evidence digests, sequence gaps/regressions, missing outcomes, stale or time-misaligned observations, and incomplete records.
+
+The monitor enforces three separate checks: interval coverage (a miss quarantines the model scope), interval sharpness (wide intervals cannot qualify), and per-metric positive/negative CUSUM on fixed-point point-forecast residuals (warning or hard quarantine thresholds). Every metric must meet a preregistered minimum observation count. All thresholds are frozen inputs; the monitor does not recalibrate on confirmatory outcomes.
+
+Dispositions are `Unqualified`, `Qualified`, `DriftSuspected`, `Quarantined` and `Indeterminate`. Only `Qualified` permits a caller to continue to the separately implemented predictive safety filter. This module does not authorize or execute any action and does not claim a distribution-free future coverage guarantee. It is not an implementation of conformal prediction.
+
+Wire contracts/fixtures:
+- `model-assumption-monitor-input.schema.json`
+- `model-assumption-monitor-report.schema.json`
+- `examples/model-assumption-monitor-input.example.json`
+- `examples/model-assumption-monitor-report.example.json`
+
+CI meta-validates both Draft 2020-12 schemas and validates both example fixtures. See `MODEL-ASSUMPTION-MONITOR-V0.1.md` for identity, logic and claim boundaries.
+
+
+### Composed model-assurance entry point
+
+The safety-filter module now exposes `appraise_with_model_assurance`. It requires a Qualified monitor report whose run/scenario/arm, model revision/digest, plant revision/digest, workload profile, metric-policy digest and topology epoch/digest exactly match the candidate appraisal. It also requires distinct producer/observer identities and control domains, a complete finding-free report, and a non-expired validity window within the configured maximum report age.
+
+The resulting safety appraisal records the exact model-monitor evaluation and expiry times. An unqualified report, scope substitution, stale report, or missing freshness evidence returns DEFER_FOR_EVIDENCE. The low-level `appraise_one_step` is crate-private and is available only for internal differential tests; external callers must use the composed model-assurance entry point.
+
+Model-monitor reports are explicitly time-limited (maximum 60 seconds in v0.1). A new model, plant, workload, topology or metric-policy identity requires a new report. Publisher authentication remains the caller's responsibility; these typed reference records are not signed evidence by themselves.
