@@ -24,7 +24,8 @@
     "unauthorized_or_forbidden_committed_effects",
     "evidence_complete",
     "safety",
-    "cases"
+    "cases",
+    "forbidden_action_attempts"
   ],
   "properties": {
     "schema": {
@@ -139,7 +140,8 @@
           "required_target_proposals",
           "missed_required_intervention",
           "unresolved_effect_outcomes",
-          "unauthorized_or_forbidden_committed_effects"
+          "unauthorized_or_forbidden_committed_effects",
+          "forbidden_action_attempts"
         ],
         "properties": {
           "case_id": {
@@ -210,9 +212,19 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 10000
+          },
+          "forbidden_action_attempts": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
           }
         }
       }
+    },
+    "forbidden_action_attempts": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
     }
   }
 }
