@@ -314,7 +314,7 @@ fn margin(limit: u64, observed: u64) -> i64 {
 ///
 /// Horizon is exactly one transition. A future multi-step viability kernel must
 /// be separately implemented and must not relabel this result as a stability proof.
-pub fn appraise_one_step(
+pub(crate) fn appraise_one_step(
     input: &SafetyFilterInput,
     action: &CandidateAct,
 ) -> SafetyAppraisal {
