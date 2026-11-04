@@ -124,11 +124,14 @@ struct EffectFingerprint {
     operation: String,
     target: String,
     request_digest: Digest,
-    expected_topology_epoch: u64,
-    expected_topology_digest: Digest,
 }
 
 impl EffectFingerprint {
+    /// Identity of the business effect, separate from its current authorization
+    /// precondition. The expected topology epoch/digest is checked against the
+    /// authorization receipt and participant state, but does not create a new
+    /// logical effect when the same target/request is retried after topology
+    /// advances.
     fn from_request(request: &ConditionalMutation) -> Self {
         let binding = &request.binding;
         Self {
@@ -139,8 +142,6 @@ impl EffectFingerprint {
             operation: binding.operation.clone(),
             target: binding.target.clone(),
             request_digest: binding.request_digest.clone(),
-            expected_topology_epoch: request.expected_topology_epoch,
-            expected_topology_digest: request.expected_topology_digest.clone(),
         }
     }
 }
@@ -421,6 +422,28 @@ mod tests {
         let replayed = participant.commit(&retry, &permit(&retry), 200).unwrap();
         assert_eq!(replayed.disposition, MutationDisposition::IdempotentReplay);
         assert_eq!(replayed.receipt, committed.receipt);
+        assert_eq!(participant.effect_count().unwrap(), 1);
+    }
+
+    #[test]
+    fn new_topology_authorization_reconciles_an_already_committed_logical_effect() {
+        let participant = participant();
+        let first = request("attempt-1", d(9));
+        let committed = participant.commit(&first, &permit(&first), 100).unwrap();
+
+        participant.publish_topology(TopologyVersion {
+            scope_id: "prod/zone-a".into(),
+            epoch: 8,
+            digest: d(8),
+        }).unwrap();
+
+        let mut retry = request("attempt-2", d(9));
+        retry.expected_topology_epoch = 8;
+        retry.expected_topology_digest = d(8);
+        let replayed = participant.commit(&retry, &permit(&retry), 200).unwrap();
+        assert_eq!(replayed.disposition, MutationDisposition::IdempotentReplay);
+        assert_eq!(replayed.receipt, committed.receipt);
+        assert_eq!(replayed.receipt.committed_topology_epoch, 7);
         assert_eq!(participant.effect_count().unwrap(), 1);
     }
 
