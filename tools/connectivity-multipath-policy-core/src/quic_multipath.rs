@@ -263,10 +263,14 @@ pub struct QuicEvidenceReport {
     pub application_disposition: ApplicationDisposition,
     pub reason: &'static str,
     pub validated_path_ids: Vec<u32>,
-    /// Data paths actually observed in ACK/packet telemetry; may be fewer than validated paths.
-    pub observed_data_path_ids: Vec<u32>,
-    /// ACK-return paths actually observed, separately from data paths.
-    pub observed_ack_return_path_ids: Vec<u32>,
+    /// Client data paths observed in ACK/packet telemetry.
+    pub client_observed_data_path_ids: Vec<u32>,
+    /// Client ACK-return paths observed, separately from data paths.
+    pub client_observed_ack_return_path_ids: Vec<u32>,
+    /// Server data paths observed in ACK/packet telemetry.
+    pub server_observed_data_path_ids: Vec<u32>,
+    /// Server ACK-return paths observed, separately from data paths.
+    pub server_observed_ack_return_path_ids: Vec<u32>,
     pub ack_path_sample_count: u32,
     pub cross_path_ack_sample_count: u32,
     pub source_bytes: Option<u64>,
@@ -311,8 +315,10 @@ fn result(
         application_disposition,
         reason,
         validated_path_ids: path_ids,
-        observed_data_path_ids: Vec::new(),
-        observed_ack_return_path_ids: Vec::new(),
+        client_observed_data_path_ids: Vec::new(),
+        client_observed_ack_return_path_ids: Vec::new(),
+        server_observed_data_path_ids: Vec::new(),
+        server_observed_ack_return_path_ids: Vec::new(),
         ack_path_sample_count: u32::try_from(ack_samples).unwrap_or(u32::MAX),
         cross_path_ack_sample_count: u32::try_from(cross_path_ack_samples).unwrap_or(u32::MAX),
         source_bytes: outcome.map(|item| item.source_bytes),
@@ -943,16 +949,34 @@ pub fn evaluate_multipath_quic_trial(evidence: &PairedTrialEvidence) -> QuicEvid
         cross_path_ack_samples,
         Some(outcome),
     );
-    report.observed_data_path_ids = evidence
+    report.client_observed_data_path_ids = evidence
         .ack_path_samples
         .iter()
+        .filter(|sample| sample.endpoint_id == evidence.client.endpoint_id)
         .map(|sample| sample.data_path_id)
         .collect::<BTreeSet<_>>()
         .into_iter()
         .collect();
-    report.observed_ack_return_path_ids = evidence
+    report.client_observed_ack_return_path_ids = evidence
         .ack_path_samples
         .iter()
+        .filter(|sample| sample.endpoint_id == evidence.client.endpoint_id)
+        .map(|sample| sample.ack_return_path_id)
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect();
+    report.server_observed_data_path_ids = evidence
+        .ack_path_samples
+        .iter()
+        .filter(|sample| sample.endpoint_id == evidence.server.endpoint_id)
+        .map(|sample| sample.data_path_id)
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect();
+    report.server_observed_ack_return_path_ids = evidence
+        .ack_path_samples
+        .iter()
+        .filter(|sample| sample.endpoint_id == evidence.server.endpoint_id)
         .map(|sample| sample.ack_return_path_id)
         .collect::<BTreeSet<_>>()
         .into_iter()
@@ -1302,8 +1326,10 @@ mod tests {
         let report = evaluate_multipath_quic_trial(&evidence);
         assert_eq!(report.disposition, TrialDisposition::Pass);
         assert_eq!(report.validated_path_ids, vec![0, 1]);
-        assert_eq!(report.observed_data_path_ids, vec![0]);
-        assert_eq!(report.observed_ack_return_path_ids, vec![0]);
+        assert_eq!(report.client_observed_data_path_ids, Vec::<u32>::new());
+        assert_eq!(report.client_observed_ack_return_path_ids, Vec::<u32>::new());
+        assert_eq!(report.server_observed_data_path_ids, vec![0]);
+        assert_eq!(report.server_observed_ack_return_path_ids, vec![0]);
     }
 
     #[test]
