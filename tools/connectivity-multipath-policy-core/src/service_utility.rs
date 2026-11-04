@@ -225,6 +225,10 @@ pub struct UtilityComparisonReport {
     pub scope: &'static str,
     pub disposition: UtilityDisposition,
     pub reason: &'static str,
+    pub baseline_environment: Option<UtilityEnvironmentIdentity>,
+    pub treatment_environment: Option<UtilityEnvironmentIdentity>,
+    pub baseline_arm: Option<UtilityArmIdentity>,
+    pub treatment_arm: Option<UtilityArmIdentity>,
     pub baseline_metrics: Option<UtilityTrialMetrics>,
     pub treatment_metrics: Option<UtilityTrialMetrics>,
     pub on_time_payload_ratio_vs_baseline_ppm: Option<u64>,
@@ -554,6 +558,10 @@ fn make_report(
         scope: "single_paired_trial",
         disposition,
         reason,
+        baseline_environment: None,
+        treatment_environment: None,
+        baseline_arm: None,
+        treatment_arm: None,
         baseline_metrics,
         treatment_metrics,
         on_time_payload_ratio_vs_baseline_ppm: None,
@@ -562,6 +570,27 @@ fn make_report(
         energy_per_on_time_mib_ratio_vs_baseline_ppm: None,
         companion_min_retention_ppm: None,
     }
+}
+
+fn make_bound_report(
+    disposition: UtilityDisposition,
+    reason: &'static str,
+    baseline: &UtilityTrial,
+    treatment: &UtilityTrial,
+    baseline_metrics: Option<UtilityTrialMetrics>,
+    treatment_metrics: Option<UtilityTrialMetrics>,
+) -> UtilityComparisonReport {
+    let mut report = make_report(
+        disposition,
+        reason,
+        baseline_metrics,
+        treatment_metrics,
+    );
+    report.baseline_environment = Some(baseline.environment.clone());
+    report.treatment_environment = Some(treatment.environment.clone());
+    report.baseline_arm = Some(baseline.arm.clone());
+    report.treatment_arm = Some(treatment.arm.clone());
+    report
 }
 
 /// Compare a baseline transport/scheduler and a treatment on the same frozen
@@ -591,9 +620,11 @@ pub fn evaluate_deadline_utility_pair(
     let baseline_tasks = validate_trial(baseline)?;
     let treatment_tasks = validate_trial(treatment)?;
     if baseline.environment != treatment.environment || baseline_tasks != treatment_tasks {
-        return Ok(make_report(
+        return Ok(make_bound_report(
             UtilityDisposition::Inconclusive,
             "paired_environment_or_task_contract_mismatch",
+            baseline,
+            treatment,
             None,
             None,
         ));
@@ -601,33 +632,41 @@ pub fn evaluate_deadline_utility_pair(
 
     for trial in [baseline, treatment] {
         if !trial.evidence.supported {
-            return Ok(make_report(
+            return Ok(make_bound_report(
                 UtilityDisposition::Unsupported,
                 "pinned_transport_or_scheduler_arm_unsupported",
+                baseline,
+                treatment,
                 None,
                 None,
             ));
         }
         if !trial.evidence.all_required_counters_present {
-            return Ok(make_report(
+            return Ok(make_bound_report(
                 UtilityDisposition::Inconclusive,
                 "required_task_transport_or_companion_counters_missing",
+                baseline,
+                treatment,
                 None,
                 None,
             ));
         }
         if !trial.evidence.cleanup_verified {
-            return Ok(make_report(
+            return Ok(make_bound_report(
                 UtilityDisposition::Fail,
                 "namespace_or_resource_cleanup_not_verified",
+                baseline,
+                treatment,
                 None,
                 None,
             ));
         }
         if !trial.evidence.path_state_verified_at_both_endpoints {
-            return Ok(make_report(
+            return Ok(make_bound_report(
                 UtilityDisposition::Inconclusive,
                 "path_state_not_verified_at_both_endpoints",
+                baseline,
+                treatment,
                 None,
                 None,
             ));
@@ -635,9 +674,11 @@ pub fn evaluate_deadline_utility_pair(
         if trial.evidence.local_active_path_count < trial.arm.required_active_paths
             || trial.evidence.remote_active_path_count < trial.arm.required_active_paths
         {
-            return Ok(make_report(
+            return Ok(make_bound_report(
                 UtilityDisposition::Fail,
                 "required_active_path_count_not_met_at_both_endpoints",
+                baseline,
+                treatment,
                 None,
                 None,
             ));
@@ -645,9 +686,11 @@ pub fn evaluate_deadline_utility_pair(
         if trial.evidence.local_active_path_count > MAX_PATHS
             || trial.evidence.remote_active_path_count > MAX_PATHS
         {
-            return Ok(make_report(
+            return Ok(make_bound_report(
                 UtilityDisposition::Inconclusive,
                 "active_path_count_exceeds_evaluator_bound",
+                baseline,
+                treatment,
                 None,
                 None,
             ));
@@ -689,9 +732,11 @@ pub fn evaluate_deadline_utility_pair(
         baseline_metrics.on_time_useful_bytes,
     )?;
 
-    let mut report = make_report(
+    let mut report = make_bound_report(
         UtilityDisposition::Pass,
         "deadline_utility_pair_meets_declared_targets",
+        baseline,
+        treatment,
         Some(baseline_metrics),
         Some(treatment_metrics),
     );
