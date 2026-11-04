@@ -42,7 +42,9 @@ jobs:
           /tmp/opsbench-schema-venv/bin/python -m pip install --disable-pip-version-check "jsonschema==4.23.0"
           /tmp/opsbench-schema-venv/bin/python - <<'PY'
           import copy
+          import hashlib
           import json
+          import os
           from pathlib import Path
           from jsonschema import Draft202012Validator
 
@@ -58,6 +60,40 @@ jobs:
                   validator = Draft202012Validator(schema)
                   validator.validate(manifest)
                   print(f"manifest conforms: {manifest_path}")
+
+                  inventory = manifest["scenario_inventory"]
+                  full_ids = inventory["effective_full_selection_ids"]
+                  lite_ids = inventory["lite_problem_ids"]
+                  if len(full_ids) != inventory["effective_full_selection_count"]:
+                      raise SystemExit("SREGym full selection count does not match its ID list")
+                  if len(set(full_ids)) != len(full_ids) or full_ids != sorted(full_ids):
+                      raise SystemExit("SREGym full selection IDs must be unique and sorted")
+                  if (
+                      inventory["explicit_registry_key_count"]
+                      + inventory["explicit_port_registry_id_count"]
+                      + inventory["builtin_slo_artifact_count"]
+                      != len(full_ids)
+                  ):
+                      raise SystemExit("SREGym full selection source counts do not reconcile")
+                  full_digest = hashlib.sha256(
+                      json.dumps(full_ids, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+                  ).hexdigest()
+                  lite_digest = hashlib.sha256(
+                      json.dumps(lite_ids, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+                  ).hexdigest()
+                  if full_digest != inventory["full_selection_ids_sha256"]:
+                      raise SystemExit("SREGym full selection digest mismatch")
+                  if full_digest != inventory["scenario_ids_sha256"]:
+                      raise SystemExit("SREGym scenario inventory digest mismatch")
+                  if lite_digest != inventory["lite_problem_ids_sha256"]:
+                      raise SystemExit("SREGym-Lite ID digest mismatch")
+                  if os.environ.get("SREGYM_FAULT_DIRS"):
+                      raise SystemExit("SREGym replication profile requires SREGYM_FAULT_DIRS to be unset")
+                  print(
+                      "SREGym problem inventory verified: "
+                      f"{len(full_ids)} full IDs (117 registry + 84 ports + 16 SLO artifacts), "
+                      f"{len(lite_ids)} Lite IDs; digests match"
+                  )
 
                   # Negative control 1: toggling the readiness flag alone must not
                   # promote an incomplete source manifest.
