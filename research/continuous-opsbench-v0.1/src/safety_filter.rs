@@ -714,6 +714,21 @@ mod tests {
     }
 
     #[test]
+    fn composed_filter_defers_when_qualified_model_report_is_expired() {
+        let mut evidence = input();
+        evidence.appraisal_at_ms = 170;
+        let mut report = qualified_model_report();
+        report.valid_until_ms = 160;
+        let result = appraise_with_model_assurance(
+            &evidence,
+            &act(CandidateOperation::Noop),
+            &report,
+        );
+        assert_eq!(result.disposition, FilterDisposition::DeferForEvidence);
+        assert!(result.findings.contains(&SafetyFinding::ModelAssumptionReportStale));
+    }
+
+    #[test]
     fn composed_filter_defers_on_model_scope_substitution() {
         let evidence = input();
         let mut report = qualified_model_report();
