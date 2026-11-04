@@ -1202,7 +1202,8 @@ pub fn audit_episode_result(
                     "{case_id}: observer freshness_ms={observer_freshness_ms} does not match timestamp-derived freshness {recomputed}"
                 ));
                 }
-                if recomputed >= 0 && recomputed as u64 > max_age_ms && observer_state != "unknown" {
+                if recomputed >= 0 && recomputed as u64 > max_age_ms && observer_state != "unknown"
+                {
                     violations.push(format!(
                     "{case_id}: stale observer evidence ({recomputed} ms) must be reported as unknown; max age is {max_age_ms} ms"
                 ));
