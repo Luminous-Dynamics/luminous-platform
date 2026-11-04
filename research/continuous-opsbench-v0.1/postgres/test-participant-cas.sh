@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "\${PGHOST:=127.0.0.1}"
-: "\${PGPORT:=5432}"
-: "\${PGUSER:=postgres}"
-: "\${PGPASSWORD:?PGPASSWORD is required}"
-: "\${PGDATABASE:=opsbench_test}"
+: "${PGHOST:=127.0.0.1}"
+: "${PGPORT:=5432}"
+: "${PGUSER:=postgres}"
+: "${PGPASSWORD:?PGPASSWORD is required}"
+: "${PGDATABASE:=opsbench_test}"
 
 psqlq() {
   psql -X -v ON_ERROR_STOP=1 -q -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" "$@"
@@ -15,7 +15,7 @@ until pg_isready -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" >/dev/n
   sleep 1
 done
 
-ROOT="$(cd "$(dirname "\${BASH_SOURCE[0]}")/../../.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 MIGRATION="$ROOT/research/continuous-opsbench-v0.1/postgres/001_participant_topology_effect_ledger.sql"
 psqlq -f "$MIGRATION"
 
