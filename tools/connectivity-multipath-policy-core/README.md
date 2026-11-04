@@ -148,6 +148,8 @@ Every verdict has scope `single_paired_trial`. A paired pass is not programme-le
 
 The first pinned comparator is `qoke/mp-quic-go` source commit `084c13ea3834fbe58cedb63db9208951d714f839`, module version `v0.3.0`, based on quic-go `v0.63.0` and Go `1.26.0`. It documents Multipath QUIC `draft-ietf-quic-multipath-21`, an opt-in extension, a default concurrent path count of three and a maximum of 64. It documents uncoupled Reno per path as the default congestion-control mode and coupled OLIA as an optional mode. Those are separate experiment treatments; never pool their performance results.
 
+The report lists validated path IDs separately from the client- and server-observed data-path IDs and ACK-return path IDs. A path can be valid and available without carrying application data in a particular trial.
+
 The verifier requires:
 - an exact protocol/source/build/controller/scheduler identity at both endpoints;
 - multipath negotiation, two active validated paths and matching path-ID sets at both endpoints;
