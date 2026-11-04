@@ -38,7 +38,7 @@ jobs:
 
           root = Path("benchmarks/external-sre-benchmark-crosswalk-v0.1")
           schema = json.loads((root / "benchmark-registry.schema.json").read_text(encoding="utf-8"))
-          snapshot = json.loads((root / "snapshot-2026-11-04.json").read_text(encoding="utf-8"))
+          snapshot = json.loads((root / "snapshot-2026-11-05.json").read_text(encoding="utf-8"))
           Draft202012Validator.check_schema(schema)
           validator = Draft202012Validator(schema)
           validator.validate(snapshot)
