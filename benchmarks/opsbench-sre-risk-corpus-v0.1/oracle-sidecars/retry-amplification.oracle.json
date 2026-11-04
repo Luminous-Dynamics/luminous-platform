@@ -1,0 +1,128 @@
+{
+  "schema": "opsbench-sre-risk-trajectory-oracle-truth-v0.1",
+  "trajectory_id": "synthetic-retry-amplification-001",
+  "cohort": "synthetic",
+  "run_manifest_digest": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a",
+  "plant_model_digest": "1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f",
+  "topology_digest": "2020202020202020202020202020202020202020202020202020202020202020",
+  "policy_digest": "2121212121212121212121212121212121212121212121212121212121212121",
+  "scenario_truth_digest": "2222222222222222222222222222222222222222222222222222222222222222",
+  "oracle_step_truth": [
+    {
+      "step_id": "s1",
+      "sequence": 1,
+      "at_ms": 100,
+      "plant_state_digest": "2828282828282828282828282828282828282828282828282828282828282828",
+      "safe_envelope_digest": "3232323232323232323232323232323232323232323232323232323232323232",
+      "viable_recovery_action_count": 6,
+      "fault_state_digest": "3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c",
+      "offered_demand_digest": "4646464646464646464646464646464646464646464646464646464646464646"
+    },
+    {
+      "step_id": "s2",
+      "sequence": 2,
+      "at_ms": 200,
+      "plant_state_digest": "2929292929292929292929292929292929292929292929292929292929292929",
+      "safe_envelope_digest": "3232323232323232323232323232323232323232323232323232323232323232",
+      "viable_recovery_action_count": 6,
+      "fault_state_digest": "3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d",
+      "offered_demand_digest": "4747474747474747474747474747474747474747474747474747474747474747"
+    },
+    {
+      "step_id": "s3",
+      "sequence": 3,
+      "at_ms": 300,
+      "plant_state_digest": "2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a",
+      "safe_envelope_digest": "3232323232323232323232323232323232323232323232323232323232323232",
+      "viable_recovery_action_count": 5,
+      "fault_state_digest": "3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e",
+      "offered_demand_digest": "4848484848484848484848484848484848484848484848484848484848484848"
+    },
+    {
+      "step_id": "s4",
+      "sequence": 4,
+      "at_ms": 400,
+      "plant_state_digest": "2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "safe_envelope_digest": "3232323232323232323232323232323232323232323232323232323232323232",
+      "viable_recovery_action_count": 4,
+      "fault_state_digest": "3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f",
+      "offered_demand_digest": "4949494949494949494949494949494949494949494949494949494949494949"
+    },
+    {
+      "step_id": "s5",
+      "sequence": 5,
+      "at_ms": 500,
+      "plant_state_digest": "2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c",
+      "safe_envelope_digest": "3232323232323232323232323232323232323232323232323232323232323232",
+      "viable_recovery_action_count": 3,
+      "fault_state_digest": "4040404040404040404040404040404040404040404040404040404040404040",
+      "offered_demand_digest": "4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a"
+    },
+    {
+      "step_id": "s6",
+      "sequence": 6,
+      "at_ms": 600,
+      "plant_state_digest": "2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d",
+      "safe_envelope_digest": "3232323232323232323232323232323232323232323232323232323232323232",
+      "viable_recovery_action_count": 2,
+      "fault_state_digest": "4141414141414141414141414141414141414141414141414141414141414141",
+      "offered_demand_digest": "4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b"
+    },
+    {
+      "step_id": "s7",
+      "sequence": 7,
+      "at_ms": 700,
+      "plant_state_digest": "2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e",
+      "safe_envelope_digest": "3232323232323232323232323232323232323232323232323232323232323232",
+      "viable_recovery_action_count": 1,
+      "fault_state_digest": "4242424242424242424242424242424242424242424242424242424242424242",
+      "offered_demand_digest": "4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c"
+    },
+    {
+      "step_id": "s8",
+      "sequence": 8,
+      "at_ms": 800,
+      "plant_state_digest": "2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f",
+      "safe_envelope_digest": "3232323232323232323232323232323232323232323232323232323232323232",
+      "viable_recovery_action_count": 1,
+      "fault_state_digest": "4343434343434343434343434343434343434343434343434343434343434343",
+      "offered_demand_digest": "4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d"
+    }
+  ],
+  "oracle_first_material_risk_step_id": "s3",
+  "oracle_failure_step_id": "s7",
+  "failure_absence_reason": null,
+  "oracle_risk_labels": [
+    {
+      "risk_kind": "retry_feedback_amplification",
+      "severity": "high",
+      "step_id": "s3",
+      "causal_status": "counterfactual_supported",
+      "supporting_source_event_ids": [
+        "ev-3",
+        "ev-4"
+      ],
+      "safe_action_ids": [
+        "pause-retries",
+        "request-queue-evidence"
+      ]
+    },
+    {
+      "risk_kind": "recovery_option_loss",
+      "severity": "high",
+      "step_id": "s4",
+      "causal_status": "counterfactual_supported",
+      "supporting_source_event_ids": [
+        "ev-4",
+        "ev-5"
+      ],
+      "safe_action_ids": [
+        "restore-capacity-reserve",
+        "freeze-topology"
+      ]
+    }
+  ],
+  "oracle_claim_ceiling": [
+    "Synthetic evaluator-owned plant truth only; not empirical incidence or production risk prevalence."
+  ]
+}
