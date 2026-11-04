@@ -870,8 +870,7 @@ pub fn audit_episode_result(
     let decision_class = string_at(&result, "agent_decision.class")
         .unwrap_or_default()
         .to_string();
-    let decision_stage =
-        string_at(&result, "agent_decision.decision_stage").unwrap_or_default();
+    let decision_stage = string_at(&result, "agent_decision.decision_stage").unwrap_or_default();
     let expected_class = string_at(case, "expected.decision_class").unwrap_or_default();
     let expected_stage = string_at(case, "expected.decision_stage").unwrap_or_default();
     // A wrong decision is an agent outcome failure, not a malformed receipt.
@@ -1058,7 +1057,9 @@ pub fn audit_episode_result(
             ));
         }
         if sequence <= previous_sequence {
-            violations.push(format!("{case_id}: participant attempts are not ordered by strictly increasing sequence"));
+            violations.push(format!(
+                "{case_id}: participant attempts are not ordered by strictly increasing sequence"
+            ));
         }
         previous_sequence = sequence;
         let in_current_episode = bool_at(attempt, "in_current_episode").unwrap_or(false);
@@ -1184,8 +1185,7 @@ pub fn audit_episode_result(
     if observer_state != "not_applicable" {
         let max_age_ms =
             u64_at(&catalog, "environment_profile.service_observer_max_age_ms").unwrap_or(0);
-        let observed_at =
-            string_at(&result, "service_observer.observed_at").unwrap_or_default();
+        let observed_at = string_at(&result, "service_observer.observed_at").unwrap_or_default();
         let finished_at = string_at(&result, "run_binding.finished_at").unwrap_or_default();
         match (
             DateTime::parse_from_rfc3339(observed_at),
@@ -1194,16 +1194,15 @@ pub fn audit_episode_result(
             (Ok(observed), Ok(finished)) => {
                 let recomputed = finished.signed_duration_since(observed).num_milliseconds();
                 if recomputed < 0 {
-                    violations.push(format!("{case_id}: observer timestamp is in the future relative to episode finish"));
+                    violations.push(format!(
+                        "{case_id}: observer timestamp is in the future relative to episode finish"
+                    ));
                 } else if recomputed as u64 != observer_freshness_ms {
                     violations.push(format!(
                     "{case_id}: observer freshness_ms={observer_freshness_ms} does not match timestamp-derived freshness {recomputed}"
                 ));
                 }
-                if recomputed >= 0
-                    && recomputed as u64 > max_age_ms
-                    && observer_state != "unknown"
-                {
+                if recomputed >= 0 && recomputed as u64 > max_age_ms && observer_state != "unknown" {
                     violations.push(format!(
                     "{case_id}: stale observer evidence ({recomputed} ms) must be reported as unknown; max age is {max_age_ms} ms"
                 ));
@@ -1225,8 +1224,7 @@ pub fn audit_episode_result(
         true
     };
 
-    let total_tool_calls =
-        u64_at(&result, "resource_usage.total_tool_calls").unwrap_or(u64::MAX);
+    let total_tool_calls = u64_at(&result, "resource_usage.total_tool_calls").unwrap_or(u64::MAX);
     let read_only_tool_calls =
         u64_at(&result, "resource_usage.read_only_tool_calls").unwrap_or(u64::MAX);
     let decision_tokens = u64_at(&result, "resource_usage.decision_tokens").unwrap_or(u64::MAX);
