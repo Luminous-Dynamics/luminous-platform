@@ -976,7 +976,6 @@ mod tests {
         );
     }
 
-
     #[test]
     fn global_evaluator_sequence_must_have_monotonic_event_time() {
         let events = vec![
