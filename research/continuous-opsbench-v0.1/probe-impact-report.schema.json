@@ -15,7 +15,18 @@
     "receipt_count",
     "total_resource_usage",
     "service_impacts",
-    "findings"
+    "findings",
+    "probe_arm_id",
+    "no_probe_arm_id",
+    "tenant_id",
+    "executor_control_domain",
+    "impact_observer_control_domain",
+    "impact_observer_adapter_digest",
+    "service_observer_control_domain",
+    "service_observer_adapter_digest",
+    "workload_profile_digest",
+    "environment_digest",
+    "fault_schedule_digest"
   ],
   "properties": {
     "schema": {
@@ -175,6 +186,50 @@
           "ImpactSequenceGap"
         ]
       }
+    },
+    "probe_arm_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "no_probe_arm_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "executor_control_domain": {
+      "type": "string",
+      "minLength": 1
+    },
+    "impact_observer_control_domain": {
+      "type": "string",
+      "minLength": 1
+    },
+    "service_observer_control_domain": {
+      "type": "string",
+      "minLength": 1
+    },
+    "impact_observer_adapter_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "service_observer_adapter_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "workload_profile_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "environment_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "fault_schedule_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
     }
   }
 }
