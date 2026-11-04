@@ -1,0 +1,65 @@
+name: PostgreSQL participant topology CAS v0.1
+
+on:
+  pull_request:
+    paths:
+      - "research/continuous-opsbench-v0.1/postgres/**"
+      - ".github/workflows/postgres-participant-cas-v0.1.yml"
+  push:
+    branches: [main]
+    paths:
+      - "research/continuous-opsbench-v0.1/postgres/**"
+      - ".github/workflows/postgres-participant-cas-v0.1.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-participant-cas:
+    name: PostgreSQL participant CAS, idempotency and concurrency
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16.4-alpine3.20
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: opsbench-test-password
+          POSTGRES_DB: opsbench_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d opsbench_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Install PostgreSQL client
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+      - name: Verify pinned PostgreSQL server version
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: "5432"
+          PGUSER: postgres
+          PGPASSWORD: opsbench-test-password
+          PGDATABASE: opsbench_test
+        run: |
+          set -euo pipefail
+          version="$(psql -X -v ON_ERROR_STOP=1 -At -c "SHOW server_version")"
+          echo "PostgreSQL server version: $version"
+          test "$version" = "16.4"
+      - name: Run migration and independent-session adversarial tests
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: "5432"
+          PGUSER: postgres
+          PGPASSWORD: opsbench-test-password
+          PGDATABASE: opsbench_test
+        run: |
+          set -euo pipefail
+          bash research/continuous-opsbench-v0.1/postgres/test-participant-cas.sh

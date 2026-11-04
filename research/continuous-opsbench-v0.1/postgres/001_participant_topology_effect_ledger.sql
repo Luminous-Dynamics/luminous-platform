@@ -446,12 +446,12 @@ BEGIN
             USING ERRCODE = '40001';
     END IF;
 
-    UPDATE opsbench_participant.participant_scope_head
-       SET participant_sequence = participant_sequence + 1,
+    UPDATE opsbench_participant.participant_scope_head AS scope_head
+       SET participant_sequence = scope_head.participant_sequence + 1,
            updated_at = completed_at_utc
-     WHERE participant_id = p_participant_id
-       AND scope_id = p_scope_id
-     RETURNING participant_sequence INTO next_sequence;
+     WHERE scope_head.participant_id = p_participant_id
+       AND scope_head.scope_id = p_scope_id
+     RETURNING scope_head.participant_sequence INTO next_sequence;
 
     UPDATE opsbench_participant.effect_attempt
        SET state = 'committed',
