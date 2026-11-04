@@ -37,6 +37,8 @@ pub struct StabilityConfig {
     pub queue_latency_ms_per_request: u64,
     /// Deterministic signed queue-depth measurement noise, one value per tick.
     pub queue_noise_by_tick: Vec<i64>,
+    /// Deterministic signed failure-rate measurement noise, one value per tick.
+    pub failed_ppm_noise_by_tick: Vec<i64>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -146,6 +148,108 @@ pub trait StabilityController {
     fn propose(&mut self, observation: &PlantObservation) -> Vec<ControlOperation>;
 }
 
+/// Simple zero-hysteresis autoscaler baseline. It switches between normal
+/// and elevated API capacity at one failure-rate threshold.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct BangBangCapacityController {
+    id: String,
+    normal_capacity: u64,
+    elevated_capacity: u64,
+    threshold_ppm: u32,
+    elevated: bool,
+}
+
+impl BangBangCapacityController {
+    pub fn new(
+        id: impl Into<String>,
+        normal_capacity: u64,
+        elevated_capacity: u64,
+        threshold_ppm: u32,
+    ) -> Result<Self, StabilityError> {
+        let id = id.into();
+        if id.is_empty() || normal_capacity == 0 || elevated_capacity == 0
+            || elevated_capacity < normal_capacity || threshold_ppm > PPM as u32
+        {
+            return Err(StabilityError::InvalidControllerConfig);
+        }
+        Ok(Self { id, normal_capacity, elevated_capacity, threshold_ppm, elevated: false })
+    }
+}
+
+impl StabilityController for BangBangCapacityController {
+    fn controller_id(&self) -> &str { &self.id }
+    fn controller(&self) -> Controller { Controller::Autoscaler }
+
+    fn propose(&mut self, observation: &PlantObservation) -> Vec<ControlOperation> {
+        if observation.observed_failed_ppm >= self.threshold_ppm && !self.elevated {
+            self.elevated = true;
+            vec![ControlOperation::SetApiCapacity(self.elevated_capacity)]
+        } else if observation.observed_failed_ppm < self.threshold_ppm && self.elevated {
+            self.elevated = false;
+            vec![ControlOperation::SetApiCapacity(self.normal_capacity)]
+        } else {
+            Vec::new()
+        }
+    }
+}
+
+/// Deadband/hysteresis autoscaler baseline. Scaling up and scaling down use
+/// separate thresholds, preventing small fluctuations from repeatedly
+/// reversing an otherwise healthy configuration.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HysteresisCapacityController {
+    id: String,
+    normal_capacity: u64,
+    elevated_capacity: u64,
+    scale_up_threshold_ppm: u32,
+    scale_down_threshold_ppm: u32,
+    elevated: bool,
+}
+
+impl HysteresisCapacityController {
+    pub fn new(
+        id: impl Into<String>,
+        normal_capacity: u64,
+        elevated_capacity: u64,
+        scale_up_threshold_ppm: u32,
+        scale_down_threshold_ppm: u32,
+    ) -> Result<Self, StabilityError> {
+        let id = id.into();
+        if id.is_empty() || normal_capacity == 0 || elevated_capacity == 0
+            || elevated_capacity < normal_capacity
+            || scale_up_threshold_ppm > PPM as u32
+            || scale_down_threshold_ppm >= scale_up_threshold_ppm
+        {
+            return Err(StabilityError::InvalidControllerConfig);
+        }
+        Ok(Self {
+            id,
+            normal_capacity,
+            elevated_capacity,
+            scale_up_threshold_ppm,
+            scale_down_threshold_ppm,
+            elevated: false,
+        })
+    }
+}
+
+impl StabilityController for HysteresisCapacityController {
+    fn controller_id(&self) -> &str { &self.id }
+    fn controller(&self) -> Controller { Controller::Autoscaler }
+
+    fn propose(&mut self, observation: &PlantObservation) -> Vec<ControlOperation> {
+        if observation.observed_failed_ppm >= self.scale_up_threshold_ppm && !self.elevated {
+            self.elevated = true;
+            vec![ControlOperation::SetApiCapacity(self.elevated_capacity)]
+        } else if observation.observed_failed_ppm <= self.scale_down_threshold_ppm && self.elevated {
+            self.elevated = false;
+            vec![ControlOperation::SetApiCapacity(self.normal_capacity)]
+        } else {
+            Vec::new()
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ControllerDecision {
     pub controller_id: String,
@@ -213,6 +317,7 @@ pub enum StabilityError {
     ObservationFromFuture(String),
     ObservationNotYetAvailable(String),
     InvalidSetpoint(String),
+    InvalidControllerConfig,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -263,7 +368,9 @@ fn validate_config(config: &StabilityConfig) -> Result<(), StabilityError> {
     {
         return Err(StabilityError::InvalidTailContract);
     }
-    if config.queue_noise_by_tick.len() != config.ticks as usize {
+    if config.queue_noise_by_tick.len() != config.ticks as usize
+        || config.failed_ppm_noise_by_tick.len() != config.ticks as usize
+    {
         return Err(StabilityError::NoiseLengthMismatch);
     }
     Ok(())
@@ -693,7 +800,9 @@ pub fn run_stability_scenario(
             source_tick: source_tick as u32,
             observed_queue_depth: noisy_queue,
             observed_latency_ms: source.latency_ms,
-            observed_failed_ppm: source.failed_ppm,
+            observed_failed_ppm: (source.failed_ppm as i128
+                + config.failed_ppm_noise_by_tick[tick] as i128)
+                .clamp(0, PPM as i128) as u32,
         }
     }).collect();
 
@@ -728,6 +837,7 @@ mod tests {
             base_latency_ms: 10,
             queue_latency_ms_per_request: 1,
             queue_noise_by_tick: vec![0; 16],
+            failed_ppm_noise_by_tick: vec![0; 16],
         }
     }
 
@@ -862,6 +972,34 @@ mod tests {
             .unwrap();
         assert_eq!(applied.controller, Controller::Agent);
         assert_eq!(forward_run.stability.samples[4].actual_api_capacity, 90);
+    }
+
+    #[test]
+    fn hysteresis_reduces_noise_induced_action_churn_without_harming_service() {
+        let mut config = config();
+        config.fault_api_capacity_reduction = 10;
+        config.observation_delay_ticks = 0;
+        config.actuation_delay_ticks = 0;
+        for tick in 2..12 {
+            config.failed_ppm_noise_by_tick[tick] = if tick % 2 == 0 { 400_000 } else { 200_000 };
+        }
+
+        let mut bang_bang = BangBangCapacityController::new("bang-bang", 100, 140, 300_000).unwrap();
+        let mut hysteresis =
+            HysteresisCapacityController::new("hysteresis", 100, 140, 350_000, 150_000).unwrap();
+
+        let noisy_bang = run_stability_closed_loop(&config, &mut bang_bang).unwrap();
+        let noisy_hysteresis = run_stability_closed_loop(&config, &mut hysteresis).unwrap();
+
+        assert!(noisy_bang.stability.metrics.action_churn_count >= 9);
+        assert_eq!(noisy_hysteresis.stability.metrics.action_churn_count, 1);
+        assert_eq!(
+            noisy_bang.stability.metrics.slo_violation_integral_request_ms,
+            noisy_hysteresis.stability.metrics.slo_violation_integral_request_ms
+        );
+        assert_eq!(noisy_bang.stability.metrics.slo_violation_integral_request_ms, 0);
+        assert!(noisy_bang.stability.metrics.final_no_intervention_tail_healthy);
+        assert!(noisy_hysteresis.stability.metrics.final_no_intervention_tail_healthy);
     }
 
     #[test]
