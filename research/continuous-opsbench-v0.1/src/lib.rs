@@ -5,6 +5,7 @@
 //! It does not run agents or infrastructure and does not authenticate publishers.
 
 pub mod safety_filter;
+pub mod viability;
 pub mod stability;
 pub mod temporal;
 

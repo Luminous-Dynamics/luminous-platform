@@ -1,0 +1,77 @@
+{
+  "base": {
+    "run_id": "run-viability-1",
+    "scenario_id": "retry-feedback-trap-1",
+    "arm_id": "candidate",
+    "observation_id": "obs-viability-1",
+    "observation_source_id": "independent-observer-1",
+    "observation_digest": "0101010101010101010101010101010101010101010101010101010101010101",
+    "observed_at_ms": 100,
+    "appraisal_at_ms": 110,
+    "maximum_observation_age_ms": 100,
+    "observation_clock_uncertainty_ms": 0,
+    "receipt_validity_ms": 50,
+    "topology_epoch": 4,
+    "topology_digest": "0202020202020202020202020202020202020202020202020202020202020202",
+    "model_revision": "two-workload-v1",
+    "model_digest": "0303030303030303030303030303030303030303030303030303030303030303",
+    "uncertainty_set_digest": "0404040404040404040404040404040404040404040404040404040404040404",
+    "disturbance_set_digest": "0505050505050505050505050505050505050505050505050505050505050505",
+    "envelope_digest": "0606060606060606060606060606060606060606060606060606060606060606",
+    "state_belief": [
+      {
+        "critical_queue": 0,
+        "bulk_queue": 0,
+        "api_capacity": 1,
+        "database_capacity": 1,
+        "retry_multiplier_ppm": 1000000
+      }
+    ],
+    "capacity_uncertainty": [
+      {
+        "api_capacity_loss": 0,
+        "database_capacity_loss": 0
+      }
+    ],
+    "disturbances": [
+      {
+        "critical_demand": 0,
+        "bulk_demand": 1
+      }
+    ],
+    "envelope": {
+      "maximum_critical_queue": 0,
+      "maximum_bulk_queue": 1,
+      "maximum_total_queue": 1,
+      "maximum_api_capacity": 1,
+      "maximum_database_capacity": 1,
+      "maximum_retry_multiplier_ppm": 2000000,
+      "minimum_spare_capacity": 0
+    }
+  },
+  "state_space_digest": "0808080808080808080808080808080808080808080808080808080808080808",
+  "fallback_actions_digest": "0909090909090909090909090909090909090909090909090909090909090909",
+  "state_space": [
+    {
+      "critical_queue": 0,
+      "bulk_queue": 1,
+      "api_capacity": 1,
+      "database_capacity": 1,
+      "retry_multiplier_ppm": 2000000
+    },
+    {
+      "critical_queue": 0,
+      "bulk_queue": 1,
+      "api_capacity": 1,
+      "database_capacity": 1,
+      "retry_multiplier_ppm": 1000000
+    }
+  ],
+  "fallback_actions": [
+    {
+      "kind": "set_retry_multiplier_ppm",
+      "value": 1000000
+    }
+  ],
+  "horizon": 1
+}
