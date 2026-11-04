@@ -79,3 +79,21 @@ The reference plant now includes three deterministic policies:
 - `PersistentHysteresisCapacityController`: queue-aware debounce; overload must persist for N delivered observations before scale-up, while both failure and queue signals must remain healthy for M observations before scale-down. An intermediate observation breaks the streak.
 
 All policies consume the same `PlantObservation` stream and share the same action budget, causal actuation delay, and deterministic arbitration. The paired noise fixture makes bang-bang repeatedly reverse its setpoint, while two-threshold hysteresis scales once and holds. The persistence-filtered controller additionally refuses to act on alternating single-sample spikes. Tests assert that all these differences are evaluated against the same plant truth and SLO contract; these are synthetic policy comparisons, not production autoscaling results.
+
+
+## Evaluator-owned causal-breakpoint analysis
+
+The additive \`src/breakpoint.rs\` module evaluates an immutable event trace against evaluator-owned truth and a versioned constraint contract. It is designed to answer two different questions:
+
+- **First critical violation:** when did the agent first breach a declared evidence, causal, authority, workload, or recovery constraint?
+- **First irrecoverable breakpoint:** when did the trace first cross into an irreversible external effect or committed state change?
+
+The evaluator binds decisions to the evidence IDs actually observed before the decision, rejects stale evidence and topology epochs, checks that the hypothesis matches evaluator-known causes and evidence support, and binds later mutation attempts to that decision. It separates blocked unauthorized attempts from unauthorized participant commits and detects duplicate logical effects.
+
+A recovery claim is credited only when a participant commit for the same action/service precedes an independent, complete, workload-matching service postcondition for that service, and that postcondition precedes the claim. Missing or incomplete observer evidence makes attribution ambiguous; a complete independent observation that still shows failure supports agent attribution. Demand under-delivery is attributed to the agent only when the trace records agent-controlled shedding, to the environment when the load source identifies an external shortfall, and otherwise remains ambiguous.
+
+The report preserves agent/environment/harness/ambiguous cause classes, exact event sequence, related IDs and evidence IDs. Harness retention regressions are only attributed when they occur on a held-out task after a passed contamination scan.
+
+\`assess_counterfactual\` compares two independently produced reports: the original trace and a separately replayed trace with one event removed or neutralized. It reports material, non-material or inconclusive effects on the first irreversible breakpoint. It does **not** create an infrastructure simulator or synthesize the counterfactual environment itself.
+
+This is an E0 deterministic evaluator reference, not an LLM judge, production event collector, authenticated evidence pipeline, or formal proof of causal sufficiency. Evaluator truth annotations, participant receipts, observer independence, holdout integrity and counterfactual replay validity must be established by separate adapters and audit evidence.
