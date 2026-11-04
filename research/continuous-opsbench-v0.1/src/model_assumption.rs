@@ -904,6 +904,12 @@ mod tests {
             evidence.observations.push(latency_observation);
         }
         evidence.metric_policy_set_digest = digest(7);
+        for forecast in &mut evidence.forecasts {
+            forecast.metric_policy_set_digest = digest(7);
+        }
+        for observation in &mut evidence.observations {
+            observation.metric_policy_set_digest = digest(7);
+        }
         evidence.metric_policies.push(MetricAssumptionPolicy {
             metric_id: "latency_ms".into(),
             units: "ms".into(),
