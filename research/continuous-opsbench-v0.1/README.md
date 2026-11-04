@@ -79,3 +79,20 @@ The reference plant now includes three deterministic policies:
 - `PersistentHysteresisCapacityController`: queue-aware debounce; overload must persist for N delivered observations before scale-up, while both failure and queue signals must remain healthy for M observations before scale-down. An intermediate observation breaks the streak.
 
 All policies consume the same `PlantObservation` stream and share the same action budget, causal actuation delay, and deterministic arbitration. The paired noise fixture makes bang-bang repeatedly reverse its setpoint, while two-threshold hysteresis scales once and holds. The persistence-filtered controller additionally refuses to act on alternating single-sample spikes. Tests assert that all these differences are evaluated against the same plant truth and SLO contract; these are synthetic policy comparisons, not production autoscaling results.
+
+
+## Predictive operational safety filter v0.1
+
+The additive \`src/safety_filter.rs\` module implements a pure one-step appraisal over explicitly supplied finite state-belief, capacity-uncertainty and demand-disturbance sets. It checks critical and bulk queue bounds, aggregate queue bounds, API/database capacity limits, retry amplification and a minimum spare-capacity floor. Retry-amplified demand is rounded upward; arithmetic overflow, stale/future observations, missing or duplicate set members, and enumeration above the fixed cap fail closed.
+
+The filter returns \`AdmitForAuthorization\`, \`RejectUnsafe\`, or \`DeferForEvidence\`. Its result binds the exact candidate-action digest, tenant, participant, target, topology epoch/digest, observation, model, uncertainty set, disturbance set and envelope. It does not authenticate publishers or digests, issue a grant, dispatch an action, write a ledger, or mutate the plant. An admission is only permission to continue to the existing effect gate; participant topology CAS remains the final race-safe commit check.
+
+The v0.1 horizon is **exactly one transition**. The supplied bounded state/model/disturbance set is exhaustively enumerated. An independently written test oracle checks a small action matrix without calling the filter's transition helper. This is not yet a multi-step viability-kernel implementation and does not solve degraded-state liveness. The model is a narrow two-workload reference and is not yet an adapter over PR #243's plant implementation.
+
+Wire contracts and fixtures:
+- \`predictive-safety-filter-request.schema.json\`
+- \`predictive-safety-filter-appraisal.schema.json\`
+- \`examples/predictive-safety-filter-request.example.json\`
+- \`examples/predictive-safety-filter-appraisal.example.json\`
+
+CI meta-validates both Draft 2020-12 schemas and validates both example fixtures before running the Rust suite. The schemas define a hex digest wire encoding; a real adapter must perform canonical serialization and recompute/authenticate digests rather than accepting caller-supplied strings as proof.
