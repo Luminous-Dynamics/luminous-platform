@@ -24,3 +24,14 @@ cargo test --locked
 ```
 
 No external crates are required. The tests exercise only a fake participant; they do not contact production systems.
+
+
+## Participant act-bound finality sink v0.1
+
+The additive src/finality.rs module models the participant-owned Finality Sink for issue #206. The participant reconstructs a typed Candidate Act and compares it with the exact act bound into an opaque authenticated-handle wrapper. It validates the participant audience, issuer identity presence, issue/not-before/expiry interval, and current policy epoch.
+
+Within one participant-owned critical section it consumes the one-use handle and nonce and records the protected effect plus idempotency index. Exact handle replay returns the original receipt without a second effect. A newly authorized retry with a new attempt/grant/runtime-evidence receipt can return the original logical effect when tenant/key and stable action fingerprint match; changed plan, target, request, operation, manifest, toolchain or policy is an idempotency conflict. Competing handles for one logical action therefore produce at most one effect in this model.
+
+Sixteen deterministic tests cover exact commit, same-handle replay, target/request/tenant/principal/plan/operation substitution, wrong audience, expiry/not-before, policy rotation, nonce replay, handle-ID reuse, retry/idempotency, changed-request conflict, malformed act/interval, and two concurrent-consumption races.
+
+Claim ceiling: the wrapper is only structurally authenticated within this E0 reference module; there is no cryptographic signature or trust-root validation, canonical byte encoder, or trusted verifier adapter yet. The sink is in-memory and mutex-linearized, not durable or distributed. A production participant must atomically commit the business effect, idempotency record, consumed handle and nonce in one durable transaction/CAS. If its external side effect cannot share that atomic boundary, strict finality must reject or remain unsupported. This module is not wired into the existing broker dispatch path and does not establish production act-bound execution finality.
