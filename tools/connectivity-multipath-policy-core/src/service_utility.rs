@@ -270,6 +270,24 @@ fn cost_per_mib(
     ))
 }
 
+fn intensity_ratio_ppm(
+    treatment_cost: u64,
+    treatment_useful_bytes: u64,
+    baseline_cost: u64,
+    baseline_useful_bytes: u64,
+) -> Result<Option<u64>, UtilityError> {
+    if treatment_useful_bytes == 0 || baseline_cost == 0 || baseline_useful_bytes == 0 {
+        return Ok(None);
+    }
+    let numerator = u128::from(treatment_cost)
+        .checked_mul(u128::from(baseline_useful_bytes))
+        .ok_or(UtilityError::ArithmeticOverflow)?;
+    let denominator = u128::from(baseline_cost)
+        .checked_mul(u128::from(treatment_useful_bytes))
+        .ok_or(UtilityError::ArithmeticOverflow)?;
+    ratio_ppm(numerator, denominator)
+}
+
 fn percentile_nearest_rank(values: &mut [u64], numerator: usize, denominator: usize) -> Option<u64> {
     if values.is_empty() || denominator == 0 {
         return None;
@@ -637,27 +655,18 @@ pub fn evaluate_deadline_utility_pair(
         u128::from(treatment_metrics.on_time_task_value_weight),
         u128::from(baseline_metrics.on_time_task_value_weight),
     )?;
-    let cost_ratio = match (
-        treatment_metrics.cost_per_on_time_mib_microunits,
-        baseline_metrics.cost_per_on_time_mib_microunits,
-    ) {
-        (Some(treatment_cost), Some(baseline_cost)) if baseline_cost > 0 => {
-            ratio_ppm(u128::from(treatment_cost), u128::from(baseline_cost))?
-        }
-        _ => None,
-    };
-    let energy_ratio = match (
-        treatment_metrics.energy_per_on_time_mib_microjoules,
-        baseline_metrics.energy_per_on_time_mib_microjoules,
-    ) {
-        (Some(treatment_energy), Some(baseline_energy)) if baseline_energy > 0 => {
-            ratio_ppm(
-                u128::from(treatment_energy),
-                u128::from(baseline_energy),
-            )?
-        }
-        _ => None,
-    };
+    let cost_ratio = intensity_ratio_ppm(
+        treatment.total_cost_microunits,
+        treatment_metrics.on_time_useful_bytes,
+        baseline.total_cost_microunits,
+        baseline_metrics.on_time_useful_bytes,
+    )?;
+    let energy_ratio = intensity_ratio_ppm(
+        treatment.total_energy_microjoules,
+        treatment_metrics.on_time_useful_bytes,
+        baseline.total_energy_microjoules,
+        baseline_metrics.on_time_useful_bytes,
+    )?;
 
     let mut report = make_report(
         UtilityDisposition::Pass,
@@ -869,10 +878,10 @@ mod tests {
         assert_eq!(report.disposition, UtilityDisposition::Pass);
         assert_eq!(report.scope, "single_paired_trial");
         assert_eq!(report.on_time_payload_ratio_vs_baseline_ppm, Some(1_666_666));
-        assert_eq!(report.on_time_task_value_ratio_vs_baseline_ppm, Some(1_000_000));
+        assert_eq!(report.on_time_task_value_ratio_vs_baseline_ppm, Some(1_333_333));
         assert_eq!(report.companion_min_retention_ppm, Some(950_000));
-        assert_eq!(report.cost_per_on_time_mib_ratio_vs_baseline_ppm, Some(900_000));
-        assert_eq!(report.energy_per_on_time_mib_ratio_vs_baseline_ppm, Some(900_000));
+        assert_eq!(report.cost_per_on_time_mib_ratio_vs_baseline_ppm, Some(540_000));
+        assert_eq!(report.energy_per_on_time_mib_ratio_vs_baseline_ppm, Some(540_000));
     }
 
     #[test]
@@ -1020,6 +1029,53 @@ mod tests {
         assert_eq!(
             evaluate_deadline_utility_pair(&baseline(), &candidate, targets()),
             Err(UtilityError::InvalidImplementationArtifact("scheduler"))
+        );
+    }
+
+    #[test]
+    fn enabled_companion_gate_without_any_backlogged_reference_flow_is_inconclusive() {
+        let mut control = baseline();
+        let mut candidate = treatment();
+        control.companion_flows.clear();
+        candidate.companion_flows.clear();
+        let report = evaluate_deadline_utility_pair(
+            &control,
+            &candidate,
+            UtilityTargets {
+                minimum_on_time_payload_ratio_ppm: 1_000_000,
+                minimum_on_time_task_value_ratio_ppm: 1_000_000,
+                minimum_companion_retention_ppm: Some(900_000),
+                maximum_cost_per_on_time_mib_ratio_ppm: None,
+                maximum_energy_per_on_time_mib_ratio_ppm: None,
+            },
+        )
+        .expect("missing companion baseline is classified");
+        assert_eq!(report.disposition, UtilityDisposition::Inconclusive);
+        assert_eq!(
+            report.reason,
+            "one_or_more_enabled_utility_metrics_not_measurable"
+        );
+    }
+
+    #[test]
+    fn companion_comparison_rejects_mismatched_flow_sets() {
+        let mut candidate = treatment();
+        candidate.companion_flows[0].flow_id = "different-flow".to_owned();
+        assert_eq!(
+            evaluate_deadline_utility_pair(&baseline(), &candidate, targets()),
+            Err(UtilityError::InvalidCompanionFlow)
+        );
+    }
+
+    #[test]
+    fn cost_intensity_ratio_uses_exact_byte_totals_not_truncated_per_mib_values() {
+        assert_eq!(
+            intensity_ratio_ppm(90, 5_000, 100, 3_000).expect("exact ratio"),
+            Some(540_000)
+        );
+        assert_eq!(
+            intensity_ratio_ppm(0, 5_000, 0, 3_000).expect("zero/zero is undefined"),
+            None
         );
     }
 
