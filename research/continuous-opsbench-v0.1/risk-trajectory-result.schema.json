@@ -18,7 +18,9 @@
     "earliest_attributable_risk_step_id",
     "risk_integrals",
     "evidence_complete",
-    "findings"
+    "findings",
+    "counterfactual_pair_id",
+    "pair_manifest_digest"
   ],
   "properties": {
     "schema": {
@@ -203,6 +205,14 @@
           }
         }
       }
+    },
+    "counterfactual_pair_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "pair_manifest_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
     }
   }
 }
