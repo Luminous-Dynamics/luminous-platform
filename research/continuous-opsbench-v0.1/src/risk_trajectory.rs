@@ -63,8 +63,10 @@ pub struct CounterfactualPairManifest {
     pub no_action_seed_bundle_digest: Digest,
     pub candidate_scenario_truth_digest: Digest,
     pub no_action_scenario_truth_digest: Digest,
+    /// Environment/participant policy epoch, not the candidate agent's model policy.
     pub candidate_policy_epoch: u64,
     pub no_action_policy_epoch: u64,
+    /// Digest of the environment/participant policy that governs both paired runs.
     pub candidate_policy_digest: Digest,
     pub no_action_policy_digest: Digest,
 }
