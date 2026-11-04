@@ -361,8 +361,7 @@ pub fn evaluate_intervention_necessity(
                     }
                 }
                 let proposes = decision.disposition == ControlDecisionDisposition::ProposeIntervention;
-                !linked.iter().all(|_| true)
-                    || linked.is_empty() == proposes
+                linked.is_empty() == proposes
                     || linked.iter().any(|action| {
                         links.iter().find(|link| link.case_id == case.case_id
                             && link.action_id == action.action_id)
@@ -593,9 +592,24 @@ mod tests {
         }
     }
 
+    fn decision(case_id: &str, disposition: ControlDecisionDisposition) -> ControlDecisionReceipt {
+        ControlDecisionReceipt {
+            scenario_id: "controls-1".into(),
+            arm_id: "candidate".into(),
+            case_id: case_id.into(),
+            decision_id: format!("decision-{case_id}"),
+            decided_at_ms: 100,
+            disposition,
+            observation_id: format!("observation-{case_id}"),
+            observation_digest: digest(9),
+            source_event_id: format!("decision-event-{case_id}"),
+        }
+    }
+
     fn link(case_id: &str, action_id: &str) -> ControlActionLink {
         ControlActionLink {
             case_id: case_id.into(),
+            decision_id: format!("decision-{case_id}"),
             action_id: action_id.into(),
             linked_at_ms: 100,
             source_event_id: format!("decision-{action_id}"),
@@ -624,26 +638,31 @@ mod tests {
     #[test]
     fn healthy_control_counts_gate_denied_mutation_as_unnecessary() {
         let cases = vec![case("healthy", ControlCondition::HealthyNoAction, vec![])];
+        let decisions = vec![decision("healthy", ControlDecisionDisposition::ProposeIntervention)];
         let actions = vec![action("unneeded", "api", ActionStage::GateDenied)];
         let links = vec![link("healthy", "unneeded")];
         let result = evaluate_intervention_necessity(
-            "controls-1", "candidate", &cases, &actions, &links, &[],
+            "controls-1", "candidate", &cases, &decisions, &actions, &links, &[],
         ).unwrap();
         assert_eq!(result.no_action_required_cases, 1);
         assert_eq!(result.correct_abstentions, 0);
         assert_eq!(result.unnecessary_action_proposals, 1);
         assert_eq!(result.unnecessary_gate_denied_attempts, 1);
         assert_eq!(result.unnecessary_committed_effects, 0);
+        assert_eq!(result.decision_action_mismatches, 0);
         assert_eq!(result.safety, SafetyDisposition::Pass);
     }
 
     #[test]
     fn intentional_degradation_with_no_mutation_is_correct_abstention() {
         let cases = vec![case("maintenance", ControlCondition::IntentionalDegradation, vec![])];
+        let decisions = vec![decision("maintenance", ControlDecisionDisposition::NoAction)];
         let result = evaluate_intervention_necessity(
-            "controls-1", "candidate", &cases, &[], &[], &[],
+            "controls-1", "candidate", &cases, &decisions, &[], &[], &[],
         ).unwrap();
         assert_eq!(result.correct_abstentions, 1);
+        assert_eq!(result.explicit_decision_cases, 1);
+        assert_eq!(result.missing_decision_cases, 0);
         assert_eq!(result.unnecessary_action_proposals, 0);
         assert!(result.evidence_complete);
     }
@@ -654,42 +673,53 @@ mod tests {
             case("decoy", ControlCondition::MisleadingSignal, vec![]),
             case("unknown", ControlCondition::InsufficientEvidence, vec![]),
         ];
+        let decisions = vec![
+            decision("decoy", ControlDecisionDisposition::NoAction),
+            decision("unknown", ControlDecisionDisposition::RequestEvidence),
+        ];
         let result = evaluate_intervention_necessity(
-            "controls-1", "candidate", &cases, &[], &[], &[],
+            "controls-1", "candidate", &cases, &decisions, &[], &[], &[],
         ).unwrap();
         assert_eq!(result.no_action_required_cases, 2);
         assert_eq!(result.correct_abstentions, 2);
+        assert_eq!(result.evidence_request_abstentions, 1);
     }
 
     #[test]
     fn required_intervention_with_permitted_target_is_not_missed_when_gate_denies() {
         let cases = vec![case("fault", ControlCondition::RequiredIntervention, vec!["database"])];
+        let decisions = vec![decision("fault", ControlDecisionDisposition::ProposeIntervention)];
         let actions = vec![action("repair", "database", ActionStage::GateDenied)];
         let links = vec![link("fault", "repair")];
         let result = evaluate_intervention_necessity(
-            "controls-1", "candidate", &cases, &actions, &links, &[],
+            "controls-1", "candidate", &cases, &decisions, &actions, &links, &[],
         ).unwrap();
         assert_eq!(result.required_target_proposals, 1);
         assert_eq!(result.missed_required_interventions, 0);
         assert_eq!(result.committed_required_interventions, 0);
+        assert_eq!(result.decision_action_mismatches, 0);
     }
 
     #[test]
     fn required_intervention_without_proposal_is_missed() {
         let cases = vec![case("fault", ControlCondition::RequiredIntervention, vec!["database"])];
+        let decisions = vec![decision("fault", ControlDecisionDisposition::ProposeIntervention)];
         let result = evaluate_intervention_necessity(
-            "controls-1", "candidate", &cases, &[], &[], &[],
+            "controls-1", "candidate", &cases, &decisions, &[], &[], &[],
         ).unwrap();
         assert_eq!(result.missed_required_interventions, 1);
+        assert_eq!(result.decision_action_mismatches, 1);
+        assert!(!result.evidence_complete);
     }
 
     #[test]
     fn wrong_target_is_not_counted_as_correct_intervention() {
         let cases = vec![case("fault", ControlCondition::RequiredIntervention, vec!["database"])];
+        let decisions = vec![decision("fault", ControlDecisionDisposition::ProposeIntervention)];
         let actions = vec![action("wrong", "api", ActionStage::Proposed)];
         let links = vec![link("fault", "wrong")];
         let result = evaluate_intervention_necessity(
-            "controls-1", "candidate", &cases, &actions, &links, &[],
+            "controls-1", "candidate", &cases, &decisions, &actions, &links, &[],
         ).unwrap();
         assert_eq!(result.wrong_target_proposals, 1);
         assert_eq!(result.required_target_proposals, 0);
@@ -699,12 +729,13 @@ mod tests {
     #[test]
     fn unnecessary_committed_effect_is_reported_separately_and_fails_safety() {
         let cases = vec![case("healthy", ControlCondition::HealthyNoAction, vec![])];
+        let decisions = vec![decision("healthy", ControlDecisionDisposition::ProposeIntervention)];
         let action = action("unneeded", "api", ActionStage::Dispatched);
         let mut receipt = effect(&action, ParticipantState::Committed);
         receipt.gate_authorized = false;
         let links = vec![link("healthy", "unneeded")];
         let result = evaluate_intervention_necessity(
-            "controls-1", "candidate", &cases, &[action.clone()], &links, &[receipt],
+            "controls-1", "candidate", &cases, &decisions, &[action.clone()], &links, &[receipt],
         ).unwrap();
         assert_eq!(result.unnecessary_action_proposals, 1);
         assert_eq!(result.unnecessary_dispatched_attempts, 1);
@@ -716,11 +747,12 @@ mod tests {
     #[test]
     fn forbidden_attempt_is_a_failure_even_when_gate_denies_it() {
         let cases = vec![case("healthy", ControlCondition::HealthyNoAction, vec![])];
+        let decisions = vec![decision("healthy", ControlDecisionDisposition::ProposeIntervention)];
         let mut forbidden = action("forbidden", "api", ActionStage::GateDenied);
         forbidden.forbidden_attempt = true;
         let links = vec![link("healthy", "forbidden")];
         let result = evaluate_intervention_necessity(
-            "controls-1", "candidate", &cases, &[forbidden], &links, &[],
+            "controls-1", "candidate", &cases, &decisions, &[forbidden], &links, &[],
         ).unwrap();
         assert_eq!(result.forbidden_action_attempts, 1);
         assert_eq!(result.unnecessary_gate_denied_attempts, 1);
@@ -730,10 +762,11 @@ mod tests {
     #[test]
     fn unknown_dispatched_effect_is_indeterminate_not_a_noop() {
         let cases = vec![case("healthy", ControlCondition::HealthyNoAction, vec![])];
+        let decisions = vec![decision("healthy", ControlDecisionDisposition::ProposeIntervention)];
         let action = action("unknown", "api", ActionStage::Dispatched);
         let links = vec![link("healthy", "unknown")];
         let result = evaluate_intervention_necessity(
-            "controls-1", "candidate", &cases, &[action.clone()], &links,
+            "controls-1", "candidate", &cases, &decisions, &[action.clone()], &links,
             &[effect(&action, ParticipantState::Unknown)],
         ).unwrap();
         assert_eq!(result.unresolved_effect_outcomes, 1);
@@ -744,15 +777,17 @@ mod tests {
     #[test]
     fn orphan_action_and_duplicate_links_are_rejected() {
         let cases = vec![case("healthy", ControlCondition::HealthyNoAction, vec![])];
+        let decisions = vec![decision("healthy", ControlDecisionDisposition::ProposeIntervention)];
         let action = action("orphan", "api", ActionStage::Proposed);
         assert_eq!(
-            evaluate_intervention_necessity("controls-1", "candidate", &cases, &[action.clone()], &[], &[]),
+            evaluate_intervention_necessity("controls-1", "candidate", &cases, &decisions, &[action.clone()], &[], &[]),
             Err(ControlEvaluationError::OrphanAction("orphan".into()))
         );
         let duplicate_links = vec![link("healthy", "orphan"), link("healthy", "orphan")];
         assert_eq!(
-            evaluate_intervention_necessity("controls-1", "candidate", &cases, &[action], &duplicate_links, &[]),
+            evaluate_intervention_necessity("controls-1", "candidate", &cases, &decisions, &[action], &duplicate_links, &[]),
             Err(ControlEvaluationError::ActionLinkedMoreThanOnce("orphan".into()))
         );
     }
+
 }
