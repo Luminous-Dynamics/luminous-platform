@@ -1,0 +1,47 @@
+name: Continuous OpsBench Evidence Debt Evaluator
+
+on:
+  pull_request:
+    paths:
+      - "research/continuous-opsbench-v0.1/**"
+      - ".github/workflows/continuous-opsbench-evidence-debt.yml"
+  push:
+    branches:
+      - "research/opsbench-evidence-debt-v0.1-2026-11-04"
+    paths:
+      - "research/continuous-opsbench-v0.1/**"
+      - ".github/workflows/continuous-opsbench-evidence-debt.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  evidence-debt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CARGO_NET_OFFLINE: "true"
+      CARGO_TERM_COLOR: always
+      EXPECTED_SUBJECT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Assert exact subject before execution
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SUBJECT_SHA"
+      - uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          components: rustfmt, clippy
+      - name: Check formatting
+        run: cargo fmt --manifest-path research/continuous-opsbench-v0.1/Cargo.toml --check
+      - name: Check locked all targets
+        run: cargo check --locked --all-targets --manifest-path research/continuous-opsbench-v0.1/Cargo.toml
+      - name: Run evidence debt and existing OpsBench tests
+        run: cargo test --locked --all-targets --manifest-path research/continuous-opsbench-v0.1/Cargo.toml
+      - name: Strict Clippy
+        run: cargo clippy --locked --all-targets --manifest-path research/continuous-opsbench-v0.1/Cargo.toml -- -D warnings
+      - name: Assert exact subject and clean source
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SUBJECT_SHA"
+          test -z "$(git status --porcelain --untracked-files=no)"
