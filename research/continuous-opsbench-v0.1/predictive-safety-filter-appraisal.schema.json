@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/predictive-safety-filter-appraisal-v0.1.schema.json",
+  "title": "Predictive Safety Filter Appraisal v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "disposition",
+    "run_id",
+    "scenario_id",
+    "arm_id",
+    "action_id",
+    "action_digest",
+    "tenant_id",
+    "participant_id",
+    "target",
+    "topology_epoch",
+    "topology_digest",
+    "observation_id",
+    "observation_digest",
+    "model_revision",
+    "model_digest",
+    "uncertainty_set_digest",
+    "disturbance_set_digest",
+    "envelope_digest",
+    "appraisal_at_ms",
+    "valid_until_ms",
+    "evaluated_combinations",
+    "minimum_invariant_margin",
+    "findings"
+  ],
+  "properties": {
+    "schema": {
+      "const": "continuous-opsbench-predictive-safety-filter-v0.1"
+    },
+    "disposition": {
+      "enum": [
+        "ADMIT_FOR_AUTHORIZATION",
+        "REJECT_UNSAFE",
+        "DEFER_FOR_EVIDENCE"
+      ]
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scenario_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "arm_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "action_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "action_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "participant_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target": {
+      "type": "string",
+      "minLength": 1
+    },
+    "topology_epoch": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 18446744073709552000
+    },
+    "topology_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "observation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observation_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "model_revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "uncertainty_set_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "disturbance_set_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "envelope_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "appraisal_at_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 18446744073709552000
+    },
+    "valid_until_ms": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 18446744073709552000
+    },
+    "evaluated_combinations": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "minimum_invariant_margin": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": -9223372036854776000,
+      "maximum": 9223372036854776000
+    },
+    "findings": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "CRITICAL_QUEUE_LIMIT",
+          "BULK_QUEUE_LIMIT",
+          "TOTAL_QUEUE_LIMIT",
+          "API_CAPACITY_LIMIT",
+          "DATABASE_CAPACITY_LIMIT",
+          "RETRY_MULTIPLIER_LIMIT",
+          "SPARE_CAPACITY_FLOOR",
+          "INVALID_CANDIDATE_ACTION",
+          "INCOMPLETE_EVIDENCE",
+          "STALE_OBSERVATION",
+          "INVALID_INPUT_SET",
+          "ENUMERATION_LIMIT_EXCEEDED",
+          "ARITHMETIC_OVERFLOW"
+        ]
+      }
+    }
+  }
+}
