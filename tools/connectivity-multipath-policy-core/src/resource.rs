@@ -1348,10 +1348,10 @@ mod tests {
         assert!(panic.is_err());
 
         let too_many_assignments = vec![
-            path("a", 100, 1, &["x"]),
-            path("b", 100, 1, &["x"]),
+            path("a", 1_000, 1, &["x"]),
+            path("b", 1_000, 1, &["x"]),
         ];
-        let larger_resource = vec![resource("x", 100, 0, 0, 0)];
+        let larger_resource = vec![resource("x", 1_000, 0, 0, 0)];
         let panic = std::panic::catch_unwind(|| {
             exact_integer_reference_max_total(&too_many_assignments, &larger_resource)
         });
