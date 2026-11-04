@@ -259,7 +259,7 @@ pub fn evaluate_probe_interference(
     if [
         c.probe_run_id.as_str(), c.no_probe_run_id.as_str(), c.scenario_id.as_str(),
         c.paired_block_id.as_str(), c.probe_arm_id.as_str(), c.no_probe_arm_id.as_str(),
-        c.tenant_id.as_str(), c.executor_control_domain.as_str(), c.observer_control_domain.as_str(),
+        c.tenant_id.as_str(), c.executor_control_domain.as_str(), c.impact_observer_control_domain.as_str(), c.service_observer_control_domain.as_str(),
     ].iter().any(|v| v.is_empty())
         || c.probe_run_id == c.no_probe_run_id || c.probe_arm_id == c.no_probe_arm_id
         || c.executor_control_domain == c.impact_observer_control_domain
@@ -506,8 +506,9 @@ mod tests {
             workload_class: "critical".into(), starts_at_ms: 100, ends_at_ms: 200,
             offered_requests: 1_000, failed_requests: failed, slow_requests: slow,
             incorrect_business_results: incorrect, workload_profile_digest: d(2),
-            environment_digest: d(3), fault_schedule_digest: d(4), observer_id: "service-observer".into(),
-            observer_control_domain: "observer".into(), complete: true,
+            environment_digest: d(3), fault_schedule_digest: d(4), service_observer_id: "service-observer".into(),
+            service_observer_control_domain: "service-observer-domain".into(),
+            service_observer_adapter_digest: d(7), complete: true,
         }
     }
     fn run(cap: ProbeCapability, usage: ProbeResourceUsage, p_fail: u64, p_slow: u64, p_bad: u64, have_receipt: bool) -> ProbeImpactReport {
