@@ -201,6 +201,28 @@ fn resource_loads_scaled(
     Ok(loads)
 }
 
+fn resource_loads(
+    allocations: &[u64],
+    path_resource_indices: &[Vec<usize>],
+    resource_count: usize,
+) -> Result<Vec<u128>, ResourceAllocationError> {
+    if allocations.len() != path_resource_indices.len() {
+        return Err(ResourceAllocationError::InternalInvariant);
+    }
+    let mut loads = vec![0_u128; resource_count];
+    for (allocation, indices) in allocations.iter().zip(path_resource_indices) {
+        for index in indices {
+            let load = loads
+                .get_mut(*index)
+                .ok_or(ResourceAllocationError::InternalInvariant)?;
+            *load = load
+                .checked_add(u128::from(*allocation))
+                .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
+        }
+    }
+    Ok(loads)
+}
+
 fn progressive_fill(
     paths: &[&PathRateDemand],
     path_resource_indices: &[Vec<usize>],
