@@ -1333,10 +1333,10 @@ mod tests {
         let run = run_stability_closed_loop(&config, &mut controller).unwrap();
         let tail_start = config.ticks - config.no_intervention_tail_ticks;
         assert!(run.decisions.iter().all(|decision| {
-            decision.decision_tick + config.actuation_delay_ticks < tail_start
+            decision.decision_tick + config.actuation_delay_ticks + 1 < tail_start
         }));
         assert!(run.actions.iter().all(|action| {
-            action.issued_at_tick + config.actuation_delay_ticks < tail_start
+            action.issued_at_tick + config.actuation_delay_ticks + 1 < tail_start
         }));
     }
 
@@ -1578,7 +1578,8 @@ mod tests {
         let run = run_stability_scenario(&config, &actions).unwrap();
         assert_eq!(run.samples[0].actual_api_capacity, 100);
         assert_eq!(run.samples[1].actual_api_capacity, 100);
-        assert_eq!(run.samples[2].actual_api_capacity, 140);
+        assert_eq!(run.samples[2].actual_api_capacity, 100);
+        assert_eq!(run.samples[3].actual_api_capacity, 140);
     }
 
     #[test]
