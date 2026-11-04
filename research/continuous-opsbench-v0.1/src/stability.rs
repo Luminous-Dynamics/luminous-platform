@@ -67,7 +67,9 @@ pub struct PlantSample {
     pub effective_capacity: u64,
     pub critical_offered: u64,
     pub bulk_offered: u64,
+    /// Newly offered critical attempts that missed their one-tick deadline.
     pub critical_failed: u64,
+    /// Newly offered bulk/retry attempts that missed their one-tick deadline.
     pub bulk_failed: u64,
     pub total_failed: u64,
     pub total_attempts: u64,
@@ -291,6 +293,8 @@ pub fn run_stability_scenario(
 
         // Critical work receives priority. Each class has its own backlog so
         // bulk retries cannot silently consume capacity reserved for critical work.
+        // The backlog is residual server-side work after client timeout; a retry
+        // is a new offered attempt and does not erase the original queued work.
         let critical_work = critical_queue.saturating_add(critical_attempts);
         let bulk_work = bulk_queue.saturating_add(bulk_attempts);
         let critical_processed = critical_work.min(effective_capacity);
