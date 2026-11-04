@@ -648,7 +648,7 @@ mod tests {
     #[test]
     fn safe_successor_missing_from_state_universe_defers() {
         let mut request = request(vec![CandidateOperation::SetRetryMultiplierPpm(1_000_000)]);
-        request.state_space.pop();
+        request.state_space.remove(0);
         let result = appraise_with_viability(
             &request,
             &candidate(CandidateOperation::SetRetryMultiplierPpm(2_000_000)),
