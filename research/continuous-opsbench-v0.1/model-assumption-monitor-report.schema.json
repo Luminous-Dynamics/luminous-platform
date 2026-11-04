@@ -28,7 +28,8 @@
     "maximum_positive_cusum",
     "maximum_negative_cusum",
     "findings",
-    "metrics"
+    "metrics",
+    "metric_policy_set_digest"
   ],
   "properties": {
     "schema": {
@@ -212,6 +213,10 @@
           }
         }
       }
+    },
+    "metric_policy_set_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
     }
   }
 }
