@@ -27,7 +27,9 @@
     "scitt_receipt_verification_delegated": true,
     "calibration_profile_verification_delegated": true,
     "canonical_statement_digest_recomputation_required": true,
-    "private_verified_inventory_constructor": true
+    "private_verified_inventory_constructor": true,
+    "semantic_fields_must_equal_decoded_canonical_signed_statement": true,
+    "canonical_statement_digest_recomputed_by_adapter": true
   },
   "evidence_states": [
     "unverified",
