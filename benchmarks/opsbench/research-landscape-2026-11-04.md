@@ -38,6 +38,34 @@ Comparing raw scores across these datasets would be invalid. The correct strateg
 - EvoHarnessBench, arXiv: https://arxiv.org/abs/2609.04280
 - Evo-Bench, arXiv: https://arxiv.org/abs/2608.09096
 
+## Additional 2026 comparators: SRE-agent quality and intrinsic risk
+
+### PagerDuty SRE Agent Benchmark
+
+PagerDuty's own 2026 benchmark reports an equal-condition sweep over 17 scenarios. Its latest complete sweep ranks PagerDuty SRE Agent at **0.77**, Claude Code (Opus 5.5) at **0.68**, and Codex (Sol 5.6) at **0.66** on a composite of localization, diagnosis, mitigation, evidence grounding, explanation quality and inverse misdirection. The report explicitly warns that the latest complete sweep is a **single trial**; earlier sweep-to-sweep variability was roughly 2 percentage points. PagerDuty's follow-on engineering retrospective reports that a rebuild improved diagnosis score by roughly 20 points while also making the agent faster and cheaper, and describes a contamination scanner on each sweep.
+
+This is a valuable close-domain comparator because it makes context access, misdirection, evidence grounding, latency and cost visible. It is not a statistically conclusive superiority claim and is not the SREGym leaderboard. We should replicate the protocol if access permits, retain the full dimension vector, and add paired scenario seeds and uncertainty rather than reducing it to one composite.
+
+Sources:
+- https://www.pagerduty.com/fr/resources/ai/learn/sre-agent-benchmark-report/
+- https://www.pagerduty.com/eng/lessons-from-pd-labs-from-experimentation-to-a-production-ready-sre-agent/
+
+### HINTBench: risks created by the agent itself
+
+HINTBench addresses intrinsic risk: unsafe trajectories can arise in benign settings without an adversarial prompt or external attacker. Its 2026 benchmark contains **596 trajectories** (400 synthetic risky, 136 synthetic safe, 30 reconstructed real-world risky, 30 reconstructed real-world safe), averaging 24 steps. It evaluates trajectory-level risk detection, risk-step localization and intrinsic failure-type identification. The best reported model remains below **37 Strict-F1** on fine-grained risk-step localization.
+
+This motivates a separate *benign-operation negative-control* track in OpsBench. Examples include an agent gradually over-expanding permissions, retrying uncertain mutations, deleting an unhealthy dependency to make a health check green, silently lowering workload, or learning a brittle workaround from a prior incident. The evaluator should score first unsafe commitment, irrecoverable breach, detectability, and recovery/handoff—not merely final outcome. Agent self-generated unsafe behavior must be measured separately from external fault injection.
+
+Source: https://aclanthology.org/2026.findings-emnlp.1639/
+
+### Harness Bench: a broad controlled harness comparison
+
+Harness Bench describes 300 sandboxed tasks across seven native harnesses and ten model backends, with 20,454 evaluated runs. Its task taxonomy includes 65 systems-engineering tasks. The public site reports a 57.3 mean score and 22.8% full-credit rate on the general suite, using task-specific oracles rather than an LLM judge.
+
+This is not an SRE-only benchmark, but it offers a useful harness-comparison method: keep task oracles stable while swapping model backends and harnesses. OpsBench should borrow the factorial structure, not import or equate its aggregate score.
+
+Source: https://www.harness-bench.ai/
+
 ## Paradigm shifts for OpsBench
 
 ### 1. From task completion to proof-carrying operations
