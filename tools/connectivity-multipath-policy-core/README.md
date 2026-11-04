@@ -147,6 +147,8 @@ The first allocator is deterministic weighted progressive filling with checked i
 
 This is a **weighted max-min fairness allocator**, not a general maximum-sum-rate optimizer. The profile includes an independent bounded exact integer reference for small topologies. In the three-path X / X+Y / Y counterexample, the max-min solution is 6/4/4 while a maximum-sum solution can reach 10/0/8. The allocator must not conceal this utilization gap or claim it wins every objective. Fairness, utilization, task completion, latency, cost and energy remain separate comparison dimensions.
 
+The test-only exact integer oracles are explicitly bounded to at most four paths, six resources and one million total integer assignments, where the assignment count is the product of each path's feasible integer-rate choices. They fail closed when a fixture exceeds that budget. A deterministic 432-case micro-topology corpus exercises every one of the 3^3 non-empty path/resource incidence assignments over two resources at all 4×4 small capacity pairs, comparing progressive filling against the independent weighted max-min reference. Equal fairness vectors use canonical path-ID order and a stable lexicographic rate-vector tie-break. This oracle is a micro-instance correctness reference, not a production optimizer or a performance benchmark.
+
 ## Required next steps before a performance claim
 
 1. Compare model output with the exact Linux kernel MPTCP path-manager and scheduler configuration.
