@@ -17,7 +17,17 @@
     "resource_capacity_is_shared_constraint": true,
     "residual_capacity_formula": "declared_capacity_bps - measured_background_load_bps - committed_reservations_bps - safety_margin_bps",
     "objective": "weighted_max_min_progressive_filling_not_global_sum_rate_optimum",
-    "exact_reference": "independent_integer_bps_small_topology_enumeration"
+    "exact_reference": "independent_integer_bps_small_topology_enumeration",
+    "exact_reference_contract": {
+      "maximum_paths": 4,
+      "maximum_resources": 6,
+      "maximum_integer_assignment_count": 1000000,
+      "search_space_definition": "product_over_paths(min(path_ceiling_bps, minimum_residual_capacity_on_path_resources) + 1)",
+      "refuses_inputs_above_bound": true,
+      "deterministic_tie_break": "canonical_path_id_order_then_lexicographically_larger_rate_vector_after_equal_weighted_fairness_vector",
+      "exhaustive_microtopology_fixture_count": 432,
+      "microtopology_space": "all_3^3_nonempty_incidence_assignments_over_two_resources_times_4x4_capacity_pairs"
+    }
   },
   "evidence_contract": {
     "required_resource_fields": [
@@ -235,6 +245,20 @@
       "operator": "==",
       "target": 1,
       "target_status": "proposed_target"
+    },
+    {
+      "id": "RIA_EXACT_ORACLE_BOUND_001",
+      "metric": "exact_reference_calls_exceeding_declared_search_space_budget",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RIA_MICROTOPOLOGY_MATCH_001",
+      "metric": "weighted_progressive_filling_matches_exact_reference_across_432_microtopologies",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
     }
   ],
   "required_metrics": [
@@ -259,7 +283,10 @@
     "maximum_sum_rate_gap_bps",
     "allocation_runtime_and_memory_high_water",
     "input_order_permutation_determinism",
-    "topology_and_inventory_digest_match"
+    "topology_and_inventory_digest_match",
+    "exact_reference_path_count_and_resource_count",
+    "exact_reference_integer_assignment_search_space",
+    "exhaustive_microtopology_fixture_count"
   ],
   "verdicts": [
     "pass",
