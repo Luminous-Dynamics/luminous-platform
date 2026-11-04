@@ -100,7 +100,9 @@
         "scitt_receipt_verification_delegated",
         "calibration_profile_verification_delegated",
         "canonical_statement_digest_recomputation_required",
-        "private_verified_inventory_constructor"
+        "private_verified_inventory_constructor",
+        "semantic_fields_must_equal_decoded_canonical_signed_statement",
+        "canonical_statement_digest_recomputed_by_adapter"
       ],
       "properties": {
         "cryptography_implemented_in_core": {
@@ -125,6 +127,12 @@
           "const": true
         },
         "private_verified_inventory_constructor": {
+          "const": true
+        },
+        "semantic_fields_must_equal_decoded_canonical_signed_statement": {
+          "const": true
+        },
+        "canonical_statement_digest_recomputed_by_adapter": {
           "const": true
         }
       }
