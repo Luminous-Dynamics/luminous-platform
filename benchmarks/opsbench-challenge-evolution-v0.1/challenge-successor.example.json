@@ -1,0 +1,67 @@
+{
+  "schema": "opsbench-challenge-successor-v0.1",
+  "epoch": 1,
+  "scenario_id": "opsbench-retry-observability-e001",
+  "parent_scenario_id": "opsbench-retry-observability-e000",
+  "parent_manifest_sha256": "0101010101010101010101010101010101010101010101010101010101010101",
+  "lane": "screening",
+  "generator": {
+    "revision": "0123456789abcdef0123456789abcdef01234567",
+    "configuration_sha256": "0202020202020202020202020202020202020202020202020202020202020202",
+    "algorithm": "splitmix64-domain-v1",
+    "seed": 184467,
+    "seed_commitment_sha256": "0303030303030303030303030303030303030303030303030303030303030303",
+    "output_payload_sha256": "0404040404040404040404040404040404040404040404040404040404040404"
+  },
+  "change": {
+    "primary_axis": "observability_degradation",
+    "parent_parameters_sha256": "0505050505050505050505050505050505050505050505050505050505050505",
+    "successor_parameters_sha256": "0606060606060606060606060606060606060606060606060606060606060606",
+    "changed_parameter_paths": [
+      "/parameters/observation_loss_ppm"
+    ],
+    "single_axis_change": true
+  },
+  "construct": {
+    "scenario_family_id": "retry-amplification",
+    "fault_mechanism_id": "retry-feedback-loop-v1",
+    "ground_truth_sha256": "0707070707070707070707070707070707070707070707070707070707070707",
+    "native_verifier_sha256": "0808080808080808080808080808080808080808080808080808080808080808",
+    "outcome_semantics_sha256": "0909090909090909090909090909090909090909090909090909090909090909",
+    "task_prompt_sha256": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a",
+    "tool_manifest_sha256": "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+    "scenario_family_sha256": "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c",
+    "semantics_preserved": true
+  },
+  "parameters": {
+    "fault_count": 2,
+    "overlapping_faults": 1,
+    "causal_interaction_depth": 2,
+    "observation_loss_ppm": 10000,
+    "maximum_event_delay_ms": 500,
+    "clock_uncertainty_ms": 25,
+    "topology_transitions": 1,
+    "demand_burst_factor_milli": 1500,
+    "recovery_tail_ticks": 30
+  },
+  "environment": {
+    "image_lock_sha256": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d",
+    "topology_sha256": "0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e",
+    "workload_sha256": "0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f",
+    "runtime_sha256": "1010101010101010101010101010101010101010101010101010101010101010",
+    "observer_policy_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "anchor_set_sha256": "1212121212121212121212121212121212121212121212121212121212121212",
+  "contamination": {
+    "scan_state": "not_required",
+    "examined_source_families": []
+  },
+  "semantic_review": {
+    "status": "pending",
+    "reviewer_ids": [],
+    "interrater_agreement": null
+  },
+  "release_state": "screening",
+  "native_comparability": false,
+  "anchor_immutable": true
+}
