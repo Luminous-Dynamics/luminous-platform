@@ -67,7 +67,9 @@
     "Run a no-instrumentation baseline before proving supplemental evidence collection is non-interfering.",
     "Freeze at least one baseline and one candidate arm, including model/provider/version, agent revision, prompt/tool/memory/inference digests, and equal declared budgets.",
     "Preregister at least five paired seed IDs, randomized arm order, cluster-level inference, and missing-run handling.",
-    "Demonstrate supplemental instrumentation non-interference against a native no-instrumentation run."
+    "Demonstrate supplemental instrumentation non-interference against a native no-instrumentation run.",
+    "Pin the agent runtime access profile (network, filesystem, repository, secret and cross-run access) for every arm.",
+    "Run a pinned contamination scanner over accessible source, prompts, tools, scenario metadata, expected answers, runbooks, issue/PR text, logs, network/filesystem access and cross-run artifacts; retain scanner/config/report digests."
   ],
   "arms": [],
   "experimental_design": {
@@ -78,5 +80,13 @@
     "inference_unit": null,
     "preregistration_sha256": null
   },
-  "instrumentation_noninterference": "not_tested"
+  "instrumentation_noninterference": "not_tested",
+  "contamination": {
+    "result": "not_run",
+    "scanner_revision": null,
+    "scanner_config_sha256": null,
+    "report_sha256": null,
+    "scanned_at": null,
+    "examined_sources": []
+  }
 }
