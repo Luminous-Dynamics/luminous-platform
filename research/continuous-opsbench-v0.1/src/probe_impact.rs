@@ -532,11 +532,16 @@ mod tests {
         }
     }
     fn run(cap: ProbeCapability, usage: ProbeResourceUsage, p_fail: u64, p_slow: u64, p_bad: u64, have_receipt: bool) -> ProbeImpactReport {
+        let executions = vec![execution(cap)];
+        let receipts = if have_receipt { vec![receipt(usage)] } else { Vec::new() };
+        let probe_windows = vec![window("probe", "probe-run", p_fail, p_slow, p_bad)];
+        let no_probe_windows = vec![window("no-probe", "control-run", 1, 10, 0)];
         evaluate_probe_interference(
-            &contract(), &[execution(cap)],
-            if have_receipt { &[receipt(usage)] } else { &[] },
-            &[window("probe", "probe-run", p_fail, p_slow, p_bad)],
-            &[window("no-probe", "control-run", 1, 10, 0)],
+            &contract(),
+            &executions,
+            &receipts,
+            &probe_windows,
+            &no_probe_windows,
         ).unwrap()
     }
     #[test]
