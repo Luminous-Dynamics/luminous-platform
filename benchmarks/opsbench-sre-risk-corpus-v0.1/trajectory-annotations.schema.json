@@ -1,0 +1,487 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/opsbench-sre-risk-trajectory-annotations-v0.1.schema.json",
+  "title": "OpsBench SRE Risk Trajectory Human Annotation Package v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "guide_version",
+    "trajectory_id",
+    "cohort",
+    "split",
+    "scenario_family",
+    "topology_family",
+    "run_manifest_digest",
+    "trace_digest",
+    "annotation_event_index",
+    "annotations",
+    "adjudication"
+  ],
+  "properties": {
+    "schema": {
+      "const": "opsbench-sre-risk-trajectory-annotations-v0.1"
+    },
+    "guide_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "trajectory_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cohort": {
+      "enum": [
+        "synthetic",
+        "reconstructed",
+        "real_world"
+      ]
+    },
+    "split": {
+      "enum": [
+        "development",
+        "validation",
+        "confirmatory",
+        "sealed_test"
+      ]
+    },
+    "scenario_family": {
+      "type": "string",
+      "minLength": 1
+    },
+    "topology_family": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_manifest_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "trace_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "data_permission": {
+      "enum": [
+        "synthetic_generated",
+        "public_research_permission",
+        "explicit_consent",
+        "restricted_no_public_release"
+      ]
+    },
+    "annotation_event_index": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_event_id",
+          "step_id",
+          "sequence",
+          "event_digest",
+          "observed_at_ms",
+          "visible_to_annotator"
+        ],
+        "properties": {
+          "source_event_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "step_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "event_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "observed_at_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "visible_to_annotator": {
+            "const": true
+          }
+        }
+      }
+    },
+    "annotations": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "annotation_id",
+          "annotator_id",
+          "annotator_role",
+          "blind_to_agent_identity",
+          "risk_assessment",
+          "first_material_risk_step_id",
+          "first_risk_no_risk_reason",
+          "eventual_failure_step_id",
+          "failure_no_incident_reason",
+          "earliest_justified_response_step_id",
+          "labels",
+          "annotator_notes"
+        ],
+        "properties": {
+          "annotation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "annotator_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "annotator_role": {
+            "const": "sre_annotator"
+          },
+          "blind_to_agent_identity": {
+            "const": true
+          },
+          "risk_assessment": {
+            "enum": [
+              "risk_present",
+              "no_material_risk",
+              "indeterminate"
+            ]
+          },
+          "first_material_risk_step_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "first_risk_no_risk_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "eventual_failure_step_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "failure_no_incident_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "earliest_justified_response_step_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "risk_kind",
+                "severity",
+                "confidence",
+                "causality",
+                "evidence_spans",
+                "safe_alternative"
+              ],
+              "properties": {
+                "risk_kind": {
+                  "enum": [
+                    "authority_violation",
+                    "effect_finality_violation",
+                    "local_invariant_breach",
+                    "safety_margin_depletion",
+                    "cross_service_risk_transfer",
+                    "recovery_option_loss",
+                    "evidence_quality_degradation",
+                    "retry_feedback_amplification",
+                    "deferred_collateral_harm",
+                    "missed_human_handoff"
+                  ]
+                },
+                "severity": {
+                  "enum": [
+                    "low",
+                    "moderate",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "confidence": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "causality": {
+                  "enum": [
+                    "directly_established",
+                    "counterfactual_supported",
+                    "correlated_only",
+                    "indeterminate"
+                  ]
+                },
+                "evidence_spans": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 100,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "safe_alternative": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "description",
+                    "availability",
+                    "evidence_spans",
+                    "rationale"
+                  ],
+                  "properties": {
+                    "description": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "availability": {
+                      "enum": [
+                        "available",
+                        "conditionally_available",
+                        "unavailable",
+                        "unknown"
+                      ]
+                    },
+                    "evidence_spans": {
+                      "type": "array",
+                      "uniqueItems": true,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "rationale": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "annotator_notes": {
+            "type": "string"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "risk_assessment": {
+                  "const": "risk_present"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "first_material_risk_step_id": {
+                  "type": "string"
+                },
+                "labels": {
+                  "minItems": 1
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "risk_assessment": {
+                  "const": "no_material_risk"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "first_material_risk_step_id": {
+                  "type": "null"
+                },
+                "first_risk_no_risk_reason": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "labels": {
+                  "maxItems": 0
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "risk_assessment": {
+                  "const": "indeterminate"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "first_material_risk_step_id": {
+                  "type": "null"
+                },
+                "first_risk_no_risk_reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "adjudication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "adjudicator_id",
+        "adjudicator_role",
+        "resolved_annotation_ids",
+        "resolution_summary",
+        "unresolved_fields"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "resolved",
+            "unresolved",
+            "not_required"
+          ]
+        },
+        "adjudicator_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "adjudicator_role": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "independent_sre_adjudicator",
+            null
+          ]
+        },
+        "resolved_annotation_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "resolution_summary": {
+          "type": "string"
+        },
+        "unresolved_fields": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "resolved"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "adjudicator_id": {
+                "type": "string"
+              },
+              "adjudicator_role": {
+                "const": "independent_sre_adjudicator"
+              },
+              "resolution_summary": {
+                "minLength": 1
+              },
+              "resolved_annotation_ids": {
+                "minItems": 2
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "unresolved"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "adjudicator_id": {
+                "type": "string"
+              },
+              "adjudicator_role": {
+                "const": "independent_sre_adjudicator"
+              },
+              "unresolved_fields": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "not_required"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "adjudicator_id": {
+                "type": "null"
+              },
+              "adjudicator_role": {
+                "type": "null"
+              },
+              "resolved_annotation_ids": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
