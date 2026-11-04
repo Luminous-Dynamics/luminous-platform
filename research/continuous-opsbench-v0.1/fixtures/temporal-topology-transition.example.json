@@ -1,0 +1,71 @@
+{
+  "schema": "continuous-opsbench-temporal-topology-v0.1",
+  "truth_epochs": [
+    {
+      "scope_id": "prod/zone-a",
+      "epoch": 1,
+      "valid_from_ms": 0,
+      "valid_until_ms": 140
+    },
+    {
+      "scope_id": "prod/zone-a",
+      "epoch": 2,
+      "valid_from_ms": 140,
+      "valid_until_ms": null
+    }
+  ],
+  "observations": [
+    {
+      "observation_id": "obs-epoch-1",
+      "scope_id": "prod/zone-a",
+      "epoch": 1,
+      "topology_digest": "0101010101010101010101010101010101010101010101010101010101010101",
+      "source_id": "inventory-observer",
+      "control_domain": "observer-domain",
+      "source_sequence": 1,
+      "event_time_ms": 100,
+      "ingested_at_ms": 110,
+      "processed_at_ms": 120,
+      "clock_uncertainty_ms": 2,
+      "valid_from_ms": 0,
+      "valid_until_ms": null,
+      "edges": [
+        {
+          "edge_id": "api-db",
+          "from_service": "api",
+          "to_service": "db",
+          "relation": "reads-from",
+          "knowledge": "Present",
+          "valid_from_ms": 0,
+          "valid_until_ms": null,
+          "evidence_digest": "0303030303030303030303030303030303030303030303030303030303030303"
+        }
+      ]
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "hypothesis-old",
+      "scope_id": "prod/zone-a",
+      "topology_epoch": 1,
+      "topology_digest": "0101010101010101010101010101010101010101010101010101010101010101",
+      "created_at_ms": 130,
+      "confidence_ppm": 900000,
+      "evidence_digests": [
+        "0404040404040404040404040404040404040404040404040404040404040404"
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "action_id": "action-after-change",
+      "hypothesis_id": "hypothesis-old",
+      "scope_id": "prod/zone-a",
+      "observation_id": "obs-epoch-1",
+      "required_topology_epoch": 1,
+      "attempted_at_ms": 150,
+      "maximum_observation_age_ms": 100,
+      "committed_effect": false
+    }
+  ]
+}
