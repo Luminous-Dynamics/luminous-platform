@@ -67,27 +67,27 @@
         "observed_at_ms": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 18446744073709552000
+          "maximum": 18446744073709551615
         },
         "appraisal_at_ms": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 18446744073709552000
+          "maximum": 18446744073709551615
         },
         "maximum_observation_age_ms": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 18446744073709552000
+          "maximum": 18446744073709551615
         },
         "receipt_validity_ms": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 18446744073709552000
+          "maximum": 18446744073709551615
         },
         "topology_epoch": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 18446744073709552000
+          "maximum": 18446744073709551615
         },
         "topology_digest": {
           "$ref": "#/$defs/digest"
@@ -138,7 +138,7 @@
         "observation_clock_uncertainty_ms": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 18446744073709552000
+          "maximum": 18446744073709551615
         }
       }
     },
@@ -367,7 +367,7 @@
         "maximum_total_queue": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 18446744073709552000
+          "maximum": 18446744073709551615
         },
         "maximum_api_capacity": {
           "type": "integer",
