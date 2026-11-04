@@ -261,6 +261,13 @@
       "operator": "baseline_first",
       "target": null,
       "target_status": "baseline_first"
+    },
+    {
+      "id": "MPQ_DATA_PATH_USAGE_001",
+      "metric": "actual_data_path_count_vs_validated_path_count_by_scenario",
+      "operator": "baseline_first",
+      "target": null,
+      "target_status": "baseline_first"
     }
   ],
   "required_metrics": [
@@ -285,7 +292,9 @@
     "stream_completion_time_deadline_met_and_deadline_missed",
     "path_validation_duration_and_path_open_abandon_resource_cost",
     "endpoint_cpu_memory_and_energy_per_useful_mib",
-    "shared_resource_capacity_and_companion_tcp_goodput_retention"
+    "shared_resource_capacity_and_companion_tcp_goodput_retention",
+    "validated_path_ids_vs_data_path_ids_observed_by_ack_telemetry",
+    "observed_data_path_ids_and_ack_return_path_ids_per_endpoint"
   ],
   "verdicts": [
     "pass",
@@ -310,6 +319,7 @@
     "The uncoupled per-path Reno and coupled OLIA modes are distinct treatments and are not pooled as one implementation result.",
     "A cross-path ACK yields composite data-path plus ACK-return-path timing, not a direct one-way RTT for either path.",
     "Per-path PMTU and ECN are not assumed equal or successful merely because the connection negotiated multipath.",
-    "CAKE and fq_codel are queue-management comparators, not substitutes for path-level transport or scheduler."
+    "CAKE and fq_codel are queue-management comparators, not substitutes for path-level transport or scheduler.",
+    "Two validated paths do not prove that both paths carried application data; observed data-path IDs are reported separately"
   ]
 }
