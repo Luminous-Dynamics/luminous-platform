@@ -606,6 +606,46 @@ mod tests {
     }
 
     #[test]
+    fn fallback_safe_under_nominal_model_but_unsafe_under_uncertainty_is_not_robust() {
+        let mut request = request(vec![CandidateOperation::Noop]);
+        let state_at = |bulk_queue, retry_multiplier_ppm| OperationalState {
+            critical_queue: 0,
+            bulk_queue,
+            api_capacity: 2,
+            database_capacity: 2,
+            retry_multiplier_ppm,
+        };
+        request.base.state_belief = vec![state_at(0, 1_000_000)];
+        request.base.envelope.maximum_api_capacity = 2;
+        request.base.envelope.maximum_database_capacity = 2;
+        request.base.capacity_uncertainty.push(CapacityUncertainty {
+            api_capacity_loss: 1,
+            database_capacity_loss: 1,
+        });
+        request.state_space = vec![
+            state_at(0, 2_000_000),
+            state_at(1, 2_000_000),
+            state_at(1, 1_000_000),
+            state_at(0, 1_000_000),
+        ];
+
+        let result = appraise_with_viability(
+            &request,
+            &candidate(CandidateOperation::SetRetryMultiplierPpm(2_000_000)),
+        );
+        assert_eq!(
+            result.one_step_appraisal.disposition,
+            FilterDisposition::AdmitForAuthorization
+        );
+        assert_eq!(result.disposition, ViabilityDisposition::BreaksViability);
+        assert!(result.findings.contains(&ViabilityFinding::CandidateSuccessorNotViable));
+        // The nominal no-op path would remain in K_0; the capacity-loss
+        // parameter creates a successor whose next no-op transition violates
+        // the bulk queue envelope, so the fallback is not robust.
+        assert_eq!(result.kernel_sizes_by_depth, vec![4, 3]);
+    }
+
+    #[test]
     fn safe_successor_missing_from_state_universe_defers() {
         let mut request = request(vec![CandidateOperation::SetRetryMultiplierPpm(1_000_000)]);
         request.state_space.pop();
