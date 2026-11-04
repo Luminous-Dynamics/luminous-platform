@@ -63,12 +63,45 @@ pub struct ExecutionHandleClaims {
 #[derive(Debug, PartialEq, Eq)]
 pub struct AuthenticatedExecutionHandle {
     claims: ExecutionHandleClaims,
+    verification: crate::verifier::ExecutionHandleVerificationReceipt,
 }
 
 impl AuthenticatedExecutionHandle {
-    #[cfg(test)]
-    pub(crate) fn from_verified_claims(claims: ExecutionHandleClaims) -> Self {
-        Self { claims }
+    /// Only the verifier module may mint this opaque capability after its
+    /// configured envelope adapter has returned a verified payload and the
+    /// core has checked act, audience, signer, trust-bundle, policy and time.
+    pub(crate) fn from_verified_claims(
+        claims: ExecutionHandleClaims,
+        verification: crate::verifier::ExecutionHandleVerificationReceipt,
+    ) -> Result<Self, FinalityError> {
+        validate_act(&claims.act)?;
+        if claims.handle_id.is_empty() || claims.issuer_id.is_empty() || claims.audience.is_empty() {
+            return Err(FinalityError::InvalidHandle("identity"));
+        }
+        if claims.nonce_digest == Digest::ZERO || claims.handle_digest == Digest::ZERO {
+            return Err(FinalityError::InvalidHandle("zero digest"));
+        }
+        if claims.handle_digest != verification.envelope_digest
+            || verification.payload_type != crate::verifier::EXECUTION_HANDLE_PAYLOAD_TYPE
+            || verification.canonical_payload_digest == Digest::ZERO
+            || verification.verified_signer_key_ids.is_empty()
+            || verification.required_signer_threshold == 0
+            || verification.verified_signer_key_ids.len() < verification.required_signer_threshold
+            || verification.verifier_spiffe_id.is_empty()
+            || verification.verifier_trust_bundle_digest == Digest::ZERO
+            || verification.signing_policy_digest == Digest::ZERO
+        {
+            return Err(FinalityError::InvalidHandle("verification receipt"));
+        }
+        let distinct_signers: std::collections::BTreeSet<&str> = verification
+            .verified_signer_key_ids.iter().map(String::as_str).collect();
+        if distinct_signers.len() != verification.verified_signer_key_ids.len() {
+            return Err(FinalityError::InvalidHandle("duplicate signer identity"));
+        }
+        if claims.issued_at_ms > claims.not_before_ms || claims.not_before_ms >= claims.expires_at_ms {
+            return Err(FinalityError::InvalidHandle("validity interval"));
+        }
+        Ok(Self { claims, verification })
     }
 }
 
@@ -79,6 +112,7 @@ pub struct FinalityEffectReceipt {
     pub consumed_handle_id: String,
     pub consumed_handle_digest: Digest,
     pub consumed_nonce_digest: Digest,
+    pub verification: crate::verifier::ExecutionHandleVerificationReceipt,
     pub committed_at_ms: u64,
     pub participant_sequence: u64,
 }
@@ -91,6 +125,7 @@ pub struct FinalityResult {
     pub disposition: FinalityDisposition,
     pub consumed_handle_id: String,
     pub consumed_handle_digest: Digest,
+    pub verification: crate::verifier::ExecutionHandleVerificationReceipt,
     pub effect_receipt: FinalityEffectReceipt,
 }
 
@@ -173,6 +208,7 @@ struct ConsumedHandle {
     act: CandidateAct,
     nonce_digest: Digest,
     handle_digest: Digest,
+    verification: crate::verifier::ExecutionHandleVerificationReceipt,
     result: FinalityResult,
 }
 
@@ -261,7 +297,8 @@ impl FinalitySink {
         // read-only reconciliation even after expiry or policy rotation.
         if let Some(consumed) = ledger.consumed_handles.get(&claims.handle_id) {
             if consumed.act != *act || consumed.nonce_digest != claims.nonce_digest
-                || consumed.handle_digest != claims.handle_digest {
+                || consumed.handle_digest != claims.handle_digest
+                || consumed.verification != handle.verification {
                 return Err(FinalityError::HandleReplayConflict);
             }
             let mut replay = consumed.result.clone();
@@ -296,6 +333,7 @@ impl FinalitySink {
                 disposition: FinalityDisposition::IdempotentReplay,
                 consumed_handle_id: claims.handle_id.clone(),
                 consumed_handle_digest: claims.handle_digest.clone(),
+                verification: handle.verification.clone(),
                 effect_receipt: existing.receipt.clone(),
             };
             ledger.consumed_nonces.insert(claims.nonce_digest.clone(), claims.handle_id.clone());
@@ -303,6 +341,7 @@ impl FinalitySink {
                 act: act.clone(),
                 nonce_digest: claims.nonce_digest.clone(),
                 handle_digest: claims.handle_digest.clone(),
+                verification: handle.verification.clone(),
                 result: result.clone(),
             });
             return Ok(result);
@@ -316,6 +355,7 @@ impl FinalitySink {
             consumed_handle_id: claims.handle_id.clone(),
             consumed_handle_digest: claims.handle_digest.clone(),
             consumed_nonce_digest: claims.nonce_digest.clone(),
+            verification: handle.verification.clone(),
             committed_at_ms: now_ms,
             participant_sequence: sequence,
         };
@@ -323,6 +363,7 @@ impl FinalitySink {
             disposition: FinalityDisposition::Committed,
             consumed_handle_id: claims.handle_id.clone(),
             consumed_handle_digest: claims.handle_digest.clone(),
+            verification: handle.verification.clone(),
             effect_receipt: receipt.clone(),
         };
 
@@ -335,6 +376,7 @@ impl FinalitySink {
             act: act.clone(),
             nonce_digest: claims.nonce_digest.clone(),
             handle_digest: claims.handle_digest.clone(),
+            verification: handle.verification.clone(),
             result: result.clone(),
         });
         Ok(result)
@@ -416,17 +458,30 @@ mod tests {
     }
 
     fn handle(act: CandidateAct, id: &str, nonce: u8) -> AuthenticatedExecutionHandle {
-        AuthenticatedExecutionHandle::from_verified_claims(ExecutionHandleClaims {
-            handle_id: id.into(),
-            nonce_digest: d(nonce),
-            handle_digest: d(nonce.wrapping_add(100)),
-            issuer_id: "finality-authority-a".into(),
-            audience: "participant-a".into(),
-            act,
-            issued_at_ms: 10,
-            not_before_ms: 10,
-            expires_at_ms: 500,
-        })
+        AuthenticatedExecutionHandle::from_verified_claims(
+            ExecutionHandleClaims {
+                handle_id: id.into(),
+                nonce_digest: d(nonce),
+                handle_digest: d(nonce.wrapping_add(100)),
+                issuer_id: "finality-authority-a".into(),
+                audience: "participant-a".into(),
+                act,
+                issued_at_ms: 10,
+                not_before_ms: 10,
+                expires_at_ms: 500,
+            },
+            crate::verifier::ExecutionHandleVerificationReceipt {
+                payload_type: crate::verifier::EXECUTION_HANDLE_PAYLOAD_TYPE.into(),
+                envelope_digest: d(nonce.wrapping_add(100)),
+                canonical_payload_digest: d(nonce.wrapping_add(110)),
+                verified_signer_key_ids: vec!["test-finality-key".into()],
+                required_signer_threshold: 1,
+                verifier_spiffe_id: "spiffe://luminous.test/finality-verifier".into(),
+                verifier_trust_bundle_digest: d(120),
+                signing_policy_digest: d(121),
+                verified_at_ms: 10,
+            },
+        ).unwrap()
     }
 
     fn sink() -> FinalitySink { FinalitySink::new("participant-a", 7).unwrap() }
@@ -584,7 +639,20 @@ mod tests {
             issuer_id: "finality-authority-a".into(), audience: "participant-b".into(),
             act: act.clone(), issued_at_ms: 10, not_before_ms: 10, expires_at_ms: 500,
         };
-        let handle = AuthenticatedExecutionHandle::from_verified_claims(claims);
+        let handle = AuthenticatedExecutionHandle::from_verified_claims(
+            claims,
+            crate::verifier::ExecutionHandleVerificationReceipt {
+                payload_type: crate::verifier::EXECUTION_HANDLE_PAYLOAD_TYPE.into(),
+                envelope_digest: d(109),
+                canonical_payload_digest: d(119),
+                verified_signer_key_ids: vec!["test-finality-key".into()],
+                required_signer_threshold: 1,
+                verifier_spiffe_id: "spiffe://luminous.test/finality-verifier".into(),
+                verifier_trust_bundle_digest: d(120),
+                signing_policy_digest: d(121),
+                verified_at_ms: 10,
+            },
+        ).unwrap();
         assert_eq!(sink.commit_exact_act(&act, &handle, 100), Err(FinalityError::WrongParticipant));
         assert_eq!(sink.effect_count().unwrap(), 0);
     }
@@ -731,11 +799,24 @@ mod tests {
             Err(FinalityError::InvalidAct("step_id"))
         );
         let act = act();
-        let handle = AuthenticatedExecutionHandle::from_verified_claims(ExecutionHandleClaims {
-            handle_id: "bad-interval".into(), nonce_digest: d(12), handle_digest: d(112),
-            issuer_id: "finality-authority-a".into(), audience: "participant-a".into(),
-            act: act.clone(), issued_at_ms: 20, not_before_ms: 10, expires_at_ms: 10,
-        });
+        let handle = AuthenticatedExecutionHandle::from_verified_claims(
+            ExecutionHandleClaims {
+                handle_id: "bad-interval".into(), nonce_digest: d(12), handle_digest: d(112),
+                issuer_id: "finality-authority-a".into(), audience: "participant-a".into(),
+                act: act.clone(), issued_at_ms: 20, not_before_ms: 10, expires_at_ms: 10,
+            },
+            crate::verifier::ExecutionHandleVerificationReceipt {
+                payload_type: crate::verifier::EXECUTION_HANDLE_PAYLOAD_TYPE.into(),
+                envelope_digest: d(112),
+                canonical_payload_digest: d(122),
+                verified_signer_key_ids: vec!["test-finality-key".into()],
+                required_signer_threshold: 1,
+                verifier_spiffe_id: "spiffe://luminous.test/finality-verifier".into(),
+                verifier_trust_bundle_digest: d(120),
+                signing_policy_digest: d(121),
+                verified_at_ms: 10,
+            },
+        ).unwrap_err();
         assert_eq!(
             sink.commit_exact_act(&act, &handle, 100),
             Err(FinalityError::InvalidHandle("validity interval"))
