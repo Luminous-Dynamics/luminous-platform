@@ -299,7 +299,7 @@
       "scale": {
         "task_count_description": "Three applications, approximately 60 faults per continuous run.",
         "tasks": null,
-        "scenarios": 3,
+        "scenarios": null,
         "trajectories": null,
         "runs_per_model": null,
         "repeats_per_task": null,
@@ -1013,7 +1013,7 @@
       "scale": {
         "task_count_description": "170 annotated trajectories across 11 settings, including structured API workflows, incident management and web/file tasks.",
         "tasks": null,
-        "scenarios": 11,
+        "scenarios": null,
         "trajectories": 170,
         "runs_per_model": null,
         "repeats_per_task": null,
@@ -1188,7 +1188,7 @@
       "scale": {
         "task_count_description": "17 streams, 802 tasks, 520 tools, 42 skills and 62 agents.",
         "tasks": 802,
-        "scenarios": 17,
+        "scenarios": null,
         "trajectories": null,
         "runs_per_model": null,
         "repeats_per_task": null,
