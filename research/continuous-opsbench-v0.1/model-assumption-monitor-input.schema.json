@@ -68,7 +68,7 @@
     "topology_epoch": {
       "type": "integer",
       "minimum": 0,
-      "maximum": 18446744073709552000
+      "maximum": 9007199254740991
     },
     "topology_digest": {
       "type": "string",
@@ -97,12 +97,12 @@
     "maximum_observation_age_ms": {
       "type": "integer",
       "minimum": 0,
-      "maximum": 18446744073709552000
+      "maximum": 9007199254740991
     },
     "maximum_target_time_skew_ms": {
       "type": "integer",
       "minimum": 0,
-      "maximum": 18446744073709552000
+      "maximum": 9007199254740991
     },
     "forecasts": {
       "type": "array",
@@ -145,37 +145,37 @@
           "issued_at_ms": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 18446744073709552000
+            "maximum": 9007199254740991
           },
           "target_at_ms": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 18446744073709552000
+            "maximum": 9007199254740991
           },
           "source_tick": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 18446744073709552000
+            "maximum": 9007199254740991
           },
           "target_tick": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 18446744073709552000
+            "maximum": 9007199254740991
           },
           "lower": {
             "type": "integer",
             "minimum": -9223372036854776000,
-            "maximum": 9223372036854776000
+            "maximum": 9007199254740991
           },
           "point": {
             "type": "integer",
             "minimum": -9223372036854776000,
-            "maximum": 9223372036854776000
+            "maximum": 9007199254740991
           },
           "upper": {
             "type": "integer",
             "minimum": -9223372036854776000,
-            "maximum": 9223372036854776000
+            "maximum": 9007199254740991
           },
           "model_revision": {
             "type": "string",
@@ -200,7 +200,7 @@
           "topology_epoch": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 18446744073709552000
+            "maximum": 9007199254740991
           },
           "topology_digest": {
             "type": "string",
@@ -254,32 +254,32 @@
           "target_tick": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 18446744073709552000
+            "maximum": 9007199254740991
           },
           "observed_at_ms": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 18446744073709552000
+            "maximum": 9007199254740991
           },
           "ingested_at_ms": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 18446744073709552000
+            "maximum": 9007199254740991
           },
           "clock_uncertainty_ms": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 18446744073709552000
+            "maximum": 9007199254740991
           },
           "source_sequence": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 18446744073709552000
+            "maximum": 9007199254740991
           },
           "actual": {
             "type": "integer",
             "minimum": -9223372036854776000,
-            "maximum": 9223372036854776000
+            "maximum": 9007199254740991
           },
           "evidence_digest": {
             "type": "string",
@@ -303,7 +303,7 @@
           "topology_epoch": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 18446744073709552000
+            "maximum": 9007199254740991
           },
           "topology_digest": {
             "type": "string",
@@ -348,27 +348,27 @@
           "maximum_interval_width": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 18446744073709552000
+            "maximum": 9007199254740991
           },
           "residual_scale": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 18446744073709552000
+            "maximum": 9007199254740991
           },
           "cusum_allowance": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 18446744073709552000
+            "maximum": 9007199254740991
           },
           "cusum_warning_threshold": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 18446744073709552000
+            "maximum": 9007199254740991
           },
           "cusum_quarantine_threshold": {
             "type": "integer",
             "minimum": 2,
-            "maximum": 18446744073709552000
+            "maximum": 9007199254740991
           }
         }
       }
