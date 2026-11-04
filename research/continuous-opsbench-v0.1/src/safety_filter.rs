@@ -117,6 +117,7 @@ pub enum SafetyFinding {
     InvalidInputSet,
     ModelAssumptionNotQualified,
     ModelAssumptionIdentityMismatch,
+    ModelAssumptionReportStale,
     EnumerationLimitExceeded,
     ArithmeticOverflow,
 }
@@ -527,12 +528,7 @@ pub fn appraise_with_model_assurance(
         && report.forecast_count > 0
         && report.matched_observation_count == report.forecast_count
         && report.findings.is_empty()
-        && !report.metrics.is_empty()
-        && input.appraisal_at_ms < report.valid_until_ms
-        && input.appraisal_at_ms
-            .checked_sub(report.evaluated_at_ms)
-            .map(|age| age <= input.maximum_model_report_age_ms)
-            .unwrap_or(false);
+        && !report.metrics.is_empty();
 
     if !identity_matches {
         return base_appraisal(
@@ -550,6 +546,20 @@ pub fn appraise_with_model_assurance(
             FilterDisposition::DeferForEvidence,
             None,
             vec![SafetyFinding::ModelAssumptionNotQualified],
+        );
+    }
+    let report_fresh = input.appraisal_at_ms < report.valid_until_ms
+        && input.appraisal_at_ms
+            .checked_sub(report.evaluated_at_ms)
+            .map(|age| age <= input.maximum_model_report_age_ms)
+            .unwrap_or(false);
+    if !report_fresh {
+        return base_appraisal(
+            input,
+            action,
+            FilterDisposition::DeferForEvidence,
+            None,
+            vec![SafetyFinding::ModelAssumptionReportStale],
         );
     }
 
