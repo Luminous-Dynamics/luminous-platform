@@ -154,6 +154,8 @@ pub enum ProbeImpactFinding {
     DuplicateReceipt,
     MissingImpactReceipt,
     DuplicateEvidence,
+    ImpactSequenceRegression,
+    ImpactSequenceGap,
     IncompleteImpactReceipt,
     ImpactIdentityMismatch,
     ObserverNotIndependent,
@@ -304,6 +306,7 @@ pub fn evaluate_probe_interference(
     let mut receipt_map = BTreeMap::new();
     let mut receipt_ids = BTreeSet::new();
     let mut evidence_digests = BTreeSet::new();
+    let mut previous_impact_sequence: Option<u64> = None;
     for r in receipts {
         if r.receipt_id.is_empty() || !receipt_ids.insert(r.receipt_id.as_str()) {
             findings.insert(ProbeImpactFinding::DuplicateReceipt); continue;
@@ -314,6 +317,18 @@ pub fn evaluate_probe_interference(
         if !r.complete {
             findings.insert(ProbeImpactFinding::IncompleteImpactReceipt); continue;
         }
+        if r.source_sequence == 0 {
+            findings.insert(ProbeImpactFinding::ImpactSequenceRegression); continue;
+        }
+        if let Some(previous) = previous_impact_sequence {
+            if r.source_sequence <= previous {
+                findings.insert(ProbeImpactFinding::ImpactSequenceRegression); continue;
+            }
+            if previous.checked_add(1) != Some(r.source_sequence) {
+                findings.insert(ProbeImpactFinding::ImpactSequenceGap); continue;
+            }
+        }
+        previous_impact_sequence = Some(r.source_sequence);
         let e = match execution_map.get(r.execution_id.as_str()) {
             Some(e) => *e,
             None => { findings.insert(ProbeImpactFinding::ImpactIdentityMismatch); continue; }
@@ -417,7 +432,8 @@ pub fn evaluate_probe_interference(
         ProbeImpactFinding::InvalidIdentity, ProbeImpactFinding::InvalidContract,
         ProbeImpactFinding::TooManyRecords, ProbeImpactFinding::DuplicateExecution,
         ProbeImpactFinding::DuplicateReceipt, ProbeImpactFinding::MissingImpactReceipt,
-        ProbeImpactFinding::DuplicateEvidence, ProbeImpactFinding::IncompleteImpactReceipt,
+        ProbeImpactFinding::DuplicateEvidence, ProbeImpactFinding::ImpactSequenceRegression,
+        ProbeImpactFinding::ImpactSequenceGap, ProbeImpactFinding::IncompleteImpactReceipt,
         ProbeImpactFinding::ImpactIdentityMismatch, ProbeImpactFinding::InvalidExecutionInterval,
         ProbeImpactFinding::MissingServiceWindow, ProbeImpactFinding::DuplicateServiceWindow,
         ProbeImpactFinding::IncompleteServiceWindow, ProbeImpactFinding::ServiceWindowIdentityMismatch,
