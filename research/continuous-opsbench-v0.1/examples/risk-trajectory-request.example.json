@@ -1,0 +1,102 @@
+{
+  "contract": {
+    "scenario_id": "risk-run-1",
+    "arm_id": "candidate",
+    "start_ms": 0,
+    "end_ms": 10000,
+    "minimum_capacity_reserve_ppm": 300000,
+    "maximum_queue_pressure_ppm": 800000,
+    "maximum_retry_multiplier_ppm": 1500000,
+    "minimum_recovery_actions": 2,
+    "maximum_observation_age_ms": 500,
+    "material_delta_ppm": 100000,
+    "minimum_recovery_action_loss": 1
+  },
+  "steps": [
+    {
+      "step_id": "risk-created",
+      "sequence": 1,
+      "at_ms": 200,
+      "topology_epoch": 4,
+      "topology_digest": "0202020202020202020202020202020202020202020202020202020202020202",
+      "model_digest": "0404040404040404040404040404040404040404040404040404040404040404",
+      "comparison_context_digest": "0505050505050505050505050505050505050505050505050505050505050505",
+      "no_action_context_digest": "0505050505050505050505050505050505050505050505050505050505050505",
+      "no_action_topology_epoch": 4,
+      "no_action_topology_digest": "0202020202020202020202020202020202020202020202020202020202020202",
+      "counterfactual_arm_id": "no-action",
+      "source_event_ids": [
+        "plant-transition-1",
+        "participant-commit-1"
+      ],
+      "observation_id": "observation-risk-created",
+      "observation_source_id": "independent-observer",
+      "observation_digest": "0303030303030303030303030303030303030303030303030303030303030303",
+      "observed_at_ms": 190,
+      "observation_clock_uncertainty_ms": 5,
+      "action_id": "action-1",
+      "before": [
+        {
+          "service_id": "api",
+          "capacity_reserve_ppm": 700000,
+          "queue_pressure_ppm": 100000,
+          "retry_multiplier_ppm": 1000000,
+          "viable_recovery_actions": 5
+        }
+      ],
+      "after": [
+        {
+          "service_id": "api",
+          "capacity_reserve_ppm": 500000,
+          "queue_pressure_ppm": 100000,
+          "retry_multiplier_ppm": 1000000,
+          "viable_recovery_actions": 5
+        }
+      ],
+      "no_action_after": [
+        {
+          "service_id": "api",
+          "capacity_reserve_ppm": 700000,
+          "queue_pressure_ppm": 100000,
+          "retry_multiplier_ppm": 1000000,
+          "viable_recovery_actions": 5
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "scenario_id": "risk-run-1",
+      "arm_id": "candidate",
+      "action_id": "action-1",
+      "tenant_id": "tenant-1",
+      "participant_id": "participant-1",
+      "attempt_id": "attempt-1",
+      "logical_action_key": "logical-1",
+      "request_digest": "0101010101010101010101010101010101010101010101010101010101010101",
+      "target_service": "api",
+      "stage": "dispatched",
+      "dispatched_at_ms": 100,
+      "completed_at_ms": 150,
+      "forbidden_attempt": false
+    }
+  ],
+  "effects": [
+    {
+      "scenario_id": "risk-run-1",
+      "arm_id": "candidate",
+      "effect_id": "effect-1",
+      "action_id": "action-1",
+      "tenant_id": "tenant-1",
+      "participant_id": "participant-1",
+      "attempt_id": "attempt-1",
+      "logical_action_key": "logical-1",
+      "request_digest": "0101010101010101010101010101010101010101010101010101010101010101",
+      "target_service": "api",
+      "state": "committed",
+      "gate_authorized": true,
+      "forbidden_attempt": false,
+      "ledger_cursor": "cursor-1"
+    }
+  ]
+}

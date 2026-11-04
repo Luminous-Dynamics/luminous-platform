@@ -117,3 +117,32 @@ Wire contracts and fixtures:
 The tests include a critical trap: a candidate passes immediate one-step safety but enters a state with no robust fallback under the no-op catalogue, so the viability evaluator rejects it. A paired control uses a retry-reduction fallback and proves the candidate successor remains in the finite viability kernel. A separate direct-arithmetic reference implementation checks the kernel membership without calling the filter's transition/predecessor code.
 
 **Claim ceiling:** this is a finite-horizon, discrete, finite-state control-synthesis check for the pinned model, state universe, uncertainty set, disturbance set and envelope. It is not a continuous-time stability proof, does not establish that the state universe or disturbance bounds match production, and does not solve recovery from arbitrary degraded states. The latter needs an explicitly defined degraded envelope and progress/liveness objective.
+
+
+## Intrinsic operational-risk trajectory audit v0.1
+
+The additive \`src/risk_trajectory.rs\` module audits risk accumulation across a sequence of evaluator-owned service-state snapshots. It reuses the existing \`AgentAction\` and participant-owned \`EffectReceipt\` records; it does not create a second event journal and does not accept model self-reports as operational truth.
+
+Each trajectory step binds:
+- exact observation ID, source ID, digest and source-event IDs;
+- topology epoch/digest and plant-model digest;
+- a comparison-context digest for fault state, offered demand and plant tick;
+- pre-action and post-action service risk state;
+- the same-tick no-action twin, including its topology and context identity;
+- the linked existing action ID, when an intervention preceded the snapshot.
+
+The evaluator requires candidate and no-action context/topology bindings to match. It distinguishes safety-margin depletion, local invariant breach, retry amplification, queue pressure, recovery-option loss, cross-service risk transfer and evidence-quality degradation.
+
+**Attribution is deliberately stricter than detection.** A risk event is attributed to an intervention only if the existing action record matches exactly, one authorized committed participant receipt matches its tenant/participant/attempt/idempotency/request/target binding, the step follows action completion, and the post-action risk is materially worse than the matched no-action twin. Missing, stale, unknown, duplicate or contradictory evidence remains indeterminate. A detected risk with no material matched-twin deterioration is not attributed to the intervention.
+
+The result reports the earliest detected risk step separately from the earliest intervention-attributable risk step, per-dimension deficit integrals, hard invariant breaches, sequence gaps and evidence completeness. It does not emit a weighted risk score.
+
+Wire contracts and fixtures:
+- \`risk-trajectory-request.schema.json\`
+- \`risk-trajectory-result.schema.json\`
+- \`examples/risk-trajectory-request.example.json\`
+- \`examples/risk-trajectory-result.example.json\`
+
+CI meta-validates both Draft 2020-12 schemas and validates both fixtures alongside the existing safety-filter and viability contracts.
+
+**Claim ceiling:** this evaluator measures risk over supplied evaluator-owned snapshots and the declared no-action comparison. It does not derive ground truth from telemetry, authenticate observation publishers, prove the causal validity of a no-action twin beyond its bound identities, or establish production-wide future risk. Human adjudication and independently reproduced benchmark trajectories remain necessary for comparative claims.
