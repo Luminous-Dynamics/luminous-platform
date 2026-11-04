@@ -138,9 +138,12 @@ struct EffectFingerprint {
 }
 
 impl EffectFingerprint {
-    /// A new attempt, grant, or runtime-evidence receipt may authorize a retry
-    /// of the same logical operation; it must not create a second effect.
-    /// The exact retry act is still compared against its own handle first.
+    /// This fingerprint identifies the business effect, not its authorization
+    /// envelope. The full act (including grant, scope, policy epoch/digest,
+    /// risk and runtime evidence) is still checked against a fresh exact handle
+    /// above. Those authorization fields are intentionally excluded here so a
+    /// policy rotation or re-grant cannot turn an already committed effect into
+    /// a second effect under the same tenant-scoped logical action key.
     fn from_act(act: &CandidateAct) -> Self {
         Self {
             canonicalization_profile: act.canonicalization_profile.clone(),
@@ -150,21 +153,16 @@ impl EffectFingerprint {
             episode_id: act.episode_id.clone(),
             plan_digest: act.plan_digest.clone(),
             step_id: act.step_id.clone(),
-            authorization_scope: act.authorization_scope.clone(),
             tool_id: act.tool_id.clone(),
             operation_id: act.operation_id.clone(),
             manifest_version: act.manifest_version.clone(),
             manifest_digest: act.manifest_digest.clone(),
             toolchain_id: act.toolchain_id.clone(),
             toolchain_digest: act.toolchain_digest.clone(),
-            policy_version: act.policy_version.clone(),
-            policy_digest: act.policy_digest.clone(),
-            policy_epoch: act.policy_epoch,
             target_digest: act.target_digest.clone(),
             request_digest: act.request_digest.clone(),
             logical_action_key: act.logical_action_key.clone(),
             environment_profile_digest: act.environment_profile_digest.clone(),
-            risk_level: act.risk_level,
         }
     }
 }
@@ -672,6 +670,30 @@ mod tests {
         assert_eq!(replayed.disposition, FinalityDisposition::IdempotentReplay);
         assert_eq!(replayed.effect_receipt, committed.effect_receipt);
         assert_eq!(replayed.consumed_handle_id, "h2");
+        assert_eq!(sink.effect_count().unwrap(), 1);
+        assert_eq!(sink.consumed_handle_count().unwrap(), 2);
+    }
+
+    #[test]
+    fn policy_rotation_and_regrant_do_not_duplicate_the_same_business_effect() {
+        let sink = sink();
+        let first = act();
+        let committed = sink.commit_exact_act(&first, &handle(first.clone(), "h-policy-1", 61), 100).unwrap();
+
+        sink.advance_policy_epoch(8).unwrap();
+        let mut retry = act();
+        retry.attempt_id = "attempt-after-rotation".into();
+        retry.grant_id = "grant-renewed".into();
+        retry.authorization_scope = "service:api:restart:reapproved".into();
+        retry.policy_version = "policy-v8".into();
+        retry.policy_digest = d(81);
+        retry.policy_epoch = 8;
+        retry.risk_level = 3;
+        retry.runtime_evidence_bundle_digest = d(82);
+        let replay = sink.commit_exact_act(&retry, &handle(retry.clone(), "h-policy-2", 62), 200).unwrap();
+
+        assert_eq!(replay.disposition, FinalityDisposition::IdempotentReplay);
+        assert_eq!(replay.effect_receipt, committed.effect_receipt);
         assert_eq!(sink.effect_count().unwrap(), 1);
         assert_eq!(sink.consumed_handle_count().unwrap(), 2);
     }
