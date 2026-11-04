@@ -924,6 +924,69 @@ mod tests {
     }
 
     #[test]
+    fn counterfactual_pair_rejects_mismatched_exogenous_inputs_before_attribution() {
+        let mut pair = pair_manifest();
+        pair.no_action_exogenous_input_digest = digest(99);
+        let state = service("api", 700_000, 100_000, 1_000_000, 5);
+        let item = step("pair-mismatch", 1, 200, None, vec![state.clone()], vec![state.clone()], vec![state]);
+        assert_eq!(
+            evaluate_risk_trajectory(&contract(), &pair, &[item], &[], &[]),
+            Err(RiskEvaluationError::CounterfactualManifestMismatch)
+        );
+    }
+
+    #[test]
+    fn counterfactual_pair_rejects_model_seed_initial_state_and_policy_mismatch() {
+        let mut pair = pair_manifest();
+        pair.no_action_model_digest = digest(99);
+        let state = service("api", 700_000, 100_000, 1_000_000, 5);
+        let item = step("model-mismatch", 1, 200, None, vec![state.clone()], vec![state.clone()], vec![state.clone()]);
+        assert_eq!(
+            evaluate_risk_trajectory(&contract(), &pair, &[item.clone()], &[], &[]),
+            Err(RiskEvaluationError::CounterfactualManifestMismatch)
+        );
+
+        pair = pair_manifest();
+        pair.no_action_initial_state_digest = digest(98);
+        assert_eq!(
+            evaluate_risk_trajectory(&contract(), &pair, &[item.clone()], &[], &[]),
+            Err(RiskEvaluationError::CounterfactualManifestMismatch)
+        );
+
+        pair = pair_manifest();
+        pair.no_action_seed_bundle_digest = digest(97);
+        assert_eq!(
+            evaluate_risk_trajectory(&contract(), &pair, &[item.clone()], &[], &[]),
+            Err(RiskEvaluationError::CounterfactualManifestMismatch)
+        );
+
+        pair = pair_manifest();
+        pair.no_action_policy_epoch = 3;
+        assert_eq!(
+            evaluate_risk_trajectory(&contract(), &pair, &[item], &[], &[]),
+            Err(RiskEvaluationError::CounterfactualManifestMismatch)
+        );
+    }
+
+    #[test]
+    fn every_trajectory_step_binds_the_same_counterfactual_pair_manifest() {
+        let mut item = step(
+            "pair-binding",
+            1,
+            200,
+            None,
+            vec![service("api", 700_000, 100_000, 1_000_000, 5)],
+            vec![service("api", 700_000, 100_000, 1_000_000, 5)],
+            vec![service("api", 700_000, 100_000, 1_000_000, 5)],
+        );
+        item.pair_manifest_digest = digest(99);
+        assert_eq!(
+            evaluate_risk_trajectory(&contract(), &pair_manifest(), &[item], &[], &[]),
+            Err(RiskEvaluationError::MissingStepIdentity("pair-binding".into()))
+        );
+    }
+
+    #[test]
     fn benign_trajectory_has_no_risk_findings() {
         let s = service("api", 700_000, 100_000, 1_000_000, 5);
         let item = step("s1", 1, 200, None, vec![s.clone()], vec![s.clone()], vec![s.clone()]);
@@ -963,7 +1026,7 @@ mod tests {
             service("database", 700_000, 100_000, 1_000_000, 5),
         ];
         let item = step("transfer", 1, 200, Some("action-1"), before, after, no_action);
-        let result = evaluate_risk_trajectory(&contract(), &[item], &[a.clone()], &[receipt(&a, ParticipantState::Committed)]).unwrap();
+        let result = evaluate_risk_trajectory(&contract(), &pair_manifest(), &[item], &[a.clone()], &[receipt(&a, ParticipantState::Committed)]).unwrap();
         let finding = result.findings.iter().find(|finding| finding.kind == RiskKind::CrossServiceRiskTransfer).unwrap();
         assert_eq!(finding.service_id, "database");
         assert_eq!(finding.attribution, RiskAttribution::AttributedToCommittedIntervention);
@@ -1030,7 +1093,7 @@ mod tests {
         );
         item.observed_at_ms = 490;
         item.observation_clock_uncertainty_ms = 20;
-        let result = evaluate_risk_trajectory(&contract(), &[item], &[], &[]).unwrap();
+        let result = evaluate_risk_trajectory(&contract(), &pair_manifest(), &[item], &[], &[]).unwrap();
         assert!(result.findings.iter().any(|finding| finding.kind == RiskKind::EvidenceQualityDegradation));
         assert!(!result.evidence_complete);
     }
