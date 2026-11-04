@@ -243,7 +243,9 @@
         "failed_cleanup",
         "max_companion_flows",
         "fixed_point_ratio_unit",
-        "statistical_analysis"
+        "statistical_analysis",
+        "companion_flow_identity_or_offered_load_mismatch",
+        "paired_verdict_must_retain_both_environment_and_arm_identities"
       ],
       "properties": {
         "path_state_verified_at_both_endpoints": {
@@ -288,6 +290,12 @@
         "statistical_analysis": {
           "type": "string",
           "minLength": 1
+        },
+        "companion_flow_identity_or_offered_load_mismatch": {
+          "const": "inconclusive"
+        },
+        "paired_verdict_must_retain_both_environment_and_arm_identities": {
+          "const": true
         }
       }
     },
@@ -384,8 +392,8 @@
     },
     "required_metrics": {
       "type": "array",
-      "minItems": 21,
-      "maxItems": 21,
+      "minItems": 23,
+      "maxItems": 23,
       "uniqueItems": true,
       "items": {
         "type": "string"
