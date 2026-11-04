@@ -96,3 +96,20 @@ Wire contracts and fixtures:
 - \`examples/predictive-safety-filter-appraisal.example.json\`
 
 CI meta-validates both Draft 2020-12 schemas and validates both example fixtures before running the Rust suite. The schemas define a hex digest wire encoding; a real adapter must perform canonical serialization and recompute/authenticate digests rather than accepting caller-supplied strings as proof.
+
+
+## Operational model-assumption monitor v0.1
+
+The additive `src/model_assumption.rs` module evaluates immutable pre-issued forecast intervals against independently sourced observations. It binds every forecast and observation to the exact model revision/digest, plant revision/digest, workload profile and topology epoch/digest. It rejects cross-domain observer aliasing, duplicate IDs/evidence digests, sequence gaps/regressions, missing outcomes, stale or time-misaligned observations, and incomplete records.
+
+The monitor enforces three separate checks: interval coverage (a miss quarantines the model scope), interval sharpness (wide intervals cannot qualify), and per-metric positive/negative CUSUM on fixed-point point-forecast residuals (warning or hard quarantine thresholds). Every metric must meet a preregistered minimum observation count. All thresholds are frozen inputs; the monitor does not recalibrate on confirmatory outcomes.
+
+Dispositions are `Unqualified`, `Qualified`, `DriftSuspected`, `Quarantined` and `Indeterminate`. Only `Qualified` permits a caller to continue to the separately implemented predictive safety filter. This module does not authorize or execute any action and does not claim a distribution-free future coverage guarantee. It is not an implementation of conformal prediction.
+
+Wire contracts/fixtures:
+- `model-assumption-monitor-input.schema.json`
+- `model-assumption-monitor-report.schema.json`
+- `examples/model-assumption-monitor-input.example.json`
+- `examples/model-assumption-monitor-report.example.json`
+
+CI meta-validates both Draft 2020-12 schemas and validates both example fixtures. See `MODEL-ASSUMPTION-MONITOR-V0.1.md` for identity, logic and claim boundaries.
