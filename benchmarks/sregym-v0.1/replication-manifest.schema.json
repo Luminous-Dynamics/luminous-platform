@@ -15,7 +15,10 @@
     "container_images",
     "preflight",
     "native_metrics",
-    "blockers"
+    "blockers",
+    "arms",
+    "experimental_design",
+    "instrumentation_noninterference"
   ],
   "properties": {
     "schema": {
@@ -330,6 +333,214 @@
         "type": "string",
         "minLength": 1
       }
+    },
+    "arms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "arm_id",
+          "role",
+          "agent_name",
+          "agent_version",
+          "model_provider",
+          "model_name",
+          "model_version",
+          "agent_revision",
+          "system_prompt_sha256",
+          "developer_prompt_sha256",
+          "tool_surface_sha256",
+          "memory_policy_sha256",
+          "inference_config_sha256",
+          "max_wall_time_seconds",
+          "max_steps",
+          "max_tool_calls",
+          "max_tokens",
+          "retry_policy",
+          "concurrency"
+        ],
+        "properties": {
+          "arm_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "role": {
+            "enum": [
+              "candidate",
+              "baseline",
+              "strong_external_baseline",
+              "diagnostic_oracle"
+            ]
+          },
+          "agent_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "agent_version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model_provider": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model_version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "agent_revision": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "system_prompt_sha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "developer_prompt_sha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "tool_surface_sha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "memory_policy_sha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "inference_config_sha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "max_wall_time_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "max_steps": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "max_tool_calls": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "max_tokens": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "retry_policy": {
+            "enum": [
+              "no_retry",
+              "fixed_bounded",
+              "adaptive_bounded",
+              null
+            ]
+          },
+          "concurrency": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          }
+        }
+      }
+    },
+    "experimental_design": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seed_ids",
+        "paired_seed_blocks",
+        "randomized_arm_order",
+        "missing_run_policy",
+        "inference_unit",
+        "preregistration_sha256"
+      ],
+      "properties": {
+        "seed_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "paired_seed_blocks": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "randomized_arm_order": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "missing_run_policy": {
+          "enum": [
+            "retain_in_denominator",
+            "report_separately_with_reason",
+            null
+          ]
+        },
+        "inference_unit": {
+          "enum": [
+            "scenario_seed_cluster",
+            null
+          ]
+        },
+        "preregistration_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "instrumentation_noninterference": {
+      "enum": [
+        "not_tested",
+        "failed",
+        "proven"
+      ]
     }
   },
   "allOf": [
@@ -432,10 +643,99 @@
               },
               "collection_errors_reported": {
                 "const": 0
+              },
+              "unit_tests_passed_reported": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          },
+          "arms": {
+            "minItems": 2,
+            "contains": {
+              "properties": {
+                "role": {
+                  "const": "candidate"
+                }
+              },
+              "required": [
+                "role"
+              ]
+            },
+            "allOf": [
+              {
+                "contains": {
+                  "properties": {
+                    "role": {
+                      "const": "baseline"
+                    }
+                  },
+                  "required": [
+                    "role"
+                  ]
+                }
+              }
+            ]
+          },
+          "experimental_design": {
+            "properties": {
+              "seed_ids": {
+                "minItems": 5
+              },
+              "paired_seed_blocks": {
+                "const": true
+              },
+              "randomized_arm_order": {
+                "const": true
+              },
+              "missing_run_policy": {
+                "const": "retain_in_denominator"
+              },
+              "inference_unit": {
+                "const": "scenario_seed_cluster"
+              },
+              "preregistration_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          },
+          "instrumentation_noninterference": {
+            "const": "proven"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "scenario_inventory": {
+                  "properties": {
+                    "suite": {
+                      "const": "full"
+                    }
+                  },
+                  "required": [
+                    "suite"
+                  ]
+                }
+              },
+              "required": [
+                "scenario_inventory"
+              ]
+            },
+            "then": {
+              "properties": {
+                "runtime": {
+                  "properties": {
+                    "cluster_profile": {
+                      "const": "self_managed_linux"
+                    }
+                  }
+                }
               }
             }
           }
-        }
+        ]
       }
     }
   ]
