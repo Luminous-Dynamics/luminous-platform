@@ -50,7 +50,8 @@
     "plant_revision": "plant-v1",
     "plant_digest": "0808080808080808080808080808080808080808080808080808080808080808",
     "workload_profile_digest": "0909090909090909090909090909090909090909090909090909090909090909",
-    "metric_policy_set_digest": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+    "metric_policy_set_digest": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a",
+    "maximum_model_report_age_ms": 20
   },
   "candidate_act": {
     "action_id": "action-1",
