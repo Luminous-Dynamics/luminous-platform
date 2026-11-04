@@ -9,6 +9,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 pub const MODEL_ASSUMPTION_SCHEMA: &str =
     "continuous-opsbench-model-assumption-monitor-v0.1";
+pub const MAX_REPORT_VALIDITY_MS: u64 = 60_000;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Forecast {
@@ -84,6 +85,8 @@ pub struct ModelAssumptionInput {
     pub observer_control_domain: String,
     pub observer_adapter_digest: Digest,
     pub metric_policy_set_digest: Digest,
+    pub evaluation_at_ms: u64,
+    pub valid_until_ms: u64,
     pub maximum_observation_age_ms: u64,
     pub maximum_target_time_skew_ms: u64,
     pub metric_policies: Vec<MetricAssumptionPolicy>,
@@ -159,6 +162,8 @@ pub struct ModelAssumptionReport {
     pub observer_id: String,
     pub observer_control_domain: String,
     pub observer_adapter_digest: Digest,
+    pub evaluated_at_ms: u64,
+    pub valid_until_ms: u64,
     pub forecast_count: usize,
     pub observation_count: usize,
     pub matched_observation_count: usize,
@@ -256,6 +261,8 @@ fn build_report(
         observer_id: input.observer_id.clone(),
         observer_control_domain: input.observer_control_domain.clone(),
         observer_adapter_digest: input.observer_adapter_digest.clone(),
+        evaluated_at_ms: input.evaluation_at_ms,
+        valid_until_ms: input.valid_until_ms,
         forecast_count: input.forecasts.len(),
         observation_count: input.observations.len(),
         matched_observation_count,
@@ -310,7 +317,10 @@ pub fn evaluate_model_assumptions(
         findings.insert(ModelFinding::TrustDomainNotSeparated);
     }
     let mut policy_by_metric = BTreeMap::new();
-    if input.metric_policies.is_empty() {
+    if input.metric_policies.is_empty()
+        || input.valid_until_ms <= input.evaluation_at_ms
+        || input.valid_until_ms.saturating_sub(input.evaluation_at_ms) > MAX_REPORT_VALIDITY_MS
+    {
         findings.insert(ModelFinding::InvalidThresholds);
     }
     for policy in &input.metric_policies {
@@ -430,6 +440,10 @@ pub fn evaluate_model_assumptions(
 
         if !observation.complete {
             findings.insert(ModelFinding::IncompleteObservation);
+            continue;
+        }
+        if observation.ingested_at_ms > input.evaluation_at_ms {
+            findings.insert(ModelFinding::FutureObservation);
             continue;
         }
         if observation.ingested_at_ms < observation.observed_at_ms {
@@ -714,6 +728,8 @@ mod tests {
             observer_control_domain: "observer-domain".into(),
             observer_adapter_digest: digest(5),
             metric_policy_set_digest: digest(6),
+            evaluation_at_ms: 410,
+            valid_until_ms: 510,
             maximum_observation_age_ms: 10,
             maximum_target_time_skew_ms: 5,
             metric_policies: vec![MetricAssumptionPolicy {
