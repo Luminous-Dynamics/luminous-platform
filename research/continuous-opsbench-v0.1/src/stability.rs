@@ -932,8 +932,8 @@ pub fn validate_closed_loop_evidence(
         {
             return Err(StabilityError::ClosedLoopEvidenceMismatch);
         }
-        if !scheduled_effect_tick(decision.decision_tick, config.actuation_delay_ticks)
-            .is_some_and(|effect_tick| effect_tick < tail_start)
+        if scheduled_effect_tick(decision.decision_tick, config.actuation_delay_ticks)
+            .is_none_or(|effect_tick| effect_tick >= tail_start)
         {
             return Err(StabilityError::ClosedLoopEvidenceMismatch);
         }
