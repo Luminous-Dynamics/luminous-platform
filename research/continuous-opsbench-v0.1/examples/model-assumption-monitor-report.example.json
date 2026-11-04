@@ -34,5 +34,6 @@
       "final_negative_cusum": 0,
       "worst_interval_width": 10
     }
-  ]
+  ],
+  "metric_policy_set_digest": "0606060606060606060606060606060606060606060606060606060606060606"
 }
