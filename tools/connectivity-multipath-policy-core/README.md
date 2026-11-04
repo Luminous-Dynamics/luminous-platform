@@ -157,6 +157,8 @@ The verifier requires:
 - ACK-path samples labelled by endpoint, with data-path and ACK-return path recorded separately; cross-path ACK RTT samples are explicitly composite;
 - stream byte accounting that distinguishes network receipt from useful in-order application release, and a hard receiver reorder-buffer bound.
 
+The adapter report distinguishes **validated path IDs** from **data-path IDs actually observed** and ACK-return path IDs. Negotiation plus two validated paths does not prove both paths carried application data.
+
 The adapter verdict is scoped to `single_paired_trial`. A paired pass is not programme-level statistical qualification. The profile contains 16 scenarios covering fallback, negotiation, independent and shared bottlenecks, cross-path ACKs, path churn, path validation, controller/scheduler comparisons and unsupported revision/observability cases.
 
 The mp-quic-go compliance and picoquic interoperability results are upstream's own reported evidence, not independent LNF qualification. Its published interop runner used a Docker bridge/router/netem stand-in because ns-3 forwarding failed in the test environment, and it explicitly did not measure goodput or cross traffic. Therefore LNF still needs matched namespace performance tests, especially shared-bottleneck TCP coexistence, before any performance claim.
