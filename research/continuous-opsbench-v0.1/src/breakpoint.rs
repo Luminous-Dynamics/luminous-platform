@@ -376,10 +376,10 @@ pub fn evaluate_breakpoints(
                     return Err(BreakpointError::DuplicateActionId(action_id.clone()));
                 }
                 let decision = decision_id.as_ref().and_then(|id| decisions.get(id));
-                let mut action_invalid = false;
+                let mut decision_invalid = false;
 
                 if decision.is_none() {
-                    action_invalid = true;
+                    decision_invalid = true;
                     push_violation(
                         &mut violations, event, BreakpointKind::UnboundMutationAttempt,
                         Attribution::Agent, Severity::Critical, false,
@@ -387,7 +387,7 @@ pub fn evaluate_breakpoints(
                     );
                 } else if let Some(decision) = decision {
                     if decision.invalid || decision.proposed_action_id.as_deref() != Some(action_id) {
-                        action_invalid = true;
+                        decision_invalid = true;
                         push_violation(
                             &mut violations, event, BreakpointKind::InvalidEvidenceAction,
                             Attribution::Agent, Severity::Critical, false,
@@ -398,7 +398,6 @@ pub fn evaluate_breakpoints(
                 }
 
                 if !policy_allowed || !scope_allowed {
-                    action_invalid = true;
                     push_violation(
                         &mut violations, event, BreakpointKind::UnauthorizedMutationAttempt,
                         Attribution::Agent, Severity::Critical, false,
@@ -414,7 +413,7 @@ pub fn evaluate_breakpoints(
                     policy_allowed: *policy_allowed,
                     scope_allowed: *scope_allowed,
                     gate_blocked: *gate_blocked,
-                    decision_invalid: action_invalid,
+                    decision_invalid,
                 });
             }
             TraceEventKind::ParticipantEffectCommitted {
