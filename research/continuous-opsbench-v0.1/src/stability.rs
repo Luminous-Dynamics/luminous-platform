@@ -688,6 +688,35 @@ mod tests {
     }
 
     #[test]
+    fn simultaneous_actions_on_independent_resources_both_apply() {
+        let mut config = config();
+        config.actuation_delay_ticks = 1;
+        let actions = [
+            ControlAction {
+                action_id: "api-capacity".into(),
+                controller: Controller::Agent,
+                issued_at_tick: 0,
+                observation_source_tick: 0,
+                operation: ControlOperation::SetApiCapacity(120),
+            },
+            ControlAction {
+                action_id: "retry-policy".into(),
+                controller: Controller::Runbook,
+                issued_at_tick: 0,
+                observation_source_tick: 0,
+                operation: ControlOperation::SetRetryMultiplierPpm(1_500_000),
+            },
+        ];
+        let run = run_stability_scenario(&config, &actions).unwrap();
+        assert_eq!(run.metrics.action_conflict_count, 0);
+        assert_eq!(run.action_outcomes.len(), 2);
+        assert!(run.action_outcomes.iter().all(|outcome| outcome.disposition == ActionDisposition::Applied));
+        assert!(run.action_outcomes.iter().any(|outcome| outcome.resource == ControlResource::ApiCapacity));
+        assert!(run.action_outcomes.iter().any(|outcome| outcome.resource == ControlResource::RetryMultiplier));
+        assert_eq!(run.samples[1].actual_api_capacity, 120);
+    }
+
+    #[test]
     fn retries_amplify_bulk_load_without_consuming_critical_priority() {
         let mut config = config();
         config.actuation_delay_ticks = 0;
