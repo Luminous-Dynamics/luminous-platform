@@ -151,6 +151,7 @@ pub struct ModelAssumptionReport {
     pub plant_revision: String,
     pub plant_digest: Digest,
     pub workload_profile_digest: Digest,
+    pub metric_policy_set_digest: Digest,
     pub topology_epoch: u64,
     pub topology_digest: Digest,
     pub model_control_domain: String,
