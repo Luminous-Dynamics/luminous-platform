@@ -223,7 +223,8 @@
         "plant_revision",
         "plant_digest",
         "workload_profile_digest",
-        "metric_policy_set_digest"
+        "metric_policy_set_digest",
+        "maximum_model_report_age_ms"
       ],
       "properties": {
         "run_id": {
@@ -332,6 +333,11 @@
         },
         "metric_policy_set_digest": {
           "$ref": "#/$defs/digest"
+        },
+        "maximum_model_report_age_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
         }
       }
     },
