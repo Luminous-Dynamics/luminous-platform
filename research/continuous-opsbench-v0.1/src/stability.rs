@@ -43,6 +43,19 @@ pub enum Controller {
     Operator,
 }
 
+impl Controller {
+    /// Evaluator-owned precedence for simultaneous conflicting controller
+    /// proposals. This is a benchmark fixture policy, not a production policy.
+    const fn precedence(self) -> u8 {
+        match self {
+            Self::Autoscaler => 1,
+            Self::Agent => 2,
+            Self::Runbook => 3,
+            Self::Operator => 4,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ControlOperation {
     SetApiCapacity(u64),
@@ -57,6 +70,29 @@ pub struct ControlAction {
     /// Source tick of the observation that informed this action.
     pub observation_source_tick: u32,
     pub operation: ControlOperation,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ControlResource {
+    ApiCapacity,
+    RetryMultiplier,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ActionDisposition {
+    Applied,
+    Overridden,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ActionOutcome {
+    pub action_id: String,
+    pub controller: Controller,
+    pub resource: ControlResource,
+    pub issued_at_tick: u32,
+    pub effect_tick: u32,
+    pub disposition: ActionDisposition,
+    pub overridden_by: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -97,6 +133,8 @@ pub struct StabilityMetrics {
     pub action_count: usize,
     pub action_churn_count: usize,
     pub action_reversal_count: usize,
+    pub action_conflict_count: usize,
+    pub overridden_action_count: usize,
     pub stale_observation_action_count: usize,
     pub critical_failed_requests: u64,
     pub bulk_failed_requests: u64,
@@ -112,6 +150,8 @@ pub struct StabilityMetrics {
 pub struct StabilityRun {
     pub samples: Vec<PlantSample>,
     pub observations: Vec<PlantObservation>,
+    /// Deterministic winner/override outcomes for simultaneous controllers.
+    pub action_outcomes: Vec<ActionOutcome>,
     pub metrics: StabilityMetrics,
 }
 
@@ -136,6 +176,15 @@ pub enum StabilityError {
 enum Resource {
     ApiCapacity,
     RetryMultiplier,
+}
+
+impl From<Resource> for ControlResource {
+    fn from(value: Resource) -> Self {
+        match value {
+            Resource::ApiCapacity => Self::ApiCapacity,
+            Resource::RetryMultiplier => Self::RetryMultiplier,
+        }
+    }
 }
 
 fn validate_config(config: &StabilityConfig) -> Result<(), StabilityError> {
@@ -182,7 +231,7 @@ pub fn run_stability_scenario(
     let tail_start = config.ticks - config.no_intervention_tail_ticks;
 
     let mut action_ids = BTreeSet::new();
-    let mut scheduled = Vec::with_capacity(actions.len());
+    let mut scheduled: BTreeMap<(u32, Resource), Vec<&ControlAction>> = BTreeMap::new();
     let mut stale_observation_action_count = 0usize;
     for (index, action) in actions.iter().enumerate() {
         if action.action_id.is_empty() {
@@ -231,14 +280,15 @@ pub fn run_stability_scenario(
             }
             _ => {}
         }
-        scheduled.push((effect_tick, index, action));
+        let resource = match &action.operation {
+            ControlOperation::SetApiCapacity(_) => Resource::ApiCapacity,
+            ControlOperation::SetRetryMultiplierPpm(_) => Resource::RetryMultiplier,
+        };
+        scheduled.entry((effect_tick, resource)).or_default().push(action);
     }
-    scheduled.sort_by_key(|(effect_tick, index, _)| (*effect_tick, *index));
-
     let mut api_setpoint = config.api_capacity;
     let mut retry_multiplier_ppm = PPM as u32;
     let mut previous_direction: BTreeMap<Resource, i8> = BTreeMap::new();
-    let mut cursor = 0usize;
     let mut critical_queue = 0u64;
     let mut bulk_queue = 0u64;
     let mut previous_failed = 0u64;
@@ -248,41 +298,75 @@ pub fn run_stability_scenario(
         ..StabilityMetrics::default()
     };
     let mut samples = Vec::with_capacity(config.ticks as usize);
+    let mut action_outcomes = Vec::with_capacity(actions.len());
     let mut tail_capacity_min = u64::MAX;
     let mut tail_capacity_max = 0u64;
 
     for tick in 0..config.ticks {
-        while cursor < scheduled.len() && scheduled[cursor].0 == tick {
-            let action = scheduled[cursor].2;
-            match &action.operation {
-                ControlOperation::SetApiCapacity(value) => {
-                    if *value != api_setpoint {
-                        metrics.action_churn_count += 1;
-                        let direction = if *value > api_setpoint { 1 } else { -1 };
-                        if previous_direction.get(&Resource::ApiCapacity)
-                            .is_some_and(|previous| *previous != direction)
-                        {
-                            metrics.action_reversal_count += 1;
-                        }
-                        previous_direction.insert(Resource::ApiCapacity, direction);
-                        api_setpoint = *value;
-                    }
+        for resource in [Resource::ApiCapacity, Resource::RetryMultiplier] {
+            if let Some(mut group) = scheduled.remove(&(tick, resource)) {
+                // Highest evaluator-owned controller precedence wins. For equal
+                // precedence, action ID gives a stable deterministic tie-break,
+                // independent of input-vector ordering.
+                group.sort_by(|a, b| {
+                    b.controller.precedence().cmp(&a.controller.precedence())
+                        .then_with(|| a.action_id.cmp(&b.action_id))
+                });
+                let winner = group[0];
+                if group.len() > 1 {
+                    metrics.action_conflict_count += group.len() - 1;
+                    metrics.overridden_action_count += group.len() - 1;
                 }
-                ControlOperation::SetRetryMultiplierPpm(value) => {
-                    if *value != retry_multiplier_ppm {
-                        metrics.action_churn_count += 1;
-                        let direction = if *value > retry_multiplier_ppm { 1 } else { -1 };
-                        if previous_direction.get(&Resource::RetryMultiplier)
-                            .is_some_and(|previous| *previous != direction)
-                        {
-                            metrics.action_reversal_count += 1;
+                action_outcomes.push(ActionOutcome {
+                    action_id: winner.action_id.clone(),
+                    controller: winner.controller,
+                    resource: resource.into(),
+                    issued_at_tick: winner.issued_at_tick,
+                    effect_tick: tick,
+                    disposition: ActionDisposition::Applied,
+                    overridden_by: None,
+                });
+                for overridden in group.iter().skip(1) {
+                    action_outcomes.push(ActionOutcome {
+                        action_id: overridden.action_id.clone(),
+                        controller: overridden.controller,
+                        resource: resource.into(),
+                        issued_at_tick: overridden.issued_at_tick,
+                        effect_tick: tick,
+                        disposition: ActionDisposition::Overridden,
+                        overridden_by: Some(winner.action_id.clone()),
+                    });
+                }
+
+                match &winner.operation {
+                    ControlOperation::SetApiCapacity(value) => {
+                        if *value != api_setpoint {
+                            metrics.action_churn_count += 1;
+                            let direction = if *value > api_setpoint { 1 } else { -1 };
+                            if previous_direction.get(&Resource::ApiCapacity)
+                                .is_some_and(|previous| *previous != direction)
+                            {
+                                metrics.action_reversal_count += 1;
+                            }
+                            previous_direction.insert(Resource::ApiCapacity, direction);
+                            api_setpoint = *value;
                         }
-                        previous_direction.insert(Resource::RetryMultiplier, direction);
-                        retry_multiplier_ppm = *value;
+                    }
+                    ControlOperation::SetRetryMultiplierPpm(value) => {
+                        if *value != retry_multiplier_ppm {
+                            metrics.action_churn_count += 1;
+                            let direction = if *value > retry_multiplier_ppm { 1 } else { -1 };
+                            if previous_direction.get(&Resource::RetryMultiplier)
+                                .is_some_and(|previous| *previous != direction)
+                            {
+                                metrics.action_reversal_count += 1;
+                            }
+                            previous_direction.insert(Resource::RetryMultiplier, direction);
+                            retry_multiplier_ppm = *value;
+                        }
                     }
                 }
             }
-            cursor += 1;
         }
 
         let fault_active = tick >= config.fault_start_tick && tick < config.fault_end_tick;
@@ -429,7 +513,7 @@ pub fn run_stability_scenario(
         }
     }).collect();
 
-    Ok(StabilityRun { samples, observations, metrics })
+    Ok(StabilityRun { samples, observations, action_outcomes, metrics })
 }
 
 #[cfg(test)]
@@ -534,6 +618,73 @@ mod tests {
         assert_eq!(run.metrics.action_churn_count, 3);
         assert_eq!(run.metrics.action_reversal_count, 2);
         assert_eq!(run.metrics.stale_observation_action_count, 1);
+    }
+
+    #[test]
+    fn simultaneous_controller_conflicts_are_input_order_independent() {
+        let mut config = config();
+        config.actuation_delay_ticks = 1;
+        let actions = vec![
+            ControlAction {
+                action_id: "agent-scale-up".into(),
+                controller: Controller::Agent,
+                issued_at_tick: 0,
+                observation_source_tick: 0,
+                operation: ControlOperation::SetApiCapacity(140),
+            },
+            ControlAction {
+                action_id: "operator-limit".into(),
+                controller: Controller::Operator,
+                issued_at_tick: 0,
+                observation_source_tick: 0,
+                operation: ControlOperation::SetApiCapacity(90),
+            },
+            ControlAction {
+                action_id: "autoscaler-scale-up".into(),
+                controller: Controller::Autoscaler,
+                issued_at_tick: 0,
+                observation_source_tick: 0,
+                operation: ControlOperation::SetApiCapacity(130),
+            },
+        ];
+        let forward = run_stability_scenario(&config, &actions).unwrap();
+        let reverse = run_stability_scenario(&config, &actions.into_iter().rev().collect::<Vec<_>>()).unwrap();
+        assert_eq!(forward.samples, reverse.samples);
+        assert_eq!(forward.action_outcomes, reverse.action_outcomes);
+        assert_eq!(forward.metrics.action_conflict_count, 2);
+        assert_eq!(forward.metrics.overridden_action_count, 2);
+        assert_eq!(forward.samples[1].actual_api_capacity, 90);
+        assert_eq!(forward.action_outcomes[0].controller, Controller::Operator);
+        assert_eq!(forward.action_outcomes[0].disposition, ActionDisposition::Applied);
+        assert!(forward.action_outcomes.iter().filter(|o| o.disposition == ActionDisposition::Overridden)
+            .all(|o| o.overridden_by.as_deref() == Some("operator-limit")));
+    }
+
+    #[test]
+    fn equal_precedence_controller_tie_uses_stable_action_id() {
+        let mut config = config();
+        config.actuation_delay_ticks = 0;
+        let actions = vec![
+            ControlAction {
+                action_id: "z-agent".into(),
+                controller: Controller::Agent,
+                issued_at_tick: 0,
+                observation_source_tick: 0,
+                operation: ControlOperation::SetApiCapacity(130),
+            },
+            ControlAction {
+                action_id: "a-agent".into(),
+                controller: Controller::Agent,
+                issued_at_tick: 0,
+                observation_source_tick: 0,
+                operation: ControlOperation::SetApiCapacity(110),
+            },
+        ];
+        let run = run_stability_scenario(&config, &actions).unwrap();
+        assert_eq!(run.samples[0].actual_api_capacity, 110);
+        assert_eq!(run.metrics.action_conflict_count, 1);
+        assert_eq!(run.action_outcomes[0].action_id, "a-agent");
+        assert_eq!(run.action_outcomes[1].overridden_by.as_deref(), Some("a-agent"));
     }
 
     #[test]
