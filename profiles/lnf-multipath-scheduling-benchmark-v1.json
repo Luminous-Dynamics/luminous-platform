@@ -67,7 +67,15 @@
     "MPATH-14",
     "MPATH-15",
     "MPATH-16",
-    "MPATH-17"
+    "MPATH-17",
+    "MPATH-18",
+    "MPATH-19",
+    "MPATH-20",
+    "MPATH-21",
+    "MPATH-22",
+    "MPATH-23",
+    "MPATH-24",
+    "MPATH-25"
   ],
   "benchmarks": [
     {
@@ -139,6 +147,69 @@
       "operator": "baseline_first",
       "target": null,
       "target_status": "baseline_first"
+    },
+    {
+      "id": "MPATH_CAPACITY_DOMAIN_001",
+      "metric": "bytes_or_rate_counted_from_same_declared_capacity_domain_more_than_once",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_REDUNDANT_DOMAIN_DIVERSITY_001",
+      "metric": "redundant_copy_sent_without_distinct_failure_and_capacity_domains",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_CAPACITY_SET_OVERLAP_001",
+      "metric": "selected_paths_with_any_shared_capacity_domain_overlap",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_CAPACITY_SET_INVALID_001",
+      "metric": "paths_with_empty_blank_duplicate_or_oversized_capacity_domain_sets_scheduled",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_CAPACITY_EVIDENCE_001",
+      "metric": "capacity_domains_scheduled_without_complete_fresh_evidence",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_CAPACITY_TOPOLOGY_BINDING_001",
+      "metric": "paths_scheduled_with_topology_digest_mismatch",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_CAPACITY_INVENTORY_DIGEST_001",
+      "metric": "paths_scheduled_with_invalid_inventory_digest_or_source_id",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_CAPACITY_CONFIDENCE_001",
+      "metric": "capacity_domains_scheduled_below_the_declared_evidence_confidence_floor",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPATH_CAPACITY_PAIR_ORACLE_001",
+      "metric": "best_two_path_disjoint_capacity_sum_vs_exhaustive_pair_oracle_ppm",
+      "operator": "baseline_first",
+      "target": null,
+      "target_status": "baseline_first"
     }
   ],
   "required_metrics": [
@@ -160,7 +231,26 @@
     "network_first_arrival_latency_p50_p95_p99",
     "in_order_application_release_latency_p50_p95_p99",
     "network_received_unique_bytes_vs_in_order_useful_application_bytes",
-    "out_of_order_bytes_retained_at_reassembly_timeout"
+    "out_of_order_bytes_retained_at_reassembly_timeout",
+    "declared_capacity_domain_ids_set_per_path",
+    "independent_failure_domain_count_vs_capacity_domain_count",
+    "scheduled_bytes_from_paths_sharing_one_capacity_domain",
+    "capacity_domain_set_size_per_path",
+    "pairwise_capacity_domain_overlap_exclusions",
+    "capacity_domain_inventory_sha256_per_path",
+    "capacity_domain_topology_digest_match_count",
+    "stale_or_expired_capacity_dependency_observation_count",
+    "incomplete_capacity_dependency_observation_count",
+    "capacity_domain_source_id_per_path",
+    "capacity_domains_scheduled_without_verified_dependency_evidence",
+    "capacity_domain_evidence_confidence_ppm_per_path",
+    "minimum_capacity_domain_confidence_floor_ppm_per_run",
+    "capacity_domains_scheduled_below_confidence_floor",
+    "invalid_capacity_domain_evidence_window_count",
+    "future_capacity_domain_observation_count",
+    "capacity_domain_dependency_ids_over_128_bytes_count",
+    "application_reassembly_wait_p50_p95_p99",
+    "best_two_path_disjoint_capacity_sum_vs_exhaustive_pair_oracle_ppm"
   ],
   "evidence_classes": [
     "deterministic_model",
@@ -177,7 +267,15 @@
     "No claim of SOTA superiority before matched pinned transport runs",
     "No claim of production readiness or network actuation",
     "No claim that deterministic segment traces reproduce ACK clocks, congestion control, retransmission or real radio propagation",
-    "No claim that shared-risk-group synthetic loss is a calibrated common-cause failure distribution"
+    "No claim that shared-risk-group synthetic loss is a calibrated common-cause failure distribution",
+    "No claim that links in distinct failure domains provide independent bottleneck capacity",
+    "The v1 scheduler permits only one path per declared capacity group and may underuse real capacity within that group",
+    "The v1 disjoint-set rule is conservative and is not a general multi-commodity flow optimizer",
+    "For more than two paths, deterministic greedy extension may underuse some globally feasible disjoint path sets",
+    "Capacity-domain evidence-envelope validation does not cryptographically authenticate the inventory or prove the declared topology is truthful",
+    "The scheduler does not discover hidden shared bottlenecks; field negative controls must challenge declared dependency sets",
+    "Capacity-domain confidence ppm is a source-declared evidence grade, not a calibrated statistical probability",
+    "The exhaustive disjoint-pair oracle is a reference for the two-path selection case, not a general multi-commodity resource allocator"
   ],
   "baseline_methodology": {
     "scheduler_implementation_pinning_required": true,
@@ -187,6 +285,51 @@
     "default_scheduler_must_be_identified_from_exact_kernel_source": true,
     "redundant_transmission_is_separate_reliability_energy_control": true,
     "same_workload_and_path_trace_required": true,
-    "same_cost_currency_required": true
-  }
+    "same_cost_currency_required": true,
+    "capacity_dependency_set_evidence_must_be_pinned": true,
+    "exhaustive_pair_oracle_required_for_two_path_case": true,
+    "unknown_or_incomplete_dependency_set_means_no_multipath": true
+  },
+  "target_defaults": {
+    "minimum_capacity_domain_confidence_floor_ppm": 950000,
+    "capacity_domain_evidence_floor_status": "proposed_not_calibrated"
+  },
+  "scenario_matrix": [
+    {
+      "scenario_id": "MPATH-20",
+      "topology": "fully_disjoint_capacity_domain_sets",
+      "description": "Two paths each have independent access, aggregation, backhaul and egress dependencies.",
+      "expected_disposition": "multipath"
+    },
+    {
+      "scenario_id": "MPATH-21",
+      "topology": "different_access_shared_secondary_backhaul",
+      "description": "Paths have different access domains but overlap at shared-backhaul; they are not independent.",
+      "expected_disposition": "single_path"
+    },
+    {
+      "scenario_id": "MPATH-22",
+      "topology": "three_path_overlap_chain",
+      "description": "A shares x with B; B shares y with C; A and C are disjoint; B has the highest individual capacity.",
+      "expected_disposition": "multipath_choose_a_and_c"
+    },
+    {
+      "scenario_id": "MPATH-23",
+      "topology": "invalid_dependency_sets",
+      "description": "Empty, blank, duplicate and over-bound capacity-domain sets are excluded with exact reasons.",
+      "expected_disposition": "exclude_invalid_path"
+    },
+    {
+      "scenario_id": "MPATH-24",
+      "topology": "invalid_dependency_evidence",
+      "description": "Incomplete, stale, future-dated, mismatched-topology, malformed-inventory and below-floor evidence cannot authorize scheduling.",
+      "expected_disposition": "exclude_invalid_path"
+    },
+    {
+      "scenario_id": "MPATH-25",
+      "topology": "deterministic_pair_and_oracle",
+      "description": "Input permutations produce the same selected pair; the selected pair is compared with an exhaustive two-path disjoint-pair oracle.",
+      "expected_disposition": "identical_decision_and_oracle_receipt"
+    }
+  ]
 }

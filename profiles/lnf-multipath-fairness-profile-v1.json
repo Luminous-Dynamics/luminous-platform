@@ -1,0 +1,172 @@
+{
+  "schema_version": "luminous.lnf-multipath-fairness-profile.v1",
+  "profile_id": "lnf-multipath-tenant-fairness-v1",
+  "status": "draft_targets_not_results",
+  "reviewed_on": "2026-11-03",
+  "objective": "Measure whether multipath sessions and multi-flow tenants share a common bottleneck fairly while preserving service floors, utilization, tail latency and explicit capacity/failure dependencies.",
+  "ownership_boundary": {
+    "principal_identity_supplied_by_authenticated_caller": true,
+    "allocator_authenticates_principals": false,
+    "broker_owns_path_eligibility": true,
+    "path_manager_owns_subflow_lifecycle": true,
+    "session_scheduler_owns_per_session_path_choice": true,
+    "tenant_allocator_owns_shared_bottleneck_rate_budget": true,
+    "qdisc_owns_packet_queueing_and_aqm": true,
+    "no_packet_content_inspection": true,
+    "no_privileged_network_actuation": true
+  },
+  "domain_semantics": {
+    "failure_domain": "declared_common_cause_link_or_site_failure",
+    "capacity_domain": "declared_shared_hard_throughput_bottleneck",
+    "fairness_principal": "caller_authenticated_tenant_or_household_identity",
+    "failure_domain_and_capacity_domain_are_not_interchangeable": true,
+    "unknown_capacity_relationship_must_not_be_counted_as_independent_capacity": true,
+    "unknown_fairness_principal_is_not_accepted": true
+  },
+  "units": {
+    "capacity": "bits_per_second",
+    "demand": "bits_per_second",
+    "minimum_service_floor": "bits_per_second",
+    "tenant_weight": "positive_integer",
+    "flow_weight": "positive_integer",
+    "fairness_index": "parts_per_million"
+  },
+  "allocator": {
+    "algorithm": "two_level_integer_weighted_max_min_water_filling",
+    "allocation_order": [
+      "tenant_principal",
+      "flow_within_tenant"
+    ],
+    "stable_tie_break": "lexicographic_principal_and_flow_id_after_largest_remainder",
+    "floors_are_hard_constraints": true,
+    "floors_exceed_capacity": "explicit_error_no_partial_report",
+    "unused_capacity_when_demand_satisfied": "reported_not_reallocated_beyond_demand",
+    "maximum_flow_count": 512,
+    "rate_conservation_required": true
+  },
+  "baselines": [
+    "linux_fq_codel_exact_kernel",
+    "openwrt_cake_besteffort_exact_kernel",
+    "openwrt_cake_diffserv3_exact_kernel",
+    "openwrt_cake_diffserv4_exact_kernel",
+    "openwrt_cake_triple_isolate_exact_kernel",
+    "naive_equal_per_flow",
+    "unweighted_max_min_per_flow",
+    "weighted_max_min_per_flow",
+    "weighted_proportional_fair_reference",
+    "lnf_tenant_first_weighted_max_min"
+  ],
+  "scenario_ids": [
+    "MPFAIR-00",
+    "MPFAIR-01",
+    "MPFAIR-02",
+    "MPFAIR-03",
+    "MPFAIR-04",
+    "MPFAIR-05",
+    "MPFAIR-06",
+    "MPFAIR-07",
+    "MPFAIR-08",
+    "MPFAIR-09",
+    "MPFAIR-10",
+    "MPFAIR-11",
+    "MPFAIR-12",
+    "MPFAIR-13",
+    "MPFAIR-14",
+    "MPFAIR-15"
+  ],
+  "benchmarks": [
+    {
+      "id": "MPFAIR_TENANT_ENTITLEMENT_001",
+      "metric": "equal_weight_backlogged_tenants_receive_equal_aggregate_rate",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPFAIR_MULTIFLOW_CAPTURE_001",
+      "metric": "tenant_aggregate_rate_does_not_increase_when_same_tenant_opens_more_flows",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPFAIR_WEIGHTED_MAXMIN_001",
+      "metric": "integer_reference_allocation_error_bits_per_second",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPFAIR_FLOOR_VIOLATIONS_001",
+      "metric": "per_tenant_or_flow_minimum_service_floor_violations",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPFAIR_CAPACITY_ACCOUNTING_001",
+      "metric": "capacity_accounted_more_than_once_across_declared_shared_bottleneck",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPFAIR_UNUSED_CAPACITY_001",
+      "metric": "unused_capacity_while_feasible_backlogged_demand_remains",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPFAIR_JAIN_EQUAL_TENANTS_001",
+      "metric": "jain_index_across_equal_weight_backlogged_tenants_ppm",
+      "operator": ">=",
+      "target": 950000,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPFAIR_FAIRNESS_UTILIZATION_LATENCY_001",
+      "metric": "fairness_utilization_and_tail_latency_pareto_frontier",
+      "operator": "baseline_first",
+      "target": null,
+      "target_status": "baseline_first"
+    }
+  ],
+  "required_metrics": [
+    "tenant_aggregate_allocated_bps",
+    "tenant_weighted_jain_index_ppm_for_backlogged_tenants",
+    "tenant_minimum_service_floor_violation_count",
+    "flow_minimum_service_floor_violation_count",
+    "tenant_flow_count",
+    "per_flow_allocated_bps",
+    "capacity_utilization_fraction",
+    "unused_capacity_bps",
+    "demand_satisfaction_ratio_by_tenant",
+    "per_tenant_goodput_bps",
+    "per_flow_goodput_bps",
+    "queue_delay_p50_p95_p99",
+    "flow_completion_time_p50_p95_p99",
+    "loss_and_ecn_marks",
+    "cpu_memory_and_scheduler_decision_cost",
+    "capacity_domain_overlap_and_accounting",
+    "flow_churn_and_tenant_join_leave_response",
+    "worst_tenant_flow_weighted_jain_index_ppm_for_tenants_with_two_or_more_backlogged_flows",
+    "per_tenant_flow_weighted_jain_index_ppm"
+  ],
+  "evidence_classes": [
+    "deterministic_model",
+    "network_namespace_or_vm_emulation",
+    "hardware_bench",
+    "field_observed"
+  ],
+  "explicit_non_claims": [
+    "No claim that the allocator authenticates tenant identities",
+    "No claim that a caller-supplied tenant ID is a cryptographic principal without an external identity binding",
+    "No claim that Jain's index alone proves service fairness or user-perceived quality",
+    "No claim that independent failure domains imply independent capacity",
+    "No claim that model allocations reproduce Linux qdisc behavior",
+    "No claim that CAKE or fq_codel has been beaten before matched kernel lab tests",
+    "No claim of 5G RAN scheduling or slicing equivalence",
+    "No claim of production deployment or regulated operator authorization"
+  ]
+}
