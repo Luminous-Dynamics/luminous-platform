@@ -728,8 +728,8 @@ mod tests {
             observer_control_domain: "observer-domain".into(),
             observer_adapter_digest: digest(5),
             metric_policy_set_digest: digest(6),
-            evaluation_at_ms: 410,
-            valid_until_ms: 510,
+            evaluation_at_ms: 110 + count as u64 * 100,
+            valid_until_ms: 210 + count as u64 * 100,
             maximum_observation_age_ms: 10,
             maximum_target_time_skew_ms: 5,
             metric_policies: vec![MetricAssumptionPolicy {
