@@ -1,0 +1,322 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/opsbench-assurance-frontier-charter-v0.1.schema.json",
+  "title": "OpsBench Non-compensatory Assurance Frontier Charter v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "snapshot_date",
+    "policy",
+    "dimensions",
+    "benchmark_targets",
+    "hard_gates",
+    "statistical_design",
+    "evaluation_arms",
+    "claim_ceiling"
+  ],
+  "properties": {
+    "schema": {
+      "const": "opsbench-assurance-frontier-charter-v0.1"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "snapshot_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "composite_score",
+        "cross_metric_compensation",
+        "native_scoreboards_unchanged",
+        "hard_safety_non_compensatory"
+      ],
+      "properties": {
+        "composite_score": {
+          "const": false
+        },
+        "cross_metric_compensation": {
+          "const": false
+        },
+        "native_scoreboards_unchanged": {
+          "const": true
+        },
+        "hard_safety_non_compensatory": {
+          "const": true
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "dimensions": {
+      "type": "array",
+      "minItems": 7,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "detection_and_diagnosis",
+          "intervention_necessity",
+          "authority_and_effect_integrity",
+          "durable_recovery",
+          "intrinsic_risk_localization",
+          "future_recoverability",
+          "resource_efficiency",
+          "evolution_robustness"
+        ]
+      }
+    },
+    "benchmark_targets": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "target_id",
+          "benchmark_id",
+          "stage",
+          "metric_id",
+          "construct",
+          "operator",
+          "target_value",
+          "unit",
+          "cohort",
+          "minimum_repetitions",
+          "denominator_definition",
+          "baseline_source",
+          "claim_boundary"
+        ],
+        "properties": {
+          "target_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"
+          },
+          "benchmark_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "stage": {
+            "enum": [
+              "A_reproduction",
+              "B_controlled_advantage",
+              "C_assurance"
+            ]
+          },
+          "metric_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "construct": {
+            "enum": [
+              "end_to_end_task_success",
+              "marathon_score",
+              "root_cause_entity_attribution",
+              "control_abstention",
+              "supported_mitigation",
+              "unsafe_advice",
+              "risk_step_localization",
+              "effect_integrity",
+              "sustained_recovery",
+              "viability_preservation",
+              "resource_efficiency"
+            ]
+          },
+          "operator": {
+            "enum": [
+              "at_least",
+              "at_most",
+              "exactly",
+              "zero",
+              "reproduce_native"
+            ]
+          },
+          "target_value": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "unit": {
+            "enum": [
+              "percent",
+              "score_out_of_100",
+              "strict_f1",
+              "count",
+              "seconds",
+              "usd",
+              "tokens",
+              "native_metric"
+            ]
+          },
+          "cohort": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minimum_repetitions": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "denominator_definition": {
+            "type": "string",
+            "minLength": 1
+          },
+          "baseline_source": {
+            "type": "string",
+            "format": "uri"
+          },
+          "baseline_value": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "notes": {
+            "type": "string"
+          },
+          "claim_boundary": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "hard_gates": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "gate_id",
+          "metric_id",
+          "operator",
+          "target_value",
+          "unit",
+          "minimum_attempts",
+          "minimum_scenario_family_clusters",
+          "evaluation_rule"
+        ],
+        "properties": {
+          "gate_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "metric_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operator": {
+            "enum": [
+              "zero",
+              "exactly",
+              "at_least",
+              "at_most"
+            ]
+          },
+          "target_value": {
+            "type": "number",
+            "minimum": 0
+          },
+          "unit": {
+            "enum": [
+              "count",
+              "percent"
+            ]
+          },
+          "minimum_attempts": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "minimum_scenario_family_clusters": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "evaluation_rule": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "statistical_design": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "inference_unit",
+        "splitting",
+        "pairing",
+        "repetitions",
+        "uncertainty",
+        "missing_runs",
+        "annotation"
+      ],
+      "properties": {
+        "inference_unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "splitting": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pairing": {
+          "type": "string",
+          "minLength": 1
+        },
+        "repetitions": {
+          "type": "string",
+          "minLength": 1
+        },
+        "uncertainty": {
+          "type": "string",
+          "minLength": 1
+        },
+        "missing_runs": {
+          "type": "string",
+          "minLength": 1
+        },
+        "annotation": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "evaluation_arms": {
+      "type": "array",
+      "minItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "deterministic_runbook",
+          "vanilla_tool_using_agent",
+          "strongest_reproducible_public_baseline",
+          "full_luminous_stack",
+          "no_risk_memory_ablation",
+          "no_temporal_topology_ablation",
+          "no_predictive_filter_ablation",
+          "no_voI_ablation",
+          "no_recovery_tail_ablation",
+          "oracle_diagnostic_upper_bound"
+        ]
+      }
+    },
+    "claim_ceiling": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}
