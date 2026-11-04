@@ -402,6 +402,7 @@ pub enum StabilityError {
     InvalidControllerConfig,
     EmptyControllerId,
     DuplicateControllerId(String),
+    StreamingTraceDiverged,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
