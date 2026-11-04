@@ -10,14 +10,16 @@
     "readme_blob_sha": "1dbf111ad26542ca325d03a99a593eb0f6fecb81",
     "pyproject_blob_sha": "b691f09a0e88049369c6539befebf86d823f457a",
     "uv_lock_blob_sha": "40614fc1bd27d328062508dea4f8ae2322808412",
-    "gitmodules_blob_sha": "8e15d8dc2c097d9508f006dca74fd78cee9749be"
+    "gitmodules_blob_sha": "8e15d8dc2c097d9508f006dca74fd78cee9749be",
+    "tree_sha": "0a0d4df0b2176d04bad6efeaebbad4905d7977d1"
   },
   "submodules": [
     {
       "path": "SREGym-applications",
       "repository": "https://github.com/SREGym/SREGym-applications.git",
-      "commit": null,
-      "state": "unresolved"
+      "commit": "b2006cb6458785c1b353d0fd1753db7fe3a30795",
+      "tree_sha": "3c41a3399abeff90abbbe3a8ed68e84b7af36d82",
+      "state": "pinned"
     }
   ],
   "runtime": {
@@ -35,15 +37,386 @@
     "lite_suite_published_count": 17,
     "suite": "full",
     "scenario_ids_sha256": null,
-    "native_scorer_path": null,
-    "native_scorer_blob_sha": null,
+    "native_scorer_path": "sregym/conductor/conductor.py",
+    "native_scorer_blob_sha": "c5c3c898253d2ef1ba7aef9557212c892da3a946",
     "native_score_axes": [
       "diagnosis",
       "mitigation",
       "end_to_end"
+    ],
+    "count_semantics": "published_reference_only",
+    "explicit_registry_key_count": 117,
+    "registry_blob_sha": "4f5e9b8774fd39a65342d4aaa997f20418092524",
+    "tasklist_file_present": false,
+    "tasklist_example_blob_sha": "f08779da40bd3e8c5e124b832de87a249b554010",
+    "default_full_selection_rule": "All ProblemRegistry entries are selected when sregym/conductor/tasklist.yml is absent; registry expands PORTED_PROBLEMS and discovers SLO artifacts. SREGYM_FAULT_DIRS can add external artifact roots.",
+    "full_selection_ids_sha256": null,
+    "lite_problem_set_blob_sha": "ca320fcd9943da78c942104a724f891228822448",
+    "lite_problem_ids": [
+      "cronjob_sidecar_blocks_completion_hotel_reservation",
+      "edge_request_filter_cpu_saturation",
+      "network_policy_block",
+      "env_variable_shadowing_astronomy_shop",
+      "mutating_webhook_resource_limits_social_network",
+      "finalizer_deadlock_controller_hotel_reservation",
+      "kafka_poison_pill_hol_block",
+      "internal_traffic_policy_local_astronomy_shop",
+      "service_dns_resolution_failure_social_network",
+      "service_wrong_pod_selection_hotel_reservation",
+      "namespace_memory_limit",
+      "valkey_auth_disruption",
+      "secret_rotation_stale_env_credentials_astronomy_shop",
+      "unschedulable_incorrect_port_assignment",
+      "duplicate_pvc_mounts_social_network",
+      "rolling_update_misconfigured_social_network",
+      "search_rate_retry_collapse_hotel_reservation"
+    ],
+    "lite_problem_ids_sha256": "50fb47c8b64278a29229e8277cb74959cee92f6093fca801209dca96cc2079fe",
+    "port_registry_blobs": [
+      {
+        "path": "sregym/conductor/problems/environment_ports.py",
+        "blob_sha": "4028b042b0db4de9e1b42f3433fd57487c507ed5"
+      },
+      {
+        "path": "sregym/conductor/problems/apps/frappe/ports.py",
+        "blob_sha": "c95241bac78df264300dc7aabed6b4d58e5eed70"
+      },
+      {
+        "path": "sregym/conductor/problems/apps/saleor/ports.py",
+        "blob_sha": "7802d64979c70e95f34d617e37bc2f693272d04e"
+      },
+      {
+        "path": "sregym/conductor/problems/apps/slack_spine/ports.py",
+        "blob_sha": "628a5fba2910ee0b3f1086ffe0e09affbf31b0ca"
+      }
+    ],
+    "slo_problem_blob_sha": "1345cf04a56f10abf3ce9035c89e64a6feded2dc",
+    "artifact_discovery_blob_sha": "55ab616ba15f77bbea6d1125b9a3f16deb66b7ac",
+    "native_scorer_files": [
+      {
+        "path": "main.py",
+        "blob_sha": "0362abada040cb9f9d354c84c5e76c98d4a52657"
+      },
+      {
+        "path": "sregym/conductor/conductor.py",
+        "blob_sha": "c5c3c898253d2ef1ba7aef9557212c892da3a946"
+      },
+      {
+        "path": "sregym/conductor/oracles/diagnosis_oracle.py",
+        "blob_sha": "01c33b9ccb129b9075d3f235c3889ab0910a5a4d"
+      },
+      {
+        "path": "sregym/conductor/oracles/mitigation.py",
+        "blob_sha": "7bf1d6942121366e32362c4c92832d5a938830cd"
+      },
+      {
+        "path": "sregym/conductor/oracles/slo_oracle.py",
+        "blob_sha": "d8ac4f5a925cd1ab576dfa77c245340e492bf920"
+      },
+      {
+        "path": "sregym/conductor/oracles/base.py",
+        "blob_sha": "4607b58939bf3855e17d2113cfb509bec5f4a198"
+      },
+      {
+        "path": "sregym/conductor/oracles/failure.py",
+        "blob_sha": "c946da43777dd8b853d9cec3c75019f10d98319d"
+      },
+      {
+        "path": "sregym/conductor/problems/registry.py",
+        "blob_sha": "4f5e9b8774fd39a65342d4aaa997f20418092524"
+      },
+      {
+        "path": "sregym/conductor/problem_sets.py",
+        "blob_sha": "ca320fcd9943da78c942104a724f891228822448"
+      },
+      {
+        "path": "sregym/conductor/problems/slo_problem.py",
+        "blob_sha": "1345cf04a56f10abf3ce9035c89e64a6feded2dc"
+      },
+      {
+        "path": "sregym/chaos/artifact.py",
+        "blob_sha": "55ab616ba15f77bbea6d1125b9a3f16deb66b7ac"
+      }
     ]
   },
-  "container_images": [],
+  "container_images": [
+    {
+      "image": "ghcr.io/sregym/frappe:20261014-admin-v2",
+      "digest": "sha256:64e540afa5ee7bdb4c9df89c7a7fad6dda4e9dea2698e7a8c62e191fe5721dd2"
+    },
+    {
+      "image": "ghcr.io/sregym/frappe:20261014-admin-v1",
+      "digest": "sha256:fa1423f3241ad94a17de6d590795d978b0b56909f1f7f888c65bff4da2d70eb7"
+    },
+    {
+      "image": "ghcr.io/sregym/frappe:20261014-loadgen-v2",
+      "digest": "sha256:fd6c2e6b5c5ca98849db0ea2fa18ddfbe59a17f1f4d1d356d0616f7535359c10"
+    },
+    {
+      "image": "ghcr.io/sregym/frappe:20261014-loadgen-v1",
+      "digest": "sha256:19a6e30636fb045157b223c546497dd8d6ff7cbe7bd509ee4a2d22d2d08b0042"
+    },
+    {
+      "image": "ghcr.io/sregym/frappe:20261014-toolbox-v2",
+      "digest": "sha256:ce6597d000d1c4a3a4cba2d5bd8b8365d9b114713631570d64a24304ba4abfdd"
+    },
+    {
+      "image": "ghcr.io/sregym/frappe:20261014-toolbox-v1",
+      "digest": "sha256:8d9aabea6abf428329ff70c25d50194fa25e0f9f161489905c8aa7183745c1e1"
+    },
+    {
+      "image": "ghcr.io/sregym/saleor:20261014-loadgen",
+      "digest": "sha256:112ce10a3ec1bd330ba181ae66784e17938218f36878ea1582293b092e5b2fd1"
+    },
+    {
+      "image": "ghcr.io/sregym/saleor:20261014-server",
+      "digest": "sha256:6214a3bf2af14b176ffba1e2f3b9cd70e6a0cb82e592d40a2494c8ec1eb7536f"
+    },
+    {
+      "image": "ghcr.io/sregym/saleor:20261014-toolbox",
+      "digest": "sha256:3d9bfc53ed3a10d46074ab00e9b9c45ca6e9391b4e8c8f1af8336fe283753bde"
+    },
+    {
+      "image": "ghcr.io/sregym/slack-spine:20261014-app",
+      "digest": "sha256:b9786b11c8293d182c975668a900e757f28a584b7004b513fa4007301d58bbbf"
+    },
+    {
+      "image": "ghcr.io/sregym/slack-spine:20261014-app-v2",
+      "digest": "sha256:2a14b0306790d39a4e6aec5743009a64d189981c2eba32c69bb1971a33ed4f03"
+    },
+    {
+      "image": "ghcr.io/sregym/slack-spine:20261014-app-v3",
+      "digest": "sha256:5fdcb15bb9346ecd918205becc341e680ba4fb906e3ef13df6bd0ce8af6cfc2c"
+    },
+    {
+      "image": "ghcr.io/sregym/slack-spine:20261014-builder",
+      "digest": "sha256:2b61c612cc97ebc110a82c431c390fd611f5f9c4f6074f0fcbba28fbf76bc05d"
+    },
+    {
+      "image": "ghcr.io/sregym/slack-spine:20261014-go",
+      "digest": "sha256:fa919c288be42d74db65632db877e7222717bc1c8492410244dc6e4ca80cbed4"
+    },
+    {
+      "image": "ghcr.io/sregym/slack-spine:20261014-loadgen",
+      "digest": "sha256:db43c7ee572a95c87fb5ff089c413aa3319c3b978a8bc9ea46332ed2fbae1665"
+    },
+    {
+      "image": "ghcr.io/sregym/slack-spine:20261014-minio",
+      "digest": "sha256:b266dae12b61e9dfac10cf78dfa8abe4d3905fce4451daeb27117adf13afa410"
+    },
+    {
+      "image": "ghcr.io/sregym/slack-spine:20261014-pgbouncer",
+      "digest": "sha256:fe2beb2cd9731690b7630134eed47412900c9b7c519bdffbbd008072e74cb86c"
+    },
+    {
+      "image": "ghcr.io/sregym/slack-spine:20261014-python",
+      "digest": "sha256:5951f314f564b3258416884f553a0d3a4cd52cd328cd73d6472b9b7d3b159d80"
+    },
+    {
+      "image": "ghcr.io/sregym/slack-spine:20261014-toolbox",
+      "digest": "sha256:75bccb38739742c94472d8a1917f22d6d9d87f992d9260ae7ce05a659f05b55b"
+    },
+    {
+      "image": "ghcr.io/sregym/mattermost:11.7.0",
+      "digest": "sha256:82b758dbf24caecc7690097fa7b6a33216b2e9e4e5527fbf67033009969f4875"
+    },
+    {
+      "image": "ghcr.io/sregym/stripe-marathon:20261010",
+      "digest": "sha256:2bb5997c3fa8177e77045e59ff17d66ca20e8040a666e28848ca4b8bd9406cc9"
+    },
+    {
+      "image": "ghcr.io/sregym/openwhisk:20260913-controller",
+      "digest": "sha256:5e0192aa01f0f1dd01aeec01a4ca94880060afd5a1507b8bc5420e8af6fdce36"
+    },
+    {
+      "image": "ghcr.io/sregym/openwhisk:20260913-invoker",
+      "digest": "sha256:458fe8a374cbfc31fe6375a6888e23834589422ef4af672d1979ae4d26bf55fc"
+    },
+    {
+      "image": "ghcr.io/sregym/openwhisk:20260913-utility",
+      "digest": "sha256:26279c46d843b2772542267b022cb4f265c48b18f259ef9a9d0b8bd2fcdb6fe4"
+    },
+    {
+      "image": "ghcr.io/sregym/openwhisk:20260913-zookeeper",
+      "digest": "sha256:8e8731e619215175125a220faacaa056a7303337aa846243a33a3eec4d8eb04a"
+    },
+    {
+      "image": "ghcr.io/sregym/openwhisk:20260913-apigateway",
+      "digest": "sha256:f267e09cafc271ac389333b1e18d8ab139eb17632b33713ae570e7e3151329f8"
+    },
+    {
+      "image": "ghcr.io/sregym/openwhisk:20260913-alarmprovider",
+      "digest": "sha256:6800bfe0da58434d300db7b5cb4eec9052e607eeae114961c79db5d4558d1c5e"
+    },
+    {
+      "image": "ghcr.io/sregym/openwhisk:20260913-kafkaprovider",
+      "digest": "sha256:ca817c3d7f91c3326c407d18443752293b9c50e6fb3e49f8f8145575e5191981"
+    },
+    {
+      "image": "ghcr.io/sregym/openwhisk:20260913-nodejs14",
+      "digest": "sha256:1637290226dd351bff9323dabe39d18e40550033905686791d42b61eefaa4f90"
+    },
+    {
+      "image": "ghcr.io/sregym/openwhisk:20260913-python37",
+      "digest": "sha256:1c4dc4cfa8552adad92ede3a779bff2b237b2400ec790862b27c902b5affc583"
+    },
+    {
+      "image": "ghcr.io/sregym/blueprint-hotel:20260913-frontend",
+      "digest": "sha256:e853a492c6de4da95809d0aae3a3a62aa9ab860aa3d43f5de5d9af0c50fd950f"
+    },
+    {
+      "image": "ghcr.io/sregym/blueprint-hotel:20260913-geo",
+      "digest": "sha256:2b511768f33cd50181eb68a941c91a01c85586dd9e069f5eee973163dfc904c2"
+    },
+    {
+      "image": "ghcr.io/sregym/blueprint-hotel:20260913-profile",
+      "digest": "sha256:47c0b5d95c085901b46fd30685daca60694d47285fbae349a2b8a4ebc1011d3d"
+    },
+    {
+      "image": "ghcr.io/sregym/blueprint-hotel:20260913-rate",
+      "digest": "sha256:a2facc6ef8a2e4daa62f5352bb295ccc04a53209478a2bc4c3a7786ac983fefb"
+    },
+    {
+      "image": "ghcr.io/sregym/blueprint-hotel:20260913-recomd",
+      "digest": "sha256:0c17bad221ab3da5f5273d43a875f893b44f47e00eeb785b7f4de3ca73d20b8a"
+    },
+    {
+      "image": "ghcr.io/sregym/blueprint-hotel:20260913-reserv",
+      "digest": "sha256:c5fe8969727ef67985af3e1d0bdfe076fc9567da4c5b1ddf8535bf9223e1bce1"
+    },
+    {
+      "image": "ghcr.io/sregym/blueprint-hotel:20260913-search",
+      "digest": "sha256:84d40f1e9f2adb2b732b288838071bdb414b9a20c5877283e06fd21a27919547"
+    },
+    {
+      "image": "ghcr.io/sregym/blueprint-hotel:20260913-user",
+      "digest": "sha256:1a209c4dd50d5a851da719a33090d1a8733a168d27471f5b7deb338a2b02a357"
+    },
+    {
+      "image": "ghcr.io/sregym/blueprint-hotel:20260913-workload",
+      "digest": "sha256:873f718bb26bbe9568fc3b469aa6b1511e5cb70a602db4dc75f6db702d87cfac"
+    },
+    {
+      "image": "ghcr.io/sregym/kube-proxy:20260913.1",
+      "digest": "sha256:e46c633ac400a65de905cea638d44af7b77b382556e4aa7a93ab9bb2c5fd8c1c"
+    },
+    {
+      "image": "ghcr.io/sregym/hotel-reservation:20260912.1",
+      "digest": "sha256:8bc558a555f65f7522d1404ca47d70d95fc0cb58449bc039b741bd3074817838"
+    },
+    {
+      "image": "ghcr.io/sregym/hotel-reservation:20260912.2",
+      "digest": "sha256:d3c82fbcbe2fc74f47c7cb35dc72040c93c6db62084b98b560e3f69a8f130766"
+    },
+    {
+      "image": "ghcr.io/sregym/stress:20260912-multiarch",
+      "digest": "sha256:60eba58b6c432c989d837e898286ff8df0d11065498b1f55090e6ed8d495dc94"
+    },
+    {
+      "image": "ghcr.io/sregym/train-ticket-deploy:20261003.3-otel",
+      "digest": "sha256:7c3c916df51207327390c7883e1588f5c2d023d0ca1d2c168a51de429063fdd5"
+    },
+    {
+      "image": "ghcr.io/sregym/train-ticket-percona:20260911-multiarch",
+      "digest": "sha256:33369d8c876f95b19de9b52cb56073e69cba6aac9abbc02138d4be887dac37ba"
+    },
+    {
+      "image": "ghcr.io/sregym/train-ticket-alertsnitch-mysql:20260911-multiarch",
+      "digest": "sha256:9276f1cddcc55d52c3521cc57c9455d07a3319069170eeee12ba80de0f5c438a"
+    },
+    {
+      "image": "ghcr.io/sregym/flight-ticket-python-runtime:20260911-multiarch",
+      "digest": "sha256:263cf7a52da1b0a9c8e45825b2574f578c811e791f234499af839a588d255f8a"
+    },
+    {
+      "image": "ghcr.io/sregym/train-ticket-nacos:20260911-multiarch",
+      "digest": "sha256:9e047e4285b437647c1e7ce0206d195ceb64fe23c69e2c443d285890c165b91a"
+    },
+    {
+      "image": "ghcr.io/sregym/train-ticket-xenon:20260913.2",
+      "digest": "sha256:aeda5aa8aa711553d57103cf8fdefb7c70a72e58542dd69d4a5018c97f7c10a0"
+    },
+    {
+      "image": "ghcr.io/sregym/train-ticket-mysqlclient:20260911-multiarch",
+      "digest": "sha256:d6f86c7b70c48c1360dc0e39d07e13b436bc2f111cf3ce38dc14a1ddf474e3b7"
+    },
+    {
+      "image": "ghcr.io/sregym/train-ticket-mysqld-exporter:20260911-multiarch",
+      "digest": "sha256:d0c36b42255bbf3b3c465788a41b5c1db770d032e0a620bb55a666915b37ef5d"
+    },
+    {
+      "image": "rabbitmq:3.8.19",
+      "digest": "sha256:20064e7c237879e71311bbfedfc0101df9826fd756edb37806ab9c9b72d39d1e"
+    },
+    {
+      "image": "ghcr.io/sregym/flight-ticket-action-deployer:20260914-actions",
+      "digest": "sha256:7ca2768cd8d094ff9c5d100715c1fedac8ec2ceebbe14182597ae170802f8964"
+    },
+    {
+      "image": "ghcr.io/sregym/flight-ticket-populate-redis:20260913.2",
+      "digest": "sha256:c1dab090dd9ee71c451acee922a0a84dfe430a2c59c303cb2cda93085500ec01"
+    },
+    {
+      "image": "ghcr.io/sregym/flight-ticket-load-generator:20260913-amd64-fixes",
+      "digest": "sha256:c171471c914260188d934a64342f8a133be3eb7cc23c99f67e7d12bd40da5c8a"
+    },
+    {
+      "image": "ghcr.io/sregym/fleetcast-backend:20260911-multiarch",
+      "digest": "sha256:e4c330ab7365c3b47ec05815f73ca945783d58d936e2f9103c1a19bd5078458c"
+    },
+    {
+      "image": "ghcr.io/sregym/hotel-reservation:sha-d2c036bc3d1138f5a0bdaffd3d87f37522c3461a",
+      "digest": "sha256:1c685e1c4c304f327952397b3a99c54dadb086607774d71f222b200ec0d2e65e"
+    },
+    {
+      "image": "ghcr.io/sregym/locust-exporter:sha-d2c036bc3d1138f5a0bdaffd3d87f37522c3461a",
+      "digest": "sha256:03fc297fe4ecb360740da4c04810e530db72576fde4042a7addaa6ba666731da"
+    },
+    {
+      "image": "ghcr.io/sregym/wrk2:sha-d2c036bc3d1138f5a0bdaffd3d87f37522c3461a",
+      "digest": "sha256:6081972a93bd88a0b4efc0859a9e26cb9c9103d2e54d8a88657f01012a77d5c0"
+    },
+    {
+      "image": "ghcr.io/sregym/social-network-deps:sha-d2c036bc3d1138f5a0bdaffd3d87f37522c3461a",
+      "digest": "sha256:7d66d10f9bd05ae8b635e0a861dbb9dd02ffd9ef1a49e6c383c3d97a981fb119"
+    },
+    {
+      "image": "ghcr.io/sregym/social-network:sha-d2c036bc3d1138f5a0bdaffd3d87f37522c3461a",
+      "digest": "sha256:70287c4756f9187613e49409291927c342724e3974f93709b21595ed1cdf1d69"
+    },
+    {
+      "image": "ghcr.io/sregym/openresty-thrift:sha-d2c036bc3d1138f5a0bdaffd3d87f37522c3461a",
+      "digest": "sha256:fa344a1bf5320c40e57476eea23706b91819c6d6faa03b34ec846c4d2e3c0d18"
+    },
+    {
+      "image": "ghcr.io/sregym/media-frontend:sha-d2c036bc3d1138f5a0bdaffd3d87f37522c3461a",
+      "digest": "sha256:32de5e0371ccb7f47f36e1f027ae0075a7e265e4eed374c1b1020fe213754d00"
+    },
+    {
+      "image": "ghcr.io/sregym/kind-node:k8s-v1.32.5-containerd-v2.1.0-20261026",
+      "digest": "sha256:4ea90b4941351857bc87656e57a2d0b02cecadd4384a97d4a8cab5aa0655fc1e"
+    },
+    {
+      "image": "ghcr.io/sregym/agent-base:sha-a4c6bf32ea763712d100bfe3d107ff097c5dc014",
+      "digest": "sha256:9df755b042158a94896701c44028bd145aabefb9355784901b1bab7e7b445ef2"
+    },
+    {
+      "image": "ghcr.io/sregym/sregym-mcp:sha-5ced3166d8a90c49317b9e243bc021d67d7ad77e",
+      "digest": "sha256:238122adef3852976f82f15ce11aace411669f59a0ea74893a6a1c678e348cfe"
+    },
+    {
+      "image": "registry.k8s.io/sig-storage/local-volume-provisioner:v2.5.0",
+      "digest": "sha256:a112f1625aad84e4f425141199ab6ddbb49432c66e05dbbaab033d0ab2e8dfaf"
+    },
+    {
+      "image": "pingcap/advanced-statefulset:v0.7.0",
+      "digest": "sha256:2aff07392d168e3a02d6cbe4bc76eb1dd3b9eec2117fb49e6101e4180f63c849"
+    },
+    {
+      "image": "registry.k8s.io/pause:3.9",
+      "digest": "sha256:7031c1b283388d2c2e09b57badb803c05ebed362dc88d84b480cc47f72a21097"
+    }
+  ],
   "preflight": {
     "upstream_test_assessment": "author_reported_failures",
     "unit_tests_passed_reported": 3483,
@@ -57,19 +430,18 @@
     "end_to_end"
   ],
   "blockers": [
-    "Resolve and pin the exact SREGym-applications gitlink commit.",
-    "Pin all OCI container images by immutable sha256 digest.",
     "Record exact Docker, kubectl, Kubernetes, and Helm versions and the cluster profile.",
-    "Export the complete scenario ID inventory and hash it; keep the 17-problem Lite cohort separate from the full suite.",
-    "Identify and pin the native scorer path and Git blob SHA.",
-    "Reproduce the upstream test suite and classify the 30 reported failures and 8 collection errors.",
     "Freeze and hash native prompts, agent adapter, tool surface, judge configuration, budgets, and retry policy.",
     "Run a no-instrumentation baseline before proving supplemental evidence collection is non-interfering.",
     "Freeze at least one baseline and one candidate arm, including model/provider/version, agent revision, prompt/tool/memory/inference digests, and equal declared budgets.",
     "Preregister at least five paired seed IDs, randomized arm order, cluster-level inference, and missing-run handling.",
     "Demonstrate supplemental instrumentation non-interference against a native no-instrumentation run.",
     "Pin the agent runtime access profile (network, filesystem, repository, secret and cross-run access) for every arm.",
-    "Run a pinned contamination scanner over accessible source, prompts, tools, scenario metadata, expected answers, runbooks, issue/PR text, logs, network/filesystem access and cross-run artifacts; retain scanner/config/report digests."
+    "Run a pinned contamination scanner over accessible source, prompts, tools, scenario metadata, expected answers, runbooks, issue/PR text, logs, network/filesystem access and cross-run artifacts; retain scanner/config/report digests.",
+    "The paper/README reference says 90 full-suite problems, but this source revision has 117 explicit ProblemRegistry keys before generated port registrations and SLO artifact discovery. The tracked tasklist is only tasklist.yml.example; the actual tasklist.yml is absent, so default selection means all registry entries plus discovered SLO artifacts. Freeze and hash the exact runnable problem ID set, and explicitly disable/record SREGYM_FAULT_DIRS.",
+    "Complete an image-reference scan across all chart values, manifests, application bundles and generated workloads. docker/images.lock.json pins 69/69 entries, but busybox:latest appears outside the lock; pin every such reference and bind the scan report.",
+    "Verify the complete scorer dependency set for every selected problem, including problem-specific oracle classes and external SLO artifact metadata; retain the scorer file list and digests.",
+    "Reproduce the upstream test suite and classify the 30 reported failures and 8 collection errors."
   ],
   "arms": [],
   "experimental_design": {
@@ -88,5 +460,16 @@
     "report_sha256": null,
     "scanned_at": null,
     "examined_sources": []
+  },
+  "image_lock": {
+    "path": "docker/images.lock.json",
+    "blob_sha": "4a51b9d72c55915439f54a606f4b08795e1262db",
+    "entry_count": 69,
+    "digest_pinned_count": 69,
+    "external_reference_scan_state": "partial",
+    "external_reference_scan_report_sha256": null,
+    "unlocked_reference_examples": [
+      "busybox:latest in sregym/service/apps/values/astronomy-shop-fixes.yaml (blob 59932e3618a045bb51a2b3bf38d95b83ff2e560a)"
+    ]
   }
 }
