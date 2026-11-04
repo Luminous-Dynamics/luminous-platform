@@ -217,7 +217,13 @@ fn validate_config(config: &StabilityConfig) -> Result<(), StabilityError> {
     {
         return Err(StabilityError::InvalidCapacityOrDemand);
     }
-    if config.maximum_failed_ppm > PPM as u32 || config.maximum_latency_ms == 0 {
+    if config.maximum_failed_ppm > PPM as u32
+        || config.maximum_critical_failed_ppm > PPM as u32
+        || config.maximum_bulk_failed_ppm > PPM as u32
+        || config.maximum_latency_ms == 0
+        || config.maximum_critical_latency_ms == 0
+        || config.maximum_bulk_latency_ms == 0
+    {
         return Err(StabilityError::InvalidSloContract);
     }
     if config.no_intervention_tail_ticks == 0
@@ -426,11 +432,21 @@ pub fn run_stability_scenario(
                 .min(PPM as u128) as u32
         };
         let queue_depth = critical_queue.saturating_add(bulk_queue);
-        let latency_ms = config.base_latency_ms.saturating_add(
+        let critical_latency_ms = config.base_latency_ms.saturating_add(
+            critical_queue.saturating_mul(config.queue_latency_ms_per_request),
+        );
+        let bulk_latency_ms = config.base_latency_ms.saturating_add(
             queue_depth.saturating_mul(config.queue_latency_ms_per_request),
         );
+        let latency_ms = bulk_latency_ms;
+        let critical_slo_healthy = critical_failed_ppm <= config.maximum_critical_failed_ppm
+            && critical_latency_ms <= config.maximum_critical_latency_ms;
+        let bulk_slo_healthy = bulk_failed_ppm <= config.maximum_bulk_failed_ppm
+            && bulk_latency_ms <= config.maximum_bulk_latency_ms;
         let slo_healthy = failed_ppm <= config.maximum_failed_ppm
-            && latency_ms <= config.maximum_latency_ms;
+            && latency_ms <= config.maximum_latency_ms
+            && critical_slo_healthy
+            && bulk_slo_healthy;
 
         metrics.critical_failed_requests = metrics.critical_failed_requests
             .saturating_add(critical_failed);
