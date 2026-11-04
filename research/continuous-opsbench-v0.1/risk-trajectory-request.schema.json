@@ -8,7 +8,8 @@
     "contract",
     "steps",
     "actions",
-    "effects"
+    "effects",
+    "counterfactual_pair_manifest"
   ],
   "properties": {
     "contract": {
@@ -111,7 +112,9 @@
           "action_id",
           "before",
           "after",
-          "no_action_after"
+          "no_action_after",
+          "counterfactual_pair_id",
+          "pair_manifest_digest"
         ],
         "properties": {
           "step_id": {
@@ -333,6 +336,14 @@
                 }
               }
             }
+          },
+          "counterfactual_pair_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "pair_manifest_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
           }
         }
       }
@@ -513,6 +524,121 @@
           "ledger_cursor": {
             "type": "string"
           }
+        }
+      }
+    },
+    "counterfactual_pair_manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pair_id",
+        "protocol_id",
+        "scenario_id",
+        "candidate_arm_id",
+        "candidate_run_id",
+        "no_action_run_id",
+        "manifest_digest",
+        "candidate_model_digest",
+        "no_action_model_digest",
+        "candidate_initial_state_digest",
+        "no_action_initial_state_digest",
+        "candidate_exogenous_input_digest",
+        "no_action_exogenous_input_digest",
+        "candidate_seed_bundle_digest",
+        "no_action_seed_bundle_digest",
+        "candidate_scenario_truth_digest",
+        "no_action_scenario_truth_digest",
+        "candidate_policy_epoch",
+        "no_action_policy_epoch",
+        "candidate_policy_digest",
+        "no_action_policy_digest"
+      ],
+      "properties": {
+        "pair_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "protocol_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scenario_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidate_arm_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidate_run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "no_action_run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "manifest_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_model_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "no_action_model_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_initial_state_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "no_action_initial_state_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_exogenous_input_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "no_action_exogenous_input_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_seed_bundle_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "no_action_seed_bundle_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_scenario_truth_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "no_action_scenario_truth_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_policy_epoch": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "no_action_policy_epoch": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "candidate_policy_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "no_action_policy_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
         }
       }
     }
