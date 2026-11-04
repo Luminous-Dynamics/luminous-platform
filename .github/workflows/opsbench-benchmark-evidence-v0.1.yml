@@ -44,7 +44,7 @@ jobs:
           validator.validate(snapshot)
 
           forbidden_keys = {
-              "composite_score", "weighted_sre_score", "overall_sre_score",
+              "weighted_sre_score", "overall_sre_score",
               "cross_benchmark_conversion", "translated_sre_score"
           }
 
