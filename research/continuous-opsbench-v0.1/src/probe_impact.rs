@@ -568,6 +568,50 @@ mod tests {
         assert_eq!(r.disposition, ProbeImpactDisposition::Indeterminate);
     }
     #[test]
+    fn resource_and_service_observers_must_use_distinct_domains() {
+        let mut contract = contract();
+        contract.service_observer_control_domain =
+            contract.impact_observer_control_domain.clone();
+        let result = evaluate_probe_interference(
+            &contract,
+            &[execution(ProbeCapability::ReadOnly)],
+            &[receipt(ProbeResourceUsage::default())],
+            &[window("probe", "probe-run", 1, 10, 0)],
+            &[window("no-probe", "control-run", 1, 10, 0)],
+        ).unwrap();
+        assert_eq!(result.disposition, ProbeImpactDisposition::Indeterminate);
+        assert!(result.findings.contains(&ProbeImpactFinding::InvalidIdentity));
+    }
+
+    #[test]
+    fn impact_receipt_source_sequence_gap_is_indeterminate() {
+        let first_execution = execution(ProbeCapability::ReadOnly);
+        let second_execution = ProbeExecution {
+            execution_id: "exec-2".into(),
+            started_at_ms: 151,
+            ended_at_ms: 160,
+            ..execution(ProbeCapability::ReadOnly)
+        };
+        let first_receipt = receipt(ProbeResourceUsage::default());
+        let second_receipt = ProbeImpactReceipt {
+            receipt_id: "receipt-2".into(),
+            execution_id: "exec-2".into(),
+            source_sequence: 3,
+            evidence_digest: d(8),
+            ..receipt(ProbeResourceUsage::default())
+        };
+        let result = evaluate_probe_interference(
+            &contract(),
+            &[first_execution, second_execution],
+            &[first_receipt, second_receipt],
+            &[window("probe", "probe-run", 1, 10, 0)],
+            &[window("no-probe", "control-run", 1, 10, 0)],
+        ).unwrap();
+        assert_eq!(result.disposition, ProbeImpactDisposition::Indeterminate);
+        assert!(result.findings.contains(&ProbeImpactFinding::ImpactSequenceGap));
+    }
+
+    #[test]
     fn changed_fault_schedule_invalidates_pair() {
         let mut control = window("no-probe", "control-run", 1, 10, 0);
         control.fault_schedule_digest = d(99);
