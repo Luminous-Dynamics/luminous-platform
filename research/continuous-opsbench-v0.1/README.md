@@ -97,3 +97,90 @@ The report preserves agent/environment/harness/ambiguous cause classes, exact ev
 \`assess_counterfactual\` compares two independently produced reports: the original trace and a separately replayed trace with one event removed or neutralized. It reports material, non-material or inconclusive effects on the first irreversible breakpoint. It does **not** create an infrastructure simulator or synthesize the counterfactual environment itself.
 
 This is an E0 deterministic evaluator reference, not an LLM judge, production event collector, authenticated evidence pipeline, or formal proof of causal sufficiency. Evaluator truth annotations, participant receipts, observer independence, holdout integrity and counterfactual replay validity must be established by separate adapters and audit evidence.
+
+
+## Operational evidence debt v0.1
+
+The additive `src/evidence_debt.rs` module measures how long an external
+effect, recovery claim or observer obligation remains unresolved. It is a
+time-integrated **evidence debt** metric, not a trust score, causal judge or
+replacement for the participant attempt ledger.
+
+For each operation (j), the evaluator receives a sequence of evaluator-owned
+state transitions. The unresolved states are:
+
+- `PendingReconciliation`: an effect or claim exists but has no authoritative
+  terminal result;
+- `ObserverGap`: the required independent observer is unavailable or has a
+  coverage gap;
+- `Contradicted`: available evidence conflicts with the current claim/state;
+- `NotObserved`: the expected receipt or observation has not arrived;
+- `Superseded`: a later operation replaced this one, but the original result
+  has not yet been reconciled.
+
+These states **do not close the debt**. The only terminal states are
+`Confirmed` (requires evidence references) and
+`ResolvedWithoutConfirmation` (requires a participant/evaluator resolution
+receipt, such as a rejection or compensation record). A terminal item cannot
+be reopened. Raw bearer material must never be placed in evidence references.
+
+For run horizon (T), the evaluator reports item-time exposure
+
+[
+D(T) = \sum_j \int_0^T \mathbf{1}[j\text{ unresolved at }t] \,dt
+]
+
+and preregistered consequence-weighted exposure
+
+[
+D_w(T) = \sum_j w_j \int_0^T
+\mathbf{1}[j\text{ unresolved at }t] \,dt.
+]
+
+The implementation uses exact integer milliseconds and fixed-point
+`consequence_weight_milli` (1,000 = 1x), not floating point or model
+confidence. Concurrent operations add to item-time. The report retains:
+- total unweighted and weighted exposure;
+- exposure by operation kind (participant effect, recovery claim, observer
+  coverage) and unresolved state;
+- unsubstantiated recovery-claim exposure separately;
+- peak concurrent unresolved items and longest unresolved item;
+- confirmed, resolved-without-confirmation and still-open counts;
+- open-item state and last evidence references at run closeout.
+
+The event sequence is the immutable evaluator order. Event times must be
+monotonic in that order and each event must fall within the frozen run horizon.
+Operation kind and consequence weight cannot change mid-lifecycle. Duplicate
+event/sequence IDs, post-terminal events, oversized references, invalid
+weights and out-of-horizon events fail closed. The evaluator bounds item and
+event cardinality before processing.
+
+### Interpretation and safety
+
+- A negative terminal receipt closes uncertainty but is **not** counted as a
+  successful confirmation.
+- A superseded or not-observed effect continues to accrue exposure; it cannot
+  disappear through relabeling.
+- Recovery claims remain exposed until a qualifying independent confirmation
+  or explicit resolution receipt is recorded.
+- Report unweighted duration alongside weighted exposure; never let a low
+  consequence count hide a critical unresolved effect in an aggregate.
+- Unauthorized, duplicate or out-of-scope committed effects remain
+  non-compensatory hard failures in the causal-breakpoint/safety report.
+  Evidence-debt exposure is diagnostic and cannot offset those failures.
+
+### Claim ceiling and integration
+
+This is an E0 deterministic integration over supplied evaluator-owned lifecycle
+records. It does not authenticate those records, collect production telemetry,
+establish that an observer is independent, infer consequence weights, or
+replace participant-ledger / broker / Nixward authority. The caller must bind
+each operation and evidence reference to the canonical event/receipt IDs from
+those owners. The evidence-debt score is never derived from agent self-report.
+
+The module includes eleven conformance/adversarial test sources for exact
+weighted integration, open exposure through the horizon, unresolved
+supersession/observer gaps, negative resolution, concurrent items, shuffled
+input order, identity/sequence/weight mutation, missing terminal evidence,
+reopening, resource bounds, and event-time regression. These are evaluator
+tests, not benchmark results.
