@@ -43,3 +43,12 @@ Before any score comparison:
 5. preregister scenario strata, paired blocks, seeds, repeats, missing-run policy and cluster-aware inference.
 
 This manifest does not say SREGym has been run and supplies no agent result.
+
+
+## Frozen comparison configuration requirements
+
+A manifest cannot transition to `ready` with only source and environment pins. The schema also requires at least one candidate and one baseline arm. Each arm freezes the agent revision, model provider/name/version, system and developer prompt digests, tool-surface digest, memory-policy digest, inference-configuration digest, concurrency, retry policy, and maximum wall-time/step/tool-call/token budgets.
+
+The confirmatory design must include at least five paired seed IDs, randomized arm order, a declared scenario/seed-cluster inference unit, a preregistered missing-run policy, and a digest of the preregistration. The five-seed minimum is a launch floor, not a claim of adequate power; the MDE/power analysis may require more.
+
+Supplemental instrumentation must be demonstrated not to alter the native environment, tool responses, task state or scorer-visible behavior before readiness can be set to `ready`.
