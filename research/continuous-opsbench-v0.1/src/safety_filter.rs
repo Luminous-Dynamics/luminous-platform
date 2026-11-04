@@ -5,6 +5,7 @@
 //! authorize or execute an action. A positive result means only that every
 //! enumerated successor passes this versioned one-step envelope.
 
+use crate::model_assumption::{ModelAssumptionReport, ModelDisposition};
 use crate::Digest;
 use std::collections::BTreeSet;
 
@@ -77,6 +78,10 @@ pub struct SafetyFilterInput {
     pub topology_digest: Digest,
     pub model_revision: String,
     pub model_digest: Digest,
+    pub plant_revision: String,
+    pub plant_digest: Digest,
+    pub workload_profile_digest: Digest,
+    pub metric_policy_set_digest: Digest,
     pub uncertainty_set_digest: Digest,
     pub disturbance_set_digest: Digest,
     pub envelope_digest: Digest,
@@ -109,6 +114,8 @@ pub enum SafetyFinding {
     IncompleteEvidence,
     StaleObservation,
     InvalidInputSet,
+    ModelAssumptionNotQualified,
+    ModelAssumptionIdentityMismatch,
     EnumerationLimitExceeded,
     ArithmeticOverflow,
 }
@@ -131,6 +138,10 @@ pub struct SafetyAppraisal {
     pub observation_digest: Digest,
     pub model_revision: String,
     pub model_digest: Digest,
+    pub plant_revision: String,
+    pub plant_digest: Digest,
+    pub workload_profile_digest: Digest,
+    pub metric_policy_set_digest: Digest,
     pub uncertainty_set_digest: Digest,
     pub disturbance_set_digest: Digest,
     pub envelope_digest: Digest,
@@ -186,6 +197,10 @@ fn base_appraisal(
         observation_digest: input.observation_digest.clone(),
         model_revision: input.model_revision.clone(),
         model_digest: input.model_digest.clone(),
+        plant_revision: input.plant_revision.clone(),
+        plant_digest: input.plant_digest.clone(),
+        workload_profile_digest: input.workload_profile_digest.clone(),
+        metric_policy_set_digest: input.metric_policy_set_digest.clone(),
         uncertainty_set_digest: input.uncertainty_set_digest.clone(),
         disturbance_set_digest: input.disturbance_set_digest.clone(),
         envelope_digest: input.envelope_digest.clone(),
@@ -472,6 +487,64 @@ pub fn appraise_one_step(
     result
 }
 
+/// Require an exact, qualified model-assumption report before applying the
+/// one-step safety appraisal. This is the composed research entry point; the
+/// low-level appraise_one_step function remains available for filter-only
+/// differential tests and must not be used as the full assurance decision.
+///
+/// The caller must source-authenticate the report before constructing this
+/// typed value. This wrapper checks identity and disposition; it does not
+/// authenticate publisher signatures or recompute external evidence digests.
+pub fn appraise_with_model_assurance(
+    input: &SafetyFilterInput,
+    action: &CandidateAct,
+    report: &ModelAssumptionReport,
+) -> SafetyAppraisal {
+    let identity_matches = report.run_id == input.run_id
+        && report.scenario_id == input.scenario_id
+        && report.arm_id == input.arm_id
+        && report.model_revision == input.model_revision
+        && report.model_digest == input.model_digest
+        && report.plant_revision == input.plant_revision
+        && report.plant_digest == input.plant_digest
+        && report.workload_profile_digest == input.workload_profile_digest
+        && report.metric_policy_set_digest == input.metric_policy_set_digest
+        && report.topology_epoch == input.topology_epoch
+        && report.topology_digest == input.topology_digest
+        && !report.model_producer_id.is_empty()
+        && !report.observer_id.is_empty()
+        && !report.observer_adapter_digest.0.iter().all(|byte| *byte == 0)
+        && report.model_producer_id != report.observer_id
+        && !report.model_control_domain.is_empty()
+        && !report.observer_control_domain.is_empty()
+        && report.model_control_domain != report.observer_control_domain
+        && report.forecast_count > 0
+        && report.matched_observation_count == report.forecast_count
+        && report.findings.is_empty()
+        && !report.metrics.is_empty();
+
+    if !identity_matches {
+        return base_appraisal(
+            input,
+            action,
+            FilterDisposition::DeferForEvidence,
+            None,
+            vec![SafetyFinding::ModelAssumptionIdentityMismatch],
+        );
+    }
+    if report.disposition != ModelDisposition::Qualified {
+        return base_appraisal(
+            input,
+            action,
+            FilterDisposition::DeferForEvidence,
+            None,
+            vec![SafetyFinding::ModelAssumptionNotQualified],
+        );
+    }
+
+    appraise_one_step(input, action)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -504,8 +577,12 @@ mod tests {
             receipt_validity_ms: 50,
             topology_epoch: 7,
             topology_digest: digest(2),
-            model_revision: "plant-v1".into(),
+            model_revision: "model-v1".into(),
             model_digest: digest(3),
+            plant_revision: "plant-v1".into(),
+            plant_digest: digest(8),
+            workload_profile_digest: digest(9),
+            metric_policy_set_digest: digest(10),
             uncertainty_set_digest: digest(4),
             disturbance_set_digest: digest(5),
             envelope_digest: digest(6),
