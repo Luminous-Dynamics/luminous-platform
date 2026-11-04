@@ -733,6 +733,18 @@ mod tests {
     }
 
     #[test]
+    fn empty_path_resource_incidence_is_rejected() {
+        assert_eq!(
+            maximize_total_rate(
+                &[resource("x", 10)],
+                &[path("empty", &[], 10)],
+            )
+            .unwrap_err(),
+            ExactMaxSumError::EmptyResourceSet
+        );
+    }
+
+    #[test]
     fn duplicate_and_unknown_path_floors_are_rejected() {
         let resources = [resource("x", 10)];
         let paths = [path("a", &["x"], 10)];
