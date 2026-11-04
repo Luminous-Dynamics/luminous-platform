@@ -197,23 +197,33 @@ fn nonzero(digest: &Digest) -> bool {
     digest.0.iter().any(|byte| *byte != 0)
 }
 
-fn scope_identity_matches(
-    input: &ModelAssumptionInput,
-    model_revision: &str,
-    model_digest: &Digest,
-    plant_revision: &str,
-    plant_digest: &Digest,
-    workload_digest: &Digest,
+struct ScopeIdentity<'a> {
+    model_revision: &'a str,
+    model_digest: &'a Digest,
+    plant_revision: &'a str,
+    plant_digest: &'a Digest,
+    workload_digest: &'a Digest,
     topology_epoch: u64,
-    topology_digest: &Digest,
-) -> bool {
-    input.model_revision == model_revision
-        && &input.model_digest == model_digest
-        && input.plant_revision == plant_revision
-        && &input.plant_digest == plant_digest
-        && &input.workload_profile_digest == workload_digest
-        && input.topology_epoch == topology_epoch
-        && &input.topology_digest == topology_digest
+    topology_digest: &'a Digest,
+}
+
+fn scope_identity_matches(input: &ModelAssumptionInput, identity: ScopeIdentity<'_>) -> bool {
+    input.model_revision == identity.model_revision
+        && &input.model_digest == identity.model_digest
+        && input.plant_revision == identity.plant_revision
+        && &input.plant_digest == identity.plant_digest
+        && &input.workload_profile_digest == identity.workload_digest
+        && input.topology_epoch == identity.topology_epoch
+        && &input.topology_digest == identity.topology_digest
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+struct ModelAggregateCounts {
+    matched_observation_count: usize,
+    envelope_miss_count: usize,
+    too_wide_count: usize,
+    maximum_positive_cusum: i128,
+    maximum_negative_cusum: i128,
 }
 
 fn build_report(
@@ -221,11 +231,7 @@ fn build_report(
     disposition: ModelDisposition,
     findings: BTreeSet<ModelFinding>,
     accumulators: BTreeMap<String, MetricAccumulator>,
-    matched_observation_count: usize,
-    envelope_miss_count: usize,
-    too_wide_count: usize,
-    maximum_positive_cusum: i128,
-    maximum_negative_cusum: i128,
+    counts: ModelAggregateCounts,
 ) -> ModelAssumptionReport {
     let metrics = accumulators
         .into_iter()
@@ -266,11 +272,11 @@ fn build_report(
         valid_until_ms: input.valid_until_ms,
         forecast_count: input.forecasts.len(),
         observation_count: input.observations.len(),
-        matched_observation_count,
-        envelope_miss_count,
-        too_wide_count,
-        maximum_positive_cusum,
-        maximum_negative_cusum,
+        matched_observation_count: counts.matched_observation_count,
+        envelope_miss_count: counts.envelope_miss_count,
+        too_wide_count: counts.too_wide_count,
+        maximum_positive_cusum: counts.maximum_positive_cusum,
+        maximum_negative_cusum: counts.maximum_negative_cusum,
         findings: findings.into_iter().collect(),
         metrics,
     }
@@ -345,11 +351,7 @@ pub fn evaluate_model_assumptions(
             ModelDisposition::Indeterminate,
             findings,
             BTreeMap::new(),
-            0,
-            0,
-            0,
-            0,
-            0,
+            ModelAggregateCounts::default(),
         ));
     }
 
@@ -373,16 +375,15 @@ pub fn evaluate_model_assumptions(
             || forecast.source_tick >= forecast.target_tick
             || forecast.lower > forecast.point
             || forecast.point > forecast.upper
-            || !scope_identity_matches(
-                input,
-                &forecast.model_revision,
-                &forecast.model_digest,
-                &forecast.plant_revision,
-                &forecast.plant_digest,
-                &forecast.workload_profile_digest,
-                forecast.topology_epoch,
-                &forecast.topology_digest,
-            )
+            || !scope_identity_matches(input, ScopeIdentity {
+                model_revision: &forecast.model_revision,
+                model_digest: &forecast.model_digest,
+                plant_revision: &forecast.plant_revision,
+                plant_digest: &forecast.plant_digest,
+                workload_digest: &forecast.workload_profile_digest,
+                topology_epoch: forecast.topology_epoch,
+                topology_digest: &forecast.topology_digest,
+            })
             || forecast.metric_policy_set_digest != input.metric_policy_set_digest
         {
             findings.insert(ModelFinding::InvalidForecast);
@@ -477,16 +478,15 @@ pub fn evaluate_model_assumptions(
         if forecast.metric_id != observation.metric_id
             || forecast.units != observation.units
             || forecast.target_tick != observation.target_tick
-            || !scope_identity_matches(
-                input,
-                &forecast.model_revision,
-                &observation.model_digest,
-                &forecast.plant_revision,
-                &observation.plant_digest,
-                &observation.workload_profile_digest,
-                observation.topology_epoch,
-                &observation.topology_digest,
-            )
+            || !scope_identity_matches(input, ScopeIdentity {
+                model_revision: &forecast.model_revision,
+                model_digest: &observation.model_digest,
+                plant_revision: &forecast.plant_revision,
+                plant_digest: &observation.plant_digest,
+                workload_digest: &observation.workload_profile_digest,
+                topology_epoch: observation.topology_epoch,
+                topology_digest: &observation.topology_digest,
+            })
             || forecast.model_digest != observation.model_digest
             || forecast.plant_digest != observation.plant_digest
             || forecast.workload_profile_digest != observation.workload_profile_digest
@@ -615,11 +615,7 @@ pub fn evaluate_model_assumptions(
     } else if warning_drift {
         ModelDisposition::DriftSuspected
     } else if too_wide > 0 || insufficient {
-        if too_wide > 0 {
-            ModelDisposition::Unqualified
-        } else {
-            ModelDisposition::Unqualified
-        }
+        ModelDisposition::Unqualified
     } else {
         ModelDisposition::Qualified
     };
@@ -633,11 +629,13 @@ pub fn evaluate_model_assumptions(
         disposition,
         findings,
         accumulators,
-        matched_observations,
-        misses,
-        too_wide,
-        max_positive,
-        max_negative,
+        ModelAggregateCounts {
+            matched_observation_count: matched_observations,
+            envelope_miss_count: misses,
+            too_wide_count: too_wide,
+            maximum_positive_cusum: max_positive,
+            maximum_negative_cusum: max_negative,
+        },
     ))
 }
 
