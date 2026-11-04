@@ -213,7 +213,7 @@ pub fn run_stability_scenario(
                 return Err(StabilityError::InvalidSetpoint(action.action_id.clone()));
             }
             ControlOperation::SetRetryMultiplierPpm(value)
-                if value < PPM as u32 || value > MAX_RETRY_MULTIPLIER_PPM =>
+                if *value < PPM as u32 || *value > MAX_RETRY_MULTIPLIER_PPM =>
             {
                 return Err(StabilityError::InvalidSetpoint(action.action_id.clone()));
             }
