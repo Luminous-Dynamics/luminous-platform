@@ -125,6 +125,26 @@ cargo clippy --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml
 cargo fmt --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml -- --check
 ```
 
+## Shared-resource incidence oracle
+
+`resource_oracle::allocate_exact_weighted_max_min` is a bounded exact-rational reference allocator for **fixed routes**. Each flow declares every resource on its route (access link, aggregation, backhaul, provider egress, etc.); every resource imposes one aggregate capacity ceiling across all flows using it.
+
+At each progressive-filling round, each active tenant retains its configured entitlement weight. That weight is normalized across the tenant's currently active flows according to their per-flow weights. The allocator increases exact rational rates until a flow reaches its demand or a shared resource saturates. Flows using a saturated resource freeze; remaining flows are re-normalized within their tenant and continue against the residual resources. Minimum service floors are charged before filling and infeasible floor sets return an explicit error.
+
+The output preserves exact numerator/denominator rates for each flow and resource, the active bottleneck IDs and the number of progressive rounds. It never sums path capacities independently when those paths consume a shared resource. Zero-capacity resources block only the flows that use them.
+
+`resource_oracle::verify_allocation_report` independently reconstructs every resource's total load from the returned flow allocations and verifies demand bounds, minimum floors, resource capacity ceilings, resource usage receipts, active bottleneck IDs and report completeness. It does not rerun the allocator to decide feasibility.
+
+This first oracle is deliberately bounded to 64 resources, 128 flows and 32 resource IDs per fixed flow route. It uses checked rational arithmetic and returns explicit overflow errors. It is not a general multi-commodity optimizer, does not choose routes, does not split a single flow over multiple routes, and does not actuate networking equipment. It is the exact reference layer for the subsequent bounded solver work in issue #247.
+
+Run the exact resource-incidence fixtures with:
+
+```sh
+cargo test --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml --lib resource_oracle
+```
+
+A passing model test establishes only this bounded mathematical/code contract. It is not a measured qdisc, MPTCP, Multipath QUIC, RAN or field result.
+
 ## MPTCP coexistence evidence evaluator
 
 `coexistence::evaluate_best_path_improvement` and `coexistence::evaluate_shared_bottleneck_do_no_harm` evaluate paired measured summaries. They do not implement MPTCP, simulate congestion control or actuate a kernel.
