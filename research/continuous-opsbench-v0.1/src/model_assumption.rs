@@ -407,7 +407,6 @@ pub fn evaluate_model_assumptions(
     let mut previous_target_by_metric: BTreeMap<String, u64> = BTreeMap::new();
     let mut matched_observations = 0usize;
     let mut misses = 0usize;
-    let _too_wide_at_forecast_validation = accumulators.values().map(|item| item.too_wide).sum::<usize>();
     let mut max_positive = 0i128;
     let mut max_negative = 0i128;
     let mut hard_drift = false;
