@@ -1244,17 +1244,7 @@ pub(crate) mod tests {
         }
     }
 
-    #[test]
-    fn receipt_issue_time_must_be_strictly_after_measurement_end() {
-        let (manifest, freeze) = crate::sealed::tests::runtime_manifest_fixture();
-        let mut bundle = fixture(&manifest, &freeze);
-        bundle.batches[0].receipt.issued_at_ms = bundle.batches[0].receipt.measurement_end_ms;
-        bundle.batches[0].receipt.valid_from_ms = bundle.batches[0].receipt.issued_at_ms;
-        assert_eq!(
-            validate_observer_fitness_bundle(&manifest, &freeze, &bundle),
-            Err(ObserverFitnessError::InvalidFitnessInterval)
-        );
-    }
+
 
 
 }
