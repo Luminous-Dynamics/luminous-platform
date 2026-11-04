@@ -7,9 +7,11 @@ on:
       - "profiles/lnf-multipath-scheduling-benchmark-v1.json"
       - "profiles/lnf-multipath-fairness-profile-v1.json"
       - "profiles/lnf-resource-incidence-profile-v1.json"
+      - "profiles/lnf-tenant-resource-incidence-profile-v1.json"
       - "schemas/lnf-multipath-scheduling-profile-v1.schema.json"
       - "schemas/lnf-multipath-fairness-profile-v1.schema.json"
       - "schemas/lnf-resource-incidence-profile-v1.schema.json"
+      - "schemas/lnf-tenant-resource-incidence-profile-v1.schema.json"
       - "tools/connectivity-benchmark-profile-validator/src/bin/json-schema-verify.rs"
       - "tools/connectivity-benchmark-profile-validator/Cargo.toml"
       - ".github/workflows/lnf-multipath-contracts.yml"
@@ -82,3 +84,12 @@ jobs:
           --
           schemas/lnf-resource-incidence-profile-v1.schema.json
           profiles/lnf-resource-incidence-profile-v1.json
+
+      - name: Validate tenant resource incidence benchmark profile
+        run: >-
+          cargo run
+          --manifest-path tools/connectivity-benchmark-profile-validator/Cargo.toml
+          --bin json-schema-verify
+          --
+          schemas/lnf-tenant-resource-incidence-profile-v1.schema.json
+          profiles/lnf-tenant-resource-incidence-profile-v1.json
