@@ -152,6 +152,7 @@ pub enum LifecycleEventKind {
     Created,
     Validated,
     Abandoned,
+    MaximumPathIdRaised,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -159,6 +160,8 @@ pub struct PathLifecycleEvent {
     pub sequence: u64,
     pub occurred_at_unix_ms: u64,
     pub path_id: u32,
+    /// Present only for MaximumPathIdRaised; the newly observed MAX_PATH_ID.
+    pub maximum_path_id: Option<u32>,
     pub kind: LifecycleEventKind,
 }
 
@@ -216,6 +219,8 @@ pub enum RttInterpretation {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AckPathSample {
     pub sample_id: u64,
+    /// Which endpoint emitted this observation (client or server endpoint ID).
+    pub endpoint_id: String,
     pub data_path_id: u32,
     pub ack_return_path_id: u32,
     pub acknowledged_packet_count: u32,
@@ -328,6 +333,9 @@ fn validate_lifecycle(
     let mut previous_sequence = None;
     let mut previous_time = None;
     let mut previous_created_path_id = None;
+    let mut observed_max_path_id = endpoint
+        .initial_max_path_id
+        .ok_or("initial_max_path_id_missing")?;
 
     for event in &endpoint.lifecycle_events {
         if event.sequence == 0 || previous_sequence.is_some_and(|value| event.sequence <= value) {
@@ -344,6 +352,9 @@ fn validate_lifecycle(
 
         match event.kind {
             LifecycleEventKind::Created => {
+                if event.maximum_path_id.is_some() {
+                    return Err("unexpected_maximum_path_id_on_lifecycle_event");
+                }
                 if !created.insert(event.path_id) {
                     return Err("path_id_reused");
                 }
@@ -356,20 +367,40 @@ fn validate_lifecycle(
                 previous_created_path_id = Some(event.path_id);
             }
             LifecycleEventKind::Validated => {
-                if !created.contains(&event.path_id) || abandoned.contains(&event.path_id) {
+                if event.maximum_path_id.is_some() {
+                    return Err("unexpected_maximum_path_id_on_lifecycle_event");
+                }
+                if !created.contains(&event.path_id)
+                    || abandoned.contains(&event.path_id)
+                    || !validated.insert(event.path_id)
+                {
                     return Err("path_validation_event_out_of_lifecycle_order");
                 }
-                validated.insert(event.path_id);
             }
             LifecycleEventKind::Abandoned => {
+                if event.maximum_path_id.is_some() {
+                    return Err("unexpected_maximum_path_id_on_lifecycle_event");
+                }
                 if !created.contains(&event.path_id) || !abandoned.insert(event.path_id) {
                     return Err("path_abandon_event_out_of_lifecycle_order");
                 }
+            }
+            LifecycleEventKind::MaximumPathIdRaised => {
+                let new_limit = event
+                    .maximum_path_id
+                    .ok_or("maximum_path_id_raise_value_missing")?;
+                if new_limit <= observed_max_path_id {
+                    return Err("maximum_path_id_limit_did_not_increase");
+                }
+                observed_max_path_id = new_limit;
             }
         }
     }
     if !created.contains(&0) {
         return Err("initial_path_creation_event_missing");
+    }
+    if observed_max_path_id != endpoint.maximum_path_id_limit_observed {
+        return Err("maximum_path_id_limit_history_disagrees_with_observed_high_water");
     }
 
     let observed_ids = endpoint
@@ -398,6 +429,9 @@ fn validate_endpoint(
     start_ms: u64,
     end_ms: u64,
 ) -> Result<EndpointSummary, EndpointFailure> {
+    if endpoint.endpoint_id.trim().is_empty() || endpoint.endpoint_id.len() > 128 {
+        return Err(EndpointFailure::Inconclusive("endpoint_identity_missing_or_invalid"));
+    }
     if !endpoint.multipath_supported {
         return Err(EndpointFailure::Unsupported("endpoint_does_not_support_multipath_quic"));
     }
@@ -680,7 +714,19 @@ pub fn evaluate_multipath_quic_trial(evidence: &PairedTrialEvidence) -> QuicEvid
             evidence.stream_outcome.as_ref(),
         );
     }
+    if evidence.client.endpoint_id == evidence.server.endpoint_id {
+        return result(
+            TrialDisposition::Inconclusive,
+            ApplicationDisposition::NotMeasured,
+            "client_and_server_endpoint_ids_are_not_distinct",
+            Vec::new(),
+            0,
+            0,
+            evidence.stream_outcome.as_ref(),
+        );
+    }
     let mut seen_sample_ids = BTreeSet::new();
+    let mut sampled_endpoint_ids = BTreeSet::new();
     let mut cross_path_ack_samples = 0_usize;
     for sample in &evidence.ack_path_samples {
         if sample.sample_id == 0 || !seen_sample_ids.insert(sample.sample_id) {
@@ -707,8 +753,25 @@ pub fn evaluate_multipath_quic_trial(evidence: &PairedTrialEvidence) -> QuicEvid
                 evidence.stream_outcome.as_ref(),
             );
         }
-        if !client.active_path_ids.contains(&sample.data_path_id)
-            || !client.active_path_ids.contains(&sample.ack_return_path_id)
+        let endpoint_paths = if sample.endpoint_id == evidence.client.endpoint_id {
+            sampled_endpoint_ids.insert("client");
+            &client.active_path_ids
+        } else if sample.endpoint_id == evidence.server.endpoint_id {
+            sampled_endpoint_ids.insert("server");
+            &server.active_path_ids
+        } else {
+            return result(
+                TrialDisposition::Fail,
+                ApplicationDisposition::NotMeasured,
+                "ack_path_sample_endpoint_identity_unknown",
+                client.active_path_ids.iter().copied().collect(),
+                evidence.ack_path_samples.len(),
+                cross_path_ack_samples,
+                evidence.stream_outcome.as_ref(),
+            );
+        };
+        if !endpoint_paths.contains(&sample.data_path_id)
+            || !endpoint_paths.contains(&sample.ack_return_path_id)
             || sample.acknowledged_packet_count == 0
             || sample.rtt_sample_count == 0
             || sample.measured_round_trip_us == 0
@@ -749,6 +812,17 @@ pub fn evaluate_multipath_quic_trial(evidence: &PairedTrialEvidence) -> QuicEvid
                 );
             }
         }
+    }
+    if sampled_endpoint_ids.len() != 2 {
+        return result(
+            TrialDisposition::Inconclusive,
+            ApplicationDisposition::NotMeasured,
+            "ack_path_samples_missing_for_one_endpoint",
+            client.active_path_ids.iter().copied().collect(),
+            evidence.ack_path_samples.len(),
+            cross_path_ack_samples,
+            evidence.stream_outcome.as_ref(),
+        );
     }
 
     let Some(outcome) = evidence.stream_outcome.as_ref() else {
@@ -901,24 +975,28 @@ mod tests {
                     sequence: 1,
                     occurred_at_unix_ms: 1_000,
                     path_id: 0,
+                    maximum_path_id: None,
                     kind: LifecycleEventKind::Created,
                 },
                 PathLifecycleEvent {
                     sequence: 2,
                     occurred_at_unix_ms: 1_010,
                     path_id: 0,
+                    maximum_path_id: None,
                     kind: LifecycleEventKind::Validated,
                 },
                 PathLifecycleEvent {
                     sequence: 3,
                     occurred_at_unix_ms: 1_020,
                     path_id: 1,
+                    maximum_path_id: None,
                     kind: LifecycleEventKind::Created,
                 },
                 PathLifecycleEvent {
                     sequence: 4,
                     occurred_at_unix_ms: 1_030,
                     path_id: 1,
+                    maximum_path_id: None,
                     kind: LifecycleEventKind::Validated,
                 },
             ],
@@ -943,6 +1021,7 @@ mod tests {
             ack_path_samples: vec![
                 AckPathSample {
                     sample_id: 1,
+                    endpoint_id: "client".to_owned(),
                     data_path_id: 0,
                     ack_return_path_id: 1,
                     acknowledged_packet_count: 64,
@@ -953,6 +1032,7 @@ mod tests {
                 },
                 AckPathSample {
                     sample_id: 2,
+                    endpoint_id: "client".to_owned(),
                     data_path_id: 1,
                     ack_return_path_id: 1,
                     acknowledged_packet_count: 32,
@@ -960,6 +1040,17 @@ mod tests {
                     measured_round_trip_us: 40_000,
                     observed_at_unix_ms: 2_100,
                     rtt_interpretation: RttInterpretation::SamePath,
+                },
+                AckPathSample {
+                    sample_id: 3,
+                    endpoint_id: "server".to_owned(),
+                    data_path_id: 1,
+                    ack_return_path_id: 0,
+                    acknowledged_packet_count: 21,
+                    rtt_sample_count: 21,
+                    measured_round_trip_us: 75_000,
+                    observed_at_unix_ms: 2_200,
+                    rtt_interpretation: RttInterpretation::CompositeDataPlusAckPath,
                 },
             ],
             stream_outcome: Some(StreamOutcome {
@@ -1176,6 +1267,72 @@ mod tests {
         let report = evaluate_multipath_quic_trial(&evidence);
         assert_eq!(report.disposition, TrialDisposition::Inconclusive);
         assert_eq!(report.reason, "endpoint_congestion_controller_pair_mismatch");
+    }
+
+    #[test]
+    fn ack_samples_must_cover_both_endpoints() {
+        let mut evidence = trial();
+        evidence.ack_path_samples.retain(|sample| sample.endpoint_id == "client");
+        let report = evaluate_multipath_quic_trial(&evidence);
+        assert_eq!(report.disposition, TrialDisposition::Inconclusive);
+        assert_eq!(report.reason, "ack_path_samples_missing_for_one_endpoint");
+    }
+
+    #[test]
+    fn ack_sample_endpoint_must_be_known() {
+        let mut evidence = trial();
+        evidence.ack_path_samples[0].endpoint_id = "unknown-endpoint".to_owned();
+        let report = evaluate_multipath_quic_trial(&evidence);
+        assert_eq!(report.disposition, TrialDisposition::Fail);
+        assert_eq!(report.reason, "ack_path_sample_endpoint_identity_unknown");
+    }
+
+    #[test]
+    fn endpoint_ids_must_be_distinct() {
+        let mut evidence = trial();
+        evidence.server.endpoint_id = evidence.client.endpoint_id.clone();
+        let report = evaluate_multipath_quic_trial(&evidence);
+        assert_eq!(report.disposition, TrialDisposition::Inconclusive);
+        assert_eq!(report.reason, "client_and_server_endpoint_ids_are_not_distinct");
+    }
+
+    #[test]
+    fn maximum_path_id_high_water_can_increase_after_path_churn() {
+        let mut evidence = trial();
+        evidence.client.maximum_path_id_limit_observed = 4;
+        evidence.server.maximum_path_id_limit_observed = 4;
+        evidence.client.lifecycle_events.push(PathLifecycleEvent {
+            sequence: 5,
+            occurred_at_unix_ms: 1_040,
+            path_id: 0,
+            maximum_path_id: Some(4),
+            kind: LifecycleEventKind::MaximumPathIdRaised,
+        });
+        evidence.server.lifecycle_events.push(PathLifecycleEvent {
+            sequence: 5,
+            occurred_at_unix_ms: 1_040,
+            path_id: 0,
+            maximum_path_id: Some(4),
+            kind: LifecycleEventKind::MaximumPathIdRaised,
+        });
+        let report = evaluate_multipath_quic_trial(&evidence);
+        assert_eq!(report.disposition, TrialDisposition::Pass);
+    }
+
+    #[test]
+    fn maximum_path_id_limit_cannot_decrease_or_repeat() {
+        let mut evidence = trial();
+        evidence.client.maximum_path_id_limit_observed = 2;
+        evidence.client.lifecycle_events.push(PathLifecycleEvent {
+            sequence: 5,
+            occurred_at_unix_ms: 1_040,
+            path_id: 0,
+            maximum_path_id: Some(2),
+            kind: LifecycleEventKind::MaximumPathIdRaised,
+        });
+        let report = evaluate_multipath_quic_trial(&evidence);
+        assert_eq!(report.disposition, TrialDisposition::Fail);
+        assert_eq!(report.reason, "maximum_path_id_limit_did_not_increase");
     }
 
     #[test]
