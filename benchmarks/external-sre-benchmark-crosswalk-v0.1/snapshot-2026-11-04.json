@@ -59,7 +59,9 @@
           "source_type": "primary_publication",
           "retrieved_on": "2026-11-04",
           "published_on": null,
-          "notes": "Describes 90 realistic problems and correlated/metastable failure classes."
+          "notes": "Describes 90 realistic problems and correlated/metastable failure classes.",
+          "capture_status": "url_only",
+          "content_sha256": null
         }
       ]
     },
@@ -248,7 +250,9 @@
           "source_type": "official_leaderboard",
           "retrieved_on": "2026-11-04",
           "published_on": null,
-          "notes": "Snapshot retrieved 2026-11-04; cohort SREGym-Lite-1004, 17 faults."
+          "notes": "Snapshot retrieved 2026-11-04; cohort SREGym-Lite-1004, 17 faults.",
+          "capture_status": "url_only",
+          "content_sha256": null
         }
       ]
     },
@@ -317,7 +321,9 @@
           "source_type": "primary_publication",
           "retrieved_on": "2026-11-04",
           "published_on": "2026-09-26",
-          "notes": "Published 2026-09-26; continuous overlapping-fault benchmark."
+          "notes": "Published 2026-09-26; continuous overlapping-fault benchmark.",
+          "capture_status": "url_only",
+          "content_sha256": null
         }
       ]
     },
@@ -384,7 +390,9 @@
           "source_type": "primary_publication",
           "retrieved_on": "2026-11-04",
           "published_on": null,
-          "notes": "Paper reports 1,150 tasks, eight domains, 164 tables, 512 tools and 34.1% best success."
+          "notes": "Paper reports 1,150 tasks, eight domains, 164 tables, 512 tools and 34.1% best success.",
+          "capture_status": "url_only",
+          "content_sha256": null
         }
       ]
     },
@@ -451,7 +459,9 @@
           "source_type": "official_leaderboard",
           "retrieved_on": "2026-11-04",
           "published_on": null,
-          "notes": "Primary benchmark publisher/independent evaluator; cross-check dated Nov 3 leaderboard snapshot."
+          "notes": "Primary benchmark publisher/independent evaluator; cross-check dated Nov 3 leaderboard snapshot.",
+          "capture_status": "url_only",
+          "content_sha256": null
         },
         {
           "title": "BenchLeader Nov 3 snapshot",
@@ -459,7 +469,9 @@
           "source_type": "official_leaderboard",
           "retrieved_on": "2026-11-04",
           "published_on": "2026-11-03",
-          "notes": "Secondary aggregation; context only, not sole evidence."
+          "notes": "Secondary aggregation; context only, not sole evidence.",
+          "capture_status": "url_only",
+          "content_sha256": null
         }
       ]
     },
@@ -527,7 +539,9 @@
           "source_type": "official_leaderboard",
           "retrieved_on": "2026-11-04",
           "published_on": null,
-          "notes": "Primary metric definition, 59 task split, three repeats and current displayed 56.2% leader."
+          "notes": "Primary metric definition, 59 task split, three repeats and current displayed 56.2% leader.",
+          "capture_status": "url_only",
+          "content_sha256": null
         }
       ]
     },
@@ -721,8 +735,10 @@
           "url": "https://edgedelta.com/arena",
           "source_type": "official_benchmark_report",
           "retrieved_on": "2026-11-04",
-          "published_on": "2026-10-01",
-          "notes": "October 2026; code, answer keys and rubric linked by publisher."
+          "published_on": null,
+          "notes": "October 2026; code, answer keys and rubric linked by publisher.",
+          "capture_status": "url_only",
+          "content_sha256": null
         }
       ]
     },
@@ -877,7 +893,9 @@
           "source_type": "official_benchmark_report",
           "retrieved_on": "2026-11-04",
           "published_on": "2026-10-21",
-          "notes": "Publisher reports 62 cases, 5 setups, 7 models, 172 runs/model, one run/case/setup and control/trap subset."
+          "notes": "Publisher reports 62 cases, 5 setups, 7 models, 172 runs/model, one run/case/setup and control/trap subset.",
+          "capture_status": "url_only",
+          "content_sha256": null
         }
       ]
     },
@@ -945,8 +963,10 @@
           "url": "https://aclanthology.org/2026.findings-emnlp.1639/",
           "source_type": "primary_publication",
           "retrieved_on": "2026-11-04",
-          "published_on": "2026-10-01",
-          "notes": "596 trajectories and average 24-step horizon."
+          "published_on": null,
+          "notes": "596 trajectories and average 24-step horizon.",
+          "capture_status": "url_only",
+          "content_sha256": null
         }
       ]
     },
@@ -1014,8 +1034,10 @@
           "url": "https://aclanthology.org/2026.findings-emnlp.598/",
           "source_type": "primary_publication",
           "retrieved_on": "2026-11-04",
-          "published_on": "2026-10-01",
-          "notes": "Paper reports 170 trajectories, 11 settings and +75% average step-localization improvement."
+          "published_on": null,
+          "notes": "Paper reports 170 trajectories, 11 settings and +75% average step-localization improvement.",
+          "capture_status": "url_only",
+          "content_sha256": null
         }
       ]
     },
@@ -1031,19 +1053,138 @@
       "task_unit": "Task executed within a harness stream under changing capability configuration.",
       "metrics": [
         {
-          "metric_id": "harness_stream_scale",
-          "name": "Harness evolution evaluation scale",
+          "metric_id": "harness_harness_streams",
+          "name": "Harness streams",
           "construct": "harness_retention",
           "unit": "count",
-          "scale": "Count of harness streams/tasks/tools/skills/agents",
+          "scale": "integer count",
           "aggregation": "not_applicable",
-          "denominator_definition": "Scale descriptors only; this registry does not claim a scalar benchmark score.",
+          "denominator_definition": "Publisher-reported benchmark scale descriptor; not a pass-rate denominator.",
           "evaluator_type": "not_applicable",
-          "repeat_design": "17 harness streams; 802 tasks; 520 tools; 42 skills; 62 agents.",
-          "limitations": []
+          "repeat_design": "17 streams with a combined 802 tasks, 520 tools, 42 skills and 62 agents.",
+          "limitations": [
+            "Scale descriptor only; no scalar leader score is asserted."
+          ]
+        },
+        {
+          "metric_id": "harness_tasks",
+          "name": "Tasks",
+          "construct": "harness_retention",
+          "unit": "count",
+          "scale": "integer count",
+          "aggregation": "not_applicable",
+          "denominator_definition": "Publisher-reported benchmark scale descriptor; not a pass-rate denominator.",
+          "evaluator_type": "not_applicable",
+          "repeat_design": "17 streams with a combined 802 tasks, 520 tools, 42 skills and 62 agents.",
+          "limitations": [
+            "Scale descriptor only; no scalar leader score is asserted."
+          ]
+        },
+        {
+          "metric_id": "harness_tools",
+          "name": "Tools",
+          "construct": "harness_retention",
+          "unit": "count",
+          "scale": "integer count",
+          "aggregation": "not_applicable",
+          "denominator_definition": "Publisher-reported benchmark scale descriptor; not a pass-rate denominator.",
+          "evaluator_type": "not_applicable",
+          "repeat_design": "17 streams with a combined 802 tasks, 520 tools, 42 skills and 62 agents.",
+          "limitations": [
+            "Scale descriptor only; no scalar leader score is asserted."
+          ]
+        },
+        {
+          "metric_id": "harness_skills",
+          "name": "Skills",
+          "construct": "harness_retention",
+          "unit": "count",
+          "scale": "integer count",
+          "aggregation": "not_applicable",
+          "denominator_definition": "Publisher-reported benchmark scale descriptor; not a pass-rate denominator.",
+          "evaluator_type": "not_applicable",
+          "repeat_design": "17 streams with a combined 802 tasks, 520 tools, 42 skills and 62 agents.",
+          "limitations": [
+            "Scale descriptor only; no scalar leader score is asserted."
+          ]
+        },
+        {
+          "metric_id": "harness_agents",
+          "name": "Agents",
+          "construct": "harness_retention",
+          "unit": "count",
+          "scale": "integer count",
+          "aggregation": "not_applicable",
+          "denominator_definition": "Publisher-reported benchmark scale descriptor; not a pass-rate denominator.",
+          "evaluator_type": "not_applicable",
+          "repeat_design": "17 streams with a combined 802 tasks, 520 tools, 42 skills and 62 agents.",
+          "limitations": [
+            "Scale descriptor only; no scalar leader score is asserted."
+          ]
         }
       ],
-      "results": [],
+      "results": [
+        {
+          "configuration": "Published benchmark corpus",
+          "metric_id": "harness_harness_streams",
+          "value": 17,
+          "unit": "count",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Number of harness evolution streams.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": "Publisher-reported benchmark scale."
+        },
+        {
+          "configuration": "Published benchmark corpus",
+          "metric_id": "harness_tasks",
+          "value": 802,
+          "unit": "count",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Number of tasks.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": "Publisher-reported benchmark scale."
+        },
+        {
+          "configuration": "Published benchmark corpus",
+          "metric_id": "harness_tools",
+          "value": 520,
+          "unit": "count",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Number of tools.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": "Publisher-reported benchmark scale."
+        },
+        {
+          "configuration": "Published benchmark corpus",
+          "metric_id": "harness_skills",
+          "value": 42,
+          "unit": "count",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Number of skills.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": "Publisher-reported benchmark scale."
+        },
+        {
+          "configuration": "Published benchmark corpus",
+          "metric_id": "harness_agents",
+          "value": 62,
+          "unit": "count",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Number of agents.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": "Publisher-reported benchmark scale."
+        }
+      ],
       "scale": {
         "task_count_description": "17 streams, 802 tasks, 520 tools, 42 skills and 62 agents.",
         "tasks": 802,
@@ -1067,8 +1208,10 @@
           "url": "https://arxiv.org/abs/2609.04280",
           "source_type": "primary_publication",
           "retrieved_on": "2026-11-04",
-          "published_on": "2026-09-01",
-          "notes": "17 streams, 802 tasks, 520 tools, 42 skills, 62 agents; capability additions can degrade previously solved tasks."
+          "published_on": null,
+          "notes": "17 streams, 802 tasks, 520 tools, 42 skills, 62 agents; capability additions can degrade previously solved tasks.",
+          "capture_status": "url_only",
+          "content_sha256": null
         }
       ]
     }
