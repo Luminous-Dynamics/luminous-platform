@@ -487,9 +487,7 @@ fn aggregate_candidate(
             }
         }
     }
-    let Some((_, first, second)) = best_pair else {
-        return None;
-    };
+    let (_, first, second) = best_pair?;
     let mut selected = vec![first, second];
     let mut seen_capacity_domains = first
         .capacity_domain_ids
@@ -943,12 +941,26 @@ mod tests {
         path_a.capacity_domain_ids = vec!["access-a".to_owned(), "shared-x".to_owned()];
         path_b.capacity_domain_ids = vec!["shared-x".to_owned(), "shared-y".to_owned()];
         path_c.capacity_domain_ids = vec!["access-c".to_owned(), "shared-y".to_owned()];
-        let result = evaluate(
-            &request(),
-            &[path_b, path_c, path_a],
-            Strategy::AggregateCapacity,
-        )
-        .expect("valid multi-domain observations");
+        let paths = vec![path_b, path_c, path_a];
+        let mut exhaustive_pair_oracle_bps = 0_u64;
+        for left in 0..paths.len() {
+            for right in (left + 1)..paths.len() {
+                let overlaps = paths[left].capacity_domain_ids.iter().any(|domain| {
+                    paths[right]
+                        .capacity_domain_ids
+                        .iter()
+                        .any(|other| other == domain)
+                });
+                if !overlaps {
+                    exhaustive_pair_oracle_bps = exhaustive_pair_oracle_bps.max(
+                        effective_capacity(&paths[left])
+                            .saturating_add(effective_capacity(&paths[right])),
+                    );
+                }
+            }
+        }
+        let result = evaluate(&request(), &paths, Strategy::AggregateCapacity)
+            .expect("valid multi-domain observations");
         assert_eq!(result.mode, DecisionMode::Multipath);
         assert_eq!(
             result
@@ -959,6 +971,13 @@ mod tests {
             vec!["a", "c"]
         );
         assert_eq!(result.distinct_capacity_domains, 4);
+        let selected_pair_capacity_bps = result
+            .allocations
+            .iter()
+            .map(|allocation| allocation.effective_capacity_bps)
+            .sum::<u64>();
+        assert_eq!(selected_pair_capacity_bps, exhaustive_pair_oracle_bps);
+        assert_eq!(exhaustive_pair_oracle_bps, 110_000_000);
     }
 
     #[test]
@@ -1103,7 +1122,9 @@ mod tests {
         let mut unknown = path("unknown", 1_000, 100_000_000, 1, "failure-a");
         unknown.capacity_domain_ids.clear();
         let allowed = path("allowed", 20_000, 10_000_000, 10, "failure-b");
-        let result = evaluate(&request(), &[unknown, allowed], Strategy::AggregateCapacity)
+        let mut req = request();
+        req.deadline_us = None;
+        let result = evaluate(&req, &[unknown, allowed], Strategy::AggregateCapacity)
             .expect("valid observations");
         assert_eq!(result.mode, DecisionMode::SinglePath);
         assert_eq!(result.exclusions[0].reason, "capacity_domains_unknown");
@@ -1223,7 +1244,9 @@ mod tests {
         let mut usd = path("usd", 1_000, 100_000_000, 1, "usd");
         usd.cost_currency = "USD".to_owned();
         let zar = path("zar", 10_000, 10_000_000, 10, "zar");
-        let result = evaluate(&request(), &[usd, zar], Strategy::LowestCost).expect("valid inputs");
+        let mut req = request();
+        req.deadline_us = None;
+        let result = evaluate(&req, &[usd, zar], Strategy::LowestCost).expect("valid inputs");
         assert_eq!(result.mode, DecisionMode::SinglePath);
         assert_eq!(result.allocations[0].path_id, "zar");
         assert_eq!(result.exclusions[0].reason, "cost_currency_mismatch");
