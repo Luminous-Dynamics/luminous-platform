@@ -466,18 +466,36 @@ pub fn run_stability_scenario(
             .saturating_add(bulk_failed);
         metrics.maximum_queue_depth = metrics.maximum_queue_depth.max(queue_depth);
         metrics.maximum_latency_ms = metrics.maximum_latency_ms.max(latency_ms);
-        let completed = critical_completed_new.saturating_add(bulk_completed_new);
-        let failed_request_time = (total_failed as u128).saturating_mul(latency_ms as u128);
-        let slow_request_time = if latency_ms > config.maximum_latency_ms {
-            (completed as u128)
-                .saturating_mul((latency_ms - config.maximum_latency_ms) as u128)
+        metrics.maximum_critical_latency_ms =
+            metrics.maximum_critical_latency_ms.max(critical_latency_ms);
+        metrics.maximum_bulk_latency_ms = metrics.maximum_bulk_latency_ms.max(bulk_latency_ms);
+
+        let critical_failed_request_time =
+            (critical_failed as u128).saturating_mul(critical_latency_ms as u128);
+        let critical_slow_request_time = if critical_latency_ms > config.maximum_critical_latency_ms {
+            (critical_completed_new as u128)
+                .saturating_mul((critical_latency_ms - config.maximum_critical_latency_ms) as u128)
         } else {
             0
         };
-        metrics.slo_violation_integral_request_ms = metrics
-            .slo_violation_integral_request_ms
-            .saturating_add(failed_request_time)
-            .saturating_add(slow_request_time);
+        let bulk_failed_request_time = (bulk_failed as u128).saturating_mul(bulk_latency_ms as u128);
+        let bulk_slow_request_time = if bulk_latency_ms > config.maximum_bulk_latency_ms {
+            (bulk_completed_new as u128)
+                .saturating_mul((bulk_latency_ms - config.maximum_bulk_latency_ms) as u128)
+        } else {
+            0
+        };
+        metrics.critical_slo_violation_integral_request_ms = metrics
+            .critical_slo_violation_integral_request_ms
+            .saturating_add(critical_failed_request_time)
+            .saturating_add(critical_slow_request_time);
+        metrics.bulk_slo_violation_integral_request_ms = metrics
+            .bulk_slo_violation_integral_request_ms
+            .saturating_add(bulk_failed_request_time)
+            .saturating_add(bulk_slow_request_time);
+        metrics.slo_violation_integral_request_ms =
+            metrics.critical_slo_violation_integral_request_ms
+                .saturating_add(metrics.bulk_slo_violation_integral_request_ms);
         let api_excess = actual_api_capacity.saturating_sub(effective_capacity);
         metrics.api_database_capacity_gap_request_units = metrics
             .api_database_capacity_gap_request_units
@@ -501,10 +519,16 @@ pub fn run_stability_scenario(
             total_failed,
             total_attempts,
             failed_ppm,
+            critical_failed_ppm,
+            bulk_failed_ppm,
             critical_queue,
             bulk_queue,
             queue_depth,
             latency_ms,
+            critical_latency_ms,
+            bulk_latency_ms,
+            critical_slo_healthy,
+            bulk_slo_healthy,
             slo_healthy,
         });
     }
@@ -577,6 +601,10 @@ mod tests {
             maximum_observation_age_ticks: 2,
             maximum_failed_ppm: 100_000,
             maximum_latency_ms: 200,
+            maximum_critical_failed_ppm: 100_000,
+            maximum_bulk_failed_ppm: 200_000,
+            maximum_critical_latency_ms: 100,
+            maximum_bulk_latency_ms: 200,
             consecutive_healthy_ticks: 2,
             no_intervention_tail_ticks: 4,
             base_latency_ms: 10,
@@ -772,6 +800,27 @@ mod tests {
         let run = run_stability_scenario(&config, &actions).unwrap();
         assert!(run.metrics.bulk_failed_requests > 0);
         assert!(run.metrics.critical_failed_requests <= run.metrics.bulk_failed_requests);
+    }
+
+    #[test]
+    fn workload_class_slos_expose_bulk_degradation_separately() {
+        let config = config();
+        let run = run_stability_scenario(&config, &[]).unwrap();
+        let during_fault = &run.samples[config.fault_start_tick as usize];
+
+        assert_eq!(during_fault.critical_failed_ppm, 0);
+        assert!(during_fault.bulk_failed_ppm > 0);
+        assert!(during_fault.critical_slo_healthy);
+        assert!(!during_fault.bulk_slo_healthy);
+        assert!(
+            run.metrics.bulk_slo_violation_integral_request_ms
+                > run.metrics.critical_slo_violation_integral_request_ms
+        );
+        assert_eq!(
+            run.metrics.slo_violation_integral_request_ms,
+            run.metrics.critical_slo_violation_integral_request_ms
+                + run.metrics.bulk_slo_violation_integral_request_ms
+        );
     }
 
     #[test]
