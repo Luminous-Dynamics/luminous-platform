@@ -27,6 +27,7 @@ pub struct Forecast {
     pub plant_revision: String,
     pub plant_digest: Digest,
     pub workload_profile_digest: Digest,
+    pub metric_policy_set_digest: Digest,
     pub topology_epoch: u64,
     pub topology_digest: Digest,
 }
@@ -243,6 +244,7 @@ fn build_report(
         plant_revision: input.plant_revision.clone(),
         plant_digest: input.plant_digest.clone(),
         workload_profile_digest: input.workload_profile_digest.clone(),
+        metric_policy_set_digest: input.metric_policy_set_digest.clone(),
         topology_epoch: input.topology_epoch,
         topology_digest: input.topology_digest.clone(),
         model_control_domain: input.model_control_domain.clone(),
