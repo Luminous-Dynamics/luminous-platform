@@ -33,7 +33,7 @@ jobs:
           set -euo pipefail
           rustup toolchain install 1.96.0 --profile minimal --component clippy
           rustup override set 1.96.0
-      - name: Validate benchmark schemas and safety-filter fixtures
+      - name: Validate benchmark schemas and fixtures
         run: |
           set -euo pipefail
           python3 -m venv /tmp/opsbench-schema-venv
@@ -44,19 +44,30 @@ jobs:
           from jsonschema import Draft202012Validator
 
           root = Path("research/continuous-opsbench-v0.1")
-          request_schema_path = root / "predictive-safety-filter-request.schema.json"
-          appraisal_schema_path = root / "predictive-safety-filter-appraisal.schema.json"
-          request_schema = json.loads(request_schema_path.read_text(encoding="utf-8"))
-          appraisal_schema = json.loads(appraisal_schema_path.read_text(encoding="utf-8"))
-          Draft202012Validator.check_schema(request_schema)
-          Draft202012Validator.check_schema(appraisal_schema)
-          Draft202012Validator(request_schema).validate(json.loads(
-              (root / "examples/predictive-safety-filter-request.example.json").read_text(encoding="utf-8")
-          ))
-          Draft202012Validator(appraisal_schema).validate(json.loads(
-              (root / "examples/predictive-safety-filter-appraisal.example.json").read_text(encoding="utf-8")
-          ))
-          print("predictive safety-filter schemas meta-validate; request/appraisal fixtures conform")
+          pairs = [
+              (
+                  "predictive-safety-filter-request.schema.json",
+                  "examples/predictive-safety-filter-request.example.json",
+              ),
+              (
+                  "predictive-safety-filter-appraisal.schema.json",
+                  "examples/predictive-safety-filter-appraisal.example.json",
+              ),
+              (
+                  "model-assumption-monitor-input.schema.json",
+                  "examples/model-assumption-monitor-input.example.json",
+              ),
+              (
+                  "model-assumption-monitor-report.schema.json",
+                  "examples/model-assumption-monitor-report.example.json",
+              ),
+          ]
+          for schema_name, fixture_name in pairs:
+              schema = json.loads((root / schema_name).read_text(encoding="utf-8"))
+              Draft202012Validator.check_schema(schema)
+              fixture = json.loads((root / fixture_name).read_text(encoding="utf-8"))
+              Draft202012Validator(schema).validate(fixture)
+              print(f"schema meta-valid; fixture conforms: {schema_name} / {fixture_name}")
           PY
       - name: Run dependency-locked tests
         run: cargo test --manifest-path research/continuous-opsbench-v0.1/Cargo.toml --locked
