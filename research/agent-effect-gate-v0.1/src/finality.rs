@@ -66,7 +66,7 @@ pub struct AuthenticatedExecutionHandle {
 }
 
 impl AuthenticatedExecutionHandle {
-    #[expect(dead_code, reason = "Only a verifier adapter may mint authenticated handles; that adapter is a later integration slice.")]
+    #[cfg(test)]
     pub(crate) fn from_verified_claims(claims: ExecutionHandleClaims) -> Self {
         Self { claims }
     }
@@ -567,6 +567,19 @@ mod tests {
             Err(FinalityError::HandleReplayConflict)
         );
         assert_eq!(sink.effect_count().unwrap(), 1);
+    }
+
+    #[test]
+    fn candidate_act_with_wrong_participant_is_rejected() {
+        let sink = sink();
+        let mut changed = act();
+        changed.participant_id = "participant-b".into();
+        let handle = handle(changed.clone(), "wrong-participant", 88);
+        assert_eq!(
+            sink.commit_exact_act(&changed, &handle, 100),
+            Err(FinalityError::WrongParticipant)
+        );
+        assert_eq!(sink.effect_count().unwrap(), 0);
     }
 
     #[test]
