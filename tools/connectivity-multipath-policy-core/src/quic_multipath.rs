@@ -5,7 +5,7 @@
 //! implementation and classifies one paired trial. It deliberately keeps
 //! data-path and ACK-return-path identities separate.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 pub const MULTIPATH_QUIC_DRAFT: &str = "draft-ietf-quic-multipath-21";
 pub const MAX_MULTIPATH_PATHS: u8 = 64;
@@ -263,6 +263,10 @@ pub struct QuicEvidenceReport {
     pub application_disposition: ApplicationDisposition,
     pub reason: &'static str,
     pub validated_path_ids: Vec<u32>,
+    /// Data paths actually observed in ACK/packet telemetry; may be fewer than validated paths.
+    pub observed_data_path_ids: Vec<u32>,
+    /// ACK-return paths actually observed, separately from data paths.
+    pub observed_ack_return_path_ids: Vec<u32>,
     pub ack_path_sample_count: u32,
     pub cross_path_ack_sample_count: u32,
     pub source_bytes: Option<u64>,
@@ -307,6 +311,8 @@ fn result(
         application_disposition,
         reason,
         validated_path_ids: path_ids,
+        observed_data_path_ids: Vec::new(),
+        observed_ack_return_path_ids: Vec::new(),
         ack_path_sample_count: u32::try_from(ack_samples).unwrap_or(u32::MAX),
         cross_path_ack_sample_count: u32::try_from(cross_path_ack_samples).unwrap_or(u32::MAX),
         source_bytes: outcome.map(|item| item.source_bytes),
@@ -430,7 +436,10 @@ fn validate_endpoint(
     start_ms: u64,
     end_ms: u64,
 ) -> Result<EndpointSummary, EndpointFailure> {
-    if endpoint.endpoint_id.trim().is_empty() || endpoint.endpoint_id.len() > 128 {
+    if endpoint.endpoint_id.trim().is_empty()
+        || endpoint.endpoint_id.len() > 128
+        || endpoint.endpoint_id.chars().any(char::is_control)
+    {
         return Err(EndpointFailure::Inconclusive("endpoint_identity_missing_or_invalid"));
     }
     if !endpoint.multipath_supported {
@@ -925,7 +934,7 @@ pub fn evaluate_multipath_quic_trial(evidence: &PairedTrialEvidence) -> QuicEvid
         ApplicationDisposition::CompletedWithoutDeadline => "protocol_qualified_and_application_completed_without_deadline",
         ApplicationDisposition::NotMeasured => "application_outcome_not_measured",
     };
-    result(
+    let mut report = result(
         TrialDisposition::Pass,
         application_disposition,
         reason,
@@ -933,7 +942,22 @@ pub fn evaluate_multipath_quic_trial(evidence: &PairedTrialEvidence) -> QuicEvid
         evidence.ack_path_samples.len(),
         cross_path_ack_samples,
         Some(outcome),
-    )
+    );
+    report.observed_data_path_ids = evidence
+        .ack_path_samples
+        .iter()
+        .map(|sample| sample.data_path_id)
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect();
+    report.observed_ack_return_path_ids = evidence
+        .ack_path_samples
+        .iter()
+        .map(|sample| sample.ack_return_path_id)
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect();
+    report
 }
 
 #[cfg(test)]
@@ -1266,6 +1290,20 @@ mod tests {
         let report = evaluate_multipath_quic_trial(&evidence);
         assert_eq!(report.disposition, TrialDisposition::Fail);
         assert_eq!(report.reason, "receiver_reorder_buffer_limit_exceeded");
+    }
+
+    #[test]
+    fn report_distinguishes_validated_paths_from_paths_used_for_data() {
+        let mut evidence = trial();
+        evidence.ack_path_samples.retain(|sample| sample.endpoint_id == "server");
+        evidence.ack_path_samples[0].data_path_id = 0;
+        evidence.ack_path_samples[0].ack_return_path_id = 0;
+        evidence.ack_path_samples[0].rtt_interpretation = RttInterpretation::SamePath;
+        let report = evaluate_multipath_quic_trial(&evidence);
+        assert_eq!(report.disposition, TrialDisposition::Pass);
+        assert_eq!(report.validated_path_ids, vec![0, 1]);
+        assert_eq!(report.observed_data_path_ids, vec![0]);
+        assert_eq!(report.observed_ack_return_path_ids, vec![0]);
     }
 
     #[test]
