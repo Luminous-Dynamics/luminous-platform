@@ -154,7 +154,8 @@
               "seconds",
               "usd",
               "tokens",
-              "native_metric"
+              "native_metric",
+              "relative_percent_improvement"
             ]
           },
           "cohort": {
