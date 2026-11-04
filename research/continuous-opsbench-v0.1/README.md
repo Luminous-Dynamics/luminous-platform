@@ -63,3 +63,10 @@ This remains structural validation. Challenge and observer signatures, durable c
 ## Observer fitness
 
 [Issue #205](https://github.com/Luminous-Dynamics/luminous-platform/issues/205) extends this work with blinded positive/negative known-answer probes, event-loss injection, per-sensor false-negative and latency measurements, and expiry on kernel/runtime/adapter/policy changes. A "complete" coverage claim must be qualified against the exact pinned instrumentation profile; missing sensors or silent drops are indeterminate, never zero accesses.
+
+
+## Temporal topology and causal-model freshness v0.1
+
+The additive `src/temporal.rs` evaluator separates evaluator-owned topology truth from agent-visible topology observations. It binds causal hypotheses to exact topology epochs/digests and reports stale-model action attempts, stale committed effects, stale or missing observations, unknown truth, sequence gaps, and unknown edges. Event time, ingest time, processing time, and valid time remain separate. See `TEMPORAL_TOPOLOGY_V0_1.md`, `schemas/temporal-topology-bundle.schema.json`, and the transition fixture.
+
+This is a structural synthetic evaluator. It does not authenticate topology sources or enforce action preconditions at the participant boundary. A production adapter must bind the epoch into a conditional participant operation to address time-of-check/time-of-use races.
