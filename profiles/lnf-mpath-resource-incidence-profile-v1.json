@@ -14,12 +14,14 @@
     "resource_identity_is_not_failure_domain_identity": true,
     "unknown_or_incomplete_inventory": "caller_must_reject_before_allocation",
     "algorithm": "weighted_max_min_progressive_filling",
-    "fixed_point_level_scale": 1000000,
+    "fixed_point_level_scale": 1000000000000,
     "max_paths": 64,
     "max_resources": 128,
     "max_resources_per_path": 32,
     "max_weight": 1000000,
-    "objective_non_claim": "weighted_max_min_fairness_is_not_maximum_sum_throughput"
+    "objective_non_claim": "weighted_max_min_fairness_is_not_maximum_sum_throughput",
+    "level_search": "event_driven_weighted_progressive_filling",
+    "rounding": "floor_fixed_point_rates_then_sorted_one_bit_per_path_if_resource_feasible"
   },
   "scenarios": [
     {
