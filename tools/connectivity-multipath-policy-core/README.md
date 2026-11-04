@@ -149,6 +149,28 @@ This is a **weighted max-min fairness allocator**, not a general maximum-sum-rat
 
 The test-only exact integer oracles are explicitly bounded to at most four paths, six resources and one million total integer assignments, where the assignment count is the product of each path's feasible integer-rate choices. They fail closed when a fixture exceeds that budget. A deterministic 432-case micro-topology corpus exercises every one of the 3^3 non-empty path/resource incidence assignments over two resources at all 4×4 small capacity pairs, comparing progressive filling against the independent weighted max-min reference. Equal fairness vectors use canonical path-ID order and a stable lexicographic rate-vector tie-break. This oracle is a micro-instance correctness reference, not a production optimizer or a performance benchmark.
 
+## Deadline-qualified service utility evaluator
+
+`service_utility::evaluate_deadline_utility_pair` evaluates two matched measured trials. It does not implement a scheduler, transport, congestion controller, qdisc or network actuator.
+
+The evaluator keeps the **environment identity** separate from each **arm identity**:
+- environment: exact kernel, topology, resource snapshot, qdisc, workload/task set, impairment, seed, warmup and measurement duration;
+- arm: protocol and revision, exact binary/kernel artifact digest, scheduler and congestion-control identity/provenance, and required active path count.
+
+It requires the same frozen task contracts in both arms. Each task binds an opaque task ID, offered useful bytes, deadline offset and positive value weight. Measurements distinguish:
+- useful application bytes delivered by the deadline;
+- total useful bytes delivered by measurement end;
+- late useful bytes;
+- completion time, when actually observed.
+
+Late useful bytes are never credited as on-time. Task value is all-or-nothing in v1: a task receives its value weight only when complete by its deadline. A missing completion timestamp with full bytes is treated as unknown timing evidence; task-value comparison becomes inconclusive rather than assuming success. Streaming/chunk-level utility requires a separate task contract.
+
+The paired report preserves both environment identities and both arm identities for every disposition, including unsupported and inconclusive outcomes. It reports deadline lateness tails, on-time task value, cost and energy per on-time useful MiB, redundant bytes, and minimum backlogged companion-flow retention. Comparative cost/energy ratios use the original totals and on-time byte counts with checked integer arithmetic, not intermediate rounded per-MiB values.
+
+Initial proposed non-regression gates are on-time payload >= baseline, on-time task value >= baseline, companion-flow retention >= 0.90, and cost/energy per on-time MiB <= baseline. These are declared engineering targets, not universal fairness constants or measured results. Every verdict is scoped to `single_paired_trial`; repeated-trial confidence intervals and programme qualification remain external.
+
+The profile treats the 2026 DaMPS/CaDaMPS paper, its 2024 legacy source repository, draft-21 MPQUIC schedulers and the 2025 DART paper as distinct comparators. Literature-only rows are not executed results. See issue #269 for the matched comparator plan.
+
 ## Required next steps before a performance claim
 
 1. Compare model output with the exact Linux kernel MPTCP path-manager and scheduler configuration.
