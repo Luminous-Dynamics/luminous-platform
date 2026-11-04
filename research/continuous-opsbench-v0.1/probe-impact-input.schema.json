@@ -24,14 +24,16 @@
         "no_probe_arm_id",
         "tenant_id",
         "executor_control_domain",
-        "observer_control_domain",
-        "observer_adapter_digest",
         "workload_profile_digest",
         "environment_digest",
         "fault_schedule_digest",
         "maximum_probe_duration_ms",
         "maximum_total_resource_usage",
-        "service_limits"
+        "service_limits",
+        "impact_observer_control_domain",
+        "impact_observer_adapter_digest",
+        "service_observer_control_domain",
+        "service_observer_adapter_digest"
       ],
       "properties": {
         "probe_run_id": {
@@ -65,14 +67,6 @@
         "executor_control_domain": {
           "type": "string",
           "minLength": 1
-        },
-        "observer_control_domain": {
-          "type": "string",
-          "minLength": 1
-        },
-        "observer_adapter_digest": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{64}$"
         },
         "workload_profile_digest": {
           "type": "string",
@@ -180,6 +174,22 @@
               }
             }
           }
+        },
+        "impact_observer_control_domain": {
+          "type": "string",
+          "minLength": 1
+        },
+        "impact_observer_adapter_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "service_observer_control_domain": {
+          "type": "string",
+          "minLength": 1
+        },
+        "service_observer_adapter_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
         }
       }
     },
@@ -287,14 +297,15 @@
           "scenario_id",
           "arm_id",
           "paired_block_id",
-          "observer_id",
-          "observer_control_domain",
-          "observer_adapter_digest",
           "measured_start_ms",
           "measured_end_ms",
           "evidence_digest",
           "complete",
-          "resource_usage"
+          "resource_usage",
+          "impact_observer_id",
+          "impact_observer_control_domain",
+          "impact_observer_adapter_digest",
+          "source_sequence"
         ],
         "properties": {
           "receipt_id": {
@@ -336,18 +347,6 @@
           "paired_block_id": {
             "type": "string",
             "minLength": 1
-          },
-          "observer_id": {
-            "type": "string",
-            "minLength": 1
-          },
-          "observer_control_domain": {
-            "type": "string",
-            "minLength": 1
-          },
-          "observer_adapter_digest": {
-            "type": "string",
-            "pattern": "^[0-9a-f]{64}$"
           },
           "measured_start_ms": {
             "type": "integer",
@@ -415,6 +414,23 @@
                 "maximum": 9007199254740991
               }
             }
+          },
+          "impact_observer_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "impact_observer_control_domain": {
+            "type": "string",
+            "minLength": 1
+          },
+          "impact_observer_adapter_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "source_sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
           }
         }
       }
@@ -443,9 +459,10 @@
           "workload_profile_digest",
           "environment_digest",
           "fault_schedule_digest",
-          "observer_id",
-          "observer_control_domain",
-          "complete"
+          "complete",
+          "service_observer_id",
+          "service_observer_control_domain",
+          "service_observer_adapter_digest"
         ],
         "properties": {
           "window_id": {
@@ -518,16 +535,20 @@
             "type": "string",
             "pattern": "^[0-9a-f]{64}$"
           },
-          "observer_id": {
-            "type": "string",
-            "minLength": 1
-          },
-          "observer_control_domain": {
-            "type": "string",
-            "minLength": 1
-          },
           "complete": {
             "type": "boolean"
+          },
+          "service_observer_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "service_observer_control_domain": {
+            "type": "string",
+            "minLength": 1
+          },
+          "service_observer_adapter_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
           }
         }
       }
@@ -556,9 +577,10 @@
           "workload_profile_digest",
           "environment_digest",
           "fault_schedule_digest",
-          "observer_id",
-          "observer_control_domain",
-          "complete"
+          "complete",
+          "service_observer_id",
+          "service_observer_control_domain",
+          "service_observer_adapter_digest"
         ],
         "properties": {
           "window_id": {
@@ -631,16 +653,20 @@
             "type": "string",
             "pattern": "^[0-9a-f]{64}$"
           },
-          "observer_id": {
-            "type": "string",
-            "minLength": 1
-          },
-          "observer_control_domain": {
-            "type": "string",
-            "minLength": 1
-          },
           "complete": {
             "type": "boolean"
+          },
+          "service_observer_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "service_observer_control_domain": {
+            "type": "string",
+            "minLength": 1
+          },
+          "service_observer_adapter_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
           }
         }
       }
