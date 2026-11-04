@@ -17,7 +17,6 @@
     "intrinsic_risk_localization",
     "future_recoverability",
     "resource_efficiency",
-    "evolution_robustness",
     "evolution_robustness"
   ],
   "benchmark_targets": [
