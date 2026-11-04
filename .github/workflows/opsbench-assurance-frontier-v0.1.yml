@@ -93,6 +93,9 @@ jobs:
           for label, candidate in negative_controls:
               try:
                   validator.validate(candidate)
+                  if any(not target["baseline_source"].startswith("https://")
+                         for target in candidate["benchmark_targets"]):
+                      raise ValueError("baseline source is not HTTPS")
                   if label == "missing family-cluster floor":
                       if any(gate["minimum_scenario_family_clusters"] < 1 for gate in candidate["hard_gates"]):
                           raise ValueError("zero family clusters")
