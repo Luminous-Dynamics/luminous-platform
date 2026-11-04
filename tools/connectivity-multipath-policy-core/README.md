@@ -142,6 +142,39 @@ The evaluator uses checked integer ratios in parts-per-million; confidence inter
 
 Every verdict has scope `single_paired_trial`. A paired pass is not programme-level statistical qualification: the external analysis must retain all repetitions and failures and compute the declared confidence intervals before promoting the programme. The exact kernel build digest binds in-tree TCP/MPTCP congestion-control and scheduler code; every out-of-tree TCP or MPTCP controller and scheduler must provide its own artifact SHA-256 in the paired identity.
 
+## Multipath QUIC draft-21 evidence verifier
+
+`quic_multipath::evaluate_multipath_quic_trial` consumes two-ended adapter evidence for one exact Multipath QUIC implementation. It does not implement QUIC, open sockets, create paths, change routes, schedule packets or actuate a network.
+
+The first pinned comparator is `qoke/mp-quic-go` source commit `084c13ea3834fbe58cedb63db9208951d714f839`, module version `v0.3.0`, based on quic-go `v0.63.0` and Go `1.26.0`. It documents Multipath QUIC `draft-ietf-quic-multipath-21`, an opt-in extension, a default concurrent path count of three and a maximum of 64. It documents uncoupled Reno per path as the default congestion-control mode and coupled OLIA as an optional mode. Those are separate experiment treatments; never pool their performance results.
+
+The report lists validated path IDs separately from the client- and server-observed data-path IDs and ACK-return path IDs. A path can be valid and available without carrying application data in a particular trial.
+
+The verifier requires:
+- an exact protocol/source/build/controller/scheduler identity at both endpoints;
+- multipath negotiation, two active validated paths and matching path-ID sets at both endpoints;
+- path lifecycle events with non-reused IDs, a monotonic MAX_PATH_ID high-water and a concurrent-path ceiling checked independently from path-ID history;
+- for secondary paths, a validation probe of at least 1200 bytes and a response on the challenge path;
+- non-zero connection IDs, separate path packet-number spaces, path-specific PMTU and observed ECN validation state;
+- ACK-path samples labelled by endpoint, with data-path and ACK-return path recorded separately; cross-path ACK RTT samples are explicitly composite;
+- stream byte accounting that distinguishes network receipt from useful in-order application release, and a hard receiver reorder-buffer bound.
+
+The adapter report distinguishes **validated path IDs** from **data-path IDs actually observed** and ACK-return path IDs. Negotiation plus two validated paths does not prove both paths carried application data.
+
+The adapter verdict is scoped to `single_paired_trial`. A paired pass is not programme-level statistical qualification. The profile contains 16 scenarios covering fallback, negotiation, independent and shared bottlenecks, cross-path ACKs, path churn, path validation, controller/scheduler comparisons and unsupported revision/observability cases.
+
+The mp-quic-go compliance and picoquic interoperability results are upstream's own reported evidence, not independent LNF qualification. Its published interop runner used a Docker bridge/router/netem stand-in because ns-3 forwarding failed in the test environment, and it explicitly did not measure goodput or cross traffic. Therefore LNF still needs matched namespace performance tests, especially shared-bottleneck TCP coexistence, before any performance claim.
+
+The focused Rust evidence checks can be run with:
+
+```sh
+cargo test --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml quic_multipath::tests --all-targets
+cargo clippy --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml --all-targets -- -D warnings
+cargo fmt --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml -- --check
+```
+
+The QUIC wire adapter must remain a thin boundary. LNF owns path/resource eligibility, intent, tenant fairness, cross-path task scheduling and evidence evaluation; the transport owns QUIC packet encoding, path validation, CID/packet-number spaces, recovery and congestion control.
+
 ## Required next steps before a performance claim
 
 1. Compare model output with the exact Linux kernel MPTCP path-manager and scheduler configuration.

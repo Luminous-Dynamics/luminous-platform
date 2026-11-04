@@ -1,0 +1,426 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/lnf-mpath-quic-profile-v1.schema.json",
+  "title": "LNF Multipath QUIC Draft-21 Evidence Profile v1",
+  "description": "Strict conformance and benchmark contract. Schema validation is not a transport or performance result.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "status",
+    "reviewed_on",
+    "issue",
+    "objective",
+    "evidence_stage",
+    "standards",
+    "reference_implementation",
+    "dimensions",
+    "evidence_contract",
+    "scenarios",
+    "comparators",
+    "benchmarks",
+    "required_metrics",
+    "verdicts",
+    "evidence_classes",
+    "explicit_non_claims"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.lnf-mpath-quic-profile.v1"
+    },
+    "profile_id": {
+      "const": "lnf-multipath-quic-draft21-v1"
+    },
+    "status": {
+      "const": "draft_targets_not_results"
+    },
+    "reviewed_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "issue": {
+      "const": 235
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence_stage": {
+      "const": "deterministic_adapter_evaluator_only"
+    },
+    "standards": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocol",
+        "intended_status",
+        "publication_state",
+        "base_transport",
+        "mptcp_fairness_reference",
+        "datatracker_url",
+        "draft_url"
+      ],
+      "properties": {
+        "protocol": {
+          "const": "draft-ietf-quic-multipath-21"
+        },
+        "intended_status": {
+          "const": "Proposed Standard"
+        },
+        "publication_state": {
+          "type": "string",
+          "minLength": 1
+        },
+        "base_transport": {
+          "const": [
+            "RFC 9000",
+            "RFC 9001",
+            "RFC 9002"
+          ]
+        },
+        "mptcp_fairness_reference": {
+          "const": "RFC 6356"
+        },
+        "datatracker_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "draft_url": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "reference_implementation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "source_commit_sha",
+        "module_version",
+        "base_transport",
+        "toolchain",
+        "multipath_revision",
+        "concurrent_path_limit_default",
+        "concurrent_path_limit_max",
+        "required_runtime_build_digest",
+        "expected_source_is_comparator_not_normative_reference",
+        "published_compliance_and_interop_are_self_reported",
+        "no_goodput_or_cross_traffic_performance_result_claimed_from_published_interop"
+      ],
+      "properties": {
+        "repository": {
+          "const": "qoke/mp-quic-go"
+        },
+        "source_commit_sha": {
+          "const": "084c13ea3834fbe58cedb63db9208951d714f839"
+        },
+        "module_version": {
+          "const": "v0.3.0"
+        },
+        "base_transport": {
+          "const": "quic-go v0.63.0"
+        },
+        "toolchain": {
+          "const": "Go 1.26.0"
+        },
+        "multipath_revision": {
+          "const": "draft-ietf-quic-multipath-21"
+        },
+        "concurrent_path_limit_default": {
+          "const": 3
+        },
+        "concurrent_path_limit_max": {
+          "const": 64
+        },
+        "required_runtime_build_digest": {
+          "const": true
+        },
+        "expected_source_is_comparator_not_normative_reference": {
+          "const": true
+        },
+        "published_compliance_and_interop_are_self_reported": {
+          "const": true
+        },
+        "no_goodput_or_cross_traffic_performance_result_claimed_from_published_interop": {
+          "const": true
+        }
+      }
+    },
+    "dimensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scheduler",
+        "congestion_control",
+        "endpoint_roles",
+        "scheduler_and_congestion_control_are_independent_experiment_dimensions",
+        "no_mixing_results_across_controller_or_scheduler_identity"
+      ],
+      "properties": {
+        "scheduler": {
+          "const": [
+            "round_robin",
+            "low_latency",
+            "min_rtt",
+            "custom"
+          ]
+        },
+        "congestion_control": {
+          "const": [
+            "uncoupled_reno_per_path",
+            "coupled_olia",
+            "other_exact_pinned"
+          ]
+        },
+        "endpoint_roles": {
+          "const": [
+            "client",
+            "server"
+          ]
+        },
+        "scheduler_and_congestion_control_are_independent_experiment_dimensions": {
+          "const": true
+        },
+        "no_mixing_results_across_controller_or_scheduler_identity": {
+          "const": true
+        }
+      }
+    },
+    "evidence_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "endpoint_pins_required",
+        "experiment_digests_required",
+        "lifecycle_events_required",
+        "both_endpoints_must_negotiate",
+        "at_least_two_active_validated_paths_at_both_endpoints",
+        "client_and_server_path_id_sets_must_match",
+        "maximum_concurrent_paths_enforced_separately_from_path_id_high_water",
+        "path_ids_never_reused",
+        "secondary_path_validation_probe_minimum_bytes",
+        "secondary_path_response_must_return_on_challenge_path",
+        "per_path_connection_id_and_packet_number_space_verified",
+        "per_path_pmtu_and_ecn_status_observed",
+        "ack_sample_endpoint_id_required",
+        "ack_return_path_recorded_separately_from_data_path",
+        "cross_path_ack_rtt_is_composite_not_a_single_path_rtt",
+        "ack_path_samples_required_from_both_endpoints",
+        "application_bytes_counted_useful_only_after_in_order_release",
+        "receiver_reorder_buffer_is_a_hard_gate",
+        "missing_or_unknown_required_evidence_is_not_pass",
+        "paired_verdict_scope",
+        "programme_qualification_requires_external_repeated_trial_analysis"
+      ],
+      "properties": {
+        "endpoint_pins_required": {
+          "const": [
+            "repository",
+            "source_commit_sha",
+            "module_version",
+            "base_transport_version",
+            "toolchain_version",
+            "protocol_revision",
+            "build_artifact_sha256",
+            "congestion_controller_id",
+            "congestion_controller_artifact_sha256",
+            "scheduler_id",
+            "scheduler_artifact_sha256"
+          ]
+        },
+        "experiment_digests_required": {
+          "const": [
+            "topology_sha256",
+            "resource_snapshot_sha256",
+            "qdisc_config_sha256",
+            "impairment_sha256",
+            "workload_sha256"
+          ]
+        },
+        "lifecycle_events_required": {
+          "const": [
+            "created",
+            "validated",
+            "abandoned",
+            "maximum_path_id_raised"
+          ]
+        },
+        "both_endpoints_must_negotiate": {
+          "const": true
+        },
+        "at_least_two_active_validated_paths_at_both_endpoints": {
+          "const": true
+        },
+        "client_and_server_path_id_sets_must_match": {
+          "const": true
+        },
+        "maximum_concurrent_paths_enforced_separately_from_path_id_high_water": {
+          "const": true
+        },
+        "path_ids_never_reused": {
+          "const": true
+        },
+        "secondary_path_validation_probe_minimum_bytes": {
+          "const": 1200
+        },
+        "secondary_path_response_must_return_on_challenge_path": {
+          "const": true
+        },
+        "per_path_connection_id_and_packet_number_space_verified": {
+          "const": true
+        },
+        "per_path_pmtu_and_ecn_status_observed": {
+          "const": true
+        },
+        "ack_sample_endpoint_id_required": {
+          "const": true
+        },
+        "ack_return_path_recorded_separately_from_data_path": {
+          "const": true
+        },
+        "cross_path_ack_rtt_is_composite_not_a_single_path_rtt": {
+          "const": true
+        },
+        "ack_path_samples_required_from_both_endpoints": {
+          "const": true
+        },
+        "application_bytes_counted_useful_only_after_in_order_release": {
+          "const": true
+        },
+        "receiver_reorder_buffer_is_a_hard_gate": {
+          "const": true
+        },
+        "missing_or_unknown_required_evidence_is_not_pass": {
+          "const": true
+        },
+        "paired_verdict_scope": {
+          "const": "single_paired_trial"
+        },
+        "programme_qualification_requires_external_repeated_trial_analysis": {
+          "const": true
+        }
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 16,
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "topology",
+          "purpose"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^MPQ-[0-9]{2}$"
+          },
+          "topology": {
+            "type": "string",
+            "minLength": 1
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "comparators": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "benchmarks": {
+      "type": "array",
+      "minItems": 11,
+      "maxItems": 11,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "metric",
+          "operator",
+          "target",
+          "target_status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^MPQ_[A-Z0-9_]{3,80}$"
+          },
+          "metric": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operator": {
+            "enum": [
+              "==",
+              "baseline_first"
+            ]
+          },
+          "target": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "target_status": {
+            "enum": [
+              "proposed_target",
+              "baseline_first"
+            ]
+          }
+        }
+      }
+    },
+    "required_metrics": {
+      "type": "array",
+      "minItems": 24,
+      "maxItems": 24,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "verdicts": {
+      "const": [
+        "pass",
+        "fail",
+        "inconclusive",
+        "unsupported"
+      ]
+    },
+    "evidence_classes": {
+      "const": [
+        "deterministic_adapter_unit_test",
+        "protocol_conformance_interop",
+        "network_namespace_or_vm_emulation",
+        "hardware_in_loop",
+        "field_observed"
+      ]
+    },
+    "explicit_non_claims": {
+      "type": "array",
+      "minItems": 11,
+      "maxItems": 11,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

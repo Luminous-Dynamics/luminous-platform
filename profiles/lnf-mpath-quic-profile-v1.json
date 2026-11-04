@@ -1,0 +1,325 @@
+{
+  "schema_version": "luminous.lnf-mpath-quic-profile.v1",
+  "profile_id": "lnf-multipath-quic-draft21-v1",
+  "status": "draft_targets_not_results",
+  "reviewed_on": "2026-11-04",
+  "issue": 235,
+  "objective": "Qualify exact Multipath QUIC draft-21 implementations against matched single-path QUIC, MPTCP and TCP baselines while verifying path lifecycle, ACK-return path attribution, resource safety, fairness and useful in-order application delivery.",
+  "evidence_stage": "deterministic_adapter_evaluator_only",
+  "standards": {
+    "protocol": "draft-ietf-quic-multipath-21",
+    "intended_status": "Proposed Standard",
+    "publication_state": "IESG approved; RFC Editor queue; not yet a published RFC as of 2026-11-04",
+    "base_transport": [
+      "RFC 9000",
+      "RFC 9001",
+      "RFC 9002"
+    ],
+    "mptcp_fairness_reference": "RFC 6356",
+    "datatracker_url": "https://datatracker.ietf.org/doc/draft-ietf-quic-multipath/",
+    "draft_url": "https://datatracker.ietf.org/doc/html/draft-ietf-quic-multipath-21"
+  },
+  "reference_implementation": {
+    "repository": "qoke/mp-quic-go",
+    "source_commit_sha": "084c13ea3834fbe58cedb63db9208951d714f839",
+    "module_version": "v0.3.0",
+    "base_transport": "quic-go v0.63.0",
+    "toolchain": "Go 1.26.0",
+    "multipath_revision": "draft-ietf-quic-multipath-21",
+    "concurrent_path_limit_default": 3,
+    "concurrent_path_limit_max": 64,
+    "required_runtime_build_digest": true,
+    "expected_source_is_comparator_not_normative_reference": true,
+    "published_compliance_and_interop_are_self_reported": true,
+    "no_goodput_or_cross_traffic_performance_result_claimed_from_published_interop": true
+  },
+  "dimensions": {
+    "scheduler": [
+      "round_robin",
+      "low_latency",
+      "min_rtt",
+      "custom"
+    ],
+    "congestion_control": [
+      "uncoupled_reno_per_path",
+      "coupled_olia",
+      "other_exact_pinned"
+    ],
+    "endpoint_roles": [
+      "client",
+      "server"
+    ],
+    "scheduler_and_congestion_control_are_independent_experiment_dimensions": true,
+    "no_mixing_results_across_controller_or_scheduler_identity": true
+  },
+  "evidence_contract": {
+    "endpoint_pins_required": [
+      "repository",
+      "source_commit_sha",
+      "module_version",
+      "base_transport_version",
+      "toolchain_version",
+      "protocol_revision",
+      "build_artifact_sha256",
+      "congestion_controller_id",
+      "congestion_controller_artifact_sha256",
+      "scheduler_id",
+      "scheduler_artifact_sha256"
+    ],
+    "experiment_digests_required": [
+      "topology_sha256",
+      "resource_snapshot_sha256",
+      "qdisc_config_sha256",
+      "impairment_sha256",
+      "workload_sha256"
+    ],
+    "lifecycle_events_required": [
+      "created",
+      "validated",
+      "abandoned",
+      "maximum_path_id_raised"
+    ],
+    "both_endpoints_must_negotiate": true,
+    "at_least_two_active_validated_paths_at_both_endpoints": true,
+    "client_and_server_path_id_sets_must_match": true,
+    "maximum_concurrent_paths_enforced_separately_from_path_id_high_water": true,
+    "path_ids_never_reused": true,
+    "secondary_path_validation_probe_minimum_bytes": 1200,
+    "secondary_path_response_must_return_on_challenge_path": true,
+    "per_path_connection_id_and_packet_number_space_verified": true,
+    "per_path_pmtu_and_ecn_status_observed": true,
+    "ack_sample_endpoint_id_required": true,
+    "ack_return_path_recorded_separately_from_data_path": true,
+    "cross_path_ack_rtt_is_composite_not_a_single_path_rtt": true,
+    "ack_path_samples_required_from_both_endpoints": true,
+    "application_bytes_counted_useful_only_after_in_order_release": true,
+    "receiver_reorder_buffer_is_a_hard_gate": true,
+    "missing_or_unknown_required_evidence_is_not_pass": true,
+    "paired_verdict_scope": "single_paired_trial",
+    "programme_qualification_requires_external_repeated_trial_analysis": true
+  },
+  "scenarios": [
+    {
+      "id": "MPQ-00",
+      "topology": "multipath_disabled_or_not_negotiated",
+      "purpose": "Single-path QUIC fallback control; no multipath semantics are credited"
+    },
+    {
+      "id": "MPQ-01",
+      "topology": "both_endpoints_negotiate_draft21_with_two_validated_paths",
+      "purpose": "Exact extension negotiation and two-ended path state"
+    },
+    {
+      "id": "MPQ-02",
+      "topology": "two_fully_independent_paths_with_matched_single_path_controls",
+      "purpose": "Best-path improvement and useful goodput"
+    },
+    {
+      "id": "MPQ-03",
+      "topology": "two_paths_share_one_backhaul_plus_competing_tcp",
+      "purpose": "Shared-bottleneck do-no-harm"
+    },
+    {
+      "id": "MPQ-04",
+      "topology": "partially_overlapping_resource_incidence_sets",
+      "purpose": "Resource ceilings across overlapping paths"
+    },
+    {
+      "id": "MPQ-05",
+      "topology": "data_packet_and_ack_return_use_different_paths",
+      "purpose": "Separate data/ACK path attribution and composite RTT"
+    },
+    {
+      "id": "MPQ-06",
+      "topology": "ack_return_path_changes_mid_stream",
+      "purpose": "RTT/PTO/scheduler response to ACK-path change"
+    },
+    {
+      "id": "MPQ-07",
+      "topology": "asymmetric_rtt_paths_with_ordered_stream_data",
+      "purpose": "In-order release, reorder bytes and byte-microseconds"
+    },
+    {
+      "id": "MPQ-08",
+      "topology": "heterogeneous_pmtu_and_ecn_by_path",
+      "purpose": "Per-path MTU and ECN validation"
+    },
+    {
+      "id": "MPQ-09",
+      "topology": "one_path_fails_with_packets_in_flight",
+      "purpose": "Abandonment, recovery and reinjection"
+    },
+    {
+      "id": "MPQ-10",
+      "topology": "invalid_or_failed_secondary_path_validation",
+      "purpose": "No data before path validation"
+    },
+    {
+      "id": "MPQ-11",
+      "topology": "path_creation_abandonment_max_path_id_growth",
+      "purpose": "No path-ID reuse; high-water differs from concurrent limit"
+    },
+    {
+      "id": "MPQ-12",
+      "topology": "path_count_limit_and_repeated_path_churn",
+      "purpose": "Bound path resources, memory and CPU"
+    },
+    {
+      "id": "MPQ-13",
+      "topology": "uncoupled_reno_per_path_vs_coupled_olia",
+      "purpose": "Distinct congestion-control treatments"
+    },
+    {
+      "id": "MPQ-14",
+      "topology": "round_robin_low_latency_min_rtt_custom_schedulers",
+      "purpose": "Scheduler comparison at fixed congestion controller"
+    },
+    {
+      "id": "MPQ-15",
+      "topology": "draft_revision_mismatch_or_instrumentation_fallback",
+      "purpose": "Unsupported/inconclusive never becomes multipath PASS"
+    }
+  ],
+  "comparators": [
+    "single_path_quic_same_pinned_implementation",
+    "mp_quic_go_draft21_uncoupled_reno_per_path",
+    "mp_quic_go_draft21_coupled_olia",
+    "mp_quic_go_round_robin_low_latency_min_rtt_scheduler_matrix",
+    "exact_pinned_linux_mptcp_scheduler_and_congestion_control",
+    "single_path_tcp_exact_pinned_congestion_control",
+    "mptcp_plus_tcp_shared_bottleneck",
+    "multipath_quic_plus_tcp_shared_bottleneck",
+    "lnf_offline_scheduler_prediction_not_applied"
+  ],
+  "benchmarks": [
+    {
+      "id": "MPQ_NEGOTIATION_001",
+      "metric": "trials_with_exact_draft21_negotiated_at_both_endpoints",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPQ_PATHS_001",
+      "metric": "trials_with_at_least_two_active_validated_paths_at_both_endpoints_and_identical_path_id_sets",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPQ_PATH_LIFECYCLE_001",
+      "metric": "path_id_reuse_or_invalid_lifecycle_transitions",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPQ_ACK_ATTRIBUTION_001",
+      "metric": "ack_samples_with_endpoint_data_path_and_ack_return_path_attributed",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPQ_ACK_RTT_001",
+      "metric": "cross_path_ack_samples_mislabeled_as_single_path_rtt",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPQ_RESOURCE_001",
+      "metric": "shared_capacity_resource_overcommit_bps",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPQ_ORDERED_USEFUL_001",
+      "metric": "useful_application_bytes_released_before_in_order_stream_release",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPQ_REORDER_001",
+      "metric": "receiver_reorder_peak_bytes_exceed_declared_limit",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "MPQ_DO_NO_HARM_001",
+      "metric": "companion_tcp_retention_and_multipath_share_under_shared_bottleneck",
+      "operator": "baseline_first",
+      "target": null,
+      "target_status": "baseline_first"
+    },
+    {
+      "id": "MPQ_PERFORMANCE_001",
+      "metric": "useful_goodput_deadline_completion_and_p95_p99_stream_release_against_matched_baselines",
+      "operator": "baseline_first",
+      "target": null,
+      "target_status": "baseline_first"
+    },
+    {
+      "id": "MPQ_DATA_PATH_USAGE_001",
+      "metric": "actual_data_path_count_vs_validated_path_count_by_scenario",
+      "operator": "baseline_first",
+      "target": null,
+      "target_status": "baseline_first"
+    }
+  ],
+  "required_metrics": [
+    "client_and_server_protocol_revision_source_commit_and_build_digest",
+    "client_and_server_negotiated_initial_max_path_id",
+    "client_and_server_active_validated_path_ids",
+    "configured_concurrent_path_limit",
+    "maximum_path_id_high_water_and_raise_events",
+    "path_create_validate_abandon_lifecycle_and_path_id_reuse_count",
+    "path_validation_probe_size_and_same_path_response_result",
+    "per_path_connection_id_and_packet_number_space_identity",
+    "per_path_pmtu_bytes",
+    "per_path_ecn_validation_status",
+    "per_path_packets_bytes_loss_retransmission_and_reinjection",
+    "per_path_congestion_controller_identity_and_artifact_digest",
+    "per_path_scheduler_identity_and_artifact_digest",
+    "ack_sample_endpoint_data_path_id_ack_return_path_id",
+    "cross_path_ack_sample_count_and_composite_rtt_interpretation",
+    "first_network_arrival_and_in_order_application_release_time",
+    "source_bytes_network_unique_bytes_and_useful_application_bytes",
+    "receiver_reorder_peak_bytes_unreleased_bytes_and_byte_microseconds",
+    "stream_completion_time_deadline_met_and_deadline_missed",
+    "path_validation_duration_and_path_open_abandon_resource_cost",
+    "endpoint_cpu_memory_and_energy_per_useful_mib",
+    "shared_resource_capacity_and_companion_tcp_goodput_retention",
+    "validated_path_ids_vs_data_path_ids_observed_by_ack_telemetry",
+    "observed_data_path_ids_and_ack_return_path_ids_per_endpoint"
+  ],
+  "verdicts": [
+    "pass",
+    "fail",
+    "inconclusive",
+    "unsupported"
+  ],
+  "evidence_classes": [
+    "deterministic_adapter_unit_test",
+    "protocol_conformance_interop",
+    "network_namespace_or_vm_emulation",
+    "hardware_in_loop",
+    "field_observed"
+  ],
+  "explicit_non_claims": [
+    "The draft-21 Multipath QUIC protocol is not represented as a published RFC in this profile.",
+    "The mp-quic-go compliance table and picoquic interop results are upstream self-reported implementation evidence, not independent LNF qualification.",
+    "The published mp-quic-go interop runner did not measure goodput or cross traffic; those performance claims are not inferred.",
+    "The evidence verifier does not implement or modify a QUIC transport, path manager, scheduler or congestion controller.",
+    "The verifier does not open sockets, generate probes, change routes, modify qdiscs or actuate a network.",
+    "A pair-level pass does not establish programme-level statistical qualification or SOTA superiority.",
+    "The uncoupled per-path Reno and coupled OLIA modes are distinct treatments and are not pooled as one implementation result.",
+    "A cross-path ACK yields composite data-path plus ACK-return-path timing, not a direct one-way RTT for either path.",
+    "Per-path PMTU and ECN are not assumed equal or successful merely because the connection negotiated multipath.",
+    "CAKE and fq_codel are queue-management comparators, not substitutes for path-level transport or scheduler.",
+    "Two validated paths do not prove that both paths carried application data; observed data-path IDs are reported separately"
+  ]
+}
