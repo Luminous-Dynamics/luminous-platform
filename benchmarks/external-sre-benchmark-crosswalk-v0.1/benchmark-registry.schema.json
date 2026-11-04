@@ -382,7 +382,9 @@
                 "title",
                 "url",
                 "source_type",
-                "retrieved_on"
+                "retrieved_on",
+                "capture_status",
+                "content_sha256"
               ],
               "properties": {
                 "title": {
@@ -421,6 +423,19 @@
                 },
                 "notes": {
                   "type": "string"
+                },
+                "capture_status": {
+                  "enum": [
+                    "url_only",
+                    "captured_and_hashed"
+                  ]
+                },
+                "content_sha256": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "pattern": "^[0-9a-f]{64}$"
                 }
               }
             }
