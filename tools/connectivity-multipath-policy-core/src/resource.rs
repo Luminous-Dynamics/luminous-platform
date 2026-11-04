@@ -693,7 +693,9 @@ mod tests {
                 .capacity_domain_ids
                 .iter()
                 .try_fold(path.path_ceiling_bps, |ceiling, domain| {
-                    capacities.get(domain).map(|capacity| ceiling.min(*capacity))
+                    capacities
+                        .get(domain)
+                        .map(|capacity| ceiling.min(*capacity))
                 })
                 .expect("exact reference paths must use known resources");
             assignment_count = assignment_count
@@ -1180,10 +1182,11 @@ mod tests {
                     (u128::from(left.0) * u128::from(right.1))
                         .cmp(&(u128::from(right.0) * u128::from(left.1)))
                 });
-                let fairness_order = best_fairness.as_ref().map_or(
-                    std::cmp::Ordering::Greater,
-                    |best| compare_weighted_fairness_vectors(&fairness, best),
-                );
+                let fairness_order = best_fairness
+                    .as_ref()
+                    .map_or(std::cmp::Ordering::Greater, |best| {
+                        compare_weighted_fairness_vectors(&fairness, best)
+                    });
                 // Equal weighted-fairness vectors can have multiple equivalent
                 // integer assignments. Prefer the lexicographically larger rate
                 // vector in canonical path-ID order to match the allocator's
@@ -1316,8 +1319,7 @@ mod tests {
                         .iter()
                         .map(|allocation| allocation.allocated_rate_bps)
                         .collect::<Vec<_>>();
-                    let expected =
-                        exact_integer_weighted_max_min_reference(&paths, &resources);
+                    let expected = exact_integer_weighted_max_min_reference(&paths, &resources);
                     assert_eq!(
                         actual, expected,
                         "resource incidence code {incidence_code}, capacities x={x_capacity} y={y_capacity}"
@@ -1347,10 +1349,8 @@ mod tests {
         });
         assert!(panic.is_err());
 
-        let too_many_assignments = vec![
-            path("a", 1_000, 1, &["x"]),
-            path("b", 1_000, 1, &["x"]),
-        ];
+        let too_many_assignments =
+            vec![path("a", 1_000, 1, &["x"]), path("b", 1_000, 1, &["x"])];
         let larger_resource = vec![resource("x", 1_000, 0, 0, 0)];
         let panic = std::panic::catch_unwind(|| {
             exact_integer_reference_max_total(&too_many_assignments, &larger_resource)
