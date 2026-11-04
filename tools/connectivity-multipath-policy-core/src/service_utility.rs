@@ -8,13 +8,20 @@
 
 use std::collections::BTreeMap;
 
-use super::coexistence::ImplementationProvenance;
-
 const PPM: u128 = 1_000_000;
 const BYTES_PER_MIB: u128 = 1_048_576;
 const MAX_TASKS: usize = 4_096;
 const MAX_COMPANION_FLOWS: usize = 256;
 const MAX_PATHS: u16 = 64;
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum UtilityImplementationProvenance {
+    /// Component is included in the binary or kernel build identified by
+    /// UtilityArmIdentity::implementation_sha256.
+    IncludedInImplementation,
+    /// Component is loaded separately and has its own exact artifact digest.
+    ExternalArtifact { artifact_sha256: String },
+}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UtilityEnvironmentIdentity {
@@ -60,9 +67,9 @@ pub struct UtilityArmIdentity {
     /// Digest of the exact binary/container or kernel build for this arm.
     pub implementation_sha256: String,
     pub scheduler: String,
-    pub scheduler_provenance: ImplementationProvenance,
+    pub scheduler_provenance: UtilityImplementationProvenance,
     pub congestion_control: String,
-    pub congestion_control_provenance: ImplementationProvenance,
+    pub congestion_control_provenance: UtilityImplementationProvenance,
     /// Minimum active paths that must be proved at both endpoints. Set to 1
     /// for a single-path reference and >=2 for a multipath arm.
     pub required_active_paths: u16,
@@ -202,6 +209,7 @@ pub struct UtilityTrialMetrics {
     pub completed_task_count: u32,
     pub completed_on_time_task_count: u32,
     pub missed_deadline_count: u32,
+    pub completion_evidence_missing_count: u32,
     pub deadline_lateness_p50_us: Option<u64>,
     pub deadline_lateness_p95_us: Option<u64>,
     pub deadline_lateness_p99_us: Option<u64>,
@@ -230,10 +238,10 @@ fn is_sha256(value: &str) -> bool {
 }
 
 fn validate_provenance(
-    provenance: &ImplementationProvenance,
+    provenance: &UtilityImplementationProvenance,
     component: &'static str,
 ) -> Result<(), UtilityError> {
-    if let ImplementationProvenance::ExternalArtifact { artifact_sha256 } = provenance {
+    if let UtilityImplementationProvenance::ExternalArtifact { artifact_sha256 } = provenance {
         if !is_sha256(artifact_sha256) {
             return Err(UtilityError::InvalidImplementationArtifact(component));
         }
@@ -361,9 +369,6 @@ fn validate_trial(trial: &UtilityTrial) -> Result<Vec<UtilityTaskContract>, Util
                     return Err(UtilityError::InvalidTaskMeasurement);
                 }
             }
-            None if measurement.total_useful_bytes == task.offered_useful_bytes => {
-                return Err(UtilityError::InvalidTaskMeasurement);
-            }
             None => {}
         }
         if measurement
@@ -405,6 +410,7 @@ fn trial_metrics(trial: &UtilityTrial) -> Result<UtilityTrialMetrics, UtilityErr
     let mut completed_task_count = 0_u32;
     let mut completed_on_time_task_count = 0_u32;
     let mut missed_deadline_count = 0_u32;
+    let mut completion_evidence_missing_count = 0_u32;
     let mut deadline_lateness = Vec::new();
 
     for (task, measurement) in tasks.iter().zip(&measurements) {
@@ -442,6 +448,12 @@ fn trial_metrics(trial: &UtilityTrial) -> Result<UtilityTrialMetrics, UtilityErr
             missed_deadline_count = missed_deadline_count
                 .checked_add(1)
                 .ok_or(UtilityError::ArithmeticOverflow)?;
+        } else {
+            // All bytes may be present, but without a completion timestamp the
+            // evaluator cannot prove whether the application met its deadline.
+            completion_evidence_missing_count = completion_evidence_missing_count
+                .checked_add(1)
+                .ok_or(UtilityError::ArithmeticOverflow)?;
         }
     }
 
@@ -473,6 +485,7 @@ fn trial_metrics(trial: &UtilityTrial) -> Result<UtilityTrialMetrics, UtilityErr
         offered_useful_bytes,
         on_time_useful_bytes,
         late_useful_bytes,
+        total_useful_bytes,
         on_time_payload_ratio_ppm,
         total_task_value_weight,
         on_time_task_value_weight,
@@ -480,6 +493,7 @@ fn trial_metrics(trial: &UtilityTrial) -> Result<UtilityTrialMetrics, UtilityErr
         completed_task_count,
         completed_on_time_task_count,
         missed_deadline_count,
+        completion_evidence_missing_count,
         deadline_lateness_p50_us: percentile_nearest_rank(&mut lateness_for_p50, 50, 100),
         deadline_lateness_p95_us: percentile_nearest_rank(&mut lateness_for_p95, 95, 100),
         deadline_lateness_p99_us: percentile_nearest_rank(&mut lateness_for_p99, 99, 100),
@@ -651,10 +665,16 @@ pub fn evaluate_deadline_utility_pair(
         u128::from(treatment_metrics.on_time_useful_bytes),
         u128::from(baseline_metrics.on_time_useful_bytes),
     )?;
-    let value_ratio = ratio_ppm(
-        u128::from(treatment_metrics.on_time_task_value_weight),
-        u128::from(baseline_metrics.on_time_task_value_weight),
-    )?;
+    let value_ratio = if baseline_metrics.completion_evidence_missing_count > 0
+        || treatment_metrics.completion_evidence_missing_count > 0
+    {
+        None
+    } else {
+        ratio_ppm(
+            u128::from(treatment_metrics.on_time_task_value_weight),
+            u128::from(baseline_metrics.on_time_task_value_weight),
+        )?
+    };
     let cost_ratio = intensity_ratio_ppm(
         treatment.total_cost_microunits,
         treatment_metrics.on_time_useful_bytes,
@@ -764,9 +784,9 @@ mod tests {
             protocol_revision: "pinned-test-revision".to_owned(),
             implementation_sha256: "1".repeat(64),
             scheduler: scheduler.to_owned(),
-            scheduler_provenance: ImplementationProvenance::InTreeKernel,
+            scheduler_provenance: UtilityImplementationProvenance::IncludedInImplementation,
             congestion_control: "cubic".to_owned(),
-            congestion_control_provenance: ImplementationProvenance::InTreeKernel,
+            congestion_control_provenance: UtilityImplementationProvenance::IncludedInImplementation,
             required_active_paths: paths,
         }
     }
@@ -1010,6 +1030,36 @@ mod tests {
     }
 
     #[test]
+    fn full_payload_without_completion_timestamp_is_inconclusive_for_task_value() {
+        let mut candidate = treatment();
+        candidate.task_measurements[0].completion_offset_us = None;
+        let report = evaluate_deadline_utility_pair(
+            &baseline(),
+            &candidate,
+            UtilityTargets {
+                minimum_on_time_payload_ratio_ppm: 1_000_000,
+                minimum_on_time_task_value_ratio_ppm: 1_000_000,
+                minimum_companion_retention_ppm: None,
+                maximum_cost_per_on_time_mib_ratio_ppm: None,
+                maximum_energy_per_on_time_mib_ratio_ppm: None,
+            },
+        )
+        .expect("missing completion timestamp is retained as unknown");
+        assert_eq!(report.disposition, UtilityDisposition::Inconclusive);
+        assert_eq!(
+            report.reason,
+            "one_or_more_enabled_utility_metrics_not_measurable"
+        );
+        assert_eq!(
+            report
+                .treatment_metrics
+                .expect("metrics retained")
+                .completion_evidence_missing_count,
+            1
+        );
+    }
+
+    #[test]
     fn task_measurement_cannot_claim_more_useful_bytes_than_offered() {
         let mut candidate = treatment();
         candidate.task_measurements[0].on_time_useful_bytes = 1_001;
@@ -1023,7 +1073,7 @@ mod tests {
     fn out_of_tree_scheduler_requires_its_binary_digest() {
         let mut candidate = treatment();
         candidate.arm.scheduler_provenance =
-            ImplementationProvenance::ExternalArtifact {
+            UtilityImplementationProvenance::ExternalArtifact {
                 artifact_sha256: "not-a-digest".to_owned(),
             };
         assert_eq!(
