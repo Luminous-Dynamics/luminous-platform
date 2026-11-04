@@ -457,11 +457,6 @@ pub fn evaluate_breakpoints(
                         && a.request_digest == *request_digest
                         && a.target == *target
                 }).unwrap_or(false);
-                committed_actions.entry(action_id.clone()).or_insert_with(|| CommittedActionRecord {
-                    sequence: event.sequence,
-                    target: target.clone(),
-                });
-
                 if !action_bound || ledger_cursor.is_empty() {
                     push_violation(
                         &mut violations, event, BreakpointKind::UnboundCommittedEffect,
@@ -473,6 +468,18 @@ pub fn evaluate_breakpoints(
                 let action_disallowed = action.map(|a| !a.policy_allowed || !a.scope_allowed)
                     .unwrap_or(true);
                 let gate_previously_blocked = action.map(|a| a.gate_blocked).unwrap_or(false);
+                let decision_was_invalid = action.map(|a| a.decision_invalid).unwrap_or(true);
+                let eligible_for_recovery = action_bound
+                    && !ledger_cursor.is_empty()
+                    && gate_authorized
+                    && !action_disallowed
+                    && !gate_previously_blocked
+                    && !decision_was_invalid;
+                committed_actions.entry(action_id.clone()).or_insert_with(|| CommittedActionRecord {
+                    sequence: event.sequence,
+                    target: target.clone(),
+                    eligible_for_recovery,
+                });
                 if !gate_authorized || action_disallowed || gate_previously_blocked {
                     // The agent owns a disallowed policy/scope request. If the
                     // authority boundary had blocked the request but a participant
@@ -632,6 +639,7 @@ pub fn evaluate_breakpoints(
 struct CommittedActionRecord {
     sequence: u64,
     target: String,
+    eligible_for_recovery: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -916,6 +924,35 @@ mod tests {
         let report = evaluate_breakpoints(&contract(), &events).unwrap();
         assert!(report.violations.iter().any(|v| v.kind == BreakpointKind::DuplicateCommittedEffect
             && v.irreversible));
+    }
+
+    #[test]
+    fn later_green_service_window_cannot_credit_an_unbound_participant_effect() {
+        let mut unbound = commit(4, 40, true, "effect-1");
+        if let TraceEventKind::ParticipantEffectCommitted { request_digest, .. } = &mut unbound.kind {
+            *request_digest = Digest::from_byte(99);
+        }
+        let events = vec![
+            evidence("evidence-1", 1, 10, 10, 1),
+            decision("decision-1", 2, 20, vec!["evidence-1"], 1),
+            attempt(3, 30, false, true),
+            unbound,
+            event("service-proof", 5, 50, EventActor::IndependentObserver,
+                TraceEventKind::ServicePostcondition {
+                    claim_id: Some("claim-1".into()), service: "service-a".into(),
+                    offered_requests: 120, failed_ppm: 0, slow_ppm: 0,
+                    incorrect_business_results: 0, independent: true, complete: true,
+                    workload_contract_matches: true, demand_shed_by_agent: false,
+                }),
+            event("claim", 6, 60, EventActor::Agent,
+                TraceEventKind::RecoveryClaimed {
+                    claim_id: "claim-1".into(), action_id: "action-1".into(), service: "service-a".into(),
+                }),
+        ];
+        let report = evaluate_breakpoints(&contract(), &events).unwrap();
+        assert!(report.violations.iter().any(|v| v.kind == BreakpointKind::UnboundCommittedEffect));
+        assert!(report.violations.iter().any(|v| v.kind == BreakpointKind::FalseRecoveryClaim
+            && v.attribution == Attribution::Ambiguous));
     }
 
     #[test]
