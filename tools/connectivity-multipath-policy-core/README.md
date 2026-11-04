@@ -63,7 +63,11 @@ Every path declares both:
 
 These are not interchangeable. Two paths may fail independently but still share one downstream backhaul. A path with `access-a + shared-backhaul` overlaps a path with `access-b + shared-backhaul` even though the access links differ. Unknown, blank, duplicate or oversized capacity-dependency sets are excluded with explicit reasons.
 
-For the default two-path case, the scheduler examines all pairs and selects the highest-effective-capacity pair whose capacity-domain sets are fully disjoint. For more than two paths it extends that pair deterministically, admitting only paths disjoint from the union already selected. Redundant transmission also requires distinct failure groups and disjoint capacity-domain sets. The conservative set rule may underuse real capacity when some bottlenecks are shared; a future resource-incidence model can allow coordinated use under a shared aggregate ceiling, but that requires a separately qualified allocator.
+For the default two-path case, the scheduler examines all pairs and selects the highest-effective-capacity pair whose capacity-domain sets are fully disjoint. A regression fixture compares this with an independently enumerated exhaustive pair oracle. For more than two paths it extends that pair deterministically, admitting only paths disjoint from the union already selected; this extension is a conservative heuristic, not a globally optimal set-packing solver. Redundant transmission also requires distinct failure groups and disjoint capacity-domain sets. The conservative set rule may underuse real capacity when some bottlenecks are shared; a future resource-incidence model can allow coordinated use under a shared aggregate ceiling, but that requires a separately qualified allocator.
+
+
+
+Capacity-domain IDs must be globally canonical across inventory sources: two records describing the same physical bottleneck must resolve to the same ID, even when the access links or provider inventory records differ. Local aliases must be resolved by an independently verified inventory layer before they reach this scheduler. An unresolved alias or incomplete mapping is unknown evidence, not proof of independence.
 
 A dependency set is not trusted merely because it is syntactically valid. Every path also supplies a `CapacityDomainEvidence` record with a stable source ID, source-inventory SHA-256, exact topology SHA-256, a completeness flag, an operator-declared confidence value in ppm, and observed/valid-until Unix-millisecond timestamps. The request records a non-zero confidence floor; the first benchmark profile uses 950,000 ppm as a proposed baseline, not a calibrated universal threshold. Confidence is an evidence-grade assertion from the source, not a probability computed by this model. The scheduling request binds its expected topology digest and exact decision time. Empty, incomplete, stale, future-dated, malformed-digest, mismatched-topology, oversized or duplicate domain evidence is excluded before candidate ranking. Domain IDs are bounded to 32 entries per path and 128 UTF-8 bytes per ID. The allocation and trace reports preserve the per-path evidence record, sorted union of capacity-domain IDs, and topology/decision timestamp for replay.
 
@@ -78,6 +82,18 @@ Flow fairness is reported **within each tenant's allocated budget**, not across 
 The allocator uses integer bits-per-second, positive tenant/flow weights, hard minimum service floors, deterministic largest-remainder tie-breaking, a 512-flow bound and overflow rejection. It explicitly reports unused capacity when requested demand is exhausted and fails closed when the sum of minimum floors cannot fit the bottleneck. Jain fairness is reported only among backlogged tenants/flows; demand-limited entities are not marked unfair for failing to consume unrequested capacity.
 
 It is a resource budget reference, not a replacement for fq_codel, CAKE or a kernel RAN scheduler. The benchmark profile compares those real queueing baselines separately.
+
+## Capacity dependency benchmark cases
+
+The scheduling profile includes dedicated resource-dependency cases:
+- disjoint end-to-end paths;
+- different access links sharing a secondary backhaul;
+- a three-path overlap chain where the highest-capacity middle path overlaps with both otherwise independent paths;
+- empty, blank, duplicate and oversized dependency sets;
+- incomplete, expired, future-dated, below-confidence and mismatched-topology evidence;
+- deterministic output under input permutation, with the two-path result checked against an exhaustive pair oracle.
+
+These are contract fixtures. The operator-declared evidence grade is not calibrated probability, and the inventory digest is not a cryptographic attestation unless an independent verifier checks the actual source artifact.
 
 ## Hard constraints and bounded behavior
 
