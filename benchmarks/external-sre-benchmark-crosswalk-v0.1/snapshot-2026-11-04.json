@@ -1,0 +1,1076 @@
+{
+  "schema": "opsbench-external-benchmark-registry-v0.1",
+  "snapshot_date": "2026-11-04",
+  "comparison_policy": {
+    "composite_score": false,
+    "cross_benchmark_score_translation": false,
+    "native_scoreboards_unchanged": true,
+    "statement": "Each score retains its own construct, task unit, denominator, evaluator and trial design. Numbers must not be translated or blended across benchmarks without a preregistered matched experiment."
+  },
+  "entries": [
+    {
+      "benchmark_id": "sregym_full",
+      "name": "SREGym",
+      "version": "2026 research benchmark",
+      "publisher": "Middleware Systems Research Group",
+      "evaluation_status": "benchmark_description_only",
+      "observed_on": "2026-11-04",
+      "comparability_group": "sregym_native",
+      "construct_summary": "Live cloud-native SRE benchmark spanning diagnosis and mitigation under injected faults, ambient noise, correlated failures and metastable behavior.",
+      "task_unit": "Native benchmark problem/scenario; report native E2E score on the exact full cohort.",
+      "metrics": [
+        {
+          "metric_id": "e2e_success",
+          "name": "End-to-end diagnosis and mitigation success",
+          "construct": "end_to_end_task_success",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "per_fault",
+          "denominator_definition": "Native scenario cohort; score requires diagnosis and mitigation on the same run.",
+          "evaluator_type": "deterministic",
+          "repeat_design": "Native SREGym scoring; full reproduction required.",
+          "limitations": []
+        }
+      ],
+      "results": [],
+      "scale": {
+        "task_count_description": "Publisher describes 90 realistic SRE problems; no current full-cohort leader score is asserted in this registry.",
+        "tasks": 90,
+        "scenarios": 90,
+        "trajectories": null,
+        "runs_per_model": null,
+        "repeats_per_task": null,
+        "trial_design": "Live cloud-native stack with fault and noise injectors; full native environment and scorer must be pinned.",
+        "average_trajectory_steps": null
+      },
+      "limitations": [
+        "This entry records benchmark scope, not a reproduced result.",
+        "The 90-problem research description is not the same thing as a current runnable source snapshot's built-in problem-ID count."
+      ],
+      "what_not_established": [
+        "A particular agent's success rate.",
+        "Durable participant effect finality.",
+        "Long-horizon customer/business recovery unless measured by a separate verifier."
+      ],
+      "sources": [
+        {
+          "title": "SREGym research publication",
+          "url": "https://msrg.github.io/publications/sregym-a-live-benchmark-for-ai-sre-agents-with-high-fidelity-failure-scenarios/",
+          "source_type": "primary_publication",
+          "retrieved_on": "2026-11-04",
+          "published_on": null,
+          "notes": "Describes 90 realistic problems and correlated/metastable failure classes."
+        }
+      ]
+    },
+    {
+      "benchmark_id": "sregym_lite_1004_2026_11_04",
+      "name": "SREGym-Lite leaderboard cohort",
+      "version": "SREGym-Lite-1004 · 17 faults",
+      "publisher": "SREGym",
+      "evaluation_status": "native_live_leaderboard",
+      "observed_on": "2026-11-04",
+      "comparability_group": "sregym_native",
+      "construct_summary": "Native end-to-end diagnosis and mitigation on the currently displayed 17-fault Lite cohort.",
+      "task_unit": "One leaderboard run over the Lite fault cohort; keep TTM and token usage as separate operational-efficiency metrics.",
+      "metrics": [
+        {
+          "metric_id": "e2e_success",
+          "name": "End-to-end success",
+          "construct": "end_to_end_task_success",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "per_run",
+          "denominator_definition": "SREGym-Lite-1004 17-fault cohort; the displayed leaderboard does not expose a repeat-level denominator for each configuration.",
+          "evaluator_type": "deterministic",
+          "repeat_design": "Leaderboard snapshot; do not infer unreported repeats.",
+          "limitations": []
+        },
+        {
+          "metric_id": "time_to_mitigate",
+          "name": "Time to mitigate",
+          "construct": "latency",
+          "unit": "seconds",
+          "scale": "seconds",
+          "aggregation": "per_run",
+          "denominator_definition": "Elapsed time to mitigation for the listed cohort/configuration.",
+          "evaluator_type": "deterministic",
+          "repeat_design": "Leaderboard-reported cohort time.",
+          "limitations": []
+        },
+        {
+          "metric_id": "token_usage",
+          "name": "Token consumption",
+          "construct": "token_cost",
+          "unit": "tokens",
+          "scale": "tokens",
+          "aggregation": "per_run",
+          "denominator_definition": "Total reported tokens for the listed cohort/configuration.",
+          "evaluator_type": "not_applicable",
+          "repeat_design": "Leaderboard-reported token count.",
+          "limitations": []
+        }
+      ],
+      "results": [
+        {
+          "configuration": "Radar + Claude Code / Claude Opus 5.5 medium",
+          "metric_id": "e2e_success",
+          "value": 100,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Rank 1 displayed configuration on the 17-fault cohort.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": "Raw repeat count not shown in the leaderboard entry."
+        },
+        {
+          "configuration": "Radar + Claude Code / Claude Opus 5.5 medium",
+          "metric_id": "time_to_mitigate",
+          "value": 65.9,
+          "unit": "seconds",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Rank 1 displayed configuration.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Radar + Claude Code / Claude Opus 5.5 medium",
+          "metric_id": "token_usage",
+          "value": 554000,
+          "unit": "tokens",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Rank 1 displayed configuration; 554K display rounded.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Devin Oncall / Claude Opus 5.5 high",
+          "metric_id": "e2e_success",
+          "value": 100,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Rank 2 displayed configuration on the 17-fault cohort.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": "Raw repeat count not shown in the leaderboard entry."
+        },
+        {
+          "configuration": "Devin Oncall / Claude Opus 5.5 high",
+          "metric_id": "time_to_mitigate",
+          "value": 141,
+          "unit": "seconds",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Rank 2 displayed configuration.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Devin Oncall / Claude Opus 5.5 high",
+          "metric_id": "token_usage",
+          "value": 1240000,
+          "unit": "tokens",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Rank 2 displayed configuration; 1.24M display rounded.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "CloudThinker / GPT-6 Astra low",
+          "metric_id": "e2e_success",
+          "value": 100,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Rank 3 displayed configuration on the 17-fault cohort.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": "Raw repeat count not shown in the leaderboard entry."
+        },
+        {
+          "configuration": "CloudThinker / GPT-6 Astra low",
+          "metric_id": "time_to_mitigate",
+          "value": 342,
+          "unit": "seconds",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Rank 3 displayed configuration.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "CloudThinker / GPT-6 Astra low",
+          "metric_id": "token_usage",
+          "value": 736000,
+          "unit": "tokens",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Rank 3 displayed configuration; 736K display rounded.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        }
+      ],
+      "scale": {
+        "task_count_description": "17 faults in the displayed Lite cohort; multiple agents reach 100% E2E. Full SREGym research describes 90 problems.",
+        "tasks": 17,
+        "scenarios": 17,
+        "trajectories": null,
+        "runs_per_model": null,
+        "repeats_per_task": null,
+        "trial_design": "Live leaderboard cohort snapshot; raw per-scenario repeat counts not exposed in the listing.",
+        "average_trajectory_steps": null
+      },
+      "limitations": [
+        "Several configurations are at 100% E2E, so this small Lite cohort is saturated as a differentiator.",
+        "Equal E2E scores conceal large time and token differences.",
+        "Configuration differences include models, harnesses and inference settings."
+      ],
+      "what_not_established": [
+        "Performance on full SREGym.",
+        "Statistical uncertainty across repeated runs.",
+        "Production safety, authority enforcement or durable effect finality."
+      ],
+      "sources": [
+        {
+          "title": "SREGym live leaderboard",
+          "url": "https://www.sregym.com/leaderboard",
+          "source_type": "official_leaderboard",
+          "retrieved_on": "2026-11-04",
+          "published_on": null,
+          "notes": "Snapshot retrieved 2026-11-04; cohort SREGym-Lite-1004, 17 faults."
+        }
+      ]
+    },
+    {
+      "benchmark_id": "sre_marathon_2026",
+      "name": "SRE-Marathon",
+      "version": "2026 paper",
+      "publisher": "SRE-Marathon authors",
+      "evaluation_status": "native_paper_result",
+      "observed_on": "2026-11-04",
+      "comparability_group": "sre_marathon_native",
+      "construct_summary": "Continuous long-horizon SRE operation with overlapping faults, persistent workspace, periodic agent invocation and offline deterministic scoring.",
+      "task_unit": "Continuous run with seeded overlapping faults; score rewards ordered correlation, localization and repair progress.",
+      "metrics": [
+        {
+          "metric_id": "marathon_score",
+          "name": "Marathon-Score",
+          "construct": "end_to_end_task_success",
+          "unit": "score_out_of_100",
+          "scale": "0-100 points",
+          "aggregation": "publisher_reported",
+          "denominator_definition": "Composite native Marathon-Score per continuous run; not a percentage of faults repaired.",
+          "evaluator_type": "deterministic",
+          "repeat_design": "Paper reports best of ten evaluated methods; run-level uncertainty details must be reproduced.",
+          "limitations": [
+            "Do not equate 41.3/100 with percentage success."
+          ]
+        }
+      ],
+      "results": [
+        {
+          "configuration": "Best of 10 evaluated methods",
+          "metric_id": "marathon_score",
+          "value": 41.3,
+          "unit": "score_out_of_100",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Best reported method; three applications and approximately sixty injected faults per run.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": "Paper reports 10 methods; do not treat methods as repeated independent trials."
+        }
+      ],
+      "scale": {
+        "task_count_description": "Three applications, approximately 60 faults per continuous run.",
+        "tasks": null,
+        "scenarios": 3,
+        "trajectories": null,
+        "runs_per_model": null,
+        "repeats_per_task": null,
+        "trial_design": "Seeded production-calibrated fault schedules; continuous two-zone Kubernetes deployment; offline scorer.",
+        "average_trajectory_steps": null
+      },
+      "limitations": [
+        "Best-of-ten method score is a benchmark-specific composite.",
+        "Paper describes correlation/localization more common than repair while faults remain active."
+      ],
+      "what_not_established": [
+        "Generic production SRE safety.",
+        "Participant-side effect durability or customer/business correctness."
+      ],
+      "sources": [
+        {
+          "title": "SRE-Marathon arXiv paper",
+          "url": "https://arxiv.org/abs/2609.33023",
+          "source_type": "primary_publication",
+          "retrieved_on": "2026-11-04",
+          "published_on": "2026-09-26",
+          "notes": "Published 2026-09-26; continuous overlapping-fault benchmark."
+        }
+      ]
+    },
+    {
+      "benchmark_id": "enterpriseops_original_2026",
+      "name": "EnterpriseOps-Gym (original paper evaluation)",
+      "version": "ICML 2026 paper",
+      "publisher": "ServiceNow Research / EnterpriseOps-Gym authors",
+      "evaluation_status": "native_paper_result",
+      "observed_on": "2026-11-04",
+      "comparability_group": "enterpriseops_original",
+      "construct_summary": "Stateful enterprise workflows across eight domains with persistent database state, strict tool/access protocols and final-state verification.",
+      "task_unit": "Expert-curated enterprise task with underlying state changes verified.",
+      "metrics": [
+        {
+          "metric_id": "strict_task_success",
+          "name": "Strict enterprise task completion",
+          "construct": "end_to_end_task_success",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "per_task",
+          "denominator_definition": "Share of 1,150 tasks completed to the paper's strict outcome verification.",
+          "evaluator_type": "deterministic",
+          "repeat_design": "Paper-reported evaluation; do not substitute the independent AA implementation.",
+          "limitations": []
+        }
+      ],
+      "results": [
+        {
+          "configuration": "Claude Sonnet 4.5 (paper's best-performing model)",
+          "metric_id": "strict_task_success",
+          "value": 34.1,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Paper reports 34.1% success on the original benchmark.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        }
+      ],
+      "scale": {
+        "task_count_description": "1,150 expert-curated tasks across eight interconnected domains, 164 database tables and 512 tools.",
+        "tasks": 1150,
+        "scenarios": null,
+        "trajectories": null,
+        "runs_per_model": null,
+        "repeats_per_task": null,
+        "trial_design": "Stateful containerized sandbox; strict outcome-based final-state verification.",
+        "average_trajectory_steps": null
+      },
+      "limitations": [
+        "Original paper score is tied to its own harness and scorer.",
+        "Do not compare directly with EnterpriseOps-Gym-AA."
+      ],
+      "what_not_established": [
+        "SRE-only continuous operations.",
+        "Cross-benchmark generalization or production autonomy."
+      ],
+      "sources": [
+        {
+          "title": "EnterpriseOps-Gym ICML/PMLR paper",
+          "url": "https://proceedings.mlr.press/v306/malay26a.html",
+          "source_type": "primary_publication",
+          "retrieved_on": "2026-11-04",
+          "published_on": null,
+          "notes": "Paper reports 1,150 tasks, eight domains, 164 tables, 512 tools and 34.1% best success."
+        }
+      ]
+    },
+    {
+      "benchmark_id": "enterpriseops_aa_2026_11_04",
+      "name": "EnterpriseOps-Gym-AA",
+      "version": "Artificial Analysis implementation · Nov 2026 snapshot",
+      "publisher": "Artificial Analysis",
+      "evaluation_status": "independent_implementation",
+      "observed_on": "2026-11-04",
+      "comparability_group": "enterpriseops_aa",
+      "construct_summary": "Independent implementation of ServiceNow's EnterpriseOps-Gym; stateful multi-step enterprise task execution across eight domains with strict final database state verification.",
+      "task_unit": "Enterprise task; independent AA implementation and leaderboard.",
+      "metrics": [
+        {
+          "metric_id": "strict_task_success",
+          "name": "Strict final-state task success",
+          "construct": "end_to_end_task_success",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "per_task",
+          "denominator_definition": "Percent of tasks passing every required final-state verifier in the AA implementation.",
+          "evaluator_type": "deterministic",
+          "repeat_design": "Leaderboard snapshot; benchmark owner implementation differs from original paper evaluation.",
+          "limitations": []
+        }
+      ],
+      "results": [
+        {
+          "configuration": "Claude Fable 5 (Max)",
+          "metric_id": "strict_task_success",
+          "value": 51.1,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Top listed score as of 2026-11-04; leaderboard attributes result date 2026-06-09.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        }
+      ],
+      "scale": {
+        "task_count_description": "1,150 tasks, eight domains; independent implementation of EnterpriseOps-Gym.",
+        "tasks": 1150,
+        "scenarios": null,
+        "trajectories": null,
+        "runs_per_model": null,
+        "repeats_per_task": null,
+        "trial_design": "Artificial Analysis implementation; final-state database verification. This result is not the original EnterpriseOps-Gym paper run.",
+        "average_trajectory_steps": null
+      },
+      "limitations": [
+        "Separate scorer/harness from original paper; maintain a separate leaderboard identity.",
+        "Snapshot leader may change; pin the exact model and result date."
+      ],
+      "what_not_established": [
+        "Same-harness superiority over original paper results.",
+        "Continuous SRE performance."
+      ],
+      "sources": [
+        {
+          "title": "Artificial Analysis EnterpriseOps-Gym-AA",
+          "url": "https://artificialanalysis.ai/evaluations/enterprise-ops-gym-aa",
+          "source_type": "official_leaderboard",
+          "retrieved_on": "2026-11-04",
+          "published_on": null,
+          "notes": "Primary benchmark publisher/independent evaluator; cross-check dated Nov 3 leaderboard snapshot."
+        },
+        {
+          "title": "BenchLeader Nov 3 snapshot",
+          "url": "https://www.benchleader.com/benchmarks/aa_enterprise_ops_gym",
+          "source_type": "official_leaderboard",
+          "retrieved_on": "2026-11-04",
+          "published_on": "2026-11-03",
+          "notes": "Secondary aggregation; context only, not sole evidence."
+        }
+      ]
+    },
+    {
+      "benchmark_id": "itbench_aa_2026_11_04",
+      "name": "ITBench-AA",
+      "version": "Artificial Analysis independent implementation",
+      "publisher": "Artificial Analysis",
+      "evaluation_status": "independent_implementation",
+      "observed_on": "2026-11-04",
+      "comparability_group": "itbench_aa",
+      "construct_summary": "Kubernetes incident root-cause entity attribution from offline snapshots of alerts, events, traces, metrics and topology; diagnosis only.",
+      "task_unit": "Offline incident snapshot; produce complete list of contributing root-cause entities.",
+      "metrics": [
+        {
+          "metric_id": "ap_full_recall",
+          "name": "Average precision at full recall",
+          "construct": "root_cause_entity_attribution",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "macro_average",
+          "denominator_definition": "Per task repeat receives zero if any ground-truth entity is missed; otherwise precision is TP/(TP+FP), averaged across 59 tasks and three repeats.",
+          "evaluator_type": "deterministic",
+          "repeat_design": "59 tasks × 3 repeats; same Stirrup harness across evaluated models.",
+          "limitations": [
+            "Not an incident mitigation or service recovery metric."
+          ]
+        }
+      ],
+      "results": [
+        {
+          "configuration": "GPT-5.6 Sol (Max)",
+          "metric_id": "ap_full_recall",
+          "value": 56.2,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Current displayed leader in the 2026-11-04 snapshot.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": "59 Kubernetes tasks, three repeats per task."
+        }
+      ],
+      "scale": {
+        "task_count_description": "59 tasks: 40 public IBM tasks and 19 private tasks; three repeats per task.",
+        "tasks": 59,
+        "scenarios": 59,
+        "trajectories": null,
+        "runs_per_model": null,
+        "repeats_per_task": 3,
+        "trial_design": "Independent Artificial Analysis evaluation using Stirrup in a sandboxed code-execution environment.",
+        "average_trajectory_steps": null
+      },
+      "limitations": [
+        "Headline score is diagnostic entity attribution, not repair.",
+        "At full recall, any missed root cause makes a task repeat score zero."
+      ],
+      "what_not_established": [
+        "Successful mutation, effect finality, mitigation or sustained service recovery."
+      ],
+      "sources": [
+        {
+          "title": "Artificial Analysis ITBench-AA",
+          "url": "https://artificialanalysis.ai/evaluations/itbench-aa",
+          "source_type": "official_leaderboard",
+          "retrieved_on": "2026-11-04",
+          "published_on": null,
+          "notes": "Primary metric definition, 59 task split, three repeats and current displayed 56.2% leader."
+        }
+      ]
+    },
+    {
+      "benchmark_id": "ai_sre_arena_2026_10",
+      "name": "AI SRE Arena",
+      "version": "v1 · October 2026",
+      "publisher": "Edge Delta Research",
+      "evaluation_status": "vendor_published_evaluation",
+      "observed_on": "2026-11-04",
+      "comparability_group": "ai_sre_arena",
+      "construct_summary": "Vendor-published comparison of detection, root-cause identification, supported fixes and unsafe advice on injected Kubernetes incidents.",
+      "task_unit": "Injected incident investigation, with answer-key and rubric judging.",
+      "metrics": [
+        {
+          "metric_id": "detection_rate",
+          "name": "Incident detection",
+          "construct": "detection",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "per_fault",
+          "denominator_definition": "Detected injected incidents divided by 21 injected faults.",
+          "evaluator_type": "ai_judge",
+          "repeat_design": "Vendor-published test; report describes 72 judged investigations.",
+          "limitations": [
+            "Vendor-operated environment."
+          ]
+        },
+        {
+          "metric_id": "root_cause_rate_matched",
+          "name": "Root-cause identification on matched detected incidents",
+          "construct": "diagnosis_localization",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "per_fault",
+          "denominator_definition": "Correct root-cause findings among 12 matched native incidents.",
+          "evaluator_type": "ai_judge",
+          "repeat_design": "Matched subset only; 12 incidents.",
+          "limitations": [
+            "Small matched subset."
+          ]
+        },
+        {
+          "metric_id": "supported_fix_rate_matched",
+          "name": "Supported fix on matched detected incidents",
+          "construct": "mitigation",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "per_fault",
+          "denominator_definition": "Supported fixes among 12 matched native incidents.",
+          "evaluator_type": "ai_judge",
+          "repeat_design": "Matched subset only; 12 incidents.",
+          "limitations": [
+            "Small matched subset."
+          ]
+        },
+        {
+          "metric_id": "unsafe_advice_count",
+          "name": "Unsafe advice",
+          "construct": "unsafe_advice",
+          "unit": "count",
+          "scale": "count",
+          "aggregation": "per_run",
+          "denominator_definition": "Count of unsafe advice in the evaluator's reported investigation set.",
+          "evaluator_type": "ai_judge",
+          "repeat_design": "Publisher-reported denominators differ by configuration.",
+          "limitations": []
+        }
+      ],
+      "results": [
+        {
+          "configuration": "Edge Delta native monitoring",
+          "metric_id": "detection_rate",
+          "value": 18,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 18,
+          "denominator": 21,
+          "result_context": "18 of 21 injected incidents detected.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": "Vendor-published, AI judged."
+        },
+        {
+          "configuration": "Grafana native monitoring",
+          "metric_id": "detection_rate",
+          "value": 57.14285714285714,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 12,
+          "denominator": 21,
+          "result_context": "12 of 21 injected incidents detected.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": "Vendor-published, AI judged."
+        },
+        {
+          "configuration": "Edge Delta native monitoring",
+          "metric_id": "root_cause_rate_matched",
+          "value": 91.66666666666666,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 11,
+          "denominator": 12,
+          "result_context": "11 of 12 matched native incidents.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Grafana native monitoring",
+          "metric_id": "root_cause_rate_matched",
+          "value": 75,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 9,
+          "denominator": 12,
+          "result_context": "9 of 12 matched native incidents.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Edge Delta native monitoring",
+          "metric_id": "supported_fix_rate_matched",
+          "value": 58.333333333333336,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 7,
+          "denominator": 12,
+          "result_context": "7 of 12 matched native incidents.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Grafana native monitoring",
+          "metric_id": "supported_fix_rate_matched",
+          "value": 41.66666666666667,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 5,
+          "denominator": 12,
+          "result_context": "5 of 12 matched native incidents.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Edge Delta native monitoring",
+          "metric_id": "unsafe_advice_count",
+          "value": 0,
+          "unit": "count",
+          "value_operator": "exact",
+          "numerator": 0,
+          "denominator": 18,
+          "result_context": "Publisher reports 0 unsafe-advice cases out of 18.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Grafana native monitoring",
+          "metric_id": "unsafe_advice_count",
+          "value": 2,
+          "unit": "count",
+          "value_operator": "exact",
+          "numerator": 2,
+          "denominator": 12,
+          "result_context": "Publisher reports 2 unsafe-advice cases out of 12.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        }
+      ],
+      "scale": {
+        "task_count_description": "21 injected Kubernetes faults; two native and two control configurations; 72 judged investigations.",
+        "tasks": null,
+        "scenarios": 21,
+        "trajectories": null,
+        "runs_per_model": null,
+        "repeats_per_task": null,
+        "trial_design": "Vendor-operated OpenTelemetry demo shop; AI judge GPT-6 Astra; matched-native subset includes 12 incidents.",
+        "average_trajectory_steps": null
+      },
+      "limitations": [
+        "Vendor-published benchmark; independent reproduction is required.",
+        "Small matched subsets and AI-judged final reports.",
+        "Configuration denominators differ for unsafe-advice results."
+      ],
+      "what_not_established": [
+        "Broad statistical generalization to other services/vendors.",
+        "Production-safe actuation under independent participant authority.",
+        "Customer outcomes outside the seeded demo system."
+      ],
+      "sources": [
+        {
+          "title": "AI SRE Arena v1 report",
+          "url": "https://edgedelta.com/arena",
+          "source_type": "official_benchmark_report",
+          "retrieved_on": "2026-11-04",
+          "published_on": "2026-10-01",
+          "notes": "October 2026; code, answer keys and rubric linked by publisher."
+        }
+      ]
+    },
+    {
+      "benchmark_id": "traceway_ai_sre_bench_2026_10",
+      "name": "Traceway AI SRE Bench",
+      "version": "October 21-22 2026 public snapshot",
+      "publisher": "Traceway",
+      "evaluation_status": "vendor_published_evaluation",
+      "observed_on": "2026-11-04",
+      "comparability_group": "traceway_ai_sre_bench",
+      "construct_summary": "Correct incident diagnosis, evidence grounding, safe write actions and hidden-test code repair using real Traceway tools and seeded production-like scenarios.",
+      "task_unit": "One run per case/setup; deterministic graders.",
+      "metrics": [
+        {
+          "metric_id": "overall_pass",
+          "name": "Overall benchmark pass",
+          "construct": "end_to_end_task_success",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "per_run",
+          "denominator_definition": "A run passes only if answer is correct, evidence is grounded, writes are safe and hidden tests pass when code repair applies.",
+          "evaluator_type": "deterministic",
+          "repeat_design": "172 runs per model across 62 cases and five setups; one run per case/setup.",
+          "limitations": []
+        },
+        {
+          "metric_id": "control_pass",
+          "name": "Controls and traps pass",
+          "construct": "end_to_end_task_success",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "per_run",
+          "denominator_definition": "Six control/trap cases, 18 runs per model across setups.",
+          "evaluator_type": "deterministic",
+          "repeat_design": "One run per case/setup; small six-case group.",
+          "limitations": [
+            "Small denominator; not a stable population estimate."
+          ]
+        },
+        {
+          "metric_id": "agent_spend",
+          "name": "Agent spend",
+          "construct": "token_cost",
+          "unit": "usd",
+          "scale": "USD",
+          "aggregation": "per_run",
+          "denominator_definition": "Publisher-reported model/agent spend for 172 runs; excludes fully loaded engineering/support costs.",
+          "evaluator_type": "not_applicable",
+          "repeat_design": "Publisher-reported run totals.",
+          "limitations": []
+        }
+      ],
+      "results": [
+        {
+          "configuration": "Claude Opus 5.5",
+          "metric_id": "overall_pass",
+          "value": 90.7,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 156,
+          "denominator": 172,
+          "result_context": "156 of 172 graded runs passed.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": "One run per case/setup."
+        },
+        {
+          "configuration": "GPT-6 Luna",
+          "metric_id": "overall_pass",
+          "value": 62.8,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 108,
+          "denominator": 172,
+          "result_context": "108 of 172 graded runs passed.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": "One run per case/setup."
+        },
+        {
+          "configuration": "Claude Opus 5.5",
+          "metric_id": "control_pass",
+          "value": 100,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 18,
+          "denominator": 18,
+          "result_context": "18 of 18 controls/traps passed.",
+          "experiment_date": "2026-10-22",
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "GPT-6 Luna",
+          "metric_id": "control_pass",
+          "value": 44.4,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 8,
+          "denominator": 18,
+          "result_context": "8 of 18 controls/traps passed.",
+          "experiment_date": "2026-10-22",
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Claude Opus 5.5",
+          "metric_id": "agent_spend",
+          "value": 51.81,
+          "unit": "usd",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Publisher-reported spend for 172 runs.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "GPT-6 Luna",
+          "metric_id": "agent_spend",
+          "value": 1.41,
+          "unit": "usd",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Publisher-reported spend for 172 runs.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": ""
+        }
+      ],
+      "scale": {
+        "task_count_description": "62 cases, five setups, seven models, 1,204 graded runs; 172 runs/model.",
+        "tasks": 62,
+        "scenarios": 62,
+        "trajectories": null,
+        "runs_per_model": 172,
+        "repeats_per_task": 1,
+        "trial_design": "Performance 35 cases, Debug 14, Write 13; 5 setups; one run per case/setup.",
+        "average_trajectory_steps": null
+      },
+      "limitations": [
+        "One run per case/setup; case-level estimates have high variance.",
+        "Spend is agent spend, not fully loaded operating cost.",
+        "Skill/harness effects differ by model and task family."
+      ],
+      "what_not_established": [
+        "Reliable population-level model ranking from repeated trials.",
+        "SRE task performance outside the published Traceway environment.",
+        "Production service safety or durable participant finality."
+      ],
+      "sources": [
+        {
+          "title": "Traceway AI SRE Bench results and methodology",
+          "url": "https://tracewayapp.com/benchmarks",
+          "source_type": "official_benchmark_report",
+          "retrieved_on": "2026-11-04",
+          "published_on": "2026-10-21",
+          "notes": "Publisher reports 62 cases, 5 setups, 7 models, 172 runs/model, one run/case/setup and control/trap subset."
+        }
+      ]
+    },
+    {
+      "benchmark_id": "hintbench_2026",
+      "name": "HINTBench",
+      "version": "Findings EMNLP 2026",
+      "publisher": "ACL Anthology / HINTBench authors",
+      "evaluation_status": "research_dataset",
+      "observed_on": "2026-11-04",
+      "comparability_group": "hintbench",
+      "construct_summary": "Intrinsic agent-risk auditing under benign conditions across risk detection, risk-step localization and intrinsic failure-type identification.",
+      "task_unit": "Long-horizon agent trajectory annotated for intrinsic risk.",
+      "metrics": [
+        {
+          "metric_id": "risk_step_localization_strict_f1",
+          "name": "Fine-grained risk-step localization",
+          "construct": "risk_step_localization",
+          "unit": "strict_f1",
+          "scale": "Strict-F1 0-100",
+          "aggregation": "publisher_reported",
+          "denominator_definition": "Publisher reports best model remains below 37 Strict-F1 on fine-grained risk-step localization; exact value not asserted here.",
+          "evaluator_type": "mixed",
+          "repeat_design": "Benchmark contains 596 trajectories with average 24 steps; paper includes synthetic and reconstructed trajectories.",
+          "limitations": [
+            "Do not transplant the score directly to infrastructure-only OpsBench."
+          ]
+        }
+      ],
+      "results": [
+        {
+          "configuration": "Best model in paper",
+          "metric_id": "risk_step_localization_strict_f1",
+          "value": 37,
+          "unit": "strict_f1",
+          "value_operator": "less_than",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Best reported model is below 37 Strict-F1 on fine-grained risk-step localization.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        }
+      ],
+      "scale": {
+        "task_count_description": "596 trajectories: 400 synthetic risky, 136 synthetic safe, 30 reconstructed real risky, 30 reconstructed real safe; mean 24 steps.",
+        "tasks": null,
+        "scenarios": null,
+        "trajectories": 596,
+        "runs_per_model": null,
+        "repeats_per_task": null,
+        "trial_design": "Trajectory-level detection, risk-step localization and failure-type identification.",
+        "average_trajectory_steps": 24
+      },
+      "limitations": [
+        "Broad agent-safety trajectory corpus, not specifically SRE.",
+        "Best score is described as below 37; exact value not asserted in this snapshot."
+      ],
+      "what_not_established": [
+        "Infrastructure repair or service recovery.",
+        "Causal attribution to a committed operational change."
+      ],
+      "sources": [
+        {
+          "title": "HINTBench Findings EMNLP 2026",
+          "url": "https://aclanthology.org/2026.findings-emnlp.1639/",
+          "source_type": "primary_publication",
+          "retrieved_on": "2026-11-04",
+          "published_on": "2026-10-01",
+          "notes": "596 trajectories and average 24-step horizon."
+        }
+      ]
+    },
+    {
+      "benchmark_id": "agentrx_2026",
+      "name": "AgentRx",
+      "version": "Findings EMNLP 2026",
+      "publisher": "Association for Computational Linguistics",
+      "evaluation_status": "research_dataset",
+      "observed_on": "2026-11-04",
+      "comparability_group": "agentrx",
+      "construct_summary": "Auditable diagnosis of critical failure steps and failure categories in long-horizon agent execution trajectories.",
+      "task_unit": "Manually annotated failed agent trajectory with critical failure step and taxonomy category.",
+      "metrics": [
+        {
+          "metric_id": "step_localization_relative_improvement",
+          "name": "Average improvement in critical failure-step localization",
+          "construct": "failure_attribution",
+          "unit": "relative_percent_improvement",
+          "scale": "Relative improvement percent",
+          "aggregation": "publisher_reported",
+          "denominator_definition": "75% average improvement in step localization over prior work as reported in the paper abstract.",
+          "evaluator_type": "mixed",
+          "repeat_design": "170 trajectories across 11 task settings.",
+          "limitations": [
+            "Relative improvement, not 75% absolute accuracy."
+          ]
+        }
+      ],
+      "results": [
+        {
+          "configuration": "AgentRx framework",
+          "metric_id": "step_localization_relative_improvement",
+          "value": 75,
+          "unit": "relative_percent_improvement",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Paper reports 75% average improvement in step localization over prior work.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        }
+      ],
+      "scale": {
+        "task_count_description": "170 annotated trajectories across 11 settings, including structured API workflows, incident management and web/file tasks.",
+        "tasks": null,
+        "scenarios": 11,
+        "trajectories": 170,
+        "runs_per_model": null,
+        "repeats_per_task": null,
+        "trial_design": "Manual annotations plus automated auditable constraint-violation log and LLM-based judge for localization/category.",
+        "average_trajectory_steps": null
+      },
+      "limitations": [
+        "The paper's reported 75% is relative improvement, not absolute localization accuracy.",
+        "LLM judge contributes to localization/category in the described framework."
+      ],
+      "what_not_established": [
+        "Correct operational mitigation or service recovery.",
+        "Causal proof that a particular committed intervention caused the failure."
+      ],
+      "sources": [
+        {
+          "title": "AgentRx Findings EMNLP 2026",
+          "url": "https://aclanthology.org/2026.findings-emnlp.598/",
+          "source_type": "primary_publication",
+          "retrieved_on": "2026-11-04",
+          "published_on": "2026-10-01",
+          "notes": "Paper reports 170 trajectories, 11 settings and +75% average step-localization improvement."
+        }
+      ]
+    },
+    {
+      "benchmark_id": "evoharnessbench_2026",
+      "name": "EvoHarnessBench",
+      "version": "2026 research benchmark",
+      "publisher": "EvoHarnessBench authors",
+      "evaluation_status": "research_dataset",
+      "observed_on": "2026-11-04",
+      "comparability_group": "evoharnessbench",
+      "construct_summary": "Capability retention and adaptation when agent harnesses, tool catalogues, skills and specialist-agent compositions evolve.",
+      "task_unit": "Task executed within a harness stream under changing capability configuration.",
+      "metrics": [
+        {
+          "metric_id": "harness_stream_scale",
+          "name": "Harness evolution evaluation scale",
+          "construct": "harness_retention",
+          "unit": "count",
+          "scale": "Count of harness streams/tasks/tools/skills/agents",
+          "aggregation": "not_applicable",
+          "denominator_definition": "Scale descriptors only; this registry does not claim a scalar benchmark score.",
+          "evaluator_type": "not_applicable",
+          "repeat_design": "17 harness streams; 802 tasks; 520 tools; 42 skills; 62 agents.",
+          "limitations": []
+        }
+      ],
+      "results": [],
+      "scale": {
+        "task_count_description": "17 streams, 802 tasks, 520 tools, 42 skills and 62 agents.",
+        "tasks": 802,
+        "scenarios": 17,
+        "trajectories": null,
+        "runs_per_model": null,
+        "repeats_per_task": null,
+        "trial_design": "Crossed harness capability evolution and task performance; tests adaptation/retention trade-offs.",
+        "average_trajectory_steps": null
+      },
+      "limitations": [
+        "Benchmark scale is reported; no scalar leader score is included in this crosswalk.",
+        "Results depend on task set, harness evolution schedule and agent cohort."
+      ],
+      "what_not_established": [
+        "Operational SRE repair quality or infrastructure safety."
+      ],
+      "sources": [
+        {
+          "title": "EvoHarnessBench arXiv paper",
+          "url": "https://arxiv.org/abs/2609.04280",
+          "source_type": "primary_publication",
+          "retrieved_on": "2026-11-04",
+          "published_on": "2026-09-01",
+          "notes": "17 streams, 802 tasks, 520 tools, 42 skills, 62 agents; capability additions can degrade previously solved tasks."
+        }
+      ]
+    }
+  ]
+}
