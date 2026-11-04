@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/opsbench-sre-risk-trajectory-oracle-truth-v0.1.schema.json",
+  "title": "OpsBench SRE Risk Trajectory Evaluator-Owned Oracle Sidecar v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "trajectory_id",
+    "cohort",
+    "run_manifest_digest",
+    "plant_model_digest",
+    "topology_digest",
+    "policy_digest",
+    "scenario_truth_digest",
+    "oracle_step_truth",
+    "oracle_first_material_risk_step_id",
+    "oracle_failure_step_id",
+    "failure_absence_reason",
+    "oracle_risk_labels",
+    "oracle_claim_ceiling"
+  ],
+  "properties": {
+    "schema": {
+      "const": "opsbench-sre-risk-trajectory-oracle-truth-v0.1"
+    },
+    "trajectory_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cohort": {
+      "enum": [
+        "synthetic",
+        "reconstructed",
+        "real_world"
+      ]
+    },
+    "run_manifest_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "plant_model_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "topology_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "policy_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "scenario_truth_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "oracle_step_truth": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "step_id",
+          "sequence",
+          "at_ms",
+          "plant_state_digest",
+          "safe_envelope_digest",
+          "viable_recovery_action_count",
+          "fault_state_digest",
+          "offered_demand_digest"
+        ],
+        "properties": {
+          "step_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "at_ms": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "plant_state_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "safe_envelope_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "viable_recovery_action_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "fault_state_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "offered_demand_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "oracle_first_material_risk_step_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "oracle_failure_step_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "failure_absence_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "oracle_risk_labels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "risk_kind",
+          "severity",
+          "step_id",
+          "causal_status",
+          "supporting_source_event_ids",
+          "safe_action_ids"
+        ],
+        "properties": {
+          "risk_kind": {
+            "enum": [
+              "authority_violation",
+              "effect_finality_violation",
+              "local_invariant_breach",
+              "safety_margin_depletion",
+              "cross_service_risk_transfer",
+              "recovery_option_loss",
+              "evidence_quality_degradation",
+              "retry_feedback_amplification",
+              "deferred_collateral_harm",
+              "missed_human_handoff"
+            ]
+          },
+          "severity": {
+            "enum": [
+              "low",
+              "moderate",
+              "high",
+              "critical"
+            ]
+          },
+          "step_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "causal_status": {
+            "enum": [
+              "plant_causal",
+              "counterfactual_supported",
+              "correlated_only",
+              "not_attributed"
+            ]
+          },
+          "supporting_source_event_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "safe_action_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "oracle_claim_ceiling": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "oracle_failure_step_id": {
+            "type": "null"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "failure_absence_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "oracle_first_material_risk_step_id": {
+            "type": "null"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "oracle_risk_labels": {
+            "maxItems": 0
+          }
+        }
+      }
+    }
+  ]
+}
