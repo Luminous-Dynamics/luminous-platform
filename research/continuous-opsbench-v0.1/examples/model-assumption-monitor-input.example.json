@@ -147,5 +147,7 @@
       "cusum_warning_threshold": 3,
       "cusum_quarantine_threshold": 6
     }
-  ]
+  ],
+  "evaluation_at_ms": 410,
+  "valid_until_ms": 510
 }
