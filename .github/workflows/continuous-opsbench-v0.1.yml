@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - "research/continuous-opsbench-v0.1/**"
+      - "benchmarks/sregym-v0.1/**"
       - ".github/workflows/continuous-opsbench-v0.1.yml"
   push:
     branches: [main]
     paths:
       - "research/continuous-opsbench-v0.1/**"
+      - "benchmarks/sregym-v0.1/**"
       - ".github/workflows/continuous-opsbench-v0.1.yml"
 
 permissions:
@@ -33,14 +35,80 @@ jobs:
           set -euo pipefail
           rustup toolchain install 1.96.0 --profile minimal --component clippy
           rustup override set 1.96.0
-      - name: Validate benchmark schemas are valid JSON
+      - name: Validate benchmark schemas and manifests
         run: |
-          python3 - <<'PY'
+          set -euo pipefail
+          python3 -m venv /tmp/opsbench-schema-venv
+          /tmp/opsbench-schema-venv/bin/python -m pip install --disable-pip-version-check "jsonschema==4.23.0"
+          /tmp/opsbench-schema-venv/bin/python - <<'PY'
+          import copy
+          import hashlib
           import json
+          import os
           from pathlib import Path
-          for path in sorted(Path("research/continuous-opsbench-v0.1").glob("*.schema.json")):
-              json.loads(path.read_text(encoding="utf-8"))
-              print(f"valid JSON: {path}")
+          from jsonschema import Draft202012Validator
+
+          schema_paths = sorted(Path("research/continuous-opsbench-v0.1").glob("*.schema.json"))
+          schema_paths += sorted(Path("benchmarks/sregym-v0.1").glob("*.schema.json"))
+          for schema_path in schema_paths:
+              schema = json.loads(schema_path.read_text(encoding="utf-8"))
+              Draft202012Validator.check_schema(schema)
+              print(f"valid Draft 2020-12 schema: {schema_path}")
+              if schema_path.name == "replication-manifest.schema.json":
+                  manifest_path = schema_path.with_name("replication-manifest.json")
+                  manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+                  validator = Draft202012Validator(schema)
+                  validator.validate(manifest)
+                  print(f"manifest conforms: {manifest_path}")
+
+                  inventory = manifest["scenario_inventory"]
+                  full_ids = inventory["effective_full_selection_ids"]
+                  lite_ids = inventory["lite_problem_ids"]
+                  if len(full_ids) != inventory["effective_full_selection_count"]:
+                      raise SystemExit("SREGym full selection count does not match its ID list")
+                  if len(set(full_ids)) != len(full_ids) or full_ids != sorted(full_ids):
+                      raise SystemExit("SREGym full selection IDs must be unique and sorted")
+                  if (
+                      inventory["explicit_registry_key_count"]
+                      + inventory["explicit_port_registry_id_count"]
+                      + inventory["builtin_slo_artifact_count"]
+                      != len(full_ids)
+                  ):
+                      raise SystemExit("SREGym full selection source counts do not reconcile")
+                  full_digest = hashlib.sha256(
+                      json.dumps(full_ids, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+                  ).hexdigest()
+                  lite_digest = hashlib.sha256(
+                      json.dumps(lite_ids, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+                  ).hexdigest()
+                  if full_digest != inventory["full_selection_ids_sha256"]:
+                      raise SystemExit("SREGym full selection digest mismatch")
+                  if full_digest != inventory["scenario_ids_sha256"]:
+                      raise SystemExit("SREGym scenario inventory digest mismatch")
+                  if lite_digest != inventory["lite_problem_ids_sha256"]:
+                      raise SystemExit("SREGym-Lite ID digest mismatch")
+                  if os.environ.get("SREGYM_FAULT_DIRS"):
+                      raise SystemExit("SREGym replication profile requires SREGYM_FAULT_DIRS to be unset")
+                  print(
+                      "SREGym problem inventory verified: "
+                      f"{len(full_ids)} full IDs (117 registry + 84 ports + 16 SLO artifacts), "
+                      f"{len(lite_ids)} Lite IDs; digests match"
+                  )
+
+                  # Negative control 1: toggling the readiness flag alone must not
+                  # promote an incomplete source manifest.
+                  promoted = copy.deepcopy(manifest)
+                  promoted["readiness"] = "ready"
+                  if validator.is_valid(promoted):
+                      raise SystemExit("unsafe: blocked SREGym manifest became ready by flipping one field")
+
+                  # Negative control 2: even removing the human-readable blocker
+                  # list cannot bypass missing scenario, runtime, arm, preflight,
+                  # image-scan, and non-interference evidence.
+                  promoted["blockers"] = []
+                  if validator.is_valid(promoted):
+                      raise SystemExit("unsafe: SREGym manifest passed readiness without required evidence")
+                  print("readiness negative controls: 2/2 rejected incomplete promotion")
           PY
       - name: Run dependency-locked tests
         run: cargo test --manifest-path research/continuous-opsbench-v0.1/Cargo.toml --locked

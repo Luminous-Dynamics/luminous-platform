@@ -1,0 +1,1109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "opsbench-sregym-native-replication-v0.1.schema.json",
+  "title": "OpsBench SREGym native replication identity v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "captured_on",
+    "readiness",
+    "upstream",
+    "submodules",
+    "runtime",
+    "scenario_inventory",
+    "container_images",
+    "preflight",
+    "native_metrics",
+    "blockers",
+    "arms",
+    "experimental_design",
+    "instrumentation_noninterference",
+    "contamination",
+    "image_lock"
+  ],
+  "properties": {
+    "schema": {
+      "const": "opsbench-sregym-native-replication-v0.1"
+    },
+    "captured_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "readiness": {
+      "enum": [
+        "blocked",
+        "ready"
+      ]
+    },
+    "upstream": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "ref",
+        "commit",
+        "commit_url",
+        "readme_blob_sha",
+        "pyproject_blob_sha",
+        "uv_lock_blob_sha",
+        "gitmodules_blob_sha",
+        "tree_sha"
+      ],
+      "properties": {
+        "repository": {
+          "const": "https://github.com/SREGym/SREGym"
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "commit_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "readme_blob_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "pyproject_blob_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "uv_lock_blob_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "gitmodules_blob_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "tree_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      }
+    },
+    "submodules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "repository",
+          "commit",
+          "state",
+          "tree_sha"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "repository": {
+            "type": "string",
+            "format": "uri"
+          },
+          "commit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "state": {
+            "enum": [
+              "pinned",
+              "unresolved"
+            ]
+          },
+          "tree_sha": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{40}$"
+          }
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "python",
+        "uv",
+        "docker",
+        "kubectl",
+        "helm",
+        "kubernetes",
+        "cluster_profile",
+        "deployment_profile"
+      ],
+      "properties": {
+        "python": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "uv": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "docker": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kubectl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "helm": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kubernetes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cluster_profile": {
+          "enum": [
+            "self_managed_linux",
+            "kind_lite",
+            "unknown",
+            null
+          ]
+        },
+        "deployment_profile": {
+          "enum": [
+            "full",
+            "svelte",
+            null
+          ]
+        }
+      }
+    },
+    "scenario_inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "full_suite_published_count",
+        "lite_suite_published_count",
+        "suite",
+        "scenario_ids_sha256",
+        "native_scorer_path",
+        "native_scorer_blob_sha",
+        "native_score_axes",
+        "count_semantics",
+        "explicit_registry_key_count",
+        "registry_blob_sha",
+        "tasklist_file_present",
+        "tasklist_example_blob_sha",
+        "default_full_selection_rule",
+        "full_selection_ids_sha256",
+        "lite_problem_set_blob_sha",
+        "lite_problem_ids",
+        "lite_problem_ids_sha256",
+        "port_registry_blobs",
+        "slo_problem_blob_sha",
+        "artifact_discovery_blob_sha",
+        "native_scorer_files",
+        "effective_full_selection_count",
+        "effective_full_selection_ids",
+        "explicit_port_registry_id_count",
+        "builtin_slo_artifact_count",
+        "sregym_fault_dirs_policy"
+      ],
+      "properties": {
+        "full_suite_published_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "lite_suite_published_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "suite": {
+          "enum": [
+            "full",
+            "sregym-lite"
+          ]
+        },
+        "scenario_ids_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "native_scorer_path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "native_scorer_blob_sha": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "native_score_axes": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "diagnosis",
+              "mitigation",
+              "end_to_end"
+            ]
+          }
+        },
+        "count_semantics": {
+          "enum": [
+            "published_reference_only",
+            "active_runnable_inventory"
+          ]
+        },
+        "explicit_registry_key_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "registry_blob_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "tasklist_file_present": {
+          "type": "boolean"
+        },
+        "tasklist_example_blob_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "default_full_selection_rule": {
+          "type": "string",
+          "minLength": 1
+        },
+        "full_selection_ids_sha256": {
+          "const": "20c5addc02d3d2d6a2c74ea190c35101ddde8c2ecb24b96573ba671da8cf681d"
+        },
+        "lite_problem_set_blob_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "lite_problem_ids": {
+          "type": "array",
+          "minItems": 17,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "lite_problem_ids_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "port_registry_blobs": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "blob_sha"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "blob_sha": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              }
+            }
+          }
+        },
+        "slo_problem_blob_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "artifact_discovery_blob_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "native_scorer_files": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "blob_sha"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "blob_sha": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              }
+            }
+          }
+        },
+        "effective_full_selection_count": {
+          "const": 217
+        },
+        "effective_full_selection_ids": {
+          "type": "array",
+          "minItems": 217,
+          "maxItems": 217,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "explicit_port_registry_id_count": {
+          "const": 84
+        },
+        "builtin_slo_artifact_count": {
+          "const": 16
+        },
+        "sregym_fault_dirs_policy": {
+          "const": "unset"
+        }
+      }
+    },
+    "container_images": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "image",
+          "digest"
+        ],
+        "properties": {
+          "image": {
+            "type": "string",
+            "minLength": 1
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "preflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "upstream_test_assessment",
+        "unit_tests_passed_reported",
+        "unit_tests_failed_reported",
+        "collection_errors_reported",
+        "independent_reproduction"
+      ],
+      "properties": {
+        "upstream_test_assessment": {
+          "enum": [
+            "unreproduced",
+            "author_reported_failures",
+            "clean",
+            "accepted_with_failures"
+          ]
+        },
+        "unit_tests_passed_reported": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "unit_tests_failed_reported": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "collection_errors_reported": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "independent_reproduction": {
+          "enum": [
+            "not_run",
+            "reproduced",
+            "disputed"
+          ]
+        }
+      }
+    },
+    "native_metrics": {
+      "type": "array",
+      "minItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "diagnosis",
+          "mitigation",
+          "end_to_end"
+        ]
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "arms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "arm_id",
+          "role",
+          "agent_name",
+          "agent_version",
+          "model_provider",
+          "model_name",
+          "model_version",
+          "agent_revision",
+          "system_prompt_sha256",
+          "developer_prompt_sha256",
+          "tool_surface_sha256",
+          "memory_policy_sha256",
+          "inference_config_sha256",
+          "max_wall_time_seconds",
+          "max_steps",
+          "max_tool_calls",
+          "max_tokens",
+          "retry_policy",
+          "concurrency",
+          "access_profile_sha256"
+        ],
+        "properties": {
+          "arm_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "role": {
+            "enum": [
+              "candidate",
+              "baseline",
+              "strong_external_baseline",
+              "diagnostic_oracle"
+            ]
+          },
+          "agent_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "agent_version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model_provider": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model_version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "agent_revision": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "system_prompt_sha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "developer_prompt_sha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "tool_surface_sha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "memory_policy_sha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "inference_config_sha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "max_wall_time_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "max_steps": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "max_tool_calls": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "max_tokens": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "retry_policy": {
+            "enum": [
+              "no_retry",
+              "fixed_bounded",
+              "adaptive_bounded",
+              null
+            ]
+          },
+          "concurrency": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "access_profile_sha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "experimental_design": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seed_ids",
+        "paired_seed_blocks",
+        "randomized_arm_order",
+        "missing_run_policy",
+        "inference_unit",
+        "preregistration_sha256"
+      ],
+      "properties": {
+        "seed_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "paired_seed_blocks": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "randomized_arm_order": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "missing_run_policy": {
+          "enum": [
+            "retain_in_denominator",
+            "report_separately_with_reason",
+            null
+          ]
+        },
+        "inference_unit": {
+          "enum": [
+            "scenario_seed_cluster",
+            null
+          ]
+        },
+        "preregistration_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "instrumentation_noninterference": {
+      "enum": [
+        "not_tested",
+        "failed",
+        "proven"
+      ]
+    },
+    "contamination": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "result",
+        "scanner_revision",
+        "scanner_config_sha256",
+        "report_sha256",
+        "scanned_at",
+        "examined_sources"
+      ],
+      "properties": {
+        "result": {
+          "enum": [
+            "not_run",
+            "passed",
+            "failed"
+          ]
+        },
+        "scanner_revision": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "scanner_config_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "report_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "scanned_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "examined_sources": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "agent_source",
+              "system_prompt",
+              "developer_prompt",
+              "tool_surface",
+              "access_profile",
+              "scenario_source",
+              "scenario_ids",
+              "expected_answers",
+              "runbooks",
+              "issue_pr_text",
+              "logs",
+              "network_filesystem_access",
+              "cross_run_artifacts",
+              "judge_scorer"
+            ]
+          }
+        }
+      }
+    },
+    "image_lock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "blob_sha",
+        "entry_count",
+        "digest_pinned_count",
+        "external_reference_scan_state",
+        "unlocked_reference_examples"
+      ],
+      "properties": {
+        "path": {
+          "const": "docker/images.lock.json"
+        },
+        "blob_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "entry_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "digest_pinned_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "external_reference_scan_state": {
+          "enum": [
+            "not_started",
+            "partial",
+            "passed"
+          ]
+        },
+        "external_reference_scan_report_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "unlocked_reference_examples": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "readiness": {
+            "const": "ready"
+          }
+        },
+        "required": [
+          "readiness"
+        ]
+      },
+      "then": {
+        "properties": {
+          "blockers": {
+            "maxItems": 0
+          },
+          "submodules": {
+            "minItems": 1,
+            "items": {
+              "properties": {
+                "commit": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{40}$"
+                },
+                "state": {
+                  "const": "pinned"
+                },
+                "tree_sha": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{40}$"
+                }
+              }
+            }
+          },
+          "runtime": {
+            "properties": {
+              "python": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uv": {
+                "type": "string",
+                "minLength": 1
+              },
+              "docker": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kubectl": {
+                "type": "string",
+                "minLength": 1
+              },
+              "helm": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kubernetes": {
+                "type": "string",
+                "minLength": 1
+              },
+              "cluster_profile": {
+                "enum": [
+                  "self_managed_linux",
+                  "kind_lite"
+                ]
+              },
+              "deployment_profile": {
+                "const": "full"
+              }
+            }
+          },
+          "scenario_inventory": {
+            "properties": {
+              "scenario_ids_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "native_scorer_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "native_scorer_blob_sha": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "full_selection_ids_sha256": {
+                "const": "20c5addc02d3d2d6a2c74ea190c35101ddde8c2ecb24b96573ba671da8cf681d"
+              },
+              "lite_problem_ids_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "native_scorer_files": {
+                "minItems": 5
+              },
+              "effective_full_selection_count": {
+                "const": 217
+              },
+              "effective_full_selection_ids": {
+                "minItems": 217,
+                "maxItems": 217
+              },
+              "explicit_port_registry_id_count": {
+                "const": 84
+              },
+              "builtin_slo_artifact_count": {
+                "const": 16
+              },
+              "sregym_fault_dirs_policy": {
+                "const": "unset"
+              }
+            }
+          },
+          "container_images": {
+            "minItems": 1
+          },
+          "preflight": {
+            "properties": {
+              "upstream_test_assessment": {
+                "const": "clean"
+              },
+              "independent_reproduction": {
+                "const": "reproduced"
+              },
+              "unit_tests_failed_reported": {
+                "const": 0
+              },
+              "collection_errors_reported": {
+                "const": 0
+              },
+              "unit_tests_passed_reported": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          },
+          "arms": {
+            "minItems": 2,
+            "contains": {
+              "properties": {
+                "role": {
+                  "const": "candidate"
+                }
+              },
+              "required": [
+                "role"
+              ]
+            },
+            "allOf": [
+              {
+                "contains": {
+                  "properties": {
+                    "role": {
+                      "const": "baseline"
+                    }
+                  },
+                  "required": [
+                    "role"
+                  ]
+                }
+              }
+            ],
+            "items": {
+              "properties": {
+                "access_profile_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            }
+          },
+          "experimental_design": {
+            "properties": {
+              "seed_ids": {
+                "minItems": 5
+              },
+              "paired_seed_blocks": {
+                "const": true
+              },
+              "randomized_arm_order": {
+                "const": true
+              },
+              "missing_run_policy": {
+                "const": "retain_in_denominator"
+              },
+              "inference_unit": {
+                "const": "scenario_seed_cluster"
+              },
+              "preregistration_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          },
+          "instrumentation_noninterference": {
+            "const": "proven"
+          },
+          "contamination": {
+            "properties": {
+              "result": {
+                "const": "passed"
+              },
+              "scanner_revision": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "scanner_config_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "report_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "scanned_at": {
+                "type": "string",
+                "format": "date"
+              },
+              "examined_sources": {
+                "minItems": 8
+              }
+            }
+          },
+          "upstream": {
+            "properties": {
+              "tree_sha": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              }
+            }
+          },
+          "image_lock": {
+            "properties": {
+              "external_reference_scan_state": {
+                "const": "passed"
+              },
+              "external_reference_scan_report_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "digest_pinned_count": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "scenario_inventory": {
+                  "properties": {
+                    "suite": {
+                      "const": "full"
+                    }
+                  },
+                  "required": [
+                    "suite"
+                  ]
+                }
+              },
+              "required": [
+                "scenario_inventory"
+              ]
+            },
+            "then": {
+              "properties": {
+                "runtime": {
+                  "properties": {
+                    "cluster_profile": {
+                      "const": "self_managed_linux"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
