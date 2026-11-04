@@ -101,6 +101,7 @@ pub struct StabilityMetrics {
     pub maximum_queue_depth: u64,
     pub maximum_latency_ms: u64,
     pub queue_range_after_fault: u64,
+    pub api_capacity_range_after_fault: u64,
     pub api_database_capacity_gap_request_units: u128,
     pub final_no_intervention_tail_healthy: bool,
 }
@@ -145,7 +146,7 @@ fn validate_config(config: &StabilityConfig) -> Result<(), StabilityError> {
     }
     if config.api_capacity == 0
         || config.database_capacity == 0
-        || config.critical_demand_per_tick + config.bulk_demand_per_tick == 0
+        || config.critical_demand_per_tick.saturating_add(config.bulk_demand_per_tick) == 0
         || config.fault_api_capacity_reduction >= config.api_capacity
     {
         return Err(StabilityError::InvalidCapacityOrDemand);
@@ -207,7 +208,7 @@ pub fn run_stability_scenario(
         if effect_tick >= tail_start {
             return Err(StabilityError::ActionInNoInterventionTail(action.action_id.clone()));
         }
-        match action.operation {
+        match &action.operation {
             ControlOperation::SetApiCapacity(0) => {
                 return Err(StabilityError::InvalidSetpoint(action.action_id.clone()));
             }
@@ -242,31 +243,31 @@ pub fn run_stability_scenario(
     for tick in 0..config.ticks {
         while cursor < scheduled.len() && scheduled[cursor].0 == tick {
             let action = scheduled[cursor].2;
-            match action.operation {
+            match &action.operation {
                 ControlOperation::SetApiCapacity(value) => {
-                    if value != api_setpoint {
+                    if *value != api_setpoint {
                         metrics.action_churn_count += 1;
-                        let direction = if value > api_setpoint { 1 } else { -1 };
+                        let direction = if *value > api_setpoint { 1 } else { -1 };
                         if previous_direction.get(&Resource::ApiCapacity)
                             .is_some_and(|previous| *previous != direction)
                         {
                             metrics.action_reversal_count += 1;
                         }
                         previous_direction.insert(Resource::ApiCapacity, direction);
-                        api_setpoint = value;
+                        api_setpoint = *value;
                     }
                 }
                 ControlOperation::SetRetryMultiplierPpm(value) => {
-                    if value != retry_multiplier_ppm {
+                    if *value != retry_multiplier_ppm {
                         metrics.action_churn_count += 1;
-                        let direction = if value > retry_multiplier_ppm { 1 } else { -1 };
+                        let direction = if *value > retry_multiplier_ppm { 1 } else { -1 };
                         if previous_direction.get(&Resource::RetryMultiplier)
                             .is_some_and(|previous| *previous != direction)
                         {
                             metrics.action_reversal_count += 1;
                         }
                         previous_direction.insert(Resource::RetryMultiplier, direction);
-                        retry_multiplier_ppm = value;
+                        retry_multiplier_ppm = *value;
                     }
                 }
             }
@@ -380,6 +381,7 @@ pub fn run_stability_scenario(
         });
     }
 
+    metrics.api_capacity_range_after_fault = tail_capacity_max.saturating_sub(tail_capacity_min);
     metrics.queue_range_after_fault = if samples.len() > config.fault_end_tick as usize {
         let tail = &samples[config.fault_end_tick as usize..];
         let min = tail.iter().map(|sample| sample.queue_depth).min().unwrap_or(0);
@@ -392,9 +394,8 @@ pub fn run_stability_scenario(
     metrics.final_no_intervention_tail_healthy =
         final_tail.iter().all(|sample| sample.slo_healthy);
     if tail_capacity_min == u64::MAX {
-        tail_capacity_min = 0;
+        metrics.api_capacity_range_after_fault = 0;
     }
-    let _api_capacity_range_after_fault = tail_capacity_max.saturating_sub(tail_capacity_min);
 
     let observations = samples.iter().enumerate().map(|(tick, _)| {
         let source_tick = tick.saturating_sub(config.observation_delay_ticks as usize);
@@ -457,6 +458,8 @@ mod tests {
     fn actuation_delay_changes_the_plant_only_at_the_due_tick() {
         let mut config = config();
         config.actuation_delay_ticks = 2;
+        config.fault_start_tick = 8;
+        config.fault_end_tick = 9;
         let actions = [ControlAction {
             action_id: "scale-up".into(),
             controller: Controller::Agent,
@@ -474,6 +477,7 @@ mod tests {
     fn action_reversals_and_stale_observation_use_are_counted() {
         let mut config = config();
         config.actuation_delay_ticks = 0;
+        config.maximum_observation_age_ticks = 1;
         let actions = [
             ControlAction {
                 action_id: "up".into(), controller: Controller::Agent,
@@ -487,7 +491,7 @@ mod tests {
             },
             ControlAction {
                 action_id: "up-again".into(), controller: Controller::Agent,
-                issued_at_tick: 2, observation_source_tick: 1,
+                issued_at_tick: 2, observation_source_tick: 0,
                 operation: ControlOperation::SetApiCapacity(110),
             },
         ];
