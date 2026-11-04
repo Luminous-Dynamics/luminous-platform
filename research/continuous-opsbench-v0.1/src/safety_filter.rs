@@ -526,9 +526,15 @@ pub fn appraise_with_model_assurance(
         && !report.observer_control_domain.is_empty()
         && report.model_control_domain != report.observer_control_domain
         && report.forecast_count > 0
+        && report.observation_count == report.forecast_count
         && report.matched_observation_count == report.forecast_count
+        && report.envelope_miss_count == 0
+        && report.too_wide_count == 0
         && report.findings.is_empty()
-        && !report.metrics.is_empty();
+        && !report.metrics.is_empty()
+        && report.valid_until_ms > report.evaluated_at_ms
+        && report.valid_until_ms.saturating_sub(report.evaluated_at_ms)
+            <= crate::model_assumption::MAX_REPORT_VALIDITY_MS;
 
     if !identity_matches {
         return base_appraisal(
