@@ -61,7 +61,9 @@
           "retry_multiplier_ppm": 1000000,
           "viable_recovery_actions": 5
         }
-      ]
+      ],
+      "counterfactual_pair_id": "pair-1",
+      "pair_manifest_digest": "0606060606060606060606060606060606060606060606060606060606060606"
     }
   ],
   "actions": [
@@ -98,5 +100,28 @@
       "forbidden_attempt": false,
       "ledger_cursor": "cursor-1"
     }
-  ]
+  ],
+  "counterfactual_pair_manifest": {
+    "pair_id": "pair-1",
+    "protocol_id": "opsbench-paired-twin-v0.1",
+    "scenario_id": "risk-run-1",
+    "candidate_arm_id": "candidate",
+    "candidate_run_id": "candidate-run-1",
+    "no_action_run_id": "no-action-run-1",
+    "manifest_digest": "0606060606060606060606060606060606060606060606060606060606060606",
+    "candidate_model_digest": "0404040404040404040404040404040404040404040404040404040404040404",
+    "no_action_model_digest": "0404040404040404040404040404040404040404040404040404040404040404",
+    "candidate_initial_state_digest": "0707070707070707070707070707070707070707070707070707070707070707",
+    "no_action_initial_state_digest": "0707070707070707070707070707070707070707070707070707070707070707",
+    "candidate_exogenous_input_digest": "0808080808080808080808080808080808080808080808080808080808080808",
+    "no_action_exogenous_input_digest": "0808080808080808080808080808080808080808080808080808080808080808",
+    "candidate_seed_bundle_digest": "0909090909090909090909090909090909090909090909090909090909090909",
+    "no_action_seed_bundle_digest": "0909090909090909090909090909090909090909090909090909090909090909",
+    "candidate_scenario_truth_digest": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a",
+    "no_action_scenario_truth_digest": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a",
+    "candidate_policy_epoch": 2,
+    "no_action_policy_epoch": 2,
+    "candidate_policy_digest": "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+    "no_action_policy_digest": "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"
+  }
 }
