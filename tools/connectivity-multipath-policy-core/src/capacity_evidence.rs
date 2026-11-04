@@ -10,8 +10,8 @@
 
 use std::collections::BTreeSet;
 
-use crate::resource_allocation::ResourceCapacity;
 use crate::CapacityDomainEvidence;
+use crate::resource_allocation::ResourceCapacity;
 
 const MAX_CLAIMS: usize = 128;
 const MAX_PATHS: usize = 64;
@@ -177,38 +177,76 @@ pub struct VerifiedCapacityInventory {
 }
 
 impl VerifiedCapacityInventory {
-    pub fn statement_id(&self) -> &str { &self.statement_id }
-    pub fn issuer_id(&self) -> &str { &self.issuer_id }
-    pub fn signing_key_id(&self) -> &str { &self.signing_key_id }
-    pub fn authority_policy_id(&self) -> &str { &self.authority_policy_id }
-    pub fn topology_sha256(&self) -> &str { &self.topology_sha256 }
-    pub fn inventory_sha256(&self) -> &str { &self.inventory_sha256 }
-    pub fn statement_sha256(&self) -> &str { &self.statement_sha256 }
-    pub fn resource_claims(&self) -> &[ResourceClaim] { &self.resource_claims }
-    pub fn path_incidence(&self) -> &[PathResourceIncidence] { &self.path_incidence }
-    pub fn maturity(&self) -> EvidenceMaturity { EvidenceMaturity::IssuerAttested }
-    pub fn confidence_claim_ppm(&self) -> u32 { self.confidence_ppm }
+    pub fn statement_id(&self) -> &str {
+        &self.statement_id
+    }
+    pub fn issuer_id(&self) -> &str {
+        &self.issuer_id
+    }
+    pub fn signing_key_id(&self) -> &str {
+        &self.signing_key_id
+    }
+    pub fn authority_policy_id(&self) -> &str {
+        &self.authority_policy_id
+    }
+    pub fn topology_sha256(&self) -> &str {
+        &self.topology_sha256
+    }
+    pub fn inventory_sha256(&self) -> &str {
+        &self.inventory_sha256
+    }
+    pub fn statement_sha256(&self) -> &str {
+        &self.statement_sha256
+    }
+    pub fn resource_claims(&self) -> &[ResourceClaim] {
+        &self.resource_claims
+    }
+    pub fn path_incidence(&self) -> &[PathResourceIncidence] {
+        &self.path_incidence
+    }
+    pub fn maturity(&self) -> EvidenceMaturity {
+        EvidenceMaturity::IssuerAttested
+    }
+    pub fn confidence_claim_ppm(&self) -> u32 {
+        self.confidence_ppm
+    }
     pub fn calibration_profile_sha256(&self) -> Option<&str> {
         self.calibration_profile_sha256.as_deref()
     }
-    pub fn calibration_profile_verified(&self) -> bool { self.calibration_profile_verified }
-    pub fn transparency_receipt_verified(&self) -> bool { self.transparency_receipt_verified }
-    pub fn issued_at_unix_ms(&self) -> u64 { self.issued_at_unix_ms }
-    pub fn observed_at_unix_ms(&self) -> u64 { self.observed_at_unix_ms }
-    pub fn valid_until_unix_ms(&self) -> u64 { self.valid_until_unix_ms }
-    pub fn sequence_number(&self) -> u64 { self.sequence_number }
+    pub fn calibration_profile_verified(&self) -> bool {
+        self.calibration_profile_verified
+    }
+    pub fn transparency_receipt_verified(&self) -> bool {
+        self.transparency_receipt_verified
+    }
+    pub fn issued_at_unix_ms(&self) -> u64 {
+        self.issued_at_unix_ms
+    }
+    pub fn observed_at_unix_ms(&self) -> u64 {
+        self.observed_at_unix_ms
+    }
+    pub fn valid_until_unix_ms(&self) -> u64 {
+        self.valid_until_unix_ms
+    }
+    pub fn sequence_number(&self) -> u64 {
+        self.sequence_number
+    }
 
     /// Confidence is withheld from ranking unless a trusted calibration
     /// profile was verified for this issuer and statement class.
     pub fn ranking_confidence_ppm(&self) -> Option<u32> {
-        self.calibration_profile_verified.then_some(self.confidence_ppm)
+        self.calibration_profile_verified
+            .then_some(self.confidence_ppm)
     }
 
     pub fn resource_capacities(&self) -> Vec<ResourceCapacity> {
-        self.resource_claims.iter().map(|claim| ResourceCapacity {
-            resource_id: claim.resource_id.clone(),
-            capacity_bps: claim.capacity_bps,
-        }).collect()
+        self.resource_claims
+            .iter()
+            .map(|claim| ResourceCapacity {
+                resource_id: claim.resource_id.clone(),
+                capacity_bps: claim.capacity_bps,
+            })
+            .collect()
     }
 
     /// Project this statement's verified dependency evidence onto one path in
@@ -232,20 +270,25 @@ impl VerifiedCapacityInventory {
         if !self.calibration_profile_verified {
             return Err(CapacityEvidenceError::EvidenceNotCalibrated);
         }
-        let incidence = self.path_incidence.iter()
+        let incidence = self
+            .path_incidence
+            .iter()
             .find(|incidence| incidence.path_id == path_id)
             .ok_or(CapacityEvidenceError::PathNotInInventory)?;
         let mut capacity_domain_ids = incidence.resource_ids.clone();
         capacity_domain_ids.sort();
-        Ok((capacity_domain_ids, CapacityDomainEvidence {
-            source_id: self.issuer_id.clone(),
-            inventory_sha256: self.inventory_sha256.clone(),
-            topology_sha256: self.topology_sha256.clone(),
-            complete: true,
-            confidence_ppm: self.confidence_ppm,
-            observed_at_unix_ms: self.observed_at_unix_ms,
-            valid_until_unix_ms: self.valid_until_unix_ms,
-        }))
+        Ok((
+            capacity_domain_ids,
+            CapacityDomainEvidence {
+                source_id: self.issuer_id.clone(),
+                inventory_sha256: self.inventory_sha256.clone(),
+                topology_sha256: self.topology_sha256.clone(),
+                complete: true,
+                confidence_ppm: self.confidence_ppm,
+                observed_at_unix_ms: self.observed_at_unix_ms,
+                valid_until_unix_ms: self.valid_until_unix_ms,
+            },
+        ))
     }
 }
 
@@ -293,14 +336,14 @@ fn is_sha256(value: &str) -> bool {
 }
 
 fn valid_id(value: &str) -> bool {
-    !value.trim().is_empty()
-        && value.len() <= MAX_ID_BYTES
-        && !value.chars().any(char::is_control)
+    !value.trim().is_empty() && value.len() <= MAX_ID_BYTES && !value.chars().any(char::is_control)
 }
 
 fn validate_policy(policy: CapacityEvidencePolicy) -> Result<(), CapacityEvidenceError> {
     if policy.maximum_observation_age_ms == 0
-        || policy.minimum_confidence_ppm.is_some_and(|value| value == 0 || value > 1_000_000)
+        || policy
+            .minimum_confidence_ppm
+            .is_some_and(|value| value == 0 || value > 1_000_000)
     {
         return Err(CapacityEvidenceError::InvalidPolicy);
     }
@@ -367,13 +410,20 @@ fn validate_statement(
     if statement.confidence_ppm == 0 || statement.confidence_ppm > 1_000_000 {
         return Err(CapacityEvidenceError::InvalidConfidence);
     }
-    if policy.minimum_confidence_ppm.is_some_and(|floor| statement.confidence_ppm < floor) {
+    if policy
+        .minimum_confidence_ppm
+        .is_some_and(|floor| statement.confidence_ppm < floor)
+    {
         return Err(CapacityEvidenceError::ConfidenceBelowPolicyFloor);
     }
     if policy.require_calibration_profile && statement.calibration_profile_sha256.is_none() {
         return Err(CapacityEvidenceError::CalibrationProfileRequired);
     }
-    if statement.calibration_profile_sha256.as_ref().is_some_and(|digest| !is_sha256(digest)) {
+    if statement
+        .calibration_profile_sha256
+        .as_ref()
+        .is_some_and(|digest| !is_sha256(digest))
+    {
         return Err(CapacityEvidenceError::InvalidCalibrationProfileDigest);
     }
     if policy.require_scitt_receipt && statement.scitt_receipt.is_none() {
@@ -454,21 +504,26 @@ pub fn verify_capacity_inventory<V: CapacityInventoryTrustVerifier>(
     verifier: &V,
 ) -> Result<VerifiedCapacityInventory, CapacityEvidenceError> {
     validate_statement(statement, now_unix_ms, policy)?;
-    verifier.verify_canonical_statement_binding(statement)
+    verifier
+        .verify_canonical_statement_binding(statement)
         .map_err(CapacityEvidenceError::Trust)?;
-    verifier.verify_statement_signature_and_authority(statement)
+    verifier
+        .verify_statement_signature_and_authority(statement)
         .map_err(CapacityEvidenceError::Trust)?;
 
     let transparency_receipt_verified = if let Some(receipt) = &statement.scitt_receipt {
-        verifier.verify_scitt_receipt(&statement.statement_sha256, receipt)
+        verifier
+            .verify_scitt_receipt(&statement.statement_sha256, receipt)
             .map_err(CapacityEvidenceError::Trust)?;
         true
     } else {
         false
     };
 
-    let calibration_profile_verified = if let Some(profile) = &statement.calibration_profile_sha256 {
-        verifier.verify_calibration_profile(&statement.issuer_id, profile, statement.confidence_ppm)
+    let calibration_profile_verified = if let Some(profile) = &statement.calibration_profile_sha256
+    {
+        verifier
+            .verify_calibration_profile(&statement.issuer_id, profile, statement.confidence_ppm)
             .map_err(CapacityEvidenceError::Trust)?;
         true
     } else {
@@ -533,9 +588,15 @@ mod tests {
             &self,
             _statement: &SignedCapacityDependencyStatement,
         ) -> Result<(), TrustVerificationError> {
-            if !self.signature_ok { return Err(TrustVerificationError::SignatureInvalid); }
-            if !self.authority_ok { return Err(TrustVerificationError::AuthorityScopeInsufficient); }
-            if self.replay { return Err(TrustVerificationError::ReplayDetected); }
+            if !self.signature_ok {
+                return Err(TrustVerificationError::SignatureInvalid);
+            }
+            if !self.authority_ok {
+                return Err(TrustVerificationError::AuthorityScopeInsufficient);
+            }
+            if self.replay {
+                return Err(TrustVerificationError::ReplayDetected);
+            }
             Ok(())
         }
 
@@ -544,7 +605,11 @@ mod tests {
             _statement_sha256: &str,
             _receipt: &[u8],
         ) -> Result<(), TrustVerificationError> {
-            if self.receipt_ok { Ok(()) } else { Err(TrustVerificationError::ScittReceiptInvalid) }
+            if self.receipt_ok {
+                Ok(())
+            } else {
+                Err(TrustVerificationError::ScittReceiptInvalid)
+            }
         }
 
         fn verify_calibration_profile(
@@ -553,7 +618,11 @@ mod tests {
             _profile_sha256: &str,
             _confidence_ppm: u32,
         ) -> Result<(), TrustVerificationError> {
-            if self.calibration_ok { Ok(()) } else { Err(TrustVerificationError::CalibrationProfileUnknown) }
+            if self.calibration_ok {
+                Ok(())
+            } else {
+                Err(TrustVerificationError::CalibrationProfileUnknown)
+            }
         }
     }
 
@@ -601,8 +670,9 @@ mod tests {
 
     #[test]
     fn valid_statement_creates_issuer_attested_inventory() {
-        let verified = verify_capacity_inventory(&statement(), 1_050_000, policy(), &MockVerifier::default())
-            .expect("valid statement");
+        let verified =
+            verify_capacity_inventory(&statement(), 1_050_000, policy(), &MockVerifier::default())
+                .expect("valid statement");
         assert_eq!(verified.maturity(), EvidenceMaturity::IssuerAttested);
         assert!(verified.transparency_receipt_verified());
         assert!(verified.calibration_profile_verified());
@@ -612,10 +682,11 @@ mod tests {
 
     #[test]
     fn verified_inventory_projects_path_dependencies_with_provenance() {
-        let verified = verify_capacity_inventory(
-            &statement(), 1_050_000, policy(), &MockVerifier::default()
-        ).expect("verified inventory");
-        let (domains, evidence) = verified.path_dependency_evidence("path-a", 1_060_000, 60_000)
+        let verified =
+            verify_capacity_inventory(&statement(), 1_050_000, policy(), &MockVerifier::default())
+                .expect("verified inventory");
+        let (domains, evidence) = verified
+            .path_dependency_evidence("path-a", 1_060_000, 60_000)
             .expect("path dependency evidence");
         assert_eq!(domains, vec!["backhaul".to_owned()]);
         assert_eq!(evidence.source_id, "operator-authority-01");
@@ -631,22 +702,26 @@ mod tests {
         let mut policy = policy();
         policy.minimum_confidence_ppm = None;
         policy.require_calibration_profile = false;
-        let verified = verify_capacity_inventory(
-            &input, 1_050_000, policy, &MockVerifier::default()
-        ).expect("issuer-attested inventory");
+        let verified =
+            verify_capacity_inventory(&input, 1_050_000, policy, &MockVerifier::default())
+                .expect("issuer-attested inventory");
         assert_eq!(
-            verified.path_dependency_evidence("path-a", 1_060_000, 60_000).unwrap_err(),
+            verified
+                .path_dependency_evidence("path-a", 1_060_000, 60_000)
+                .unwrap_err(),
             CapacityEvidenceError::EvidenceNotCalibrated
         );
     }
 
     #[test]
     fn projected_path_evidence_rechecks_expiry() {
-        let verified = verify_capacity_inventory(
-            &statement(), 1_050_000, policy(), &MockVerifier::default()
-        ).expect("verified inventory");
+        let verified =
+            verify_capacity_inventory(&statement(), 1_050_000, policy(), &MockVerifier::default())
+                .expect("verified inventory");
         assert_eq!(
-            verified.path_dependency_evidence("path-a", 1_200_000, 60_000).unwrap_err(),
+            verified
+                .path_dependency_evidence("path-a", 1_200_000, 60_000)
+                .unwrap_err(),
             CapacityEvidenceError::EvidenceExpiredAtUse
         );
     }
@@ -698,73 +773,118 @@ mod tests {
 
     #[test]
     fn invalid_signature_is_rejected() {
-        let result = verify_capacity_inventory(&statement(), 1_050_000, policy(), &MockVerifier {
-            signature_ok: false,
-            ..MockVerifier::default()
-        });
-        assert_eq!(result.unwrap_err(), CapacityEvidenceError::Trust(TrustVerificationError::SignatureInvalid));
+        let result = verify_capacity_inventory(
+            &statement(),
+            1_050_000,
+            policy(),
+            &MockVerifier {
+                signature_ok: false,
+                ..MockVerifier::default()
+            },
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            CapacityEvidenceError::Trust(TrustVerificationError::SignatureInvalid)
+        );
     }
 
     #[test]
     fn unauthorized_issuer_scope_is_rejected() {
-        let result = verify_capacity_inventory(&statement(), 1_050_000, policy(), &MockVerifier {
-            authority_ok: false,
-            ..MockVerifier::default()
-        });
-        assert_eq!(result.unwrap_err(), CapacityEvidenceError::Trust(TrustVerificationError::AuthorityScopeInsufficient));
+        let result = verify_capacity_inventory(
+            &statement(),
+            1_050_000,
+            policy(),
+            &MockVerifier {
+                authority_ok: false,
+                ..MockVerifier::default()
+            },
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            CapacityEvidenceError::Trust(TrustVerificationError::AuthorityScopeInsufficient)
+        );
     }
 
     #[test]
     fn replay_is_rejected_by_trust_verifier() {
-        let result = verify_capacity_inventory(&statement(), 1_050_000, policy(), &MockVerifier {
-            replay: true,
-            ..MockVerifier::default()
-        });
-        assert_eq!(result.unwrap_err(), CapacityEvidenceError::Trust(TrustVerificationError::ReplayDetected));
+        let result = verify_capacity_inventory(
+            &statement(),
+            1_050_000,
+            policy(),
+            &MockVerifier {
+                replay: true,
+                ..MockVerifier::default()
+            },
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            CapacityEvidenceError::Trust(TrustVerificationError::ReplayDetected)
+        );
     }
 
     #[test]
     fn statement_with_bad_digest_is_rejected_before_crypto_verification() {
         let mut input = statement();
         input.statement_sha256 = "bad".to_owned();
-        let result = verify_capacity_inventory(&input, 1_050_000, policy(), &MockVerifier::default());
-        assert_eq!(result.unwrap_err(), CapacityEvidenceError::InvalidStatementDigest);
+        let result =
+            verify_capacity_inventory(&input, 1_050_000, policy(), &MockVerifier::default());
+        assert_eq!(
+            result.unwrap_err(),
+            CapacityEvidenceError::InvalidStatementDigest
+        );
     }
 
     #[test]
     fn expired_inventory_is_rejected() {
-        let result = verify_capacity_inventory(&statement(), 1_200_000, policy(), &MockVerifier::default());
+        let result =
+            verify_capacity_inventory(&statement(), 1_200_000, policy(), &MockVerifier::default());
         assert_eq!(result.unwrap_err(), CapacityEvidenceError::StatementExpired);
     }
 
     #[test]
     fn stale_inventory_is_rejected() {
-        let result = verify_capacity_inventory(&statement(), 1_100_001, policy(), &MockVerifier::default());
-        assert_eq!(result.unwrap_err(), CapacityEvidenceError::ObservationTooOld);
+        let result =
+            verify_capacity_inventory(&statement(), 1_100_001, policy(), &MockVerifier::default());
+        assert_eq!(
+            result.unwrap_err(),
+            CapacityEvidenceError::ObservationTooOld
+        );
     }
 
     #[test]
     fn incomplete_inventory_is_rejected() {
         let mut input = statement();
         input.coverage_complete = false;
-        let result = verify_capacity_inventory(&input, 1_050_000, policy(), &MockVerifier::default());
-        assert_eq!(result.unwrap_err(), CapacityEvidenceError::IncompleteCoverage);
+        let result =
+            verify_capacity_inventory(&input, 1_050_000, policy(), &MockVerifier::default());
+        assert_eq!(
+            result.unwrap_err(),
+            CapacityEvidenceError::IncompleteCoverage
+        );
     }
 
     #[test]
     fn scitt_receipt_is_not_optional_when_policy_requires_it() {
         let mut input = statement();
         input.scitt_receipt = None;
-        let result = verify_capacity_inventory(&input, 1_050_000, policy(), &MockVerifier::default());
-        assert_eq!(result.unwrap_err(), CapacityEvidenceError::ScittReceiptRequired);
+        let result =
+            verify_capacity_inventory(&input, 1_050_000, policy(), &MockVerifier::default());
+        assert_eq!(
+            result.unwrap_err(),
+            CapacityEvidenceError::ScittReceiptRequired
+        );
     }
 
     #[test]
     fn confidence_below_policy_floor_is_rejected() {
         let mut input = statement();
         input.confidence_ppm = 949_999;
-        let result = verify_capacity_inventory(&input, 1_050_000, policy(), &MockVerifier::default());
-        assert_eq!(result.unwrap_err(), CapacityEvidenceError::ConfidenceBelowPolicyFloor);
+        let result =
+            verify_capacity_inventory(&input, 1_050_000, policy(), &MockVerifier::default());
+        assert_eq!(
+            result.unwrap_err(),
+            CapacityEvidenceError::ConfidenceBelowPolicyFloor
+        );
     }
 
     #[test]
@@ -774,51 +894,82 @@ mod tests {
         let mut policy = policy();
         policy.minimum_confidence_ppm = None;
         policy.require_calibration_profile = false;
-        let verified = verify_capacity_inventory(&input, 1_050_000, policy, &MockVerifier::default())
-            .expect("issuer-attested but uncalibrated");
+        let verified =
+            verify_capacity_inventory(&input, 1_050_000, policy, &MockVerifier::default())
+                .expect("issuer-attested but uncalibrated");
         assert_eq!(verified.maturity(), EvidenceMaturity::IssuerAttested);
         assert_eq!(verified.ranking_confidence_ppm(), None);
     }
 
     #[test]
     fn invalid_scitt_receipt_is_rejected() {
-        let result = verify_capacity_inventory(&statement(), 1_050_000, policy(), &MockVerifier {
-            receipt_ok: false,
-            ..MockVerifier::default()
-        });
-        assert_eq!(result.unwrap_err(), CapacityEvidenceError::Trust(TrustVerificationError::ScittReceiptInvalid));
+        let result = verify_capacity_inventory(
+            &statement(),
+            1_050_000,
+            policy(),
+            &MockVerifier {
+                receipt_ok: false,
+                ..MockVerifier::default()
+            },
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            CapacityEvidenceError::Trust(TrustVerificationError::ScittReceiptInvalid)
+        );
     }
 
     #[test]
     fn invalid_calibration_profile_is_rejected() {
-        let result = verify_capacity_inventory(&statement(), 1_050_000, policy(), &MockVerifier {
-            calibration_ok: false,
-            ..MockVerifier::default()
-        });
-        assert_eq!(result.unwrap_err(), CapacityEvidenceError::Trust(TrustVerificationError::CalibrationProfileUnknown));
+        let result = verify_capacity_inventory(
+            &statement(),
+            1_050_000,
+            policy(),
+            &MockVerifier {
+                calibration_ok: false,
+                ..MockVerifier::default()
+            },
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            CapacityEvidenceError::Trust(TrustVerificationError::CalibrationProfileUnknown)
+        );
     }
 
     #[test]
     fn duplicate_resource_inventory_is_rejected() {
         let mut input = statement();
         input.resource_claims.push(input.resource_claims[0].clone());
-        let result = verify_capacity_inventory(&input, 1_050_000, policy(), &MockVerifier::default());
-        assert_eq!(result.unwrap_err(), CapacityEvidenceError::DuplicateResourceId);
+        let result =
+            verify_capacity_inventory(&input, 1_050_000, policy(), &MockVerifier::default());
+        assert_eq!(
+            result.unwrap_err(),
+            CapacityEvidenceError::DuplicateResourceId
+        );
     }
 
     #[test]
     fn unknown_path_resource_reference_is_rejected() {
         let mut input = statement();
-        input.path_incidence[0].resource_ids.push("unknown".to_owned());
-        let result = verify_capacity_inventory(&input, 1_050_000, policy(), &MockVerifier::default());
-        assert_eq!(result.unwrap_err(), CapacityEvidenceError::UnknownPathResource);
+        input.path_incidence[0]
+            .resource_ids
+            .push("unknown".to_owned());
+        let result =
+            verify_capacity_inventory(&input, 1_050_000, policy(), &MockVerifier::default());
+        assert_eq!(
+            result.unwrap_err(),
+            CapacityEvidenceError::UnknownPathResource
+        );
     }
 
     #[test]
     fn path_incidence_without_resources_is_rejected() {
         let mut input = statement();
         input.path_incidence[0].resource_ids.clear();
-        let result = verify_capacity_inventory(&input, 1_050_000, policy(), &MockVerifier::default());
-        assert_eq!(result.unwrap_err(), CapacityEvidenceError::EmptyPathResources);
+        let result =
+            verify_capacity_inventory(&input, 1_050_000, policy(), &MockVerifier::default());
+        assert_eq!(
+            result.unwrap_err(),
+            CapacityEvidenceError::EmptyPathResources
+        );
     }
 }
