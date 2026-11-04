@@ -278,7 +278,7 @@ pub fn evaluate_evidence_debt(
     let mut items = BTreeMap::<String, ItemState>::new();
     let mut by_kind = BTreeMap::<EvidenceDebtKind, EvidenceDebtAggregate>::new();
     let mut by_state = BTreeMap::<EvidenceDebtState, u64>::new();
-    let mut seen_kind_items = BTreeSet::<(EvidenceDebtKind, String)>::new();
+    let mut previous_global_time = None::<u64>;
 
     let mut total_unresolved_duration_ms = 0u64;
     let mut total_weighted_exposure_milli_ms = 0u128;
@@ -298,6 +298,10 @@ pub fn evaluate_evidence_debt(
         if !sequences.insert(event.sequence) {
             return Err(EvidenceDebtError::DuplicateSequence);
         }
+        if previous_global_time.is_some_and(|previous| event.occurred_at_ms < previous) {
+            return Err(EvidenceDebtError::EventSequenceTimeRegression);
+        }
+        previous_global_time = Some(event.occurred_at_ms);
 
         match items.get_mut(&event.operation_id) {
             None => {
@@ -312,7 +316,6 @@ pub fn evaluate_evidence_debt(
                     .item_count
                     .checked_add(1)
                     .ok_or(EvidenceDebtError::CounterOverflow)?;
-                seen_kind_items.insert((event.kind, event.operation_id.clone()));
                 items.insert(
                     event.operation_id.clone(),
                     ItemState {
@@ -354,7 +357,9 @@ pub fn evaluate_evidence_debt(
                 )?;
                 add_duration(by_state.entry(item.current_state).or_default(), duration)?;
 
-                let aggregate = by_kind.get_mut(&item.kind).expect("item kind is registered");
+                let aggregate = by_kind
+                    .get_mut(&item.kind)
+                    .ok_or(EvidenceDebtError::CounterOverflow)?;
                 add_duration(&mut aggregate.unresolved_duration_ms, duration)?;
                 add_weighted(
                     &mut aggregate.weighted_exposure_milli_ms,
@@ -418,7 +423,9 @@ pub fn evaluate_evidence_debt(
         )?;
         add_duration(by_state.entry(item.current_state).or_default(), duration)?;
 
-        let aggregate = by_kind.get_mut(&item.kind).expect("item kind is registered");
+        let aggregate = by_kind
+            .get_mut(&item.kind)
+            .ok_or(EvidenceDebtError::CounterOverflow)?;
         add_duration(&mut aggregate.unresolved_duration_ms, duration)?;
         add_weighted(
             &mut aggregate.weighted_exposure_milli_ms,
@@ -734,6 +741,21 @@ mod tests {
                 EvidenceDebtState::PendingReconciliation, 1_000),
             event("a2", "effect-a", 2, 90, EvidenceDebtKind::ParticipantEffect,
                 EvidenceDebtState::Confirmed, 1_000),
+        ];
+        assert_eq!(
+            evaluate_evidence_debt(&contract(), &events),
+            Err(EvidenceDebtError::EventSequenceTimeRegression)
+        );
+    }
+
+
+    #[test]
+    fn global_evaluator_sequence_must_have_monotonic_event_time() {
+        let events = vec![
+            event("a1", "effect-a", 1, 200, EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::PendingReconciliation, 1_000),
+            event("b1", "effect-b", 2, 100, EvidenceDebtKind::ParticipantEffect,
+                EvidenceDebtState::PendingReconciliation, 1_000),
         ];
         assert_eq!(
             evaluate_evidence_debt(&contract(), &events),
