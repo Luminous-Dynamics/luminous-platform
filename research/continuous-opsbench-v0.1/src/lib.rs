@@ -634,20 +634,48 @@ mod tests {
         }
     }
 
-    fn window(service: &str, id: &str, start: u64, end: u64,
-        offered: u64, failed: u64, slow: u64, incorrect: u64, arm: &str) -> ObserverWindow {
+    struct ObserverWindowSpec<'a> {
+        service: &'a str,
+        id: &'a str,
+        start: u64,
+        end: u64,
+        offered: u64,
+        failed: u64,
+        slow: u64,
+        incorrect: u64,
+        arm: &'a str,
+    }
+
+    fn window(spec: ObserverWindowSpec<'_>) -> ObserverWindow {
         ObserverWindow {
-            scenario_id: "continuous-001".into(), arm_id: arm.into(),
-            window_id: id.into(), starts_at_ms: start, ends_at_ms: end,
-            service: service.into(), request_class: "critical-read".into(),
-            offered_requests: offered, failed_requests: failed, slow_requests: slow,
-            incorrect_business_results: incorrect, workload_profile_digest: Digest::from_byte(7),
-            observer_id: "observer-independent".into(), complete: true,
+            scenario_id: "continuous-001".into(),
+            arm_id: spec.arm.into(),
+            window_id: spec.id.into(),
+            starts_at_ms: spec.start,
+            ends_at_ms: spec.end,
+            service: spec.service.into(),
+            request_class: "critical-read".into(),
+            offered_requests: spec.offered,
+            failed_requests: spec.failed,
+            slow_requests: spec.slow,
+            incorrect_business_results: spec.incorrect,
+            workload_profile_digest: Digest::from_byte(7),
+            observer_id: "observer-independent".into(),
+            complete: true,
         }
     }
 
-    fn two_fault_fixture() -> (RunContract, Vec<FaultTruth>, Vec<IncidentReport>,
-        Vec<AgentAction>, Vec<EffectReceipt>, Vec<ObserverWindow>, Vec<ObserverWindow>) {
+    type TwoFaultFixture = (
+        RunContract,
+        Vec<FaultTruth>,
+        Vec<IncidentReport>,
+        Vec<AgentAction>,
+        Vec<EffectReceipt>,
+        Vec<ObserverWindow>,
+        Vec<ObserverWindow>,
+    );
+
+    fn two_fault_fixture() -> TwoFaultFixture {
         let c = contract();
         let faults = vec![
             fault("fault-a", 100, 900, "service-a", "alert-a"),
@@ -663,16 +691,96 @@ mod tests {
         ];
         let effects = actions.iter().map(|a| effect(a, ParticipantState::Committed)).collect();
         let observations = vec![
-            window("service-a", "a-1", 220, 260, 120, 0, 0, 0, "candidate"),
-            window("service-a", "a-2", 260, 300, 120, 0, 0, 0, "candidate"),
-            window("service-b", "b-1", 320, 360, 120, 0, 0, 0, "candidate"),
-            window("service-b", "b-2", 360, 400, 120, 0, 0, 0, "candidate"),
+            window(ObserverWindowSpec {
+                service: "service-a",
+                id: "a-1",
+                start: 220,
+                end: 260,
+                offered: 120,
+                failed: 0,
+                slow: 0,
+                incorrect: 0,
+                arm: "candidate",
+            }),
+            window(ObserverWindowSpec {
+                service: "service-a",
+                id: "a-2",
+                start: 260,
+                end: 300,
+                offered: 120,
+                failed: 0,
+                slow: 0,
+                incorrect: 0,
+                arm: "candidate",
+            }),
+            window(ObserverWindowSpec {
+                service: "service-b",
+                id: "b-1",
+                start: 320,
+                end: 360,
+                offered: 120,
+                failed: 0,
+                slow: 0,
+                incorrect: 0,
+                arm: "candidate",
+            }),
+            window(ObserverWindowSpec {
+                service: "service-b",
+                id: "b-2",
+                start: 360,
+                end: 400,
+                offered: 120,
+                failed: 0,
+                slow: 0,
+                incorrect: 0,
+                arm: "candidate",
+            }),
         ];
         let baseline = vec![
-            window("service-a", "na-1", 220, 260, 120, 40, 0, 0, "no-action"),
-            window("service-a", "na-2", 260, 300, 120, 35, 0, 0, "no-action"),
-            window("service-b", "nb-1", 320, 360, 120, 45, 0, 0, "no-action"),
-            window("service-b", "nb-2", 360, 400, 120, 40, 0, 0, "no-action"),
+            window(ObserverWindowSpec {
+                service: "service-a",
+                id: "na-1",
+                start: 220,
+                end: 260,
+                offered: 120,
+                failed: 40,
+                slow: 0,
+                incorrect: 0,
+                arm: "no-action",
+            }),
+            window(ObserverWindowSpec {
+                service: "service-a",
+                id: "na-2",
+                start: 260,
+                end: 300,
+                offered: 120,
+                failed: 35,
+                slow: 0,
+                incorrect: 0,
+                arm: "no-action",
+            }),
+            window(ObserverWindowSpec {
+                service: "service-b",
+                id: "nb-1",
+                start: 320,
+                end: 360,
+                offered: 120,
+                failed: 45,
+                slow: 0,
+                incorrect: 0,
+                arm: "no-action",
+            }),
+            window(ObserverWindowSpec {
+                service: "service-b",
+                id: "nb-2",
+                start: 360,
+                end: 400,
+                offered: 120,
+                failed: 40,
+                slow: 0,
+                incorrect: 0,
+                arm: "no-action",
+            }),
         ];
         (c, faults, reports, actions, effects, observations, baseline)
     }
@@ -798,7 +906,17 @@ mod tests {
         let mut c = contract();
         c.end_ms = 2_000;
         let f = vec![fault("short", 100, 120, "service-a", "short-alert")];
-        let no_action = vec![window("service-a", "na", 100, 120, 120, 60, 0, 0, "no-action")];
+        let no_action = vec![window(ObserverWindowSpec {
+                service: "service-a",
+                id: "na",
+                start: 100,
+                end: 120,
+                offered: 120,
+                failed: 60,
+                slow: 0,
+                incorrect: 0,
+                arm: "no-action",
+            })];
         let result = evaluate_continuous_run(&c, &f, &[], &[], &[], &[], &no_action).unwrap();
         assert_eq!(result.total_faults, 1);
         assert_eq!(result.correlated_faults, 0);
