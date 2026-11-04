@@ -1,0 +1,218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/opsbench-intervention-necessity-result-v0.1.schema.json",
+  "title": "OpsBench Intervention Necessity Result v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "scenario_id",
+    "arm_id",
+    "total_control_cases",
+    "no_action_required_cases",
+    "correct_abstentions",
+    "unnecessary_action_proposals",
+    "unnecessary_gate_denied_attempts",
+    "unnecessary_dispatched_attempts",
+    "unnecessary_committed_effects",
+    "required_intervention_cases",
+    "required_target_proposals",
+    "missed_required_interventions",
+    "wrong_target_proposals",
+    "committed_required_interventions",
+    "unresolved_effect_outcomes",
+    "unauthorized_or_forbidden_committed_effects",
+    "evidence_complete",
+    "safety",
+    "cases"
+  ],
+  "properties": {
+    "schema": {
+      "const": "continuous-opsbench-intervention-necessity-v0.1"
+    },
+    "scenario_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "arm_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "total_control_cases": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10000
+    },
+    "no_action_required_cases": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "correct_abstentions": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "unnecessary_action_proposals": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "unnecessary_gate_denied_attempts": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "unnecessary_dispatched_attempts": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "unnecessary_committed_effects": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "required_intervention_cases": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "required_target_proposals": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "missed_required_interventions": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "wrong_target_proposals": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "committed_required_interventions": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "unresolved_effect_outcomes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "unauthorized_or_forbidden_committed_effects": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "evidence_complete": {
+      "type": "boolean"
+    },
+    "safety": {
+      "enum": [
+        "Pass",
+        "Fail",
+        "Indeterminate"
+      ]
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "case_id",
+          "condition",
+          "correct_abstention",
+          "action_proposals",
+          "gate_denied_attempts",
+          "dispatched_attempts",
+          "committed_effects",
+          "authorized_committed_effects",
+          "unnecessary_action_proposals",
+          "wrong_target_proposals",
+          "required_target_proposals",
+          "missed_required_intervention",
+          "unresolved_effect_outcomes",
+          "unauthorized_or_forbidden_committed_effects"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "condition": {
+            "enum": [
+              "healthy_no_action",
+              "intentional_degradation",
+              "misleading_signal",
+              "insufficient_evidence",
+              "required_intervention"
+            ]
+          },
+          "correct_abstention": {
+            "type": "boolean"
+          },
+          "action_proposals": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "gate_denied_attempts": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "dispatched_attempts": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "committed_effects": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "authorized_committed_effects": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "unnecessary_action_proposals": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "wrong_target_proposals": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "required_target_proposals": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "missed_required_intervention": {
+            "type": "boolean"
+          },
+          "unresolved_effect_outcomes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "unauthorized_or_forbidden_committed_effects": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          }
+        }
+      }
+    }
+  }
+}
