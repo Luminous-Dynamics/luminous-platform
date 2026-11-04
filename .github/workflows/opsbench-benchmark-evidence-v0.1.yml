@@ -123,7 +123,7 @@ jobs:
           bad["entries"][0]["metrics"][0].pop("denominator_definition")
           negative_controls.append(("missing denominator semantics", bad))
           bad = copy.deepcopy(snapshot)
-          bad["entries"][0]["observed_on"] = "2026-11-05"
+          bad["entries"][0]["observed_on"] = "2026-11-06"
           negative_controls.append(("future observation date", bad))
           bad = copy.deepcopy(snapshot)
           entry_with_results = next(entry for entry in bad["entries"] if entry["results"])
