@@ -35,5 +35,7 @@
       ],
       "topology_epoch": 4
     }
-  ]
+  ],
+  "counterfactual_pair_id": "pair-1",
+  "pair_manifest_digest": "0606060606060606060606060606060606060606060606060606060606060606"
 }
