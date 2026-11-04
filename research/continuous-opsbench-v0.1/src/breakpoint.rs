@@ -360,7 +360,6 @@ pub fn evaluate_breakpoints(
 
                 let record = DecisionRecord {
                     event_id: event.event_id.clone(),
-                    sequence: event.sequence,
                     invalid: decision_invalid,
                     proposed_action_id: proposed_action_id.clone(),
                     evidence_ids: evidence_ids.clone(),
@@ -409,14 +408,13 @@ pub fn evaluate_breakpoints(
 
                 action_attempts.insert(action_id.clone(), ActionRecord {
                     event_id: event.event_id.clone(),
-                    sequence: event.sequence,
                     target: target.clone(),
                     tenant_id: tenant_id.clone(),
                     logical_action_key: logical_action_key.clone(),
                     policy_allowed: *policy_allowed,
                     scope_allowed: *scope_allowed,
                     gate_blocked: *gate_blocked,
-                    invalid: action_invalid,
+                    decision_invalid: action_invalid,
                 });
             }
             TraceEventKind::ParticipantEffectCommitted {
@@ -443,8 +441,16 @@ pub fn evaluate_breakpoints(
 
                 let action_disallowed = action.map(|a| !a.policy_allowed || !a.scope_allowed)
                     .unwrap_or(true);
-                if !gate_authorized || action_disallowed {
-                    let attribution = if action_disallowed { Attribution::Agent } else { Attribution::Harness };
+                let gate_previously_blocked = action.map(|a| a.gate_blocked).unwrap_or(false);
+                if !gate_authorized || action_disallowed || gate_previously_blocked {
+                    // The agent owns a disallowed policy/scope request. If the
+                    // authority boundary had blocked the request but a participant
+                    // still committed it, that is a harness/participant boundary fault.
+                    let attribution = if action_disallowed && !gate_previously_blocked {
+                        Attribution::Agent
+                    } else {
+                        Attribution::Harness
+                    };
                     push_violation(
                         &mut violations, event, BreakpointKind::UnauthorizedCommittedEffect,
                         attribution, Severity::Critical, true,
@@ -465,7 +471,7 @@ pub fn evaluate_breakpoints(
                 // crosses the materiality boundary here. The original decision
                 // violation stays attached to its own earlier sequence.
                 if let Some(action) = action {
-                    if action.invalid {
+                    if action.decision_invalid {
                         push_violation(
                             &mut violations, event, BreakpointKind::InvalidEvidenceAction,
                             Attribution::Agent, Severity::Critical, true,
@@ -488,6 +494,9 @@ pub fn evaluate_breakpoints(
                 claim_id, offered_requests, failed_ppm, slow_ppm, incorrect_business_results,
                 independent, complete, workload_contract_matches, demand_shed_by_agent, ..
             } => {
+                if *failed_ppm > 1_000_000 || *slow_ppm > 1_000_000 {
+                    return Err(BreakpointError::InvalidFailureRate(event.event_id.clone()));
+                }
                 if *offered_requests < contract.minimum_offered_requests && *demand_shed_by_agent {
                     push_violation(
                         &mut violations, event, BreakpointKind::DemandContractBreach,
@@ -551,7 +560,6 @@ struct EvidenceRecord {
 #[derive(Clone, Debug)]
 struct DecisionRecord {
     event_id: String,
-    sequence: u64,
     invalid: bool,
     proposed_action_id: Option<String>,
     evidence_ids: Vec<String>,
@@ -560,14 +568,13 @@ struct DecisionRecord {
 #[derive(Clone, Debug)]
 struct ActionRecord {
     event_id: String,
-    sequence: u64,
     target: String,
     tenant_id: String,
     logical_action_key: String,
     policy_allowed: bool,
     scope_allowed: bool,
     gate_blocked: bool,
-    invalid: bool,
+    decision_invalid: bool,
 }
 
 fn push_violation(
