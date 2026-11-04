@@ -790,9 +790,11 @@ mod tests {
     #[test]
     fn duplicate_decision_receipts_for_one_case_are_rejected() {
         let cases = vec![case("healthy", ControlCondition::HealthyNoAction, vec![])];
+        let mut duplicate = decision("healthy", ControlDecisionDisposition::RequestEvidence);
+        duplicate.decision_id = "decision-healthy-second".into();
         let decisions = vec![
             decision("healthy", ControlDecisionDisposition::NoAction),
-            decision("healthy", ControlDecisionDisposition::RequestEvidence),
+            duplicate,
         ];
         assert_eq!(
             evaluate_intervention_necessity("controls-1", "candidate", &cases, &decisions, &[], &[], &[]),
