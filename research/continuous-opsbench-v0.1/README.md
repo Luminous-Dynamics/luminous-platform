@@ -146,3 +146,23 @@ Wire contracts and fixtures:
 CI meta-validates both Draft 2020-12 schemas and validates both fixtures alongside the existing safety-filter and viability contracts.
 
 **Claim ceiling:** this evaluator measures risk over supplied evaluator-owned snapshots and the declared no-action comparison. It does not derive ground truth from telemetry, authenticate observation publishers, prove the causal validity of a no-action twin beyond its bound identities, or establish production-wide future risk. Human adjudication and independently reproduced benchmark trajectories remain necessary for comparative claims.
+
+
+## Counterfactual twin equivalence v0.1
+
+The intrinsic-risk trajectory evaluator now requires a separate \`CounterfactualPairManifest\` for the candidate and no-action runs. The pair binds:
+- candidate/no-action run IDs and a protocol ID;
+- plant simulator/model revision;
+- initial evaluator-owned plant state;
+- exogenous input digest (fault schedule, offered demand/workload and disturbance stream);
+- seed bundle;
+- scenario/fault truth;
+- environment policy epoch and digest.
+
+Every step additionally binds the exact pair ID and pair-manifest digest. The step's plant-model digest must match the manifest. Candidate and no-action values for every exogenous field must be byte-identical before any intervention attribution is permitted.
+
+The pair manifest is not the same as an aggregate score or a model-provided claim. It is an evaluator/run-manifest input. The adapter that constructs it must compute the manifest digest from a canonical serialization and bind both run IDs. The reference evaluator checks digest presence and exact field equality; it does not authenticate the manifest publisher or independently prove that a simulator matches an unobservable production world.
+
+A twin that differs in plant model, initial state, exogenous fault/demand/disturbance input, seed, scenario truth, policy epoch or policy digest is rejected as a counterfactual mismatch. Findings do not get downgraded to harmless background risk and attribution does not proceed.
+
+The result includes the pair ID and manifest digest so a scorecard can be traced back to the exact matched experiment. This establishes deterministic pairing within the declared test harness, not universal causal truth.
