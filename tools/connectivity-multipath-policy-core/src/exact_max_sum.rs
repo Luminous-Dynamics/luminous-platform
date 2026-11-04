@@ -96,9 +96,7 @@ struct SearchState {
 }
 
 fn valid_id(id: &str) -> bool {
-    !id.trim().is_empty()
-        && id.len() <= MAX_ORACLE_ID_BYTES
-        && !id.chars().any(char::is_control)
+    !id.trim().is_empty() && id.len() <= MAX_ORACLE_ID_BYTES && !id.chars().any(char::is_control)
 }
 
 fn checked_total(values: impl Iterator<Item = u64>) -> Result<u128, ExactMaxSumError> {
@@ -147,8 +145,7 @@ fn should_replace_witness(
     match (current_total_bps, current_rates) {
         (None, None) => true,
         (Some(current_total), Some(current_rates)) => {
-            total_bps > current_total
-                || (total_bps == current_total && rates > current_rates)
+            total_bps > current_total || (total_bps == current_total && rates > current_rates)
         }
         _ => false,
     }
@@ -168,11 +165,8 @@ fn enumerate_rate_vectors(
             .assignments_examined
             .checked_add(1)
             .ok_or(ExactMaxSumError::ArithmeticOverflow)?;
-        let loads = calculate_resource_loads(
-            rates,
-            path_resource_indices,
-            resource_capacities.len(),
-        )?;
+        let loads =
+            calculate_resource_loads(rates, path_resource_indices, resource_capacities.len())?;
         if !resource_feasible(&loads, resource_capacities) {
             return Ok(());
         }
@@ -254,14 +248,25 @@ fn jain_index_ppm(rates: &[u64]) -> Result<Option<u32>, ExactMaxSumError> {
         .checked_add(denominator / 2)
         .ok_or(ExactMaxSumError::ArithmeticOverflow)?
         / denominator;
-    u32::try_from(rounded.min(1_000_000)).map(Some).map_err(|_| ExactMaxSumError::ArithmeticOverflow)
+    u32::try_from(rounded.min(1_000_000))
+        .map(Some)
+        .map_err(|_| ExactMaxSumError::ArithmeticOverflow)
 }
 
 fn validate_and_index(
     resources: &[ResourceCapacity],
     paths: &[PathRateDemand],
     minimums: &[PathRateFloor],
-) -> Result<(Vec<&PathRateDemand>, Vec<&ResourceCapacity>, Vec<u64>, Vec<Vec<usize>>, u64), ExactMaxSumError> {
+) -> Result<
+    (
+        Vec<&PathRateDemand>,
+        Vec<&ResourceCapacity>,
+        Vec<u64>,
+        Vec<Vec<usize>>,
+        u64,
+    ),
+    ExactMaxSumError,
+> {
     if paths.is_empty() {
         return Err(ExactMaxSumError::EmptyPaths);
     }
@@ -444,12 +449,16 @@ pub fn maximize_total_rate_with_floors(
         &mut rates,
         &mut state,
     )?;
-    let best_rates = state.best_rates.ok_or(ExactMaxSumError::InfeasibleMinimums)?;
+    let best_rates = state
+        .best_rates
+        .ok_or(ExactMaxSumError::InfeasibleMinimums)?;
     let best_loads = state
         .best_resource_loads
         .ok_or(ExactMaxSumError::InternalInvariant)?;
     let total_requested_bps = checked_total(ordered_paths.iter().map(|path| path.demand_bps))?;
-    let total_allocated_bps = state.best_total_bps.ok_or(ExactMaxSumError::InternalInvariant)?;
+    let total_allocated_bps = state
+        .best_total_bps
+        .ok_or(ExactMaxSumError::InternalInvariant)?;
     let unserved_requested_bps = total_requested_bps
         .checked_sub(total_allocated_bps)
         .ok_or(ExactMaxSumError::InternalInvariant)?;
@@ -547,7 +556,10 @@ mod tests {
         let fair = allocate_weighted_max_min(&resources, &paths).expect("weighted max-min result");
         assert_eq!(fair.total_allocated_bps, 15);
         assert_eq!(exact.total_allocated_bps, 20);
-        assert_eq!((rate(&exact, "a"), rate(&exact, "b"), rate(&exact, "c")), (10, 0, 10));
+        assert_eq!(
+            (rate(&exact, "a"), rate(&exact, "b"), rate(&exact, "c")),
+            (10, 0, 10)
+        );
         let gap_ppm = (exact.total_allocated_bps - fair.total_allocated_bps) * 1_000_000
             / exact.total_allocated_bps;
         assert_eq!(gap_ppm, 250_000);
@@ -584,7 +596,10 @@ mod tests {
     fn demand_limited_path_releases_unused_capacity_to_peer() {
         let report = maximize_total_rate(
             &[resource("shared", 10)],
-            &[path("small", &["shared"], 2), path("large", &["shared"], 10)],
+            &[
+                path("small", &["shared"], 2),
+                path("large", &["shared"], 10),
+            ],
         )
         .expect("demand limited max-sum");
         assert_eq!(rate(&report, "small"), 2);
@@ -602,15 +617,29 @@ mod tests {
                 path("c", &["y"], 10),
             ],
             &[
-                PathRateFloor { path_id: "a".to_owned(), minimum_bps: 2 },
-                PathRateFloor { path_id: "b".to_owned(), minimum_bps: 2 },
-                PathRateFloor { path_id: "c".to_owned(), minimum_bps: 2 },
+                PathRateFloor {
+                    path_id: "a".to_owned(),
+                    minimum_bps: 2,
+                },
+                PathRateFloor {
+                    path_id: "b".to_owned(),
+                    minimum_bps: 2,
+                },
+                PathRateFloor {
+                    path_id: "c".to_owned(),
+                    minimum_bps: 2,
+                },
             ],
         )
         .expect("feasible floors");
         assert_eq!(report.total_allocated_bps, 18);
         assert_eq!(rate(&report, "b"), 2);
-        assert!(report.path_allocations.iter().all(|path| path.allocated_bps >= path.minimum_bps));
+        assert!(
+            report
+                .path_allocations
+                .iter()
+                .all(|path| path.allocated_bps >= path.minimum_bps)
+        );
     }
 
     #[test]
@@ -619,8 +648,14 @@ mod tests {
             &[resource("x", 10)],
             &[path("a", &["x"], 10), path("b", &["x"], 10)],
             &[
-                PathRateFloor { path_id: "a".to_owned(), minimum_bps: 6 },
-                PathRateFloor { path_id: "b".to_owned(), minimum_bps: 5 },
+                PathRateFloor {
+                    path_id: "a".to_owned(),
+                    minimum_bps: 6,
+                },
+                PathRateFloor {
+                    path_id: "b".to_owned(),
+                    minimum_bps: 5,
+                },
             ],
         )
         .unwrap_err();
@@ -673,19 +708,12 @@ mod tests {
     #[test]
     fn demand_and_resource_bounds_are_enforced() {
         assert_eq!(
-            maximize_total_rate(
-                &[resource("x", 100)],
-                &[path("too-big", &["x"], 1_001)],
-            )
-            .unwrap_err(),
+            maximize_total_rate(&[resource("x", 100)], &[path("too-big", &["x"], 1_001)],)
+                .unwrap_err(),
             ExactMaxSumError::DemandBoundExceeded
         );
         assert_eq!(
-            maximize_total_rate(
-                &[resource("x", 1_001)],
-                &[path("a", &["x"], 100)],
-            )
-            .unwrap_err(),
+            maximize_total_rate(&[resource("x", 1_001)], &[path("a", &["x"], 100)],).unwrap_err(),
             ExactMaxSumError::ResourceCapacityBoundExceeded
         );
     }
@@ -709,8 +737,14 @@ mod tests {
         let resources = [resource("x", 10)];
         let paths = [path("a", &["x"], 10)];
         let duplicate = [
-            PathRateFloor { path_id: "a".to_owned(), minimum_bps: 1 },
-            PathRateFloor { path_id: "a".to_owned(), minimum_bps: 2 },
+            PathRateFloor {
+                path_id: "a".to_owned(),
+                minimum_bps: 1,
+            },
+            PathRateFloor {
+                path_id: "a".to_owned(),
+                minimum_bps: 2,
+            },
         ];
         assert_eq!(
             maximize_total_rate_with_floors(&resources, &paths, &duplicate).unwrap_err(),
@@ -720,7 +754,10 @@ mod tests {
             maximize_total_rate_with_floors(
                 &resources,
                 &paths,
-                &[PathRateFloor { path_id: "missing".to_owned(), minimum_bps: 1 }]
+                &[PathRateFloor {
+                    path_id: "missing".to_owned(),
+                    minimum_bps: 1
+                }]
             )
             .unwrap_err(),
             ExactMaxSumError::UnknownFloorPath
@@ -733,7 +770,10 @@ mod tests {
             maximize_total_rate_with_floors(
                 &[resource("x", 10)],
                 &[path("a", &["x"], 10)],
-                &[PathRateFloor { path_id: "a".to_owned(), minimum_bps: 11 }],
+                &[PathRateFloor {
+                    path_id: "a".to_owned(),
+                    minimum_bps: 11
+                }],
             )
             .unwrap_err(),
             ExactMaxSumError::MinimumExceedsDemand
