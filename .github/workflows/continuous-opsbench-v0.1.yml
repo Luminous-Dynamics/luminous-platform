@@ -33,14 +33,30 @@ jobs:
           set -euo pipefail
           rustup toolchain install 1.96.0 --profile minimal --component clippy
           rustup override set 1.96.0
-      - name: Validate benchmark schemas are valid JSON
+      - name: Validate benchmark schemas and safety-filter fixtures
         run: |
-          python3 - <<'PY'
+          set -euo pipefail
+          python3 -m venv /tmp/opsbench-schema-venv
+          /tmp/opsbench-schema-venv/bin/python -m pip install --disable-pip-version-check "jsonschema==4.23.0"
+          /tmp/opsbench-schema-venv/bin/python - <<'PY'
           import json
           from pathlib import Path
-          for path in sorted(Path("research/continuous-opsbench-v0.1").glob("*.schema.json")):
-              json.loads(path.read_text(encoding="utf-8"))
-              print(f"valid JSON: {path}")
+          from jsonschema import Draft202012Validator
+
+          root = Path("research/continuous-opsbench-v0.1")
+          request_schema_path = root / "predictive-safety-filter-request.schema.json"
+          appraisal_schema_path = root / "predictive-safety-filter-appraisal.schema.json"
+          request_schema = json.loads(request_schema_path.read_text(encoding="utf-8"))
+          appraisal_schema = json.loads(appraisal_schema_path.read_text(encoding="utf-8"))
+          Draft202012Validator.check_schema(request_schema)
+          Draft202012Validator.check_schema(appraisal_schema)
+          Draft202012Validator(request_schema).validate(json.loads(
+              (root / "examples/predictive-safety-filter-request.example.json").read_text(encoding="utf-8")
+          ))
+          Draft202012Validator(appraisal_schema).validate(json.loads(
+              (root / "examples/predictive-safety-filter-appraisal.example.json").read_text(encoding="utf-8")
+          ))
+          print("predictive safety-filter schemas meta-validate; request/appraisal fixtures conform")
           PY
       - name: Run dependency-locked tests
         run: cargo test --manifest-path research/continuous-opsbench-v0.1/Cargo.toml --locked
