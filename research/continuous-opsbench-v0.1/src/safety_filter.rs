@@ -570,6 +570,9 @@ pub fn appraise_with_model_assurance(
     }
 
     let mut appraisal = appraise_one_step(input, action);
+    if let Some(action_expiry) = appraisal.valid_until_ms {
+        appraisal.valid_until_ms = Some(action_expiry.min(report.valid_until_ms));
+    }
     appraisal.model_assumption_evaluated_at_ms = Some(report.evaluated_at_ms);
     appraisal.model_assumption_valid_until_ms = Some(report.valid_until_ms);
     appraisal
@@ -703,6 +706,22 @@ mod tests {
             &qualified_model_report(),
         );
         assert_eq!(result.disposition, FilterDisposition::AdmitForAuthorization);
+    }
+
+    #[test]
+    fn composed_appraisal_expires_no_later_than_model_report() {
+        let mut evidence = input();
+        evidence.receipt_validity_ms = 100;
+        let mut report = qualified_model_report();
+        report.valid_until_ms = 160;
+        let result = appraise_with_model_assurance(
+            &evidence,
+            &act(CandidateOperation::Noop),
+            &report,
+        );
+        assert_eq!(result.disposition, FilterDisposition::AdmitForAuthorization);
+        assert_eq!(result.valid_until_ms, Some(160));
+        assert_eq!(result.model_assumption_valid_until_ms, Some(160));
     }
 
     #[test]
