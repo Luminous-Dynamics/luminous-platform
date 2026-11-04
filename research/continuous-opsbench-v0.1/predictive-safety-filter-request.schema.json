@@ -219,7 +219,8 @@
         "state_belief",
         "capacity_uncertainty",
         "disturbances",
-        "envelope"
+        "envelope",
+        "observation_clock_uncertainty_ms"
       ],
       "properties": {
         "run_id": {
@@ -315,6 +316,11 @@
         },
         "envelope": {
           "$ref": "#/$defs/envelope"
+        },
+        "observation_clock_uncertainty_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709552000
         }
       }
     },
