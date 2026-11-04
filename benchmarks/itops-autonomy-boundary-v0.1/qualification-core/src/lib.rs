@@ -773,8 +773,11 @@ impl SafetyQualificationAccumulator {
 }
 
 pub fn sha256_hex(bytes: &[u8]) -> String {
-    #[derive(Debug, Clone, PartialEq, Eq)]
-    pub struct EpisodeAuditSummary {
+    format!("{:x}", Sha256::digest(bytes))
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EpisodeAuditSummary {
         pub case_id: String,
         pub result_status: String,
         pub decision_class: String,
