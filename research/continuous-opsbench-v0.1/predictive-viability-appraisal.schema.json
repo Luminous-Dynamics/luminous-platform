@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/predictive-viability-appraisal-v0.1.schema.json",
+  "title": "Predictive Viability Appraisal v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "disposition",
+    "run_id",
+    "scenario_id",
+    "arm_id",
+    "action_id",
+    "action_digest",
+    "tenant_id",
+    "participant_id",
+    "target",
+    "topology_epoch",
+    "topology_digest",
+    "observation_id",
+    "observation_digest",
+    "model_revision",
+    "model_digest",
+    "uncertainty_set_digest",
+    "disturbance_set_digest",
+    "envelope_digest",
+    "state_space_digest",
+    "fallback_actions_digest",
+    "appraisal_at_ms",
+    "valid_until_ms",
+    "horizon",
+    "kernel_sizes_by_depth",
+    "candidate_successors_evaluated",
+    "viability_transition_evaluations",
+    "findings",
+    "one_step_appraisal"
+  ],
+  "properties": {
+    "schema": {
+      "const": "continuous-opsbench-predictive-viability-v0.1"
+    },
+    "disposition": {
+      "enum": [
+        "PreservesViability",
+        "BreaksViability",
+        "DeferForEvidence"
+      ]
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scenario_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "arm_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "action_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "action_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "participant_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target": {
+      "type": "string",
+      "minLength": 1
+    },
+    "topology_epoch": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 18446744073709552000
+    },
+    "topology_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "observation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observation_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "model_revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "uncertainty_set_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "disturbance_set_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "envelope_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "state_space_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "fallback_actions_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "appraisal_at_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 18446744073709552000
+    },
+    "valid_until_ms": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 18446744073709552000
+    },
+    "horizon": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 16
+    },
+    "kernel_sizes_by_depth": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 17,
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 512
+      }
+    },
+    "candidate_successors_evaluated": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "viability_transition_evaluations": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "findings": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "IMMEDIATE_SAFETY_REJECTED",
+          "IMMEDIATE_SAFETY_INDETERMINATE",
+          "MISSING_FALLBACK_ACTIONS",
+          "INVALID_FALLBACK_ACTION",
+          "DUPLICATE_FALLBACK_ACTION",
+          "EMPTY_OR_DUPLICATE_STATE_SPACE",
+          "STATE_SPACE_LIMIT_EXCEEDED",
+          "HORIZON_OUT_OF_RANGE",
+          "INVALID_STATE_SPACE",
+          "TRANSITION_EVALUATION_LIMIT_EXCEEDED",
+          "SAFE_SUCCESSOR_OUTSIDE_STATE_SPACE",
+          "CANDIDATE_SUCCESSOR_NOT_VIABLE",
+          "ARITHMETIC_OVERFLOW",
+          "NO_VIABLE_STATES"
+        ]
+      }
+    },
+    "one_step_appraisal": {
+      "$ref": "predictive-safety-filter-appraisal.schema.json"
+    }
+  }
+}
