@@ -309,7 +309,6 @@ pub fn appraise_one_step(
         || input.capacity_uncertainty.is_empty()
         || input.disturbances.is_empty()
         || input.receipt_validity_ms == 0
-        || input.envelope.maximum_total_queue == 0
         || input.envelope.maximum_api_capacity == 0
         || input.envelope.maximum_database_capacity == 0
         || input.envelope.maximum_retry_multiplier_ppm == 0
@@ -333,8 +332,8 @@ pub fn appraise_one_step(
         None => return defer(input, action, SafetyFinding::IncompleteEvidence),
     };
 
-    if let CandidateOperation::SetApiCapacity(value) = action.operation {
-        if value == 0 || value > input.envelope.maximum_api_capacity {
+    if let CandidateOperation::SetApiCapacity(value) = &action.operation {
+        if *value == 0 || *value > input.envelope.maximum_api_capacity {
             return base_appraisal(
                 input,
                 action,
@@ -344,8 +343,8 @@ pub fn appraise_one_step(
             );
         }
     }
-    if let CandidateOperation::SetRetryMultiplierPpm(value) = action.operation {
-        if value == 0 || value > input.envelope.maximum_retry_multiplier_ppm {
+    if let CandidateOperation::SetRetryMultiplierPpm(value) = &action.operation {
+        if *value == 0 || *value > input.envelope.maximum_retry_multiplier_ppm {
             return base_appraisal(
                 input,
                 action,
