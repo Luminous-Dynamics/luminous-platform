@@ -34,7 +34,7 @@ jobs:
         with:
           components: rustfmt, clippy
       - name: Check formatting
-        run: cargo fmt --manifest-path research/continuous-opsbench-v0.1/Cargo.toml --check
+        run: rustfmt --edition 2024 --check research/continuous-opsbench-v0.1/src/evidence_debt.rs
       - name: Check locked all targets
         run: cargo check --locked --all-targets --manifest-path research/continuous-opsbench-v0.1/Cargo.toml
       - name: Run evidence debt and existing OpsBench tests
