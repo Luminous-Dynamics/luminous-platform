@@ -502,11 +502,13 @@ pub fn validate_observer_fitness_bundle(
                 || !valid_id(&injection.injector_id)
                 || is_zero(&injection.marker_digest)
                 || !markers.insert(injection.marker_digest.clone())
-                || !all_markers.insert(injection.marker_digest.clone())
             {
                 return Err(ObserverFitnessError::InjectionBindingMismatch(
                     injection.probe_id.clone(),
                 ));
+            }
+            if !all_markers.insert(injection.marker_digest.clone()) {
+                return Err(ObserverFitnessError::ZeroOrDuplicateDigest);
             }
             let operation_valid = matches!(
                 (definition.expectation, injection.operation),
@@ -998,11 +1000,11 @@ pub(crate) mod tests {
         post_run_batch.receipt.batch_nonce_digest = d(226);
         post_run_batch.receipt.calibration_runtime_digest = d(227);
         post_run_batch.receipt.calibration_namespace_digest = d(228);
-        post_run_batch.receipt.measurement_start_ms = 140;
-        post_run_batch.receipt.measurement_end_ms = 145;
-        post_run_batch.receipt.issued_at_ms = 150;
-        post_run_batch.receipt.valid_from_ms = 150;
-        post_run_batch.receipt.expires_at_ms = 3_600_150;
+        post_run_batch.receipt.measurement_start_ms = 160;
+        post_run_batch.receipt.measurement_end_ms = 165;
+        post_run_batch.receipt.issued_at_ms = 170;
+        post_run_batch.receipt.valid_from_ms = 170;
+        post_run_batch.receipt.expires_at_ms = 3_600_170;
 
         ObserverFitnessBundle {
             plan,
