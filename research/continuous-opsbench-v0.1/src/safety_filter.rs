@@ -72,6 +72,7 @@ pub struct SafetyFilterInput {
     pub observed_at_ms: u64,
     pub appraisal_at_ms: u64,
     pub maximum_observation_age_ms: u64,
+    pub observation_clock_uncertainty_ms: u64,
     pub receipt_validity_ms: u64,
     pub topology_epoch: u64,
     pub topology_digest: Digest,
@@ -323,14 +324,26 @@ pub fn appraise_one_step(
         Some(age) => age,
         None => return defer(input, action, SafetyFinding::StaleObservation),
     };
-    if age > input.maximum_observation_age_ms {
+    let conservative_age = match age.checked_add(input.observation_clock_uncertainty_ms) {
+        Some(age) => age,
+        None => return defer(input, action, SafetyFinding::StaleObservation),
+    };
+    if conservative_age >= input.maximum_observation_age_ms {
         return defer(input, action, SafetyFinding::StaleObservation);
     }
 
-    let valid_until_ms = match input.appraisal_at_ms.checked_add(input.receipt_validity_ms) {
-        Some(expiry) => Some(expiry),
+    let requested_expiry = match input.appraisal_at_ms.checked_add(input.receipt_validity_ms) {
+        Some(expiry) => expiry,
         None => return defer(input, action, SafetyFinding::IncompleteEvidence),
     };
+    let observation_expiry = match input.observed_at_ms
+        .checked_add(input.maximum_observation_age_ms)
+        .and_then(|expiry| expiry.checked_sub(input.observation_clock_uncertainty_ms))
+    {
+        Some(expiry) if expiry > input.appraisal_at_ms => expiry,
+        _ => return defer(input, action, SafetyFinding::StaleObservation),
+    };
+    let valid_until_ms = Some(requested_expiry.min(observation_expiry));
 
     if let CandidateOperation::SetApiCapacity(value) = &action.operation {
         if *value == 0 || *value > input.envelope.maximum_api_capacity {
@@ -501,6 +514,7 @@ mod tests {
             observed_at_ms: 100,
             appraisal_at_ms: 110,
             maximum_observation_age_ms: 20,
+            observation_clock_uncertainty_ms: 0,
             receipt_validity_ms: 50,
             topology_epoch: 7,
             topology_digest: digest(2),
