@@ -295,14 +295,19 @@ pub fn evaluate_intervention_necessity(
                 ActionStage::Dispatched => dispatched += 1,
             }
 
+            let committed_rows = effects.iter().filter(|effect| {
+                effect.scenario_id == scenario_id
+                    && effect.arm_id == arm_id
+                    && effect.action_id == action.action_id
+                    && effect.state == ParticipantState::Committed
+            }).count();
+            committed += committed_rows;
             match effect_disposition(action, effects) {
                 ControlEffectDisposition::CommittedValid => {
-                    committed += 1;
                     authorized_committed += 1;
                 }
                 ControlEffectDisposition::CommittedInvalid => {
-                    committed += 1;
-                    unauthorized += 1;
+                    unauthorized += committed_rows.max(1);
                     evidence_complete = false;
                 }
                 ControlEffectDisposition::NotCommitted => {}
@@ -318,7 +323,9 @@ pub fn evaluate_intervention_necessity(
                 }
                 ControlEffectDisposition::Invalid => {
                     unresolved += 1;
-                    unauthorized += 1;
+                    if committed_rows > 0 {
+                        unauthorized += committed_rows;
+                    }
                     evidence_complete = false;
                 }
             }
