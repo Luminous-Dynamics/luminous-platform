@@ -1,0 +1,460 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/lnf-service-utility-profile-v1.schema.json",
+  "title": "LNF Deadline-qualified Service Utility Profile v1",
+  "description": "Strict benchmark and evidence contract. Validation is not benchmark execution.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "status",
+    "reviewed_on",
+    "parent_issue",
+    "execution_stage",
+    "objective",
+    "optimization_contract",
+    "paired_identity",
+    "task_contract",
+    "evidence_requirements",
+    "scenario_ids",
+    "scenario_definitions",
+    "comparators",
+    "benchmarks",
+    "required_metrics",
+    "verdicts",
+    "target_defaults",
+    "evidence_classes",
+    "explicit_non_claims"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.lnf-service-utility-profile.v1"
+    },
+    "profile_id": {
+      "const": "lnf-deadline-qualified-service-utility-v1"
+    },
+    "status": {
+      "const": "draft_targets_not_results"
+    },
+    "reviewed_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "parent_issue": {
+      "const": 269
+    },
+    "execution_stage": {
+      "const": "deterministic_paired_trial_evaluator_only"
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "optimization_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primary_objective",
+        "secondary_dimensions",
+        "no_scalar_aggregate_score",
+        "throughput_only_win_is_insufficient",
+        "late_useful_bytes_are_not_credited_as_on_time",
+        "incomplete_task_is_not_complete",
+        "task_value_is_all_or_nothing_for_this_v1",
+        "future_streaming_chunk_value_requires_separate_contract",
+        "scheduler_actuation"
+      ],
+      "properties": {
+        "primary_objective": {
+          "const": "maximize_on_time_useful_task_value"
+        },
+        "secondary_dimensions": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "no_scalar_aggregate_score": {
+          "const": true
+        },
+        "throughput_only_win_is_insufficient": {
+          "const": true
+        },
+        "late_useful_bytes_are_not_credited_as_on_time": {
+          "const": true
+        },
+        "incomplete_task_is_not_complete": {
+          "const": true
+        },
+        "task_value_is_all_or_nothing_for_this_v1": {
+          "const": true
+        },
+        "future_streaming_chunk_value_requires_separate_contract": {
+          "const": true
+        },
+        "scheduler_actuation": {
+          "const": false
+        }
+      }
+    },
+    "paired_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required_environment_digests",
+        "required_environment_scalars",
+        "environment_must_match_across_arms",
+        "task_contract_must_match_exactly_across_arms",
+        "arm_identity_is_separate_from_environment",
+        "arm_fields",
+        "out_of_tree_components_require_artifact_digest",
+        "verdict_scope"
+      ],
+      "properties": {
+        "required_environment_digests": {
+          "const": [
+            "kernel_build_sha256",
+            "topology_sha256",
+            "resource_snapshot_sha256",
+            "qdisc_config_sha256",
+            "workload_sha256",
+            "impairment_sha256"
+          ]
+        },
+        "required_environment_scalars": {
+          "const": [
+            "seed",
+            "warmup_us",
+            "measurement_duration_us"
+          ]
+        },
+        "environment_must_match_across_arms": {
+          "const": true
+        },
+        "task_contract_must_match_exactly_across_arms": {
+          "const": true
+        },
+        "arm_identity_is_separate_from_environment": {
+          "const": true
+        },
+        "arm_fields": {
+          "const": [
+            "protocol",
+            "protocol_revision",
+            "implementation_sha256",
+            "scheduler",
+            "scheduler_provenance",
+            "congestion_control",
+            "congestion_control_provenance",
+            "required_active_paths"
+          ]
+        },
+        "out_of_tree_components_require_artifact_digest": {
+          "const": true
+        },
+        "verdict_scope": {
+          "const": "single_paired_trial"
+        }
+      }
+    },
+    "task_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required_fields",
+        "task_id_unique",
+        "deadline_is_relative_to_measurement_start",
+        "deadline_must_fit_measurement_window",
+        "value_weight_positive_integer",
+        "max_tasks",
+        "task_set_digest_bound_by",
+        "per_task_measurement_fields",
+        "on_time_bytes_le_total_bytes",
+        "total_bytes_le_offered_bytes",
+        "completion_event_requires_full_payload",
+        "no_completion_timestamp_with_full_bytes"
+      ],
+      "properties": {
+        "required_fields": {
+          "const": [
+            "task_id",
+            "offered_useful_bytes",
+            "deadline_after_us",
+            "value_weight"
+          ]
+        },
+        "task_id_unique": {
+          "const": true
+        },
+        "deadline_is_relative_to_measurement_start": {
+          "const": true
+        },
+        "deadline_must_fit_measurement_window": {
+          "const": true
+        },
+        "value_weight_positive_integer": {
+          "const": true
+        },
+        "max_tasks": {
+          "const": 4096
+        },
+        "task_set_digest_bound_by": {
+          "const": "workload_sha256"
+        },
+        "per_task_measurement_fields": {
+          "const": [
+            "on_time_useful_bytes",
+            "total_useful_bytes",
+            "completion_offset_us"
+          ]
+        },
+        "on_time_bytes_le_total_bytes": {
+          "const": true
+        },
+        "total_bytes_le_offered_bytes": {
+          "const": true
+        },
+        "completion_event_requires_full_payload": {
+          "const": true
+        },
+        "no_completion_timestamp_with_full_bytes": {
+          "const": "completion evidence is unknown; do not infer deadline completion"
+        }
+      }
+    },
+    "evidence_requirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path_state_verified_at_both_endpoints",
+        "active_path_count_separately_reported_local_and_remote",
+        "required_active_paths_must_be_met_at_both_endpoints",
+        "all_required_task_and_transport_counters_required",
+        "companion_flow_ids_and_offered_load_must_match",
+        "cleanup_verified",
+        "missing_task_measurement",
+        "missing_completion_timestamp",
+        "zero_baseline_for_relative_metric",
+        "unsupported_arm",
+        "failed_cleanup",
+        "max_companion_flows",
+        "fixed_point_ratio_unit",
+        "statistical_analysis"
+      ],
+      "properties": {
+        "path_state_verified_at_both_endpoints": {
+          "const": true
+        },
+        "active_path_count_separately_reported_local_and_remote": {
+          "const": true
+        },
+        "required_active_paths_must_be_met_at_both_endpoints": {
+          "const": true
+        },
+        "all_required_task_and_transport_counters_required": {
+          "const": true
+        },
+        "companion_flow_ids_and_offered_load_must_match": {
+          "const": true
+        },
+        "cleanup_verified": {
+          "const": true
+        },
+        "missing_task_measurement": {
+          "const": "inconclusive"
+        },
+        "missing_completion_timestamp": {
+          "const": "task_value_ratio_inconclusive"
+        },
+        "zero_baseline_for_relative_metric": {
+          "const": "inconclusive"
+        },
+        "unsupported_arm": {
+          "const": "unsupported"
+        },
+        "failed_cleanup": {
+          "const": "fail"
+        },
+        "max_companion_flows": {
+          "const": 256
+        },
+        "fixed_point_ratio_unit": {
+          "const": "parts_per_million"
+        },
+        "statistical_analysis": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "scenario_ids": {
+      "type": "array",
+      "minItems": 14,
+      "maxItems": 14,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^UTL-[0-9]{2}$"
+      }
+    },
+    "scenario_definitions": {
+      "type": "array",
+      "minItems": 14,
+      "maxItems": 14,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "topology",
+          "purpose"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^UTL-[0-9]{2}$"
+          },
+          "topology": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "comparators": {
+      "type": "array",
+      "minItems": 11,
+      "maxItems": 11,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "benchmarks": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "metric",
+          "operator",
+          "target",
+          "target_status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^UTL_[A-Z0-9_]{3,80}$"
+          },
+          "metric": {
+            "type": "string"
+          },
+          "operator": {
+            "enum": [
+              "==",
+              ">=",
+              "<=",
+              "report"
+            ]
+          },
+          "target": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "target_status": {
+            "enum": [
+              "proposed_target",
+              "proposed_non_regression_target",
+              "baseline_first"
+            ]
+          }
+        }
+      }
+    },
+    "required_metrics": {
+      "type": "array",
+      "minItems": 21,
+      "maxItems": 21,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "verdicts": {
+      "const": [
+        "pass",
+        "fail",
+        "inconclusive",
+        "unsupported"
+      ]
+    },
+    "target_defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimum_on_time_payload_ratio_ppm",
+        "minimum_on_time_task_value_ratio_ppm",
+        "minimum_companion_retention_ppm",
+        "maximum_cost_per_on_time_mib_ratio_ppm",
+        "maximum_energy_per_on_time_mib_ratio_ppm",
+        "target_status"
+      ],
+      "properties": {
+        "minimum_on_time_payload_ratio_ppm": {
+          "const": 1000000
+        },
+        "minimum_on_time_task_value_ratio_ppm": {
+          "const": 1000000
+        },
+        "minimum_companion_retention_ppm": {
+          "const": 900000
+        },
+        "maximum_cost_per_on_time_mib_ratio_ppm": {
+          "const": 1000000
+        },
+        "maximum_energy_per_on_time_mib_ratio_ppm": {
+          "const": 1000000
+        },
+        "target_status": {
+          "const": "proposed_not_measured"
+        }
+      }
+    },
+    "evidence_classes": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "deterministic_evaluator",
+          "network_namespace_or_vm_emulation",
+          "hardware_bench",
+          "field_observed",
+          "literature_only"
+        ]
+      }
+    },
+    "explicit_non_claims": {
+      "type": "array",
+      "minItems": 11,
+      "maxItems": 11,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}
