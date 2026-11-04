@@ -1,0 +1,302 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-temporal-topology-v0.1.schema.json",
+  "title": "Continuous OpsBench temporal topology bundle v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "truth_epochs",
+    "observations",
+    "hypotheses",
+    "actions"
+  ],
+  "properties": {
+    "schema": {
+      "const": "continuous-opsbench-temporal-topology-v0.1"
+    },
+    "truth_epochs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/truthEpoch"
+      }
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/observation"
+      }
+    },
+    "hypotheses": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/hypothesis"
+      }
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/action"
+      }
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "identity": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "optionalEnd": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "truthEpoch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope_id",
+        "epoch",
+        "valid_from_ms",
+        "valid_until_ms"
+      ],
+      "properties": {
+        "scope_id": {
+          "$ref": "#/$defs/identity"
+        },
+        "epoch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "valid_from_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "valid_until_ms": {
+          "$ref": "#/$defs/optionalEnd"
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "edge_id",
+        "from_service",
+        "to_service",
+        "relation",
+        "knowledge",
+        "valid_from_ms",
+        "valid_until_ms",
+        "evidence_digest"
+      ],
+      "properties": {
+        "edge_id": {
+          "$ref": "#/$defs/identity"
+        },
+        "from_service": {
+          "$ref": "#/$defs/identity"
+        },
+        "to_service": {
+          "$ref": "#/$defs/identity"
+        },
+        "relation": {
+          "$ref": "#/$defs/identity"
+        },
+        "knowledge": {
+          "enum": [
+            "Present",
+            "Absent",
+            "Unknown"
+          ]
+        },
+        "valid_from_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "valid_until_ms": {
+          "$ref": "#/$defs/optionalEnd"
+        },
+        "evidence_digest": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observation_id",
+        "scope_id",
+        "epoch",
+        "topology_digest",
+        "source_id",
+        "control_domain",
+        "source_sequence",
+        "event_time_ms",
+        "ingested_at_ms",
+        "processed_at_ms",
+        "clock_uncertainty_ms",
+        "valid_from_ms",
+        "valid_until_ms",
+        "edges"
+      ],
+      "properties": {
+        "observation_id": {
+          "$ref": "#/$defs/identity"
+        },
+        "scope_id": {
+          "$ref": "#/$defs/identity"
+        },
+        "epoch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "topology_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "source_id": {
+          "$ref": "#/$defs/identity"
+        },
+        "control_domain": {
+          "$ref": "#/$defs/identity"
+        },
+        "source_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "event_time_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ingested_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "processed_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "clock_uncertainty_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "valid_from_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "valid_until_ms": {
+          "$ref": "#/$defs/optionalEnd"
+        },
+        "edges": {
+          "type": "array",
+          "maxItems": 100000,
+          "items": {
+            "$ref": "#/$defs/edge"
+          }
+        }
+      }
+    },
+    "hypothesis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hypothesis_id",
+        "scope_id",
+        "topology_epoch",
+        "topology_digest",
+        "created_at_ms",
+        "confidence_ppm",
+        "evidence_digests"
+      ],
+      "properties": {
+        "hypothesis_id": {
+          "$ref": "#/$defs/identity"
+        },
+        "scope_id": {
+          "$ref": "#/$defs/identity"
+        },
+        "topology_epoch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "topology_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "created_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "confidence_ppm": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "evidence_digests": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/digest"
+          }
+        }
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action_id",
+        "hypothesis_id",
+        "scope_id",
+        "observation_id",
+        "required_topology_epoch",
+        "attempted_at_ms",
+        "maximum_observation_age_ms",
+        "committed_effect"
+      ],
+      "properties": {
+        "action_id": {
+          "$ref": "#/$defs/identity"
+        },
+        "hypothesis_id": {
+          "$ref": "#/$defs/identity"
+        },
+        "scope_id": {
+          "$ref": "#/$defs/identity"
+        },
+        "observation_id": {
+          "$ref": "#/$defs/identity"
+        },
+        "required_topology_epoch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "attempted_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maximum_observation_age_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "committed_effect": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}
