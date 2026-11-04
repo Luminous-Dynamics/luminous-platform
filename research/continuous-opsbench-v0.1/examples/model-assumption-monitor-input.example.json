@@ -17,12 +17,6 @@
   "observer_adapter_digest": "0505050505050505050505050505050505050505050505050505050505050505",
   "maximum_observation_age_ms": 10,
   "maximum_target_time_skew_ms": 5,
-  "minimum_observations_per_metric": 3,
-  "maximum_interval_width": 10,
-  "residual_scale": 1,
-  "cusum_allowance": 1,
-  "cusum_warning_threshold": 3,
-  "cusum_quarantine_threshold": 6,
   "forecasts": [
     {
       "forecast_id": "forecast-0",
@@ -139,6 +133,19 @@
       "workload_profile_digest": "0303030303030303030303030303030303030303030303030303030303030303",
       "topology_epoch": 7,
       "topology_digest": "0404040404040404040404040404040404040404040404040404040404040404"
+    }
+  ],
+  "metric_policy_set_digest": "0606060606060606060606060606060606060606060606060606060606060606",
+  "metric_policies": [
+    {
+      "metric_id": "critical_queue",
+      "units": "requests",
+      "minimum_observations": 3,
+      "maximum_interval_width": 10,
+      "residual_scale": 1,
+      "cusum_allowance": 1,
+      "cusum_warning_threshold": 3,
+      "cusum_quarantine_threshold": 6
     }
   ]
 }
