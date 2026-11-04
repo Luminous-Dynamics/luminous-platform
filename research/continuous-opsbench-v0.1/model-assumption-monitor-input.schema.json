@@ -129,7 +129,8 @@
           "plant_digest",
           "workload_profile_digest",
           "topology_epoch",
-          "topology_digest"
+          "topology_digest",
+          "metric_policy_set_digest"
         ],
         "properties": {
           "forecast_id": {
@@ -207,6 +208,10 @@
           "topology_digest": {
             "type": "string",
             "pattern": "^[0-9a-f]{64}$"
+          },
+          "metric_policy_set_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
           }
         }
       }
@@ -234,7 +239,8 @@
           "plant_digest",
           "workload_profile_digest",
           "topology_epoch",
-          "topology_digest"
+          "topology_digest",
+          "metric_policy_set_digest"
         ],
         "properties": {
           "observation_id": {
@@ -308,6 +314,10 @@
             "maximum": 9007199254740991
           },
           "topology_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "metric_policy_set_digest": {
             "type": "string",
             "pattern": "^[0-9a-f]{64}$"
           }
