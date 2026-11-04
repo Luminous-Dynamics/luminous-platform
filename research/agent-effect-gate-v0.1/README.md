@@ -38,3 +38,8 @@ Claim ceiling: the wrapper is only structurally authenticated within this E0 ref
 
 
 The effect fingerprint is deliberately separate from the authorization envelope: the handle binds every Candidate Act field and is revalidated on each submission, while idempotency binds the stable effect semantics. This avoids duplicate commits after policy rotation without weakening act-specific authorization.
+
+
+## Cryptographic integration profile
+
+See [ACT_BOUND_CRYPTO_PROFILE_V0.1.md](ACT_BOUND_CRYPTO_PROFILE_V0.1.md) for the researched candidate trust separation and integration plan. It keeps Sigstore artifact provenance, SPIFFE workload identity, runtime attestation, act-specific JWS/JWT authorization, participant effect finality and independent service truth as distinct assertions. Candidate crate versions are pinned in the ADR for an isolated spike only; no cryptographic dependencies or production verifier are added by this document.
