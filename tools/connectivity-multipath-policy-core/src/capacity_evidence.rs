@@ -686,7 +686,7 @@ mod tests {
             verify_capacity_inventory(&statement(), 1_050_000, policy(), &MockVerifier::default())
                 .expect("verified inventory");
         let (domains, evidence) = verified
-            .path_dependency_evidence("path-a", 1_060_000, 60_000)
+            .path_dependency_evidence("path-a", 1_040_000, 60_000)
             .expect("path dependency evidence");
         assert_eq!(domains, vec!["backhaul".to_owned()]);
         assert_eq!(evidence.source_id, "operator-authority-01");
@@ -707,7 +707,7 @@ mod tests {
                 .expect("issuer-attested inventory");
         assert_eq!(
             verified
-                .path_dependency_evidence("path-a", 1_060_000, 60_000)
+                .path_dependency_evidence("path-a", 1_040_000, 60_000)
                 .unwrap_err(),
             CapacityEvidenceError::EvidenceNotCalibrated
         );
