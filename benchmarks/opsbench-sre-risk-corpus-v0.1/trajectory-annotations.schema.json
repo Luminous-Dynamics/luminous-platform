@@ -16,7 +16,8 @@
     "trace_digest",
     "annotation_event_index",
     "annotations",
-    "adjudication"
+    "adjudication",
+    "data_permission"
   ],
   "properties": {
     "schema": {
