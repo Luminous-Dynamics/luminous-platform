@@ -1,0 +1,442 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "opsbench-sregym-native-replication-v0.1.schema.json",
+  "title": "OpsBench SREGym native replication identity v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "captured_on",
+    "readiness",
+    "upstream",
+    "submodules",
+    "runtime",
+    "scenario_inventory",
+    "container_images",
+    "preflight",
+    "native_metrics",
+    "blockers"
+  ],
+  "properties": {
+    "schema": {
+      "const": "opsbench-sregym-native-replication-v0.1"
+    },
+    "captured_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "readiness": {
+      "enum": [
+        "blocked",
+        "ready"
+      ]
+    },
+    "upstream": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "ref",
+        "commit",
+        "commit_url",
+        "readme_blob_sha",
+        "pyproject_blob_sha",
+        "uv_lock_blob_sha",
+        "gitmodules_blob_sha"
+      ],
+      "properties": {
+        "repository": {
+          "const": "https://github.com/SREGym/SREGym"
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "commit_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "readme_blob_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "pyproject_blob_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "uv_lock_blob_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "gitmodules_blob_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      }
+    },
+    "submodules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "repository",
+          "commit",
+          "state"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "repository": {
+            "type": "string",
+            "format": "uri"
+          },
+          "commit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "state": {
+            "enum": [
+              "pinned",
+              "unresolved"
+            ]
+          }
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "python",
+        "uv",
+        "docker",
+        "kubectl",
+        "helm",
+        "kubernetes",
+        "cluster_profile",
+        "deployment_profile"
+      ],
+      "properties": {
+        "python": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "uv": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "docker": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kubectl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "helm": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kubernetes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cluster_profile": {
+          "enum": [
+            "self_managed_linux",
+            "kind_lite",
+            "unknown",
+            null
+          ]
+        },
+        "deployment_profile": {
+          "enum": [
+            "full",
+            "svelte",
+            null
+          ]
+        }
+      }
+    },
+    "scenario_inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "full_suite_published_count",
+        "lite_suite_published_count",
+        "suite",
+        "scenario_ids_sha256",
+        "native_scorer_path",
+        "native_scorer_blob_sha",
+        "native_score_axes"
+      ],
+      "properties": {
+        "full_suite_published_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "lite_suite_published_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "suite": {
+          "enum": [
+            "full",
+            "sregym-lite"
+          ]
+        },
+        "scenario_ids_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "native_scorer_path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "native_scorer_blob_sha": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "native_score_axes": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "diagnosis",
+              "mitigation",
+              "end_to_end"
+            ]
+          }
+        }
+      }
+    },
+    "container_images": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "image",
+          "digest"
+        ],
+        "properties": {
+          "image": {
+            "type": "string",
+            "minLength": 1
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "preflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "upstream_test_assessment",
+        "unit_tests_passed_reported",
+        "unit_tests_failed_reported",
+        "collection_errors_reported",
+        "independent_reproduction"
+      ],
+      "properties": {
+        "upstream_test_assessment": {
+          "enum": [
+            "unreproduced",
+            "author_reported_failures",
+            "clean",
+            "accepted_with_failures"
+          ]
+        },
+        "unit_tests_passed_reported": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "unit_tests_failed_reported": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "collection_errors_reported": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "independent_reproduction": {
+          "enum": [
+            "not_run",
+            "reproduced",
+            "disputed"
+          ]
+        }
+      }
+    },
+    "native_metrics": {
+      "type": "array",
+      "minItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "diagnosis",
+          "mitigation",
+          "end_to_end"
+        ]
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "readiness": {
+            "const": "ready"
+          }
+        },
+        "required": [
+          "readiness"
+        ]
+      },
+      "then": {
+        "properties": {
+          "blockers": {
+            "maxItems": 0
+          },
+          "submodules": {
+            "minItems": 1,
+            "items": {
+              "properties": {
+                "commit": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{40}$"
+                },
+                "state": {
+                  "const": "pinned"
+                }
+              }
+            }
+          },
+          "runtime": {
+            "properties": {
+              "python": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uv": {
+                "type": "string",
+                "minLength": 1
+              },
+              "docker": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kubectl": {
+                "type": "string",
+                "minLength": 1
+              },
+              "helm": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kubernetes": {
+                "type": "string",
+                "minLength": 1
+              },
+              "cluster_profile": {
+                "enum": [
+                  "self_managed_linux",
+                  "kind_lite"
+                ]
+              },
+              "deployment_profile": {
+                "const": "full"
+              }
+            }
+          },
+          "scenario_inventory": {
+            "properties": {
+              "scenario_ids_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "native_scorer_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "native_scorer_blob_sha": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              }
+            }
+          },
+          "container_images": {
+            "minItems": 1
+          },
+          "preflight": {
+            "properties": {
+              "upstream_test_assessment": {
+                "const": "clean"
+              },
+              "independent_reproduction": {
+                "const": "reproduced"
+              },
+              "unit_tests_failed_reported": {
+                "const": 0
+              },
+              "collection_errors_reported": {
+                "const": 0
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
