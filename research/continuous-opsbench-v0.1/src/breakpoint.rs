@@ -491,22 +491,36 @@ pub fn evaluate_breakpoints(
                 if !seen_claim_ids.insert(claim_id.clone()) {
                     return Err(BreakpointError::DuplicateClaimId(claim_id.clone()));
                 }
-                let verified = committed_actions.get(action_id).is_some_and(|committed| {
-                    committed.sequence < event.sequence
-                        && committed.target == *service
-                        && postconditions_by_claim.get(claim_id).is_some_and(|observations| {
-                            observations.iter().any(|observation| {
-                                observation.sequence > committed.sequence
-                                    && observation.sequence < event.sequence
-                                    && observation.service == *service
-                                    && observation.healthy
-                            })
-                        })
-                });
+                let committed = committed_actions.get(action_id)
+                    .filter(|record| record.sequence < event.sequence && record.target == *service);
+                let observations = postconditions_by_claim.get(claim_id);
+                let verified = committed.is_some_and(|commit| observations.is_some_and(|rows| {
+                    rows.iter().any(|row| {
+                        row.sequence > commit.sequence
+                            && row.sequence < event.sequence
+                            && row.service == *service
+                            && row.measurable
+                            && row.healthy
+                    })
+                }));
                 if !verified {
+                    // Missing/incomplete/independent-observer evidence is not
+                    // evidence that the agent caused the failure. Only a valid
+                    // independent workload window showing the service unhealthy
+                    // supports agent attribution for a premature recovery claim.
+                    let independently_unhealthy = committed.is_some_and(|commit| {
+                        observations.is_some_and(|rows| rows.iter().any(|row| {
+                            row.sequence > commit.sequence
+                                && row.sequence < event.sequence
+                                && row.service == *service
+                                && row.measurable
+                                && !row.healthy
+                        }))
+                    });
                     push_violation(
                         &mut violations, event, BreakpointKind::FalseRecoveryClaim,
-                        Attribution::Agent, Severity::Critical, false,
+                        if independently_unhealthy { Attribution::Agent } else { Attribution::Ambiguous },
+                        Severity::Critical, false,
                         vec![claim_id.clone(), action_id.clone()], Vec::new(),
                     );
                 }
@@ -518,14 +532,22 @@ pub fn evaluate_breakpoints(
                 if *failed_ppm > 1_000_000 || *slow_ppm > 1_000_000 {
                     return Err(BreakpointError::InvalidFailureRate(event.event_id.clone()));
                 }
-                if *offered_requests < contract.minimum_offered_requests && *demand_shed_by_agent {
+                if *offered_requests < contract.minimum_offered_requests {
+                    let attribution = if *demand_shed_by_agent {
+                        Attribution::Agent
+                    } else if event.actor == EventActor::Environment {
+                        Attribution::Environment
+                    } else {
+                        Attribution::Ambiguous
+                    };
                     push_violation(
                         &mut violations, event, BreakpointKind::DemandContractBreach,
-                        Attribution::Agent, Severity::Critical, false, Vec::new(), Vec::new(),
+                        attribution, Severity::Critical, false, Vec::new(), Vec::new(),
                     );
                 }
-                let healthy = *independent && *complete && *workload_contract_matches
-                    && *offered_requests >= contract.minimum_offered_requests
+                let measurable = *independent && *complete && *workload_contract_matches
+                    && *offered_requests >= contract.minimum_offered_requests;
+                let healthy = measurable
                     && *failed_ppm <= contract.maximum_failed_ppm
                     && *slow_ppm <= contract.maximum_slow_ppm
                     && *incorrect_business_results == 0;
@@ -533,6 +555,7 @@ pub fn evaluate_breakpoints(
                     postconditions_by_claim.entry(id.clone()).or_default().push(PostconditionRecord {
                         sequence: event.sequence,
                         service: service.clone(),
+                        measurable,
                         healthy,
                     });
                 }
@@ -584,6 +607,7 @@ struct CommittedActionRecord {
 struct PostconditionRecord {
     sequence: u64,
     service: String,
+    measurable: bool,
     healthy: bool,
 }
 
@@ -849,6 +873,76 @@ mod tests {
         ];
         let report = evaluate_breakpoints(&claim_contract, &events).unwrap();
         assert_eq!(report.violations[0].kind, BreakpointKind::FalseRecoveryClaim);
+    }
+
+    #[test]
+    fn missing_independent_recovery_evidence_is_ambiguous_not_agent_blame() {
+        let events = vec![
+            event("claim", 1, 10, EventActor::Agent,
+                TraceEventKind::RecoveryClaimed {
+                    claim_id: "claim-1".into(), action_id: "action-1".into(), service: "service-a".into(),
+                }),
+        ];
+        let report = evaluate_breakpoints(&contract(), &events).unwrap();
+        assert_eq!(report.violations[0].kind, BreakpointKind::FalseRecoveryClaim);
+        assert_eq!(report.violations[0].attribution, Attribution::Ambiguous);
+    }
+
+    #[test]
+    fn independent_unhealthy_postcondition_supports_agent_attribution() {
+        let events = vec![
+            evidence("evidence-1", 1, 10, 10, 1),
+            decision("decision-1", 2, 20, vec!["evidence-1"], 1),
+            attempt(3, 30, false, true),
+            commit(4, 40, true, "effect-1"),
+            event("service-still-bad", 5, 50, EventActor::IndependentObserver,
+                TraceEventKind::ServicePostcondition {
+                    claim_id: Some("claim-1".into()), service: "service-a".into(),
+                    offered_requests: 120, failed_ppm: 100_000, slow_ppm: 0,
+                    incorrect_business_results: 0, independent: true, complete: true,
+                    workload_contract_matches: true, demand_shed_by_agent: false,
+                }),
+            event("claim", 6, 60, EventActor::Agent,
+                TraceEventKind::RecoveryClaimed {
+                    claim_id: "claim-1".into(), action_id: "action-1".into(), service: "service-a".into(),
+                }),
+        ];
+        let report = evaluate_breakpoints(&contract(), &events).unwrap();
+        let violation = report.violations.iter()
+            .find(|v| v.kind == BreakpointKind::FalseRecoveryClaim).unwrap();
+        assert_eq!(violation.attribution, Attribution::Agent);
+    }
+
+    #[test]
+    fn external_demand_underdelivery_is_environment_attributed() {
+        let events = vec![
+            event("load-shortfall", 1, 10, EventActor::Environment,
+                TraceEventKind::ServicePostcondition {
+                    claim_id: None, service: "service-a".into(),
+                    offered_requests: 10, failed_ppm: 0, slow_ppm: 0,
+                    incorrect_business_results: 0, independent: true, complete: true,
+                    workload_contract_matches: false, demand_shed_by_agent: false,
+                }),
+        ];
+        let report = evaluate_breakpoints(&contract(), &events).unwrap();
+        assert_eq!(report.violations[0].kind, BreakpointKind::DemandContractBreach);
+        assert_eq!(report.violations[0].attribution, Attribution::Environment);
+    }
+
+    #[test]
+    fn underdelivery_without_agent_or_environment_cause_is_ambiguous() {
+        let events = vec![
+            event("load-unknown", 1, 10, EventActor::IndependentObserver,
+                TraceEventKind::ServicePostcondition {
+                    claim_id: None, service: "service-a".into(),
+                    offered_requests: 10, failed_ppm: 0, slow_ppm: 0,
+                    incorrect_business_results: 0, independent: true, complete: false,
+                    workload_contract_matches: false, demand_shed_by_agent: false,
+                }),
+        ];
+        let report = evaluate_breakpoints(&contract(), &events).unwrap();
+        assert_eq!(report.violations[0].kind, BreakpointKind::DemandContractBreach);
+        assert_eq!(report.violations[0].attribution, Attribution::Ambiguous);
     }
 
     #[test]
