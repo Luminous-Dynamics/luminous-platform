@@ -10,7 +10,8 @@
     "cases",
     "actions",
     "links",
-    "effects"
+    "effects",
+    "decisions"
   ],
   "properties": {
     "scenario_id": {
@@ -185,7 +186,8 @@
           "case_id",
           "action_id",
           "linked_at_ms",
-          "source_event_id"
+          "source_event_id",
+          "decision_id"
         ],
         "properties": {
           "case_id": {
@@ -202,6 +204,10 @@
             "maximum": 9007199254740991
           },
           "source_event_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "decision_id": {
             "type": "string",
             "minLength": 1
           }
@@ -288,6 +294,68 @@
           },
           "ledger_cursor": {
             "type": "string"
+          }
+        }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "scenario_id",
+          "arm_id",
+          "case_id",
+          "decision_id",
+          "decided_at_ms",
+          "disposition",
+          "observation_id",
+          "observation_digest",
+          "source_event_id"
+        ],
+        "properties": {
+          "scenario_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "arm_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "case_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "decision_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "decided_at_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "disposition": {
+            "enum": [
+              "no_action",
+              "request_evidence",
+              "propose_intervention"
+            ]
+          },
+          "observation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "observation_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "source_event_id": {
+            "type": "string",
+            "minLength": 1
           }
         }
       }
