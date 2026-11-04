@@ -341,6 +341,10 @@ pub struct ControllerDecision {
     pub observed_queue_depth: u64,
     pub observed_latency_ms: u64,
     pub observed_failed_ppm: u32,
+    /// Exact delayed/noisy observation delivered to this controller decision.
+    pub observation: PlantObservation,
+    /// Complete proposed operations, preserved independently of the action list.
+    pub proposed_actions: Vec<ControlAction>,
     pub proposed_action_ids: Vec<String>,
 }
 
@@ -405,6 +409,7 @@ pub enum StabilityError {
     StreamingSamplesDiverged,
     StreamingObservationsDiverged,
     StreamingActionOutcomesDiverged,
+    ClosedLoopEvidenceMismatch,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -767,6 +772,8 @@ pub fn run_stability_multi_controller_loop_streaming(
             let controller_kind = controller.controller();
             let proposals = controller.propose(&observation);
             let mut proposed_action_ids = Vec::with_capacity(proposals.len());
+            let mut proposed_actions = Vec::with_capacity(proposals.len());
+            let mut proposed_actions = Vec::with_capacity(proposals.len());
             for (index, operation) in proposals.into_iter().enumerate() {
                 let action = ControlAction {
                     action_id: format!("closed-loop-{controller_id}-{tick}-{index}"),
@@ -781,7 +788,8 @@ pub fn run_stability_multi_controller_loop_streaming(
                 let (effect_tick, resource, _stale) = validate_stream_action(config, &action)?;
                 proposed_action_ids.push(action.action_id.clone());
                 scheduled.entry((effect_tick, resource)).or_default().push(action.clone());
-                actions.push(action);
+                actions.push(action.clone());
+                proposed_actions.push(action);
             }
             decisions.push(ControllerDecision {
                 controller_id,
@@ -791,6 +799,8 @@ pub fn run_stability_multi_controller_loop_streaming(
                 observed_queue_depth: observation.observed_queue_depth,
                 observed_latency_ms: observation.observed_latency_ms,
                 observed_failed_ppm: observation.observed_failed_ppm,
+                observation: observation.clone(),
+                proposed_actions,
                 proposed_action_ids,
             });
         }
@@ -857,13 +867,15 @@ pub fn run_stability_multi_controller_loop_reference(
             for (index, operation) in proposals.into_iter().enumerate() {
                 let action_id = format!("closed-loop-{controller_id}-{tick}-{index}");
                 proposed_action_ids.push(action_id.clone());
-                actions.push(ControlAction {
+                let action = ControlAction {
                     action_id,
                     controller: controller_kind,
                     issued_at_tick: tick,
                     observation_source_tick: observation.source_tick,
                     operation,
-                });
+                };
+                proposed_actions.push(action.clone());
+                actions.push(action);
             }
             decisions.push(ControllerDecision {
                 controller_id,
@@ -873,6 +885,8 @@ pub fn run_stability_multi_controller_loop_reference(
                 observed_queue_depth: observation.observed_queue_depth,
                 observed_latency_ms: observation.observed_latency_ms,
                 observed_failed_ppm: observation.observed_failed_ppm,
+                observation: observation.clone(),
+                proposed_actions,
                 proposed_action_ids,
             });
         }
