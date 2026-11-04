@@ -8,7 +8,7 @@
 use crate::safety_filter::{
     appraise_one_step, transition, CandidateAct, CandidateOperation, CapacityUncertainty,
     DemandDisturbance, FilterDisposition, OperationalState, SafetyAppraisal, SafetyEnvelope,
-    SafetyFilterInput, Successor,
+    SafetyFilterInput, Successor, PPM,
 };
 use crate::Digest;
 use std::collections::{BTreeMap, BTreeSet};
