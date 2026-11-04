@@ -274,10 +274,16 @@ fn cost_per_mib(
     if useful_bytes == 0 {
         return Ok(None);
     }
-    let value = u128::from(cost_microunits)
+    let numerator = u128::from(cost_microunits)
         .checked_mul(BYTES_PER_MIB)
+        .ok_or(UtilityError::ArithmeticOverflow)?;
+    let denominator = u128::from(useful_bytes);
+    // Round presentation values upward so displayed unit-cost never
+    // understates a non-integer micro-unit-per-MiB measurement.
+    let value = numerator
+        .checked_add(denominator - 1)
         .ok_or(UtilityError::ArithmeticOverflow)?
-        / u128::from(useful_bytes);
+        / denominator;
     Ok(Some(
         u64::try_from(value).map_err(|_| UtilityError::ArithmeticOverflow)?,
     ))
@@ -354,12 +360,14 @@ fn validate_trial(trial: &UtilityTrial) -> Result<Vec<UtilityTaskContract>, Util
     if measurements.len() != tasks.len() {
         return Err(UtilityError::MissingTaskMeasurement);
     }
-    for (index, (task, measurement)) in tasks.iter().zip(&measurements).enumerate() {
+    for index in 1..measurements.len() {
+        if measurements[index - 1].task_id == measurements[index].task_id {
+            return Err(UtilityError::DuplicateTaskMeasurement);
+        }
+    }
+    for (task, measurement) in tasks.iter().zip(&measurements) {
         if task.task_id != measurement.task_id {
             return Err(UtilityError::MissingTaskMeasurement);
-        }
-        if index > 0 && measurements[index - 1].task_id == measurement.task_id {
-            return Err(UtilityError::DuplicateTaskMeasurement);
         }
         if measurement.on_time_useful_bytes > measurement.total_useful_bytes
             || measurement.total_useful_bytes > task.offered_useful_bytes
@@ -1126,6 +1134,40 @@ mod tests {
         assert_eq!(
             evaluate_deadline_utility_pair(&baseline(), &candidate, targets()),
             Err(UtilityError::InvalidTaskMeasurement)
+        );
+    }
+
+    #[test]
+    fn report_preserves_both_exact_arm_and_environment_identities_on_pass() {
+        let control = baseline();
+        let candidate = treatment();
+        let report = evaluate_deadline_utility_pair(&control, &candidate, targets())
+            .expect("valid pair");
+        assert_eq!(report.baseline_environment, Some(control.environment));
+        assert_eq!(report.treatment_environment, Some(candidate.environment));
+        assert_eq!(report.baseline_arm, Some(control.arm));
+        assert_eq!(report.treatment_arm, Some(candidate.arm));
+    }
+
+    #[test]
+    fn report_preserves_arm_identities_on_inconclusive_pair() {
+        let control = baseline();
+        let mut candidate = treatment();
+        candidate.environment.qdisc_config_sha256 = "9".repeat(64);
+        let report = evaluate_deadline_utility_pair(&control, &candidate, targets())
+            .expect("mismatched pair classified");
+        assert_eq!(report.disposition, UtilityDisposition::Inconclusive);
+        assert_eq!(report.baseline_arm, Some(control.arm));
+        assert_eq!(report.treatment_arm, Some(candidate.arm));
+    }
+
+    #[test]
+    fn duplicate_task_measurements_are_distinguished_from_missing_measurements() {
+        let mut candidate = treatment();
+        candidate.task_measurements[1].task_id = "control".to_owned();
+        assert_eq!(
+            evaluate_deadline_utility_pair(&baseline(), &candidate, targets()),
+            Err(UtilityError::DuplicateTaskMeasurement)
         );
     }
 
