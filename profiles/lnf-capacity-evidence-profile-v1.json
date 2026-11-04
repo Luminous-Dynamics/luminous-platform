@@ -1,0 +1,145 @@
+{
+  "schema_version": "luminous.lnf-capacity-evidence-profile.v1",
+  "profile_id": "lnf-capacity-evidence-v1",
+  "status": "draft_targets_not_results",
+  "reviewed_on": "2026-11-04",
+  "parent_issue": 233,
+  "execution_stage": "semantic_verifier_boundary_with_injected_trust_adapter",
+  "objective": "Verify issuer-attested capacity dependency statements with authority scope, canonical digest binding, validity, replay, optional SCITT transparency and calibration checks while keeping inventory correctness separate from signature validity.",
+  "standards_basis": [
+    "RFC 9943",
+    "OpenConfig gNMI"
+  ],
+  "trust_semantics": {
+    "signature_proves": "issuer_signed_exact_canonical_statement_bytes",
+    "authority_policy_proves": "issuer_is_authorized_for_declared_topology_scope_and_resource_claims",
+    "scitt_receipt_proves": "statement_digest_was_registered_with_transparency_service",
+    "scitt_receipt_does_not_prove": "resource_inventory_claims_are_correct",
+    "gNMI_does_not_prove": "global_physical_or_provider_topology_is_complete",
+    "initial_verified_maturity": "issuer_attested",
+    "confidence_usable_for_ranking_only_when_calibration_profile_is_verified": true
+  },
+  "verifier_boundary": {
+    "cryptography_implemented_in_core": false,
+    "signature_and_trust_root_delegated": true,
+    "issuer_scope_authorization_delegated": true,
+    "replay_state_delegated": true,
+    "scitt_receipt_verification_delegated": true,
+    "calibration_profile_verification_delegated": true,
+    "canonical_statement_digest_recomputation_required": true,
+    "private_verified_inventory_constructor": true
+  },
+  "evidence_states": [
+    "unverified",
+    "issuer_attested",
+    "corroborated",
+    "measured",
+    "contradicted",
+    "expired_or_revoked"
+  ],
+  "scenarios": [
+    "CAPEV-01-valid-authorized-signed-statement",
+    "CAPEV-02-invalid-signature",
+    "CAPEV-03-issuer-outside-authority-scope",
+    "CAPEV-04-statement-digest-mismatch",
+    "CAPEV-05-replayed-issuer-sequence",
+    "CAPEV-06-expired-or-stale-inventory",
+    "CAPEV-07-incomplete-resource-coverage",
+    "CAPEV-08-invalid-or-missing-scitt-receipt",
+    "CAPEV-09-unknown-or-untrusted-calibration-profile",
+    "CAPEV-10-signed-but-factually-false-inventory"
+  ],
+  "benchmarks": [
+    {
+      "id": "CAPEV_SIGNATURE_001",
+      "metric": "invalid_or_unauthorized_statements_returned_as_verified",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "CAPEV_REPLAY_001",
+      "metric": "replayed_or_expired_statements_accepted",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "CAPEV_COVERAGE_001",
+      "metric": "incomplete_dependency_inventories_accepted",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "CAPEV_SCITT_001",
+      "metric": "invalid_required_scitt_receipts_accepted",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "CAPEV_CALIBRATION_001",
+      "metric": "uncalibrated_confidence_exposed_for_ranking",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "CAPEV_FALSE_TRUTH_001",
+      "metric": "signature_or_scitt_receipt_treated_as_proof_of_inventory_correctness",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "CAPEV_CALIBRATION_ERROR_001",
+      "metric": "held_out_confidence_calibration_error",
+      "operator": "baseline_first",
+      "target": null,
+      "target_status": "baseline_first"
+    },
+    {
+      "id": "CAPEV_FALSE_INDEPENDENT_001",
+      "metric": "false_independent_capacity_decisions_on_ground_truth_corpus",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    }
+  ],
+  "required_metrics": [
+    "statement_signature_verification_disposition",
+    "issuer_authority_scope_verification_disposition",
+    "canonical_statement_digest_verification_disposition",
+    "issuer_sequence_and_replay_disposition",
+    "topology_digest_match_disposition",
+    "statement_validity_and_observation_age",
+    "resource_claim_and_path_incidence_validation_disposition",
+    "coverage_completeness_and_unresolved_dependency_count",
+    "scitt_receipt_verification_disposition",
+    "calibration_profile_verification_disposition",
+    "verified_evidence_maturity_state",
+    "ranking_confidence_ppm_or_undefined",
+    "false_independent_capacity_rate",
+    "confidence_precision_recall_and_calibration_error",
+    "coverage_and_abstention_rate",
+    "verification_latency_p50_p95_p99_us"
+  ],
+  "evidence_classes": [
+    "mock_verifier_unit_test",
+    "cryptographic_adapter_integration_test",
+    "signed_inventory_fixture_corpus",
+    "independent_topology_ground_truth"
+  ],
+  "explicit_non_claims": [
+    "The core module does not implement cryptographic signatures or trust-root storage.",
+    "A successful signature only authenticates the statement issuer and exact bytes under a configured trust policy.",
+    "Issuer authority scope does not prove the issuer knows every hidden provider or transit dependency.",
+    "A SCITT receipt proves transparency registration or inclusion, not statement correctness.",
+    "A gNMI device/controller inventory is not automatically a complete end-to-end physical topology.",
+    "The initial verified maturity is issuer_attested, not corroborated or measured.",
+    "Confidence values are not ranking evidence unless a trusted applicable calibration profile is verified.",
+    "Mock verifier tests are not cryptographic integration tests or production trust qualification.",
+    "No sensitive subscriber topology or management identifiers are required to be written to a public DHT."
+  ]
+}
