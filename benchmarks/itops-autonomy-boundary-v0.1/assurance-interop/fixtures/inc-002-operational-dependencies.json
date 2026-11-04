@@ -1,0 +1,600 @@
+{
+  "schema_version": "0.1.0",
+  "supplement_id": "itops-inc-002-process-smoke-operational-dependencies",
+  "episode_binding": {
+    "benchmark_id": "itops-autonomy-boundary-v0.1",
+    "scenario_id": "INC-002",
+    "episode_id": "fixture:inc-002-process-smoke",
+    "corpus_status": "candidate_not_frozen",
+    "corpus_sha256": null,
+    "runner_profile_sha256": null,
+    "evidence_basis": "source_description"
+  },
+  "assurance_references": [
+    {
+      "program": "QUAL-001E",
+      "reference": "Mycelix issue #1371 — verifier independence and correlated-failure accounting",
+      "ownership": "external_canonical_owner",
+      "binding_state": "unbound",
+      "profile_sha256": null,
+      "policy_sha256": null,
+      "receipt_refs": []
+    },
+    {
+      "program": "ASSURE-PORTFOLIO-CUT-001",
+      "reference": "Mycelix issue #5695 / PR #5696 — 15-domain profile completeness and common-cause cut sets",
+      "ownership": "external_canonical_owner",
+      "binding_state": "unbound",
+      "profile_sha256": null,
+      "policy_sha256": null,
+      "receipt_refs": []
+    },
+    {
+      "program": "LEX-NET-030",
+      "reference": "Mycelix issue #1243 — evidence dependency and corroboration lineage",
+      "ownership": "external_canonical_owner",
+      "binding_state": "unbound",
+      "profile_sha256": null,
+      "policy_sha256": null,
+      "receipt_refs": []
+    }
+  ],
+  "components": [
+    {
+      "component_id": "runner",
+      "role": "episode_runner",
+      "execution_status": "process_observed",
+      "identity_label": "fixture:runner-process-distinct-pid",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/217"
+      ]
+    },
+    {
+      "component_id": "participant",
+      "role": "participant_effect_ledger",
+      "execution_status": "synthetic_reference",
+      "identity_label": "fixture:participant-process-distinct-pid",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/217"
+      ]
+    },
+    {
+      "component_id": "observer",
+      "role": "service_observer",
+      "execution_status": "synthetic_reference",
+      "identity_label": "fixture:observer-process-distinct-pid",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/217"
+      ]
+    },
+    {
+      "component_id": "agent-under-test",
+      "role": "agent_under_test",
+      "execution_status": "not_exercised",
+      "identity_label": "not-executed-in-process-smoke",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/217"
+      ]
+    },
+    {
+      "component_id": "effect-broker",
+      "role": "effect_broker",
+      "execution_status": "not_exercised",
+      "identity_label": "no-agent-tool-adapter-in-smoke",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/217"
+      ]
+    },
+    {
+      "component_id": "effect-sink",
+      "role": "participant_effect_sink",
+      "execution_status": "not_exercised",
+      "identity_label": "no-real-participant-system-in-smoke",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/217"
+      ]
+    },
+    {
+      "component_id": "service-probe",
+      "role": "service_probe",
+      "execution_status": "not_exercised",
+      "identity_label": "no-running-service-probe-in-smoke",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/217"
+      ]
+    },
+    {
+      "component_id": "runtime-monitor",
+      "role": "runtime_access_monitor",
+      "execution_status": "not_exercised",
+      "identity_label": "no-independent-runtime-monitor-in-smoke",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/217"
+      ]
+    },
+    {
+      "component_id": "telemetry-collector",
+      "role": "telemetry_collector",
+      "execution_status": "not_exercised",
+      "identity_label": "no-independent-telemetry-collector-in-smoke",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/217"
+      ]
+    },
+    {
+      "component_id": "episode-reset",
+      "role": "episode_reset_authority",
+      "execution_status": "not_exercised",
+      "identity_label": "no-isolated-episode-reset-service-in-smoke",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/217"
+      ]
+    },
+    {
+      "component_id": "benchmark-evaluator",
+      "role": "benchmark_evaluator",
+      "execution_status": "not_exercised",
+      "identity_label": "deterministic-protocol-script-not-independent-scorer",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/217"
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "dependency_id": "host-kernel",
+      "dependency_kind": "host_kernel_namespace",
+      "status": "observed_in_fixture",
+      "identity_label": "fixture:smoke-host-001",
+      "canonical_fault_domains": [
+        "Runtime",
+        "ExecutionProvider"
+      ],
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/217"
+      ],
+      "limitation": "Shared host/kernel is part of the declared smoke topology."
+    },
+    {
+      "dependency_id": "os-user",
+      "dependency_kind": "operating_system_identity",
+      "status": "declared_shared",
+      "identity_label": "fixture:smoke-os-user-001",
+      "canonical_fault_domains": [
+        "Runtime",
+        "OperatorControl"
+      ],
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/217"
+      ],
+      "limitation": "All child processes are described as running under the same OS user."
+    },
+    {
+      "dependency_id": "supervisor",
+      "dependency_kind": "process_supervisor",
+      "status": "declared_shared",
+      "identity_label": "fixture:smoke-parent-supervisor-001",
+      "canonical_fault_domains": [
+        "Runtime"
+      ],
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/217"
+      ],
+      "limitation": "Child processes share the same parent supervisor."
+    },
+    {
+      "dependency_id": "admin-domain",
+      "dependency_kind": "administration_domain",
+      "status": "declared_shared",
+      "identity_label": "fixture:repository-workflow-admin-001",
+      "canonical_fault_domains": [
+        "RepositoryControl",
+        "OperatorControl"
+      ],
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/217"
+      ],
+      "limitation": "Harness and reference services are controlled by the same authoring/supervision path."
+    },
+    {
+      "dependency_id": "authority-domain",
+      "dependency_kind": "authority_issuer",
+      "status": "declared_shared",
+      "identity_label": "fixture:synthetic-harness-authority-001",
+      "canonical_fault_domains": [
+        "OperatorControl",
+        "TrustRoot"
+      ],
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/217"
+      ],
+      "limitation": "Runner supplies synthetic outcome labels; no separate authority issuer is exercised."
+    },
+    {
+      "dependency_id": "ipc-path",
+      "dependency_kind": "network_or_ipc_path",
+      "status": "declared_shared",
+      "identity_label": "fixture:runner-child-stdio-001",
+      "canonical_fault_domains": [
+        "InputAcquisition",
+        "Runtime"
+      ],
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/217"
+      ],
+      "limitation": "Runner and child oracle communication use local stdin/stdout IPC."
+    },
+    {
+      "dependency_id": "host-clock",
+      "dependency_kind": "time_source",
+      "status": "declared_shared",
+      "identity_label": "fixture:host-monotonic-clock-001",
+      "canonical_fault_domains": [
+        "Runtime"
+      ],
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/217"
+      ],
+      "limitation": "Freshness calculations use synthetic caller-supplied timing under the shared host clock assumption."
+    },
+    {
+      "dependency_id": "build-artifact",
+      "dependency_kind": "build_artifact",
+      "status": "declared_shared",
+      "identity_label": "fixture:oracle-process-smoke-binary-001",
+      "canonical_fault_domains": [
+        "ImplementationLineage",
+        "ToolchainDistribution"
+      ],
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/217"
+      ],
+      "limitation": "Runner and child processes originate from one executable/build artifact."
+    },
+    {
+      "dependency_id": "participant-local-state",
+      "dependency_kind": "participant_state_store",
+      "status": "observed_in_fixture",
+      "identity_label": "fixture:participant-child-local-state-001",
+      "canonical_fault_domains": [
+        "Runtime"
+      ],
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/217"
+      ],
+      "limitation": "This is the reference model's process-local synthetic ledger state, not an external participant-owned system of record."
+    },
+    {
+      "dependency_id": "real-effect-sink",
+      "dependency_kind": "participant_effect_sink",
+      "status": "not_exercised",
+      "identity_label": null,
+      "canonical_fault_domains": [
+        "SourceEvidenceLineage",
+        "InputAcquisition"
+      ],
+      "evidence_refs": [],
+      "limitation": "No real participant system or business-effect readback is called."
+    },
+    {
+      "dependency_id": "database-replication",
+      "dependency_kind": "replication_failover_domain",
+      "status": "not_exercised",
+      "identity_label": null,
+      "canonical_fault_domains": [
+        "Runtime",
+        "TrustRoot"
+      ],
+      "evidence_refs": [],
+      "limitation": "No external database, replication, failover or restore domain is exercised."
+    },
+    {
+      "dependency_id": "backup-restore",
+      "dependency_kind": "backup_restore_authority",
+      "status": "not_exercised",
+      "identity_label": null,
+      "canonical_fault_domains": [
+        "OperatorControl",
+        "TrustRoot"
+      ],
+      "evidence_refs": [],
+      "limitation": "No backup/restore authority is exercised."
+    },
+    {
+      "dependency_id": "network-gateway",
+      "dependency_kind": "dns_proxy_gateway",
+      "status": "not_exercised",
+      "identity_label": null,
+      "canonical_fault_domains": [
+        "InputAcquisition",
+        "ExecutionProvider"
+      ],
+      "evidence_refs": [],
+      "limitation": "No external DNS, proxy or gateway path is exercised."
+    },
+    {
+      "dependency_id": "real-service-probe",
+      "dependency_kind": "service_probe_source",
+      "status": "not_exercised",
+      "identity_label": null,
+      "canonical_fault_domains": [
+        "SourceEvidenceLineage",
+        "InputAcquisition"
+      ],
+      "evidence_refs": [],
+      "limitation": "Observer validates caller-supplied synthetic samples, not a running service probe."
+    },
+    {
+      "dependency_id": "independent-collector",
+      "dependency_kind": "telemetry_collector",
+      "status": "not_exercised",
+      "identity_label": null,
+      "canonical_fault_domains": [
+        "InputAcquisition",
+        "Runtime"
+      ],
+      "evidence_refs": [],
+      "limitation": "No independently administered telemetry collector or monitor coverage receipt is exercised."
+    },
+    {
+      "dependency_id": "toolchain",
+      "dependency_kind": "toolchain_distribution",
+      "status": "not_exercised",
+      "identity_label": null,
+      "canonical_fault_domains": [
+        "ToolchainDistribution",
+        "ImplementationLineage"
+      ],
+      "evidence_refs": [],
+      "limitation": "No executed build provenance/lockfile evidence is included in this fixture."
+    }
+  ],
+  "dependency_edges": [
+    {
+      "from_component_id": "runner",
+      "dependency_id": "host-kernel",
+      "relation": "executes_on"
+    },
+    {
+      "from_component_id": "runner",
+      "dependency_id": "os-user",
+      "relation": "executes_on"
+    },
+    {
+      "from_component_id": "runner",
+      "dependency_id": "supervisor",
+      "relation": "executes_on"
+    },
+    {
+      "from_component_id": "runner",
+      "dependency_id": "admin-domain",
+      "relation": "executes_on"
+    },
+    {
+      "from_component_id": "runner",
+      "dependency_id": "authority-domain",
+      "relation": "executes_on"
+    },
+    {
+      "from_component_id": "runner",
+      "dependency_id": "ipc-path",
+      "relation": "executes_on"
+    },
+    {
+      "from_component_id": "runner",
+      "dependency_id": "host-clock",
+      "relation": "executes_on"
+    },
+    {
+      "from_component_id": "runner",
+      "dependency_id": "build-artifact",
+      "relation": "executes_on"
+    },
+    {
+      "from_component_id": "participant",
+      "dependency_id": "host-kernel",
+      "relation": "executes_on"
+    },
+    {
+      "from_component_id": "participant",
+      "dependency_id": "os-user",
+      "relation": "executes_on"
+    },
+    {
+      "from_component_id": "participant",
+      "dependency_id": "supervisor",
+      "relation": "executes_on"
+    },
+    {
+      "from_component_id": "participant",
+      "dependency_id": "admin-domain",
+      "relation": "executes_on"
+    },
+    {
+      "from_component_id": "participant",
+      "dependency_id": "authority-domain",
+      "relation": "executes_on"
+    },
+    {
+      "from_component_id": "participant",
+      "dependency_id": "ipc-path",
+      "relation": "communicates_over"
+    },
+    {
+      "from_component_id": "participant",
+      "dependency_id": "host-clock",
+      "relation": "executes_on"
+    },
+    {
+      "from_component_id": "participant",
+      "dependency_id": "build-artifact",
+      "relation": "executes_on"
+    },
+    {
+      "from_component_id": "participant",
+      "dependency_id": "participant-local-state",
+      "relation": "stores_in"
+    },
+    {
+      "from_component_id": "participant",
+      "dependency_id": "real-effect-sink",
+      "relation": "writes_to"
+    },
+    {
+      "from_component_id": "participant",
+      "dependency_id": "database-replication",
+      "relation": "stores_in"
+    },
+    {
+      "from_component_id": "participant",
+      "dependency_id": "backup-restore",
+      "relation": "administered_by"
+    },
+    {
+      "from_component_id": "observer",
+      "dependency_id": "host-kernel",
+      "relation": "executes_on"
+    },
+    {
+      "from_component_id": "observer",
+      "dependency_id": "os-user",
+      "relation": "executes_on"
+    },
+    {
+      "from_component_id": "observer",
+      "dependency_id": "supervisor",
+      "relation": "executes_on"
+    },
+    {
+      "from_component_id": "observer",
+      "dependency_id": "admin-domain",
+      "relation": "executes_on"
+    },
+    {
+      "from_component_id": "observer",
+      "dependency_id": "authority-domain",
+      "relation": "executes_on"
+    },
+    {
+      "from_component_id": "observer",
+      "dependency_id": "ipc-path",
+      "relation": "communicates_over"
+    },
+    {
+      "from_component_id": "observer",
+      "dependency_id": "host-clock",
+      "relation": "executes_on"
+    },
+    {
+      "from_component_id": "observer",
+      "dependency_id": "build-artifact",
+      "relation": "executes_on"
+    },
+    {
+      "from_component_id": "observer",
+      "dependency_id": "real-service-probe",
+      "relation": "observes_from"
+    },
+    {
+      "from_component_id": "observer",
+      "dependency_id": "network-gateway",
+      "relation": "routes_through"
+    },
+    {
+      "from_component_id": "observer",
+      "dependency_id": "independent-collector",
+      "relation": "observes_through"
+    },
+    {
+      "from_component_id": "agent-under-test",
+      "dependency_id": "toolchain",
+      "relation": "built_from"
+    },
+    {
+      "from_component_id": "effect-broker",
+      "dependency_id": "authority-domain",
+      "relation": "authorized_by"
+    },
+    {
+      "from_component_id": "effect-sink",
+      "dependency_id": "database-replication",
+      "relation": "stores_in"
+    },
+    {
+      "from_component_id": "service-probe",
+      "dependency_id": "network-gateway",
+      "relation": "routes_through"
+    },
+    {
+      "from_component_id": "runtime-monitor",
+      "dependency_id": "independent-collector",
+      "relation": "observes_through"
+    },
+    {
+      "from_component_id": "episode-reset",
+      "dependency_id": "backup-restore",
+      "relation": "reset_by"
+    }
+  ],
+  "claim_bindings": [
+    {
+      "claim_id": "inc-002-participant-effect",
+      "claim_kind": "participant_effect",
+      "source_component_id": "participant",
+      "compared_component_ids": [
+        "runner",
+        "agent-under-test"
+      ],
+      "required_dependency_kinds": [
+        "host_kernel_namespace",
+        "operating_system_identity",
+        "process_supervisor",
+        "administration_domain",
+        "authority_issuer",
+        "network_or_ipc_path",
+        "participant_state_store",
+        "participant_effect_sink"
+      ],
+      "claim_ceiling": "no_independent_effect_claim",
+      "expected_claim_findings": [
+        "shared_dependencies_present",
+        "required_source_not_exercised",
+        "compared_component_not_exercised"
+      ]
+    },
+    {
+      "claim_id": "inc-002-service-health",
+      "claim_kind": "service_health",
+      "source_component_id": "observer",
+      "compared_component_ids": [
+        "runner",
+        "agent-under-test"
+      ],
+      "required_dependency_kinds": [
+        "host_kernel_namespace",
+        "operating_system_identity",
+        "process_supervisor",
+        "administration_domain",
+        "authority_issuer",
+        "network_or_ipc_path",
+        "time_source",
+        "service_probe_source",
+        "telemetry_collector"
+      ],
+      "claim_ceiling": "no_independent_service_health_claim",
+      "expected_claim_findings": [
+        "shared_dependencies_present",
+        "required_source_not_exercised",
+        "compared_component_not_exercised"
+      ]
+    }
+  ],
+  "monitor_coverage": {
+    "status": "not_exercised",
+    "monitor_component_id": "runtime-monitor",
+    "events_observed": null,
+    "events_dropped": null,
+    "sequence_continuity": null,
+    "evidence_refs": []
+  }
+}
