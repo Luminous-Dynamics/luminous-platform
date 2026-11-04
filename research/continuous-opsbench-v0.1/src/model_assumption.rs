@@ -407,7 +407,7 @@ pub fn evaluate_model_assumptions(
     let mut previous_target_by_metric: BTreeMap<String, u64> = BTreeMap::new();
     let mut matched_observations = 0usize;
     let mut misses = 0usize;
-    let mut too_wide = accumulators.values().map(|item| item.too_wide).sum::<usize>();
+    let _too_wide_at_forecast_validation = accumulators.values().map(|item| item.too_wide).sum::<usize>();
     let mut max_positive = 0i128;
     let mut max_negative = 0i128;
     let mut hard_drift = false;
@@ -450,18 +450,18 @@ pub fn evaluate_model_assumptions(
             findings.insert(ModelFinding::FutureObservation);
             continue;
         }
-        let ingest_age = match observation
-            .ingested_at_ms
+        let observation_age = match input
+            .evaluation_at_ms
             .checked_sub(observation.observed_at_ms)
             .and_then(|age| age.checked_add(observation.clock_uncertainty_ms))
         {
             Some(age) => age,
             None => {
-                findings.insert(ModelFinding::StaleObservation);
+                findings.insert(ModelFinding::FutureObservation);
                 continue;
             }
         };
-        if ingest_age > input.maximum_observation_age_ms {
+        if observation_age > input.maximum_observation_age_ms {
             findings.insert(ModelFinding::StaleObservation);
             continue;
         }
@@ -579,7 +579,7 @@ pub fn evaluate_model_assumptions(
     if hard_drift {
         findings.insert(ModelFinding::DriftQuarantine);
     }
-    too_wide = accumulators.values().map(|item| item.too_wide).sum::<usize>();
+    let too_wide = accumulators.values().map(|item| item.too_wide).sum::<usize>();
 
     let invalid_evidence = [
         ModelFinding::InvalidForecast,
