@@ -138,3 +138,24 @@ Not yet implemented/qualified:
 - exact-head CI against a pinned PostgreSQL image digest.
 
 A passing future campaign will qualify only the pinned PostgreSQL build, migration digest, adapter code and tested fault model. It will not prove generic atomicity with arbitrary external providers or every production storage configuration.
+
+
+## Disposable PostgreSQL integration harness
+
+The accompanying workflow uses a disposable PostgreSQL 16.4 service and executes the migration rather than merely validating the SQL file as text.
+
+The shell harness exercises:
+- migration application;
+- local business-row mutation and participant receipt in one transaction;
+- transaction rollback removing both business and participant changes;
+- deferred rejection when a local attempt is not finalized;
+- exact idempotent replay after topology advances, preserving original commit epoch and sequence;
+- conflicting request under an existing logical idempotency key;
+- stale topology epoch and topology-digest rejection;
+- independent-session race between local effect commit and topology publication;
+- independent-session race on the same logical idempotency key, expecting one attempt and one committed sequence;
+- same-epoch/different-digest rejection.
+
+The race tests use separate psql processes and independent database connections. They are not a full crash-cut/restart campaign: process termination at each WAL/commit boundary, response-loss recovery, deadlock/lock-timeout classification, and authentication-adapter integration remain follow-up work.
+
+The CI service image is the explicit PostgreSQL 16.4 Alpine tag and the job verifies the server reports version 16.4. The run establishes behavior only for that disposable configuration and test cases; it does not qualify arbitrary production database settings or remote provider effects.
