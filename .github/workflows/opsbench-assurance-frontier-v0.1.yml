@@ -53,6 +53,8 @@ jobs:
                   raise SystemExit(f"empty denominator: {target['target_id']}")
               if not target["claim_boundary"].strip():
                   raise SystemExit(f"empty claim boundary: {target['target_id']}")
+              if not target["baseline_source"].startswith("https://"):
+                  raise SystemExit(f"baseline source must be HTTPS: {target['target_id']}")
               if target["operator"] == "reproduce_native" and target["baseline_source"] == "":
                   raise SystemExit(f"native reproduction target has no source: {target['target_id']}")
           for gate in charter["hard_gates"]:
