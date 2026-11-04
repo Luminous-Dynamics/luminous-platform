@@ -476,12 +476,9 @@ pub fn evaluate_risk_trajectory(
             return Err(RiskEvaluationError::InvalidServiceSet(step.step_id.clone()));
         }
 
-        let age = match step.at_ms.checked_sub(step.observed_at_ms)
+        let age = step.at_ms.checked_sub(step.observed_at_ms)
             .and_then(|age| age.checked_add(step.observation_clock_uncertainty_ms))
-        {
-            Some(age) => age,
-            None => u64::MAX,
-        };
+            .unwrap_or(u64::MAX);
         let stale = age >= contract.maximum_observation_age_ms;
         if stale {
             evidence_complete = false;
