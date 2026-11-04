@@ -849,6 +849,53 @@ mod tests {
     }
 
     #[test]
+    fn each_metric_uses_its_own_units_scale_and_thresholds() {
+        let mut evidence = input(3);
+        for index in 0..3 {
+            let forecast_id = format!("latency-forecast-{index}");
+            let observation_id = format!("latency-observation-{index}");
+            let mut latency_forecast = forecast(&forecast_id, 1_000, index);
+            latency_forecast.metric_id = "latency_ms".into();
+            latency_forecast.units = "ms".into();
+            latency_forecast.lower = 990;
+            latency_forecast.point = 1_000;
+            latency_forecast.upper = 1_010;
+            evidence.forecasts.push(latency_forecast);
+
+            let mut latency_observation = observation(
+                &observation_id,
+                &forecast_id,
+                1_010,
+                index as u64 + 4,
+                index,
+            );
+            latency_observation.metric_id = "latency_ms".into();
+            latency_observation.units = "ms".into();
+            latency_observation.actual = 1_010;
+            evidence.observations.push(latency_observation);
+        }
+        evidence.metric_policy_set_digest = digest(7);
+        evidence.metric_policies.push(MetricAssumptionPolicy {
+            metric_id: "latency_ms".into(),
+            units: "ms".into(),
+            minimum_observations: 3,
+            maximum_interval_width: 20,
+            residual_scale: 10,
+            cusum_allowance: 0,
+            cusum_warning_threshold: 2,
+            cusum_quarantine_threshold: 4,
+        });
+
+        let result = evaluate_model_assumptions(&evidence).unwrap();
+        assert_eq!(result.disposition, ModelDisposition::DriftSuspected);
+        let latency = result.metrics.iter()
+            .find(|metric| metric.metric_id == "latency_ms")
+            .unwrap();
+        assert_eq!(latency.final_positive_cusum, 3);
+        assert_eq!(latency.final_negative_cusum, 0);
+    }
+
+    #[test]
     fn model_revision_change_is_not_silently_recalibrated() {
         let mut evidence = input(3);
         evidence.forecasts[1].model_revision = "model-v2".into();
