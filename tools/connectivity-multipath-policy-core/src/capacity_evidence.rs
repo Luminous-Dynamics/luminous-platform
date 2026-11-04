@@ -11,6 +11,7 @@
 use std::collections::BTreeSet;
 
 use crate::resource_allocation::ResourceCapacity;
+use crate::CapacityDomainEvidence;
 
 const MAX_CLAIMS: usize = 128;
 const MAX_PATHS: usize = 64;
@@ -140,6 +141,11 @@ pub enum CapacityEvidenceError {
     StatementExpired,
     ObservationTooOld,
     InvalidSequenceNumber,
+    EvidenceNotCalibrated,
+    PathNotInInventory,
+    EvidenceExpiredAtUse,
+    EvidenceStaleAtUse,
+    InvalidCurrentTime,
     Trust(TrustVerificationError),
 }
 
@@ -202,6 +208,43 @@ impl VerifiedCapacityInventory {
             resource_id: claim.resource_id.clone(),
             capacity_bps: claim.capacity_bps,
         }).collect()
+    }
+
+    /// Project this statement's verified dependency evidence onto one path in
+    /// the already-validated incidence manifest. Confidence is only forwarded
+    /// when the verifier approved a calibration profile for this issuer.
+    pub fn path_dependency_evidence(
+        &self,
+        path_id: &str,
+        now_unix_ms: u64,
+        maximum_observation_age_ms: u64,
+    ) -> Result<(Vec<String>, CapacityDomainEvidence), CapacityEvidenceError> {
+        if now_unix_ms == 0 || maximum_observation_age_ms == 0 {
+            return Err(CapacityEvidenceError::InvalidCurrentTime);
+        }
+        if self.valid_until_unix_ms <= now_unix_ms {
+            return Err(CapacityEvidenceError::EvidenceExpiredAtUse);
+        }
+        if now_unix_ms.saturating_sub(self.observed_at_unix_ms) > maximum_observation_age_ms {
+            return Err(CapacityEvidenceError::EvidenceStaleAtUse);
+        }
+        if !self.calibration_profile_verified {
+            return Err(CapacityEvidenceError::EvidenceNotCalibrated);
+        }
+        let incidence = self.path_incidence.iter()
+            .find(|incidence| incidence.path_id == path_id)
+            .ok_or(CapacityEvidenceError::PathNotInInventory)?;
+        let mut capacity_domain_ids = incidence.resource_ids.clone();
+        capacity_domain_ids.sort();
+        Ok((capacity_domain_ids, CapacityDomainEvidence {
+            source_id: self.issuer_id.clone(),
+            inventory_sha256: self.inventory_sha256.clone(),
+            topology_sha256: self.topology_sha256.clone(),
+            complete: true,
+            confidence_ppm: self.confidence_ppm,
+            observed_at_unix_ms: self.observed_at_unix_ms,
+            valid_until_unix_ms: self.valid_until_unix_ms,
+        }))
     }
 }
 
@@ -544,6 +587,47 @@ mod tests {
         assert!(verified.calibration_profile_verified());
         assert_eq!(verified.ranking_confidence_ppm(), Some(970_000));
         assert_eq!(verified.resource_capacities()[0].capacity_bps, 100_000_000);
+    }
+
+    #[test]
+    fn verified_inventory_projects_path_dependencies_with_provenance() {
+        let verified = verify_capacity_inventory(
+            &statement(), 1_050_000, policy(), &MockVerifier::default()
+        ).expect("verified inventory");
+        let (domains, evidence) = verified.path_dependency_evidence("path-a", 1_060_000, 60_000)
+            .expect("path dependency evidence");
+        assert_eq!(domains, vec!["backhaul".to_owned()]);
+        assert_eq!(evidence.source_id, "operator-authority-01");
+        assert_eq!(evidence.inventory_sha256, "b".repeat(64));
+        assert_eq!(evidence.topology_sha256, "a".repeat(64));
+        assert_eq!(evidence.confidence_ppm, 970_000);
+    }
+
+    #[test]
+    fn uncalibrated_inventory_cannot_project_ranking_evidence() {
+        let mut input = statement();
+        input.calibration_profile_sha256 = None;
+        let mut policy = policy();
+        policy.minimum_confidence_ppm = None;
+        policy.require_calibration_profile = false;
+        let verified = verify_capacity_inventory(
+            &input, 1_050_000, policy, &MockVerifier::default()
+        ).expect("issuer-attested inventory");
+        assert_eq!(
+            verified.path_dependency_evidence("path-a", 1_060_000, 60_000).unwrap_err(),
+            CapacityEvidenceError::EvidenceNotCalibrated
+        );
+    }
+
+    #[test]
+    fn projected_path_evidence_rechecks_expiry() {
+        let verified = verify_capacity_inventory(
+            &statement(), 1_050_000, policy(), &MockVerifier::default()
+        ).expect("verified inventory");
+        assert_eq!(
+            verified.path_dependency_evidence("path-a", 1_200_000, 60_000).unwrap_err(),
+            CapacityEvidenceError::EvidenceExpiredAtUse
+        );
     }
 
     #[test]
