@@ -457,7 +457,7 @@ pub fn allocate_weighted_max_min(
         let fits = path_resource_indices[path_index]
             .iter()
             .all(|resource_index| {
-                loads[*resource_index] + 1 <= u128::from(resource_capacities[*resource_index])
+                loads[*resource_index] < u128::from(resource_capacities[*resource_index])
             });
         if fits {
             rates[path_index] = rates[path_index]
