@@ -1,0 +1,568 @@
+//! Deterministic closed-loop operational stability plant.
+//!
+//! This small synthetic plant exposes delayed actuation/observation, retry
+//! amplification, API/database bottlenecks, workload priority, action churn,
+//! and a no-intervention recovery tail. It is a scenario/evaluator reference,
+//! not a model of arbitrary production systems or a proof of stability.
+
+use std::collections::{BTreeMap, BTreeSet};
+
+pub const PPM: u64 = 1_000_000;
+pub const MAX_RETRY_MULTIPLIER_PPM: u32 = 3_000_000;
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct StabilityConfig {
+    pub ticks: u32,
+    pub api_capacity: u64,
+    pub database_capacity: u64,
+    pub critical_demand_per_tick: u64,
+    pub bulk_demand_per_tick: u64,
+    /// Fault is active on the half-open interval [start, end).
+    pub fault_start_tick: u32,
+    pub fault_end_tick: u32,
+    pub fault_api_capacity_reduction: u64,
+    pub observation_delay_ticks: u32,
+    pub actuation_delay_ticks: u32,
+    pub maximum_observation_age_ticks: u32,
+    pub maximum_failed_ppm: u32,
+    pub maximum_latency_ms: u64,
+    pub consecutive_healthy_ticks: u32,
+    /// Final ticks are reserved for recovery after all controller actions stop.
+    pub no_intervention_tail_ticks: u32,
+    pub base_latency_ms: u64,
+    pub queue_latency_ms_per_request: u64,
+    /// Deterministic signed queue-depth measurement noise, one value per tick.
+    pub queue_noise_by_tick: Vec<i64>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Controller {
+    Agent,
+    Runbook,
+    Autoscaler,
+    Operator,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ControlOperation {
+    SetApiCapacity(u64),
+    SetRetryMultiplierPpm(u32),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ControlAction {
+    pub action_id: String,
+    pub controller: Controller,
+    pub issued_at_tick: u32,
+    /// Source tick of the observation that informed this action.
+    pub observation_source_tick: u32,
+    pub operation: ControlOperation,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PlantSample {
+    pub tick: u32,
+    pub actual_api_capacity: u64,
+    pub database_capacity: u64,
+    pub effective_capacity: u64,
+    pub critical_offered: u64,
+    pub bulk_offered: u64,
+    pub critical_failed: u64,
+    pub bulk_failed: u64,
+    pub total_failed: u64,
+    pub total_attempts: u64,
+    pub failed_ppm: u32,
+    pub critical_queue: u64,
+    pub bulk_queue: u64,
+    pub queue_depth: u64,
+    pub latency_ms: u64,
+    pub slo_healthy: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PlantObservation {
+    pub tick: u32,
+    pub source_tick: u32,
+    pub observed_queue_depth: u64,
+    pub observed_latency_ms: u64,
+    pub observed_failed_ppm: u32,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct StabilityMetrics {
+    pub slo_violation_integral_request_ms: u128,
+    pub settling_time_ticks_after_fault: Option<u32>,
+    pub action_count: usize,
+    pub action_churn_count: usize,
+    pub action_reversal_count: usize,
+    pub stale_observation_action_count: usize,
+    pub critical_failed_requests: u64,
+    pub bulk_failed_requests: u64,
+    pub maximum_queue_depth: u64,
+    pub maximum_latency_ms: u64,
+    pub queue_range_after_fault: u64,
+    pub api_database_capacity_gap_request_units: u128,
+    pub final_no_intervention_tail_healthy: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct StabilityRun {
+    pub samples: Vec<PlantSample>,
+    pub observations: Vec<PlantObservation>,
+    pub metrics: StabilityMetrics,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum StabilityError {
+    EmptyRun,
+    InvalidFaultInterval,
+    InvalidCapacityOrDemand,
+    InvalidSloContract,
+    InvalidTailContract,
+    NoiseLengthMismatch,
+    EmptyActionIdentity,
+    DuplicateAction(String),
+    ActionOutsideRun(String),
+    ActionInNoInterventionTail(String),
+    ObservationFromFuture(String),
+    InvalidSetpoint(String),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum Resource {
+    ApiCapacity,
+    RetryMultiplier,
+}
+
+fn validate_config(config: &StabilityConfig) -> Result<(), StabilityError> {
+    if config.ticks == 0 {
+        return Err(StabilityError::EmptyRun);
+    }
+    if config.fault_start_tick >= config.fault_end_tick
+        || config.fault_end_tick > config.ticks
+    {
+        return Err(StabilityError::InvalidFaultInterval);
+    }
+    if config.api_capacity == 0
+        || config.database_capacity == 0
+        || config.critical_demand_per_tick + config.bulk_demand_per_tick == 0
+        || config.fault_api_capacity_reduction >= config.api_capacity
+    {
+        return Err(StabilityError::InvalidCapacityOrDemand);
+    }
+    if config.maximum_failed_ppm > PPM as u32 || config.maximum_latency_ms == 0 {
+        return Err(StabilityError::InvalidSloContract);
+    }
+    if config.no_intervention_tail_ticks == 0
+        || config.no_intervention_tail_ticks > config.ticks
+        || config.consecutive_healthy_ticks == 0
+        || config.consecutive_healthy_ticks > config.no_intervention_tail_ticks
+        || config.fault_end_tick > config.ticks - config.no_intervention_tail_ticks
+    {
+        return Err(StabilityError::InvalidTailContract);
+    }
+    if config.queue_noise_by_tick.len() != config.ticks as usize {
+        return Err(StabilityError::NoiseLengthMismatch);
+    }
+    Ok(())
+}
+
+/// Run a deterministic plant against an externally supplied controller action
+/// trace. The caller is responsible for generating actions only from permitted
+/// observations; observation source ticks remain visible for audit.
+pub fn run_stability_scenario(
+    config: &StabilityConfig,
+    actions: &[ControlAction],
+) -> Result<StabilityRun, StabilityError> {
+    validate_config(config)?;
+    let tail_start = config.ticks - config.no_intervention_tail_ticks;
+
+    let mut action_ids = BTreeSet::new();
+    let mut scheduled = Vec::with_capacity(actions.len());
+    let mut stale_observation_action_count = 0usize;
+    for (index, action) in actions.iter().enumerate() {
+        if action.action_id.is_empty() {
+            return Err(StabilityError::EmptyActionIdentity);
+        }
+        if !action_ids.insert(action.action_id.as_str()) {
+            return Err(StabilityError::DuplicateAction(action.action_id.clone()));
+        }
+        if action.issued_at_tick >= config.ticks {
+            return Err(StabilityError::ActionOutsideRun(action.action_id.clone()));
+        }
+        if action.observation_source_tick > action.issued_at_tick {
+            return Err(StabilityError::ObservationFromFuture(action.action_id.clone()));
+        }
+        if action.issued_at_tick - action.observation_source_tick
+            > config.maximum_observation_age_ticks
+        {
+            stale_observation_action_count += 1;
+        }
+        let effect_tick = action.issued_at_tick
+            .checked_add(config.actuation_delay_ticks)
+            .ok_or_else(|| StabilityError::ActionOutsideRun(action.action_id.clone()))?;
+        if effect_tick >= config.ticks {
+            return Err(StabilityError::ActionOutsideRun(action.action_id.clone()));
+        }
+        if effect_tick >= tail_start {
+            return Err(StabilityError::ActionInNoInterventionTail(action.action_id.clone()));
+        }
+        match action.operation {
+            ControlOperation::SetApiCapacity(0) => {
+                return Err(StabilityError::InvalidSetpoint(action.action_id.clone()));
+            }
+            ControlOperation::SetRetryMultiplierPpm(value)
+                if value < PPM as u32 || value > MAX_RETRY_MULTIPLIER_PPM =>
+            {
+                return Err(StabilityError::InvalidSetpoint(action.action_id.clone()));
+            }
+            _ => {}
+        }
+        scheduled.push((effect_tick, index, action));
+    }
+    scheduled.sort_by_key(|(effect_tick, index, _)| (*effect_tick, *index));
+
+    let mut api_setpoint = config.api_capacity;
+    let mut retry_multiplier_ppm = PPM as u32;
+    let mut previous_direction: BTreeMap<Resource, i8> = BTreeMap::new();
+    let mut cursor = 0usize;
+    let mut critical_queue = 0u64;
+    let mut bulk_queue = 0u64;
+    let mut previous_failed = 0u64;
+    let mut metrics = StabilityMetrics {
+        action_count: actions.len(),
+        stale_observation_action_count,
+        ..StabilityMetrics::default()
+    };
+    let mut samples = Vec::with_capacity(config.ticks as usize);
+    let mut tail_capacity_min = u64::MAX;
+    let mut tail_capacity_max = 0u64;
+    let mut healthy_streak = 0u32;
+
+    for tick in 0..config.ticks {
+        while cursor < scheduled.len() && scheduled[cursor].0 == tick {
+            let action = scheduled[cursor].2;
+            match action.operation {
+                ControlOperation::SetApiCapacity(value) => {
+                    if value != api_setpoint {
+                        metrics.action_churn_count += 1;
+                        let direction = if value > api_setpoint { 1 } else { -1 };
+                        if previous_direction.get(&Resource::ApiCapacity)
+                            .is_some_and(|previous| *previous != direction)
+                        {
+                            metrics.action_reversal_count += 1;
+                        }
+                        previous_direction.insert(Resource::ApiCapacity, direction);
+                        api_setpoint = value;
+                    }
+                }
+                ControlOperation::SetRetryMultiplierPpm(value) => {
+                    if value != retry_multiplier_ppm {
+                        metrics.action_churn_count += 1;
+                        let direction = if value > retry_multiplier_ppm { 1 } else { -1 };
+                        if previous_direction.get(&Resource::RetryMultiplier)
+                            .is_some_and(|previous| *previous != direction)
+                        {
+                            metrics.action_reversal_count += 1;
+                        }
+                        previous_direction.insert(Resource::RetryMultiplier, direction);
+                        retry_multiplier_ppm = value;
+                    }
+                }
+            }
+            cursor += 1;
+        }
+
+        let fault_active = tick >= config.fault_start_tick && tick < config.fault_end_tick;
+        let actual_api_capacity = if fault_active {
+            api_setpoint.saturating_sub(config.fault_api_capacity_reduction).max(1)
+        } else {
+            api_setpoint
+        };
+        let effective_capacity = actual_api_capacity.min(config.database_capacity);
+        let retry_extra = (previous_failed as u128)
+            .saturating_mul((retry_multiplier_ppm - PPM as u32) as u128)
+            .checked_div(PPM as u128)
+            .unwrap_or(0)
+            .min(u64::MAX as u128) as u64;
+        let critical_attempts = config.critical_demand_per_tick;
+        let bulk_attempts = config.bulk_demand_per_tick.saturating_add(retry_extra);
+
+        // Critical work receives priority. Each class has its own backlog so
+        // bulk retries cannot silently consume capacity reserved for critical work.
+        let critical_work = critical_queue.saturating_add(critical_attempts);
+        let bulk_work = bulk_queue.saturating_add(bulk_attempts);
+        let critical_processed = critical_work.min(effective_capacity);
+        let bulk_processed = bulk_work.min(effective_capacity.saturating_sub(critical_processed));
+        let critical_completed_new = critical_processed
+            .saturating_sub(critical_queue)
+            .min(critical_attempts);
+        let bulk_completed_new = bulk_processed
+            .saturating_sub(bulk_queue)
+            .min(bulk_attempts);
+
+        critical_queue = critical_work.saturating_sub(critical_processed);
+        bulk_queue = bulk_work.saturating_sub(bulk_processed);
+        let critical_failed = critical_attempts.saturating_sub(critical_completed_new);
+        let bulk_failed = bulk_attempts.saturating_sub(bulk_completed_new);
+        let total_failed = critical_failed.saturating_add(bulk_failed);
+        let total_attempts = critical_attempts.saturating_add(bulk_attempts);
+        let failed_ppm = if total_attempts == 0 {
+            0
+        } else {
+            ((total_failed as u128 * PPM as u128) / total_attempts as u128)
+                .min(PPM as u128) as u32
+        };
+        let queue_depth = critical_queue.saturating_add(bulk_queue);
+        let latency_ms = config.base_latency_ms.saturating_add(
+            queue_depth.saturating_mul(config.queue_latency_ms_per_request),
+        );
+        let slo_healthy = failed_ppm <= config.maximum_failed_ppm
+            && latency_ms <= config.maximum_latency_ms;
+
+        metrics.critical_failed_requests = metrics.critical_failed_requests
+            .saturating_add(critical_failed);
+        metrics.bulk_failed_requests = metrics.bulk_failed_requests
+            .saturating_add(bulk_failed);
+        metrics.maximum_queue_depth = metrics.maximum_queue_depth.max(queue_depth);
+        metrics.maximum_latency_ms = metrics.maximum_latency_ms.max(latency_ms);
+        let completed = critical_completed_new.saturating_add(bulk_completed_new);
+        let failed_request_time = (total_failed as u128).saturating_mul(latency_ms as u128);
+        let slow_request_time = if latency_ms > config.maximum_latency_ms {
+            (completed as u128)
+                .saturating_mul((latency_ms - config.maximum_latency_ms) as u128)
+        } else {
+            0
+        };
+        metrics.slo_violation_integral_request_ms = metrics
+            .slo_violation_integral_request_ms
+            .saturating_add(failed_request_time)
+            .saturating_add(slow_request_time);
+        let api_excess = actual_api_capacity.saturating_sub(effective_capacity);
+        metrics.api_database_capacity_gap_request_units = metrics
+            .api_database_capacity_gap_request_units
+            .saturating_add(api_excess as u128);
+
+        if tick >= config.fault_end_tick {
+            tail_capacity_min = tail_capacity_min.min(actual_api_capacity);
+            tail_capacity_max = tail_capacity_max.max(actual_api_capacity);
+            if slo_healthy {
+                healthy_streak = healthy_streak.saturating_add(1);
+                if metrics.settling_time_ticks_after_fault.is_none()
+                    && healthy_streak >= config.consecutive_healthy_ticks
+                {
+                    metrics.settling_time_ticks_after_fault =
+                        Some(tick + 1 - config.fault_end_tick);
+                }
+            } else {
+                healthy_streak = 0;
+            }
+        }
+
+        previous_failed = total_failed;
+        samples.push(PlantSample {
+            tick,
+            actual_api_capacity,
+            database_capacity: config.database_capacity,
+            effective_capacity,
+            critical_offered: critical_attempts,
+            bulk_offered: bulk_attempts,
+            critical_failed,
+            bulk_failed,
+            total_failed,
+            total_attempts,
+            failed_ppm,
+            critical_queue,
+            bulk_queue,
+            queue_depth,
+            latency_ms,
+            slo_healthy,
+        });
+    }
+
+    metrics.queue_range_after_fault = if samples.len() > config.fault_end_tick as usize {
+        let tail = &samples[config.fault_end_tick as usize..];
+        let min = tail.iter().map(|sample| sample.queue_depth).min().unwrap_or(0);
+        let max = tail.iter().map(|sample| sample.queue_depth).max().unwrap_or(0);
+        max.saturating_sub(min)
+    } else {
+        0
+    };
+    let final_tail = &samples[tail_start as usize..];
+    metrics.final_no_intervention_tail_healthy =
+        final_tail.iter().all(|sample| sample.slo_healthy);
+    if tail_capacity_min == u64::MAX {
+        tail_capacity_min = 0;
+    }
+    let _api_capacity_range_after_fault = tail_capacity_max.saturating_sub(tail_capacity_min);
+
+    let observations = samples.iter().enumerate().map(|(tick, _)| {
+        let source_tick = tick.saturating_sub(config.observation_delay_ticks as usize);
+        let source = &samples[source_tick];
+        let noise = config.queue_noise_by_tick[tick] as i128;
+        let noisy_queue = (source.queue_depth as i128 + noise)
+            .clamp(0, u64::MAX as i128) as u64;
+        PlantObservation {
+            tick: tick as u32,
+            source_tick: source_tick as u32,
+            observed_queue_depth: noisy_queue,
+            observed_latency_ms: source.latency_ms,
+            observed_failed_ppm: source.failed_ppm,
+        }
+    }).collect();
+
+    Ok(StabilityRun { samples, observations, metrics })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn config() -> StabilityConfig {
+        StabilityConfig {
+            ticks: 16,
+            api_capacity: 100,
+            database_capacity: 100,
+            critical_demand_per_tick: 20,
+            bulk_demand_per_tick: 60,
+            fault_start_tick: 2,
+            fault_end_tick: 5,
+            fault_api_capacity_reduction: 50,
+            observation_delay_ticks: 1,
+            actuation_delay_ticks: 1,
+            maximum_observation_age_ticks: 2,
+            maximum_failed_ppm: 100_000,
+            maximum_latency_ms: 200,
+            consecutive_healthy_ticks: 2,
+            no_intervention_tail_ticks: 4,
+            base_latency_ms: 10,
+            queue_latency_ms_per_request: 1,
+            queue_noise_by_tick: vec![0; 16],
+        }
+    }
+
+    #[test]
+    fn observation_trace_preserves_source_time_and_deterministic_noise() {
+        let mut config = config();
+        config.queue_noise_by_tick[3] = 9;
+        let run = run_stability_scenario(&config, &[]).unwrap();
+        assert_eq!(run.observations[3].source_tick, 2);
+        assert_eq!(
+            run.observations[3].observed_queue_depth,
+            run.samples[2].queue_depth + 9
+        );
+    }
+
+    #[test]
+    fn actuation_delay_changes_the_plant_only_at_the_due_tick() {
+        let mut config = config();
+        config.actuation_delay_ticks = 2;
+        let actions = [ControlAction {
+            action_id: "scale-up".into(),
+            controller: Controller::Agent,
+            issued_at_tick: 0,
+            observation_source_tick: 0,
+            operation: ControlOperation::SetApiCapacity(140),
+        }];
+        let run = run_stability_scenario(&config, &actions).unwrap();
+        assert_eq!(run.samples[0].actual_api_capacity, 100);
+        assert_eq!(run.samples[1].actual_api_capacity, 100);
+        assert_eq!(run.samples[2].actual_api_capacity, 140);
+    }
+
+    #[test]
+    fn action_reversals_and_stale_observation_use_are_counted() {
+        let mut config = config();
+        config.actuation_delay_ticks = 0;
+        let actions = [
+            ControlAction {
+                action_id: "up".into(), controller: Controller::Agent,
+                issued_at_tick: 0, observation_source_tick: 0,
+                operation: ControlOperation::SetApiCapacity(120),
+            },
+            ControlAction {
+                action_id: "down".into(), controller: Controller::Agent,
+                issued_at_tick: 1, observation_source_tick: 0,
+                operation: ControlOperation::SetApiCapacity(80),
+            },
+            ControlAction {
+                action_id: "up-again".into(), controller: Controller::Agent,
+                issued_at_tick: 2, observation_source_tick: 1,
+                operation: ControlOperation::SetApiCapacity(110),
+            },
+        ];
+        let run = run_stability_scenario(&config, &actions).unwrap();
+        assert_eq!(run.metrics.action_churn_count, 3);
+        assert_eq!(run.metrics.action_reversal_count, 2);
+        assert_eq!(run.metrics.stale_observation_action_count, 1);
+    }
+
+    #[test]
+    fn retries_amplify_bulk_load_without_consuming_critical_priority() {
+        let mut config = config();
+        config.actuation_delay_ticks = 0;
+        let actions = [ControlAction {
+            action_id: "retry-amplification".into(),
+            controller: Controller::Agent,
+            issued_at_tick: 5,
+            observation_source_tick: 4,
+            operation: ControlOperation::SetRetryMultiplierPpm(2_000_000),
+        }];
+        let run = run_stability_scenario(&config, &actions).unwrap();
+        assert!(run.metrics.bulk_failed_requests > 0);
+        assert!(run.metrics.critical_failed_requests <= run.metrics.bulk_failed_requests);
+    }
+
+    #[test]
+    fn database_bottleneck_is_reported_separately_from_api_capacity() {
+        let mut config = config();
+        config.database_capacity = 40;
+        config.actuation_delay_ticks = 0;
+        let actions = [ControlAction {
+            action_id: "overscale-api".into(),
+            controller: Controller::Autoscaler,
+            issued_at_tick: 0,
+            observation_source_tick: 0,
+            operation: ControlOperation::SetApiCapacity(180),
+        }];
+        let run = run_stability_scenario(&config, &actions).unwrap();
+        assert!(run.metrics.api_database_capacity_gap_request_units > 0);
+    }
+
+    #[test]
+    fn no_intervention_tail_is_required_for_persistent_recovery() {
+        let mut config = config();
+        config.fault_api_capacity_reduction = 10;
+        let run = run_stability_scenario(&config, &[]).unwrap();
+        assert!(run.metrics.final_no_intervention_tail_healthy);
+        assert!(run.metrics.settling_time_ticks_after_fault.is_some());
+    }
+
+    #[test]
+    fn actions_cannot_be_scheduled_into_the_no_intervention_tail() {
+        let mut config = config();
+        config.actuation_delay_ticks = 1;
+        let actions = [ControlAction {
+            action_id: "late-repair".into(),
+            controller: Controller::Agent,
+            issued_at_tick: 11,
+            observation_source_tick: 10,
+            operation: ControlOperation::SetApiCapacity(120),
+        }];
+        assert_eq!(
+            run_stability_scenario(&config, &actions),
+            Err(StabilityError::ActionInNoInterventionTail("late-repair".into()))
+        );
+    }
+
+    #[test]
+    fn delayed_noisy_feedback_and_faulted_workload_produce_separate_metrics() {
+        let mut config = config();
+        config.queue_noise_by_tick[7] = -4;
+        let run = run_stability_scenario(&config, &[]).unwrap();
+        assert!(run.metrics.slo_violation_integral_request_ms > 0);
+        assert!(run.metrics.maximum_latency_ms >= config.base_latency_ms);
+        assert!(run.metrics.maximum_queue_depth > 0);
+        assert!(run.samples[2].critical_failed <= run.samples[2].bulk_failed);
+    }
+}
