@@ -1,0 +1,61 @@
+{
+  "filter_input": {
+    "run_id": "run-1",
+    "scenario_id": "scenario-1",
+    "arm_id": "candidate",
+    "observation_id": "obs-1",
+    "observation_source_id": "observer-a",
+    "observation_digest": "0101010101010101010101010101010101010101010101010101010101010101",
+    "observed_at_ms": 100,
+    "appraisal_at_ms": 110,
+    "maximum_observation_age_ms": 20,
+    "receipt_validity_ms": 50,
+    "topology_epoch": 7,
+    "topology_digest": "0202020202020202020202020202020202020202020202020202020202020202",
+    "model_revision": "plant-v1",
+    "model_digest": "0303030303030303030303030303030303030303030303030303030303030303",
+    "uncertainty_set_digest": "0404040404040404040404040404040404040404040404040404040404040404",
+    "disturbance_set_digest": "0505050505050505050505050505050505050505050505050505050505050505",
+    "envelope_digest": "0606060606060606060606060606060606060606060606060606060606060606",
+    "state_belief": [
+      {
+        "critical_queue": 0,
+        "bulk_queue": 0,
+        "api_capacity": 10,
+        "database_capacity": 10,
+        "retry_multiplier_ppm": 1000000
+      }
+    ],
+    "capacity_uncertainty": [
+      {
+        "api_capacity_loss": 0,
+        "database_capacity_loss": 0
+      }
+    ],
+    "disturbances": [
+      {
+        "critical_demand": 2,
+        "bulk_demand": 3
+      }
+    ],
+    "envelope": {
+      "maximum_critical_queue": 0,
+      "maximum_bulk_queue": 0,
+      "maximum_total_queue": 0,
+      "maximum_api_capacity": 10,
+      "maximum_database_capacity": 10,
+      "maximum_retry_multiplier_ppm": 1000000,
+      "minimum_spare_capacity": 5
+    }
+  },
+  "candidate_act": {
+    "action_id": "action-1",
+    "tenant_id": "tenant-1",
+    "participant_id": "participant-1",
+    "target": "api-service",
+    "action_digest": "0707070707070707070707070707070707070707070707070707070707070707",
+    "operation": {
+      "kind": "noop"
+    }
+  }
+}
