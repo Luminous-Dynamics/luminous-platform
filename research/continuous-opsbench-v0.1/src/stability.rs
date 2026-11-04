@@ -501,6 +501,10 @@ impl StreamingPlantState {
     }
 }
 
+fn scheduled_effect_tick(issued_at_tick: u32, actuation_delay_ticks: u32) -> Option<u32> {
+    issued_at_tick.checked_add(1)?.checked_add(actuation_delay_ticks)
+}
+
 fn validate_stream_action(
     config: &StabilityConfig,
     action: &ControlAction,
@@ -523,8 +527,7 @@ fn validate_stream_action(
     }
     let stale = action.issued_at_tick - action.observation_source_tick
         > config.maximum_observation_age_ticks;
-    let effect_tick = action.issued_at_tick
-        .checked_add(config.actuation_delay_ticks)
+    let effect_tick = scheduled_effect_tick(action.issued_at_tick, config.actuation_delay_ticks)
         .ok_or_else(|| StabilityError::ActionOutsideRun(action.action_id.clone()))?;
     let tail_start = config.ticks - config.no_intervention_tail_ticks;
     if effect_tick >= config.ticks {
@@ -751,7 +754,7 @@ pub fn run_stability_multi_controller_loop_streaming(
         samples.push(advance_streaming_plant_tick(config, tick, &mut state));
         let observation = observation_for_tick(config, tick, &samples);
 
-        let can_act = tick.checked_add(config.actuation_delay_ticks)
+        let can_act = scheduled_effect_tick(tick, config.actuation_delay_ticks)
             .is_some_and(|effect_tick| effect_tick < tail_start);
         if !can_act {
             continue;
@@ -835,7 +838,7 @@ pub fn run_stability_multi_controller_loop_reference(
         let partial_run = run_stability_scenario(config, &actions)?;
         let observation = partial_run.observations[tick as usize].clone();
 
-        let effect_tick = tick.checked_add(config.actuation_delay_ticks);
+        let effect_tick = scheduled_effect_tick(tick, config.actuation_delay_ticks);
         let can_act = effect_tick.is_some_and(|due| due < tail_start);
         if !can_act {
             continue;
@@ -918,8 +921,7 @@ pub fn run_stability_scenario(
         {
             stale_observation_action_count += 1;
         }
-        let effect_tick = action.issued_at_tick
-            .checked_add(config.actuation_delay_ticks)
+        let effect_tick = scheduled_effect_tick(action.issued_at_tick, config.actuation_delay_ticks)
             .ok_or_else(|| StabilityError::ActionOutsideRun(action.action_id.clone()))?;
         if effect_tick >= config.ticks {
             return Err(StabilityError::ActionOutsideRun(action.action_id.clone()));
