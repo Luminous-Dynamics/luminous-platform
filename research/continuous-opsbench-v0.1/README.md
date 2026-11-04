@@ -96,3 +96,24 @@ Wire contracts and fixtures:
 - \`examples/predictive-safety-filter-appraisal.example.json\`
 
 CI meta-validates both Draft 2020-12 schemas and validates both example fixtures before running the Rust suite. The schemas define a hex digest wire encoding; a real adapter must perform canonical serialization and recompute/authenticate digests rather than accepting caller-supplied strings as proof.
+
+
+## Finite-horizon robust viability v0.1
+
+The additive \`src/viability.rs\` evaluator extends the one-step predictive filter with a bounded finite-state robust viability calculation. It computes \`K_0\` as the declared safe subset of the finite state universe, then iterates robust predecessors: a state remains in \`K_(n+1)\` only when at least one frozen fallback action keeps every model-uncertainty/disturbance successor inside \`K_n\`.
+
+A candidate is marked \`PreservesViability\` only when its one-step appraisal passes and every immediate candidate successor belongs to \`K_H\`. A safe successor missing from the declared state universe is indeterminate rather than silently treated as unsafe or omitted. Duplicate state/action rows, missing fallback actions, invalid actions, out-of-range horizons, arithmetic overflow and evaluation caps fail closed. The report retains each kernel cardinality, exact horizon and finite-universe digest bindings.
+
+The fallback catalogue is used only for mathematical controllability analysis. The evaluator cannot authorize or execute a fallback. Every actual intervention remains subject to the existing exact-scope effect gate and participant topology CAS.
+
+Observation freshness now includes the declared clock-uncertainty bound. Appraisal expiry is capped by both the requested receipt lifetime and the conservative observation-expiry boundary; a result is not valid at or beyond that expiry.
+
+Wire contracts and fixtures:
+- \`predictive-viability-request.schema.json\`
+- \`predictive-viability-appraisal.schema.json\`
+- \`examples/predictive-viability-request.example.json\`
+- \`examples/predictive-viability-appraisal.example.json\`
+
+The tests include a critical trap: a candidate passes immediate one-step safety but enters a state with no robust fallback under the no-op catalogue, so the viability evaluator rejects it. A paired control uses a retry-reduction fallback and proves the candidate successor remains in the finite viability kernel. A separate direct-arithmetic reference implementation checks the kernel membership without calling the filter's transition/predecessor code.
+
+**Claim ceiling:** this is a finite-horizon, discrete, finite-state control-synthesis check for the pinned model, state universe, uncertainty set, disturbance set and envelope. It is not a continuous-time stability proof, does not establish that the state universe or disturbance bounds match production, and does not solve recovery from arbitrary degraded states. The latter needs an explicitly defined degraded envelope and progress/liveness objective.
