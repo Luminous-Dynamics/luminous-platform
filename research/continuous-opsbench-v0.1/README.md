@@ -39,10 +39,10 @@ This is a structural synthetic evaluator. It does not authenticate topology sour
 
 ## Participant-side conditional mutation v0.1
 
-The additive \`src/conditional.rs\` reference model serializes topology publication and mutation commit through one participant-owned mutex. A mutation is accepted only when its expected topology epoch and digest still match at the commit boundary, and the authorization decision is bound to the exact participant, scope, tenant, attempt, logical action, operation, target and request digest.
+The additive \`src/conditional.rs\` reference model serializes topology publication and mutation commit through one participant-owned mutex. A mutation is accepted only when its expected topology epoch and digest still match at the commit boundary, and the authorization decision is bound to the exact participant, scope, tenant, attempt, logical action, operation, target, request digest, and expected topology epoch+digest.
 
 The effect journal is idempotent by tenant plus logical action key. An exact retry returns the original receipt even after topology advances; reusing the key for a different request is rejected. A commit receipt records the topology epoch/digest that was current at the linearization point.
 
-The tests include stale-epoch and same-epoch/different-digest rejection, exact retry, idempotency conflict, authorization mismatch/denial/expiry, monotonic topology publication, and a concurrent topology-update/commit race.
+The tests include stale-epoch and same-epoch/different-digest rejection, denial of authorization retargeting to a newer topology epoch, successful fresh authorization at that epoch, exact retry, idempotency conflict, authorization mismatch/denial/expiry, monotonic topology publication, and a concurrent topology-update/commit race.
 
 **Claim ceiling:** this is an in-memory concurrency reference model. The mutex is not a durable database transaction, a distributed CAS, or a production authorization verifier. A production participant must put the topology compare, effect write, and idempotency journal in the same durable serializable transaction or equivalent linearizable conditional-write primitive. Authorization signatures and trust roots must be authenticated before the normalized authorization receipt reaches this module. No production safety claim follows from the synthetic tests.
