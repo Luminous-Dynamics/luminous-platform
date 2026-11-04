@@ -940,9 +940,24 @@ mod tests {
         path_a.capacity_domain_ids = vec!["access-a".to_owned(), "shared-x".to_owned()];
         path_b.capacity_domain_ids = vec!["shared-x".to_owned(), "shared-y".to_owned()];
         path_c.capacity_domain_ids = vec!["access-c".to_owned(), "shared-y".to_owned()];
+        let paths = vec![path_b, path_c, path_a];
+        let mut exhaustive_pair_oracle_bps = 0_u64;
+        for left in 0..paths.len() {
+            for right in (left + 1)..paths.len() {
+                let overlaps = paths[left].capacity_domain_ids.iter().any(|domain| {
+                    paths[right].capacity_domain_ids.iter().any(|other| other == domain)
+                });
+                if !overlaps {
+                    exhaustive_pair_oracle_bps = exhaustive_pair_oracle_bps.max(
+                        effective_capacity(&paths[left])
+                            .saturating_add(effective_capacity(&paths[right])),
+                    );
+                }
+            }
+        }
         let result = evaluate(
             &request(),
-            &[path_b, path_c, path_a],
+            &paths,
             Strategy::AggregateCapacity,
         )
         .expect("valid multi-domain observations");
@@ -956,6 +971,13 @@ mod tests {
             vec!["a", "c"]
         );
         assert_eq!(result.distinct_capacity_domains, 4);
+        let selected_pair_capacity_bps = result
+            .allocations
+            .iter()
+            .map(|allocation| allocation.effective_capacity_bps)
+            .sum::<u64>();
+        assert_eq!(selected_pair_capacity_bps, exhaustive_pair_oracle_bps);
+        assert_eq!(exhaustive_pair_oracle_bps, 110_000_000);
     }
 
     #[test]
