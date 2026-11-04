@@ -708,7 +708,7 @@ mod tests {
     fn positive_residual_drift_is_detected_before_interval_failure() {
         let mut evidence = input(4);
         for observation in &mut evidence.observations {
-            observation.actual = 103;
+            observation.actual = 102;
         }
         let result = evaluate_model_assumptions(&evidence).unwrap();
         assert_eq!(result.disposition, ModelDisposition::DriftSuspected);
