@@ -203,11 +203,16 @@ pub fn assess_counterfactual(
     let replay_first = counterfactual.first_irrecoverable.as_ref();
 
     let verdict = match original_first {
-        Some(first) if first.event_id == removed_event_id => match replay_first {
-            None => CounterfactualVerdict::Material,
-            Some(next) if next.sequence > first.sequence => CounterfactualVerdict::Material,
-            Some(_) => CounterfactualVerdict::NotMaterial,
-        },
+        Some(first)
+            if first.event_id == removed_event_id
+                || first.related_ids.iter().any(|id| id == removed_event_id) =>
+        {
+            match replay_first {
+                None => CounterfactualVerdict::Material,
+                Some(next) if next.sequence > first.sequence => CounterfactualVerdict::Material,
+                Some(_) => CounterfactualVerdict::NotMaterial,
+            }
+        }
         Some(first) => match replay_first {
             Some(next) if next.event_id == first.event_id => CounterfactualVerdict::NotMaterial,
             Some(next) if next.sequence >= first.sequence => CounterfactualVerdict::NotMaterial,
@@ -366,6 +371,7 @@ pub fn evaluate_breakpoints(
                     invalid: decision_invalid,
                     proposed_action_id: proposed_action_id.clone(),
                     evidence_ids: evidence_ids.clone(),
+                    evidence_event_ids: used_evidence.clone(),
                 };
                 if decisions.insert(decision_id.clone(), record).is_some() {
                     return Err(BreakpointError::DuplicateDecisionId(decision_id.clone()));
@@ -380,6 +386,8 @@ pub fn evaluate_breakpoints(
                 }
                 let decision = decision_id.as_ref().and_then(|id| decisions.get(id));
                 let mut decision_invalid = false;
+                let mut decision_event_id = None;
+                let mut decision_evidence_event_ids = Vec::new();
 
                 if decision.is_none() {
                     decision_invalid = true;
@@ -389,6 +397,8 @@ pub fn evaluate_breakpoints(
                         vec![action_id.clone()], Vec::new(),
                     );
                 } else if let Some(decision) = decision {
+                    decision_event_id = Some(decision.event_id.clone());
+                    decision_evidence_event_ids = decision.evidence_event_ids.clone();
                     if decision.invalid || decision.proposed_action_id.as_deref() != Some(action_id) {
                         decision_invalid = true;
                         push_violation(
@@ -417,6 +427,8 @@ pub fn evaluate_breakpoints(
                     scope_allowed: *scope_allowed,
                     gate_blocked: *gate_blocked,
                     decision_invalid,
+                    decision_event_id,
+                    decision_evidence_event_ids,
                 });
             }
             TraceEventKind::ParticipantEffectCommitted {
@@ -478,11 +490,17 @@ pub fn evaluate_breakpoints(
                 // violation stays attached to its own earlier sequence.
                 if let Some(action) = action {
                     if action.decision_invalid {
+                        let mut related_ids = vec![
+                            action.event_id.clone(), action_id.clone(), effect_id.clone(),
+                        ];
+                        if let Some(decision_event_id) = &action.decision_event_id {
+                            related_ids.push(decision_event_id.clone());
+                        }
+                        related_ids.extend(action.decision_evidence_event_ids.iter().cloned());
                         push_violation(
                             &mut violations, event, BreakpointKind::InvalidEvidenceAction,
                             Attribution::Agent, Severity::Critical, true,
-                            vec![action.event_id.clone(), action_id.clone(), effect_id.clone()],
-                            Vec::new(),
+                            related_ids, Vec::new(),
                         );
                     }
                 }
@@ -625,6 +643,7 @@ struct DecisionRecord {
     invalid: bool,
     proposed_action_id: Option<String>,
     evidence_ids: Vec<String>,
+    evidence_event_ids: Vec<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -637,6 +656,8 @@ struct ActionRecord {
     scope_allowed: bool,
     gate_blocked: bool,
     decision_invalid: bool,
+    decision_event_id: Option<String>,
+    decision_evidence_event_ids: Vec<String>,
 }
 
 // This private constructor assembles a fully explicit violation record; keeping
@@ -1012,6 +1033,37 @@ mod tests {
         });
         let assessment = assess_counterfactual("commit-1", &original, &replay);
         assert_eq!(assessment.verdict, CounterfactualVerdict::Material);
+    }
+
+    #[test]
+    fn counterfactual_traces_decision_and_evidence_events_through_the_breakpoint() {
+        let original = BreakpointReport {
+            scenario_id: "episode-1".into(),
+            violations: Vec::new(),
+            first_critical: None,
+            first_irrecoverable: Some(ConstraintViolation {
+                event_id: "commit-event".into(),
+                sequence: 8,
+                kind: BreakpointKind::InvalidEvidenceAction,
+                attribution: Attribution::Agent,
+                severity: Severity::Critical,
+                irreversible: true,
+                related_ids: vec!["decision-event".into(), "evidence-event".into()],
+                evidence_ids: Vec::new(),
+            }),
+            attribution_counts: BTreeMap::new(),
+        };
+        let replay = BreakpointReport {
+            scenario_id: "episode-1".into(),
+            violations: Vec::new(),
+            first_critical: None,
+            first_irrecoverable: None,
+            attribution_counts: BTreeMap::new(),
+        };
+        assert_eq!(
+            assess_counterfactual("evidence-event", &original, &replay).verdict,
+            CounterfactualVerdict::Material
+        );
     }
 
     #[test]
