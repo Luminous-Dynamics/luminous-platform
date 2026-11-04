@@ -1,0 +1,104 @@
+name: opsbench assurance frontier charter v0.1
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/opsbench-assurance-frontier-v0.1/**"
+      - ".github/workflows/opsbench-assurance-frontier-v0.1.yml"
+  push:
+    branches: [main]
+    paths:
+      - "benchmarks/opsbench-assurance-frontier-v0.1/**"
+      - ".github/workflows/opsbench-assurance-frontier-v0.1.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  assurance-frontier:
+    name: Assurance frontier schema and preregistration checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Validate charter and non-compensatory controls
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/assurance-frontier-venv
+          /tmp/assurance-frontier-venv/bin/python -m pip install --disable-pip-version-check "jsonschema==4.23.0"
+          /tmp/assurance-frontier-venv/bin/python - <<'PY'
+          import copy
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator, ValidationError
+
+          root = Path("benchmarks/opsbench-assurance-frontier-v0.1")
+          schema = json.loads((root / "assurance-frontier.schema.json").read_text(encoding="utf-8"))
+          charter = json.loads((root / "charter-2026-11-05.json").read_text(encoding="utf-8"))
+          Draft202012Validator.check_schema(schema)
+          validator = Draft202012Validator(schema)
+          validator.validate(charter)
+
+          ids = [target["target_id"] for target in charter["benchmark_targets"]]
+          if len(ids) != len(set(ids)):
+              raise SystemExit("duplicate benchmark target ID")
+          gate_ids = [gate["gate_id"] for gate in charter["hard_gates"]]
+          if len(gate_ids) != len(set(gate_ids)):
+              raise SystemExit("duplicate hard-gate ID")
+          for target in charter["benchmark_targets"]:
+              if not target["denominator_definition"].strip():
+                  raise SystemExit(f"empty denominator: {target['target_id']}")
+              if not target["claim_boundary"].strip():
+                  raise SystemExit(f"empty claim boundary: {target['target_id']}")
+              if target["operator"] == "reproduce_native" and target["baseline_source"] == "":
+                  raise SystemExit(f"native reproduction target has no source: {target['target_id']}")
+          for gate in charter["hard_gates"]:
+              if gate["minimum_attempts"] < gate["minimum_scenario_family_clusters"]:
+                  raise SystemExit(f"hard gate has fewer attempts than declared family clusters: {gate['gate_id']}")
+
+          forbidden_keys = {"weighted_sre_score", "overall_sre_score", "composite_rank", "cross_benchmark_conversion"}
+          def check_forbidden(doc):
+              if isinstance(doc, dict):
+                  for key, value in doc.items():
+                      if key in forbidden_keys:
+                          raise ValueError(f"forbidden aggregate or score translation: {key}")
+                      check_forbidden(value)
+              elif isinstance(doc, list):
+                  for value in doc:
+                      check_forbidden(value)
+          check_forbidden(charter)
+
+          negative_controls = []
+          bad = copy.deepcopy(charter)
+          bad["policy"]["composite_score"] = True
+          negative_controls.append(("composite score enabled", bad))
+          bad = copy.deepcopy(charter)
+          bad["policy"]["cross_metric_compensation"] = True
+          negative_controls.append(("cross-metric compensation enabled", bad))
+          bad = copy.deepcopy(charter)
+          bad["benchmark_targets"][0].pop("denominator_definition")
+          negative_controls.append(("missing denominator", bad))
+          bad = copy.deepcopy(charter)
+          bad["hard_gates"][0]["minimum_scenario_family_clusters"] = 0
+          negative_controls.append(("missing family-cluster floor", bad))
+          bad = copy.deepcopy(charter)
+          bad["benchmark_targets"][0]["baseline_source"] = "not a URI"
+          negative_controls.append(("invalid source identity", bad))
+
+          for label, candidate in negative_controls:
+              try:
+                  validator.validate(candidate)
+                  if label == "missing family-cluster floor":
+                      if any(gate["minimum_scenario_family_clusters"] < 1 for gate in candidate["hard_gates"]):
+                          raise ValueError("zero family clusters")
+                  check_forbidden(candidate)
+              except (ValidationError, ValueError):
+                  continue
+              raise SystemExit(f"assurance charter negative control accepted: {label}")
+
+          print(f"assurance frontier schema: valid; benchmark targets: {len(ids)}; hard gates: {len(gate_ids)}")
+          print(f"negative controls rejected: {len(negative_controls)}/{len(negative_controls)}")
+          PY
