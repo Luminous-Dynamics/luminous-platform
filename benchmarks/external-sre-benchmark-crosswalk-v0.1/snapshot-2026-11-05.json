@@ -663,7 +663,7 @@
           "numerator": 18,
           "denominator": 21,
           "result_context": "Detected 18 of 21 faults.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -675,7 +675,7 @@
           "numerator": 12,
           "denominator": 21,
           "result_context": "Detected 12 of 21 faults.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -687,7 +687,7 @@
           "numerator": 11,
           "denominator": 12,
           "result_context": "Correct on the 12 incidents both native products investigated.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -699,7 +699,7 @@
           "numerator": 9,
           "denominator": 12,
           "result_context": "Correct on the 12 incidents both native products investigated.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -711,7 +711,7 @@
           "numerator": 15,
           "denominator": 18,
           "result_context": "Correct root cause on all 18 native investigations.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -723,7 +723,7 @@
           "numerator": 9,
           "denominator": 12,
           "result_context": "Correct root cause on all 12 native investigations.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -735,7 +735,7 @@
           "numerator": 18,
           "denominator": 21,
           "result_context": "Correct root cause on 18 of 21 externally started investigations.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -747,7 +747,7 @@
           "numerator": 19,
           "denominator": 21,
           "result_context": "Correct root cause on 19 of 21 externally started investigations.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -759,7 +759,7 @@
           "numerator": 12,
           "denominator": 18,
           "result_context": "Correct blast radius on 12 of 18 native investigations.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -771,7 +771,7 @@
           "numerator": 8,
           "denominator": 12,
           "result_context": "Correct blast radius on 8 of 12 native investigations.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -783,7 +783,7 @@
           "numerator": 18,
           "denominator": 21,
           "result_context": "Correct blast radius on 18 of 21 control investigations.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -795,7 +795,7 @@
           "numerator": 18,
           "denominator": 21,
           "result_context": "Correct blast radius on 18 of 21 control investigations.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -807,7 +807,7 @@
           "numerator": 7,
           "denominator": 12,
           "result_context": "Supported fix on the 12 matched incidents.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -819,7 +819,7 @@
           "numerator": 5,
           "denominator": 12,
           "result_context": "Supported fix on the 12 matched incidents.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -831,7 +831,7 @@
           "numerator": 8,
           "denominator": 18,
           "result_context": "Supported fix on 8 of 18 native investigations.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -843,7 +843,7 @@
           "numerator": 5,
           "denominator": 12,
           "result_context": "Supported fix on 5 of 12 native investigations.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -855,7 +855,7 @@
           "numerator": 16,
           "denominator": 21,
           "result_context": "Supported fix on 16 of 21 control investigations.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -867,7 +867,7 @@
           "numerator": 15,
           "denominator": 21,
           "result_context": "Supported fix on 15 of 21 control investigations.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -879,7 +879,7 @@
           "numerator": 9,
           "denominator": 16,
           "result_context": "Nine of 16 applicable reports passed readiness; two native reports had no mitigation proposal.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -891,7 +891,7 @@
           "numerator": 5,
           "denominator": 12,
           "result_context": "Ready on 5 of 12 native investigations.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -903,7 +903,7 @@
           "numerator": 16,
           "denominator": 21,
           "result_context": "Ready on 16 of 21 control investigations.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -915,7 +915,7 @@
           "numerator": 15,
           "denominator": 21,
           "result_context": "Ready on 15 of 21 control investigations.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -927,7 +927,7 @@
           "numerator": 0,
           "denominator": 18,
           "result_context": "No incorrect or unsafe final advice in 18 reports.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -939,7 +939,7 @@
           "numerator": 2,
           "denominator": 12,
           "result_context": "Two incorrect or unsafe final recommendations in 12 reports.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -951,7 +951,7 @@
           "numerator": 5,
           "denominator": 21,
           "result_context": "Five incorrect or unsafe final recommendations in 21 control runs.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         },
         {
@@ -963,7 +963,7 @@
           "numerator": 6,
           "denominator": 21,
           "result_context": "Six incorrect or unsafe final recommendations in 21 control runs.",
-          "experiment_date": "2026-10-01",
+          "experiment_date": null,
           "uncertainty_or_repeat_note": ""
         }
       ],
