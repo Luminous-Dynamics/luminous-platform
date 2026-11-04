@@ -201,6 +201,7 @@ pub struct UtilityTargets {
 pub struct UtilityTrialMetrics {
     pub offered_useful_bytes: u64,
     pub on_time_useful_bytes: u64,
+    pub total_useful_bytes: u64,
     pub late_useful_bytes: u64,
     pub on_time_payload_ratio_ppm: u64,
     pub total_task_value_weight: u64,
@@ -902,6 +903,20 @@ mod tests {
         assert_eq!(report.companion_min_retention_ppm, Some(950_000));
         assert_eq!(report.cost_per_on_time_mib_ratio_vs_baseline_ppm, Some(540_000));
         assert_eq!(report.energy_per_on_time_mib_ratio_vs_baseline_ppm, Some(540_000));
+    }
+
+    #[test]
+    fn trial_metrics_preserve_total_and_late_useful_payload_separately() {
+        let report = evaluate_deadline_utility_pair(
+            &baseline(),
+            &treatment(),
+            targets(),
+        )
+        .expect("valid pair");
+        let metrics = report.treatment_metrics.expect("treatment metrics");
+        assert_eq!(metrics.on_time_useful_bytes, 5_000);
+        assert_eq!(metrics.total_useful_bytes, 5_000);
+        assert_eq!(metrics.late_useful_bytes, 0);
     }
 
     #[test]
