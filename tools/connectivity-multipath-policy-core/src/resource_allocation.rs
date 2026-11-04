@@ -18,7 +18,7 @@ const MAX_RESOURCES: usize = 128;
 const MAX_RESOURCES_PER_PATH: usize = 32;
 const MAX_ID_BYTES: usize = 128;
 const MAX_WEIGHT: u32 = 1_000_000;
-const LEVEL_SCALE: u128 = 1_000_000;
+const LEVEL_SCALE: u128 = 1_000_000_000_000;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ResourceCapacity {
@@ -512,7 +512,7 @@ pub fn allocate_weighted_max_min(
         .iter()
         .filter(|allocation| allocation.backlogged)
         .map(|allocation| {
-            f64::from(allocation.allocated_bps) / f64::from(allocation.weight)
+            allocation.allocated_bps as f64 / f64::from(allocation.weight)
         })
         .collect::<Vec<_>>();
 
@@ -657,6 +657,27 @@ mod tests {
         assert_eq!(rate(&result, "c"), 5);
         assert_eq!(result.total_allocated_bps, 15);
         assert!(result.resource_usage.iter().all(|usage| usage.saturated));
+    }
+
+    #[test]
+    fn chain_fixture_exposes_max_min_vs_max_sum_tradeoff_against_exact_lp() {
+        // Exact LP for A uses X, B uses X+Y, C uses Y, with cap(X)=cap(Y)=10:
+        // max A+B+C subject to A+B<=10 and B+C<=10. The optimum is 20
+        // (A=10, B=0, C=10), while weighted max-min is A=B=C=5, total 15.
+        let result = allocate_weighted_max_min(
+            &[resource("x", 10), resource("y", 10)],
+            &[
+                path("a", &["x"], 1, 100),
+                path("b", &["x", "y"], 1, 100),
+                path("c", &["y"], 1, 100),
+            ],
+        )
+        .expect("resource incidence allocation");
+        let exact_lp_max_sum_bps = 20_u128;
+        assert_eq!(result.total_allocated_bps, 15);
+        let gap_ppm = (exact_lp_max_sum_bps - result.total_allocated_bps) * 1_000_000
+            / exact_lp_max_sum_bps;
+        assert_eq!(gap_ppm, 250_000);
     }
 
     #[test]
