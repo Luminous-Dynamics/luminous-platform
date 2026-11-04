@@ -66,3 +66,14 @@ SREGym's public native scores remain scored by the pinned upstream evaluator. An
 ## Dated external leaderboard reference
 
 See [leaderboard-snapshot-2026-11-04.md](leaderboard-snapshot-2026-11-04.md). The official SREGym-Lite-1004 snapshot lists five configurations at 100% E2E on 17 faults. Treat Lite as a compatibility/smoke cohort rather than a differentiating frontier score; retain full-suite and supplemental sealed challenge results separately.
+
+
+## Newly verified upstream tree and runtime-selection details (4 Nov 2026)
+
+The candidate root commit `51964ce0a911be3e71d9e1e75551bb0089dc70c7` resolves to tree `0a0d4df0b2176d04bad6efeaebbad4905d7977d1`. Its `SREGym-applications` gitlink is pinned at commit `b2006cb6458785c1b353d0fd1753db7fe3a30795`, whose tree is `3c41a3399abeff90abbbe3a8ed68e84b7af36d82`. These identifiers are now recorded in the manifest.
+
+The named SREGym-Lite suite is directly enumerated in `sregym/conductor/problem_sets.py` (blob `ca320fcd9943da78c942104a724f891228822448`). The manifest includes its exact 17 IDs and SHA-256 over compact UTF-8 JSON encoding.
+
+**Important full-suite discrepancy:** this revision's `ProblemRegistry` source (blob `4f5e9b8774fd39a65342d4aaa997f20418092524`) contains 117 explicit dictionary keys before the generated Frappe/Saleor/Slack Spine `PORTED_PROBLEMS` and discovered SLO artifact registrations. The tracked `sregym/conductor/tasklist.yml` is absent; only `tasklist.yml.example` is tracked. The code therefore defaults to all registered entries, and SLO discovery can add artifacts from optional `SREGYM_FAULT_DIRS`. The advertised 90-problem full-suite figure must not be treated as the exact executable ID set for this commit. The manifest remains blocked until the effective full ID set, environment extensions and scorer/oracle closure are frozen.
+
+The image lock file `docker/images.lock.json` (blob `4a51b9d72c55915439f54a606f4b08795e1262db`) has **69 entries, all 69 with sha256 digests**. This does not yet prove every image referenced by all chart values and manifests is locked: `busybox:latest` appears in `sregym/service/apps/values/astronomy-shop-fixes.yaml` (blob `59932e3618a045bb51a2b3bf38d95b83ff2e560a`). The external image-reference scan must close that gap.
