@@ -163,6 +163,14 @@ The adapter verdict is scoped to `single_paired_trial`. A paired pass is not pro
 
 The mp-quic-go compliance and picoquic interoperability results are upstream's own reported evidence, not independent LNF qualification. Its published interop runner used a Docker bridge/router/netem stand-in because ns-3 forwarding failed in the test environment, and it explicitly did not measure goodput or cross traffic. Therefore LNF still needs matched namespace performance tests, especially shared-bottleneck TCP coexistence, before any performance claim.
 
+The focused Rust evidence checks can be run with:
+
+```sh
+cargo test --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml quic_multipath::tests --all-targets
+cargo clippy --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml --all-targets -- -D warnings
+cargo fmt --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml -- --check
+```
+
 The QUIC wire adapter must remain a thin boundary. LNF owns path/resource eligibility, intent, tenant fairness, cross-path task scheduling and evidence evaluation; the transport owns QUIC packet encoding, path validation, CID/packet-number spaces, recovery and congestion control.
 
 ## Required next steps before a performance claim
