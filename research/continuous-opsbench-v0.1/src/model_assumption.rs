@@ -580,15 +580,18 @@ mod tests {
         Digest::from_byte(value)
     }
 
-    fn forecast(id: &str, point: i64) -> Forecast {
+    fn forecast(id: &str, point: i64, index: usize) -> Forecast {
+        let source_tick = index as u64 + 1;
+        let target_tick = source_tick + 1;
+        let target_at_ms = 200 + index as u64 * 100;
         Forecast {
             forecast_id: id.into(),
             metric_id: "critical_queue".into(),
             units: "requests".into(),
-            issued_at_ms: 100,
-            target_at_ms: 200,
-            source_tick: 1,
-            target_tick: 2,
+            issued_at_ms: target_at_ms - 100,
+            target_at_ms,
+            source_tick,
+            target_tick,
             lower: point - 5,
             point,
             upper: point + 5,
@@ -602,15 +605,17 @@ mod tests {
         }
     }
 
-    fn observation(id: &str, forecast_id: &str, actual: i64, sequence: u64) -> IndependentObservation {
+    fn observation(id: &str, forecast_id: &str, actual: i64, sequence: u64, index: usize) -> IndependentObservation {
+        let target_tick = index as u64 + 2;
+        let observed_at_ms = 200 + index as u64 * 100;
         IndependentObservation {
             observation_id: id.into(),
             forecast_id: forecast_id.into(),
             metric_id: "critical_queue".into(),
             units: "requests".into(),
-            target_tick: 2,
-            observed_at_ms: 200,
-            ingested_at_ms: 205,
+            target_tick,
+            observed_at_ms,
+            ingested_at_ms: observed_at_ms + 5,
             clock_uncertainty_ms: 1,
             source_sequence: sequence,
             actual,
@@ -626,7 +631,7 @@ mod tests {
 
     fn input(count: usize) -> ModelAssumptionInput {
         let forecasts = (0..count)
-            .map(|index| forecast(&format!("forecast-{index}"), 100))
+            .map(|index| forecast(&format!("forecast-{index}"), 100, index))
             .collect::<Vec<_>>();
         let observations = (0..count)
             .map(|index| {
@@ -635,6 +640,7 @@ mod tests {
                     &format!("forecast-{index}"),
                     100,
                     index as u64 + 1,
+                    index,
                 )
             })
             .collect();
