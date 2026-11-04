@@ -332,6 +332,108 @@ impl StabilityController for HysteresisCapacityController {
     }
 }
 
+/// Queue-aware persistence filter baseline. Scaling up requires a breach in
+/// either observed failures or queue depth for N consecutive delivered samples.
+/// Scaling down requires both signals to remain healthy for M samples. This
+/// avoids reacting to a single noisy spike and avoids declaring recovery on one
+/// transient low measurement.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PersistentHysteresisCapacityController {
+    id: String,
+    normal_capacity: u64,
+    elevated_capacity: u64,
+    scale_up_failure_ppm: u32,
+    scale_down_failure_ppm: u32,
+    scale_up_queue_depth: u64,
+    scale_down_queue_depth: u64,
+    required_breach_observations: u32,
+    required_healthy_observations: u32,
+    breach_streak: u32,
+    healthy_streak: u32,
+    elevated: bool,
+}
+
+impl PersistentHysteresisCapacityController {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        id: impl Into<String>,
+        normal_capacity: u64,
+        elevated_capacity: u64,
+        scale_up_failure_ppm: u32,
+        scale_down_failure_ppm: u32,
+        scale_up_queue_depth: u64,
+        scale_down_queue_depth: u64,
+        required_breach_observations: u32,
+        required_healthy_observations: u32,
+    ) -> Result<Self, StabilityError> {
+        let id = id.into();
+        if id.is_empty()
+            || normal_capacity == 0
+            || elevated_capacity <= normal_capacity
+            || scale_up_failure_ppm > PPM as u32
+            || scale_down_failure_ppm >= scale_up_failure_ppm
+            || scale_up_queue_depth == 0
+            || scale_down_queue_depth >= scale_up_queue_depth
+            || required_breach_observations == 0
+            || required_healthy_observations == 0
+        {
+            return Err(StabilityError::InvalidControllerConfig);
+        }
+        Ok(Self {
+            id,
+            normal_capacity,
+            elevated_capacity,
+            scale_up_failure_ppm,
+            scale_down_failure_ppm,
+            scale_up_queue_depth,
+            scale_down_queue_depth,
+            required_breach_observations,
+            required_healthy_observations,
+            breach_streak: 0,
+            healthy_streak: 0,
+            elevated: false,
+        })
+    }
+}
+
+impl StabilityController for PersistentHysteresisCapacityController {
+    fn controller_id(&self) -> &str { &self.id }
+    fn controller(&self) -> Controller { Controller::Autoscaler }
+
+    fn propose(&mut self, observation: &PlantObservation) -> Vec<ControlOperation> {
+        let overloaded = observation.observed_failed_ppm >= self.scale_up_failure_ppm
+            || observation.observed_queue_depth >= self.scale_up_queue_depth;
+        let recovered = observation.observed_failed_ppm <= self.scale_down_failure_ppm
+            && observation.observed_queue_depth <= self.scale_down_queue_depth;
+
+        if overloaded {
+            self.breach_streak = self.breach_streak.saturating_add(1);
+            self.healthy_streak = 0;
+            if !self.elevated && self.breach_streak >= self.required_breach_observations {
+                self.elevated = true;
+                self.breach_streak = 0;
+                return vec![ControlOperation::SetApiCapacity(self.elevated_capacity)];
+            }
+        } else if recovered {
+            self.healthy_streak = self.healthy_streak.saturating_add(1);
+            self.breach_streak = 0;
+            if self.elevated && self.healthy_streak >= self.required_healthy_observations {
+                self.elevated = false;
+                self.healthy_streak = 0;
+                return vec![ControlOperation::SetApiCapacity(self.normal_capacity)];
+            }
+        } else {
+            // Intermediate observations satisfy neither state transition and
+            // break both streaks; an intermittent near-threshold signal does
+            // not accumulate into a false persistent condition.
+            self.breach_streak = 0;
+            self.healthy_streak = 0;
+        }
+
+        Vec::new()
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ControllerDecision {
     pub controller_id: String,
@@ -1626,6 +1728,89 @@ mod tests {
         assert_eq!(noisy_bang.stability.metrics.slo_violation_integral_request_ms, 0);
         assert!(noisy_bang.stability.metrics.final_no_intervention_tail_healthy);
         assert!(noisy_hysteresis.stability.metrics.final_no_intervention_tail_healthy);
+    }
+
+    #[test]
+    fn persistent_hysteresis_requires_consecutive_breach_and_recovery_observations() {
+        let mut controller = PersistentHysteresisCapacityController::new(
+            "persistent-autoscaler",
+            100,
+            140,
+            350_000,
+            100_000,
+            80,
+            20,
+            2,
+            3,
+        ).unwrap();
+
+        let observation = |tick, failed, queue| PlantObservation {
+            tick,
+            source_tick: tick,
+            observed_queue_depth: queue,
+            observed_latency_ms: 10,
+            observed_failed_ppm: failed,
+        };
+
+        assert!(controller.propose(&observation(1, 400_000, 90)).is_empty());
+        // One intermediate sample breaks the breach streak.
+        assert!(controller.propose(&observation(2, 200_000, 40)).is_empty());
+        assert!(controller.propose(&observation(3, 400_000, 90)).is_empty());
+        assert_eq!(
+            controller.propose(&observation(4, 400_000, 90)),
+            vec![ControlOperation::SetApiCapacity(140)]
+        );
+
+        assert!(controller.propose(&observation(5, 80_000, 10)).is_empty());
+        assert!(controller.propose(&observation(6, 80_000, 10)).is_empty());
+        assert_eq!(
+            controller.propose(&observation(7, 80_000, 10)),
+            vec![ControlOperation::SetApiCapacity(100)]
+        );
+    }
+
+    #[test]
+    fn persistent_hysteresis_does_not_scale_on_alternating_single_sample_noise() {
+        let mut config = config();
+        config.fault_api_capacity_reduction = 10;
+        config.observation_delay_ticks = 0;
+        config.actuation_delay_ticks = 0;
+        for tick in 2..12 {
+            config.failed_ppm_noise_by_tick[tick] =
+                if tick % 2 == 0 { 400_000 } else { 200_000 };
+        }
+        let mut controller = PersistentHysteresisCapacityController::new(
+            "persistent-noise-filter",
+            100,
+            140,
+            350_000,
+            150_000,
+            500,
+            100,
+            2,
+            2,
+        ).unwrap();
+        let run = run_stability_closed_loop(&config, &mut controller).unwrap();
+        assert!(run.actions.is_empty());
+        assert_eq!(run.stability.metrics.action_churn_count, 0);
+        assert_eq!(run.stability.metrics.slo_violation_integral_request_ms, 0);
+        assert!(run.stability.metrics.final_no_intervention_tail_healthy);
+    }
+
+    #[test]
+    fn persistent_hysteresis_rejects_invalid_thresholds_and_zero_streaks() {
+        assert_eq!(
+            PersistentHysteresisCapacityController::new(
+                "bad", 100, 140, 100_000, 100_000, 80, 20, 2, 2
+            ),
+            Err(StabilityError::InvalidControllerConfig)
+        );
+        assert_eq!(
+            PersistentHysteresisCapacityController::new(
+                "bad", 100, 140, 100_000, 50_000, 80, 20, 0, 2
+            ),
+            Err(StabilityError::InvalidControllerConfig)
+        );
     }
 
     #[test]
