@@ -836,6 +836,8 @@ mod tests {
     #[test]
     fn stale_observation_is_indeterminate() {
         let mut evidence = input(3);
+        evidence.evaluation_at_ms = 1_000;
+        evidence.valid_until_ms = 1_100;
         evidence.observations[0].ingested_at_ms = 1_000;
         let result = evaluate_model_assumptions(&evidence).unwrap();
         assert_eq!(result.disposition, ModelDisposition::Indeterminate);
