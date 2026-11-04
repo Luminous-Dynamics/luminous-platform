@@ -33,14 +33,27 @@ jobs:
           set -euo pipefail
           rustup toolchain install 1.96.0 --profile minimal --component clippy
           rustup override set 1.96.0
-      - name: Validate benchmark schemas are valid JSON
+      - name: Validate probe impact schemas and fixtures
         run: |
-          python3 - <<'PY'
+          set -euo pipefail
+          python3 -m venv /tmp/opsbench-schema-venv
+          /tmp/opsbench-schema-venv/bin/python -m pip install --disable-pip-version-check "jsonschema==4.23.0"
+          /tmp/opsbench-schema-venv/bin/python - <<'PY'
           import json
           from pathlib import Path
-          for path in sorted(Path("research/continuous-opsbench-v0.1").glob("*.schema.json")):
-              json.loads(path.read_text(encoding="utf-8"))
-              print(f"valid JSON: {path}")
+          from jsonschema import Draft202012Validator
+
+          root = Path("research/continuous-opsbench-v0.1")
+          pairs = [
+              ("probe-impact-input.schema.json", "examples/probe-impact-input.example.json"),
+              ("probe-impact-report.schema.json", "examples/probe-impact-report.example.json"),
+          ]
+          for schema_name, fixture_name in pairs:
+              schema = json.loads((root / schema_name).read_text(encoding="utf-8"))
+              Draft202012Validator.check_schema(schema)
+              fixture = json.loads((root / fixture_name).read_text(encoding="utf-8"))
+              Draft202012Validator(schema).validate(fixture)
+              print(f"Draft 2020-12 schema and fixture validated: {schema_name}")
           PY
       - name: Run dependency-locked tests
         run: cargo test --manifest-path research/continuous-opsbench-v0.1/Cargo.toml --locked
