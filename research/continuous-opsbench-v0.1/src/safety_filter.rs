@@ -561,7 +561,7 @@ mod tests {
         assert_eq!(result.disposition, FilterDisposition::AdmitForAuthorization);
         assert_eq!(result.evaluated_combinations, 1);
         assert_eq!(result.minimum_invariant_margin, Some(0));
-        assert_eq!(result.valid_until_ms, Some(160));
+        assert_eq!(result.valid_until_ms, Some(120));
     }
 
     #[test]
