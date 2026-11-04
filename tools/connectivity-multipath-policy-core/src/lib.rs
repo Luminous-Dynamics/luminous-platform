@@ -945,7 +945,10 @@ mod tests {
         for left in 0..paths.len() {
             for right in (left + 1)..paths.len() {
                 let overlaps = paths[left].capacity_domain_ids.iter().any(|domain| {
-                    paths[right].capacity_domain_ids.iter().any(|other| other == domain)
+                    paths[right]
+                        .capacity_domain_ids
+                        .iter()
+                        .any(|other| other == domain)
                 });
                 if !overlaps {
                     exhaustive_pair_oracle_bps = exhaustive_pair_oracle_bps.max(
@@ -955,12 +958,8 @@ mod tests {
                 }
             }
         }
-        let result = evaluate(
-            &request(),
-            &paths,
-            Strategy::AggregateCapacity,
-        )
-        .expect("valid multi-domain observations");
+        let result = evaluate(&request(), &paths, Strategy::AggregateCapacity)
+            .expect("valid multi-domain observations");
         assert_eq!(result.mode, DecisionMode::Multipath);
         assert_eq!(
             result
