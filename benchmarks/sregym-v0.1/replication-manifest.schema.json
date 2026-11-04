@@ -223,7 +223,12 @@
         "port_registry_blobs",
         "slo_problem_blob_sha",
         "artifact_discovery_blob_sha",
-        "native_scorer_files"
+        "native_scorer_files",
+        "effective_full_selection_count",
+        "effective_full_selection_ids",
+        "explicit_port_registry_id_count",
+        "builtin_slo_artifact_count",
+        "sregym_fault_dirs_policy"
       ],
       "properties": {
         "full_suite_published_count": {
@@ -298,11 +303,7 @@
           "minLength": 1
         },
         "full_selection_ids_sha256": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "pattern": "^[0-9a-f]{64}$"
+          "const": "20c5addc02d3d2d6a2c74ea190c35101ddde8c2ecb24b96573ba671da8cf681d"
         },
         "lite_problem_set_blob_sha": {
           "type": "string",
@@ -371,6 +372,28 @@
               }
             }
           }
+        },
+        "effective_full_selection_count": {
+          "const": 217
+        },
+        "effective_full_selection_ids": {
+          "type": "array",
+          "minItems": 217,
+          "maxItems": 217,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "explicit_port_registry_id_count": {
+          "const": 84
+        },
+        "builtin_slo_artifact_count": {
+          "const": 16
+        },
+        "sregym_fault_dirs_policy": {
+          "const": "unset"
         }
       }
     },
@@ -887,8 +910,7 @@
                 "pattern": "^[0-9a-f]{40}$"
               },
               "full_selection_ids_sha256": {
-                "type": "string",
-                "pattern": "^[0-9a-f]{64}$"
+                "const": "20c5addc02d3d2d6a2c74ea190c35101ddde8c2ecb24b96573ba671da8cf681d"
               },
               "lite_problem_ids_sha256": {
                 "type": "string",
@@ -896,6 +918,22 @@
               },
               "native_scorer_files": {
                 "minItems": 5
+              },
+              "effective_full_selection_count": {
+                "const": 217
+              },
+              "effective_full_selection_ids": {
+                "minItems": 217,
+                "maxItems": 217
+              },
+              "explicit_port_registry_id_count": {
+                "const": 84
+              },
+              "builtin_slo_artifact_count": {
+                "const": 16
+              },
+              "sregym_fault_dirs_policy": {
+                "const": "unset"
               }
             }
           },
