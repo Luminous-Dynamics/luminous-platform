@@ -684,7 +684,11 @@ mod tests {
         let mut base = input();
         base.observation_clock_uncertainty_ms = 10;
         base.maximum_observation_age_ms = 30;
-        let request = ViabilityRequest { base, ..request(vec![CandidateOperation::SetRetryMultiplierPpm(1_000_000)]) };
+        let mut request = request(vec![CandidateOperation::SetRetryMultiplierPpm(1_000_000)]);
+        request.base = base;
+        // Candidate demand leads to the zero-queue successor; include that
+        // reachable state so this test measures freshness, not model coverage.
+        request.state_space.push(state(0, 1_000_000));
         let result = appraise_with_viability(
             &request,
             &candidate(CandidateOperation::SetRetryMultiplierPpm(1_000_000)),
