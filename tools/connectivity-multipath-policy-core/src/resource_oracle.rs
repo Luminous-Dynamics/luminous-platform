@@ -237,7 +237,6 @@ pub enum ResourceOracleError {
     TooManyResources,
     InvalidResourceId,
     DuplicateResourceId,
-    ZeroCapacityNotAllowed,
     EmptyFlowSet,
     TooManyFlows,
     EmptyFlowId,
@@ -293,9 +292,6 @@ fn validate_inputs(
     for (index, resource) in sorted_resources.iter().enumerate() {
         if !validate_id(&resource.resource_id) {
             return Err(ResourceOracleError::InvalidResourceId);
-        }
-        if resource.capacity_bps == 0 {
-            return Err(ResourceOracleError::ZeroCapacityNotAllowed);
         }
         if resource_index
             .insert(resource.resource_id.as_str(), index)
@@ -372,6 +368,22 @@ fn validate_inputs(
         });
     }
     Ok((validated, sorted_resources))
+}
+
+fn saturated_resource_indices(
+    usage: &[Fraction],
+    capacities: &[Fraction],
+) -> Result<BTreeSet<usize>, ResourceOracleError> {
+    if usage.len() != capacities.len() {
+        return Err(ResourceOracleError::InternalInvariant);
+    }
+    let mut saturated = BTreeSet::new();
+    for (index, used) in usage.iter().enumerate() {
+        if used.checked_cmp(capacities[index])? == Ordering::Equal {
+            saturated.insert(index);
+        }
+    }
+    Ok(saturated)
 }
 
 /// Allocate fixed-route flows by tenant-normalized weighted progressive filling.
@@ -487,14 +499,7 @@ pub fn allocate_exact_weighted_max_min(
 
         let delta = delta.ok_or(ResourceOracleError::InternalInvariant)?;
         if delta.is_zero() {
-            let saturated_resources = usage
-                .iter()
-                .enumerate()
-                .filter_map(|(index, used)| {
-                    (used.checked_cmp(capacities[index]).ok() == Some(Ordering::Equal))
-                        .then_some(index)
-                })
-                .collect::<BTreeSet<_>>();
+            let saturated_resources = saturated_resource_indices(&usage, &capacities)?;
             let before = active.len();
             active.retain(|flow_index| {
                 !validated[*flow_index]
@@ -525,14 +530,7 @@ pub fn allocate_exact_weighted_max_min(
             }
         }
 
-        let saturated_resources = usage
-            .iter()
-            .enumerate()
-            .filter_map(|(index, used)| {
-                (used.checked_cmp(capacities[index]).ok() == Some(Ordering::Equal))
-                    .then_some(index)
-            })
-            .collect::<BTreeSet<_>>();
+        let saturated_resources = saturated_resource_indices(&usage, &capacities)?;
         let before = active.len();
         active.retain(|flow_index| {
             let demand_reached = allocations[*flow_index]
@@ -757,6 +755,29 @@ mod tests {
     }
 
     #[test]
+    fn three_path_overlap_chain_respects_both_shared_resources() {
+        let result = allocate_exact_weighted_max_min(
+            &[resource("shared-x", 60), resource("shared-y", 50)],
+            &[
+                flow("a", "tenant-a", 1, 1, 100, 0, &["shared-x"]),
+                flow("b", "tenant-b", 1, 1, 100, 0, &["shared-x", "shared-y"]),
+                flow("c", "tenant-c", 1, 1, 100, 0, &["shared-y"]),
+            ],
+        )
+        .expect("feasible overlap chain");
+        assert_eq!(
+            result
+                .flow_allocations
+                .iter()
+                .map(|item| item.allocated)
+                .collect::<Vec<_>>(),
+            vec![rate(35, 1), rate(25, 1), rate(25, 1)]
+        );
+        assert_eq!(result.resource_usage[0].allocated, rate(60, 1));
+        assert_eq!(result.resource_usage[1].allocated, rate(50, 1));
+    }
+
+    #[test]
     fn feasible_minimum_floors_are_satisfied_before_progressive_filling() {
         let result = allocate_exact_weighted_max_min(
             &[resource("r", 100)],
@@ -846,14 +867,32 @@ mod tests {
     }
 
     #[test]
-    fn capacity_resource_zero_is_rejected_explicitly() {
+    fn zero_capacity_resource_blocks_only_flows_that_use_it() {
+        let result = allocate_exact_weighted_max_min(
+            &[resource("blocked", 0), resource("available", 40)],
+            &[
+                flow("blocked-flow", "tenant-a", 1, 1, 100, 0, &["blocked"]),
+                flow("available-flow", "tenant-b", 1, 1, 100, 0, &["available"]),
+            ],
+        )
+        .expect("zero capacity is a hard resource ceiling");
         assert_eq!(
-            allocate_exact_weighted_max_min(
-                &[resource("r", 0)],
-                &[flow("a", "tenant-a", 1, 1, 100, 0, &["r"])],
-            )
-            .unwrap_err(),
-            ResourceOracleError::ZeroCapacityNotAllowed
+            result
+                .flow_allocations
+                .iter()
+                .find(|item| item.flow_id == "blocked-flow")
+                .expect("blocked flow")
+                .allocated,
+            rate(0, 1)
+        );
+        assert_eq!(
+            result
+                .flow_allocations
+                .iter()
+                .find(|item| item.flow_id == "available-flow")
+                .expect("available flow")
+                .allocated,
+            rate(40, 1)
         );
     }
 
