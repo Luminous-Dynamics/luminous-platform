@@ -1,0 +1,59 @@
+{
+  "schema": "opsbench-sre-risk-trajectory-oracle-truth-v0.1",
+  "trajectory_id": "synthetic-healthy-noise-control-001",
+  "cohort": "synthetic",
+  "run_manifest_digest": "1919191919191919191919191919191919191919191919191919191919191919",
+  "plant_model_digest": "5050505050505050505050505050505050505050505050505050505050505050",
+  "topology_digest": "5151515151515151515151515151515151515151515151515151515151515151",
+  "policy_digest": "5252525252525252525252525252525252525252525252525252525252525252",
+  "scenario_truth_digest": "5353535353535353535353535353535353535353535353535353535353535353",
+  "oracle_step_truth": [
+    {
+      "step_id": "b1",
+      "sequence": 1,
+      "at_ms": 100,
+      "plant_state_digest": "5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a",
+      "safe_envelope_digest": "5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f",
+      "viable_recovery_action_count": 4,
+      "fault_state_digest": "6464646464646464646464646464646464646464646464646464646464646464",
+      "offered_demand_digest": "6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e"
+    },
+    {
+      "step_id": "b2",
+      "sequence": 2,
+      "at_ms": 200,
+      "plant_state_digest": "5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b",
+      "safe_envelope_digest": "5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f",
+      "viable_recovery_action_count": 4,
+      "fault_state_digest": "6565656565656565656565656565656565656565656565656565656565656565",
+      "offered_demand_digest": "6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f"
+    },
+    {
+      "step_id": "b3",
+      "sequence": 3,
+      "at_ms": 300,
+      "plant_state_digest": "5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c",
+      "safe_envelope_digest": "5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f",
+      "viable_recovery_action_count": 4,
+      "fault_state_digest": "6666666666666666666666666666666666666666666666666666666666666666",
+      "offered_demand_digest": "7070707070707070707070707070707070707070707070707070707070707070"
+    },
+    {
+      "step_id": "b4",
+      "sequence": 4,
+      "at_ms": 400,
+      "plant_state_digest": "5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d",
+      "safe_envelope_digest": "5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f",
+      "viable_recovery_action_count": 4,
+      "fault_state_digest": "6767676767676767676767676767676767676767676767676767676767676767",
+      "offered_demand_digest": "7171717171717171717171717171717171717171717171717171717171717171"
+    }
+  ],
+  "oracle_first_material_risk_step_id": null,
+  "oracle_failure_step_id": null,
+  "failure_absence_reason": "No injected plant fault or material envelope departure occurs in the observation window.",
+  "oracle_risk_labels": [],
+  "oracle_claim_ceiling": [
+    "Synthetic benign control only; no prevalence statement."
+  ]
+}

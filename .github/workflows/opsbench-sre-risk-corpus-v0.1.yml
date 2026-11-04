@@ -1,0 +1,191 @@
+name: opsbench SRE risk trajectory corpus v0.1
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/opsbench-sre-risk-corpus-v0.1/**"
+      - ".github/workflows/opsbench-sre-risk-corpus-v0.1.yml"
+  push:
+    branches: [main]
+    paths:
+      - "benchmarks/opsbench-sre-risk-corpus-v0.1/**"
+      - ".github/workflows/opsbench-sre-risk-corpus-v0.1.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  risk-trajectory-corpus:
+    name: Annotation provenance and evaluator-truth separation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Validate annotation packages and evaluator-only truth
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/sre-risk-corpus-venv
+          /tmp/sre-risk-corpus-venv/bin/python -m pip install --disable-pip-version-check "jsonschema==4.23.0"
+          /tmp/sre-risk-corpus-venv/bin/python - <<'PY'
+          import copy
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator, ValidationError
+
+          root = Path("benchmarks/opsbench-sre-risk-corpus-v0.1")
+          annotation_schema = json.loads((root / "trajectory-annotations.schema.json").read_text(encoding="utf-8"))
+          oracle_schema = json.loads((root / "oracle-truth-sidecar.schema.json").read_text(encoding="utf-8"))
+          Draft202012Validator.check_schema(annotation_schema)
+          Draft202012Validator.check_schema(oracle_schema)
+          annotation_validator = Draft202012Validator(annotation_schema)
+          oracle_validator = Draft202012Validator(oracle_schema)
+
+          pairs = [
+              ("examples/retry-amplification.annotations.json",
+               "oracle-sidecars/retry-amplification.oracle.json"),
+              ("examples/healthy-noise.annotations.json",
+               "oracle-sidecars/healthy-noise.oracle.json"),
+          ]
+
+          def validate_pair(annotation, oracle):
+              annotation_validator.validate(annotation)
+              oracle_validator.validate(oracle)
+              if annotation["trajectory_id"] != oracle["trajectory_id"]:
+                  raise ValueError("annotation/oracle trajectory ID mismatch")
+              if annotation["cohort"] != oracle["cohort"]:
+                  raise ValueError("annotation/oracle cohort mismatch")
+              if annotation["run_manifest_digest"] != oracle["run_manifest_digest"]:
+                  raise ValueError("annotation/oracle run-manifest digest mismatch")
+
+              event_index = annotation["annotation_event_index"]
+              source_ids = [event["source_event_id"] for event in event_index]
+              step_ids = [event["step_id"] for event in event_index]
+              if len(source_ids) != len(set(source_ids)):
+                  raise ValueError("duplicate annotation source-event ID")
+              if len(step_ids) != len(set(step_ids)):
+                  raise ValueError("duplicate annotation step ID")
+              if any(not event["visible_to_annotator"] for event in event_index):
+                  raise ValueError("annotation event index contains hidden event")
+              ordered = sorted(event_index, key=lambda event: event["sequence"])
+              if ordered != event_index:
+                  raise ValueError("annotation event index is not sequence ordered")
+              if any(ordered[i]["sequence"] >= ordered[i + 1]["sequence"] for i in range(len(ordered) - 1)):
+                  raise ValueError("non-monotonic annotation sequence")
+              observed = [event["observed_at_ms"] for event in ordered if event["observed_at_ms"] is not None]
+              if any(observed[i] > observed[i + 1] for i in range(len(observed) - 1)):
+                  raise ValueError("non-monotonic observed-at sequence")
+
+              annotators = annotation["annotations"]
+              annotator_ids = [item["annotator_id"] for item in annotators]
+              annotation_ids = [item["annotation_id"] for item in annotators]
+              if len(annotator_ids) != len(set(annotator_ids)):
+                  raise ValueError("annotators are not independent: duplicate annotator ID")
+              if len(annotation_ids) != len(set(annotation_ids)):
+                  raise ValueError("duplicate annotation ID")
+              for item in annotators:
+                  if not item["blind_to_agent_identity"] or item["annotator_role"] != "sre_annotator":
+                      raise ValueError("annotator role/blinding requirement violated")
+                  for step_id in (
+                      item["first_material_risk_step_id"],
+                      item["eventual_failure_step_id"],
+                      item["earliest_justified_response_step_id"],
+                  ):
+                      if step_id is not None and step_id not in set(step_ids):
+                          raise ValueError("annotation references unknown step ID")
+                  if item["eventual_failure_step_id"] is None and not item["failure_no_incident_reason"]:
+                      raise ValueError("missing failure step must carry an explicit reason")
+                  for label in item["labels"]:
+                      spans = set(label["evidence_spans"])
+                      if not spans.issubset(set(source_ids)):
+                          raise ValueError("risk label references an unknown source event")
+                      alt_spans = set(label["safe_alternative"]["evidence_spans"])
+                      if not alt_spans.issubset(set(source_ids)):
+                          raise ValueError("safe alternative references an unknown source event")
+                  if item["risk_assessment"] == "risk_present":
+                      first = item["first_material_risk_step_id"]
+                      if first is None:
+                          raise ValueError("risk-present annotation lacks first material risk step")
+                  elif item["risk_assessment"] == "no_material_risk":
+                      if item["first_material_risk_step_id"] is not None or item["labels"]:
+                          raise ValueError("no-risk annotation must not contain risk labels")
+                      if not item["first_risk_no_risk_reason"]:
+                          raise ValueError("no-risk annotation lacks reason")
+              adjudication = annotation["adjudication"]
+              if adjudication["status"] in ("resolved", "unresolved"):
+                  if adjudication["adjudicator_id"] in set(annotator_ids):
+                      raise ValueError("adjudicator must be independent of annotators")
+              if adjudication["status"] == "resolved":
+                  if set(adjudication["resolved_annotation_ids"]) != set(annotation_ids):
+                      raise ValueError("adjudication must preserve and resolve all annotation IDs")
+
+              oracle_steps = oracle["oracle_step_truth"]
+              oracle_step_ids = [step["step_id"] for step in oracle_steps]
+              if len(oracle_step_ids) != len(set(oracle_step_ids)):
+                  raise ValueError("duplicate oracle step ID")
+              if any(oracle_steps[i]["sequence"] >= oracle_steps[i + 1]["sequence"] for i in range(len(oracle_steps) - 1)):
+                  raise ValueError("non-monotonic oracle step sequence")
+              if any(oracle_steps[i]["at_ms"] >= oracle_steps[i + 1]["at_ms"] for i in range(len(oracle_steps) - 1)):
+                  raise ValueError("non-monotonic oracle plant time")
+              if set(oracle_step_ids) != set(step_ids):
+                  raise ValueError("oracle step set differs from annotation event index")
+              for step_id in (oracle["oracle_first_material_risk_step_id"], oracle["oracle_failure_step_id"]):
+                  if step_id is not None and step_id not in set(oracle_step_ids):
+                      raise ValueError("oracle references unknown step ID")
+              if oracle["oracle_first_material_risk_step_id"] is None and oracle["oracle_risk_labels"]:
+                  raise ValueError("oracle no-risk trajectory contains risk labels")
+              if oracle["oracle_failure_step_id"] is None and not oracle["failure_absence_reason"]:
+                  raise ValueError("oracle missing failure step lacks reason")
+              for label in oracle["oracle_risk_labels"]:
+                  if label["step_id"] not in set(oracle_step_ids):
+                      raise ValueError("oracle label references unknown step")
+                  if not set(label["supporting_source_event_ids"]).issubset(set(source_ids)):
+                      raise ValueError("oracle label references unknown supporting event")
+              if any(key.startswith("oracle_") or key in {"plant_model_digest", "safe_envelope_digest"}
+                     for key in annotation):
+                  raise ValueError("evaluator-only truth leaked into annotator package")
+
+          package_values = []
+          for annotation_path, oracle_path in pairs:
+              annotation = json.loads((root / annotation_path).read_text(encoding="utf-8"))
+              oracle = json.loads((root / oracle_path).read_text(encoding="utf-8"))
+              validate_pair(annotation, oracle)
+              package_values.append((annotation_path, oracle_path, annotation, oracle))
+              print(f"valid annotation/oracle pair: {annotation_path} + {oracle_path}")
+
+          negative_controls = []
+          _, _, positive, positive_oracle = package_values[0]
+          bad = copy.deepcopy(positive)
+          bad.pop("trace_digest")
+          negative_controls.append(("missing trace digest", bad, positive_oracle))
+          bad = copy.deepcopy(positive)
+          bad["annotation_event_index"][1]["source_event_id"] = bad["annotation_event_index"][0]["source_event_id"]
+          negative_controls.append(("duplicate source event", bad, positive_oracle))
+          bad = copy.deepcopy(positive)
+          bad["annotation_event_index"][1]["sequence"] = 1
+          negative_controls.append(("invalid step ordering", bad, positive_oracle))
+          bad = copy.deepcopy(positive)
+          bad["annotations"][0].pop("annotator_id")
+          negative_controls.append(("missing annotator identity", bad, positive_oracle))
+          bad = copy.deepcopy(positive)
+          bad["adjudication"]["adjudicator_id"] = bad["annotations"][0]["annotator_id"]
+          negative_controls.append(("non-independent adjudicator", bad, positive_oracle))
+          bad = copy.deepcopy(positive)
+          bad["annotations"][0]["labels"][0]["evidence_spans"] = ["unknown-event"]
+          negative_controls.append(("unknown evidence span", bad, positive_oracle))
+          bad_oracle = copy.deepcopy(positive_oracle)
+          bad_oracle["oracle_failure_step_id"] = "missing-step"
+          negative_controls.append(("unknown oracle failure step", positive, bad_oracle))
+
+          for label, candidate_annotation, candidate_oracle in negative_controls:
+              try:
+                  validate_pair(candidate_annotation, candidate_oracle)
+              except (ValidationError, ValueError):
+                  continue
+              raise SystemExit(f"risk corpus negative control accepted: {label}")
+
+          print(f"trajectory annotation/oracle pairs: {len(package_values)}")
+          print(f"negative controls rejected: {len(negative_controls)}/{len(negative_controls)}")
+          PY
