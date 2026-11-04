@@ -487,10 +487,18 @@ pub fn evaluate_model_assumptions(
         let residual = i128::from(observation.actual) - i128::from(forecast.point);
         let normalized = residual / i128::from(input.residual_scale);
         let allowance = i128::from(input.cusum_allowance);
-        metric.positive_cusum =
-            (metric.positive_cusum + normalized - allowance).max(0);
-        metric.negative_cusum =
-            (metric.negative_cusum - normalized - allowance).max(0);
+        metric.positive_cusum = metric
+            .positive_cusum
+            .checked_add(normalized)
+            .and_then(|value| value.checked_sub(allowance))
+            .ok_or(ModelAssumptionError::ArithmeticOverflow)?
+            .max(0);
+        metric.negative_cusum = metric
+            .negative_cusum
+            .checked_sub(normalized)
+            .and_then(|value| value.checked_sub(allowance))
+            .ok_or(ModelAssumptionError::ArithmeticOverflow)?
+            .max(0);
         max_positive = max_positive.max(metric.positive_cusum);
         max_negative = max_negative.max(metric.negative_cusum);
         if metric.positive_cusum >= i128::from(input.cusum_quarantine_threshold)
