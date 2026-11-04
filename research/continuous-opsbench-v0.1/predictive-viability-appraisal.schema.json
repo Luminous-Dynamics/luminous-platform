@@ -81,7 +81,7 @@
     "topology_epoch": {
       "type": "integer",
       "minimum": 0,
-      "maximum": 18446744073709552000
+      "maximum": 18446744073709551615
     },
     "topology_digest": {
       "type": "string",
@@ -126,7 +126,7 @@
     "appraisal_at_ms": {
       "type": "integer",
       "minimum": 0,
-      "maximum": 18446744073709552000
+      "maximum": 18446744073709551615
     },
     "valid_until_ms": {
       "type": [
@@ -134,7 +134,7 @@
         "null"
       ],
       "minimum": 0,
-      "maximum": 18446744073709552000
+      "maximum": 18446744073709551615
     },
     "horizon": {
       "type": "integer",
@@ -261,7 +261,7 @@
         "topology_epoch": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 18446744073709552000
+          "maximum": 18446744073709551615
         },
         "topology_digest": {
           "type": "string",
@@ -298,7 +298,7 @@
         "appraisal_at_ms": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 18446744073709552000
+          "maximum": 18446744073709551615
         },
         "valid_until_ms": {
           "type": [
@@ -306,7 +306,7 @@
             "null"
           ],
           "minimum": 0,
-          "maximum": 18446744073709552000
+          "maximum": 18446744073709551615
         },
         "evaluated_combinations": {
           "type": "integer",
@@ -318,8 +318,8 @@
             "integer",
             "null"
           ],
-          "minimum": -9223372036854776000,
-          "maximum": 9223372036854776000
+          "minimum": -9223372036854775808,
+          "maximum": 9223372036854775807
         },
         "findings": {
           "type": "array",
