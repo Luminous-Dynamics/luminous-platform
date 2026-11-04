@@ -450,6 +450,10 @@ pub fn appraise_one_step(
         }
     }
 
+    if evaluated != combinations {
+        return defer(input, action, SafetyFinding::InvalidInputSet);
+    }
+
     let disposition = if findings.is_empty() {
         FilterDisposition::AdmitForAuthorization
     } else {
@@ -705,7 +709,7 @@ mod tests {
         ];
         for action in actions {
             let expected = exhaustive_oracle_safe(&evidence, &action);
-            let actual = appraise_one_step(&evidence, &act(action)).disposition
+            let actual = appraise_one_step(&evidence, &act(action.clone())).disposition
                 == FilterDisposition::AdmitForAuthorization;
             assert_eq!(actual, expected, "oracle mismatch for action: {action:?}");
         }
