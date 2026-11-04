@@ -7,6 +7,7 @@
 pub mod coexistence;
 pub mod fairness;
 pub mod trace;
+pub mod quic_multipath;
 
 use std::collections::BTreeSet;
 
