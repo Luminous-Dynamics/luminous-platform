@@ -615,6 +615,9 @@ struct ActionRecord {
     decision_invalid: bool,
 }
 
+// This private constructor assembles a fully explicit violation record; keeping
+// the fields positional avoids hiding evaluator-attributed evidence in defaults.
+#[allow(clippy::too_many_arguments)]
 fn push_violation(
     out: &mut Vec<ConstraintViolation>,
     event: &TraceEvent,
@@ -906,7 +909,7 @@ mod tests {
             scenario_id: "episode-1".into(), violations: Vec::new(),
             first_critical: None, first_irrecoverable: None, attribution_counts: BTreeMap::new(),
         };
-        let mut replay = original.clone();
+        let replay = original.clone();
         original.first_irrecoverable = Some(ConstraintViolation {
             event_id: "commit-1".into(), sequence: 8,
             kind: BreakpointKind::UnauthorizedCommittedEffect,
