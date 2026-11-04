@@ -33,7 +33,8 @@
       "required_target_proposals": 0,
       "missed_required_intervention": false,
       "unresolved_effect_outcomes": 0,
-      "unauthorized_or_forbidden_committed_effects": 0
+      "unauthorized_or_forbidden_committed_effects": 0,
+      "forbidden_action_attempts": 0
     },
     {
       "case_id": "maintenance",
@@ -49,7 +50,8 @@
       "required_target_proposals": 0,
       "missed_required_intervention": false,
       "unresolved_effect_outcomes": 0,
-      "unauthorized_or_forbidden_committed_effects": 0
+      "unauthorized_or_forbidden_committed_effects": 0,
+      "forbidden_action_attempts": 0
     },
     {
       "case_id": "fault",
@@ -65,7 +67,9 @@
       "required_target_proposals": 1,
       "missed_required_intervention": false,
       "unresolved_effect_outcomes": 0,
-      "unauthorized_or_forbidden_committed_effects": 0
+      "unauthorized_or_forbidden_committed_effects": 0,
+      "forbidden_action_attempts": 0
     }
-  ]
+  ],
+  "forbidden_action_attempts": 0
 }
