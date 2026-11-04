@@ -402,7 +402,9 @@ pub enum StabilityError {
     InvalidControllerConfig,
     EmptyControllerId,
     DuplicateControllerId(String),
-    StreamingTraceDiverged,
+    StreamingSamplesDiverged,
+    StreamingObservationsDiverged,
+    StreamingActionOutcomesDiverged,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -798,11 +800,14 @@ pub fn run_stability_multi_controller_loop_streaming(
     let streamed_observations: Vec<_> = (0..config.ticks)
         .map(|tick| observation_for_tick(config, tick, &samples))
         .collect();
-    if samples != replay.samples
-        || outcomes != replay.action_outcomes
-        || streamed_observations != replay.observations
-    {
-        return Err(StabilityError::StreamingTraceDiverged);
+    if samples != replay.samples {
+        return Err(StabilityError::StreamingSamplesDiverged);
+    }
+    if streamed_observations != replay.observations {
+        return Err(StabilityError::StreamingObservationsDiverged);
+    }
+    if outcomes != replay.action_outcomes {
+        return Err(StabilityError::StreamingActionOutcomesDiverged);
     }
 
     Ok(ClosedLoopRun {
@@ -1291,7 +1296,8 @@ mod tests {
 
     #[test]
     fn controller_loop_acts_only_on_delivered_observations_and_recovers() {
-        let config = config();
+        let mut config = config();
+        config.actuation_delay_ticks = 0;
         let baseline = run_stability_scenario(&config, &[]).unwrap();
         let mut controller = OneShotReactiveScaleUp {
             id: "reactive-agent",
@@ -1490,7 +1496,7 @@ mod tests {
             .find(|outcome| outcome.disposition == ActionDisposition::Applied)
             .unwrap();
         assert_eq!(applied.controller, Controller::Agent);
-        assert_eq!(forward_run.stability.samples[4].actual_api_capacity, 90);
+        assert_eq!(forward_run.stability.samples[5].actual_api_capacity, 90);
     }
 
     #[test]
@@ -1661,7 +1667,7 @@ mod tests {
         assert_eq!(forward.action_outcomes, reverse.action_outcomes);
         assert_eq!(forward.metrics.action_conflict_count, 2);
         assert_eq!(forward.metrics.overridden_action_count, 2);
-        assert_eq!(forward.samples[1].actual_api_capacity, 90);
+        assert_eq!(forward.samples[2].actual_api_capacity, 90);
         assert_eq!(forward.action_outcomes[0].controller, Controller::Operator);
         assert_eq!(forward.action_outcomes[0].disposition, ActionDisposition::Applied);
         assert!(forward.action_outcomes.iter().filter(|o| o.disposition == ActionDisposition::Overridden)
@@ -1689,7 +1695,7 @@ mod tests {
             },
         ];
         let run = run_stability_scenario(&config, &actions).unwrap();
-        assert_eq!(run.samples[0].actual_api_capacity, 110);
+        assert_eq!(run.samples[1].actual_api_capacity, 110);
         assert_eq!(run.metrics.action_conflict_count, 1);
         assert_eq!(run.action_outcomes[0].action_id, "a-agent");
         assert_eq!(run.action_outcomes[1].overridden_by.as_deref(), Some("a-agent"));
@@ -1721,7 +1727,7 @@ mod tests {
         assert!(run.action_outcomes.iter().all(|outcome| outcome.disposition == ActionDisposition::Applied));
         assert!(run.action_outcomes.iter().any(|outcome| outcome.resource == ControlResource::ApiCapacity));
         assert!(run.action_outcomes.iter().any(|outcome| outcome.resource == ControlResource::RetryMultiplier));
-        assert_eq!(run.samples[1].actual_api_capacity, 120);
+        assert_eq!(run.samples[2].actual_api_capacity, 120);
     }
 
     #[test]
@@ -1808,7 +1814,7 @@ mod tests {
             },
         ];
         let run = run_stability_scenario(&config, &actions).unwrap();
-        assert_eq!(run.metrics.settling_time_ticks_after_fault, Some(5));
+        assert_eq!(run.metrics.settling_time_ticks_after_fault, Some(6));
         assert!(run.metrics.final_no_intervention_tail_healthy);
     }
 
