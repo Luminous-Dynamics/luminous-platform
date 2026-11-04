@@ -66,6 +66,7 @@ pub struct AuthenticatedExecutionHandle {
 }
 
 impl AuthenticatedExecutionHandle {
+    #[expect(dead_code, reason = "Only a verifier adapter may mint authenticated handles; that adapter is a later integration slice.")]
     pub(crate) fn from_verified_claims(claims: ExecutionHandleClaims) -> Self {
         Self { claims }
     }
