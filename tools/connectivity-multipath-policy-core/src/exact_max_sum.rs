@@ -254,20 +254,19 @@ fn jain_index_ppm(rates: &[u64]) -> Result<Option<u32>, ExactMaxSumError> {
         .map_err(|_| ExactMaxSumError::ArithmeticOverflow)
 }
 
+struct ValidatedInputs<'a> {
+    ordered_paths: Vec<&'a PathRateDemand>,
+    ordered_resources: Vec<&'a ResourceCapacity>,
+    floors: Vec<u64>,
+    path_resource_indices: Vec<Vec<usize>>,
+    search_space_size: u64,
+}
+
 fn validate_and_index<'a>(
     resources: &'a [ResourceCapacity],
     paths: &'a [PathRateDemand],
     minimums: &[PathRateFloor],
-) -> Result<
-    (
-        Vec<&'a PathRateDemand>,
-        Vec<&'a ResourceCapacity>,
-        Vec<u64>,
-        Vec<Vec<usize>>,
-        u64,
-    ),
-    ExactMaxSumError,
-> {
+) -> Result<ValidatedInputs<'a>, ExactMaxSumError> {
     if paths.is_empty() {
         return Err(ExactMaxSumError::EmptyPaths);
     }
@@ -395,13 +394,13 @@ fn validate_and_index<'a>(
             Ok(indices)
         })
         .collect::<Result<Vec<_>, ExactMaxSumError>>()?;
-    Ok((
+    Ok(ValidatedInputs {
         ordered_paths,
         ordered_resources,
         floors,
         path_resource_indices,
         search_space_size,
-    ))
+    })
 }
 
 /// Find the exact maximum-sum integer allocation for one bounded resource graph.
@@ -427,8 +426,13 @@ pub fn maximize_total_rate_with_floors(
     paths: &[PathRateDemand],
     minimums: &[PathRateFloor],
 ) -> Result<ExactMaxSumReport, ExactMaxSumError> {
-    let (ordered_paths, ordered_resources, floors, path_resource_indices, search_space_size) =
-        validate_and_index(resources, paths, minimums)?;
+    let ValidatedInputs {
+        ordered_paths,
+        ordered_resources,
+        floors,
+        path_resource_indices,
+        search_space_size,
+    } = validate_and_index(resources, paths, minimums)?;
     let resource_capacities = ordered_resources
         .iter()
         .map(|resource| resource.capacity_bps)
