@@ -126,7 +126,8 @@ jobs:
           bad["entries"][0]["observed_on"] = "2026-11-05"
           negative_controls.append(("future observation date", bad))
           bad = copy.deepcopy(snapshot)
-          bad["entries"][0]["results"][0]["metric_id"] = "unknown_metric"
+          entry_with_results = next(entry for entry in bad["entries"] if entry["results"])
+          entry_with_results["results"][0]["metric_id"] = "unknown_metric"
           negative_controls.append(("unknown metric reference", bad))
           bad = copy.deepcopy(snapshot)
           bad["entries"][0]["sources"][0]["capture_status"] = "captured_and_hashed"
