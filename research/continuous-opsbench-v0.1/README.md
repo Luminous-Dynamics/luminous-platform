@@ -52,3 +52,14 @@ The stability reference applies an evaluator-owned precedence rule to simultaneo
 
 
 The workload model reports critical and bulk failure rates, latency envelopes, and request-time SLO violation integrals independently. Aggregate SLO compliance and persistent recovery require **both** workload classes to pass their declared failure-rate and latency limits; bulk or critical degradation cannot be hidden by a healthy aggregate. The aggregate request-time violation integral is the sum of the two class-specific integrals.
+
+
+## Observation-driven closed-loop controller runner
+
+The additive `run_stability_closed_loop` function calls a `StabilityController` once per actionable tick. Its only input is the current delayed/noisy `PlantObservation`; evaluator fault truth and actual plant state are not passed through the policy interface. The runner records the observation source tick, measurement values, proposed action IDs, issue time and applied/overridden outcomes. It stops invoking the controller early enough that every proposed actuation lands before the reserved no-intervention tail.
+
+The initial implementation replays the already-issued action prefix at each tick to derive the next observation. This is **O(T²)** and intentionally prioritizes a clear deterministic information boundary for small conformance episodes. It is not the performance runner for large campaigns. The next optimization should share a stepwise plant transition kernel between replay and streaming execution, then prove byte-for-byte trace equivalence before using it for throughput comparisons.
+
+Two controller-loop tests prove that a threshold policy reacts only after the fault observation arrives and improves the paired no-action synthetic trace, and that the controller is never invoked for the no-intervention tail.
+
+The controller trait is an in-process policy seam, not a live LLM integration. Model/provider, prompt, tool, memory, policy and action budgets still need to be supplied by the external runner manifest and hashed into each arm.
