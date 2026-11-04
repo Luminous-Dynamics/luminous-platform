@@ -1,0 +1,218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/opsbench-risk-trajectory-result-v0.1.schema.json",
+  "title": "OpsBench Risk Trajectory Result v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "scenario_id",
+    "arm_id",
+    "step_count",
+    "finding_count",
+    "attributed_finding_count",
+    "indeterminate_attribution_count",
+    "hard_invariant_breaches",
+    "sequence_gaps",
+    "earliest_risk_step_id",
+    "earliest_attributable_risk_step_id",
+    "risk_integrals",
+    "evidence_complete",
+    "findings",
+    "counterfactual_pair_id",
+    "pair_manifest_digest"
+  ],
+  "properties": {
+    "schema": {
+      "const": "continuous-opsbench-risk-trajectory-v0.1"
+    },
+    "scenario_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "arm_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "step_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "finding_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "attributed_finding_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "indeterminate_attribution_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "hard_invariant_breaches": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "sequence_gaps": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "earliest_risk_step_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "earliest_attributable_risk_step_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "risk_integrals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "capacity_reserve_deficit_ppm_steps",
+        "queue_pressure_excess_ppm_steps",
+        "retry_amplification_excess_ppm_steps",
+        "recovery_option_deficit_steps"
+      ],
+      "properties": {
+        "capacity_reserve_deficit_ppm_steps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "queue_pressure_excess_ppm_steps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "retry_amplification_excess_ppm_steps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "recovery_option_deficit_steps": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "evidence_complete": {
+      "type": "boolean"
+    },
+    "findings": {
+      "type": "array",
+      "maxItems": 1000000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "step_id",
+          "sequence",
+          "at_ms",
+          "service_id",
+          "kind",
+          "severity",
+          "attribution",
+          "linked_action_id",
+          "counterfactual_delta_ppm",
+          "evidence_digest",
+          "source_event_ids",
+          "topology_epoch"
+        ],
+        "properties": {
+          "step_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "at_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "service_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "enum": [
+              "safety_margin_depletion",
+              "local_invariant_breach",
+              "retry_feedback_amplification",
+              "queue_pressure_escalation",
+              "recovery_option_loss",
+              "cross_service_risk_transfer",
+              "evidence_quality_degradation",
+              "missing_action_evidence",
+              "unresolved_effect_outcome"
+            ]
+          },
+          "severity": {
+            "enum": [
+              "elevated",
+              "high",
+              "critical"
+            ]
+          },
+          "attribution": {
+            "enum": [
+              "attributed_to_committed_intervention",
+              "background_or_not_attributed",
+              "indeterminate"
+            ]
+          },
+          "linked_action_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "counterfactual_delta_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "evidence_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "source_event_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "topology_epoch": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        }
+      }
+    },
+    "counterfactual_pair_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "pair_manifest_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

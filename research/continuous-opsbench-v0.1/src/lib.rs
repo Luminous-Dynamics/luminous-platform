@@ -6,6 +6,7 @@
 
 pub mod safety_filter;
 pub mod viability;
+pub mod risk_trajectory;
 pub mod stability;
 pub mod temporal;
 

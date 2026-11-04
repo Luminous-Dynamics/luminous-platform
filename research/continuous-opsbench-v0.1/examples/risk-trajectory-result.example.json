@@ -1,0 +1,41 @@
+{
+  "schema": "continuous-opsbench-risk-trajectory-v0.1",
+  "scenario_id": "risk-run-1",
+  "arm_id": "candidate",
+  "step_count": 1,
+  "finding_count": 1,
+  "attributed_finding_count": 1,
+  "indeterminate_attribution_count": 0,
+  "hard_invariant_breaches": 0,
+  "sequence_gaps": 0,
+  "earliest_risk_step_id": "risk-created",
+  "earliest_attributable_risk_step_id": "risk-created",
+  "risk_integrals": {
+    "capacity_reserve_deficit_ppm_steps": 0,
+    "queue_pressure_excess_ppm_steps": 0,
+    "retry_amplification_excess_ppm_steps": 0,
+    "recovery_option_deficit_steps": 0
+  },
+  "evidence_complete": true,
+  "findings": [
+    {
+      "step_id": "risk-created",
+      "sequence": 1,
+      "at_ms": 200,
+      "service_id": "api",
+      "kind": "safety_margin_depletion",
+      "severity": "high",
+      "attribution": "attributed_to_committed_intervention",
+      "linked_action_id": "action-1",
+      "counterfactual_delta_ppm": 200000,
+      "evidence_digest": "0303030303030303030303030303030303030303030303030303030303030303",
+      "source_event_ids": [
+        "plant-transition-1",
+        "participant-commit-1"
+      ],
+      "topology_epoch": 4
+    }
+  ],
+  "counterfactual_pair_id": "pair-1",
+  "pair_manifest_digest": "0606060606060606060606060606060606060606060606060606060606060606"
+}

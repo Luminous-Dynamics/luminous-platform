@@ -1,0 +1,646 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/opsbench-risk-trajectory-request-v0.1.schema.json",
+  "title": "OpsBench Risk Trajectory Request v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "steps",
+    "actions",
+    "effects",
+    "counterfactual_pair_manifest"
+  ],
+  "properties": {
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario_id",
+        "arm_id",
+        "start_ms",
+        "end_ms",
+        "minimum_capacity_reserve_ppm",
+        "maximum_queue_pressure_ppm",
+        "maximum_retry_multiplier_ppm",
+        "minimum_recovery_actions",
+        "maximum_observation_age_ms",
+        "material_delta_ppm",
+        "minimum_recovery_action_loss"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "arm_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "start_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "end_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "minimum_capacity_reserve_ppm": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "maximum_queue_pressure_ppm": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000000
+        },
+        "maximum_retry_multiplier_ppm": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000000
+        },
+        "minimum_recovery_actions": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "maximum_observation_age_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "material_delta_ppm": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000000
+        },
+        "minimum_recovery_action_loss": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "step_id",
+          "sequence",
+          "at_ms",
+          "topology_epoch",
+          "topology_digest",
+          "model_digest",
+          "comparison_context_digest",
+          "no_action_context_digest",
+          "no_action_topology_epoch",
+          "no_action_topology_digest",
+          "counterfactual_arm_id",
+          "source_event_ids",
+          "observation_id",
+          "observation_source_id",
+          "observation_digest",
+          "observed_at_ms",
+          "observation_clock_uncertainty_ms",
+          "action_id",
+          "before",
+          "after",
+          "no_action_after",
+          "counterfactual_pair_id",
+          "pair_manifest_digest"
+        ],
+        "properties": {
+          "step_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "at_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "topology_epoch": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "topology_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "model_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "comparison_context_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "no_action_context_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "no_action_topology_epoch": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "no_action_topology_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "counterfactual_arm_id": {
+            "const": "no-action"
+          },
+          "source_event_ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 128,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          "observation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "observation_source_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "observation_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "observed_at_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "observation_clock_uncertainty_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "action_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "before": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 256,
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "service_id",
+                "capacity_reserve_ppm",
+                "queue_pressure_ppm",
+                "retry_multiplier_ppm",
+                "viable_recovery_actions"
+              ],
+              "properties": {
+                "service_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "capacity_reserve_ppm": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "queue_pressure_ppm": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000000
+                },
+                "retry_multiplier_ppm": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000000
+                },
+                "viable_recovery_actions": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                }
+              }
+            }
+          },
+          "after": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 256,
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "service_id",
+                "capacity_reserve_ppm",
+                "queue_pressure_ppm",
+                "retry_multiplier_ppm",
+                "viable_recovery_actions"
+              ],
+              "properties": {
+                "service_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "capacity_reserve_ppm": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "queue_pressure_ppm": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000000
+                },
+                "retry_multiplier_ppm": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000000
+                },
+                "viable_recovery_actions": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                }
+              }
+            }
+          },
+          "no_action_after": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 256,
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "service_id",
+                "capacity_reserve_ppm",
+                "queue_pressure_ppm",
+                "retry_multiplier_ppm",
+                "viable_recovery_actions"
+              ],
+              "properties": {
+                "service_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "capacity_reserve_ppm": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "queue_pressure_ppm": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000000
+                },
+                "retry_multiplier_ppm": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000000
+                },
+                "viable_recovery_actions": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                }
+              }
+            }
+          },
+          "counterfactual_pair_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "pair_manifest_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "actions": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "scenario_id",
+          "arm_id",
+          "action_id",
+          "tenant_id",
+          "participant_id",
+          "attempt_id",
+          "logical_action_key",
+          "request_digest",
+          "target_service",
+          "stage",
+          "dispatched_at_ms",
+          "completed_at_ms",
+          "forbidden_attempt"
+        ],
+        "properties": {
+          "scenario_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "arm_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "action_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tenant_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "participant_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "attempt_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "logical_action_key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "request_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "target_service": {
+            "type": "string",
+            "minLength": 1
+          },
+          "stage": {
+            "enum": [
+              "proposed",
+              "gate_denied",
+              "dispatched"
+            ]
+          },
+          "dispatched_at_ms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completed_at_ms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "forbidden_attempt": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "effects": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "scenario_id",
+          "arm_id",
+          "effect_id",
+          "action_id",
+          "tenant_id",
+          "participant_id",
+          "attempt_id",
+          "logical_action_key",
+          "request_digest",
+          "target_service",
+          "state",
+          "gate_authorized",
+          "forbidden_attempt",
+          "ledger_cursor"
+        ],
+        "properties": {
+          "scenario_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "arm_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "effect_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "action_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tenant_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "participant_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "attempt_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "logical_action_key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "request_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "target_service": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state": {
+            "enum": [
+              "accepted_pending",
+              "committed",
+              "never_accepted",
+              "rejected",
+              "unknown"
+            ]
+          },
+          "gate_authorized": {
+            "type": "boolean"
+          },
+          "forbidden_attempt": {
+            "type": "boolean"
+          },
+          "ledger_cursor": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "counterfactual_pair_manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pair_id",
+        "protocol_id",
+        "scenario_id",
+        "candidate_arm_id",
+        "candidate_run_id",
+        "no_action_run_id",
+        "manifest_digest",
+        "candidate_model_digest",
+        "no_action_model_digest",
+        "candidate_initial_state_digest",
+        "no_action_initial_state_digest",
+        "candidate_exogenous_input_digest",
+        "no_action_exogenous_input_digest",
+        "candidate_seed_bundle_digest",
+        "no_action_seed_bundle_digest",
+        "candidate_scenario_truth_digest",
+        "no_action_scenario_truth_digest",
+        "candidate_policy_epoch",
+        "no_action_policy_epoch",
+        "candidate_policy_digest",
+        "no_action_policy_digest"
+      ],
+      "properties": {
+        "pair_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "protocol_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scenario_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidate_arm_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidate_run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "no_action_run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "manifest_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_model_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "no_action_model_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_initial_state_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "no_action_initial_state_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_exogenous_input_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "no_action_exogenous_input_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_seed_bundle_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "no_action_seed_bundle_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_scenario_truth_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "no_action_scenario_truth_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_policy_epoch": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "no_action_policy_epoch": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "candidate_policy_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "no_action_policy_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    }
+  }
+}
