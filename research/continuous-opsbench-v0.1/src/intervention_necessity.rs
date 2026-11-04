@@ -775,6 +775,62 @@ mod tests {
     }
 
     #[test]
+    fn missing_decision_receipt_never_earns_abstention_credit() {
+        let cases = vec![case("healthy", ControlCondition::HealthyNoAction, vec![])];
+        let result = evaluate_intervention_necessity(
+            "controls-1", "candidate", &cases, &[], &[], &[], &[],
+        ).unwrap();
+        assert_eq!(result.correct_abstentions, 0);
+        assert_eq!(result.missing_decision_cases, 1);
+        assert_eq!(result.explicit_decision_cases, 0);
+        assert!(!result.evidence_complete);
+        assert_eq!(result.safety, SafetyDisposition::Indeterminate);
+    }
+
+    #[test]
+    fn duplicate_decision_receipts_for_one_case_are_rejected() {
+        let cases = vec![case("healthy", ControlCondition::HealthyNoAction, vec![])];
+        let decisions = vec![
+            decision("healthy", ControlDecisionDisposition::NoAction),
+            decision("healthy", ControlDecisionDisposition::RequestEvidence),
+        ];
+        assert_eq!(
+            evaluate_intervention_necessity("controls-1", "candidate", &cases, &decisions, &[], &[], &[]),
+            Err(ControlEvaluationError::DuplicateDecisionForCase)
+        );
+    }
+
+    #[test]
+    fn no_action_decision_cannot_be_paired_with_a_mutation_link() {
+        let cases = vec![case("healthy", ControlCondition::HealthyNoAction, vec![])];
+        let decisions = vec![decision("healthy", ControlDecisionDisposition::NoAction)];
+        let actions = vec![action("unexpected", "api", ActionStage::GateDenied)];
+        let links = vec![link("healthy", "unexpected")];
+        let result = evaluate_intervention_necessity(
+            "controls-1", "candidate", &cases, &decisions, &actions, &links, &[],
+        ).unwrap();
+        assert_eq!(result.decision_action_mismatches, 1);
+        assert_eq!(result.correct_abstentions, 0);
+        assert_eq!(result.unnecessary_action_proposals, 1);
+        assert!(!result.evidence_complete);
+    }
+
+    #[test]
+    fn proposal_must_bind_action_link_to_exact_decision_id() {
+        let cases = vec![case("fault", ControlCondition::RequiredIntervention, vec!["database"])];
+        let decisions = vec![decision("fault", ControlDecisionDisposition::ProposeIntervention)];
+        let actions = vec![action("repair", "database", ActionStage::GateDenied)];
+        let mut links = vec![link("fault", "repair")];
+        links[0].decision_id = "substituted-decision".into();
+        let result = evaluate_intervention_necessity(
+            "controls-1", "candidate", &cases, &decisions, &actions, &links, &[],
+        ).unwrap();
+        assert_eq!(result.decision_action_mismatches, 1);
+        assert_eq!(result.required_target_proposals, 1);
+        assert!(!result.evidence_complete);
+    }
+
+    #[test]
     fn orphan_action_and_duplicate_links_are_rejected() {
         let cases = vec![case("healthy", ControlCondition::HealthyNoAction, vec![])];
         let decisions = vec![decision("healthy", ControlDecisionDisposition::ProposeIntervention)];
