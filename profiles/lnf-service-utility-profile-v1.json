@@ -1,0 +1,328 @@
+{
+  "schema_version": "luminous.lnf-service-utility-profile.v1",
+  "profile_id": "lnf-deadline-qualified-service-utility-v1",
+  "status": "draft_targets_not_results",
+  "reviewed_on": "2026-11-04",
+  "parent_issue": 269,
+  "execution_stage": "deterministic_paired_trial_evaluator_only",
+  "objective": "Compare deadline-qualified useful application work, task value, cost, energy, redundancy and companion-flow retention across matched network protocol/scheduler trials without implementing packet scheduling or network actuation.",
+  "optimization_contract": {
+    "primary_objective": "maximize_on_time_useful_task_value",
+    "secondary_dimensions": [
+      "on_time_useful_payload_bytes",
+      "cost_per_on_time_useful_mib",
+      "energy_per_on_time_useful_mib",
+      "companion_flow_retention",
+      "redundant_bytes",
+      "late_payload_bytes",
+      "deadline_lateness_tail",
+      "resource_utilization"
+    ],
+    "no_scalar_aggregate_score": true,
+    "throughput_only_win_is_insufficient": true,
+    "late_useful_bytes_are_not_credited_as_on_time": true,
+    "incomplete_task_is_not_complete": true,
+    "task_value_is_all_or_nothing_for_this_v1": true,
+    "future_streaming_chunk_value_requires_separate_contract": true,
+    "scheduler_actuation": false
+  },
+  "paired_identity": {
+    "required_environment_digests": [
+      "kernel_build_sha256",
+      "topology_sha256",
+      "resource_snapshot_sha256",
+      "qdisc_config_sha256",
+      "workload_sha256",
+      "impairment_sha256"
+    ],
+    "required_environment_scalars": [
+      "seed",
+      "warmup_us",
+      "measurement_duration_us"
+    ],
+    "environment_must_match_across_arms": true,
+    "task_contract_must_match_exactly_across_arms": true,
+    "arm_identity_is_separate_from_environment": true,
+    "arm_fields": [
+      "protocol",
+      "protocol_revision",
+      "implementation_sha256",
+      "scheduler",
+      "scheduler_provenance",
+      "congestion_control",
+      "congestion_control_provenance",
+      "required_active_paths"
+    ],
+    "out_of_tree_components_require_artifact_digest": true,
+    "verdict_scope": "single_paired_trial"
+  },
+  "task_contract": {
+    "required_fields": [
+      "task_id",
+      "offered_useful_bytes",
+      "deadline_after_us",
+      "value_weight"
+    ],
+    "task_id_unique": true,
+    "deadline_is_relative_to_measurement_start": true,
+    "deadline_must_fit_measurement_window": true,
+    "value_weight_positive_integer": true,
+    "max_tasks": 4096,
+    "task_set_digest_bound_by": "workload_sha256",
+    "per_task_measurement_fields": [
+      "on_time_useful_bytes",
+      "total_useful_bytes",
+      "completion_offset_us"
+    ],
+    "on_time_bytes_le_total_bytes": true,
+    "total_bytes_le_offered_bytes": true,
+    "completion_event_requires_full_payload": true,
+    "no_completion_timestamp_with_full_bytes": "completion evidence is unknown; do not infer deadline completion"
+  },
+  "evidence_requirements": {
+    "path_state_verified_at_both_endpoints": true,
+    "active_path_count_separately_reported_local_and_remote": true,
+    "required_active_paths_must_be_met_at_both_endpoints": true,
+    "all_required_task_and_transport_counters_required": true,
+    "companion_flow_ids_and_offered_load_must_match": true,
+    "cleanup_verified": true,
+    "missing_task_measurement": "inconclusive",
+    "missing_completion_timestamp": "task_value_ratio_inconclusive",
+    "zero_baseline_for_relative_metric": "inconclusive",
+    "unsupported_arm": "unsupported",
+    "failed_cleanup": "fail",
+    "max_companion_flows": 256,
+    "fixed_point_ratio_unit": "parts_per_million",
+    "statistical_analysis": "external repeated-trial layer; preserve all pair outcomes and denominators"
+  },
+  "scenario_ids": [
+    "UTL-00",
+    "UTL-01",
+    "UTL-02",
+    "UTL-03",
+    "UTL-04",
+    "UTL-05",
+    "UTL-06",
+    "UTL-07",
+    "UTL-08",
+    "UTL-09",
+    "UTL-10",
+    "UTL-11",
+    "UTL-12",
+    "UTL-13"
+  ],
+  "scenario_definitions": [
+    {
+      "id": "UTL-00",
+      "topology": "tight_deadline_control_packets_mixed_with_bulk",
+      "purpose": "prioritize deadline-qualified utility rather than raw byte count"
+    },
+    {
+      "id": "UTL-01",
+      "topology": "heterogeneous_task_sizes_deadlines_and_value_weights",
+      "purpose": "distinguish task completion value from byte throughput"
+    },
+    {
+      "id": "UTL-02",
+      "topology": "cellular_expensive_wifi_cheap_with_deadline_feasibility",
+      "purpose": "cost-aware scheduling measurement with path and resource evidence"
+    },
+    {
+      "id": "UTL-03",
+      "topology": "cheap_path_misses_deadline_expensive_path_meets_it",
+      "purpose": "measure utility/cost tradeoff under urgency"
+    },
+    {
+      "id": "UTL-04",
+      "topology": "both_paths_meet_deadline_but_one_is_more_expensive",
+      "purpose": "measure cost efficiency without deadline regression"
+    },
+    {
+      "id": "UTL-05",
+      "topology": "all_paths_deadline_infeasible",
+      "purpose": "prevent resource waste on infeasible tasks"
+    },
+    {
+      "id": "UTL-06",
+      "topology": "partial_useful_delivery_with_late_remaining_payload",
+      "purpose": "late bytes are separated from timely bytes"
+    },
+    {
+      "id": "UTL-07",
+      "topology": "high_throughput_high_rtt_vs_lower_throughput_low_tail_latency",
+      "purpose": "capture application completion and latency tails"
+    },
+    {
+      "id": "UTL-08",
+      "topology": "redundant_transmission_improves_success_but_consumes_shared_backhaul",
+      "purpose": "enforce resource-incidence residual capacity"
+    },
+    {
+      "id": "UTL-09",
+      "topology": "raw_throughput_increases_while_companion_tcp_or_quic_is_starved",
+      "purpose": "reject network-wide fairness regression"
+    },
+    {
+      "id": "UTL-10",
+      "topology": "congestion_burst_after_scheduler_learning",
+      "purpose": "measure recovery and regret without assuming an adaptive scheduler"
+    },
+    {
+      "id": "UTL-11",
+      "topology": "deadline_or_cost_metadata_missing_stale_or_inconsistent",
+      "purpose": "incomplete task contracts are not treated as successful evidence"
+    },
+    {
+      "id": "UTL-12",
+      "topology": "unpinned_external_binary_or_unknown_controller",
+      "purpose": "implementation provenance must be exact"
+    },
+    {
+      "id": "UTL-13",
+      "topology": "paired_task_seed_qdisc_resource_or_impairment_identity_mismatch",
+      "purpose": "reject mismatched paired-arm comparisons"
+    }
+  ],
+  "comparators": [
+    "single_path_tcp_exact_pinned",
+    "single_path_quic_exact_pinned",
+    "linux_mptcp_exact_kernel_scheduler_and_congestion_control",
+    "multipath_quic_draft21_minrtt_exact_revision",
+    "multipath_quic_draft21_roundrobin_exact_revision",
+    "multipath_quic_draft21_lowlatency_exact_revision",
+    "multipath_quic_draft21_olia_exact_revision",
+    "legacy_damps_cadamps_2024_artifact_only_if_rebuilt_and_pinned",
+    "damps_cadamps_2026_journal_paper_literature_only_until_exact_artifact",
+    "dart_2025_deadline_redundancy_paper_literature_only_until_exact_artifact",
+    "lnf_resource_incidence_rate_allocation_non_actuating"
+  ],
+  "benchmarks": [
+    {
+      "id": "UTL_PAIR_IDENTITY_001",
+      "metric": "control_treatment_environment_and_task_contract_identity_mismatch",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "UTL_ON_TIME_PAYLOAD_001",
+      "metric": "treatment_on_time_useful_payload_ratio_vs_baseline_ppm",
+      "operator": ">=",
+      "target": 1000000,
+      "target_status": "proposed_non_regression_target"
+    },
+    {
+      "id": "UTL_TASK_VALUE_001",
+      "metric": "treatment_on_time_task_value_ratio_vs_baseline_ppm",
+      "operator": ">=",
+      "target": 1000000,
+      "target_status": "proposed_non_regression_target"
+    },
+    {
+      "id": "UTL_COMPANION_RETENTION_001",
+      "metric": "minimum_backlogged_companion_flow_retention_ppm",
+      "operator": ">=",
+      "target": 900000,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "UTL_COST_INTENSITY_001",
+      "metric": "treatment_cost_per_on_time_mib_ratio_vs_baseline_ppm",
+      "operator": "<=",
+      "target": 1000000,
+      "target_status": "proposed_non_regression_target"
+    },
+    {
+      "id": "UTL_ENERGY_INTENSITY_001",
+      "metric": "treatment_energy_per_on_time_mib_ratio_vs_baseline_ppm",
+      "operator": "<=",
+      "target": 1000000,
+      "target_status": "proposed_non_regression_target"
+    },
+    {
+      "id": "UTL_LATE_BYTES_001",
+      "metric": "late_useful_bytes_reported_separately_from_on_time_useful_bytes",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "UTL_REDUNDANCY_001",
+      "metric": "redundant_bytes_per_on_time_useful_byte_ppm",
+      "operator": "report",
+      "target": null,
+      "target_status": "baseline_first"
+    },
+    {
+      "id": "UTL_EVIDENCE_001",
+      "metric": "missing_or_mismatched_task_completion_evidence_classified_as_pass",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "UTL_PAIRED_SCOPE_001",
+      "metric": "single_pair_pass_promoted_to_programme_level_without_external_statistics",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    }
+  ],
+  "required_metrics": [
+    "offered_useful_bytes",
+    "on_time_useful_bytes",
+    "total_useful_bytes",
+    "late_useful_bytes",
+    "on_time_payload_ratio_ppm",
+    "total_task_value_weight",
+    "on_time_task_value_weight",
+    "on_time_task_value_ratio_ppm",
+    "completed_task_count",
+    "completed_on_time_task_count",
+    "missed_deadline_count",
+    "completion_evidence_missing_count",
+    "deadline_lateness_p50_us",
+    "deadline_lateness_p95_us",
+    "deadline_lateness_p99_us",
+    "cost_per_on_time_mib_microunits",
+    "energy_per_on_time_mib_microjoules",
+    "redundant_bytes_per_on_time_byte_ppm",
+    "companion_min_retention_ppm",
+    "local_and_remote_active_path_counts",
+    "exact_arm_and_environment_digests"
+  ],
+  "verdicts": [
+    "pass",
+    "fail",
+    "inconclusive",
+    "unsupported"
+  ],
+  "target_defaults": {
+    "minimum_on_time_payload_ratio_ppm": 1000000,
+    "minimum_on_time_task_value_ratio_ppm": 1000000,
+    "minimum_companion_retention_ppm": 900000,
+    "maximum_cost_per_on_time_mib_ratio_ppm": 1000000,
+    "maximum_energy_per_on_time_mib_ratio_ppm": 1000000,
+    "target_status": "proposed_not_measured"
+  },
+  "evidence_classes": [
+    "deterministic_evaluator",
+    "network_namespace_or_vm_emulation",
+    "hardware_bench",
+    "field_observed",
+    "literature_only"
+  ],
+  "explicit_non_claims": [
+    "The evaluator compares paired measured summaries and does not implement a packet scheduler.",
+    "A paired-trial PASS is not programme-level statistical qualification.",
+    "No claim is made that the legacy DaMPS/CaDaMPS repository is the exact source behind the 2026 journal paper.",
+    "Paper-reported performance percentages are not directly comparable without matched workloads and baselines.",
+    "A literature-only comparator is not an executed experiment.",
+    "Late useful bytes are not counted as on-time useful payload.",
+    "Missing completion timestamps cannot prove on-time task completion.",
+    "Task value is all-or-nothing in v1; streaming chunk value requires a distinct contract.",
+    "No scheduler, congestion-control, qdisc or router actuation is implemented.",
+    "No claim of superiority over DaMPS, CaDaMPS, DART, MPTCP, Multipath QUIC, CAKE or fq_codel is made.",
+    "No raw throughput gain is accepted as a win if the declared deadline, cost, energy or companion-flow gates fail."
+  ]
+}
