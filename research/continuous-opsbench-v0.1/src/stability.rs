@@ -233,7 +233,7 @@ pub fn run_stability_scenario(
     let mut action_ids = BTreeSet::new();
     let mut scheduled: BTreeMap<(u32, Resource), Vec<&ControlAction>> = BTreeMap::new();
     let mut stale_observation_action_count = 0usize;
-    for (index, action) in actions.iter().enumerate() {
+    for action in actions {
         if action.action_id.is_empty() {
             return Err(StabilityError::EmptyActionIdentity);
         }
