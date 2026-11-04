@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/lnf-capacity-evidence-profile-v1.schema.json",
+  "title": "LNF Capacity Evidence Benchmark Profile v1",
+  "description": "Strict trust-boundary and evidence-calibration contract. Validation is not cryptographic or network qualification.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "status",
+    "reviewed_on",
+    "parent_issue",
+    "execution_stage",
+    "objective",
+    "standards_basis",
+    "trust_semantics",
+    "verifier_boundary",
+    "evidence_states",
+    "scenarios",
+    "benchmarks",
+    "required_metrics",
+    "evidence_classes",
+    "explicit_non_claims"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.lnf-capacity-evidence-profile.v1"
+    },
+    "profile_id": {
+      "const": "lnf-capacity-evidence-v1"
+    },
+    "status": {
+      "const": "draft_targets_not_results"
+    },
+    "reviewed_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "parent_issue": {
+      "const": 233
+    },
+    "execution_stage": {
+      "const": "semantic_verifier_boundary_with_injected_trust_adapter"
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "standards_basis": {
+      "const": [
+        "RFC 9943",
+        "OpenConfig gNMI"
+      ]
+    },
+    "trust_semantics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "signature_proves",
+        "authority_policy_proves",
+        "scitt_receipt_proves",
+        "scitt_receipt_does_not_prove",
+        "gNMI_does_not_prove",
+        "initial_verified_maturity",
+        "confidence_usable_for_ranking_only_when_calibration_profile_is_verified"
+      ],
+      "properties": {
+        "signature_proves": {
+          "const": "issuer_signed_exact_canonical_statement_bytes"
+        },
+        "authority_policy_proves": {
+          "const": "issuer_is_authorized_for_declared_topology_scope_and_resource_claims"
+        },
+        "scitt_receipt_proves": {
+          "const": "statement_digest_was_registered_with_transparency_service"
+        },
+        "scitt_receipt_does_not_prove": {
+          "const": "resource_inventory_claims_are_correct"
+        },
+        "gNMI_does_not_prove": {
+          "const": "global_physical_or_provider_topology_is_complete"
+        },
+        "initial_verified_maturity": {
+          "const": "issuer_attested"
+        },
+        "confidence_usable_for_ranking_only_when_calibration_profile_is_verified": {
+          "const": true
+        }
+      }
+    },
+    "verifier_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cryptography_implemented_in_core",
+        "signature_and_trust_root_delegated",
+        "issuer_scope_authorization_delegated",
+        "replay_state_delegated",
+        "scitt_receipt_verification_delegated",
+        "calibration_profile_verification_delegated",
+        "canonical_statement_digest_recomputation_required",
+        "private_verified_inventory_constructor"
+      ],
+      "properties": {
+        "cryptography_implemented_in_core": {
+          "const": false
+        },
+        "signature_and_trust_root_delegated": {
+          "const": true
+        },
+        "issuer_scope_authorization_delegated": {
+          "const": true
+        },
+        "replay_state_delegated": {
+          "const": true
+        },
+        "scitt_receipt_verification_delegated": {
+          "const": true
+        },
+        "calibration_profile_verification_delegated": {
+          "const": true
+        },
+        "canonical_statement_digest_recomputation_required": {
+          "const": true
+        },
+        "private_verified_inventory_constructor": {
+          "const": true
+        }
+      }
+    },
+    "evidence_states": {
+      "const": [
+        "unverified",
+        "issuer_attested",
+        "corroborated",
+        "measured",
+        "contradicted",
+        "expired_or_revoked"
+      ]
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^CAPEV-[0-9]{2}-"
+      }
+    },
+    "benchmarks": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "metric",
+          "operator",
+          "target",
+          "target_status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^CAPEV_[A-Z0-9_]{3,80}$"
+          },
+          "metric": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operator": {
+            "enum": [
+              "==",
+              "baseline_first"
+            ]
+          },
+          "target": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "target_status": {
+            "enum": [
+              "proposed_target",
+              "baseline_first"
+            ]
+          }
+        }
+      }
+    },
+    "required_metrics": {
+      "type": "array",
+      "minItems": 16,
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "evidence_classes": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "mock_verifier_unit_test",
+          "cryptographic_adapter_integration_test",
+          "signed_inventory_fixture_corpus",
+          "independent_topology_ground_truth"
+        ]
+      }
+    },
+    "explicit_non_claims": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}
