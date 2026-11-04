@@ -48,6 +48,15 @@ pub struct RiskTrajectoryStep {
     pub at_ms: u64,
     pub topology_epoch: u64,
     pub topology_digest: Digest,
+    pub model_digest: Digest,
+    /// Binds fault state, offered demand, plant tick and scenario context.
+    pub comparison_context_digest: Digest,
+    /// Must equal comparison_context_digest for the no-action twin.
+    pub no_action_context_digest: Digest,
+    pub no_action_topology_epoch: u64,
+    pub no_action_topology_digest: Digest,
+    pub counterfactual_arm_id: String,
+    pub source_event_ids: Vec<String>,
     pub observation_id: String,
     pub observation_source_id: String,
     pub observation_digest: Digest,
@@ -105,6 +114,7 @@ pub struct RiskFinding {
     pub linked_action_id: Option<String>,
     pub counterfactual_delta_ppm: Option<i64>,
     pub evidence_digest: Digest,
+    pub source_event_ids: Vec<String>,
     pub topology_epoch: u64,
 }
 
@@ -145,6 +155,9 @@ pub enum RiskEvaluationError {
     StepOutsideRun(String),
     MissingStepIdentity(String),
     InvalidServiceSet(String),
+    CounterfactualMismatch(String),
+    InvalidRiskThresholds,
+    EmptyTrajectory,
     DuplicateActionId,
     AmbiguousActionBinding(String),
 }
@@ -167,56 +180,42 @@ fn service_map<'a>(
 }
 
 fn exact_committed_effect(action: &AgentAction, effects: &[EffectReceipt]) -> EffectMatch {
-    let matching: Vec<&EffectReceipt> = effects.iter().filter(|effect| {
+    let by_action: Vec<&EffectReceipt> = effects.iter().filter(|effect| {
         effect.scenario_id == action.scenario_id
             && effect.arm_id == action.arm_id
             && effect.action_id == action.action_id
-            && effect.tenant_id == action.tenant_id
-            && effect.participant_id == action.participant_id
-            && effect.attempt_id == action.attempt_id
-            && effect.logical_action_key == action.logical_action_key
-            && effect.request_digest == action.request_digest
-            && effect.target_service == action.target_service
     }).collect();
 
-    if matching.is_empty() {
-        let unresolved = effects.iter().any(|effect| {
-            effect.scenario_id == action.scenario_id
-                && effect.arm_id == action.arm_id
-                && effect.action_id == action.action_id
-                && (effect.state == ParticipantState::Unknown
-                    || effect.state == ParticipantState::AcceptedPending)
-        });
-        return if unresolved { EffectMatch::Unknown } else { EffectMatch::Missing };
+    if by_action.is_empty() {
+        return EffectMatch::Missing;
     }
-
-    let committed: Vec<&EffectReceipt> = matching.iter()
-        .copied()
-        .filter(|effect| effect.state == ParticipantState::Committed)
-        .collect();
-
-    if committed.is_empty() {
-        return if matching.iter().any(|effect| {
-            effect.state == ParticipantState::Unknown
-                || effect.state == ParticipantState::AcceptedPending
-        }) {
-            EffectMatch::Unknown
-        } else {
-            EffectMatch::NotCommitted
-        };
-    }
-
-    if committed.len() != 1 {
+    if by_action.len() != 1 {
         return EffectMatch::Invalid;
     }
-    let effect = committed[0];
-    if !effect.gate_authorized
-        || effect.forbidden_attempt
-        || effect.ledger_cursor.is_empty()
-    {
+    let effect = by_action[0];
+    let exact_binding = effect.tenant_id == action.tenant_id
+        && effect.participant_id == action.participant_id
+        && effect.attempt_id == action.attempt_id
+        && effect.logical_action_key == action.logical_action_key
+        && effect.request_digest == action.request_digest
+        && effect.target_service == action.target_service;
+    if !exact_binding {
         return EffectMatch::Invalid;
     }
-    EffectMatch::Committed
+    match effect.state {
+        ParticipantState::Committed => {
+            if !effect.gate_authorized
+                || effect.forbidden_attempt
+                || effect.ledger_cursor.is_empty()
+            {
+                EffectMatch::Invalid
+            } else {
+                EffectMatch::Committed
+            }
+        }
+        ParticipantState::Unknown | ParticipantState::AcceptedPending => EffectMatch::Unknown,
+        ParticipantState::NeverAccepted | ParticipantState::Rejected => EffectMatch::NotCommitted,
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -341,6 +340,7 @@ fn push_finding(
         linked_action_id: step.action_id.clone(),
         counterfactual_delta_ppm: delta,
         evidence_digest: step.observation_digest.clone(),
+        source_event_ids: step.source_event_ids.clone(),
         topology_epoch: step.topology_epoch,
     });
 }
@@ -391,6 +391,12 @@ pub fn evaluate_risk_trajectory(
     if contract.start_ms >= contract.end_ms {
         return Err(RiskEvaluationError::InvalidRunInterval);
     }
+    if contract.material_delta_ppm == 0 || contract.minimum_recovery_action_loss == 0 {
+        return Err(RiskEvaluationError::InvalidRiskThresholds);
+    }
+    if steps.is_empty() {
+        return Err(RiskEvaluationError::EmptyTrajectory);
+    }
 
     let mut action_ids = BTreeSet::new();
     for action in actions.iter().filter(|action| {
@@ -414,12 +420,26 @@ pub fn evaluate_risk_trajectory(
             || step.observation_id.is_empty()
             || step.observation_source_id.is_empty()
             || !nonzero_digest(&step.topology_digest)
+            || !nonzero_digest(&step.model_digest)
+            || !nonzero_digest(&step.comparison_context_digest)
+            || !nonzero_digest(&step.no_action_context_digest)
+            || !nonzero_digest(&step.no_action_topology_digest)
             || !nonzero_digest(&step.observation_digest)
+            || step.source_event_ids.is_empty()
+            || step.source_event_ids.iter().any(|id| id.is_empty())
+            || step.source_event_ids.iter().collect::<BTreeSet<_>>().len() != step.source_event_ids.len()
+            || step.counterfactual_arm_id != "no-action"
             || step.before.is_empty()
             || step.after.is_empty()
             || step.no_action_after.is_empty()
         {
             return Err(RiskEvaluationError::MissingStepIdentity(step.step_id.clone()));
+        }
+        if step.comparison_context_digest != step.no_action_context_digest
+            || step.topology_epoch != step.no_action_topology_epoch
+            || step.topology_digest != step.no_action_topology_digest
+        {
+            return Err(RiskEvaluationError::CounterfactualMismatch(step.step_id.clone()));
         }
         if !step_ids.insert(step.step_id.as_str()) {
             return Err(RiskEvaluationError::DuplicateStepId);
@@ -486,6 +506,42 @@ pub fn evaluate_risk_trajectory(
             }
             None => None,
         };
+
+        if let Some(action_id) = step.action_id.as_deref() {
+            match action {
+                None => {
+                    evidence_complete = false;
+                    push_finding(
+                        &mut findings,
+                        step,
+                        "unknown-action",
+                        RiskKind::MissingActionEvidence,
+                        RiskSeverity::High,
+                        RiskAttribution::Indeterminate,
+                        None,
+                    );
+                }
+                Some(action) if action.stage == ActionStage::Dispatched => {
+                    match exact_committed_effect(action, effects) {
+                        EffectMatch::Committed | EffectMatch::NotCommitted => {}
+                        EffectMatch::Missing | EffectMatch::Unknown | EffectMatch::Invalid => {
+                            evidence_complete = false;
+                            push_finding(
+                                &mut findings,
+                                step,
+                                &action.target_service,
+                                RiskKind::UnresolvedEffectOutcome,
+                                RiskSeverity::High,
+                                RiskAttribution::Indeterminate,
+                                None,
+                            );
+                        }
+                    }
+                }
+                Some(_) => {}
+            }
+            let _ = action_id;
+        }
 
         for (service_id, post) in &after {
             let pre = before[service_id];
@@ -619,17 +675,6 @@ pub fn evaluate_risk_trajectory(
             }
         }
 
-        if step.action_id.is_some() && action.is_none() {
-            push_finding(
-                &mut findings,
-                step,
-                "unknown-action",
-                RiskKind::MissingActionEvidence,
-                RiskSeverity::High,
-                RiskAttribution::Indeterminate,
-                None,
-            );
-        }
     }
 
     findings.sort_by(|a, b| {
@@ -761,6 +806,13 @@ mod tests {
             at_ms: at,
             topology_epoch: 4,
             topology_digest: digest(2),
+            model_digest: digest(4),
+            comparison_context_digest: digest(5),
+            no_action_context_digest: digest(5),
+            no_action_topology_epoch: 4,
+            no_action_topology_digest: digest(2),
+            counterfactual_arm_id: "no-action".into(),
+            source_event_ids: vec![format!("event-{id}")],
             observation_id: format!("observation-{id}"),
             observation_source_id: "independent-observer".into(),
             observation_digest: digest(3),
