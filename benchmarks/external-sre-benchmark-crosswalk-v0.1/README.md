@@ -1,6 +1,7 @@
 # External SRE / agent benchmark evidence registry v0.1
 
-Snapshot date: 2026-11-04
+Latest snapshot date: 2026-11-05
+Historical snapshot retained: snapshot-2026-11-04.json
 
 This registry is a machine-readable snapshot of public evidence for external SRE, enterprise operations, agent-risk and harness-evolution benchmarks. It exists to prevent category errors and preserve source context when comparing results.
 
@@ -64,3 +65,28 @@ The workflow:
 - rejects composite-score/score-translation mutation controls.
 
 The snapshot is not an independent reproduction of external benchmarks and cannot establish Luminous superiority. Superiority claims require same-task, same-harness, same-permission, same-budget and same-evaluator paired experiments with preregistered statistics.
+
+
+## Refresh 2026-11-05
+
+The dated 2026-11-04 file remains immutable. The new \`snapshot-2026-11-05.json\` adds a same-day source retrieval and refreshes live benchmark results.
+
+### AI SRE Arena: preserve denominator classes
+
+The report distinguishes the 12 incidents both native products investigated from each product's full set of investigations. Those are not competing definitions of the same denominator:
+- matched native subset: root cause 11/12 vs 9/12; supported fix 7/12 vs 5/12;
+- all native investigations: root cause 15/18 vs 9/12; supported fix 8/18 vs 5/12;
+- control CLIs externally investigate all 21: root cause 18/21 and 19/21; supported fix 16/21 and 15/21;
+- native detection remains 18/21 and 12/21;
+- blast radius, readiness and unsafe final advice are separate metrics.
+
+The publisher page explicitly describes both the matched 12-case comparison and the full-investigation table. The registry uses separate metric IDs instead of blending these scores.
+
+### Traceway: refreshed seven-model cohort
+
+The 2026-10-21/22 campaign reports 172 runs/model, seven models, 62 cases and five setups. The refresh captures all seven overall pass counts, grounded-answer/evidence counts, the 18-run control/trap subset and publisher-reported spend.
+
+The most important restraint signal remains independent of overall pass rate: Opus 18/18 control runs; DeepSeek and Qwen 11/18; MiniMax 10/18; Haiku 9/18; GPT-6 Luna and GLM 8/18. The control set contains only six cases, with 18 runs/model; treat it as a benchmark-specific diagnostic cohort, not a precise general-population estimate.
+
+The refreshed snapshot contains 11 entries and 74 metric observations. The workflow now validates the 2026-11-05 snapshot and preserves the previous snapshot as dated history.
+
