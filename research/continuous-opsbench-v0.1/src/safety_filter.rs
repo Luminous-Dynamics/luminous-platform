@@ -618,6 +618,88 @@ mod tests {
         }
     }
 
+    fn qualified_model_report() -> ModelAssumptionReport {
+        ModelAssumptionReport {
+            schema: crate::model_assumption::MODEL_ASSUMPTION_SCHEMA.into(),
+            disposition: ModelDisposition::Qualified,
+            run_id: "run-1".into(),
+            scenario_id: "scenario-1".into(),
+            arm_id: "candidate".into(),
+            dependence_cluster_id: "cluster-1".into(),
+            model_revision: "model-v1".into(),
+            model_digest: digest(3),
+            plant_revision: "plant-v1".into(),
+            plant_digest: digest(8),
+            workload_profile_digest: digest(9),
+            metric_policy_set_digest: digest(10),
+            topology_epoch: 7,
+            topology_digest: digest(2),
+            model_producer_id: "model-builder".into(),
+            model_control_domain: "model-domain".into(),
+            observer_id: "service-observer".into(),
+            observer_control_domain: "observer-domain".into(),
+            observer_adapter_digest: digest(11),
+            forecast_count: 3,
+            observation_count: 3,
+            matched_observation_count: 3,
+            envelope_miss_count: 0,
+            too_wide_count: 0,
+            maximum_positive_cusum: 0,
+            maximum_negative_cusum: 0,
+            findings: Vec::new(),
+            metrics: vec![crate::model_assumption::MetricAssumptionSummary {
+                metric_id: "critical_queue".into(),
+                forecast_count: 3,
+                matched_observation_count: 3,
+                covered_count: 3,
+                envelope_miss_count: 0,
+                too_wide_count: 0,
+                final_positive_cusum: 0,
+                final_negative_cusum: 0,
+                worst_interval_width: 10,
+            }],
+        }
+    }
+
+    #[test]
+    fn composed_filter_requires_exact_qualified_model_report() {
+        let evidence = input();
+        let result = appraise_with_model_assurance(
+            &evidence,
+            &act(CandidateOperation::Noop),
+            &qualified_model_report(),
+        );
+        assert_eq!(result.disposition, FilterDisposition::AdmitForAuthorization);
+    }
+
+    #[test]
+    fn composed_filter_defers_when_model_is_not_qualified() {
+        let evidence = input();
+        let mut report = qualified_model_report();
+        report.disposition = ModelDisposition::DriftSuspected;
+        let result = appraise_with_model_assurance(
+            &evidence,
+            &act(CandidateOperation::Noop),
+            &report,
+        );
+        assert_eq!(result.disposition, FilterDisposition::DeferForEvidence);
+        assert!(result.findings.contains(&SafetyFinding::ModelAssumptionNotQualified));
+    }
+
+    #[test]
+    fn composed_filter_defers_on_model_scope_substitution() {
+        let evidence = input();
+        let mut report = qualified_model_report();
+        report.plant_digest = digest(99);
+        let result = appraise_with_model_assurance(
+            &evidence,
+            &act(CandidateOperation::Noop),
+            &report,
+        );
+        assert_eq!(result.disposition, FilterDisposition::DeferForEvidence);
+        assert!(result.findings.contains(&SafetyFinding::ModelAssumptionIdentityMismatch));
+    }
+
     #[test]
     fn safe_action_is_admitted_for_authorization_only() {
         let result = appraise_one_step(&input(), &act(CandidateOperation::Noop));
