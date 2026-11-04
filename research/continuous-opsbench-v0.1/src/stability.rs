@@ -715,6 +715,99 @@ pub fn run_stability_multi_controller_loop(
     run_stability_multi_controller_loop_streaming(config, controllers)
 }
 
+/// Incremental O(T + A log A) controller runner. The plant advances exactly
+/// once per tick, and each policy receives only the observation delivered at
+/// that tick. Before returning, the complete result is replayed through the
+/// reference evaluator; any divergence fails closed.
+pub fn run_stability_multi_controller_loop_streaming(
+    config: &StabilityConfig,
+    controllers: &mut [&mut dyn StabilityController],
+) -> Result<ClosedLoopRun, StabilityError> {
+    validate_config(config)?;
+    let tail_start = config.ticks - config.no_intervention_tail_ticks;
+    let mut ids = BTreeSet::new();
+    for controller in controllers.iter() {
+        let id = controller.controller_id();
+        if id.is_empty() {
+            return Err(StabilityError::EmptyControllerId);
+        }
+        if !ids.insert(id.to_owned()) {
+            return Err(StabilityError::DuplicateControllerId(id.to_owned()));
+        }
+    }
+    controllers.sort_by(|a, b| a.controller_id().cmp(b.controller_id()));
+
+    let mut state = StreamingPlantState::new(config);
+    let mut scheduled: BTreeMap<(u32, Resource), Vec<ControlAction>> = BTreeMap::new();
+    let mut actions = Vec::new();
+    let mut decisions = Vec::new();
+    let mut samples = Vec::with_capacity(config.ticks as usize);
+    let mut outcomes = Vec::new();
+    let mut action_ids = BTreeSet::new();
+
+    for tick in 0..config.ticks {
+        apply_stream_actions(&mut scheduled, tick, &mut state, &mut outcomes);
+        samples.push(advance_streaming_plant_tick(config, tick, &mut state));
+        let observation = observation_for_tick(config, tick, &samples);
+
+        let can_act = tick.checked_add(config.actuation_delay_ticks)
+            .is_some_and(|effect_tick| effect_tick < tail_start);
+        if !can_act {
+            continue;
+        }
+
+        for controller in controllers.iter_mut() {
+            let controller_id = controller.controller_id().to_owned();
+            let controller_kind = controller.controller();
+            let proposals = controller.propose(&observation);
+            let mut proposed_action_ids = Vec::with_capacity(proposals.len());
+            for (index, operation) in proposals.into_iter().enumerate() {
+                let action = ControlAction {
+                    action_id: format!("closed-loop-{controller_id}-{tick}-{index}"),
+                    controller: controller_kind,
+                    issued_at_tick: tick,
+                    observation_source_tick: observation.source_tick,
+                    operation,
+                };
+                if !action_ids.insert(action.action_id.clone()) {
+                    return Err(StabilityError::DuplicateAction(action.action_id));
+                }
+                let (effect_tick, resource, _stale) = validate_stream_action(config, &action)?;
+                proposed_action_ids.push(action.action_id.clone());
+                scheduled.entry((effect_tick, resource)).or_default().push(action.clone());
+                actions.push(action);
+            }
+            decisions.push(ControllerDecision {
+                controller_id,
+                controller: controller_kind,
+                decision_tick: tick,
+                observation_source_tick: observation.source_tick,
+                observed_queue_depth: observation.observed_queue_depth,
+                observed_latency_ms: observation.observed_latency_ms,
+                observed_failed_ppm: observation.observed_failed_ppm,
+                proposed_action_ids,
+            });
+        }
+    }
+
+    let replay = run_stability_scenario(config, &actions)?;
+    let streamed_observations: Vec<_> = (0..config.ticks)
+        .map(|tick| observation_for_tick(config, tick, &samples))
+        .collect();
+    if samples != replay.samples
+        || outcomes != replay.action_outcomes
+        || streamed_observations != replay.observations
+    {
+        return Err(StabilityError::StreamingTraceDiverged);
+    }
+
+    Ok(ClosedLoopRun {
+        actions,
+        decisions,
+        stability: replay,
+    })
+}
+
 pub fn run_stability_multi_controller_loop_reference(
     config: &StabilityConfig,
     controllers: &mut [&mut dyn StabilityController],
