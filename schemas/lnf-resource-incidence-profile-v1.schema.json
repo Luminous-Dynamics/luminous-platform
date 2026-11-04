@@ -59,7 +59,8 @@
         "resource_capacity_is_shared_constraint",
         "residual_capacity_formula",
         "objective",
-        "exact_reference"
+        "exact_reference",
+        "exact_reference_contract"
       ],
       "properties": {
         "name": {
@@ -97,6 +98,46 @@
         },
         "exact_reference": {
           "const": "independent_integer_bps_small_topology_enumeration"
+        },
+        "exact_reference_contract": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "maximum_paths",
+            "maximum_resources",
+            "maximum_integer_assignment_count",
+            "search_space_definition",
+            "refuses_inputs_above_bound",
+            "deterministic_tie_break",
+            "exhaustive_microtopology_fixture_count",
+            "microtopology_space"
+          ],
+          "properties": {
+            "maximum_paths": {
+              "const": 4
+            },
+            "maximum_resources": {
+              "const": 6
+            },
+            "maximum_integer_assignment_count": {
+              "const": 1000000
+            },
+            "search_space_definition": {
+              "const": "product_over_paths(min(path_ceiling_bps, minimum_residual_capacity_on_path_resources) + 1)"
+            },
+            "refuses_inputs_above_bound": {
+              "const": true
+            },
+            "deterministic_tie_break": {
+              "const": "canonical_path_id_order_then_lexicographically_larger_rate_vector_after_equal_weighted_fairness_vector"
+            },
+            "exhaustive_microtopology_fixture_count": {
+              "const": 432
+            },
+            "microtopology_space": {
+              "const": "all_3^3_nonempty_incidence_assignments_over_two_resources_times_4x4_capacity_pairs"
+            }
+          }
         }
       }
     },
@@ -231,8 +272,8 @@
     },
     "benchmarks": {
       "type": "array",
-      "minItems": 10,
-      "maxItems": 10,
+      "minItems": 12,
+      "maxItems": 12,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -275,8 +316,8 @@
     },
     "required_metrics": {
       "type": "array",
-      "minItems": 22,
-      "maxItems": 22,
+      "minItems": 25,
+      "maxItems": 25,
       "uniqueItems": true,
       "items": {
         "type": "string",
