@@ -32,7 +32,9 @@
     "plant_revision",
     "plant_digest",
     "workload_profile_digest",
-    "metric_policy_set_digest"
+    "metric_policy_set_digest",
+    "model_assumption_evaluated_at_ms",
+    "model_assumption_valid_until_ms"
   ],
   "properties": {
     "schema": {
@@ -178,6 +180,22 @@
     "metric_policy_set_digest": {
       "type": "string",
       "pattern": "^[0-9a-f]{64}$"
+    },
+    "model_assumption_evaluated_at_ms": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "model_assumption_valid_until_ms": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 9007199254740991
     }
   }
 }
