@@ -1062,7 +1062,7 @@ mod tests {
             "event-evidence-1", &original, &counterfactual
         );
         assert_eq!(assessment.verdict, CounterfactualVerdict::Material);
-        assert_eq!(assessment.original_first_irrecoverable.as_deref(), Some("commit-event-effect-1"));
+        assert_eq!(assessment.original_first_irrecoverable.as_deref(), Some("event-effect-1"));
     }
 
     #[test]
