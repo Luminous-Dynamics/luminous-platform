@@ -67,6 +67,7 @@ pub enum ExactMaxSumError {
     TooManyResourcesPerPath,
     InvalidPathId,
     InvalidResourceId,
+    EmptyResourceSet,
     DuplicatePathId,
     DuplicateResourceId,
     DuplicateResourceInPath,
@@ -99,7 +100,7 @@ fn valid_id(id: &str) -> bool {
     !id.trim().is_empty() && id.len() <= MAX_ORACLE_ID_BYTES && !id.chars().any(char::is_control)
 }
 
-fn checked_total(values: impl Iterator<Item = u64>) -> Result<u128, ExactMaxSumError> {
+fn checked_total(mut values: impl Iterator<Item = u64>) -> Result<u128, ExactMaxSumError> {
     values.try_fold(0_u128, |sum, value| {
         sum.checked_add(u128::from(value))
             .ok_or(ExactMaxSumError::ArithmeticOverflow)
@@ -253,14 +254,14 @@ fn jain_index_ppm(rates: &[u64]) -> Result<Option<u32>, ExactMaxSumError> {
         .map_err(|_| ExactMaxSumError::ArithmeticOverflow)
 }
 
-fn validate_and_index(
-    resources: &[ResourceCapacity],
-    paths: &[PathRateDemand],
+fn validate_and_index<'a>(
+    resources: &'a [ResourceCapacity],
+    paths: &'a [PathRateDemand],
     minimums: &[PathRateFloor],
 ) -> Result<
     (
-        Vec<&PathRateDemand>,
-        Vec<&ResourceCapacity>,
+        Vec<&'a PathRateDemand>,
+        Vec<&'a ResourceCapacity>,
         Vec<u64>,
         Vec<Vec<usize>>,
         u64,
