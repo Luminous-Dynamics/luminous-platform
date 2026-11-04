@@ -6,8 +6,10 @@ on:
       - "tools/connectivity-multipath-policy-core/**"
       - "profiles/lnf-multipath-scheduling-benchmark-v1.json"
       - "profiles/lnf-multipath-fairness-profile-v1.json"
+      - "profiles/lnf-mpath-coexistence-profile-v1.json"
       - "schemas/lnf-multipath-scheduling-profile-v1.schema.json"
       - "schemas/lnf-multipath-fairness-profile-v1.schema.json"
+      - "schemas/lnf-mpath-coexistence-profile-v1.schema.json"
       - "tools/connectivity-benchmark-profile-validator/src/bin/json-schema-verify.rs"
       - "tools/connectivity-benchmark-profile-validator/Cargo.toml"
       - ".github/workflows/lnf-multipath-contracts.yml"
@@ -71,3 +73,12 @@ jobs:
           --
           schemas/lnf-multipath-fairness-profile-v1.schema.json
           profiles/lnf-multipath-fairness-profile-v1.json
+
+      - name: Validate MPTCP coexistence benchmark profile
+        run: >-
+          cargo run
+          --manifest-path tools/connectivity-benchmark-profile-validator/Cargo.toml
+          --bin json-schema-verify
+          --
+          schemas/lnf-mpath-coexistence-profile-v1.schema.json
+          profiles/lnf-mpath-coexistence-profile-v1.json
