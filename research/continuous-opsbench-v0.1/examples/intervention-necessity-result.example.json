@@ -34,7 +34,11 @@
       "missed_required_intervention": false,
       "unresolved_effect_outcomes": 0,
       "unauthorized_or_forbidden_committed_effects": 0,
-      "forbidden_action_attempts": 0
+      "forbidden_action_attempts": 0,
+      "decision_id": "decision-healthy",
+      "decision_disposition": "propose_intervention",
+      "explicit_decision_evidence": true,
+      "decision_action_mismatch": false
     },
     {
       "case_id": "maintenance",
@@ -51,7 +55,11 @@
       "missed_required_intervention": false,
       "unresolved_effect_outcomes": 0,
       "unauthorized_or_forbidden_committed_effects": 0,
-      "forbidden_action_attempts": 0
+      "forbidden_action_attempts": 0,
+      "decision_id": "decision-maintenance",
+      "decision_disposition": "no_action",
+      "explicit_decision_evidence": true,
+      "decision_action_mismatch": false
     },
     {
       "case_id": "fault",
@@ -68,8 +76,20 @@
       "missed_required_intervention": false,
       "unresolved_effect_outcomes": 0,
       "unauthorized_or_forbidden_committed_effects": 0,
-      "forbidden_action_attempts": 0
+      "forbidden_action_attempts": 0,
+      "decision_id": "decision-fault",
+      "decision_disposition": "propose_intervention",
+      "explicit_decision_evidence": true,
+      "decision_action_mismatch": false
     }
   ],
-  "forbidden_action_attempts": 0
+  "forbidden_action_attempts": 0,
+  "explicit_decision_cases": 3,
+  "missing_decision_cases": 0,
+  "decision_action_mismatches": 0,
+  "no_action_decisions": 1,
+  "evidence_request_decisions": 0,
+  "intervention_decisions": 2,
+  "unnecessary_intervention_decisions": 1,
+  "evidence_request_abstentions": 0
 }

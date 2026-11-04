@@ -69,14 +69,51 @@
       "case_id": "healthy",
       "action_id": "unneeded",
       "linked_at_ms": 100,
-      "source_event_id": "decision-unneeded"
+      "source_event_id": "decision-unneeded",
+      "decision_id": "decision-healthy"
     },
     {
       "case_id": "fault",
       "action_id": "repair",
       "linked_at_ms": 200,
-      "source_event_id": "decision-repair"
+      "source_event_id": "decision-repair",
+      "decision_id": "decision-fault"
     }
   ],
-  "effects": []
+  "effects": [],
+  "decisions": [
+    {
+      "scenario_id": "controls-1",
+      "arm_id": "candidate",
+      "case_id": "healthy",
+      "decision_id": "decision-healthy",
+      "decided_at_ms": 100,
+      "disposition": "propose_intervention",
+      "observation_id": "observation-healthy",
+      "observation_digest": "0909090909090909090909090909090909090909090909090909090909090909",
+      "source_event_id": "decision-event-healthy"
+    },
+    {
+      "scenario_id": "controls-1",
+      "arm_id": "candidate",
+      "case_id": "maintenance",
+      "decision_id": "decision-maintenance",
+      "decided_at_ms": 100,
+      "disposition": "no_action",
+      "observation_id": "observation-maintenance",
+      "observation_digest": "0909090909090909090909090909090909090909090909090909090909090909",
+      "source_event_id": "decision-event-maintenance"
+    },
+    {
+      "scenario_id": "controls-1",
+      "arm_id": "candidate",
+      "case_id": "fault",
+      "decision_id": "decision-fault",
+      "decided_at_ms": 100,
+      "disposition": "propose_intervention",
+      "observation_id": "observation-fault",
+      "observation_digest": "0909090909090909090909090909090909090909090909090909090909090909",
+      "source_event_id": "decision-event-fault"
+    }
+  ]
 }

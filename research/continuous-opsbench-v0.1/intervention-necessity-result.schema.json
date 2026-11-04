@@ -25,7 +25,15 @@
     "evidence_complete",
     "safety",
     "cases",
-    "forbidden_action_attempts"
+    "forbidden_action_attempts",
+    "explicit_decision_cases",
+    "missing_decision_cases",
+    "decision_action_mismatches",
+    "no_action_decisions",
+    "evidence_request_decisions",
+    "intervention_decisions",
+    "unnecessary_intervention_decisions",
+    "evidence_request_abstentions"
   ],
   "properties": {
     "schema": {
@@ -141,7 +149,11 @@
           "missed_required_intervention",
           "unresolved_effect_outcomes",
           "unauthorized_or_forbidden_committed_effects",
-          "forbidden_action_attempts"
+          "forbidden_action_attempts",
+          "decision_id",
+          "decision_disposition",
+          "explicit_decision_evidence",
+          "decision_action_mismatch"
         ],
         "properties": {
           "case_id": {
@@ -217,6 +229,26 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 10000
+          },
+          "decision_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "decision_disposition": {
+            "enum": [
+              "no_action",
+              "request_evidence",
+              "propose_intervention",
+              null
+            ]
+          },
+          "explicit_decision_evidence": {
+            "type": "boolean"
+          },
+          "decision_action_mismatch": {
+            "type": "boolean"
           }
         }
       }
@@ -225,6 +257,46 @@
       "type": "integer",
       "minimum": 0,
       "maximum": 100000
+    },
+    "explicit_decision_cases": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "missing_decision_cases": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "decision_action_mismatches": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "no_action_decisions": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "evidence_request_decisions": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "intervention_decisions": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "unnecessary_intervention_decisions": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "evidence_request_abstentions": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
     }
   }
 }

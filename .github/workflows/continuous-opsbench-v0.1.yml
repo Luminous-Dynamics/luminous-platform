@@ -39,6 +39,7 @@ jobs:
           python3 -m venv /tmp/opsbench-schema-venv
           /tmp/opsbench-schema-venv/bin/python -m pip install --disable-pip-version-check "jsonschema==4.23.0"
           /tmp/opsbench-schema-venv/bin/python - <<'PY'
+          import copy
           import json
           from pathlib import Path
           from jsonschema import Draft202012Validator
@@ -85,6 +86,75 @@ jobs:
               fixture = json.loads((root / fixture_name).read_text(encoding="utf-8"))
               schemas[schema_name].validate(fixture)
               print(f"valid: {fixture_name} against {schema_name}")
+          control_request = json.loads(
+              (root / "examples/intervention-necessity-request.example.json").read_text(encoding="utf-8")
+          )
+
+          def decision_binding_errors(request):
+              errors = []
+              cases = {case["case_id"]: case for case in request["cases"]}
+              decisions_by_case = {}
+              decision_ids = set()
+              for decision in request.get("decisions", []):
+                  if decision["case_id"] not in cases:
+                      errors.append("unknown decision case")
+                  if decision["decision_id"] in decision_ids:
+                      errors.append("duplicate decision ID")
+                  decision_ids.add(decision["decision_id"])
+                  decisions_by_case.setdefault(decision["case_id"], []).append(decision)
+              actions = {action["action_id"]: action for action in request["actions"]}
+              links_by_case = {}
+              linked_actions = set()
+              for link in request["links"]:
+                  if link["case_id"] not in cases or link["action_id"] not in actions:
+                      errors.append("orphan decision/action link")
+                      continue
+                  if link["action_id"] in linked_actions:
+                      errors.append("duplicate action link")
+                  linked_actions.add(link["action_id"])
+                  links_by_case.setdefault(link["case_id"], []).append(link)
+              if set(actions) != linked_actions:
+                  errors.append("orphan action")
+              for case_id in cases:
+                  case_decisions = decisions_by_case.get(case_id, [])
+                  if len(case_decisions) != 1:
+                      errors.append("control case must have exactly one decision receipt")
+                      continue
+                  decision = case_decisions[0]
+                  links = links_by_case.get(case_id, [])
+                  proposes = decision["disposition"] == "propose_intervention"
+                  if proposes != bool(links):
+                      errors.append("decision disposition/action presence mismatch")
+                  if any(link["decision_id"] != decision["decision_id"] for link in links):
+                      errors.append("action link substituted decision ID")
+              return errors
+
+          if decision_binding_errors(control_request):
+              raise SystemExit(f"invalid decision binding in fixture: {decision_binding_errors(control_request)}")
+
+          decision_negative_controls = []
+          bad = copy.deepcopy(control_request)
+          bad["decisions"].pop()
+          decision_negative_controls.append(("missing decision receipt", bad))
+          bad = copy.deepcopy(control_request)
+          bad["decisions"].append(copy.deepcopy(bad["decisions"][0]))
+          decision_negative_controls.append(("duplicate decision receipt", bad))
+          bad = copy.deepcopy(control_request)
+          bad["links"][0]["decision_id"] = "substituted-decision"
+          decision_negative_controls.append(("substituted decision binding", bad))
+          bad = copy.deepcopy(control_request)
+          bad["decisions"][0]["disposition"] = "no_action"
+          decision_negative_controls.append(("no-action decision with mutation link", bad))
+          bad = copy.deepcopy(control_request)
+          bad["actions"] = [action for action in bad["actions"] if action["action_id"] != "unneeded"]
+          bad["links"] = [link for link in bad["links"] if link["action_id"] != "unneeded"]
+          decision_negative_controls.append(("intervention decision with no action link", bad))
+
+          for label, candidate in decision_negative_controls:
+              if not decision_binding_errors(candidate):
+                  raise SystemExit(f"decision-evidence negative control accepted: {label}")
+
+          print(f"decision-evidence negative controls rejected: {len(decision_negative_controls)}/{len(decision_negative_controls)}")
           PY
       - name: Run dependency-locked tests
         run: cargo test --manifest-path research/continuous-opsbench-v0.1/Cargo.toml --locked

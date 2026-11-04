@@ -167,3 +167,18 @@ Wire contracts and fixtures:
 CI validates the Draft 2020-12 schemas and fixtures. The tests include healthy no-action, intentional degradation, misleading/insufficient evidence, required intervention, wrong target, gate-denied unnecessary write, unauthorized commit and unknown participant outcome.
 
 **Claim ceiling:** this evaluator measures action necessity against the declared control-case truth and exact links. It does not establish that the oracle labels every production control correctly, nor that no-action is always optimal under future unobserved disturbances. External comparisons require sealed controls and independently adjudicated ground truth.
+
+
+### Explicit decision receipts for intervention necessity
+
+Correct abstention is never inferred from an empty action list alone. Every control case must carry one explicit, source-bound \`ControlDecisionReceipt\` with:
+- scenario, arm and case IDs;
+- unique decision ID and an in-interval timestamp;
+- \`NoAction\`, \`RequestEvidence\` or \`ProposeIntervention\`;
+- observation ID, nonzero observation digest and source-event ID.
+
+Every action link binds to that exact decision ID. An action link with a \`NoAction\` or \`RequestEvidence\` decision is a decision/action mismatch. A \`ProposeIntervention\` decision without an action link is likewise mismatched; on a required-intervention case it remains a missed target proposal.
+
+The evaluator distinguishes missing decision receipts from explicit restraint, and reports no-action decisions, evidence-request decisions, intervention decisions, unnecessary intervention decisions and mismatches independently. Missing decision evidence makes the run indeterminate and earns no abstention credit. Evidence-request abstention is still restraint, but is counted separately from immediate no-action.
+
+This is a receipt of an externally observed decision record, not proof of the agent's hidden internal reasoning or publisher authenticity.
