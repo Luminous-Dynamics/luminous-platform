@@ -54,6 +54,8 @@ jobs:
               "predictive-viability-appraisal.schema.json",
               "risk-trajectory-request.schema.json",
               "risk-trajectory-result.schema.json",
+              "intervention-necessity-request.schema.json",
+              "intervention-necessity-result.schema.json",
           ]
           schemas = {}
           for name in schema_names:
@@ -74,6 +76,10 @@ jobs:
                "examples/risk-trajectory-request.example.json"),
               ("risk-trajectory-result.schema.json",
                "examples/risk-trajectory-result.example.json"),
+              ("intervention-necessity-request.schema.json",
+               "examples/intervention-necessity-request.example.json"),
+              ("intervention-necessity-result.schema.json",
+               "examples/intervention-necessity-result.example.json"),
           ]
           for schema_name, fixture_name in fixtures:
               fixture = json.loads((root / fixture_name).read_text(encoding="utf-8"))

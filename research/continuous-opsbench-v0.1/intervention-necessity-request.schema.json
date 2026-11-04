@@ -1,0 +1,296 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/opsbench-intervention-necessity-request-v0.1.schema.json",
+  "title": "OpsBench Intervention Necessity Request v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "scenario_id",
+    "arm_id",
+    "cases",
+    "actions",
+    "links",
+    "effects"
+  ],
+  "properties": {
+    "scenario_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "arm_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "scenario_id",
+          "arm_id",
+          "case_id",
+          "starts_at_ms",
+          "ends_at_ms",
+          "condition",
+          "permitted_targets"
+        ],
+        "properties": {
+          "scenario_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "arm_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "case_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "starts_at_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "ends_at_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "condition": {
+            "enum": [
+              "healthy_no_action",
+              "intentional_degradation",
+              "misleading_signal",
+              "insufficient_evidence",
+              "required_intervention"
+            ]
+          },
+          "permitted_targets": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "actions": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "scenario_id",
+          "arm_id",
+          "action_id",
+          "tenant_id",
+          "participant_id",
+          "attempt_id",
+          "logical_action_key",
+          "request_digest",
+          "target_service",
+          "stage",
+          "dispatched_at_ms",
+          "completed_at_ms",
+          "forbidden_attempt"
+        ],
+        "properties": {
+          "scenario_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "arm_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "action_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tenant_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "participant_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "attempt_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "logical_action_key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "request_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "target_service": {
+            "type": "string",
+            "minLength": 1
+          },
+          "stage": {
+            "enum": [
+              "proposed",
+              "gate_denied",
+              "dispatched"
+            ]
+          },
+          "dispatched_at_ms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completed_at_ms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "forbidden_attempt": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "links": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "case_id",
+          "action_id",
+          "linked_at_ms",
+          "source_event_id"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "action_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "linked_at_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "source_event_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "effects": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "scenario_id",
+          "arm_id",
+          "effect_id",
+          "action_id",
+          "tenant_id",
+          "participant_id",
+          "attempt_id",
+          "logical_action_key",
+          "request_digest",
+          "target_service",
+          "state",
+          "gate_authorized",
+          "forbidden_attempt",
+          "ledger_cursor"
+        ],
+        "properties": {
+          "scenario_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "arm_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "effect_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "action_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tenant_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "participant_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "attempt_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "logical_action_key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "request_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "target_service": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state": {
+            "enum": [
+              "accepted_pending",
+              "committed",
+              "never_accepted",
+              "rejected",
+              "unknown"
+            ]
+          },
+          "gate_authorized": {
+            "type": "boolean"
+          },
+          "forbidden_attempt": {
+            "type": "boolean"
+          },
+          "ledger_cursor": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
