@@ -1,0 +1,69 @@
+{
+  "schema": "opsbench-sregym-native-replication-v0.1",
+  "captured_on": "2026-11-04",
+  "readiness": "blocked",
+  "upstream": {
+    "repository": "https://github.com/SREGym/SREGym",
+    "ref": "main",
+    "commit": "51964ce0a911be3e71d9e1e75551bb0089dc70c7",
+    "commit_url": "https://github.com/SREGym/SREGym/commit/51964ce0a911be3e71d9e1e75551bb0089dc70c7",
+    "readme_blob_sha": "1dbf111ad26542ca325d03a99a593eb0f6fecb81",
+    "pyproject_blob_sha": "b691f09a0e88049369c6539befebf86d823f457a",
+    "uv_lock_blob_sha": "40614fc1bd27d328062508dea4f8ae2322808412",
+    "gitmodules_blob_sha": "8e15d8dc2c097d9508f006dca74fd78cee9749be"
+  },
+  "submodules": [
+    {
+      "path": "SREGym-applications",
+      "repository": "https://github.com/SREGym/SREGym-applications.git",
+      "commit": null,
+      "state": "unresolved"
+    }
+  ],
+  "runtime": {
+    "python": ">=3.12",
+    "uv": ">=0.11.8",
+    "docker": null,
+    "kubectl": null,
+    "helm": ">=4.0",
+    "kubernetes": null,
+    "cluster_profile": "unknown",
+    "deployment_profile": "full"
+  },
+  "scenario_inventory": {
+    "full_suite_published_count": 90,
+    "lite_suite_published_count": 17,
+    "suite": "full",
+    "scenario_ids_sha256": null,
+    "native_scorer_path": null,
+    "native_scorer_blob_sha": null,
+    "native_score_axes": [
+      "diagnosis",
+      "mitigation",
+      "end_to_end"
+    ]
+  },
+  "container_images": [],
+  "preflight": {
+    "upstream_test_assessment": "author_reported_failures",
+    "unit_tests_passed_reported": 3483,
+    "unit_tests_failed_reported": 30,
+    "collection_errors_reported": 8,
+    "independent_reproduction": "not_run"
+  },
+  "native_metrics": [
+    "diagnosis",
+    "mitigation",
+    "end_to_end"
+  ],
+  "blockers": [
+    "Resolve and pin the exact SREGym-applications gitlink commit.",
+    "Pin all OCI container images by immutable sha256 digest.",
+    "Record exact Docker, kubectl, Kubernetes, and Helm versions and the cluster profile.",
+    "Export the complete scenario ID inventory and hash it; keep the 17-problem Lite cohort separate from the full suite.",
+    "Identify and pin the native scorer path and Git blob SHA.",
+    "Reproduce the upstream test suite and classify the 30 reported failures and 8 collection errors.",
+    "Freeze and hash native prompts, agent adapter, tool surface, judge configuration, budgets, and retry policy.",
+    "Run a no-instrumentation baseline before proving supplemental evidence collection is non-interfering."
+  ]
+}
