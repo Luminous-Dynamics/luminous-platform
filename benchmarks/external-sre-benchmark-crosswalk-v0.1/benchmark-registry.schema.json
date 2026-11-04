@@ -231,7 +231,8 @@
                 "metric_id",
                 "value",
                 "unit",
-                "result_context"
+                "result_context",
+                "value_operator"
               ],
               "properties": {
                 "configuration": {
@@ -284,6 +285,15 @@
                 },
                 "uncertainty_or_repeat_note": {
                   "type": "string"
+                },
+                "value_operator": {
+                  "enum": [
+                    "exact",
+                    "less_than",
+                    "greater_than",
+                    "at_least",
+                    "at_most"
+                  ]
                 }
               }
             }
