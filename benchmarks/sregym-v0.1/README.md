@@ -52,3 +52,12 @@ A manifest cannot transition to `ready` with only source and environment pins. T
 The confirmatory design must include at least five paired seed IDs, randomized arm order, a declared scenario/seed-cluster inference unit, a preregistered missing-run policy, and a digest of the preregistration. The five-seed minimum is a launch floor, not a claim of adequate power; the MDE/power analysis may require more.
 
 Supplemental instrumentation must be demonstrated not to alter the native environment, tool responses, task state or scorer-visible behavior before readiness can be set to `ready`.
+
+
+## Contamination and access-boundary qualification
+
+A replication cannot be marked ready without a pinned contamination scanner revision/configuration, a passed scan report digest, scan date, and declared examined source families. Each agent arm also needs an access-profile digest covering repository/filesystem/network/secret/cross-run visibility, not only its tool names. A prompt or tool-manifest digest alone does not characterize benchmark leakage exposure.
+
+The scanner must check at least the relevant agent source, prompts, tool/access surface, scenario material, expected answers, runbooks, issue/PR text, logs, and cross-run artifacts. Record what was actually examined; do not mark a family scanned merely because it was inaccessible or omitted.
+
+SREGym's public native scores remain scored by the pinned upstream evaluator. Any Luminous-generated sealed challenge corpus remains a separate supplemental benchmark with its own salted commitment and access-controlled scorer; never add it to the native SREGym score.
