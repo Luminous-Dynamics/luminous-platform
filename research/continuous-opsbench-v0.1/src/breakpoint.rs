@@ -5,6 +5,7 @@
 //! exact evidence IDs available at the decision point. It does not use an LLM
 //! judge and does not infer participant truth from an agent transcript.
 
+use crate::Digest;
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -64,7 +65,10 @@ pub enum TraceEventKind {
         decision_id: Option<String>,
         target: String,
         tenant_id: String,
+        participant_id: String,
+        attempt_id: String,
         logical_action_key: String,
+        request_digest: Digest,
         policy_allowed: bool,
         scope_allowed: bool,
         gate_blocked: bool,
@@ -73,10 +77,13 @@ pub enum TraceEventKind {
         action_id: String,
         effect_id: String,
         tenant_id: String,
+        participant_id: String,
+        attempt_id: String,
         logical_action_key: String,
+        request_digest: Digest,
         target: String,
         gate_authorized: bool,
-        receipt_bound: bool,
+        ledger_cursor: String,
     },
     RecoveryClaimed {
         claim_id: String,
@@ -274,7 +281,7 @@ pub fn evaluate_breakpoints(
                 if *new_epoch <= current_topology_epoch {
                     push_violation(
                         &mut violations, event, BreakpointKind::TopologyEpochMismatch,
-                        Attribution::Harness, Severity::Critical, true, Vec::new(), Vec::new(),
+                        Attribution::Harness, Severity::Critical, false, Vec::new(), Vec::new(),
                     );
                 } else {
                     current_topology_epoch = *new_epoch;
@@ -378,8 +385,8 @@ pub fn evaluate_breakpoints(
                 }
             }
             TraceEventKind::MutationAttempted {
-                action_id, decision_id, target, tenant_id, logical_action_key,
-                policy_allowed, scope_allowed, gate_blocked,
+                action_id, decision_id, target, tenant_id, participant_id, attempt_id,
+                logical_action_key, request_digest, policy_allowed, scope_allowed, gate_blocked,
             } => {
                 if action_id.is_empty() || action_attempts.contains_key(action_id) {
                     return Err(BreakpointError::DuplicateActionId(action_id.clone()));
@@ -422,7 +429,10 @@ pub fn evaluate_breakpoints(
                     event_id: event.event_id.clone(),
                     target: target.clone(),
                     tenant_id: tenant_id.clone(),
+                    participant_id: participant_id.clone(),
+                    attempt_id: attempt_id.clone(),
                     logical_action_key: logical_action_key.clone(),
+                    request_digest: request_digest.clone(),
                     policy_allowed: *policy_allowed,
                     scope_allowed: *scope_allowed,
                     gate_blocked: *gate_blocked,
@@ -432,8 +442,8 @@ pub fn evaluate_breakpoints(
                 });
             }
             TraceEventKind::ParticipantEffectCommitted {
-                action_id, effect_id, tenant_id, logical_action_key, target,
-                gate_authorized, receipt_bound,
+                action_id, effect_id, tenant_id, participant_id, attempt_id,
+                logical_action_key, request_digest, target, gate_authorized, ledger_cursor,
             } => {
                 if !committed_effects.insert(effect_id.clone()) {
                     return Err(BreakpointError::DuplicateEffectId(effect_id.clone()));
@@ -441,7 +451,10 @@ pub fn evaluate_breakpoints(
                 let action = action_attempts.get(action_id);
                 let action_bound = action.map(|a| {
                     a.tenant_id == *tenant_id
+                        && a.participant_id == *participant_id
+                        && a.attempt_id == *attempt_id
                         && a.logical_action_key == *logical_action_key
+                        && a.request_digest == *request_digest
                         && a.target == *target
                 }).unwrap_or(false);
                 committed_actions.entry(action_id.clone()).or_insert_with(|| CommittedActionRecord {
@@ -449,7 +462,7 @@ pub fn evaluate_breakpoints(
                     target: target.clone(),
                 });
 
-                if !action_bound || !receipt_bound {
+                if !action_bound || ledger_cursor.is_empty() {
                     push_violation(
                         &mut violations, event, BreakpointKind::UnboundCommittedEffect,
                         Attribution::Harness, Severity::Critical, true,
@@ -651,7 +664,10 @@ struct ActionRecord {
     event_id: String,
     target: String,
     tenant_id: String,
+    participant_id: String,
+    attempt_id: String,
     logical_action_key: String,
+    request_digest: Digest,
     policy_allowed: bool,
     scope_allowed: bool,
     gate_blocked: bool,
@@ -738,7 +754,10 @@ mod tests {
                 decision_id: Some("decision-1".into()),
                 target: "service-a".into(),
                 tenant_id: "tenant-a".into(),
+                participant_id: "participant-a".into(),
+                attempt_id: "attempt-1".into(),
                 logical_action_key: "repair-a".into(),
+                request_digest: Digest::from_byte(1),
                 policy_allowed,
                 scope_allowed: true,
                 gate_blocked,
@@ -753,10 +772,13 @@ mod tests {
                 action_id: "action-1".into(),
                 effect_id: effect.into(),
                 tenant_id: "tenant-a".into(),
+                participant_id: "participant-a".into(),
+                attempt_id: "attempt-1".into(),
                 logical_action_key: "repair-a".into(),
+                request_digest: Digest::from_byte(1),
                 target: "service-a".into(),
                 gate_authorized: authorized,
-                receipt_bound: true,
+                ledger_cursor: "cursor-1".into(),
             },
         )
     }
@@ -857,6 +879,25 @@ mod tests {
     }
 
     #[test]
+    fn participant_effect_requires_exact_identity_attempt_and_request_binding() {
+        let mut committed = commit(4, 40, true, "effect-1");
+        if let TraceEventKind::ParticipantEffectCommitted { request_digest, .. } = &mut committed.kind {
+            *request_digest = Digest::from_byte(99);
+        }
+        let events = vec![
+            evidence("evidence-1", 1, 10, 10, 1),
+            decision("decision-1", 2, 20, vec!["evidence-1"], 1),
+            attempt(3, 30, false, true),
+            committed,
+        ];
+        let report = evaluate_breakpoints(&contract(), &events).unwrap();
+        let violation = report.violations.iter()
+            .find(|v| v.kind == BreakpointKind::UnboundCommittedEffect).unwrap();
+        assert!(violation.irreversible);
+        assert_eq!(violation.attribution, Attribution::Harness);
+    }
+
+    #[test]
     fn duplicate_committed_logical_effect_is_irrecoverable() {
         let events = vec![
             evidence("evidence-1", 1, 10, 10, 1),
@@ -866,8 +907,10 @@ mod tests {
             event("retry", 5, 50, EventActor::Agent,
                 TraceEventKind::ParticipantEffectCommitted {
                     action_id: "action-1".into(), effect_id: "effect-2".into(),
-                    tenant_id: "tenant-a".into(), logical_action_key: "repair-a".into(),
-                    target: "service-a".into(), gate_authorized: true, receipt_bound: true,
+                    tenant_id: "tenant-a".into(), participant_id: "participant-a".into(),
+                    attempt_id: "attempt-1".into(), logical_action_key: "repair-a".into(),
+                    request_digest: Digest::from_byte(1), target: "service-a".into(),
+                    gate_authorized: true, ledger_cursor: "cursor-2".into(),
                 }),
         ];
         let report = evaluate_breakpoints(&contract(), &events).unwrap();
