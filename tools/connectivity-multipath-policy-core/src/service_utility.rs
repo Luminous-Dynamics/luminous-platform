@@ -625,8 +625,34 @@ pub fn evaluate_deadline_utility_pair(
         return Err(UtilityError::InvalidTarget);
     }
 
-    let baseline_tasks = validate_trial(baseline)?;
-    let treatment_tasks = validate_trial(treatment)?;
+    let baseline_tasks = match validate_trial(baseline) {
+        Ok(tasks) => tasks,
+        Err(UtilityError::MissingTaskMeasurement) => {
+            return Ok(make_bound_report(
+                UtilityDisposition::Inconclusive,
+                "baseline_task_measurement_missing_or_unmatched",
+                baseline,
+                treatment,
+                None,
+                None,
+            ));
+        }
+        Err(error) => return Err(error),
+    };
+    let treatment_tasks = match validate_trial(treatment) {
+        Ok(tasks) => tasks,
+        Err(UtilityError::MissingTaskMeasurement) => {
+            return Ok(make_bound_report(
+                UtilityDisposition::Inconclusive,
+                "treatment_task_measurement_missing_or_unmatched",
+                baseline,
+                treatment,
+                None,
+                None,
+            ));
+        }
+        Err(error) => return Err(error),
+    };
     if baseline.environment != treatment.environment || baseline_tasks != treatment_tasks {
         return Ok(make_bound_report(
             UtilityDisposition::Inconclusive,
@@ -705,10 +731,23 @@ pub fn evaluate_deadline_utility_pair(
         }
     }
 
-    let baseline_companion = companion_retention_ppm(
+    let baseline_companion = match companion_retention_ppm(
         &baseline.companion_flows,
         &treatment.companion_flows,
-    )?;
+    ) {
+        Ok(retention) => retention,
+        Err(UtilityError::InvalidCompanionFlow) => {
+            return Ok(make_bound_report(
+                UtilityDisposition::Inconclusive,
+                "companion_flow_identity_or_offered_load_mismatch",
+                baseline,
+                treatment,
+                None,
+                None,
+            ));
+        }
+        Err(error) => return Err(error),
+    };
     let baseline_metrics = trial_metrics(baseline)?;
     let mut treatment_metrics = trial_metrics(treatment)?;
     treatment_metrics.companion_min_retention_ppm = baseline_companion;
@@ -1159,6 +1198,33 @@ mod tests {
         assert_eq!(report.disposition, UtilityDisposition::Inconclusive);
         assert_eq!(report.baseline_arm, Some(control.arm));
         assert_eq!(report.treatment_arm, Some(candidate.arm));
+    }
+
+    #[test]
+    fn missing_task_measurement_is_inconclusive_and_preserves_pair_identity() {
+        let control = baseline();
+        let mut candidate = treatment();
+        candidate.task_measurements.pop();
+        let report = evaluate_deadline_utility_pair(&control, &candidate, targets())
+            .expect("missing observation is a disposition");
+        assert_eq!(report.disposition, UtilityDisposition::Inconclusive);
+        assert_eq!(report.reason, "treatment_task_measurement_missing_or_unmatched");
+        assert_eq!(report.baseline_arm, Some(control.arm));
+        assert_eq!(report.treatment_arm, Some(candidate.arm));
+    }
+
+    #[test]
+    fn companion_flow_identity_mismatch_is_inconclusive_not_a_parser_error() {
+        let control = baseline();
+        let mut candidate = treatment();
+        candidate.companion_flows[0].flow_id = "different-flow".to_owned();
+        let report = evaluate_deadline_utility_pair(&control, &candidate, targets())
+            .expect("mismatched companion evidence is classified");
+        assert_eq!(report.disposition, UtilityDisposition::Inconclusive);
+        assert_eq!(
+            report.reason,
+            "companion_flow_identity_or_offered_load_mismatch"
+        );
     }
 
     #[test]
