@@ -160,6 +160,8 @@ pub struct RiskIntegrals {
 pub struct RiskTrajectoryResult {
     pub schema: String,
     pub scenario_id: String,
+    pub counterfactual_pair_id: String,
+    pub pair_manifest_digest: Digest,
     pub arm_id: String,
     pub step_count: usize,
     pub finding_count: usize,
@@ -768,6 +770,8 @@ pub fn evaluate_risk_trajectory(
     Ok(RiskTrajectoryResult {
         schema: RISK_TRAJECTORY_SCHEMA.to_owned(),
         scenario_id: contract.scenario_id.clone(),
+        counterfactual_pair_id: pair.pair_id.clone(),
+        pair_manifest_digest: pair.manifest_digest.clone(),
         arm_id: contract.arm_id.clone(),
         step_count: steps.len(),
         finding_count: findings.len(),
