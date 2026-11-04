@@ -850,6 +850,12 @@ pub fn allocate_tenant_resource_incidence(
         }
     }
 
+    // A bounded solve that exits with active variables is never emitted as a
+    // feasible allocation. This catches iteration-bound exhaustion.
+    if active_paths.iter().any(|active| *active) {
+        return Err(TenantResourceAllocationError::InternalInvariant);
+    }
+
     let final_flow_rates =
         flow_totals_scaled(&flow_entries, &eligible_paths, &rates_scaled)?;
     let mut integer_path_rates = rates_scaled
