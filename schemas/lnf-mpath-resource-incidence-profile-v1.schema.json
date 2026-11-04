@@ -87,7 +87,7 @@
           "const": "weighted_max_min_progressive_filling"
         },
         "fixed_point_level_scale": {
-          "const": 1000000
+          "const": 1000000000000
         },
         "max_paths": {
           "const": 64
@@ -103,6 +103,9 @@
         },
         "objective_non_claim": {
           "const": "weighted_max_min_fairness_is_not_maximum_sum_throughput"
+        },
+        "level_search": {
+          "const": "event_driven_weighted_progressive_filling"
         }
       }
     },
