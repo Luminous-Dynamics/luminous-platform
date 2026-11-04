@@ -127,7 +127,8 @@
               "sustained_recovery",
               "viability_preservation",
               "resource_efficiency",
-              "diagnosis_localization"
+              "diagnosis_localization",
+              "failure_attribution"
             ]
           },
           "operator": {
