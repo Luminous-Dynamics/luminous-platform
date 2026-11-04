@@ -992,26 +992,26 @@ pub fn audit_episode_result(
             "{case_id}: service-observer control-domain identity is missing"
         ));
     }
-    if let (Some(agent), Some(participant)) = (agent_domain, participant_domain) {
-        if agent == participant {
-            violations.push(format!(
-                "{case_id}: agent and participant oracle share a control domain"
-            ));
-        }
+    if let (Some(agent), Some(participant)) = (agent_domain, participant_domain)
+        && agent == participant
+    {
+        violations.push(format!(
+            "{case_id}: agent and participant oracle share a control domain"
+        ));
     }
-    if let (Some(agent), Some(observer)) = (agent_domain, observer_domain) {
-        if agent == observer {
-            violations.push(format!(
-                "{case_id}: agent and service observer share a control domain"
-            ));
-        }
+    if let (Some(agent), Some(observer)) = (agent_domain, observer_domain)
+        && agent == observer
+    {
+        violations.push(format!(
+            "{case_id}: agent and service observer share a control domain"
+        ));
     }
-    if let (Some(participant), Some(observer)) = (participant_domain, observer_domain) {
-        if participant == observer {
-            violations.push(format!(
-                "{case_id}: participant oracle and service observer share a control domain"
-            ));
-        }
+    if let (Some(participant), Some(observer)) = (participant_domain, observer_domain)
+        && participant == observer
+    {
+        violations.push(format!(
+            "{case_id}: participant oracle and service observer share a control domain"
+        ));
     }
 
     let expected_effects =
