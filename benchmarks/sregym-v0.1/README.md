@@ -61,3 +61,8 @@ A replication cannot be marked ready without a pinned contamination scanner revi
 The scanner must check at least the relevant agent source, prompts, tool/access surface, scenario material, expected answers, runbooks, issue/PR text, logs, and cross-run artifacts. Record what was actually examined; do not mark a family scanned merely because it was inaccessible or omitted.
 
 SREGym's public native scores remain scored by the pinned upstream evaluator. Any Luminous-generated sealed challenge corpus remains a separate supplemental benchmark with its own salted commitment and access-controlled scorer; never add it to the native SREGym score.
+
+
+## Dated external leaderboard reference
+
+See [leaderboard-snapshot-2026-11-04.md](leaderboard-snapshot-2026-11-04.md). The official SREGym-Lite-1004 snapshot lists five configurations at 100% E2E on 17 faults. Treat Lite as a compatibility/smoke cohort rather than a differentiating frontier score; retain full-suite and supplemental sealed challenge results separately.
