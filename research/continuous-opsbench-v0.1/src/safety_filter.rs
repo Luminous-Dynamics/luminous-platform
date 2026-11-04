@@ -73,6 +73,7 @@ pub struct SafetyFilterInput {
     pub observed_at_ms: u64,
     pub appraisal_at_ms: u64,
     pub maximum_observation_age_ms: u64,
+    pub maximum_model_report_age_ms: u64,
     pub receipt_validity_ms: u64,
     pub topology_epoch: u64,
     pub topology_digest: Digest,
@@ -151,6 +152,8 @@ pub struct SafetyAppraisal {
     /// Minimum signed distance to any declared invariant over enumerated successors.
     /// Negative means at least one declared invariant was violated.
     pub minimum_invariant_margin: Option<i64>,
+    pub model_assumption_evaluated_at_ms: Option<u64>,
+    pub model_assumption_valid_until_ms: Option<u64>,
     pub findings: Vec<SafetyFinding>,
 }
 
@@ -208,6 +211,8 @@ fn base_appraisal(
         valid_until_ms,
         evaluated_combinations: 0,
         minimum_invariant_margin: None,
+        model_assumption_evaluated_at_ms: None,
+        model_assumption_valid_until_ms: None,
         findings,
     }
 }
@@ -324,6 +329,7 @@ pub fn appraise_one_step(
         || input.capacity_uncertainty.is_empty()
         || input.disturbances.is_empty()
         || input.receipt_validity_ms == 0
+        || input.maximum_model_report_age_ms == 0
         || input.envelope.maximum_api_capacity == 0
         || input.envelope.maximum_database_capacity == 0
         || input.envelope.maximum_retry_multiplier_ppm == 0
@@ -521,7 +527,12 @@ pub fn appraise_with_model_assurance(
         && report.forecast_count > 0
         && report.matched_observation_count == report.forecast_count
         && report.findings.is_empty()
-        && !report.metrics.is_empty();
+        && !report.metrics.is_empty()
+        && input.appraisal_at_ms < report.valid_until_ms
+        && input.appraisal_at_ms
+            .checked_sub(report.evaluated_at_ms)
+            .map(|age| age <= input.maximum_model_report_age_ms)
+            .unwrap_or(false);
 
     if !identity_matches {
         return base_appraisal(
@@ -542,7 +553,10 @@ pub fn appraise_with_model_assurance(
         );
     }
 
-    appraise_one_step(input, action)
+    let mut appraisal = appraise_one_step(input, action);
+    appraisal.model_assumption_evaluated_at_ms = Some(report.evaluated_at_ms);
+    appraisal.model_assumption_valid_until_ms = Some(report.valid_until_ms);
+    appraisal
 }
 
 #[cfg(test)]
@@ -574,6 +588,7 @@ mod tests {
             observed_at_ms: 100,
             appraisal_at_ms: 110,
             maximum_observation_age_ms: 20,
+            maximum_model_report_age_ms: 20,
             receipt_validity_ms: 50,
             topology_epoch: 7,
             topology_digest: digest(2),
@@ -639,6 +654,8 @@ mod tests {
             observer_id: "service-observer".into(),
             observer_control_domain: "observer-domain".into(),
             observer_adapter_digest: digest(11),
+            evaluated_at_ms: 100,
+            valid_until_ms: 160,
             forecast_count: 3,
             observation_count: 3,
             matched_observation_count: 3,
