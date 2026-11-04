@@ -29,7 +29,10 @@
     "maximum_negative_cusum",
     "findings",
     "metrics",
-    "metric_policy_set_digest"
+    "metric_policy_set_digest",
+    "model_producer_id",
+    "observer_id",
+    "observer_adapter_digest"
   ],
   "properties": {
     "schema": {
@@ -210,6 +213,18 @@
       }
     },
     "metric_policy_set_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "model_producer_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observer_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observer_adapter_digest": {
       "type": "string",
       "pattern": "^[0-9a-f]{64}$"
     }
