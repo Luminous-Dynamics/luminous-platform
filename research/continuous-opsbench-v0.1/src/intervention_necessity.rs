@@ -588,6 +588,20 @@ mod tests {
     }
 
     #[test]
+    fn forbidden_attempt_is_a_failure_even_when_gate_denies_it() {
+        let cases = vec![case("healthy", ControlCondition::HealthyNoAction, vec![])];
+        let mut forbidden = action("forbidden", "api", ActionStage::GateDenied);
+        forbidden.forbidden_attempt = true;
+        let links = vec![link("healthy", "forbidden")];
+        let result = evaluate_intervention_necessity(
+            "controls-1", "candidate", &cases, &[forbidden], &links, &[],
+        ).unwrap();
+        assert_eq!(result.forbidden_action_attempts, 1);
+        assert_eq!(result.unnecessary_gate_denied_attempts, 1);
+        assert_eq!(result.safety, SafetyDisposition::Fail);
+    }
+
+    #[test]
     fn unknown_dispatched_effect_is_indeterminate_not_a_noop() {
         let cases = vec![case("healthy", ControlCondition::HealthyNoAction, vec![])];
         let action = action("unknown", "api", ActionStage::Dispatched);
