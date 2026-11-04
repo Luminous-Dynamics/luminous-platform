@@ -9,6 +9,88 @@ use std::collections::{BTreeMap, BTreeSet};
 
 pub const PPM: u64 = 1_000_000;
 pub const MAX_RETRY_MULTIPLIER_PPM: u32 = 3_000_000;
+pub const NOISE_GENERATOR_V1: &str = "splitmix64-rejection-v1";
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DeterministicNoiseTrace {
+    pub algorithm: String,
+    pub seed: u64,
+    pub queue_noise_by_tick: Vec<i64>,
+    pub failed_ppm_noise_by_tick: Vec<i64>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum NoiseGenerationError {
+    ZeroTicks,
+    QueueBoundTooLarge,
+    FailureNoiseBoundTooLarge,
+}
+
+struct SplitMix64 {
+    state: u64,
+}
+
+impl SplitMix64 {
+    fn new(seed: u64) -> Self { Self { state: seed } }
+
+    fn next_u64(&mut self) -> u64 {
+        self.state = self.state.wrapping_add(0x9E3779B97F4A7C15);
+        let mut z = self.state;
+        z = (z ^ (z >> 30)).wrapping_mul(0xBF58476D1CE4E5B9);
+        z = (z ^ (z >> 27)).wrapping_mul(0x94D049BB133111EB);
+        z ^ (z >> 31)
+    }
+
+    fn bounded(&mut self, upper_exclusive: u64) -> u64 {
+        // Rejection sampling avoids modulo bias for the finite integer interval.
+        let threshold = upper_exclusive.wrapping_neg() % upper_exclusive;
+        loop {
+            let value = self.next_u64();
+            if value >= threshold {
+                return value % upper_exclusive;
+            }
+        }
+    }
+
+    fn signed(&mut self, absolute_bound: u64) -> i64 {
+        let width = absolute_bound * 2 + 1;
+        (self.bounded(width) as i128 - absolute_bound as i128) as i64
+    }
+}
+
+/// Generate deterministic paired observation noise. This is a reproducibility
+/// PRNG, not cryptographic randomness. The generator name and seed must be
+/// captured in the scenario/run manifest; never change its mapping in-place.
+pub fn generate_deterministic_noise_v1(
+    seed: u64,
+    ticks: u32,
+    maximum_absolute_queue_noise: u64,
+    maximum_absolute_failed_ppm_noise: u32,
+) -> Result<DeterministicNoiseTrace, NoiseGenerationError> {
+    if ticks == 0 {
+        return Err(NoiseGenerationError::ZeroTicks);
+    }
+    if maximum_absolute_queue_noise > i64::MAX as u64 {
+        return Err(NoiseGenerationError::QueueBoundTooLarge);
+    }
+    if maximum_absolute_failed_ppm_noise > PPM as u32 {
+        return Err(NoiseGenerationError::FailureNoiseBoundTooLarge);
+    }
+
+    let mut rng = SplitMix64::new(seed);
+    let mut queue_noise_by_tick = Vec::with_capacity(ticks as usize);
+    let mut failed_ppm_noise_by_tick = Vec::with_capacity(ticks as usize);
+    for _ in 0..ticks {
+        queue_noise_by_tick.push(rng.signed(maximum_absolute_queue_noise));
+        failed_ppm_noise_by_tick.push(rng.signed(maximum_absolute_failed_ppm_noise as u64));
+    }
+    Ok(DeterministicNoiseTrace {
+        algorithm: NOISE_GENERATOR_V1.to_owned(),
+        seed,
+        queue_noise_by_tick,
+        failed_ppm_noise_by_tick,
+    })
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct StabilityConfig {
@@ -1052,6 +1134,35 @@ mod tests {
         assert_eq!(noisy_bang.stability.metrics.slo_violation_integral_request_ms, 0);
         assert!(noisy_bang.stability.metrics.final_no_intervention_tail_healthy);
         assert!(noisy_hysteresis.stability.metrics.final_no_intervention_tail_healthy);
+    }
+
+    #[test]
+    fn seeded_noise_v1_is_reproducible_and_paired() {
+        let first = generate_deterministic_noise_v1(0x5eed, 64, 12, 50_000).unwrap();
+        let replay = generate_deterministic_noise_v1(0x5eed, 64, 12, 50_000).unwrap();
+        let other_seed = generate_deterministic_noise_v1(0x5eee, 64, 12, 50_000).unwrap();
+        assert_eq!(first, replay);
+        assert_eq!(first.algorithm, NOISE_GENERATOR_V1);
+        assert_ne!(first.queue_noise_by_tick, other_seed.queue_noise_by_tick);
+        assert_ne!(first.failed_ppm_noise_by_tick, other_seed.failed_ppm_noise_by_tick);
+        assert!(first.queue_noise_by_tick.iter().all(|value| value.abs() <= 12));
+        assert!(first.failed_ppm_noise_by_tick.iter().all(|value| value.abs() <= 50_000));
+    }
+
+    #[test]
+    fn seeded_noise_v1_rejects_invalid_bounds_and_empty_runs() {
+        assert_eq!(
+            generate_deterministic_noise_v1(1, 0, 0, 0),
+            Err(NoiseGenerationError::ZeroTicks)
+        );
+        assert_eq!(
+            generate_deterministic_noise_v1(1, 1, i64::MAX as u64 + 1, 0),
+            Err(NoiseGenerationError::QueueBoundTooLarge)
+        );
+        assert_eq!(
+            generate_deterministic_noise_v1(1, 1, 0, PPM as u32 + 1),
+            Err(NoiseGenerationError::FailureNoiseBoundTooLarge)
+        );
     }
 
     #[test]
