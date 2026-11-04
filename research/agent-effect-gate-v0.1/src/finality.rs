@@ -113,12 +113,14 @@ pub enum FinalityError {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct EffectFingerprint {
+    canonicalization_profile: String,
     participant_id: String,
     tenant_id: String,
     principal_id: String,
     episode_id: String,
     plan_digest: Digest,
     step_id: String,
+    authorization_scope: String,
     tool_id: String,
     operation_id: String,
     manifest_version: String,
@@ -141,12 +143,14 @@ impl EffectFingerprint {
     /// The exact retry act is still compared against its own handle first.
     fn from_act(act: &CandidateAct) -> Self {
         Self {
+            canonicalization_profile: act.canonicalization_profile.clone(),
             participant_id: act.participant_id.clone(),
             tenant_id: act.tenant_id.clone(),
             principal_id: act.principal_id.clone(),
             episode_id: act.episode_id.clone(),
             plan_digest: act.plan_digest.clone(),
             step_id: act.step_id.clone(),
+            authorization_scope: act.authorization_scope.clone(),
             tool_id: act.tool_id.clone(),
             operation_id: act.operation_id.clone(),
             manifest_version: act.manifest_version.clone(),
@@ -493,6 +497,76 @@ mod tests {
             );
             assert_eq!(sink.effect_count().unwrap(), 0);
         }
+    }
+
+    #[test]
+    fn every_candidate_act_field_is_bound_to_the_handle() {
+        let mutations: Vec<Box<dyn Fn(&mut CandidateAct)>> = vec![
+            Box::new(|a| a.canonicalization_profile = "other-canonicalizer".into()),
+            Box::new(|a| a.tenant_id = "tenant-b".into()),
+            Box::new(|a| a.principal_id = "principal-b".into()),
+            Box::new(|a| a.episode_id = "episode-other".into()),
+            Box::new(|a| a.plan_digest = d(101)),
+            Box::new(|a| a.step_id = "step-delete".into()),
+            Box::new(|a| a.grant_id = "grant-other".into()),
+            Box::new(|a| a.authorization_scope = "service:api:delete".into()),
+            Box::new(|a| a.tool_id = "other.tool".into()),
+            Box::new(|a| a.operation_id = "delete".into()),
+            Box::new(|a| a.manifest_version = "9.9.9".into()),
+            Box::new(|a| a.manifest_digest = d(102)),
+            Box::new(|a| a.toolchain_id = "other-toolchain".into()),
+            Box::new(|a| a.toolchain_digest = d(103)),
+            Box::new(|a| a.policy_version = "policy-other".into()),
+            Box::new(|a| a.policy_digest = d(104)),
+            Box::new(|a| a.policy_epoch = 8),
+            Box::new(|a| a.target_digest = d(105)),
+            Box::new(|a| a.request_digest = d(106)),
+            Box::new(|a| a.attempt_id = "attempt-other".into()),
+            Box::new(|a| a.logical_action_key = "another-logical-action".into()),
+            Box::new(|a| a.environment_profile_digest = d(107)),
+            Box::new(|a| a.runtime_evidence_bundle_digest = d(108)),
+            Box::new(|a| a.risk_level = 3),
+        ];
+        for (index, mutate) in mutations.into_iter().enumerate() {
+            let sink = sink();
+            let original = act();
+            let mut changed = original.clone();
+            mutate(&mut changed);
+            let handle = handle(original, &format!("field-{index}"), 30 + index as u8);
+            assert_eq!(
+                sink.commit_exact_act(&changed, &handle, 100),
+                Err(FinalityError::HandleActMismatch),
+                "act field mutation {index} unexpectedly passed"
+            );
+            assert_eq!(sink.effect_count().unwrap(), 0);
+        }
+    }
+
+    #[test]
+    fn handle_id_replay_with_changed_envelope_digest_is_rejected() {
+        let sink = sink();
+        let act = act();
+        let first = handle(act.clone(), "same-handle", 9);
+        sink.commit_exact_act(&act, &first, 100).unwrap();
+
+        let changed_envelope = AuthenticatedExecutionHandle::from_verified_claims(
+            ExecutionHandleClaims {
+                handle_id: "same-handle".into(),
+                nonce_digest: d(9),
+                handle_digest: d(199),
+                issuer_id: "finality-authority-a".into(),
+                audience: "participant-a".into(),
+                act: act.clone(),
+                issued_at_ms: 10,
+                not_before_ms: 10,
+                expires_at_ms: 500,
+            }
+        );
+        assert_eq!(
+            sink.commit_exact_act(&act, &changed_envelope, 200),
+            Err(FinalityError::HandleReplayConflict)
+        );
+        assert_eq!(sink.effect_count().unwrap(), 1);
     }
 
     #[test]
