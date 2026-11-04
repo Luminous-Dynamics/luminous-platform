@@ -41,6 +41,7 @@ jobs:
           python3 -m venv /tmp/opsbench-schema-venv
           /tmp/opsbench-schema-venv/bin/python -m pip install --disable-pip-version-check "jsonschema==4.23.0"
           /tmp/opsbench-schema-venv/bin/python - <<'PY'
+          import copy
           import json
           from pathlib import Path
           from jsonschema import Draft202012Validator
@@ -54,8 +55,24 @@ jobs:
               if schema_path.name == "replication-manifest.schema.json":
                   manifest_path = schema_path.with_name("replication-manifest.json")
                   manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-                  Draft202012Validator(schema).validate(manifest)
+                  validator = Draft202012Validator(schema)
+                  validator.validate(manifest)
                   print(f"manifest conforms: {manifest_path}")
+
+                  # Negative control 1: toggling the readiness flag alone must not
+                  # promote an incomplete source manifest.
+                  promoted = copy.deepcopy(manifest)
+                  promoted["readiness"] = "ready"
+                  if validator.is_valid(promoted):
+                      raise SystemExit("unsafe: blocked SREGym manifest became ready by flipping one field")
+
+                  # Negative control 2: even removing the human-readable blocker
+                  # list cannot bypass missing scenario, runtime, arm, preflight,
+                  # image-scan, and non-interference evidence.
+                  promoted["blockers"] = []
+                  if validator.is_valid(promoted):
+                      raise SystemExit("unsafe: SREGym manifest passed readiness without required evidence")
+                  print("readiness negative controls: 2/2 rejected incomplete promotion")
           PY
       - name: Run dependency-locked tests
         run: cargo test --manifest-path research/continuous-opsbench-v0.1/Cargo.toml --locked
