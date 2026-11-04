@@ -44,7 +44,7 @@ pub struct SafetyEnvelope {
     pub minimum_spare_capacity: u32,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum CandidateOperation {
     Noop,
     SetApiCapacity(u32),
@@ -145,13 +145,13 @@ pub struct SafetyAppraisal {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-struct Successor {
-    critical_queue: u32,
-    bulk_queue: u32,
-    api_capacity: u32,
-    database_capacity: u32,
-    retry_multiplier_ppm: u32,
-    spare_capacity: u32,
+pub(crate) struct Successor {
+    pub(crate) critical_queue: u32,
+    pub(crate) bulk_queue: u32,
+    pub(crate) api_capacity: u32,
+    pub(crate) database_capacity: u32,
+    pub(crate) retry_multiplier_ppm: u32,
+    pub(crate) spare_capacity: u32,
 }
 
 fn nonzero_digest(digest: &Digest) -> bool {
@@ -229,7 +229,7 @@ fn invalid_identity(input: &SafetyFilterInput, action: &CandidateAct) -> bool {
     .any(|value| value.is_empty())
 }
 
-fn transition(
+pub(crate) fn transition(
     state: &OperationalState,
     model: &CapacityUncertainty,
     disturbance: &DemandDisturbance,
