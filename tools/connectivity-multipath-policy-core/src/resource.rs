@@ -1537,10 +1537,12 @@ mod tests {
             report.integer_rounding_candidate_count,
             MAX_EXACT_INTEGER_ROUNDING_CANDIDATES + 1
         );
-        assert!(report
-            .resource_usage
-            .iter()
-            .all(|usage| usage.allocated_rate_bps <= usage.residual_capacity_bps));
+        assert!(
+            report
+                .resource_usage
+                .iter()
+                .all(|usage| usage.allocated_rate_bps <= usage.residual_capacity_bps)
+        );
         assert_eq!(report.total_allocated_rate_bps, 10);
         assert_eq!(
             report
