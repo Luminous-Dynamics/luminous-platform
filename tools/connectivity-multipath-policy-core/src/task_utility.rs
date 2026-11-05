@@ -190,12 +190,22 @@ pub struct TaskTrial {
     pub companion_demand_bps: u64,
     pub companion_goodput_bps: u64,
     pub companion_backlogged: bool,
+    /// Digest of the raw trial evidence bundle (per-task observations, counters and readbacks).
+    pub raw_evidence_sha256: String,
+    /// Digest of the canonical measurement receipt binding the raw evidence to this arm.
+    pub measurement_receipt_sha256: String,
 }
 
 impl TaskTrial {
     pub fn validate(&self) -> Result<(), TaskUtilityError> {
         self.environment.validate()?;
         self.arm.validate()?;
+        if !is_sha256(&self.raw_evidence_sha256) {
+            return Err(TaskUtilityError::InvalidDigest("raw_evidence_sha256"));
+        }
+        if !is_sha256(&self.measurement_receipt_sha256) {
+            return Err(TaskUtilityError::InvalidDigest("measurement_receipt_sha256"));
+        }
         if self.declared_task_count == 0
             || self.tasks.len() > self.declared_task_count as usize
             || self.tasks.len() > MAX_TASKS
@@ -335,6 +345,13 @@ pub struct TaskTrialMetrics {
 pub struct TaskUtilityReport {
     /// Every disposition is scoped to this one exact paired trial.
     pub scope: &'static str,
+    pub environment_identity: TaskEnvironmentIdentity,
+    pub control_arm_identity: TransportArmIdentity,
+    pub treatment_arm_identity: TransportArmIdentity,
+    pub control_raw_evidence_sha256: String,
+    pub treatment_raw_evidence_sha256: String,
+    pub control_measurement_receipt_sha256: String,
+    pub treatment_measurement_receipt_sha256: String,
     pub control_metrics: Option<TaskTrialMetrics>,
     pub treatment_metrics: Option<TaskTrialMetrics>,
     pub on_time_value_retention_ppm: Option<u64>,
@@ -558,6 +575,8 @@ fn overall_disposition(gates: &[UtilityGateResult]) -> UtilityDisposition {
 }
 
 fn inconclusive_report(
+    control: &TaskTrial,
+    treatment: &TaskTrial,
     control_metrics: Option<TaskTrialMetrics>,
     treatment_metrics: Option<TaskTrialMetrics>,
     reason: &'static str,
@@ -622,6 +641,13 @@ fn inconclusive_report(
     ];
     TaskUtilityReport {
         scope: "single_paired_trial",
+        environment_identity: control.environment.clone(),
+        control_arm_identity: control.arm.clone(),
+        treatment_arm_identity: treatment.arm.clone(),
+        control_raw_evidence_sha256: control.raw_evidence_sha256.clone(),
+        treatment_raw_evidence_sha256: treatment.raw_evidence_sha256.clone(),
+        control_measurement_receipt_sha256: control.measurement_receipt_sha256.clone(),
+        treatment_measurement_receipt_sha256: treatment.measurement_receipt_sha256.clone(),
         control_metrics,
         treatment_metrics,
         on_time_value_retention_ppm: None,
@@ -658,6 +684,8 @@ pub fn evaluate_task_utility_pair(
 
     if !control.arm_supported || !treatment.arm_supported {
         let mut report = inconclusive_report(
+            control,
+            treatment,
             control_metrics,
             treatment_metrics,
             "one_or_both_transport_arms_unsupported",
@@ -675,6 +703,8 @@ pub fn evaluate_task_utility_pair(
 
     if control.environment != treatment.environment {
         return Ok(inconclusive_report(
+            control,
+            treatment,
             control_metrics,
             treatment_metrics,
             "control_and_treatment_environment_identity_mismatch",
@@ -682,6 +712,8 @@ pub fn evaluate_task_utility_pair(
     }
     if !task_manifest_matches(control, treatment) {
         return Ok(inconclusive_report(
+            control,
+            treatment,
             control_metrics,
             treatment_metrics,
             "control_and_treatment_task_manifest_mismatch_or_incomplete",
@@ -692,6 +724,8 @@ pub fn evaluate_task_utility_pair(
         (control_metrics, treatment_metrics)
     else {
         return Ok(inconclusive_report(
+            control,
+            treatment,
             None,
             None,
             "task_observation_denominator_incomplete",
@@ -699,6 +733,13 @@ pub fn evaluate_task_utility_pair(
     };
 
     let mut gates = Vec::new();
+    gates.push(gate(
+        "TASK_PAIR_IDENTITY",
+        UtilityDisposition::Pass,
+        "environment_and_task_manifest_match_exactly",
+        Some(1),
+        Some(1),
+    ));
 
     let cleanup_ok = control.cleanup_verified && treatment.cleanup_verified;
     gates.push(gate(
@@ -991,6 +1032,13 @@ pub fn evaluate_task_utility_pair(
     let overall = overall_disposition(&gates);
     Ok(TaskUtilityReport {
         scope: "single_paired_trial",
+        environment_identity: control.environment.clone(),
+        control_arm_identity: control.arm.clone(),
+        treatment_arm_identity: treatment.arm.clone(),
+        control_raw_evidence_sha256: control.raw_evidence_sha256.clone(),
+        treatment_raw_evidence_sha256: treatment.raw_evidence_sha256.clone(),
+        control_measurement_receipt_sha256: control.measurement_receipt_sha256.clone(),
+        treatment_measurement_receipt_sha256: treatment.measurement_receipt_sha256.clone(),
         control_metrics: Some(control_metrics),
         treatment_metrics: Some(treatment_metrics),
         on_time_value_retention_ppm,
@@ -1083,6 +1131,8 @@ mod tests {
             companion_demand_bps: 50_000_000,
             companion_goodput_bps: 45_000_000,
             companion_backlogged: true,
+            raw_evidence_sha256: "8".repeat(64),
+            measurement_receipt_sha256: "9".repeat(64),
         }
     }
 
@@ -1147,7 +1197,10 @@ mod tests {
         let report =
             evaluate_task_utility_pair(&control, &treatment, TaskUtilityTargets::default())
                 .expect("valid pair");
-        assert_eq!(report.gates[1].disposition, UtilityDisposition::Fail);
+        assert_eq!(
+            report.gates.iter().find(|item| item.gate_id == "TASK_ON_TIME_VALUE").unwrap().disposition,
+            UtilityDisposition::Fail
+        );
     }
 
     #[test]
@@ -1157,7 +1210,10 @@ mod tests {
         let report =
             evaluate_task_utility_pair(&control, &treatment, TaskUtilityTargets::default())
                 .expect("valid pair");
-        assert_eq!(report.gates[2].disposition, UtilityDisposition::Fail);
+        assert_eq!(
+            report.gates.iter().find(|item| item.gate_id == "TASK_COST_PER_ON_TIME_MIB").unwrap().disposition,
+            UtilityDisposition::Fail
+        );
     }
 
     #[test]
@@ -1167,7 +1223,10 @@ mod tests {
         let report =
             evaluate_task_utility_pair(&control, &treatment, TaskUtilityTargets::default())
                 .expect("valid pair");
-        assert_eq!(report.gates[3].disposition, UtilityDisposition::Fail);
+        assert_eq!(
+            report.gates.iter().find(|item| item.gate_id == "TASK_ENERGY_PER_ON_TIME_MIB").unwrap().disposition,
+            UtilityDisposition::Fail
+        );
     }
 
     #[test]
@@ -1177,7 +1236,10 @@ mod tests {
         let report =
             evaluate_task_utility_pair(&control, &treatment, TaskUtilityTargets::default())
                 .expect("valid pair");
-        assert_eq!(report.gates[4].disposition, UtilityDisposition::Fail);
+        assert_eq!(
+            report.gates.iter().find(|item| item.gate_id == "TASK_COMPANION_RETENTION").unwrap().disposition,
+            UtilityDisposition::Fail
+        );
     }
 
     #[test]
@@ -1197,7 +1259,10 @@ mod tests {
         let report =
             evaluate_task_utility_pair(&control, &treatment, TaskUtilityTargets::default())
                 .expect("valid pair");
-        assert_eq!(report.gates[0].disposition, UtilityDisposition::Fail);
+        assert_eq!(
+            report.gates.iter().find(|item| item.gate_id == "TASK_CLEANUP").unwrap().disposition,
+            UtilityDisposition::Fail
+        );
     }
 
     #[test]
@@ -1234,7 +1299,7 @@ mod tests {
             evaluate_task_utility_pair(&control, &treatment, TaskUtilityTargets::default())
                 .expect("no companion load is not a fairness pass");
         assert_eq!(
-            report.gates[4].disposition,
+            report.gates.iter().find(|item| item.gate_id == "TASK_COMPANION_RETENTION").unwrap().disposition,
             UtilityDisposition::Inconclusive
         );
     }
