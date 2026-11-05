@@ -596,7 +596,7 @@ pub fn allocate_tenant_resource_incidence(
         let included_tenants = tenant_entries
             .iter()
             .enumerate()
-            .map(|(index, tenant)| {
+            .map(|(index, _tenant)| {
                 !floor_phase || current_tenant_rates[index] < minimum_tenant_rates_scaled[index]
             })
             .collect::<Vec<_>>();
@@ -645,7 +645,7 @@ pub fn allocate_tenant_resource_incidence(
             delta_level = Some(delta_level.map_or(candidate, |current| current.min(candidate)));
         }
         if floor_phase {
-            for (tenant_index, tenant) in tenant_entries.iter().enumerate() {
+            for tenant_index in 0..tenant_entries.len() {
                 let weight = active_tenant_weights[tenant_index];
                 if weight == 0 {
                     continue;
@@ -733,7 +733,7 @@ pub fn allocate_tenant_resource_incidence(
                     &flow_entries,
                     &flow_totals_scaled(&flow_entries, &eligible_paths, &rates_scaled)?,
                 )?;
-                for (tenant_index, tenant) in tenant_entries.iter().enumerate() {
+                for tenant_index in 0..tenant_entries.len() {
                     let minimum = minimum_tenant_rates_scaled[tenant_index];
                     if totals[tenant_index] < minimum
                         && !eligible_paths.iter().enumerate().any(|(path_index, path)| {
@@ -827,7 +827,7 @@ pub fn allocate_tenant_resource_incidence(
             return Err(TenantResourceAllocationError::InternalInvariant);
         }
         if floor_phase && !floors_complete {
-            for (tenant_index, tenant) in tenant_entries.iter().enumerate() {
+            for tenant_index in 0..tenant_entries.len() {
                 let minimum = minimum_tenant_rates_scaled[tenant_index];
                 if updated_tenant_rates[tenant_index] < minimum
                     && !eligible_paths.iter().enumerate().any(|(path_index, path)| {
@@ -847,7 +847,6 @@ pub fn allocate_tenant_resource_incidence(
         return Err(TenantResourceAllocationError::InternalInvariant);
     }
 
-    let final_flow_rates = flow_totals_scaled(&flow_entries, &eligible_paths, &rates_scaled)?;
     let mut integer_path_rates = rates_scaled
         .iter()
         .map(|value| {
@@ -918,7 +917,7 @@ pub fn allocate_tenant_resource_incidence(
             integer_flow_rates[flow_index],
         )?;
     }
-    for (tenant_index, tenant) in tenant_entries.iter().enumerate() {
+    for tenant_index in 0..tenant_entries.len() {
         if integer_tenant_rates[tenant_index] < tenant.principal.minimum_service_bps {
             return Err(TenantResourceAllocationError::MinimumServiceInfeasible);
         }
@@ -975,7 +974,7 @@ pub fn allocate_tenant_resource_incidence(
 
     let mut tenant_allocations = Vec::with_capacity(tenant_entries.len());
     let mut minimum_service_met_tenant_ids = Vec::new();
-    for (tenant_index, tenant) in tenant_entries.iter().enumerate() {
+    for tenant_index in 0..tenant_entries.len() {
         let demand_bps = tenant_demands[tenant_index];
         let allocated_rate_bps = integer_tenant_rates[tenant_index];
         let active_flow_count = u32::try_from(
