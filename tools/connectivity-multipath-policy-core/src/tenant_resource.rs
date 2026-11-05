@@ -11,8 +11,8 @@
 
 use super::resource::{
     CapacityResource, ResourceAllocationError, ResourceAllocationRequest, ResourceDomainUsage,
-    ResourcePathExclusion, canonical_ids, validate_request, validate_resource_inventory,
-    valid_identifier,
+    ResourcePathExclusion, canonical_ids, valid_identifier, validate_request,
+    validate_resource_inventory,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -210,8 +210,7 @@ fn compute_effective_path_weights(
         if !active_paths[path_index] || !included_tenants[flows[path.flow_index].tenant_index] {
             continue;
         }
-        active_path_weight_per_flow[path.flow_index] = active_path_weight_per_flow
-            [path.flow_index]
+        active_path_weight_per_flow[path.flow_index] = active_path_weight_per_flow[path.flow_index]
             .checked_add(u128::from(path.path.split_weight))
             .ok_or(TenantResourceAllocationError::ArithmeticOverflow)?;
     }
@@ -289,14 +288,12 @@ fn compute_effective_path_weights(
         fractional[tenant_index].sort_by(|left, right| {
             let left_fraction = left.remainder * right.denominator;
             let right_fraction = right.remainder * left.denominator;
-            right_fraction
-                .cmp(&left_fraction)
-                .then_with(|| {
-                    paths[left.path_index]
-                        .path
-                        .path_id
-                        .cmp(&paths[right.path_index].path.path_id)
-                })
+            right_fraction.cmp(&left_fraction).then_with(|| {
+                paths[left.path_index]
+                    .path
+                    .path_id
+                    .cmp(&paths[right.path_index].path.path_id)
+            })
         });
         for item in fractional[tenant_index].iter().take(leftover_count) {
             weights[item.path_index] = weights[item.path_index]
@@ -354,10 +351,7 @@ fn sum_weights_by_resource(
     Ok(result)
 }
 
-fn any_pending_tenant_floor(
-    minimum_tenant_rates: &[u128],
-    tenant_totals: &[u128],
-) -> bool {
+fn any_pending_tenant_floor(minimum_tenant_rates: &[u128], tenant_totals: &[u128]) -> bool {
     minimum_tenant_rates
         .iter()
         .zip(tenant_totals)
@@ -385,9 +379,8 @@ pub fn allocate_tenant_resource_incidence(
         return Err(TenantResourceAllocationError::TooManyPaths);
     }
 
-    let (resource_index, resource_residuals) =
-        validate_resource_inventory(request, resources)
-            .map_err(TenantResourceAllocationError::Resource)?;
+    let (resource_index, resource_residuals) = validate_resource_inventory(request, resources)
+        .map_err(TenantResourceAllocationError::Resource)?;
 
     let mut ordered_tenants = tenants.iter().collect::<Vec<_>>();
     ordered_tenants.sort_by(|left, right| left.tenant_id.cmp(&right.tenant_id));
@@ -569,9 +562,7 @@ pub fn allocate_tenant_resource_incidence(
     let mut active_paths = vec![true; eligible_paths.len()];
     let mut remaining_scaled = resource_residuals
         .iter()
-        .map(|residual| {
-            residual.map(|value| rate_scaled(value)).transpose()
-        })
+        .map(|residual| residual.map(|value| rate_scaled(value)).transpose())
         .collect::<Result<Vec<_>, _>>()?;
 
     let maximum_iterations = eligible_paths
@@ -582,11 +573,11 @@ pub fn allocate_tenant_resource_incidence(
         .saturating_add(16);
 
     for _iteration in 0..maximum_iterations {
-        let current_flow_rates =
-            flow_totals_scaled(&flow_entries, &eligible_paths, &rates_scaled)?;
+        let current_flow_rates = flow_totals_scaled(&flow_entries, &eligible_paths, &rates_scaled)?;
         let current_tenant_rates =
             tenant_totals_scaled(&tenant_entries, &flow_entries, &current_flow_rates)?;
-        let floor_phase = any_pending_tenant_floor(&minimum_tenant_rates_scaled, &current_tenant_rates);
+        let floor_phase =
+            any_pending_tenant_floor(&minimum_tenant_rates_scaled, &current_tenant_rates);
 
         // Path ceilings and per-flow demands are permanent upper bounds.
         for (path_index, path) in eligible_paths.iter().enumerate() {
@@ -674,8 +665,8 @@ pub fn allocate_tenant_resource_incidence(
             if *weight == 0 {
                 continue;
             }
-            let remaining =
-                remaining_scaled[resource_index].ok_or(TenantResourceAllocationError::InternalInvariant)?;
+            let remaining = remaining_scaled[resource_index]
+                .ok_or(TenantResourceAllocationError::InternalInvariant)?;
             let candidate = remaining / *weight;
             delta_level = Some(delta_level.map_or(candidate, |current| current.min(candidate)));
         }
@@ -715,8 +706,8 @@ pub fn allocate_tenant_resource_incidence(
                 if *weight == 0 {
                     continue;
                 }
-                let remaining =
-                    remaining_scaled[resource_index].ok_or(TenantResourceAllocationError::InternalInvariant)?;
+                let remaining = remaining_scaled[resource_index]
+                    .ok_or(TenantResourceAllocationError::InternalInvariant)?;
                 if remaining < *weight {
                     for (path_index, path) in eligible_paths.iter().enumerate() {
                         if active_paths[path_index]
@@ -747,7 +738,8 @@ pub fn allocate_tenant_resource_incidence(
                     if totals[tenant_index] < minimum
                         && !eligible_paths.iter().enumerate().any(|(path_index, path)| {
                             active_paths[path_index]
-                                && flows_tenant_index(&flow_entries[path.flow_index]) == tenant_index
+                                && flows_tenant_index(&flow_entries[path.flow_index])
+                                    == tenant_index
                         })
                     {
                         return Err(TenantResourceAllocationError::MinimumServiceInfeasible);
@@ -775,8 +767,8 @@ pub fn allocate_tenant_resource_incidence(
             let used = delta
                 .checked_mul(*weight)
                 .ok_or(TenantResourceAllocationError::ArithmeticOverflow)?;
-            let remaining =
-                remaining_scaled[resource_index].ok_or(TenantResourceAllocationError::InternalInvariant)?;
+            let remaining = remaining_scaled[resource_index]
+                .ok_or(TenantResourceAllocationError::InternalInvariant)?;
             remaining_scaled[resource_index] = Some(
                 remaining
                     .checked_sub(used)
@@ -784,8 +776,7 @@ pub fn allocate_tenant_resource_incidence(
             );
         }
 
-        let updated_flow_rates =
-            flow_totals_scaled(&flow_entries, &eligible_paths, &rates_scaled)?;
+        let updated_flow_rates = flow_totals_scaled(&flow_entries, &eligible_paths, &rates_scaled)?;
         let mut freeze = vec![false; eligible_paths.len()];
         for (path_index, path) in eligible_paths.iter().enumerate() {
             if active_paths[path_index]
@@ -807,8 +798,8 @@ pub fn allocate_tenant_resource_incidence(
             if *weight == 0 {
                 continue;
             }
-            let remaining =
-                remaining_scaled[resource_index].ok_or(TenantResourceAllocationError::InternalInvariant)?;
+            let remaining = remaining_scaled[resource_index]
+                .ok_or(TenantResourceAllocationError::InternalInvariant)?;
             if remaining < *weight {
                 for (path_index, path) in eligible_paths.iter().enumerate() {
                     if active_paths[path_index]
@@ -856,8 +847,7 @@ pub fn allocate_tenant_resource_incidence(
         return Err(TenantResourceAllocationError::InternalInvariant);
     }
 
-    let final_flow_rates =
-        flow_totals_scaled(&flow_entries, &eligible_paths, &rates_scaled)?;
+    let final_flow_rates = flow_totals_scaled(&flow_entries, &eligible_paths, &rates_scaled)?;
     let mut integer_path_rates = rates_scaled
         .iter()
         .map(|value| {
@@ -873,8 +863,10 @@ pub fn allocate_tenant_resource_incidence(
             integer_path_rates[path_index],
         )?;
         for domain_index in &path.domain_indexes {
-            integer_resource_usage[*domain_index] =
-                checked_add(integer_resource_usage[*domain_index], integer_path_rates[path_index])?;
+            integer_resource_usage[*domain_index] = checked_add(
+                integer_resource_usage[*domain_index],
+                integer_path_rates[path_index],
+            )?;
         }
     }
 
@@ -1162,7 +1154,15 @@ mod tests {
         flows.push(flow("b-0", "b", 1, 100));
         let mut paths = flows
             .iter()
-            .map(|item| path(&format!("p-{}", item.flow_id), &item.flow_id, 100, 1, &["shared"]))
+            .map(|item| {
+                path(
+                    &format!("p-{}", item.flow_id),
+                    &item.flow_id,
+                    100,
+                    1,
+                    &["shared"],
+                )
+            })
             .collect::<Vec<_>>();
         paths.sort_by(|left, right| left.path_id.cmp(&right.path_id));
         let report = allocate_tenant_resource_incidence(
@@ -1173,8 +1173,16 @@ mod tests {
             &[resource("shared", 110)],
         )
         .expect("feasible allocation");
-        let a = report.tenant_allocations.iter().find(|x| x.tenant_id == "a").unwrap();
-        let b = report.tenant_allocations.iter().find(|x| x.tenant_id == "b").unwrap();
+        let a = report
+            .tenant_allocations
+            .iter()
+            .find(|x| x.tenant_id == "a")
+            .unwrap();
+        let b = report
+            .tenant_allocations
+            .iter()
+            .find(|x| x.tenant_id == "b")
+            .unwrap();
         assert_eq!(a.allocated_rate_bps, 55);
         assert_eq!(b.allocated_rate_bps, 55);
     }
@@ -1192,8 +1200,16 @@ mod tests {
             &[resource("shared", 90)],
         )
         .expect("feasible allocation");
-        let a = report.tenant_allocations.iter().find(|x| x.tenant_id == "a").unwrap();
-        let b = report.tenant_allocations.iter().find(|x| x.tenant_id == "b").unwrap();
+        let a = report
+            .tenant_allocations
+            .iter()
+            .find(|x| x.tenant_id == "a")
+            .unwrap();
+        let b = report
+            .tenant_allocations
+            .iter()
+            .find(|x| x.tenant_id == "b")
+            .unwrap();
         assert_eq!(a.allocated_rate_bps, 60);
         assert_eq!(b.allocated_rate_bps, 30);
     }
@@ -1216,9 +1232,21 @@ mod tests {
             &[resource("shared", 90)],
         )
         .expect("feasible allocation");
-        let a_small = report.flow_allocations.iter().find(|x| x.flow_id == "a-small").unwrap();
-        let a_large = report.flow_allocations.iter().find(|x| x.flow_id == "a-large").unwrap();
-        let b = report.flow_allocations.iter().find(|x| x.flow_id == "b").unwrap();
+        let a_small = report
+            .flow_allocations
+            .iter()
+            .find(|x| x.flow_id == "a-small")
+            .unwrap();
+        let a_large = report
+            .flow_allocations
+            .iter()
+            .find(|x| x.flow_id == "a-large")
+            .unwrap();
+        let b = report
+            .flow_allocations
+            .iter()
+            .find(|x| x.flow_id == "b")
+            .unwrap();
         assert_eq!(a_small.allocated_rate_bps, 10);
         assert_eq!(a_large.allocated_rate_bps, 35);
         assert_eq!(b.allocated_rate_bps, 45);
@@ -1238,13 +1266,28 @@ mod tests {
             &[resource("shared", 100)],
         )
         .expect("feasible allocation");
-        let a = report.tenant_allocations.iter().find(|x| x.tenant_id == "a").unwrap();
-        let b = report.tenant_allocations.iter().find(|x| x.tenant_id == "b").unwrap();
+        let a = report
+            .tenant_allocations
+            .iter()
+            .find(|x| x.tenant_id == "a")
+            .unwrap();
+        let b = report
+            .tenant_allocations
+            .iter()
+            .find(|x| x.tenant_id == "b")
+            .unwrap();
         assert_eq!(a.allocated_rate_bps, 50);
         assert_eq!(b.allocated_rate_bps, 50);
-        let a_paths = report.path_allocations.iter().filter(|x| x.flow_id == "fa").collect::<Vec<_>>();
+        let a_paths = report
+            .path_allocations
+            .iter()
+            .filter(|x| x.flow_id == "fa")
+            .collect::<Vec<_>>();
         assert_eq!(a_paths.len(), 2);
-        assert_eq!(a_paths.iter().map(|x| x.allocated_rate_bps).sum::<u64>(), 50);
+        assert_eq!(
+            a_paths.iter().map(|x| x.allocated_rate_bps).sum::<u64>(),
+            50
+        );
     }
 
     #[test]
@@ -1260,7 +1303,12 @@ mod tests {
             &[resource("shared", 100)],
         )
         .expect("both floors fit");
-        assert!(report.tenant_allocations.iter().all(|x| x.minimum_service_met));
+        assert!(
+            report
+                .tenant_allocations
+                .iter()
+                .all(|x| x.minimum_service_met)
+        );
         assert_eq!(report.tenant_allocations[0].allocated_rate_bps, 50);
         assert_eq!(report.tenant_allocations[1].allocated_rate_bps, 50);
     }
@@ -1278,7 +1326,10 @@ mod tests {
             &[resource("shared", 50)],
         )
         .unwrap_err();
-        assert_eq!(error, TenantResourceAllocationError::MinimumServiceInfeasible);
+        assert_eq!(
+            error,
+            TenantResourceAllocationError::MinimumServiceInfeasible
+        );
     }
 
     #[test]
@@ -1288,11 +1339,7 @@ mod tests {
         // maximum-sum but starving allocation [10, 0, 10].
         let report = allocate_tenant_resource_incidence(
             &request(),
-            &[
-                tenant("a", 1, 0),
-                tenant("b", 1, 0),
-                tenant("c", 1, 0),
-            ],
+            &[tenant("a", 1, 0), tenant("b", 1, 0), tenant("c", 1, 0)],
             &[
                 flow("fa", "a", 1, 10),
                 flow("fb", "b", 1, 10),
@@ -1340,15 +1387,14 @@ mod tests {
             path("pa", "fa", 100, 1, &["x", "shared"]),
             path("pb", "fb", 100, 1, &["y", "shared"]),
         ];
-        let resources = vec![resource("x", 100), resource("y", 100), resource("shared", 100)];
-        let forward = allocate_tenant_resource_incidence(
-            &request(),
-            &tenants,
-            &flows,
-            &paths,
-            &resources,
-        )
-        .expect("forward order");
+        let resources = vec![
+            resource("x", 100),
+            resource("y", 100),
+            resource("shared", 100),
+        ];
+        let forward =
+            allocate_tenant_resource_incidence(&request(), &tenants, &flows, &paths, &resources)
+                .expect("forward order");
         let reverse = allocate_tenant_resource_incidence(
             &request(),
             &tenants.into_iter().rev().collect::<Vec<_>>(),
@@ -1373,7 +1419,10 @@ mod tests {
         )
         .expect("stale evidence is a path exclusion");
         assert_eq!(report.path_allocations.len(), 0);
-        assert_eq!(report.exclusions[0].reason, "capacity_resource_evidence_invalid");
+        assert_eq!(
+            report.exclusions[0].reason,
+            "capacity_resource_evidence_invalid"
+        );
     }
 
     #[test]
@@ -1388,6 +1437,9 @@ mod tests {
             &[stale],
         )
         .unwrap_err();
-        assert_eq!(error, TenantResourceAllocationError::MinimumServiceInfeasible);
+        assert_eq!(
+            error,
+            TenantResourceAllocationError::MinimumServiceInfeasible
+        );
     }
 }
