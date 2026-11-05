@@ -171,13 +171,18 @@ fn normalize(
             return Err(ResourceAllocationError::ZeroCapacity);
         }
         if item.observation_age_ms > request.maximum_observation_age_ms {
-            return Err(ResourceAllocationError::StaleCapacityObservation(item.domain_id));
+            return Err(ResourceAllocationError::StaleCapacityObservation(
+                item.domain_id,
+            ));
         }
         if !valid_sha256(&item.source_sha256) {
             return Err(ResourceAllocationError::InvalidSourceDigest(item.domain_id));
         }
         let index = domains.len();
-        if domain_indices.insert(item.domain_id.clone(), index).is_some() {
+        if domain_indices
+            .insert(item.domain_id.clone(), index)
+            .is_some()
+        {
             return Err(ResourceAllocationError::DuplicateCapacityObservationId);
         }
         domains.push(Domain {
@@ -288,7 +293,11 @@ fn candidate(
                 u64::try_from(applied).map_err(|_| ResourceAllocationError::ArithmeticOverflow)?,
             )
             .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
-        next_remainders[index] = if applied == gap { 0 } else { scaled % LEVEL_SCALE };
+        next_remainders[index] = if applied == gap {
+            0
+        } else {
+            scaled % LEVEL_SCALE
+        };
     }
     Ok((next_rates, next_remainders))
 }
@@ -305,18 +314,12 @@ fn feasible(
         .all(|(used, domain)| *used <= u128::from(domain.capacity)))
 }
 
-fn less_normalized_service(
-    left: usize,
-    right: usize,
-    paths: &[Path],
-    allocations: &[u64],
-) -> bool {
+fn less_normalized_service(left: usize, right: usize, paths: &[Path], allocations: &[u64]) -> bool {
     let left_extra = u128::from(allocations[left].saturating_sub(paths[left].floor));
     let right_extra = u128::from(allocations[right].saturating_sub(paths[right].floor));
     let left_scaled = left_extra * u128::from(paths[right].weight);
     let right_scaled = right_extra * u128::from(paths[left].weight);
-    left_scaled < right_scaled
-        || (left_scaled == right_scaled && paths[left].id < paths[right].id)
+    left_scaled < right_scaled || (left_scaled == right_scaled && paths[left].id < paths[right].id)
 }
 
 fn progressive_fill(
@@ -388,8 +391,7 @@ fn progressive_fill(
 
         // The immediately following micro-bps level is the first infeasible
         // level because binary search leaves high == low + 1.
-        let (after_rates, _) =
-            candidate(paths, &allocations, &remainders, &active, high - low)?;
+        let (after_rates, _) = candidate(paths, &allocations, &remainders, &active, high - low)?;
         let after_usage = resource_usage(paths, &after_rates, domains.len())?;
         let mut newly_binding = BTreeSet::new();
         for (index, used) in after_usage.iter().enumerate() {
@@ -437,9 +439,11 @@ fn progressive_fill(
             {
                 continue;
             }
-            if !path.domains.iter().all(|domain| {
-                usage[*domain] < u128::from(domains[*domain].capacity)
-            }) {
+            if !path
+                .domains
+                .iter()
+                .all(|domain| usage[*domain] < u128::from(domains[*domain].capacity))
+            {
                 continue;
             }
             if best.is_none_or(|previous| {
@@ -507,8 +511,8 @@ pub fn allocate_resource_incidence_weighted_max_min(
         .zip(&usage)
         .enumerate()
         .map(|(index, (domain, used))| {
-            let used = u64::try_from(*used)
-                .map_err(|_| ResourceAllocationError::ArithmeticOverflow)?;
+            let used =
+                u64::try_from(*used).map_err(|_| ResourceAllocationError::ArithmeticOverflow)?;
             Ok(DomainRateAllocation {
                 domain_id: domain.id.clone(),
                 capacity_bps: domain.capacity,
@@ -734,7 +738,9 @@ mod tests {
                 vec![path("a", 1, 100, 60, &["x"]), path("b", 1, 100, 60, &["x"])],
                 vec![domain("x", 100)],
             )),
-            Err(ResourceAllocationError::MinimumFloorsExceedCapacity("x".to_owned()))
+            Err(ResourceAllocationError::MinimumFloorsExceedCapacity(
+                "x".to_owned()
+            ))
         );
     }
 
@@ -747,7 +753,9 @@ mod tests {
                 vec![path("a", 1, 100, 0, &["x"])],
                 vec![stale],
             )),
-            Err(ResourceAllocationError::StaleCapacityObservation("x".to_owned()))
+            Err(ResourceAllocationError::StaleCapacityObservation(
+                "x".to_owned()
+            ))
         );
     }
 
@@ -771,7 +779,9 @@ mod tests {
                 vec![path("a", 1, 100, 0, &["missing"])],
                 vec![domain("x", 100)],
             )),
-            Err(ResourceAllocationError::UnknownCapacityDomain("missing".to_owned()))
+            Err(ResourceAllocationError::UnknownCapacityDomain(
+                "missing".to_owned()
+            ))
         );
     }
 
@@ -831,10 +841,7 @@ mod tests {
         assert_eq!(result.rounding_adjustments_bps, 1);
     }
 
-    fn weighted_service_score(
-        rates: &[u64],
-        paths: &[ResourcePathDemand],
-    ) -> Vec<(u64, u32)> {
+    fn weighted_service_score(rates: &[u64], paths: &[ResourcePathDemand]) -> Vec<(u64, u32)> {
         let mut score = paths
             .iter()
             .zip(rates)
@@ -847,10 +854,7 @@ mod tests {
         score
     }
 
-    fn compare_weighted_scores(
-        left: &[(u64, u32)],
-        right: &[(u64, u32)],
-    ) -> std::cmp::Ordering {
+    fn compare_weighted_scores(left: &[(u64, u32)], right: &[(u64, u32)]) -> std::cmp::Ordering {
         for (left_item, right_item) in left.iter().zip(right) {
             let ordering = (u128::from(left_item.0) * u128::from(right_item.1))
                 .cmp(&(u128::from(right_item.0) * u128::from(left_item.1)));
@@ -863,10 +867,7 @@ mod tests {
 
     #[test]
     fn weighted_progressive_fill_matches_exhaustive_shared_resource_oracle() {
-        let paths = vec![
-            path("a", 1, 5, 0, &["x"]),
-            path("b", 2, 5, 0, &["x"]),
-        ];
+        let paths = vec![path("a", 1, 5, 0, &["x"]), path("b", 2, 5, 0, &["x"])];
         let result = allocate_resource_incidence_weighted_max_min(&request(
             paths.clone(),
             vec![domain("x", 5)],
