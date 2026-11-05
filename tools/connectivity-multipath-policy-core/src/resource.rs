@@ -659,7 +659,8 @@ pub fn allocate_resource_incidence(
         .iter()
         .enumerate()
         .filter_map(|(index, value)| {
-            (value % RATE_SCALE != 0 && integer_rates[index] < eligible[index].path.path_ceiling_bps)
+            (value % RATE_SCALE != 0
+                && integer_rates[index] < eligible[index].path.path_ceiling_bps)
                 .then_some(index)
         })
         .collect::<Vec<_>>();
@@ -1515,10 +1516,12 @@ mod tests {
         );
         assert!(report.integer_rounding_exact);
         assert!(report.integer_rounding_candidate_count <= MAX_EXACT_INTEGER_ROUNDING_CANDIDATES);
-        assert!(report
-            .resource_usage
-            .iter()
-            .all(|usage| usage.allocated_rate_bps <= usage.residual_capacity_bps));
+        assert!(
+            report
+                .resource_usage
+                .iter()
+                .all(|usage| usage.allocated_rate_bps <= usage.residual_capacity_bps)
+        );
     }
 
     #[test]
@@ -1547,10 +1550,12 @@ mod tests {
                 .count(),
             10
         );
-        assert!(report
-            .path_allocations
-            .iter()
-            .all(|allocation| allocation.allocated_rate_bps <= 1));
+        assert!(
+            report
+                .path_allocations
+                .iter()
+                .all(|allocation| allocation.allocated_rate_bps <= 1)
+        );
     }
 
     #[test]
