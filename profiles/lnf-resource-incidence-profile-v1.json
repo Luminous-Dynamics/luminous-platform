@@ -9,7 +9,7 @@
     "name": "weighted_progressive_filling",
     "numeric_representation": "checked_u128_scaled_micro_bps_then_integer_bps",
     "scale": 1000000,
-    "tie_break": "largest_remainder_then_stable_path_id",
+    "tie_break": "exact_bounded_lexicographic_weighted_max_min_search_then_fractional_remainder_path_id_fallback",
     "max_paths": 64,
     "max_resources": 64,
     "max_capacity_domains_per_path": 32,
@@ -27,6 +27,16 @@
       "deterministic_tie_break": "canonical_path_id_order_then_lexicographically_larger_rate_vector_after_equal_weighted_fairness_vector",
       "exhaustive_microtopology_fixture_count": 432,
       "microtopology_space": "all_3^3_nonempty_incidence_assignments_over_two_resources_times_4x4_capacity_pairs"
+    },
+    "integer_rounding_contract": {
+      "exact_candidate_limit": 20,
+      "exact_search": "enumerate all feasible combinations of zero-or-one-bps increments for fractional candidates and select the lexicographically greatest sorted weighted-rate vector",
+      "above_limit": "one-bps-per-path descending fractional remainder, then canonical path ID; feasible but not exact leximin",
+      "report_fields": [
+        "integer_rounding_exact",
+        "integer_rounding_candidate_count"
+      ],
+      "no_exact_claim_above_limit": true
     }
   },
   "evidence_contract": {
@@ -259,6 +269,13 @@
       "operator": "==",
       "target": 1,
       "target_status": "proposed_target"
+    },
+    {
+      "id": "RIA_INTEGER_ROUNDING_001",
+      "metric": "exact_integer_leximin_rounding_when_fractional_candidate_count_is_at_most_20",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
     }
   ],
   "required_metrics": [
@@ -286,7 +303,10 @@
     "topology_and_inventory_digest_match",
     "exact_reference_path_count_and_resource_count",
     "exact_reference_integer_assignment_search_space",
-    "exhaustive_microtopology_fixture_count"
+    "exhaustive_microtopology_fixture_count",
+    "integer_rounding_exact",
+    "integer_rounding_candidate_count",
+    "integer_rounding_fallback_case_count"
   ],
   "verdicts": [
     "pass",
@@ -312,6 +332,7 @@
     "No MPTCP best-path or do-no-harm result is implied by this allocator's output.",
     "CAKE and fq_codel are queue-management baselines, not equivalent path-level resource allocators.",
     "The exact integer reference is bounded to small topologies and is not a production optimizer.",
-    "The resource snapshot digest is caller-computed and echoed; this module does not independently hash or authenticate the source inventory"
+    "The resource snapshot digest is caller-computed and echoed; this module does not independently hash or authenticate the source inventory",
+    "When more than 20 fractional paths require integer rounding, the deterministic fractional-remainder fallback is feasible but is not claimed to be the exact integer leximin allocation."
   ]
 }
