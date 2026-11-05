@@ -1,0 +1,290 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/lnf-resource-incidence-profile-v1.schema.json",
+  "title": "LNF Resource Incidence Weighted Max-min Profile v1",
+  "description": "Strict contract for resource-dependency allocation. Profile validation does not constitute benchmark execution.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "status",
+    "reviewed_on",
+    "issue",
+    "execution_stage",
+    "objective",
+    "mathematical_contract",
+    "bounds",
+    "evidence_contract",
+    "scenario_ids",
+    "scenarios",
+    "comparators",
+    "required_metrics",
+    "benchmarks",
+    "evidence_classes",
+    "explicit_non_claims"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.lnf-resource-incidence-profile.v1"
+    },
+    "profile_id": {
+      "const": "lnf-resource-incidence-weighted-max-min-v1"
+    },
+    "status": {
+      "const": "draft_targets_not_results"
+    },
+    "reviewed_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "issue": {
+      "const": 280
+    },
+    "execution_stage": {
+      "const": "deterministic_reference_allocator_only"
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mathematical_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "variables",
+        "path_constraints",
+        "resource_constraint",
+        "policy",
+        "integer_unit",
+        "rounding",
+        "no_general_sum_rate_optimality_claim"
+      ],
+      "properties": {
+        "variables": {
+          "const": "x_path_bps"
+        },
+        "path_constraints": {
+          "const": [
+            "minimum_bps <= x_path_bps",
+            "x_path_bps <= demand_bps",
+            "x_path_bps >= 0"
+          ]
+        },
+        "resource_constraint": {
+          "const": "sum(x_path_bps for paths that traverse domain d) <= capacity_domain_d_bps"
+        },
+        "policy": {
+          "const": "weighted_max_min_progressive_filling"
+        },
+        "integer_unit": {
+          "const": "bits_per_second"
+        },
+        "rounding": {
+          "const": "deterministic one-bit adjustments by lowest normalized service above floor, then path ID"
+        },
+        "no_general_sum_rate_optimality_claim": {
+          "const": true
+        }
+      }
+    },
+    "bounds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "paths_maximum",
+        "capacity_domains_maximum",
+        "capacity_domains_per_path_minimum",
+        "capacity_domains_per_path_maximum",
+        "identifier_maximum_bytes",
+        "path_weight_minimum",
+        "path_weight_maximum",
+        "maximum_observation_age_ms_maximum"
+      ],
+      "properties": {
+        "paths_maximum": {
+          "const": 64
+        },
+        "capacity_domains_maximum": {
+          "const": 128
+        },
+        "capacity_domains_per_path_minimum": {
+          "const": 1
+        },
+        "capacity_domains_per_path_maximum": {
+          "const": 32
+        },
+        "identifier_maximum_bytes": {
+          "const": 128
+        },
+        "path_weight_minimum": {
+          "const": 1
+        },
+        "path_weight_maximum": {
+          "const": 100
+        },
+        "maximum_observation_age_ms_maximum": {
+          "const": 300000
+        }
+      }
+    },
+    "evidence_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "each_capacity_domain_has_its_own_source_sha256",
+        "per_domain_observation_age_required",
+        "stale_observation_disposition",
+        "unknown_capacity_domain_disposition",
+        "source_digests_may_differ_when_each_domain_provenance_is_explicit",
+        "no_inferred_capacity"
+      ],
+      "properties": {
+        "each_capacity_domain_has_its_own_source_sha256": {
+          "const": true
+        },
+        "per_domain_observation_age_required": {
+          "const": true
+        },
+        "stale_observation_disposition": {
+          "const": "explicit_error_no_allocation"
+        },
+        "unknown_capacity_domain_disposition": {
+          "const": "explicit_error_no_allocation"
+        },
+        "source_digests_may_differ_when_each_domain_provenance_is_explicit": {
+          "const": true
+        },
+        "no_inferred_capacity": {
+          "const": true
+        }
+      }
+    },
+    "scenario_ids": {
+      "type": "array",
+      "minItems": 16,
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^RESALLOC-[0-9]{2}$"
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 16,
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "purpose"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^RESALLOC-[0-9]{2}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "comparators": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required_metrics": {
+      "type": "array",
+      "minItems": 20,
+      "maxItems": 20,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "benchmarks": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "metric",
+          "operator",
+          "target",
+          "target_status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^RESALLOC_[A-Z0-9_]{3,80}$"
+          },
+          "metric": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operator": {
+            "enum": [
+              "==",
+              "baseline_first"
+            ]
+          },
+          "target": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "target_status": {
+            "enum": [
+              "proposed_target",
+              "baseline_first"
+            ]
+          }
+        }
+      }
+    },
+    "evidence_classes": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "deterministic_unit_test",
+          "property_or_permutation_test",
+          "network_namespace_or_vm_emulation",
+          "hardware_or_field_observed"
+        ]
+      }
+    },
+    "explicit_non_claims": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}
