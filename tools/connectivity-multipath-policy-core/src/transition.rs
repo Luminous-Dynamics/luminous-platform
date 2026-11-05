@@ -126,12 +126,19 @@ pub struct EventDispositionRecord {
     pub applied_at_unix_ms: Option<u64>,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ServiceFloorStatus {
+    Met,
+    Unmet,
+    Unknown,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TenantOutageState {
     pub tenant_id: String,
     pub service_floor_bps: u64,
     pub allocated_rate_bps: u64,
-    pub floor_met: bool,
+    pub floor_status: ServiceFloorStatus,
     pub outage_started_at_unix_ms: Option<u64>,
     pub outage_duration_so_far_ms: Option<u64>,
     pub recovered_at_unix_ms: Option<u64>,
@@ -569,6 +576,9 @@ fn apply_pending_events(
                 record.reason = disposition_reason(record.disposition);
                 continue;
             }
+            if record.first_eligible_tick_unix_ms.is_none() {
+                record.first_eligible_tick_unix_ms = Some(tick_unix_ms);
+            }
             if event.topology_epoch > state.topology_epoch {
                 record.disposition = EventDisposition::DeferredFutureTopologyEpoch;
                 record.reason = disposition_reason(record.disposition);
@@ -795,32 +805,52 @@ pub fn evaluate_transition_trace(
                 .get(tenant.tenant_id.as_str())
                 .copied()
                 .unwrap_or(0);
-            let floor_met = tenant.minimum_service_bps == 0
-                || (allocated >= tenant.minimum_service_bps && allocation_error.is_none());
+            let floor_status = if tenant.minimum_service_bps == 0 {
+                ServiceFloorStatus::Met
+            } else if allocation_error.is_none() {
+                if allocated >= tenant.minimum_service_bps {
+                    ServiceFloorStatus::Met
+                } else {
+                    ServiceFloorStatus::Unmet
+                }
+            } else if service_floor_unmet_tenant_ids.contains(&tenant.tenant_id) {
+                ServiceFloorStatus::Unmet
+            } else {
+                ServiceFloorStatus::Unknown
+            };
+
             let started = state.outage_started_at.get(&tenant.tenant_id).copied();
             let mut recovered_at = None;
             let mut last_recovery = state.last_recovery_duration.get(&tenant.tenant_id).copied();
-            if floor_met {
-                if let Some(outage_start) = started {
-                    let duration = tick
-                        .checked_sub(outage_start)
-                        .ok_or(TransitionError::ArithmeticOverflow)?;
-                    recovered_at = Some(*tick);
-                    last_recovery = Some(duration);
-                    state.last_recovery_duration.insert(tenant.tenant_id.clone(), duration);
-                    state.outage_started_at.remove(&tenant.tenant_id);
+            match floor_status {
+                ServiceFloorStatus::Met => {
+                    if let Some(outage_start) = started {
+                        let duration = tick
+                            .checked_sub(outage_start)
+                            .ok_or(TransitionError::ArithmeticOverflow)?;
+                        recovered_at = Some(*tick);
+                        last_recovery = Some(duration);
+                        state.last_recovery_duration.insert(tenant.tenant_id.clone(), duration);
+                        state.outage_started_at.remove(&tenant.tenant_id);
+                    }
                 }
-            } else {
-                state.outage_started_at
-                    .entry(tenant.tenant_id.clone())
-                    .or_insert(*tick);
+                ServiceFloorStatus::Unmet => {
+                    state.outage_started_at
+                        .entry(tenant.tenant_id.clone())
+                        .or_insert(*tick);
+                }
+                ServiceFloorStatus::Unknown => {}
             }
             tenant_outages.push(TenantOutageState {
                 tenant_id: tenant.tenant_id.clone(),
                 service_floor_bps: tenant.minimum_service_bps,
                 allocated_rate_bps: allocated,
-                floor_met,
-                outage_started_at_unix_ms: if recovered_at.is_some() { started } else { state.outage_started_at.get(&tenant.tenant_id).copied() },
+                floor_status,
+                outage_started_at_unix_ms: if recovered_at.is_some() {
+                    started
+                } else {
+                    state.outage_started_at.get(&tenant.tenant_id).copied()
+                },
                 outage_duration_so_far_ms: state
                     .outage_started_at
                     .get(&tenant.tenant_id)
@@ -838,7 +868,9 @@ pub fn evaluate_transition_trace(
         for path_id in state.paths.keys() {
             let health = state.path_health.get(path_id).copied().unwrap_or(PathHealth::Up);
             let subflow_down = state.subflows.get(path_id).is_some_and(BTreeSet::is_empty);
-            let effective_down = health == PathHealth::Down || subflow_down;
+            let effective_down = health == PathHealth::Down
+                || matches!(health, PathHealth::Degraded { capacity_factor_ppm: 0 })
+                || subflow_down;
             let was_down = previous_path_health.get(path_id).is_some_and(|prior| *prior == PathHealth::Down);
             if effective_down {
                 path_down_count += 1;
@@ -859,7 +891,12 @@ pub fn evaluate_transition_trace(
             .paths
             .keys()
             .map(|path_id| {
-                let health = if state.subflows.get(path_id).is_some_and(BTreeSet::is_empty) {
+                let health = if state.subflows.get(path_id).is_some_and(BTreeSet::is_empty)
+                    || matches!(
+                        state.path_health.get(path_id),
+                        Some(PathHealth::Degraded { capacity_factor_ppm: 0 })
+                    )
+                {
                     PathHealth::Down
                 } else {
                     state.path_health.get(path_id).copied().unwrap_or(PathHealth::Up)
@@ -871,7 +908,7 @@ pub fn evaluate_transition_trace(
         let changed = paths_became_down_this_tick.len() + paths_recovered_this_tick.len();
         let affected_flows = state.flows.values().filter(|flow| {
             let flow_paths = state.paths.values().filter(|path| path.flow_id == flow.flow_id).collect::<Vec<_>>();
-            !flow_paths.is_empty() && flow_paths.iter().all(|path| {
+            flow_paths.iter().all(|path| {
                 state.path_health.get(&path.path_id) == Some(&PathHealth::Down)
                     || state.subflows.get(&path.path_id).is_some_and(BTreeSet::is_empty)
             })
@@ -879,7 +916,7 @@ pub fn evaluate_transition_trace(
         let affected_tenants = state.tenants.values().filter(|tenant| {
             state.flows.values().any(|flow| flow.tenant_id == tenant.tenant_id && {
                 let flow_paths = state.paths.values().filter(|path| path.flow_id == flow.flow_id).collect::<Vec<_>>();
-                !flow_paths.is_empty() && flow_paths.iter().all(|path| {
+                flow_paths.iter().all(|path| {
                     state.path_health.get(&path.path_id) == Some(&PathHealth::Down)
                         || state.subflows.get(&path.path_id).is_some_and(BTreeSet::is_empty)
                 })
@@ -1311,7 +1348,7 @@ mod tests {
             .find(|item| item.tenant_id == "tenant-a")
             .expect("tenant a outage state");
         assert_eq!(tenant_a.last_recovery_duration_ms, Some(400));
-        assert!(tenant_a.floor_met);
+        assert_eq!(tenant_a.floor_status, ServiceFloorStatus::Met);
     }
 
     #[test]
