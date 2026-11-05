@@ -1,0 +1,410 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/lnf-mpath-task-utility-profile-v1.schema.json",
+  "title": "LNF Deadline-qualified Task Utility Profile v1",
+  "description": "Strict benchmark/evaluator contract. Profile validation is not benchmark execution.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "status",
+    "reviewed_on",
+    "parent_issue",
+    "qualification_scope",
+    "objective",
+    "paradigm",
+    "objective_tracks",
+    "paired_identity",
+    "evidence_requirements",
+    "scenarios",
+    "scenario_definitions",
+    "comparators",
+    "required_metrics",
+    "benchmarks",
+    "target_defaults",
+    "verdicts",
+    "evidence_classes",
+    "explicit_non_claims"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.lnf-mpath-task-utility-profile.v1"
+    },
+    "profile_id": {
+      "const": "lnf-deadline-useful-work-v1"
+    },
+    "status": {
+      "const": "draft_targets_not_results"
+    },
+    "reviewed_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "parent_issue": {
+      "const": 269
+    },
+    "qualification_scope": {
+      "const": "single_paired_trial_evaluator"
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "paradigm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primary",
+        "utility_is_application_supplied",
+        "late_useful_bytes_receive_zero_on_time_credit",
+        "fairness_and_resource_safety_are_hard_separate_gates",
+        "no_single_weighted_score_may_hide_a_regression"
+      ],
+      "properties": {
+        "primary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "utility_is_application_supplied": {
+          "const": true
+        },
+        "late_useful_bytes_receive_zero_on_time_credit": {
+          "const": true
+        },
+        "fairness_and_resource_safety_are_hard_separate_gates": {
+          "const": true
+        },
+        "no_single_weighted_score_may_hide_a_regression": {
+          "const": true
+        }
+      }
+    },
+    "objective_tracks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rfc_6356_compatibility",
+        "num_utility_exploration"
+      ],
+      "properties": {
+        "rfc_6356_compatibility": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "required_properties",
+            "purpose"
+          ],
+          "properties": {
+            "status": {
+              "const": "compatibility_baseline"
+            },
+            "required_properties": {
+              "const": [
+                "best_path_improvement",
+                "do_no_harm_at_shared_resources",
+                "resource_pooling"
+              ]
+            },
+            "purpose": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "num_utility_exploration": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "required_properties",
+            "purpose"
+          ],
+          "properties": {
+            "status": {
+              "const": "research_track_not_implemented_by_this_evaluator"
+            },
+            "required_properties": {
+              "const": [
+                "declared_task_utility",
+                "shared_resource_constraints",
+                "tenant_fairness_floor",
+                "companion_flow_retention"
+              ]
+            },
+            "purpose": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "paired_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required_environment_digests",
+        "required_arm_identity",
+        "common_environment_must_match",
+        "task_rows_must_match_by_id_release_deadline_offered_bytes_and_value",
+        "arm_identity_may_differ_between_control_and_treatment",
+        "mismatched_pair_disposition",
+        "paired_verdict_scope"
+      ],
+      "properties": {
+        "required_environment_digests": {
+          "const": [
+            "kernel_build_sha256",
+            "system_image_sha256",
+            "topology_sha256",
+            "resource_snapshot_sha256",
+            "qdisc_config_sha256",
+            "workload_sha256",
+            "task_manifest_sha256",
+            "impairment_sha256",
+            "tariff_sha256",
+            "energy_model_sha256",
+            "observer_config_sha256"
+          ]
+        },
+        "required_arm_identity": {
+          "const": [
+            "protocol",
+            "transport_version",
+            "scheduler_id",
+            "congestion_control_id",
+            "path_manager_id",
+            "implementation_sha256",
+            "arm_config_sha256"
+          ]
+        },
+        "common_environment_must_match": {
+          "const": true
+        },
+        "task_rows_must_match_by_id_release_deadline_offered_bytes_and_value": {
+          "const": true
+        },
+        "arm_identity_may_differ_between_control_and_treatment": {
+          "const": true
+        },
+        "mismatched_pair_disposition": {
+          "const": "inconclusive"
+        },
+        "paired_verdict_scope": {
+          "const": "single_paired_trial"
+        }
+      }
+    },
+    "evidence_requirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_counters_complete",
+        "cost_energy_counters_complete",
+        "companion_counters_complete_for_companion_gate",
+        "shared_resource_accounting_complete",
+        "cleanup_verified",
+        "unsupported_transport_is_not_pass",
+        "missing_task_or_counter_rows_are_not_zero",
+        "total_transmitted_bytes_must_cover_observed_useful_bytes",
+        "application_value_units_must_be_supplied_by_the_workload_not_inferred_by_network"
+      ],
+      "properties": {
+        "task_counters_complete": {
+          "const": true
+        },
+        "cost_energy_counters_complete": {
+          "const": true
+        },
+        "companion_counters_complete_for_companion_gate": {
+          "const": true
+        },
+        "shared_resource_accounting_complete": {
+          "const": true
+        },
+        "cleanup_verified": {
+          "const": true
+        },
+        "unsupported_transport_is_not_pass": {
+          "const": true
+        },
+        "missing_task_or_counter_rows_are_not_zero": {
+          "const": true
+        },
+        "total_transmitted_bytes_must_cover_observed_useful_bytes": {
+          "const": true
+        },
+        "application_value_units_must_be_supplied_by_the_workload_not_inferred_by_network": {
+          "const": true
+        }
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 14,
+      "maxItems": 14,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^TASK-[0-9]{2}$"
+      }
+    },
+    "scenario_definitions": {
+      "type": "array",
+      "minItems": 14,
+      "maxItems": 14,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "purpose"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^TASK-[0-9]{2}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "comparators": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required_metrics": {
+      "type": "array",
+      "minItems": 24,
+      "maxItems": 24,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "benchmarks": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "metric",
+          "operator",
+          "target",
+          "target_status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^TASK_[A-Z0-9_]{3,80}$"
+          },
+          "metric": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operator": {
+            "enum": [
+              "==",
+              ">=",
+              "<="
+            ]
+          },
+          "target": {
+            "type": "number"
+          },
+          "target_status": {
+            "const": "proposed_target"
+          }
+        }
+      }
+    },
+    "target_defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimum_on_time_value_retention_ppm",
+        "maximum_cost_per_on_time_mib_ratio_ppm",
+        "maximum_energy_per_on_time_mib_ratio_ppm",
+        "minimum_companion_retention_ppm",
+        "maximum_deadline_miss_increase",
+        "maximum_resource_overcommit_bps",
+        "target_status"
+      ],
+      "properties": {
+        "minimum_on_time_value_retention_ppm": {
+          "const": 1000000
+        },
+        "maximum_cost_per_on_time_mib_ratio_ppm": {
+          "const": 1000000
+        },
+        "maximum_energy_per_on_time_mib_ratio_ppm": {
+          "const": 1000000
+        },
+        "minimum_companion_retention_ppm": {
+          "const": 900000
+        },
+        "maximum_deadline_miss_increase": {
+          "const": 0
+        },
+        "maximum_resource_overcommit_bps": {
+          "const": 0
+        },
+        "target_status": {
+          "const": "proposed_not_measured"
+        }
+      }
+    },
+    "verdicts": {
+      "const": [
+        "pass",
+        "fail",
+        "inconclusive",
+        "unsupported"
+      ]
+    },
+    "evidence_classes": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "deterministic_evaluator",
+          "network_namespace_or_vm_emulation",
+          "hardware_bench",
+          "field_observed"
+        ]
+      }
+    },
+    "explicit_non_claims": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}
