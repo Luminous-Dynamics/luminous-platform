@@ -193,6 +193,7 @@ pub enum TransitionError {
     InvalidInitialSnapshotDigest,
     InvalidInitialEpoch,
     InvalidConfidenceFloor,
+    InvalidEventSet,
     TooManyEvents,
     TooManyDecisionTicks,
     ZeroDecisionTick,
@@ -238,6 +239,54 @@ fn validate_initial(snapshot: &TransitionSnapshot) -> Result<(), TransitionError
         || snapshot.minimum_evidence_confidence_ppm > 1_000_000
     {
         return Err(TransitionError::InvalidConfidenceFloor);
+    }
+    if snapshot.tenants.is_empty()
+        || snapshot.tenants.len() > 64
+        || snapshot.flows.is_empty()
+        || snapshot.flows.len() > 256
+        || snapshot.paths.len() > 64
+        || snapshot.resources.len() > 64
+    {
+        return Err(TransitionError::InvalidEventSet);
+    }
+    let mut tenant_ids = BTreeSet::new();
+    for tenant in &snapshot.tenants {
+        if !bounded_identifier(&tenant.tenant_id, MAX_SOURCE_ID_BYTES)
+            || tenant.tenant_weight == 0
+            || !tenant_ids.insert(tenant.tenant_id.as_str())
+        {
+            return Err(TransitionError::InvalidEventSet);
+        }
+    }
+    let mut flow_ids = BTreeSet::new();
+    for flow in &snapshot.flows {
+        if !bounded_identifier(&flow.flow_id, MAX_SOURCE_ID_BYTES)
+            || flow.demand_bps == 0
+            || flow.flow_weight == 0
+            || !tenant_ids.contains(flow.tenant_id.as_str())
+            || !flow_ids.insert(flow.flow_id.as_str())
+        {
+            return Err(TransitionError::InvalidEventSet);
+        }
+    }
+    let mut path_ids = BTreeSet::new();
+    for path in &snapshot.paths {
+        if !bounded_identifier(&path.path_id, MAX_SOURCE_ID_BYTES)
+            || path.path_ceiling_bps == 0
+            || path.split_weight == 0
+            || !flow_ids.contains(path.flow_id.as_str())
+            || !path_ids.insert(path.path_id.as_str())
+        {
+            return Err(TransitionError::InvalidEventSet);
+        }
+    }
+    let mut resource_ids = BTreeSet::new();
+    for resource in &snapshot.resources {
+        if !bounded_identifier(&resource.resource_id, MAX_SOURCE_ID_BYTES)
+            || !resource_ids.insert(resource.resource_id.as_str())
+        {
+            return Err(TransitionError::InvalidEventSet);
+        }
     }
     Ok(())
 }
@@ -958,6 +1007,12 @@ pub fn evaluate_transition_trace(
         });
     }
 
+    records.sort_by(|left, right| {
+        left.source_id
+            .cmp(&right.source_id)
+            .then_with(|| left.source_sequence.cmp(&right.source_sequence))
+            .then_with(|| left.event_id.cmp(&right.event_id))
+    });
     let applied_event_count = records.iter().filter(|record| record.disposition == EventDisposition::Applied).count();
     let rejected_event_count = records.iter().filter(|record| matches!(
         record.disposition,
@@ -1370,6 +1425,105 @@ mod tests {
         assert!(report.ticks[0].resource_usage.iter().all(|usage| {
             usage.allocated_rate_bps <= usage.residual_capacity_bps
         }));
+    }
+
+    #[test]
+    fn event_input_permutation_produces_identical_canonical_report() {
+        let first_event = event(
+            "a-down",
+            "source-a",
+            1,
+            1_100,
+            1_100,
+            1_100,
+            TransitionEventKind::PathHealthChanged {
+                path_id: "path-a".to_owned(),
+                health: PathHealth::Down,
+            },
+        );
+        let second_event = event(
+            "b-degraded",
+            "source-b",
+            1,
+            1_100,
+            1_100,
+            1_100,
+            TransitionEventKind::PathHealthChanged {
+                path_id: "path-b".to_owned(),
+                health: PathHealth::Degraded {
+                    capacity_factor_ppm: 500_000,
+                },
+            },
+        );
+        let forward = evaluate_transition_trace(
+            &snapshot(),
+            &[first_event.clone(), second_event.clone()],
+            &[1_200],
+        )
+        .expect("forward event order");
+        let reverse = evaluate_transition_trace(
+            &snapshot(),
+            &[second_event, first_event],
+            &[1_200],
+        )
+        .expect("reverse event order");
+        assert_eq!(forward, reverse);
+    }
+
+    #[test]
+    fn source_event_time_rewind_is_rejected() {
+        let events = vec![
+            event(
+                "first",
+                "gateway",
+                1,
+                1_200,
+                1_200,
+                1_200,
+                TransitionEventKind::PathHealthChanged {
+                    path_id: "path-a".to_owned(),
+                    health: PathHealth::Down,
+                },
+            ),
+            event(
+                "rewind",
+                "gateway",
+                2,
+                1_100,
+                1_300,
+                1_300,
+                TransitionEventKind::PathHealthChanged {
+                    path_id: "path-b".to_owned(),
+                    health: PathHealth::Down,
+                },
+            ),
+        ];
+        let report = evaluate_transition_trace(&snapshot(), &events, &[1_400])
+            .expect("source time rewind classified");
+        assert_eq!(
+            report.event_dispositions
+                .iter()
+                .find(|record| record.event_id == "rewind")
+                .expect("rewind disposition")
+                .disposition,
+            EventDisposition::RejectedOutOfOrderSourceTime
+        );
+    }
+
+    #[test]
+    fn duplicate_initial_tenant_or_path_ids_fail_closed() {
+        let mut invalid = snapshot();
+        invalid.tenants.push(invalid.tenants[0].clone());
+        assert_eq!(
+            evaluate_transition_trace(&invalid, &[], &[1_000]).unwrap_err(),
+            TransitionError::InvalidEventSet
+        );
+        let mut invalid = snapshot();
+        invalid.paths.push(invalid.paths[0].clone());
+        assert_eq!(
+            evaluate_transition_trace(&invalid, &[], &[1_000]).unwrap_err(),
+            TransitionError::InvalidEventSet
+        );
     }
 
     #[test]
