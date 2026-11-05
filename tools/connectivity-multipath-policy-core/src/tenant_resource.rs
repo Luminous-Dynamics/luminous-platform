@@ -1336,6 +1336,22 @@ mod tests {
     }
 
     #[test]
+    fn tenant_with_no_eligible_path_is_a_service_floor_infeasibility() {
+        let error = allocate_tenant_resource_incidence(
+            &request(),
+            &[tenant("a", 1, 10), tenant("b", 1, 0)],
+            &[flow("fa", "a", 1, 100), flow("fb", "b", 1, 100)],
+            &[path("pb", "fb", 100, 1, &["shared"])],
+            &[resource("shared", 100)],
+        )
+        .unwrap_err();
+        assert_eq!(
+            error,
+            TenantResourceAllocationError::MinimumServiceInfeasible
+        );
+    }
+
+    #[test]
     fn exact_small_overlap_oracle_agrees_with_tenant_progressive_fill() {
         // A uses X; B uses X+Y; C uses Y. X and Y each have capacity 10.
         // The exact integral leximin witness is [5, 5, 5], not the
