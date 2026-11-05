@@ -917,7 +917,7 @@ pub fn allocate_tenant_resource_incidence(
             integer_flow_rates[flow_index],
         )?;
     }
-    for tenant_index in 0..tenant_entries.len() {
+    for (tenant_index, tenant) in tenant_entries.iter().enumerate() {
         if integer_tenant_rates[tenant_index] < tenant.principal.minimum_service_bps {
             return Err(TenantResourceAllocationError::MinimumServiceInfeasible);
         }
