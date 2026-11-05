@@ -823,9 +823,10 @@ pub fn allocate_tenant_resource_incidence(
             .iter()
             .zip(&minimum_tenant_rates_scaled)
             .all(|(actual, minimum)| actual >= minimum);
-        if !any_frozen && !(floor_phase && floors_complete) {
-            return Err(TenantResourceAllocationError::InternalInvariant);
-        }
+        // A tenant with no remaining eligible path is a known floor outage,
+        // not a malformed progressive-fill state. Classify it before the
+        // generic no-freeze invariant so callers can distinguish the affected
+        // tenant from tenants whose service-floor status remains unknown.
         if floor_phase && !floors_complete {
             for tenant_index in 0..tenant_entries.len() {
                 let minimum = minimum_tenant_rates_scaled[tenant_index];
@@ -838,6 +839,9 @@ pub fn allocate_tenant_resource_incidence(
                     return Err(TenantResourceAllocationError::MinimumServiceInfeasible);
                 }
             }
+        }
+        if !any_frozen && !(floor_phase && floors_complete) {
+            return Err(TenantResourceAllocationError::InternalInvariant);
         }
     }
 
