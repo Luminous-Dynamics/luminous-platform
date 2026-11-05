@@ -1544,6 +1544,18 @@ mod tests {
             "tenant A floor disposition was not Unmet: {:#?}",
             report.ticks[1]
         );
+        assert!(
+            !report.ticks[1]
+                .service_floor_unmet_tenant_ids
+                .contains(&"tenant-b".to_owned()),
+            "tenant B retains an eligible path and must not be classified as known-unmet"
+        );
+        assert!(
+            report.ticks[1]
+                .service_floor_status_unknown_tenant_ids
+                .contains(&"tenant-b".to_owned()),
+            "tenant B's floor status is unknown because allocation is blocked by tenant A's infeasible floor"
+        );
         let tenant_a = report.ticks[3]
             .tenant_outages
             .iter()
