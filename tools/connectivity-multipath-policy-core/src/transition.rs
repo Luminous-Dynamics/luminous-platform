@@ -1527,8 +1527,7 @@ mod tests {
         let report = evaluate_transition_trace(&snapshot(), &events, &[1_000, 1_100, 1_300, 1_500])
             .expect("outage and recovery trace");
         assert_eq!(
-            report.ticks[1].path_down_count,
-            1,
+            report.ticks[1].path_down_count, 1,
             "path-down state was not reflected in the transition tick: {:#?}",
             report.ticks[1]
         );
