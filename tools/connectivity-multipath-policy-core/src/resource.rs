@@ -149,6 +149,10 @@ pub struct ResourceAllocationReport {
     pub resource_usage: Vec<ResourceDomainUsage>,
     pub saturated_path_ids: Vec<String>,
     pub saturated_resource_ids: Vec<String>,
+    /// True when every fractional one-bps choice was explored exactly.
+    pub integer_rounding_exact: bool,
+    /// Number of paths with a non-zero fractional remainder after progressive filling.
+    pub integer_rounding_candidate_count: usize,
     pub exclusions: Vec<ResourcePathExclusion>,
     /// This is a weighted max-min result, not a global maximum-goodput claim.
     pub objective: &'static str,
@@ -230,6 +234,69 @@ fn canonical_ids(ids: &[String]) -> Vec<String> {
     let mut result = ids.to_vec();
     result.sort();
     result
+}
+
+const MAX_EXACT_INTEGER_ROUNDING_CANDIDATES: usize = 20;
+
+fn search_integer_rounding(
+    position: usize,
+    candidates: &[usize],
+    eligible: &[EligiblePath],
+    resource_residuals: &[Option<u64>],
+    domain_used: &mut [u64],
+    current_rates: &mut [u64],
+    best_rates: &mut Vec<u64>,
+) {
+    if position == candidates.len() {
+        if compare_integer_weighted_fairness(current_rates, best_rates, eligible)
+            == std::cmp::Ordering::Greater
+        {
+            *best_rates = current_rates.to_vec();
+        }
+        return;
+    }
+
+    // First visit the no-increment branch. The include branch is only explored
+    // when one additional whole bit/s fits every resource consumed by the path.
+    search_integer_rounding(
+        position + 1,
+        candidates,
+        eligible,
+        resource_residuals,
+        domain_used,
+        current_rates,
+        best_rates,
+    );
+
+    let path_index = candidates[position];
+    let path = &eligible[path_index];
+    if current_rates[path_index] >= path.path.path_ceiling_bps {
+        return;
+    }
+    if !path.domain_indexes.iter().all(|domain_index| {
+        resource_residuals[*domain_index]
+            .is_some_and(|capacity| domain_used[*domain_index] < capacity)
+    }) {
+        return;
+    }
+
+    current_rates[path_index] += 1;
+    for domain_index in &path.domain_indexes {
+        domain_used[*domain_index] += 1;
+    }
+    search_integer_rounding(
+        position + 1,
+        candidates,
+        eligible,
+        resource_residuals,
+        domain_used,
+        current_rates,
+        best_rates,
+    );
+    for domain_index in &path.domain_indexes {
+        domain_used[*domain_index] -= 1;
+    }
+    current_rates[path_index] -= 1;
 }
 
 fn compare_integer_weighted_fairness(
@@ -566,48 +633,91 @@ pub fn allocate_resource_incidence(
         }
     }
 
-    // Convert the fixed-point progressive-fill result to integer bps without
-    // changing its weighted max-min objective. Largest fractional remainder
-    // is proportional apportionment, not max-min: on a one-bps bottleneck it
-    // can award the bit to a high-weight path and contradict the exact oracle.
-    // Select each residual bps by the lexicographically best sorted vector of
-    // rate/weight ratios, with canonical path-ID tie-breaking. The continuous
-    // fixed-point solution leaves fewer than one bps per active path to round.
-    for _ in 0..eligible.len() {
-        let mut best_candidate: Option<(usize, Vec<u64>)> = None;
-        for (index, item) in eligible.iter().enumerate() {
-            if integer_rates[index] >= item.path.path_ceiling_bps {
-                continue;
-            }
-            let fits_all_resources = item.domain_indexes.iter().all(|domain_index| {
-                resource_residuals[*domain_index]
-                    .is_some_and(|capacity| integer_domain_used[*domain_index] < capacity)
-            });
-            if !fits_all_resources {
-                continue;
-            }
-
-            let mut candidate = integer_rates.clone();
-            candidate[index] = candidate[index]
-                .checked_add(1)
-                .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
-            let replace = best_candidate.as_ref().is_none_or(|(_, best_rates)| {
-                compare_integer_weighted_fairness(&candidate, best_rates, &eligible)
-                    == std::cmp::Ordering::Greater
-            });
-            if replace {
-                best_candidate = Some((index, candidate));
-            }
-        }
-
-        let Some((index, next_rates)) = best_candidate else {
-            break;
-        };
-        integer_rates = next_rates;
-        for domain_index in &eligible[index].domain_indexes {
+    // Convert the fixed-point result to integer bps. Exact max-min rounding
+    // is a small combinatorial problem: independently choosing each path's
+    // next bit can block a more equitable combination across disjoint resources.
+    // Search all feasible 0/1 increments when there are at most 20 fractional
+    // candidates; above that bound, use the deterministic one-bit heuristic
+    // below and expose that the integer rounding was not exhaustively qualified.
+    let mut integer_rates = rates_scaled
+        .iter()
+        .map(|value| {
+            u64::try_from(value / RATE_SCALE)
+                .map_err(|_| ResourceAllocationError::ArithmeticOverflow)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let mut integer_domain_used = vec![0_u64; resources.len()];
+    for (index, item) in eligible.iter().enumerate() {
+        for domain_index in &item.domain_indexes {
             integer_domain_used[*domain_index] = integer_domain_used[*domain_index]
-                .checked_add(1)
+                .checked_add(integer_rates[index])
                 .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
+        }
+    }
+
+    let fractional_candidates = rates_scaled
+        .iter()
+        .enumerate()
+        .filter_map(|(index, value)| {
+            (value % RATE_SCALE != 0 && integer_rates[index] < eligible[index].path.path_ceiling_bps)
+                .then_some(index)
+        })
+        .collect::<Vec<_>>();
+    let integer_rounding_candidate_count = fractional_candidates.len();
+    let integer_rounding_exact =
+        integer_rounding_candidate_count <= MAX_EXACT_INTEGER_ROUNDING_CANDIDATES;
+
+    if integer_rounding_exact {
+        let mut best_rates = integer_rates.clone();
+        search_integer_rounding(
+            0,
+            &fractional_candidates,
+            &eligible,
+            &resource_residuals,
+            &mut integer_domain_used,
+            &mut integer_rates,
+            &mut best_rates,
+        );
+        integer_rates = best_rates;
+    } else {
+        // Bounded fallback for large active sets. This is feasible and stable,
+        // but not claimed to be the exact integer leximin solution.
+        for _ in 0..eligible.len() {
+            let mut best_candidate: Option<(usize, Vec<u64>)> = None;
+            for (index, item) in eligible.iter().enumerate() {
+                if integer_rates[index] >= item.path.path_ceiling_bps {
+                    continue;
+                }
+                let fits_all_resources = item.domain_indexes.iter().all(|domain_index| {
+                    resource_residuals[*domain_index]
+                        .is_some_and(|capacity| integer_domain_used[*domain_index] < capacity)
+                });
+                if !fits_all_resources {
+                    continue;
+                }
+
+                let mut candidate = integer_rates.clone();
+                candidate[index] = candidate[index]
+                    .checked_add(1)
+                    .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
+                let replace = best_candidate.as_ref().is_none_or(|(_, best_rates)| {
+                    compare_integer_weighted_fairness(&candidate, best_rates, &eligible)
+                        == std::cmp::Ordering::Greater
+                });
+                if replace {
+                    best_candidate = Some((index, candidate));
+                }
+            }
+
+            let Some((index, next_rates)) = best_candidate else {
+                break;
+            };
+            integer_rates = next_rates;
+            for domain_index in &eligible[index].domain_indexes {
+                integer_domain_used[*domain_index] = integer_domain_used[*domain_index]
+                    .checked_add(1)
+                    .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
+            }
         }
     }
 
@@ -696,6 +806,8 @@ pub fn allocate_resource_incidence(
         resource_usage,
         saturated_path_ids,
         saturated_resource_ids,
+        integer_rounding_exact,
+        integer_rounding_candidate_count,
         exclusions,
         objective: "weighted_max_min_progressive_filling_not_global_sum_rate_optimum",
     })
