@@ -10,13 +10,12 @@
 //! trust boundary. Allocated rates are planning outputs, never measured goodput.
 
 use super::resource::{
-    CapacityResource, ResourceAllocationRequest, ResourceDomainUsage, is_sha256,
-    valid_identifier,
+    CapacityResource, ResourceAllocationRequest, ResourceDomainUsage, is_sha256, valid_identifier,
 };
 use super::tenant_resource::{
-    TenantFlowRateAllocation, TenantRateAllocation, TenantResourceAllocationError,
-    TenantResourceFlow, TenantResourcePath,
-    TenantResourcePrincipal, TenantPathRateAllocation, allocate_tenant_resource_incidence,
+    TenantFlowRateAllocation, TenantPathRateAllocation, TenantRateAllocation,
+    TenantResourceAllocationError, TenantResourceFlow, TenantResourcePath, TenantResourcePrincipal,
+    allocate_tenant_resource_incidence,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -44,19 +43,30 @@ pub enum SubflowState {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum TransitionEventKind {
     TenantUpsert(TenantResourcePrincipal),
-    TenantRemoved { tenant_id: String },
+    TenantRemoved {
+        tenant_id: String,
+    },
     FlowUpsert(TenantResourceFlow),
-    FlowRemoved { flow_id: String },
+    FlowRemoved {
+        flow_id: String,
+    },
     PathUpsert(TenantResourcePath),
-    PathRemoved { path_id: String },
-    PathHealthChanged { path_id: String, health: PathHealth },
+    PathRemoved {
+        path_id: String,
+    },
+    PathHealthChanged {
+        path_id: String,
+        health: PathHealth,
+    },
     SubflowChanged {
         path_id: String,
         subflow_id: String,
         state: SubflowState,
     },
     CapacityResourceUpsert(CapacityResource),
-    CapacityResourceRemoved { resource_id: String },
+    CapacityResourceRemoved {
+        resource_id: String,
+    },
     /// Advances the topology epoch. The event header is bound to the old epoch
     /// and old topology digest; subsequent events must use the new epoch/digest.
     TopologyEpochAdvanced {
@@ -339,7 +349,8 @@ fn validate_event_envelope(event: &TransitionEvent) -> Option<EventDisposition> 
     {
         return Some(EventDisposition::RejectedInvalidIdentifier);
     }
-    if !is_sha256(&event.source_sha256) || !is_sha256(&event.topology_sha256)
+    if !is_sha256(&event.source_sha256)
+        || !is_sha256(&event.topology_sha256)
         || !is_sha256(&event.state_snapshot_sha256)
     {
         return Some(EventDisposition::RejectedInvalidDigest);
@@ -376,10 +387,16 @@ fn disposition_reason(disposition: EventDisposition) -> &'static str {
         EventDisposition::RejectedInvalidTime => "event_time_order_is_invalid",
         EventDisposition::RejectedDuplicateEventId => "event_id_is_duplicated",
         EventDisposition::RejectedDuplicateOrOldSequence => "source_sequence_is_duplicate_or_old",
-        EventDisposition::RejectedOutOfOrderSourceTime => "source_event_time_or_effective_time_rewinds",
+        EventDisposition::RejectedOutOfOrderSourceTime => {
+            "source_event_time_or_effective_time_rewinds"
+        }
         EventDisposition::RejectedTopologyEpoch => "event_belongs_to_an_obsolete_topology_epoch",
-        EventDisposition::RejectedTopologyDigest => "event_topology_digest_does_not_match_active_epoch",
-        EventDisposition::RejectedInvalidEpochAdvance => "topology_epoch_advance_is_not_the_next_epoch",
+        EventDisposition::RejectedTopologyDigest => {
+            "event_topology_digest_does_not_match_active_epoch"
+        }
+        EventDisposition::RejectedInvalidEpochAdvance => {
+            "topology_epoch_advance_is_not_the_next_epoch"
+        }
         EventDisposition::RejectedMalformedEvent => "event_references_unknown_or_invalid_state",
     }
 }
@@ -429,7 +446,9 @@ fn apply_event(
             {
                 return Err(EventDisposition::RejectedMalformedEvent);
             }
-            state.tenants.insert(tenant.tenant_id.clone(), tenant.clone());
+            state
+                .tenants
+                .insert(tenant.tenant_id.clone(), tenant.clone());
         }
         TransitionEventKind::TenantRemoved { tenant_id } => {
             if !state.tenants.contains_key(tenant_id) {
@@ -519,7 +538,9 @@ fn apply_event(
             {
                 return Err(EventDisposition::RejectedMalformedEvent);
             }
-            state.resources.insert(resource.resource_id.clone(), resource.clone());
+            state
+                .resources
+                .insert(resource.resource_id.clone(), resource.clone());
         }
         TransitionEventKind::CapacityResourceRemoved { resource_id } => {
             if state.resources.remove(resource_id).is_none() {
@@ -530,9 +551,12 @@ fn apply_event(
             next_epoch,
             next_topology_sha256,
         } => {
-            if *next_epoch != state.topology_epoch.checked_add(1).ok_or(
-                EventDisposition::RejectedInvalidEpochAdvance,
-            )? {
+            if *next_epoch
+                != state
+                    .topology_epoch
+                    .checked_add(1)
+                    .ok_or(EventDisposition::RejectedInvalidEpochAdvance)?
+            {
                 return Err(EventDisposition::RejectedInvalidEpochAdvance);
             }
             state.topology_epoch = *next_epoch;
@@ -554,17 +578,23 @@ fn effective_path(
             return None;
         }
     }
-    let health = state.path_health.get(&path.path_id).copied().unwrap_or(PathHealth::Up);
+    let health = state
+        .path_health
+        .get(&path.path_id)
+        .copied()
+        .unwrap_or(PathHealth::Up);
     match health {
         PathHealth::Down => Ok(None),
         PathHealth::Up => Ok(Some(path.clone())),
-        PathHealth::Degraded { capacity_factor_ppm } => {
+        PathHealth::Degraded {
+            capacity_factor_ppm,
+        } => {
             let mut degraded = path.clone();
             let ceiling = u128::from(path.path_ceiling_bps)
                 .checked_mul(u128::from(capacity_factor_ppm))
                 .ok_or(TransitionError::ArithmeticOverflow)?;
-            degraded.path_ceiling_bps =
-                u64::try_from(ceiling / 1_000_000).map_err(|_| TransitionError::ArithmeticOverflow)?;
+            degraded.path_ceiling_bps = u64::try_from(ceiling / 1_000_000)
+                .map_err(|_| TransitionError::ArithmeticOverflow)?;
             Ok((degraded.path_ceiling_bps > 0).then_some(degraded))
         }
     }
@@ -793,7 +823,13 @@ pub fn evaluate_transition_trace(
     let mut ticks = Vec::with_capacity(decision_ticks_unix_ms.len());
     for tick in decision_ticks_unix_ms {
         let mut applied_event_ids = Vec::new();
-        apply_pending_events(&mut state, events, &mut records, &mut applied_event_ids, *tick);
+        apply_pending_events(
+            &mut state,
+            events,
+            &mut records,
+            &mut applied_event_ids,
+            *tick,
+        );
 
         let mut paths = Vec::with_capacity(state.paths.len());
         for path in state.paths.values() {
@@ -843,10 +879,20 @@ pub fn evaluate_transition_trace(
             }
             Err(error) => {
                 if error == TenantResourceAllocationError::MinimumServiceInfeasible {
-                    for tenant in state.tenants.values().filter(|tenant| tenant.minimum_service_bps > 0) {
-                        let tenant_has_eligible_path = state.flows.values()
+                    for tenant in state
+                        .tenants
+                        .values()
+                        .filter(|tenant| tenant.minimum_service_bps > 0)
+                    {
+                        let tenant_has_eligible_path = state
+                            .flows
+                            .values()
                             .filter(|flow| flow.tenant_id == tenant.tenant_id)
-                            .flat_map(|flow| paths.iter().filter(move |path| path.flow_id == flow.flow_id))
+                            .flat_map(|flow| {
+                                paths
+                                    .iter()
+                                    .filter(move |path| path.flow_id == flow.flow_id)
+                            })
                             .next()
                             .is_some();
                         if tenant_has_eligible_path {
@@ -856,7 +902,9 @@ pub fn evaluate_transition_trace(
                         }
                     }
                 } else {
-                    service_floor_status_unknown_tenant_ids = state.tenants.values()
+                    service_floor_status_unknown_tenant_ids = state
+                        .tenants
+                        .values()
                         .filter(|tenant| tenant.minimum_service_bps > 0)
                         .map(|tenant| tenant.tenant_id.clone())
                         .collect();
@@ -900,12 +948,15 @@ pub fn evaluate_transition_trace(
                             .ok_or(TransitionError::ArithmeticOverflow)?;
                         recovered_at = Some(*tick);
                         last_recovery = Some(duration);
-                        state.last_recovery_duration.insert(tenant.tenant_id.clone(), duration);
+                        state
+                            .last_recovery_duration
+                            .insert(tenant.tenant_id.clone(), duration);
                         state.outage_started_at.remove(&tenant.tenant_id);
                     }
                 }
                 ServiceFloorStatus::Unmet => {
-                    state.outage_started_at
+                    state
+                        .outage_started_at
                         .entry(tenant.tenant_id.clone())
                         .or_insert(*tick);
                 }
@@ -936,12 +987,23 @@ pub fn evaluate_transition_trace(
         let mut path_degraded_count = 0_u32;
         let mut path_down_count = 0_u32;
         for path_id in state.paths.keys() {
-            let health = state.path_health.get(path_id).copied().unwrap_or(PathHealth::Up);
+            let health = state
+                .path_health
+                .get(path_id)
+                .copied()
+                .unwrap_or(PathHealth::Up);
             let subflow_down = state.subflows.get(path_id).is_some_and(BTreeSet::is_empty);
             let effective_down = health == PathHealth::Down
-                || matches!(health, PathHealth::Degraded { capacity_factor_ppm: 0 })
+                || matches!(
+                    health,
+                    PathHealth::Degraded {
+                        capacity_factor_ppm: 0
+                    }
+                )
                 || subflow_down;
-            let was_down = previous_path_health.get(path_id).is_some_and(|prior| *prior == PathHealth::Down);
+            let was_down = previous_path_health
+                .get(path_id)
+                .is_some_and(|prior| *prior == PathHealth::Down);
             if effective_down {
                 path_down_count += 1;
                 if !was_down {
@@ -955,7 +1017,6 @@ pub fn evaluate_transition_trace(
                     paths_recovered_this_tick.push(path_id.clone());
                 }
             }
-
         }
         previous_path_health = state
             .paths
@@ -964,34 +1025,63 @@ pub fn evaluate_transition_trace(
                 let health = if state.subflows.get(path_id).is_some_and(BTreeSet::is_empty)
                     || matches!(
                         state.path_health.get(path_id),
-                        Some(PathHealth::Degraded { capacity_factor_ppm: 0 })
-                    )
-                {
+                        Some(PathHealth::Degraded {
+                            capacity_factor_ppm: 0
+                        })
+                    ) {
                     PathHealth::Down
                 } else {
-                    state.path_health.get(path_id).copied().unwrap_or(PathHealth::Up)
+                    state
+                        .path_health
+                        .get(path_id)
+                        .copied()
+                        .unwrap_or(PathHealth::Up)
                 };
                 (path_id.clone(), health)
             })
             .collect();
 
         let changed = paths_became_down_this_tick.len() + paths_recovered_this_tick.len();
-        let affected_flows = state.flows.values().filter(|flow| {
-            let flow_paths = state.paths.values().filter(|path| path.flow_id == flow.flow_id).collect::<Vec<_>>();
-            flow_paths.iter().all(|path| {
-                state.path_health.get(&path.path_id) == Some(&PathHealth::Down)
-                    || state.subflows.get(&path.path_id).is_some_and(BTreeSet::is_empty)
-            })
-        }).count();
-        let affected_tenants = state.tenants.values().filter(|tenant| {
-            state.flows.values().any(|flow| flow.tenant_id == tenant.tenant_id && {
-                let flow_paths = state.paths.values().filter(|path| path.flow_id == flow.flow_id).collect::<Vec<_>>();
+        let affected_flows = state
+            .flows
+            .values()
+            .filter(|flow| {
+                let flow_paths = state
+                    .paths
+                    .values()
+                    .filter(|path| path.flow_id == flow.flow_id)
+                    .collect::<Vec<_>>();
                 flow_paths.iter().all(|path| {
                     state.path_health.get(&path.path_id) == Some(&PathHealth::Down)
-                        || state.subflows.get(&path.path_id).is_some_and(BTreeSet::is_empty)
+                        || state
+                            .subflows
+                            .get(&path.path_id)
+                            .is_some_and(BTreeSet::is_empty)
                 })
             })
-        }).count();
+            .count();
+        let affected_tenants = state
+            .tenants
+            .values()
+            .filter(|tenant| {
+                state.flows.values().any(|flow| {
+                    flow.tenant_id == tenant.tenant_id && {
+                        let flow_paths = state
+                            .paths
+                            .values()
+                            .filter(|path| path.flow_id == flow.flow_id)
+                            .collect::<Vec<_>>();
+                        flow_paths.iter().all(|path| {
+                            state.path_health.get(&path.path_id) == Some(&PathHealth::Down)
+                                || state
+                                    .subflows
+                                    .get(&path.path_id)
+                                    .is_some_and(BTreeSet::is_empty)
+                        })
+                    }
+                })
+            })
+            .count();
 
         applied_event_ids.sort();
         paths_became_down_this_tick.sort();
@@ -1012,9 +1102,12 @@ pub fn evaluate_transition_trace(
             path_down_count,
             paths_became_down_this_tick,
             paths_recovered_this_tick,
-            affected_flow_count: u32::try_from(affected_flows).map_err(|_| TransitionError::ArithmeticOverflow)?,
-            affected_tenant_count: u32::try_from(affected_tenants).map_err(|_| TransitionError::ArithmeticOverflow)?,
-            synchronized_path_change_count: u32::try_from(changed).map_err(|_| TransitionError::ArithmeticOverflow)?,
+            affected_flow_count: u32::try_from(affected_flows)
+                .map_err(|_| TransitionError::ArithmeticOverflow)?,
+            affected_tenant_count: u32::try_from(affected_tenants)
+                .map_err(|_| TransitionError::ArithmeticOverflow)?,
+            synchronized_path_change_count: u32::try_from(changed)
+                .map_err(|_| TransitionError::ArithmeticOverflow)?,
             zero_rate_tenant_ids,
             service_floor_unmet_tenant_ids,
             service_floor_status_unknown_tenant_ids,
@@ -1034,20 +1127,28 @@ pub fn evaluate_transition_trace(
             .then_with(|| left.source_sequence.cmp(&right.source_sequence))
             .then_with(|| left.event_id.cmp(&right.event_id))
     });
-    let applied_event_count = records.iter().filter(|record| record.disposition == EventDisposition::Applied).count();
-    let rejected_event_count = records.iter().filter(|record| matches!(
-        record.disposition,
-        EventDisposition::RejectedInvalidIdentifier
-            | EventDisposition::RejectedInvalidDigest
-            | EventDisposition::RejectedInvalidTime
-            | EventDisposition::RejectedDuplicateEventId
-            | EventDisposition::RejectedDuplicateOrOldSequence
-            | EventDisposition::RejectedOutOfOrderSourceTime
-            | EventDisposition::RejectedTopologyEpoch
-            | EventDisposition::RejectedTopologyDigest
-            | EventDisposition::RejectedInvalidEpochAdvance
-            | EventDisposition::RejectedMalformedEvent
-    )).count();
+    let applied_event_count = records
+        .iter()
+        .filter(|record| record.disposition == EventDisposition::Applied)
+        .count();
+    let rejected_event_count = records
+        .iter()
+        .filter(|record| {
+            matches!(
+                record.disposition,
+                EventDisposition::RejectedInvalidIdentifier
+                    | EventDisposition::RejectedInvalidDigest
+                    | EventDisposition::RejectedInvalidTime
+                    | EventDisposition::RejectedDuplicateEventId
+                    | EventDisposition::RejectedDuplicateOrOldSequence
+                    | EventDisposition::RejectedOutOfOrderSourceTime
+                    | EventDisposition::RejectedTopologyEpoch
+                    | EventDisposition::RejectedTopologyDigest
+                    | EventDisposition::RejectedInvalidEpochAdvance
+                    | EventDisposition::RejectedMalformedEvent
+            )
+        })
+        .count();
     let deferred_event_count = records.len() - applied_event_count - rejected_event_count;
     Ok(TransitionTraceReport {
         initial_topology_epoch: initial.topology_epoch,
@@ -1225,7 +1326,10 @@ mod tests {
         assert_eq!(report.ticks[0].path_down_count, 0);
         assert_eq!(report.ticks[0].applied_event_ids.len(), 0);
         assert_eq!(report.ticks[1].path_down_count, 1);
-        assert_eq!(report.event_dispositions[0].disposition, EventDisposition::Applied);
+        assert_eq!(
+            report.event_dispositions[0].disposition,
+            EventDisposition::Applied
+        );
     }
 
     #[test]
@@ -1315,9 +1419,12 @@ mod tests {
             .expect("duplicate IDs are classified");
         assert_eq!(report.applied_event_count, 0);
         assert_eq!(report.rejected_event_count, 2);
-        assert!(report.event_dispositions.iter().all(|record| {
-            record.disposition == EventDisposition::RejectedDuplicateEventId
-        }));
+        assert!(
+            report
+                .event_dispositions
+                .iter()
+                .all(|record| { record.disposition == EventDisposition::RejectedDuplicateEventId })
+        );
     }
 
     #[test]
@@ -1415,9 +1522,11 @@ mod tests {
         ];
         let report = evaluate_transition_trace(&snapshot(), &events, &[1_000, 1_100, 1_300, 1_500])
             .expect("outage and recovery trace");
-        assert!(report.ticks[1]
-            .service_floor_unmet_tenant_ids
-            .contains(&"tenant-a".to_owned()));
+        assert!(
+            report.ticks[1]
+                .service_floor_unmet_tenant_ids
+                .contains(&"tenant-a".to_owned())
+        );
         let tenant_a = report.ticks[3]
             .tenant_outages
             .iter()
@@ -1443,9 +1552,12 @@ mod tests {
         )];
         let report = evaluate_transition_trace(&snapshot(), &events, &[1_100])
             .expect("failover rate allocation");
-        assert!(report.ticks[0].resource_usage.iter().all(|usage| {
-            usage.allocated_rate_bps <= usage.residual_capacity_bps
-        }));
+        assert!(
+            report.ticks[0]
+                .resource_usage
+                .iter()
+                .all(|usage| { usage.allocated_rate_bps <= usage.residual_capacity_bps })
+        );
     }
 
     #[test]
@@ -1482,12 +1594,9 @@ mod tests {
             &[1_200],
         )
         .expect("forward event order");
-        let reverse = evaluate_transition_trace(
-            &snapshot(),
-            &[second_event, first_event],
-            &[1_200],
-        )
-        .expect("reverse event order");
+        let reverse =
+            evaluate_transition_trace(&snapshot(), &[second_event, first_event], &[1_200])
+                .expect("reverse event order");
         assert_eq!(forward, reverse);
     }
 
@@ -1522,7 +1631,8 @@ mod tests {
         let report = evaluate_transition_trace(&snapshot(), &events, &[1_400])
             .expect("source time rewind classified");
         assert_eq!(
-            report.event_dispositions
+            report
+                .event_dispositions
                 .iter()
                 .find(|record| record.event_id == "rewind")
                 .expect("rewind disposition")
