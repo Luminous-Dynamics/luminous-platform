@@ -15,7 +15,7 @@ use super::resource::{
 };
 use super::tenant_resource::{
     TenantFlowRateAllocation, TenantRateAllocation, TenantResourceAllocationError,
-    TenantResourceAllocationReport, TenantResourceFlow, TenantResourcePath,
+    TenantResourceFlow, TenantResourcePath,
     TenantResourcePrincipal, TenantPathRateAllocation, allocate_tenant_resource_incidence,
 };
 use std::collections::{BTreeMap, BTreeSet};
@@ -1032,9 +1032,9 @@ pub fn evaluate_transition_trace(
         initial_topology_epoch: initial.topology_epoch,
         final_topology_epoch: state.topology_epoch,
         event_count: events.len(),
-        applied_event_count: u32::try_from(applied_event_count).map_err(|_| TransitionError::ArithmeticOverflow)? as usize,
-        rejected_event_count: u32::try_from(rejected_event_count).map_err(|_| TransitionError::ArithmeticOverflow)? as usize,
-        deferred_event_count: u32::try_from(deferred_event_count).map_err(|_| TransitionError::ArithmeticOverflow)? as usize,
+        applied_event_count,
+        rejected_event_count,
+        deferred_event_count,
         event_dispositions: records,
         ticks,
         limitations: vec![
