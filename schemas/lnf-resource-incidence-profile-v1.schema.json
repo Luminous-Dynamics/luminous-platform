@@ -103,7 +103,7 @@
       ],
       "properties": {
         "paths_maximum": {
-          "const": 64
+          "const": 256
         },
         "capacity_domains_maximum": {
           "const": 128
