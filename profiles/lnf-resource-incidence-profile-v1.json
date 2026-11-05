@@ -1,0 +1,338 @@
+{
+  "schema_version": "luminous.lnf.resource-incidence-profile.v1",
+  "profile_id": "lnf-resource-incidence-v1",
+  "status": "draft_targets_not_results",
+  "reviewed_on": "2026-11-03",
+  "objective": "Evaluate weighted max-min path-rate allocation over evidence-bound resource-incidence constraints without double-counting shared bottlenecks.",
+  "ownership_boundary": "Pure Rust deterministic allocation/planning model. No path discovery, measurement collection, router actuation, kernel qdisc changes, MPTCP scheduling or identity authentication.",
+  "algorithm": {
+    "name": "weighted_progressive_filling",
+    "numeric_representation": "checked_u128_scaled_micro_bps_then_integer_bps",
+    "scale": 1000000,
+    "tie_break": "exact_bounded_lexicographic_weighted_max_min_search_then_fractional_remainder_path_id_fallback",
+    "max_paths": 64,
+    "max_resources": 64,
+    "max_capacity_domains_per_path": 32,
+    "path_ceiling_is_hard": true,
+    "resource_capacity_is_shared_constraint": true,
+    "residual_capacity_formula": "declared_capacity_bps - measured_background_load_bps - committed_reservations_bps - safety_margin_bps",
+    "objective": "weighted_max_min_progressive_filling_not_global_sum_rate_optimum",
+    "exact_reference": "independent_integer_bps_small_topology_enumeration",
+    "exact_reference_contract": {
+      "maximum_paths": 4,
+      "maximum_resources": 6,
+      "maximum_integer_assignment_count": 1000000,
+      "search_space_definition": "product_over_paths(min(path_ceiling_bps, minimum_residual_capacity_on_path_resources) + 1)",
+      "refuses_inputs_above_bound": true,
+      "deterministic_tie_break": "canonical_path_id_order_then_lexicographically_larger_rate_vector_after_equal_weighted_fairness_vector",
+      "exhaustive_microtopology_fixture_count": 432,
+      "microtopology_space": "all_3^3_nonempty_incidence_assignments_over_two_resources_times_4x4_capacity_pairs"
+    },
+    "integer_rounding_contract": {
+      "exact_candidate_limit": 20,
+      "exact_search": "enumerate all feasible combinations of zero-or-one-bps increments for fractional candidates and select the lexicographically greatest sorted weighted-rate vector",
+      "above_limit": "one-bps-per-path descending fractional remainder, then canonical path ID; feasible but not exact leximin",
+      "report_fields": [
+        "integer_rounding_exact",
+        "integer_rounding_candidate_count"
+      ],
+      "no_exact_claim_above_limit": true
+    }
+  },
+  "evidence_contract": {
+    "required_resource_fields": [
+      "resource_id",
+      "declared_capacity_bps",
+      "measured_background_load_bps",
+      "committed_reservations_bps",
+      "safety_margin_bps"
+    ],
+    "required_evidence_fields": [
+      "source_id",
+      "inventory_sha256",
+      "topology_sha256",
+      "complete",
+      "confidence_ppm",
+      "measurement_window_start_unix_ms",
+      "measurement_window_end_unix_ms",
+      "observed_at_unix_ms",
+      "valid_until_unix_ms"
+    ],
+    "topology_digest_must_match_request": true,
+    "inventory_digest_sha256_required": true,
+    "completeness_required": true,
+    "minimum_confidence_ppm": 950000,
+    "confidence_is_probability": false,
+    "validity_window_required": true,
+    "unknown_or_invalid_resource_excludes_dependent_paths": true,
+    "resource_capacity_underflow": "hard_error",
+    "residual_capacity_must_be_nonnegative": true,
+    "required_request_fields": [
+      "topology_sha256",
+      "resource_snapshot_sha256",
+      "now_unix_ms",
+      "minimum_evidence_confidence_ppm"
+    ],
+    "resource_snapshot_digest_contract": "caller_computed_digest_of_canonical_frozen_path_and_resource_input_snapshot_echoed_in_every_report; not_authentication_or_independent_hash_recomputation"
+  },
+  "scenario_ids": [
+    "RIA-00",
+    "RIA-01",
+    "RIA-02",
+    "RIA-03",
+    "RIA-04",
+    "RIA-05",
+    "RIA-06",
+    "RIA-07",
+    "RIA-08",
+    "RIA-09",
+    "RIA-10",
+    "RIA-11",
+    "RIA-12",
+    "RIA-13",
+    "RIA-14",
+    "RIA-15"
+  ],
+  "scenario_definitions": [
+    {
+      "id": "RIA-00",
+      "topology": "two_paths_with_fully_disjoint_capacity_domains",
+      "purpose": "independent access resources remain additive"
+    },
+    {
+      "id": "RIA-01",
+      "topology": "two_paths_share_one_backhaul",
+      "purpose": "shared bottleneck capacity is consumed once"
+    },
+    {
+      "id": "RIA-02",
+      "topology": "shared_aggregation_plus_path_specific_access",
+      "purpose": "progressive filling freezes shared users and allows independent traffic"
+    },
+    {
+      "id": "RIA-03",
+      "topology": "three_paths_a_x_b_xy_c_y",
+      "purpose": "partial overlap and fairness vs utilization gap"
+    },
+    {
+      "id": "RIA-04",
+      "topology": "serial_four_resource_path_and_peer_shares_final_egress",
+      "purpose": "multiple serial resource ceilings"
+    },
+    {
+      "id": "RIA-05",
+      "topology": "resource_has_zero_residual_capacity",
+      "purpose": "zero residual excludes only dependent paths"
+    },
+    {
+      "id": "RIA-06",
+      "topology": "residual_capacity_lower_than_line_rate",
+      "purpose": "existing background traffic is reserved before new traffic"
+    },
+    {
+      "id": "RIA-07",
+      "topology": "background_load_snapshot_changes",
+      "purpose": "stale resource snapshot cannot be reused"
+    },
+    {
+      "id": "RIA-08",
+      "topology": "reservations_change_between_snapshots",
+      "purpose": "residual recomputation and deterministic replay"
+    },
+    {
+      "id": "RIA-09",
+      "topology": "unknown_stale_low_confidence_incomplete_resource",
+      "purpose": "invalid evidence excludes dependent paths"
+    },
+    {
+      "id": "RIA-10",
+      "topology": "duplicate_resource_id_or_missing_resource_reference",
+      "purpose": "malformed incidence inventory fail closed"
+    },
+    {
+      "id": "RIA-11",
+      "topology": "path_ceiling_conflicts_with_resource_ceiling",
+      "purpose": "path and resource constraints saturate independently"
+    },
+    {
+      "id": "RIA-12",
+      "topology": "weighted_paths_share_resource",
+      "purpose": "weighted max-min proportional shares"
+    },
+    {
+      "id": "RIA-13",
+      "topology": "path_join_and_leave_under_new_snapshot",
+      "purpose": "recompute all allocations from frozen identities"
+    },
+    {
+      "id": "RIA-14",
+      "topology": "resource_under_two_alias_ids_without_shared_provenance",
+      "purpose": "explicit non-claim: name equality is not topology proof"
+    },
+    {
+      "id": "RIA-15",
+      "topology": "small_overlap_topologies_against_exact_integer_oracle",
+      "purpose": "validate fairness vector and expose maximum-sum utilization gap"
+    }
+  ],
+  "comparators": [
+    "conservative_disjoint_capacity_domain_selector",
+    "equal_per_path_share",
+    "weighted_per_path_max_min_ignoring_shared_resources_negative_control",
+    "weighted_resource_incidence_progressive_filling",
+    "independent_exact_integer_bps_weighted_max_min_reference",
+    "independent_exact_integer_bps_maximum_sum_reference",
+    "pinned_linux_mptcp_namespace_measurements_when_available",
+    "cake_triple_isolate_and_fq_codel_queueing_baselines_not_path_allocators"
+  ],
+  "benchmarks": [
+    {
+      "id": "RIA_SHARED_RESOURCE_OVERCOMMIT_001",
+      "metric": "max(resource_allocated_rate_bps - resource_residual_capacity_bps,0)_summed_over_domains",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RIA_UNKNOWN_EVIDENCE_USE_001",
+      "metric": "rate_allocated_on_paths_with_unknown_stale_incomplete_or_topology_mismatched_resource_evidence_bps",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RIA_PATH_CEILING_001",
+      "metric": "sum_path_rate_over_path_ceiling_bps",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RIA_DETERMINISM_001",
+      "metric": "identical_reports_under_path_and_resource_order_permutations",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RIA_EVIDENCE_PROVENANCE_001",
+      "metric": "resource_usage_rows_with_missing_source_digest_or_topology_binding",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RIA_WEIGHTED_MAX_MIN_001",
+      "metric": "small_topology_sorted_weighted_rate_vector_matches_exact_integer_reference",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RIA_MAX_SUM_GAP_001",
+      "metric": "weighted_max_min_rate_sum_minus_exact_maximum_sum_rate",
+      "operator": "report",
+      "target": null,
+      "target_status": "baseline_first"
+    },
+    {
+      "id": "RIA_RESIDUAL_ACCOUNTING_001",
+      "metric": "declared_capacity - background_load - reservations - safety_margin - residual_capacity",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RIA_INVALID_INVENTORY_001",
+      "metric": "paths_relying_on_invalid_resource_inventory_that_receive_nonzero_rate",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RIA_REPORT_REPLAY_001",
+      "metric": "same_frozen_inputs_produce_identical_rates_saturation_and_evidence_report",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RIA_EXACT_ORACLE_BOUND_001",
+      "metric": "exact_reference_calls_exceeding_declared_search_space_budget",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RIA_MICROTOPOLOGY_MATCH_001",
+      "metric": "weighted_progressive_filling_matches_exact_reference_across_432_microtopologies",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RIA_INTEGER_ROUNDING_001",
+      "metric": "exact_integer_leximin_rounding_when_fractional_candidate_count_is_at_most_20",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
+    }
+  ],
+  "required_metrics": [
+    "path_allocated_rate_bps",
+    "path_ceiling_bps",
+    "path_weight",
+    "resource_declared_capacity_bps",
+    "resource_measured_background_load_bps",
+    "resource_committed_reservations_bps",
+    "resource_safety_margin_bps",
+    "resource_residual_capacity_bps",
+    "resource_allocated_rate_bps",
+    "resource_unused_capacity_bps",
+    "resource_saturation_count",
+    "path_saturation_count",
+    "resource_incidence_degree",
+    "invalid_resource_evidence_exclusion_count",
+    "unknown_resource_reference_exclusion_count",
+    "weighted_max_min_sorted_rate_vector",
+    "exact_integer_maximum_sum_rate_bps",
+    "weighted_max_min_sum_rate_bps",
+    "maximum_sum_rate_gap_bps",
+    "allocation_runtime_and_memory_high_water",
+    "input_order_permutation_determinism",
+    "topology_and_inventory_digest_match",
+    "exact_reference_path_count_and_resource_count",
+    "exact_reference_integer_assignment_search_space",
+    "exhaustive_microtopology_fixture_count",
+    "integer_rounding_exact",
+    "integer_rounding_candidate_count",
+    "integer_rounding_fallback_case_count"
+  ],
+  "verdicts": [
+    "pass",
+    "fail",
+    "inconclusive",
+    "unsupported"
+  ],
+  "evidence_classes": [
+    "deterministic_unit_tests",
+    "exact_small_topology_reference",
+    "network_namespace_or_vm_emulation",
+    "hardware_bench",
+    "field_observed"
+  ],
+  "explicit_non_claims": [
+    "No claim that weighted max-min progressive filling globally maximizes total sum goodput.",
+    "No claim that declared operator telemetry is independently truthful merely because its evidence envelope validates.",
+    "No inference that different resource IDs denote independent physical infrastructure.",
+    "No path discovery, topology inference, route actuation or packet scheduling is implemented.",
+    "No shared capacity is added per path; every resource has one aggregate residual ceiling.",
+    "No floating point is used in allocation or gate decisions.",
+    "No namespace, hardware or field performance result is claimed by deterministic unit tests.",
+    "No MPTCP best-path or do-no-harm result is implied by this allocator's output.",
+    "CAKE and fq_codel are queue-management baselines, not equivalent path-level resource allocators.",
+    "The exact integer reference is bounded to small topologies and is not a production optimizer.",
+    "The resource snapshot digest is caller-computed and echoed; this module does not independently hash or authenticate the source inventory",
+    "When more than 20 fractional paths require integer rounding, the deterministic fractional-remainder fallback is feasible but is not claimed to be the exact integer leximin allocation."
+  ]
+}

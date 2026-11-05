@@ -142,6 +142,29 @@ The evaluator uses checked integer ratios in parts-per-million; confidence inter
 
 Every verdict has scope `single_paired_trial`. A paired pass is not programme-level statistical qualification: the external analysis must retain all repetitions and failures and compute the declared confidence intervals before promoting the programme. The exact kernel build digest binds in-tree TCP/MPTCP congestion-control and scheduler code; every out-of-tree TCP or MPTCP controller and scheduler must provide its own artifact SHA-256 in the paired identity.
 
+## Shared-resource incidence allocator
+
+`resource::allocate_resource_incidence` advances the conservative disjoint-domain selector by allocating path rates under explicit shared-resource ceilings.
+
+Each path declares a non-empty set of capacity-domain IDs and a path-specific ceiling. Each resource inventory entry carries:
+- declared capacity;
+- measured background load;
+- committed reservations not already included in that load;
+- a withheld safety margin;
+- source, inventory digest, topology digest, completeness, confidence, measurement window and validity interval.
+
+Residual capacity is computed once per resource:
+
+`residual = declared - background_load - committed_reservations - safety_margin`
+
+Every allocation must satisfy the path ceiling and every resource constraint. For resource d, the sum of allocated rates for all paths traversing d may not exceed that resource's residual capacity. Unknown, stale, incomplete, low-confidence or topology-mismatched evidence excludes dependent paths; it is never interpreted as infinite capacity.
+
+The first allocator is deterministic weighted progressive filling with checked integer arithmetic and micro-bps fixed-point levels. It freezes flows that encounter a path or resource ceiling, while paths that do not traverse a saturated resource may continue to gain rate. Integer rounding is exhaustively leximin-optimal for up to 20 fractional candidates; above that bound it uses a deterministic one-bit-per-path fractional-remainder heuristic and explicitly marks `integer_rounding_exact=false`. The report preserves per-resource residual/allocated/unused capacity, evidence provenance, saturated constraints, exclusions and rounding qualification.
+
+This is a **weighted max-min fairness allocator**, not a general maximum-sum-rate optimizer. The profile includes an independent bounded exact integer reference for small topologies. In the three-path X / X+Y / Y counterexample, the max-min solution is 6/4/4 while a maximum-sum solution can reach 10/0/8. The allocator must not conceal this utilization gap or claim it wins every objective. Fairness, utilization, task completion, latency, cost and energy remain separate comparison dimensions.
+
+The test-only exact integer oracles are explicitly bounded to at most four paths, six resources and one million total integer assignments, where the assignment count is the product of each path's feasible integer-rate choices. They fail closed when a fixture exceeds that budget. A deterministic 432-case micro-topology corpus exercises every one of the 3^3 non-empty path/resource incidence assignments over two resources at all 4×4 small capacity pairs, comparing progressive filling against the independent weighted max-min reference. Equal fairness vectors use canonical path-ID order and a stable lexicographic rate-vector tie-break. This oracle is a micro-instance correctness reference, not a production optimizer or a performance benchmark.
+
 ## Required next steps before a performance claim
 
 1. Compare model output with the exact Linux kernel MPTCP path-manager and scheduler configuration.
