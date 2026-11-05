@@ -1,0 +1,373 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/lnf-tenant-resource-incidence-profile-v1.schema.json",
+  "title": "LNF Tenant-First Multi-Resource Incidence Profile v1",
+  "description": "Strict profile for deterministic hierarchical tenant/flow/path allocation under shared-resource capacity constraints. Validation is not a benchmark result.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "status",
+    "reviewed_on",
+    "issue",
+    "parent_issue",
+    "parent_resource_allocator_pr",
+    "objective",
+    "ownership_boundary",
+    "algorithm",
+    "evidence_contract",
+    "scenarios",
+    "comparators",
+    "benchmarks",
+    "required_metrics",
+    "verdicts",
+    "evidence_classes",
+    "explicit_non_claims"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.lnf.tenant-resource-incidence-profile.v1"
+    },
+    "profile_id": {
+      "const": "lnf-tenant-resource-incidence-v1"
+    },
+    "status": {
+      "const": "draft_targets_not_results"
+    },
+    "reviewed_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "issue": {
+      "const": 247
+    },
+    "parent_issue": {
+      "const": 226
+    },
+    "parent_resource_allocator_pr": {
+      "const": 230
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ownership_boundary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "algorithm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "hierarchy",
+        "numeric_representation",
+        "weight_scale",
+        "rate_denominator",
+        "max_tenants",
+        "max_flows",
+        "max_paths",
+        "max_paths_per_flow",
+        "max_resources",
+        "max_capacity_domains_per_path",
+        "max_tenant_weight",
+        "max_flow_weight",
+        "max_path_split_weight",
+        "path_ceiling_is_hard",
+        "flow_demand_is_hard",
+        "resource_capacity_is_one_shared_aggregate_constraint",
+        "tenant_weight_normalization",
+        "progressive_filling",
+        "residual_capacity_formula",
+        "floor_policy",
+        "objective",
+        "exact_reference"
+      ],
+      "properties": {
+        "name": {
+          "const": "tenant_first_weighted_progressive_filling_with_normalized_flow_and_path_weights"
+        },
+        "hierarchy": {
+          "const": [
+            "tenant_principal",
+            "flow_within_tenant",
+            "path_within_flow"
+          ]
+        },
+        "numeric_representation": {
+          "const": "checked_u128_fixed_point_then_integer_bps_largest_remainder"
+        },
+        "weight_scale": {
+          "const": 1000000000000
+        },
+        "rate_denominator": {
+          "const": 1000000000000000000
+        },
+        "max_tenants": {
+          "const": 64
+        },
+        "max_flows": {
+          "const": 256
+        },
+        "max_paths": {
+          "const": 64
+        },
+        "max_paths_per_flow": {
+          "const": 8
+        },
+        "max_resources": {
+          "const": 64
+        },
+        "max_capacity_domains_per_path": {
+          "const": 32
+        },
+        "max_tenant_weight": {
+          "const": 1000000
+        },
+        "max_flow_weight": {
+          "const": 1000
+        },
+        "max_path_split_weight": {
+          "const": 1000
+        },
+        "path_ceiling_is_hard": {
+          "const": true
+        },
+        "flow_demand_is_hard": {
+          "const": true
+        },
+        "resource_capacity_is_one_shared_aggregate_constraint": {
+          "const": true
+        },
+        "tenant_weight_normalization": {
+          "const": "For each tenant, the sum of effective path weights over its active flows and paths is exactly tenant_weight * weight_scale; flow and path multiplicity cannot increase the tenant's aggregate entitlement."
+        },
+        "progressive_filling": {
+          "const": "All eligible active tenants first progress toward declared minimum service floors. Tenants whose floors are met leave the floor phase. Then the same tenant-normalized weights govern the remaining weighted max-min allocation. Path, flow and resource bottlenecks freeze only affected path variables; surviving variables are renormalized deterministically."
+        },
+        "residual_capacity_formula": {
+          "const": "declared_capacity_bps - measured_background_load_bps - committed_reservations_bps - safety_margin_bps"
+        },
+        "floor_policy": {
+          "const": "Minimum service floors are aggregate per tenant, may not exceed aggregate demand, and must be met or the solve returns explicit infeasible."
+        },
+        "objective": {
+          "const": "tenant_weighted_max_min_then_flow_weighted_max_min_over_shared_resource_incidence_not_global_sum_rate_optimum"
+        },
+        "exact_reference": {
+          "const": "Independent integer exhaustive enumeration for frozen small-topology oracle fixtures only; not a general production LP solver."
+        }
+      }
+    },
+    "evidence_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reuse_existing_resource_evidence_validator",
+        "resource_validator_source",
+        "topology_digest_must_match_request",
+        "inventory_digest_sha256_required",
+        "completeness_required",
+        "confidence_floor_required",
+        "validity_window_required",
+        "resource_residual_must_be_nonnegative",
+        "unknown_or_invalid_resource_excludes_dependent_paths",
+        "tenant_principal_id_required",
+        "tenant_identity_authenticated_by_this_module",
+        "caller_must_bind_principal_to_authenticated_identity",
+        "duplicate_tenant_flow_path_resource_ids_rejected",
+        "resource_snapshot_digest",
+        "unknown_tenant_or_flow_reference",
+        "unknown_resource_reference",
+        "infeasible_minimum_floors",
+        "bounded_iteration_exhaustion",
+        "no_floating_point_in_allocation",
+        "deterministic_order_permutation_required"
+      ],
+      "properties": {
+        "reuse_existing_resource_evidence_validator": {
+          "const": true
+        },
+        "resource_validator_source": {
+          "const": "tools/connectivity-multipath-policy-core/src/resource.rs::validate_resource_inventory"
+        },
+        "topology_digest_must_match_request": {
+          "const": true
+        },
+        "inventory_digest_sha256_required": {
+          "const": true
+        },
+        "completeness_required": {
+          "const": true
+        },
+        "confidence_floor_required": {
+          "const": true
+        },
+        "validity_window_required": {
+          "const": true
+        },
+        "resource_residual_must_be_nonnegative": {
+          "const": true
+        },
+        "unknown_or_invalid_resource_excludes_dependent_paths": {
+          "const": true
+        },
+        "tenant_principal_id_required": {
+          "const": true
+        },
+        "tenant_identity_authenticated_by_this_module": {
+          "const": false
+        },
+        "caller_must_bind_principal_to_authenticated_identity": {
+          "const": true
+        },
+        "duplicate_tenant_flow_path_resource_ids_rejected": {
+          "const": true
+        },
+        "resource_snapshot_digest": {
+          "const": "caller_computed_digest_echoed_in_report_not_independently_authenticated_or_recomputed"
+        },
+        "unknown_tenant_or_flow_reference": {
+          "const": "hard_error"
+        },
+        "unknown_resource_reference": {
+          "const": "dependent_path_exclusion"
+        },
+        "infeasible_minimum_floors": {
+          "const": "explicit_infeasible"
+        },
+        "bounded_iteration_exhaustion": {
+          "const": "fail_closed_internal_invariant"
+        },
+        "no_floating_point_in_allocation": {
+          "const": true
+        },
+        "deterministic_order_permutation_required": {
+          "const": true
+        }
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 18,
+      "maxItems": 18,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "topology",
+          "purpose"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^TRI-[0-9]{2}$"
+          },
+          "topology": {
+            "type": "string",
+            "minLength": 1
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "comparators": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "benchmarks": {
+      "type": "array",
+      "minItems": 13,
+      "maxItems": 13,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "metric",
+          "operator",
+          "target",
+          "target_status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^TRI_[A-Z0-9_]{3,80}$"
+          },
+          "metric": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operator": {
+            "enum": [
+              "==",
+              "<=",
+              "report",
+              "baseline_first"
+            ]
+          },
+          "target": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "target_status": {
+            "enum": [
+              "proposed_target",
+              "baseline_first"
+            ]
+          }
+        }
+      }
+    },
+    "required_metrics": {
+      "type": "array",
+      "minItems": 31,
+      "maxItems": 31,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "verdicts": {
+      "const": [
+        "pass",
+        "fail",
+        "inconclusive",
+        "unsupported"
+      ]
+    },
+    "evidence_classes": {
+      "const": [
+        "deterministic_unit_tests",
+        "bounded_exact_integer_oracle_fixtures",
+        "network_namespace_or_vm_emulation",
+        "hardware_bench",
+        "field_observed"
+      ]
+    },
+    "explicit_non_claims": {
+      "type": "array",
+      "minItems": 13,
+      "maxItems": 13,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

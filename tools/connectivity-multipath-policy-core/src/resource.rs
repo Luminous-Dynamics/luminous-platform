@@ -8,8 +8,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 const RATE_SCALE: u128 = 1_000_000;
 const MAX_PATHS: usize = 64;
-const MAX_RESOURCES: usize = 64;
-const MAX_DOMAINS_PER_PATH: usize = 32;
+pub(crate) const MAX_RESOURCES: usize = 64;
+pub(crate) const MAX_DOMAINS_PER_PATH: usize = 32;
 const MAX_ID_BYTES: usize = 128;
 const MAX_SOURCE_ID_BYTES: usize = 256;
 
@@ -149,10 +149,6 @@ pub struct ResourceAllocationReport {
     pub resource_usage: Vec<ResourceDomainUsage>,
     pub saturated_path_ids: Vec<String>,
     pub saturated_resource_ids: Vec<String>,
-    /// True when every fractional one-bps choice was explored exactly.
-    pub integer_rounding_exact: bool,
-    /// Number of paths with a non-zero fractional remainder after progressive filling.
-    pub integer_rounding_candidate_count: usize,
     pub exclusions: Vec<ResourcePathExclusion>,
     /// This is a weighted max-min result, not a global maximum-goodput claim.
     pub objective: &'static str,
@@ -164,15 +160,17 @@ struct EligiblePath {
     domain_indexes: Vec<usize>,
 }
 
-fn is_sha256(value: &str) -> bool {
+pub(crate) fn is_sha256(value: &str) -> bool {
     value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
 }
 
-fn valid_identifier(value: &str) -> bool {
+pub(crate) fn valid_identifier(value: &str) -> bool {
     !value.trim().is_empty() && value.len() <= MAX_ID_BYTES && !value.chars().any(char::is_control)
 }
 
-fn validate_request(request: &ResourceAllocationRequest) -> Result<(), ResourceAllocationError> {
+pub(crate) fn validate_request(
+    request: &ResourceAllocationRequest,
+) -> Result<(), ResourceAllocationError> {
     if !is_sha256(&request.topology_sha256) {
         return Err(ResourceAllocationError::InvalidTopologyDigest);
     }
@@ -190,7 +188,7 @@ fn validate_request(request: &ResourceAllocationRequest) -> Result<(), ResourceA
     Ok(())
 }
 
-fn evidence_error(
+pub(crate) fn evidence_error(
     request: &ResourceAllocationRequest,
     evidence: &CapacityResourceEvidence,
 ) -> Option<&'static str> {
@@ -230,105 +228,41 @@ fn evidence_error(
     None
 }
 
-fn canonical_ids(ids: &[String]) -> Vec<String> {
+pub(crate) fn canonical_ids(ids: &[String]) -> Vec<String> {
     let mut result = ids.to_vec();
     result.sort();
     result
 }
 
-const MAX_EXACT_INTEGER_ROUNDING_CANDIDATES: usize = 20;
-
-fn search_integer_rounding(
-    position: usize,
-    candidates: &[usize],
-    eligible: &[EligiblePath],
-    resource_residuals: &[Option<u64>],
-    domain_used: &mut [u64],
-    current_rates: &mut [u64],
-    best_rates: &mut Vec<u64>,
-) {
-    if position == candidates.len() {
-        if compare_integer_weighted_fairness(current_rates, best_rates, eligible)
-            == std::cmp::Ordering::Greater
+pub(crate) fn validate_resource_inventory(
+    request: &ResourceAllocationRequest,
+    resources: &[CapacityResource],
+) -> Result<(BTreeMap<String, usize>, Vec<Option<u64>>), ResourceAllocationError> {
+    if resources.len() > MAX_RESOURCES {
+        return Err(ResourceAllocationError::TooManyResources);
+    }
+    let mut resource_index = BTreeMap::new();
+    let mut resource_residuals = Vec::with_capacity(resources.len());
+    for (index, resource) in resources.iter().enumerate() {
+        if !valid_identifier(&resource.resource_id) {
+            return Err(ResourceAllocationError::InvalidResourceId);
+        }
+        if resource_index
+            .insert(resource.resource_id.clone(), index)
+            .is_some()
         {
-            *best_rates = current_rates.to_vec();
+            return Err(ResourceAllocationError::DuplicateResourceId);
         }
-        return;
-    }
-
-    // First visit the no-increment branch. The include branch is only explored
-    // when one additional whole bit/s fits every resource consumed by the path.
-    search_integer_rounding(
-        position + 1,
-        candidates,
-        eligible,
-        resource_residuals,
-        domain_used,
-        current_rates,
-        best_rates,
-    );
-
-    let path_index = candidates[position];
-    let path = &eligible[path_index];
-    if current_rates[path_index] >= path.path.path_ceiling_bps {
-        return;
-    }
-    if !path.domain_indexes.iter().all(|domain_index| {
-        resource_residuals[*domain_index]
-            .is_some_and(|capacity| domain_used[*domain_index] < capacity)
-    }) {
-        return;
-    }
-
-    current_rates[path_index] += 1;
-    for domain_index in &path.domain_indexes {
-        domain_used[*domain_index] += 1;
-    }
-    search_integer_rounding(
-        position + 1,
-        candidates,
-        eligible,
-        resource_residuals,
-        domain_used,
-        current_rates,
-        best_rates,
-    );
-    for domain_index in &path.domain_indexes {
-        domain_used[*domain_index] -= 1;
-    }
-    current_rates[path_index] -= 1;
-}
-
-fn compare_integer_weighted_fairness(
-    left_rates: &[u64],
-    right_rates: &[u64],
-    paths: &[EligiblePath],
-) -> std::cmp::Ordering {
-    let ordered = |rates: &[u64]| {
-        let mut values = rates
-            .iter()
-            .zip(paths)
-            .map(|(rate, path)| (*rate, path.path.weight, path.path.path_id.as_str()))
-            .collect::<Vec<_>>();
-        values.sort_by(|left, right| {
-            (u128::from(left.0) * u128::from(right.1))
-                .cmp(&(u128::from(right.0) * u128::from(left.1)))
-                .then_with(|| left.2.cmp(right.2))
-        });
-        values
-    };
-
-    let left = ordered(left_rates);
-    let right = ordered(right_rates);
-    for (left_value, right_value) in left.iter().zip(&right) {
-        let ordering = (u128::from(left_value.0) * u128::from(right_value.1))
-            .cmp(&(u128::from(right_value.0) * u128::from(left_value.1)));
-        if ordering != std::cmp::Ordering::Equal {
-            return ordering;
+        if resource.declared_capacity_bps == 0 {
+            return Err(ResourceAllocationError::InvalidResourceCapacity);
+        }
+        if evidence_error(request, &resource.evidence).is_some() {
+            resource_residuals.push(None);
+        } else {
+            resource_residuals.push(Some(resource.residual_capacity_bps()?));
         }
     }
-    // Deterministic integer max-min tie-break: canonical path-ID order.
-    left_rates.cmp(right_rates)
+    Ok((resource_index, resource_residuals))
 }
 
 /// Allocate path rates with deterministic weighted max-min progressive filling.
@@ -349,29 +283,7 @@ pub fn allocate_resource_incidence(
         return Err(ResourceAllocationError::TooManyResources);
     }
 
-    let mut resource_index = BTreeMap::new();
-    let mut resource_residuals = Vec::with_capacity(resources.len());
-    let mut resource_ids = BTreeSet::new();
-    for (index, resource) in resources.iter().enumerate() {
-        if !valid_identifier(&resource.resource_id) {
-            return Err(ResourceAllocationError::InvalidResourceId);
-        }
-        if !resource_ids.insert(resource.resource_id.as_str()) {
-            return Err(ResourceAllocationError::DuplicateResourceId);
-        }
-        if resource.declared_capacity_bps == 0 {
-            return Err(ResourceAllocationError::InvalidResourceCapacity);
-        }
-        if evidence_error(request, &resource.evidence).is_some() {
-            // Invalid resource evidence is not a global failure: paths using
-            // this resource are excluded below, while independent resources
-            // remain eligible.
-            resource_residuals.push(None);
-        } else {
-            resource_residuals.push(Some(resource.residual_capacity_bps()?));
-        }
-        resource_index.insert(resource.resource_id.as_str(), index);
-    }
+    let (resource_index, resource_residuals) = validate_resource_inventory(request, resources)?;
 
     let mut seen_path_ids = BTreeSet::new();
     let mut exclusions = Vec::new();
@@ -441,7 +353,7 @@ pub fn allocate_resource_incidence(
         let mut domain_indexes = Vec::with_capacity(path.capacity_domain_ids.len());
         let mut exclusion_reason = None;
         for domain_id in &path.capacity_domain_ids {
-            let Some(index) = resource_index.get(domain_id.as_str()).copied() else {
+            let Some(index) = resource_index.get(domain_id).copied() else {
                 exclusion_reason = Some("capacity_resource_unknown");
                 break;
             };
@@ -617,28 +529,6 @@ pub fn allocate_resource_incidence(
         return Err(ResourceAllocationError::InternalInvariant);
     }
 
-    let integer_rates = rates_scaled
-        .iter()
-        .map(|value| {
-            u64::try_from(value / RATE_SCALE)
-                .map_err(|_| ResourceAllocationError::ArithmeticOverflow)
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    let mut integer_domain_used = vec![0_u64; resources.len()];
-    for (index, item) in eligible.iter().enumerate() {
-        for domain_index in &item.domain_indexes {
-            integer_domain_used[*domain_index] = integer_domain_used[*domain_index]
-                .checked_add(integer_rates[index])
-                .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
-        }
-    }
-
-    // Convert the fixed-point result to integer bps. Exact max-min rounding
-    // is a small combinatorial problem: independently choosing each path's
-    // next bit can block a more equitable combination across disjoint resources.
-    // Search all feasible 0/1 increments when there are at most 20 fractional
-    // candidates; above that bound, use the deterministic one-bit heuristic
-    // below and expose that the integer rounding was not exhaustively qualified.
     let mut integer_rates = rates_scaled
         .iter()
         .map(|value| {
@@ -646,76 +536,41 @@ pub fn allocate_resource_incidence(
                 .map_err(|_| ResourceAllocationError::ArithmeticOverflow)
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let mut integer_domain_used = vec![0_u64; resources.len()];
-    for (index, item) in eligible.iter().enumerate() {
-        for domain_index in &item.domain_indexes {
-            integer_domain_used[*domain_index] = integer_domain_used[*domain_index]
-                .checked_add(integer_rates[index])
-                .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
+    let mut fractional_order = (0..eligible.len()).collect::<Vec<_>>();
+    fractional_order.sort_by(|left, right| {
+        (rates_scaled[*right] % RATE_SCALE)
+            .cmp(&(rates_scaled[*left] % RATE_SCALE))
+            .then_with(|| {
+                eligible[*left]
+                    .path
+                    .path_id
+                    .cmp(&eligible[*right].path.path_id)
+            })
+    });
+
+    // Largest-remainder bps rounding is admitted only when every resource on
+    // the path has one full bps of residual headroom. This cannot overcommit.
+    for index in fractional_order {
+        if integer_rates[index] >= eligible[index].path.path_ceiling_bps {
+            continue;
         }
-    }
-
-    let fractional_candidates = rates_scaled
-        .iter()
-        .enumerate()
-        .filter_map(|(index, value)| {
-            (value % RATE_SCALE != 0
-                && integer_rates[index] < eligible[index].path.path_ceiling_bps)
-                .then_some(index)
-        })
-        .collect::<Vec<_>>();
-    let integer_rounding_candidate_count = fractional_candidates.len();
-    let integer_rounding_exact =
-        integer_rounding_candidate_count <= MAX_EXACT_INTEGER_ROUNDING_CANDIDATES;
-
-    if integer_rounding_exact {
-        let mut best_rates = integer_rates.clone();
-        search_integer_rounding(
-            0,
-            &fractional_candidates,
-            &eligible,
-            &resource_residuals,
-            &mut integer_domain_used,
-            &mut integer_rates,
-            &mut best_rates,
-        );
-        integer_rates = best_rates;
-    } else {
-        // Bounded fallback for large active sets. Each fractional candidate
-        // receives at most one bit/s, in descending fractional-remainder order
-        // with canonical path-ID ties. This is a stable apportionment heuristic,
-        // not an exact integer leximin solution; the report says so explicitly.
-        let mut ordered_candidates = fractional_candidates.clone();
-        ordered_candidates.sort_by(|left, right| {
-            (rates_scaled[*right] % RATE_SCALE)
-                .cmp(&(rates_scaled[*left] % RATE_SCALE))
-                .then_with(|| {
-                    eligible[*left]
-                        .path
-                        .path_id
-                        .cmp(&eligible[*right].path.path_id)
-                })
+        let fits_all_resources = eligible[index].domain_indexes.iter().all(|domain_index| {
+            let Some(capacity) = resource_residuals[*domain_index] else {
+                return false;
+            };
+            let used = eligible
+                .iter()
+                .enumerate()
+                .filter(|(_, path)| path.domain_indexes.contains(domain_index))
+                .try_fold(0_u64, |sum, (path_index, _)| {
+                    sum.checked_add(integer_rates[path_index])
+                });
+            used.is_some_and(|used| used < capacity)
         });
-        for index in ordered_candidates {
-            let item = &eligible[index];
-            if integer_rates[index] >= item.path.path_ceiling_bps {
-                continue;
-            }
-            let fits_all_resources = item.domain_indexes.iter().all(|domain_index| {
-                resource_residuals[*domain_index]
-                    .is_some_and(|capacity| integer_domain_used[*domain_index] < capacity)
-            });
-            if !fits_all_resources {
-                continue;
-            }
+        if fits_all_resources {
             integer_rates[index] = integer_rates[index]
                 .checked_add(1)
                 .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
-            for domain_index in &item.domain_indexes {
-                integer_domain_used[*domain_index] = integer_domain_used[*domain_index]
-                    .checked_add(1)
-                    .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
-            }
         }
     }
 
@@ -804,8 +659,6 @@ pub fn allocate_resource_incidence(
         resource_usage,
         saturated_path_ids,
         saturated_resource_ids,
-        integer_rounding_exact,
-        integer_rounding_candidate_count,
         exclusions,
         objective: "weighted_max_min_progressive_filling_not_global_sum_rate_optimum",
     })
@@ -814,58 +667,6 @@ pub fn allocate_resource_incidence(
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    const MAX_EXACT_REFERENCE_PATHS: usize = 4;
-    const MAX_EXACT_REFERENCE_RESOURCES: usize = 6;
-    const MAX_EXACT_REFERENCE_ASSIGNMENTS: u128 = 1_000_000;
-
-    /// The exact integer oracles intentionally cover only bounded micro-topologies.
-    /// The product of each path's feasible integer-rate choices is capped, so an
-    /// accidental call with production-scale bps/capacity cannot explode test time.
-    fn assert_exact_reference_bounds(
-        paths: &[ResourcePath],
-        resources: &[CapacityResource],
-    ) -> BTreeMap<String, u64> {
-        assert!(
-            paths.len() <= MAX_EXACT_REFERENCE_PATHS,
-            "exact reference is limited to {MAX_EXACT_REFERENCE_PATHS} paths"
-        );
-        assert!(
-            resources.len() <= MAX_EXACT_REFERENCE_RESOURCES,
-            "exact reference is limited to {MAX_EXACT_REFERENCE_RESOURCES} resources"
-        );
-
-        let capacities = resources
-            .iter()
-            .map(|resource| {
-                (
-                    resource.resource_id.clone(),
-                    resource.residual_capacity_bps().expect("valid residual"),
-                )
-            })
-            .collect::<BTreeMap<_, _>>();
-
-        let mut assignment_count = 1_u128;
-        for path in paths {
-            let feasible_ceiling = path
-                .capacity_domain_ids
-                .iter()
-                .try_fold(path.path_ceiling_bps, |ceiling, domain| {
-                    capacities
-                        .get(domain)
-                        .map(|capacity| ceiling.min(*capacity))
-                })
-                .expect("exact reference paths must use known resources");
-            assignment_count = assignment_count
-                .checked_mul(u128::from(feasible_ceiling) + 1)
-                .expect("bounded reference assignment count fits u128");
-        }
-        assert!(
-            assignment_count <= MAX_EXACT_REFERENCE_ASSIGNMENTS,
-            "exact reference assignment count {assignment_count} exceeds bound              {MAX_EXACT_REFERENCE_ASSIGNMENTS}"
-        );
-        capacities
-    }
 
     fn evidence() -> CapacityResourceEvidence {
         CapacityResourceEvidence {
@@ -1244,10 +1045,6 @@ mod tests {
         paths: &[ResourcePath],
         resources: &[CapacityResource],
     ) -> u64 {
-        let capacities = assert_exact_reference_bounds(paths, resources);
-        let mut canonical_paths = paths.to_vec();
-        canonical_paths.sort_by(|left, right| left.path_id.cmp(&right.path_id));
-
         fn visit(
             index: usize,
             paths: &[ResourcePath],
@@ -1286,15 +1083,17 @@ mod tests {
             }
         }
 
+        let capacities = resources
+            .iter()
+            .map(|resource| {
+                (
+                    resource.resource_id.clone(),
+                    resource.residual_capacity_bps().expect("valid residual"),
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
         let mut best = 0;
-        visit(
-            0,
-            &canonical_paths,
-            &capacities,
-            &mut BTreeMap::new(),
-            0,
-            &mut best,
-        );
+        visit(0, paths, &capacities, &mut BTreeMap::new(), 0, &mut best);
         best
     }
 
@@ -1317,10 +1116,6 @@ mod tests {
         paths: &[ResourcePath],
         resources: &[CapacityResource],
     ) -> Vec<u64> {
-        let capacities = assert_exact_reference_bounds(paths, resources);
-        let mut canonical_paths = paths.to_vec();
-        canonical_paths.sort_by(|left, right| left.path_id.cmp(&right.path_id));
-
         fn visit(
             index: usize,
             paths: &[ResourcePath],
@@ -1340,18 +1135,10 @@ mod tests {
                     (u128::from(left.0) * u128::from(right.1))
                         .cmp(&(u128::from(right.0) * u128::from(left.1)))
                 });
-                let fairness_order = best_fairness
-                    .as_ref()
-                    .map_or(std::cmp::Ordering::Greater, |best| {
-                        compare_weighted_fairness_vectors(&fairness, best)
-                    });
-                // Equal weighted-fairness vectors can have multiple equivalent
-                // integer assignments. Prefer the lexicographically larger rate
-                // vector in canonical path-ID order to match the allocator's
-                // deterministic remainder convention.
-                let replace = fairness_order == std::cmp::Ordering::Greater
-                    || (fairness_order == std::cmp::Ordering::Equal
-                        && rates.as_slice() > best_rates.as_slice());
+                let replace = best_fairness.as_ref().is_none_or(|best| {
+                    compare_weighted_fairness_vectors(&fairness, best)
+                        == std::cmp::Ordering::Greater
+                });
                 if replace {
                     *best_fairness = Some(fairness);
                     *best_rates = rates.clone();
@@ -1394,11 +1181,20 @@ mod tests {
             }
         }
 
+        let capacities = resources
+            .iter()
+            .map(|resource| {
+                (
+                    resource.resource_id.clone(),
+                    resource.residual_capacity_bps().expect("valid residual"),
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
         let mut best_fairness = None;
         let mut best_rates = Vec::new();
         visit(
             0,
-            &canonical_paths,
+            paths,
             &capacities,
             &mut BTreeMap::new(),
             &mut Vec::new(),
@@ -1441,142 +1237,6 @@ mod tests {
         );
         // The allocator's weighted max-min objective is intentionally not
         // presented as a maximum-sum-rate optimizer; the gap remains visible.
-    }
-
-    #[test]
-    fn exhaustive_two_resource_microtopologies_match_exact_weighted_reference() {
-        // Every one of the 3^3 non-empty incidence assignments over {x, y}
-        // is checked at all 4x4 small residual-capacity combinations. Weights
-        // differ deliberately so this exercises weighted progressive filling.
-        let incidence_sets: [&[&str]; 3] = [&["x"], &["y"], &["x", "y"]];
-        let mut fixture_count = 0_u32;
-
-        for incidence_code in 0_u32..27 {
-            let mut code = incidence_code;
-            let mut selected_sets = Vec::with_capacity(3);
-            for _ in 0..3 {
-                selected_sets.push(incidence_sets[(code % 3) as usize]);
-                code /= 3;
-            }
-
-            for x_capacity in 1_u64..=4 {
-                for y_capacity in 1_u64..=4 {
-                    let paths = vec![
-                        path("a", 4, 1, selected_sets[0]),
-                        path("b", 4, 2, selected_sets[1]),
-                        path("c", 4, 3, selected_sets[2]),
-                    ];
-                    let resources = vec![
-                        resource("x", x_capacity, 0, 0, 0),
-                        resource("y", y_capacity, 0, 0, 0),
-                    ];
-                    let report = allocate_resource_incidence(&request(), &paths, &resources)
-                        .expect("valid micro-topology");
-                    let actual = report
-                        .path_allocations
-                        .iter()
-                        .map(|allocation| allocation.allocated_rate_bps)
-                        .collect::<Vec<_>>();
-                    let expected = exact_integer_weighted_max_min_reference(&paths, &resources);
-                    assert_eq!(
-                        actual, expected,
-                        "resource incidence code {incidence_code}, capacities x={x_capacity} y={y_capacity}"
-                    );
-                    for usage in &report.resource_usage {
-                        assert!(
-                            usage.allocated_rate_bps <= usage.residual_capacity_bps,
-                            "resource {} exceeded its residual capacity",
-                            usage.resource_id
-                        );
-                    }
-                    fixture_count += 1;
-                }
-            }
-        }
-        assert_eq!(fixture_count, 27 * 16);
-    }
-
-    #[test]
-    fn exact_integer_rounding_selects_a_feasible_combination_across_independent_resources() {
-        let paths = vec![
-            path("a", 4, 1, &["x", "y"]),
-            path("b", 4, 2, &["y"]),
-            path("c", 4, 3, &["x"]),
-        ];
-        let resources = vec![resource("x", 1, 0, 0, 0), resource("y", 1, 0, 0, 0)];
-        let report = allocate_resource_incidence(&request(), &paths, &resources)
-            .expect("valid shared-resource microtopology");
-        assert_eq!(
-            report
-                .path_allocations
-                .iter()
-                .map(|allocation| allocation.allocated_rate_bps)
-                .collect::<Vec<_>>(),
-            vec![0, 1, 1]
-        );
-        assert!(report.integer_rounding_exact);
-        assert!(report.integer_rounding_candidate_count <= MAX_EXACT_INTEGER_ROUNDING_CANDIDATES);
-        assert!(
-            report
-                .resource_usage
-                .iter()
-                .all(|usage| usage.allocated_rate_bps <= usage.residual_capacity_bps)
-        );
-    }
-
-    #[test]
-    fn large_integer_rounding_sets_use_marked_feasible_fallback() {
-        let paths = (0..=MAX_EXACT_INTEGER_ROUNDING_CANDIDATES)
-            .map(|index| path(&format!("p{index:02}"), 10, 1, &["shared"]))
-            .collect::<Vec<_>>();
-        let resources = vec![resource("shared", 10, 0, 0, 0)];
-        let report = allocate_resource_incidence(&request(), &paths, &resources)
-            .expect("bounded fallback must remain feasible");
-        assert!(!report.integer_rounding_exact);
-        assert_eq!(
-            report.integer_rounding_candidate_count,
-            MAX_EXACT_INTEGER_ROUNDING_CANDIDATES + 1
-        );
-        assert!(
-            report
-                .resource_usage
-                .iter()
-                .all(|usage| usage.allocated_rate_bps <= usage.residual_capacity_bps)
-        );
-        assert_eq!(report.total_allocated_rate_bps, 10);
-        assert_eq!(
-            report
-                .path_allocations
-                .iter()
-                .filter(|allocation| allocation.allocated_rate_bps == 1)
-                .count(),
-            10
-        );
-        assert!(
-            report
-                .path_allocations
-                .iter()
-                .all(|allocation| allocation.allocated_rate_bps <= 1)
-        );
-    }
-
-    #[test]
-    fn exact_reference_rejects_unbounded_microtopology_inputs() {
-        let too_many_paths = (0..=MAX_EXACT_REFERENCE_PATHS)
-            .map(|index| path(&format!("p{index}"), 1, 1, &["x"]))
-            .collect::<Vec<_>>();
-        let resources = vec![resource("x", 1, 0, 0, 0)];
-        let panic = std::panic::catch_unwind(|| {
-            exact_integer_weighted_max_min_reference(&too_many_paths, &resources)
-        });
-        assert!(panic.is_err());
-
-        let too_many_assignments = vec![path("a", 1_000, 1, &["x"]), path("b", 1_000, 1, &["x"])];
-        let larger_resource = vec![resource("x", 1_000, 0, 0, 0)];
-        let panic = std::panic::catch_unwind(|| {
-            exact_integer_reference_max_total(&too_many_assignments, &larger_resource)
-        });
-        assert!(panic.is_err());
     }
 
     #[test]

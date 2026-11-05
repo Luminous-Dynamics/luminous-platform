@@ -1,0 +1,319 @@
+{
+  "schema_version": "luminous.lnf.tenant-resource-incidence-profile.v1",
+  "profile_id": "lnf-tenant-resource-incidence-v1",
+  "status": "draft_targets_not_results",
+  "reviewed_on": "2026-11-04",
+  "issue": 247,
+  "parent_issue": 226,
+  "parent_resource_allocator_pr": 230,
+  "objective": "Allocate shared multi-resource capacity fairly by authenticated tenant principal, then by flow weight, then by path split weight, while respecting every shared resource ceiling and per-tenant minimum service floor.",
+  "ownership_boundary": "Pure Rust deterministic planning model. Tenant authentication, resource discovery, evidence collection and router/transport actuation remain external. Reuses the evidence-bound resource inventory validator; this module does not implement another inventory source.",
+  "algorithm": {
+    "name": "tenant_first_weighted_progressive_filling_with_normalized_flow_and_path_weights",
+    "hierarchy": [
+      "tenant_principal",
+      "flow_within_tenant",
+      "path_within_flow"
+    ],
+    "numeric_representation": "checked_u128_fixed_point_then_integer_bps_largest_remainder",
+    "weight_scale": 1000000000000,
+    "rate_denominator": 1000000000000000000,
+    "max_tenants": 64,
+    "max_flows": 256,
+    "max_paths": 64,
+    "max_paths_per_flow": 8,
+    "max_resources": 64,
+    "max_capacity_domains_per_path": 32,
+    "max_tenant_weight": 1000000,
+    "max_flow_weight": 1000,
+    "max_path_split_weight": 1000,
+    "path_ceiling_is_hard": true,
+    "flow_demand_is_hard": true,
+    "resource_capacity_is_one_shared_aggregate_constraint": true,
+    "tenant_weight_normalization": "For each tenant, the sum of effective path weights over its active flows and paths is exactly tenant_weight * weight_scale; flow and path multiplicity cannot increase the tenant's aggregate entitlement.",
+    "progressive_filling": "All eligible active tenants first progress toward declared minimum service floors. Tenants whose floors are met leave the floor phase. Then the same tenant-normalized weights govern the remaining weighted max-min allocation. Path, flow and resource bottlenecks freeze only affected path variables; surviving variables are renormalized deterministically.",
+    "residual_capacity_formula": "declared_capacity_bps - measured_background_load_bps - committed_reservations_bps - safety_margin_bps",
+    "floor_policy": "Minimum service floors are aggregate per tenant, may not exceed aggregate demand, and must be met or the solve returns explicit infeasible.",
+    "objective": "tenant_weighted_max_min_then_flow_weighted_max_min_over_shared_resource_incidence_not_global_sum_rate_optimum",
+    "exact_reference": "Independent integer exhaustive enumeration for frozen small-topology oracle fixtures only; not a general production LP solver."
+  },
+  "evidence_contract": {
+    "reuse_existing_resource_evidence_validator": true,
+    "resource_validator_source": "tools/connectivity-multipath-policy-core/src/resource.rs::validate_resource_inventory",
+    "topology_digest_must_match_request": true,
+    "inventory_digest_sha256_required": true,
+    "completeness_required": true,
+    "confidence_floor_required": true,
+    "validity_window_required": true,
+    "resource_residual_must_be_nonnegative": true,
+    "unknown_or_invalid_resource_excludes_dependent_paths": true,
+    "tenant_principal_id_required": true,
+    "tenant_identity_authenticated_by_this_module": false,
+    "caller_must_bind_principal_to_authenticated_identity": true,
+    "duplicate_tenant_flow_path_resource_ids_rejected": true,
+    "resource_snapshot_digest": "caller_computed_digest_echoed_in_report_not_independently_authenticated_or_recomputed",
+    "unknown_tenant_or_flow_reference": "hard_error",
+    "unknown_resource_reference": "dependent_path_exclusion",
+    "infeasible_minimum_floors": "explicit_infeasible",
+    "bounded_iteration_exhaustion": "fail_closed_internal_invariant",
+    "no_floating_point_in_allocation": true,
+    "deterministic_order_permutation_required": true
+  },
+  "scenarios": [
+    {
+      "id": "TRI-00",
+      "topology": "two_tenants_one_shared_resource_equal_weight",
+      "purpose": "Equal tenant entitlement on one bottleneck"
+    },
+    {
+      "id": "TRI-01",
+      "topology": "two_tenants_unequal_aggregate_weights",
+      "purpose": "Configured tenant weights control aggregate entitlement"
+    },
+    {
+      "id": "TRI-02",
+      "topology": "one_tenant_opens_many_flows",
+      "purpose": "Flow multiplication does not multiply tenant entitlement"
+    },
+    {
+      "id": "TRI-03",
+      "topology": "one_flow_uses_multiple_paths",
+      "purpose": "Path multiplication does not multiply flow or tenant entitlement"
+    },
+    {
+      "id": "TRI-04",
+      "topology": "multiple_flows_within_tenant_unequal_flow_weights",
+      "purpose": "Flow weights divide the tenant allocation"
+    },
+    {
+      "id": "TRI-05",
+      "topology": "multiple_paths_within_flow_unequal_split_weights",
+      "purpose": "Path split weights divide the flow allocation"
+    },
+    {
+      "id": "TRI-06",
+      "topology": "tenant_floors_feasible",
+      "purpose": "Floors are met before residual fair sharing"
+    },
+    {
+      "id": "TRI-07",
+      "topology": "tenant_floors_exceed_shared_resource_capacity",
+      "purpose": "Explicit infeasible result; no partial success"
+    },
+    {
+      "id": "TRI-08",
+      "topology": "tenant_floor_exceeds_aggregate_demand",
+      "purpose": "Reject invalid floor declaration"
+    },
+    {
+      "id": "TRI-09",
+      "topology": "three_paths_x_xy_y_overlap",
+      "purpose": "Compare the [5,5,5] weighted leximin witness against the [10,0,10] maximum-sum witness for X=10,Y=10"
+    },
+    {
+      "id": "TRI-10",
+      "topology": "partial_resource_saturation",
+      "purpose": "Only affected path variables freeze; independent resources remain usable"
+    },
+    {
+      "id": "TRI-11",
+      "topology": "one_resource_evidence_stale_or_incomplete",
+      "purpose": "Dependent paths excluded; unaffected resource paths remain eligible"
+    },
+    {
+      "id": "TRI-12",
+      "topology": "flow_demand_saturates_early",
+      "purpose": "Residual entitlement is redistributed without exceeding demand"
+    },
+    {
+      "id": "TRI-13",
+      "topology": "path_ceiling_saturates_early",
+      "purpose": "Remaining flow allocation shifts to another active path"
+    },
+    {
+      "id": "TRI-14",
+      "topology": "path_or_flow_multiplicity_changes",
+      "purpose": "Aggregate tenant entitlement remains bounded by tenant weight"
+    },
+    {
+      "id": "TRI-15",
+      "topology": "tenant_flow_path_resource_input_order_permutation",
+      "purpose": "Byte-identical deterministic report"
+    },
+    {
+      "id": "TRI-16",
+      "topology": "resource_snapshot_changes_after_background_load_or_reservations",
+      "purpose": "Recompute from new frozen evidence; no stale reuse"
+    },
+    {
+      "id": "TRI-17",
+      "topology": "zero_capacity_overflow_duplicate_ids_and_iteration_bound",
+      "purpose": "Fail closed on malformed/bounded inputs"
+    }
+  ],
+  "comparators": [
+    "existing_resource_incidence_weighted_max_min_without_tenant_principals_pr230",
+    "single_bottleneck_tenant_first_weighted_max_min_pr215",
+    "equal_per_flow_sharing",
+    "unweighted_flow_weighted_max_min",
+    "weighted_flow_max_min",
+    "tenant_first_weighted_progressive_filling_with_resource_incidence",
+    "bounded_exact_integer_leximin_oracle_for_frozen_small_topologies",
+    "exact_maximum_sum_integer_reference_for_same_small_topologies",
+    "cake_triple_isolate_and_fq_codel_queueing_baselines_not_path_allocators"
+  ],
+  "benchmarks": [
+    {
+      "id": "TRI_TENANT_ENTITLEMENT_001",
+      "metric": "tenant_aggregate_rate_share_vs_configured_weight_for_backlogged_tenants",
+      "operator": "baseline_first",
+      "target": null,
+      "target_status": "baseline_first"
+    },
+    {
+      "id": "TRI_FLOW_MULTIPLICATION_001",
+      "metric": "additional_tenant_rate_created_only_by_opening_extra_flows",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TRI_PATH_MULTIPLICATION_001",
+      "metric": "additional_tenant_or_flow_entitlement_created_only_by_adding_paths",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TRI_RESOURCE_OVERCOMMIT_001",
+      "metric": "sum_path_rate_using_resource_minus_resource_residual_capacity",
+      "operator": "<=",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TRI_TENANT_FLOOR_001",
+      "metric": "minimum_service_floor_violations_when_feasible",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TRI_FLOOR_INFEASIBLE_001",
+      "metric": "infeasible_floor_sets_reported_as_feasible",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TRI_DEMAND_BOUND_001",
+      "metric": "flow_rate_over_declared_demand",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TRI_PATH_BOUND_001",
+      "metric": "path_rate_over_path_ceiling",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TRI_ORACLE_001",
+      "metric": "allocation_vector_matches_exact_integer_leximin_for_frozen_fixtures",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TRI_MAX_SUM_GAP_001",
+      "metric": "tenant_weighted_max_min_total_rate_minus_exact_maximum_sum_total_rate",
+      "operator": "report",
+      "target": null,
+      "target_status": "baseline_first"
+    },
+    {
+      "id": "TRI_DETERMINISM_001",
+      "metric": "identical_report_under_tenant_flow_path_resource_order_permutation",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TRI_INVALID_EVIDENCE_001",
+      "metric": "rate_allocated_on_path_with_unknown_stale_or_incomplete_resource_evidence",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TRI_RUNTIME_001",
+      "metric": "allocation_runtime_and_memory_high_water_by_tenant_flow_path_resource_counts",
+      "operator": "baseline_first",
+      "target": null,
+      "target_status": "baseline_first"
+    }
+  ],
+  "required_metrics": [
+    "tenant_weight",
+    "tenant_minimum_service_bps",
+    "tenant_aggregate_demand_bps",
+    "tenant_aggregate_allocated_rate_bps",
+    "tenant_weighted_rate_bps",
+    "tenant_floor_met_status",
+    "tenant_active_flow_count",
+    "flow_weight",
+    "flow_demand_bps",
+    "flow_allocated_rate_bps",
+    "flow_active_path_count",
+    "path_split_weight",
+    "path_ceiling_bps",
+    "path_allocated_rate_bps",
+    "path_capacity_domain_ids",
+    "resource_declared_capacity_bps",
+    "resource_background_load_bps",
+    "resource_committed_reservations_bps",
+    "resource_safety_margin_bps",
+    "resource_residual_capacity_bps",
+    "resource_allocated_rate_bps",
+    "resource_unused_capacity_bps",
+    "resource_saturation_count",
+    "minimum_service_met_tenant_ids",
+    "flow_minimum_demand_and_capacity_exclusions",
+    "resource_evidence_source_inventory_topology_and_validity",
+    "weighted_tenant_jain_index_for_backlogged_tenants",
+    "weighted_flow_jain_index_within_each_tenant",
+    "exact_integer_leximin_vector_and_maximum_sum_gap",
+    "determinism_under_input_permutation",
+    "allocation_runtime_and_memory_high_water"
+  ],
+  "verdicts": [
+    "pass",
+    "fail",
+    "inconclusive",
+    "unsupported"
+  ],
+  "evidence_classes": [
+    "deterministic_unit_tests",
+    "bounded_exact_integer_oracle_fixtures",
+    "network_namespace_or_vm_emulation",
+    "hardware_bench",
+    "field_observed"
+  ],
+  "explicit_non_claims": [
+    "This module does not authenticate tenant IDs; the caller must bind tenant principal IDs to authenticated identities.",
+    "This module reuses the evidence-bound resource inventory validator from the existing resource allocator and does not create a second resource inventory engine.",
+    "Tenant-weighted progressive filling is not a global maximum-sum-rate optimizer.",
+    "The bounded integer oracle fixture proves agreement only for its explicitly enumerated small topologies, not general LP optimality.",
+    "No claim is made that tenant weights, flow weights or path split weights are fair without an externally justified policy.",
+    "No rate is allocated on a path whose required resource evidence is unknown, stale, incomplete, low-confidence or topology-mismatched.",
+    "The input resource snapshot digest is caller-computed and echoed, not independently authenticated by this module.",
+    "No route, SIM/eSIM, qdisc, congestion-control or radio actuation is performed.",
+    "CAKE and fq_codel are queue-management comparators, not equivalent tenant/path allocation algorithms.",
+    "No namespace, hardware or field performance result is claimed by deterministic unit tests.",
+    "The allocator does not guarantee a globally optimal path split under arbitrary path/resource incidence; it is bounded and deterministic.",
+    "The allocator does not implement packet ordering, receiver reassembly or transport congestion control.",
+    "A successful allocation report is a plan under one frozen resource snapshot, not proof that the network actually delivered that rate."
+  ]
+}

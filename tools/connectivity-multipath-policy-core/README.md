@@ -143,11 +143,31 @@ Residual capacity is computed once per resource:
 
 Every allocation must satisfy the path ceiling and every resource constraint. For resource d, the sum of allocated rates for all paths traversing d may not exceed that resource's residual capacity. Unknown, stale, incomplete, low-confidence or topology-mismatched evidence excludes dependent paths; it is never interpreted as infinite capacity.
 
-The first allocator is deterministic weighted progressive filling with checked integer arithmetic and micro-bps fixed-point levels. It freezes flows that encounter a path or resource ceiling, while paths that do not traverse a saturated resource may continue to gain rate. Integer rounding is exhaustively leximin-optimal for up to 20 fractional candidates; above that bound it uses a deterministic one-bit-per-path fractional-remainder heuristic and explicitly marks `integer_rounding_exact=false`. The report preserves per-resource residual/allocated/unused capacity, evidence provenance, saturated constraints, exclusions and rounding qualification.
+The first allocator is deterministic weighted progressive filling with checked integer arithmetic, micro-bps fixed-point levels and stable largest-remainder rounding. It freezes flows that encounter a path or resource ceiling, while paths that do not traverse a saturated resource may continue to gain rate. The report preserves per-resource residual/allocated/unused capacity, evidence provenance, saturated constraints and exclusions.
 
 This is a **weighted max-min fairness allocator**, not a general maximum-sum-rate optimizer. The profile includes an independent bounded exact integer reference for small topologies. In the three-path X / X+Y / Y counterexample, the max-min solution is 6/4/4 while a maximum-sum solution can reach 10/0/8. The allocator must not conceal this utilization gap or claim it wins every objective. Fairness, utilization, task completion, latency, cost and energy remain separate comparison dimensions.
 
-The test-only exact integer oracles are explicitly bounded to at most four paths, six resources and one million total integer assignments, where the assignment count is the product of each path's feasible integer-rate choices. They fail closed when a fixture exceeds that budget. A deterministic 432-case micro-topology corpus exercises every one of the 3^3 non-empty path/resource incidence assignments over two resources at all 4×4 small capacity pairs, comparing progressive filling against the independent weighted max-min reference. Equal fairness vectors use canonical path-ID order and a stable lexicographic rate-vector tie-break. This oracle is a micro-instance correctness reference, not a production optimizer or a performance benchmark.
+## Tenant-first resource-incidence allocation
+
+`tenant_resource::allocate_tenant_resource_incidence` extends the existing evidence-bound resource allocator without duplicating its inventory-validation path. It reuses `resource::validate_resource_inventory` from `resource.rs` and takes caller-supplied tenant principals, flows, paths and the same capacity-resource snapshot.
+
+Its hierarchy is **tenant principal → flow → path**:
+- each tenant has one configured aggregate weight and an optional aggregate minimum service floor;
+- flow weights divide that tenant's current entitlement across its active flows;
+- path split weights divide each flow's current entitlement across its active paths;
+- every path remains subject to its path ceiling, flow demand, and every resource ceiling in its capacity-domain set.
+
+Effective path weights are normalized so that, for each tenant, the sum over active flows and paths remains exactly its configured tenant weight (in the declared fixed-point scale). Opening more flows or more paths therefore cannot multiply the tenant's aggregate entitlement. If a path or resource saturates, only affected path variables freeze and the remaining weights are deterministically renormalized.
+
+The floor phase runs first. Every tenant's minimum service floor must be no greater than its aggregate flow demand and must fit under the shared resource constraints. If a floor cannot be met, the allocator returns `MinimumServiceInfeasible`; it does not emit a partially feasible report as success. A bounded-iteration exhaustion also fails closed.
+
+The allocator uses bounded fixed-point integer arithmetic, deterministic largest-remainder rounding, and a maximum of 64 tenants, 256 flows, 64 paths, eight paths per flow and 64 resources. It returns path, flow, tenant and per-resource allocations, bottleneck saturation, exclusions and the frozen topology/resource snapshot identities. Tenant principal IDs are **not authenticated here**; the caller must bind them to authenticated Mycelix or other identity-plane principals.
+
+### Fairness versus total utilization
+
+Tenant-first weighted max-min and maximum-sum goodput are different objectives. For the frozen overlap example A→X, B→X+Y, C→Y with X=10 and Y=10, the leximin fair vector is [5,5,5] (total 15), while [10,0,10] maximizes the sum (total 20) by starving B. LNF must publish both vectors and their trade-off; it must not label the higher sum as a universal improvement.
+
+The exact enumeration test in this module covers that small integer fixture only. It is not a general rational LP oracle or a proof of global optimality for arbitrary topologies. Programme-level comparisons must retain all repetitions, resource topologies, demands, floors, and failure cases.
 
 ## Required next steps before a performance claim
 

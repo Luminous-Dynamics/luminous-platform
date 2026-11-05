@@ -355,14 +355,6 @@ struct TransmissionAccounting<'a> {
     records: &'a mut Vec<TraceTransmission>,
 }
 
-struct TransmissionAccounting<'a> {
-    request: &'a ScheduleRequest,
-    trace_request: &'a TraceRequest,
-    aggregate_cost_used: &'a mut u64,
-    aggregate_energy_used: &'a mut u64,
-    records: &'a mut Vec<TraceTransmission>,
-}
-
 fn record_transmission(
     state: &mut PathState,
     segment_index: u32,
@@ -1224,7 +1216,10 @@ mod tests {
         assert_eq!(delivered[2].application_release_us, 30);
         let release_waits = delivered
             .iter()
-            .map(|item| item.application_release_us.saturating_sub(item.first_arrival_us))
+            .map(|item| {
+                item.application_release_us
+                    .saturating_sub(item.first_arrival_us)
+            })
             .collect::<Vec<_>>();
         assert_eq!(pctl(&release_waits, 50, 100), Some(0));
         assert_eq!(pctl(&release_waits, 95, 100), Some(10));
