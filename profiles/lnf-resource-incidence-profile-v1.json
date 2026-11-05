@@ -20,7 +20,7 @@
     "no_general_sum_rate_optimality_claim": true
   },
   "bounds": {
-    "paths_maximum": 64,
+    "paths_maximum": 256,
     "capacity_domains_maximum": 128,
     "capacity_domains_per_path_minimum": 1,
     "capacity_domains_per_path_maximum": 32,
