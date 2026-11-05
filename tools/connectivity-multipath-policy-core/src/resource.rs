@@ -9,7 +9,7 @@ use std::collections::{BTreeMap, BTreeSet};
 const RATE_SCALE: u128 = 1_000_000;
 const MAX_PATHS: usize = 64;
 const MAX_RESOURCES: usize = 64;
-const MAX_DOMAINS_PER_PATH: usize = 32;
+pub(crate) const MAX_DOMAINS_PER_PATH: usize = 32;
 const MAX_ID_BYTES: usize = 128;
 const MAX_SOURCE_ID_BYTES: usize = 256;
 
