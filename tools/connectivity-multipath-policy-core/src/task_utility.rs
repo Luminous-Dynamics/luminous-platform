@@ -1174,7 +1174,7 @@ mod tests {
                 .expect("mismatched pairs are classified");
         assert_eq!(report.overall_disposition, UtilityDisposition::Inconclusive);
         assert_eq!(
-            report.gates[0].reason,
+            report.gates.iter().find(|item| item.gate_id == "TASK_PAIR_IDENTITY").unwrap().reason,
             "control_and_treatment_environment_identity_mismatch"
         );
     }
@@ -1249,7 +1249,10 @@ mod tests {
         let report =
             evaluate_task_utility_pair(&control, &treatment, TaskUtilityTargets::default())
                 .expect("valid pair");
-        assert_eq!(report.gates[6].disposition, UtilityDisposition::Fail);
+        assert_eq!(
+            report.gates.iter().find(|item| item.gate_id == "TASK_RESOURCE_OVERCOMMIT").unwrap().disposition,
+            UtilityDisposition::Fail
+        );
     }
 
     #[test]
