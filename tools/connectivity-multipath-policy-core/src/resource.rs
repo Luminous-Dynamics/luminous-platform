@@ -172,7 +172,9 @@ pub(crate) fn valid_identifier(value: &str) -> bool {
     !value.trim().is_empty() && value.len() <= MAX_ID_BYTES && !value.chars().any(char::is_control)
 }
 
-pub(crate) fn validate_request(request: &ResourceAllocationRequest) -> Result<(), ResourceAllocationError> {
+pub(crate) fn validate_request(
+    request: &ResourceAllocationRequest,
+) -> Result<(), ResourceAllocationError> {
     if !is_sha256(&request.topology_sha256) {
         return Err(ResourceAllocationError::InvalidTopologyDigest);
     }
