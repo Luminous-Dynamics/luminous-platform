@@ -238,10 +238,12 @@ pub(crate) fn canonical_ids(ids: &[String]) -> Vec<String> {
     result
 }
 
+pub(crate) type ValidatedResourceInventory = (BTreeMap<String, usize>, Vec<Option<u64>>);
+
 pub(crate) fn validate_resource_inventory(
     request: &ResourceAllocationRequest,
     resources: &[CapacityResource],
-) -> Result<(BTreeMap<String, usize>, Vec<Option<u64>>), ResourceAllocationError> {
+) -> Result<ValidatedResourceInventory, ResourceAllocationError> {
     if resources.len() > MAX_RESOURCES {
         return Err(ResourceAllocationError::TooManyResources);
     }
