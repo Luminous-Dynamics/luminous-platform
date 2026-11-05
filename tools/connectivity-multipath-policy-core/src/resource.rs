@@ -241,13 +241,7 @@ fn compare_integer_weighted_fairness(
         let mut values = rates
             .iter()
             .zip(paths)
-            .map(|(rate, path)| {
-                (
-                    *rate,
-                    path.path.weight,
-                    path.path.path_id.as_str(),
-                )
-            })
+            .map(|(rate, path)| (*rate, path.path.weight, path.path.path_id.as_str()))
             .collect::<Vec<_>>();
         values.sort_by(|left, right| {
             (u128::from(left.0) * u128::from(right.1))
