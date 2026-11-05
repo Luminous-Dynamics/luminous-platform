@@ -680,40 +680,37 @@ pub fn allocate_resource_incidence(
         );
         integer_rates = best_rates;
     } else {
-        // Bounded fallback for large active sets. This is feasible and stable,
-        // but not claimed to be the exact integer leximin solution.
-        for _ in 0..eligible.len() {
-            let mut best_candidate: Option<(usize, Vec<u64>)> = None;
-            for (index, item) in eligible.iter().enumerate() {
-                if integer_rates[index] >= item.path.path_ceiling_bps {
-                    continue;
-                }
-                let fits_all_resources = item.domain_indexes.iter().all(|domain_index| {
-                    resource_residuals[*domain_index]
-                        .is_some_and(|capacity| integer_domain_used[*domain_index] < capacity)
-                });
-                if !fits_all_resources {
-                    continue;
-                }
-
-                let mut candidate = integer_rates.clone();
-                candidate[index] = candidate[index]
-                    .checked_add(1)
-                    .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
-                let replace = best_candidate.as_ref().is_none_or(|(_, best_rates)| {
-                    compare_integer_weighted_fairness(&candidate, best_rates, &eligible)
-                        == std::cmp::Ordering::Greater
-                });
-                if replace {
-                    best_candidate = Some((index, candidate));
-                }
+        // Bounded fallback for large active sets. Each fractional candidate
+        // receives at most one bit/s, in descending fractional-remainder order
+        // with canonical path-ID ties. This is a stable apportionment heuristic,
+        // not an exact integer leximin solution; the report says so explicitly.
+        let mut ordered_candidates = fractional_candidates.clone();
+        ordered_candidates.sort_by(|left, right| {
+            (rates_scaled[*right] % RATE_SCALE)
+                .cmp(&(rates_scaled[*left] % RATE_SCALE))
+                .then_with(|| {
+                    eligible[*left]
+                        .path
+                        .path_id
+                        .cmp(&eligible[*right].path.path_id)
+                })
+        });
+        for index in ordered_candidates {
+            let item = &eligible[index];
+            if integer_rates[index] >= item.path.path_ceiling_bps {
+                continue;
             }
-
-            let Some((index, next_rates)) = best_candidate else {
-                break;
-            };
-            integer_rates = next_rates;
-            for domain_index in &eligible[index].domain_indexes {
+            let fits_all_resources = item.domain_indexes.iter().all(|domain_index| {
+                resource_residuals[*domain_index]
+                    .is_some_and(|capacity| integer_domain_used[*domain_index] < capacity)
+            });
+            if !fits_all_resources {
+                continue;
+            }
+            integer_rates[index] = integer_rates[index]
+                .checked_add(1)
+                .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
+            for domain_index in &item.domain_indexes {
                 integer_domain_used[*domain_index] = integer_domain_used[*domain_index]
                     .checked_add(1)
                     .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
@@ -1542,6 +1539,18 @@ mod tests {
             .iter()
             .all(|usage| usage.allocated_rate_bps <= usage.residual_capacity_bps));
         assert_eq!(report.total_allocated_rate_bps, 10);
+        assert_eq!(
+            report
+                .path_allocations
+                .iter()
+                .filter(|allocation| allocation.allocated_rate_bps == 1)
+                .count(),
+            10
+        );
+        assert!(report
+            .path_allocations
+            .iter()
+            .all(|allocation| allocation.allocated_rate_bps <= 1));
     }
 
     #[test]
