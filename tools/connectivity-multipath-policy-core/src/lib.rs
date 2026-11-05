@@ -4,8 +4,8 @@
 //! addresses, create subflows, modify routes, inspect packet contents, or send
 //! packets. Its finish-time and reorder figures are planning estimates, not
 //! transport measurements.
-pub mod resource;
 pub mod fairness;
+pub mod resource;
 pub mod trace;
 
 use std::collections::BTreeSet;
