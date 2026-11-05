@@ -55,6 +55,7 @@ pub struct DomainRateAllocation {
     pub capacity_bps: u64,
     pub allocated_bps: u64,
     pub remaining_bps: u64,
+    pub utilization_ppm: u32,
     pub observation_age_ms: u64,
     pub source_sha256: String,
     pub binding: bool,
@@ -513,6 +514,10 @@ pub fn allocate_resource_incidence_weighted_max_min(
                 capacity_bps: domain.capacity,
                 allocated_bps: used,
                 remaining_bps: domain.capacity - used,
+                utilization_ppm: u32::try_from(
+                    (u128::from(used) * LEVEL_SCALE) / u128::from(domain.capacity),
+                )
+                .map_err(|_| ResourceAllocationError::ArithmeticOverflow)?,
                 observation_age_ms: domain.age_ms,
                 source_sha256: domain.source_sha256.clone(),
                 binding: binding.contains(&index),
@@ -630,6 +635,17 @@ mod tests {
         assert_eq!(rate(&result, "a"), 35);
         assert_eq!(rate(&result, "b"), 35);
         assert_eq!(remaining(&result, "backhaul-x"), 0);
+    }
+
+    #[test]
+    fn domain_utilization_is_reported_in_parts_per_million() {
+        let result = allocate_resource_incidence_weighted_max_min(&request(
+            vec![path("a", 1, 40, 0, &["x"])],
+            vec![domain("x", 100)],
+        ))
+        .expect("valid resource allocation");
+        assert_eq!(result.domains[0].allocated_bps, 40);
+        assert_eq!(result.domains[0].utilization_ppm, 400_000);
     }
 
     #[test]
