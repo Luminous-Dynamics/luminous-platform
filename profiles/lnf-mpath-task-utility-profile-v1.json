@@ -1,0 +1,292 @@
+{
+  "schema_version": "luminous.lnf-mpath-task-utility-profile.v1",
+  "profile_id": "lnf-deadline-useful-work-v1",
+  "status": "draft_targets_not_results",
+  "reviewed_on": "2026-11-05",
+  "parent_issue": 269,
+  "qualification_scope": "single_paired_trial_evaluator",
+  "objective": "Compare multipath and single-path transport arms by useful application work delivered before deadlines, cost and energy per on-time useful MiB, deadline misses, redundancy overhead, shared-resource safety and companion-flow retention.",
+  "paradigm": {
+    "primary": "Optimize deadline-qualified useful application work rather than raw packet throughput.",
+    "utility_is_application_supplied": true,
+    "late_useful_bytes_receive_zero_on_time_credit": true,
+    "fairness_and_resource_safety_are_hard_separate_gates": true,
+    "no_single_weighted_score_may_hide_a_regression": true
+  },
+  "objective_tracks": {
+    "rfc_6356_compatibility": {
+      "status": "compatibility_baseline",
+      "required_properties": [
+        "best_path_improvement",
+        "do_no_harm_at_shared_resources",
+        "resource_pooling"
+      ],
+      "purpose": "Retain the established MPTCP compatibility/fairness reference as a separate experimental track."
+    },
+    "num_utility_exploration": {
+      "status": "research_track_not_implemented_by_this_evaluator",
+      "required_properties": [
+        "declared_task_utility",
+        "shared_resource_constraints",
+        "tenant_fairness_floor",
+        "companion_flow_retention"
+      ],
+      "purpose": "Compare utility-oriented allocations, including NUM-inspired controllers, without silently treating the RFC best-path principle as the only possible research objective."
+    }
+  },
+  "paired_identity": {
+    "required_environment_digests": [
+      "kernel_build_sha256",
+      "system_image_sha256",
+      "topology_sha256",
+      "resource_snapshot_sha256",
+      "qdisc_config_sha256",
+      "workload_sha256",
+      "task_manifest_sha256",
+      "impairment_sha256",
+      "tariff_sha256",
+      "energy_model_sha256",
+      "observer_config_sha256"
+    ],
+    "required_arm_identity": [
+      "protocol",
+      "transport_version",
+      "scheduler_id",
+      "congestion_control_id",
+      "path_manager_id",
+      "implementation_sha256",
+      "arm_config_sha256"
+    ],
+    "common_environment_must_match": true,
+    "task_rows_must_match_by_id_release_deadline_offered_bytes_and_value": true,
+    "arm_identity_may_differ_between_control_and_treatment": true,
+    "mismatched_pair_disposition": "inconclusive",
+    "paired_verdict_scope": "single_paired_trial"
+  },
+  "evidence_requirements": {
+    "task_counters_complete": true,
+    "cost_energy_counters_complete": true,
+    "companion_counters_complete_for_companion_gate": true,
+    "shared_resource_accounting_complete": true,
+    "cleanup_verified": true,
+    "unsupported_transport_is_not_pass": true,
+    "missing_task_or_counter_rows_are_not_zero": true,
+    "total_transmitted_bytes_must_cover_observed_useful_bytes": true,
+    "application_value_units_must_be_supplied_by_the_workload_not_inferred_by_network": true
+  },
+  "scenarios": [
+    "TASK-00",
+    "TASK-01",
+    "TASK-02",
+    "TASK-03",
+    "TASK-04",
+    "TASK-05",
+    "TASK-06",
+    "TASK-07",
+    "TASK-08",
+    "TASK-09",
+    "TASK-10",
+    "TASK-11",
+    "TASK-12",
+    "TASK-13"
+  ],
+  "scenario_definitions": [
+    {
+      "id": "TASK-00",
+      "name": "small-deadline-control-mixed-with-bulk",
+      "purpose": "Measure short control tasks competing with a long bulk transfer."
+    },
+    {
+      "id": "TASK-01",
+      "name": "heterogeneous-size-deadline-value",
+      "purpose": "Vary task size, deadline and application value weights."
+    },
+    {
+      "id": "TASK-02",
+      "name": "expensive-cellular-cheap-wifi-feasible",
+      "purpose": "Compare cost-aware path choice when both paths can meet deadline."
+    },
+    {
+      "id": "TASK-03",
+      "name": "cheap-path-misses-deadline",
+      "purpose": "Test whether a more expensive path is justified by timely task value."
+    },
+    {
+      "id": "TASK-04",
+      "name": "deadline-infeasible-on-all-paths",
+      "purpose": "Avoid spending scarce capacity on hopeless retransmission after a task deadline is infeasible."
+    },
+    {
+      "id": "TASK-05",
+      "name": "partial-useful-streaming-chunks",
+      "purpose": "Credit on-time chunks without granting value to late chunks."
+    },
+    {
+      "id": "TASK-06",
+      "name": "high-throughput-high-tail-delay-vs-lower-latency",
+      "purpose": "Compare high-throughput high-jitter paths with lower-throughput low-tail-delay alternatives."
+    },
+    {
+      "id": "TASK-07",
+      "name": "redundancy-under-shared-backhaul",
+      "purpose": "Measure deadline reliability gains and duplicate-byte cost under a shared bottleneck."
+    },
+    {
+      "id": "TASK-08",
+      "name": "multipath-throughput-vs-companion-starvation",
+      "purpose": "Reject apparent gains that materially reduce a competing TCP/QUIC flow's service."
+    },
+    {
+      "id": "TASK-09",
+      "name": "congestion-burst-and-controller-recovery",
+      "purpose": "Measure recovery and regret after a congestion or loss burst."
+    },
+    {
+      "id": "TASK-10",
+      "name": "stale-or-missing-task-metadata",
+      "purpose": "Ensure missing/stale task metadata produces inconclusive or unsupported outcomes."
+    },
+    {
+      "id": "TASK-11",
+      "name": "untrusted-controller-or-binary-identity",
+      "purpose": "Reject unknown or unpinned external implementations from qualification."
+    },
+    {
+      "id": "TASK-12",
+      "name": "paired-task-or-environment-mismatch",
+      "purpose": "Reject treatment/control pairs with different task sets, seeds or environment digests."
+    },
+    {
+      "id": "TASK-13",
+      "name": "NUM-vs-RFC-objective-tradeoff",
+      "purpose": "Compare RFC 6356-compatible behavior against a NUM-oriented research controller while retaining fairness, resource and companion-flow gates."
+    }
+  ],
+  "comparators": [
+    "single_path_tcp_cubic_exact_kernel",
+    "single_path_quic_exact_binary",
+    "linux_mptcp_default_scheduler_exact_kernel",
+    "mptcp_rfc6356_compatible_coupled_controller",
+    "multipath_quic_draft21_minrtt_exact_binary",
+    "multipath_quic_draft21_roundrobin_exact_binary",
+    "n_mptcp_num_utility_research_arm_exact_source_required",
+    "damps_cadamps_literature_only_until_exact_artifact_is_pinned",
+    "resource_incidence_weighted_max_min_reference"
+  ],
+  "required_metrics": [
+    "offered_useful_bytes",
+    "on_time_useful_bytes",
+    "late_useful_bytes_not_credited",
+    "offered_task_value_units",
+    "on_time_task_value_units",
+    "on_time_useful_byte_ratio_ppm",
+    "on_time_task_value_ratio_ppm",
+    "deadline_miss_count",
+    "deadline_miss_lateness_p50_p95_p99_us",
+    "cost_per_on_time_useful_mib_micros",
+    "energy_per_on_time_useful_mib_uwh",
+    "redundant_bytes_per_on_time_useful_mib",
+    "retransmitted_bytes_per_on_time_useful_mib",
+    "aggregate_goodput_bps",
+    "bottleneck_capacity_bps",
+    "maximum_shared_resource_overcommit_bps",
+    "queue_delay_p95_p99_us",
+    "receiver_reorder_peak_bytes",
+    "companion_flow_demand_bps",
+    "companion_flow_goodput_bps",
+    "companion_flow_retention_ratio_ppm",
+    "cleanup_disposition",
+    "paired_environment_identity_disposition",
+    "task_manifest_identity_disposition"
+  ],
+  "benchmarks": [
+    {
+      "id": "TASK_PAIR_IDENTITY_001",
+      "metric": "environment_or_task_manifest_mismatches_classified_as_pass",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TASK_VALUE_NONREGRESSION_001",
+      "metric": "treatment_on_time_task_value_over_control_on_time_task_value_ppm",
+      "operator": ">=",
+      "target": 1000000,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TASK_COST_EFFICIENCY_001",
+      "metric": "treatment_cost_per_on_time_useful_mib_over_control_ppm",
+      "operator": "<=",
+      "target": 1000000,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TASK_ENERGY_EFFICIENCY_001",
+      "metric": "treatment_energy_per_on_time_useful_mib_over_control_ppm",
+      "operator": "<=",
+      "target": 1000000,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TASK_COMPANION_RETENTION_001",
+      "metric": "treatment_companion_goodput_over_control_ppm",
+      "operator": ">=",
+      "target": 900000,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TASK_RESOURCE_SAFETY_001",
+      "metric": "maximum_shared_resource_overcommit_bps",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TASK_DEADLINE_MISSES_001",
+      "metric": "increase_in_task_level_deadline_miss_count",
+      "operator": "<=",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TASK_LATE_CREDIT_001",
+      "metric": "late_useful_bytes_credited_as_on_time_bytes",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    }
+  ],
+  "target_defaults": {
+    "minimum_on_time_value_retention_ppm": 1000000,
+    "maximum_cost_per_on_time_mib_ratio_ppm": 1000000,
+    "maximum_energy_per_on_time_mib_ratio_ppm": 1000000,
+    "minimum_companion_retention_ppm": 900000,
+    "maximum_deadline_miss_increase": 0,
+    "maximum_resource_overcommit_bps": 0,
+    "target_status": "proposed_not_measured"
+  },
+  "verdicts": [
+    "pass",
+    "fail",
+    "inconclusive",
+    "unsupported"
+  ],
+  "evidence_classes": [
+    "deterministic_evaluator",
+    "network_namespace_or_vm_emulation",
+    "hardware_bench",
+    "field_observed"
+  ],
+  "explicit_non_claims": [
+    "The evaluator does not implement N-MPTCP, DaMPS, CaDaMPS, DART, MPTCP, QUIC or any congestion controller.",
+    "The evaluator does not schedule packets or actuate a route, qdisc or radio.",
+    "Application value units are supplied by a frozen workload oracle; the network does not infer human value.",
+    "Late useful bytes are reported but do not count as on-time useful work.",
+    "A paired-trial pass is not programme-level statistical qualification.",
+    "The NUM-oriented track is experimental and does not silently replace RFC 6356 compatibility evaluation.",
+    "Paper-reported DaMPS/CaDaMPS or N-MPTCP percentages are not accepted as directly comparable results without matching workload and implementation identities.",
+    "No claim of beating Linux MPTCP, Multipath QUIC, DaMPS, CaDaMPS or DART is made without exact pinned measured comparisons.",
+    "No namespace, hardware or field measurement is claimed by the pure evaluator."
+  ]
+}
