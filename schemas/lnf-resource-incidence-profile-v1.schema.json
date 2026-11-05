@@ -60,7 +60,8 @@
         "residual_capacity_formula",
         "objective",
         "exact_reference",
-        "exact_reference_contract"
+        "exact_reference_contract",
+        "integer_rounding_contract"
       ],
       "properties": {
         "name": {
@@ -73,7 +74,7 @@
           "const": 1000000
         },
         "tie_break": {
-          "const": "largest_remainder_then_stable_path_id"
+          "const": "exact_bounded_lexicographic_weighted_max_min_search_then_fractional_remainder_path_id_fallback"
         },
         "max_paths": {
           "const": 64
@@ -136,6 +137,37 @@
             },
             "microtopology_space": {
               "const": "all_3^3_nonempty_incidence_assignments_over_two_resources_times_4x4_capacity_pairs"
+            }
+          }
+        },
+        "integer_rounding_contract": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "exact_candidate_limit",
+            "exact_search",
+            "above_limit",
+            "report_fields",
+            "no_exact_claim_above_limit"
+          ],
+          "properties": {
+            "exact_candidate_limit": {
+              "const": 20
+            },
+            "exact_search": {
+              "const": "enumerate all feasible combinations of zero-or-one-bps increments for fractional candidates and select the lexicographically greatest sorted weighted-rate vector"
+            },
+            "above_limit": {
+              "const": "one-bps-per-path descending fractional remainder, then canonical path ID; feasible but not exact leximin"
+            },
+            "report_fields": {
+              "const": [
+                "integer_rounding_exact",
+                "integer_rounding_candidate_count"
+              ]
+            },
+            "no_exact_claim_above_limit": {
+              "const": true
             }
           }
         }
@@ -272,8 +304,8 @@
     },
     "benchmarks": {
       "type": "array",
-      "minItems": 12,
-      "maxItems": 12,
+      "minItems": 13,
+      "maxItems": 13,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -316,8 +348,8 @@
     },
     "required_metrics": {
       "type": "array",
-      "minItems": 25,
-      "maxItems": 25,
+      "minItems": 28,
+      "maxItems": 28,
       "uniqueItems": true,
       "items": {
         "type": "string",
@@ -344,8 +376,8 @@
     },
     "explicit_non_claims": {
       "type": "array",
-      "minItems": 11,
-      "maxItems": 11,
+      "minItems": 12,
+      "maxItems": 12,
       "uniqueItems": true,
       "items": {
         "type": "string",
