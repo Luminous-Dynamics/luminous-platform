@@ -1,0 +1,250 @@
+{
+  "schema_version": "luminous.lnf.network-transition-profile.v1",
+  "profile_id": "lnf-network-transition-evaluator-v1",
+  "status": "draft_targets_not_results",
+  "reviewed_on": "2026-11-05",
+  "parent_issue": 281,
+  "objective": "Replay bounded event streams at explicit decision ticks and evaluate tenant/resource allocation and service-floor restoration without hidden future information or network actuation.",
+  "execution_stage": "deterministic_event_evaluator_only",
+  "architecture": {
+    "event_model": "bounded_event_sourced_state_replay",
+    "event_time": "occurred_at_unix_ms",
+    "observation_time": "observed_at_unix_ms",
+    "effective_time": "effective_at_unix_ms",
+    "decision_time": "caller_supplied_strictly_increasing_unix_ms_ticks",
+    "topology_epoch_required": true,
+    "source_sequence": "one_based_contiguous_per_source",
+    "source_and_state_digests": "caller_computed_sha256_shape_checked_and_echoed_not_authenticated",
+    "allocator": "tenant_resource::allocate_tenant_resource_incidence",
+    "output_unit": "allocated_bits_per_second_not_measured_goodput",
+    "actuation": false
+  },
+  "bounds": {
+    "events": 4096,
+    "decision_ticks": 256,
+    "tenants": 64,
+    "flows": 256,
+    "paths": 64,
+    "resources": 64,
+    "subflows_per_path": 256
+  },
+  "event_types": [
+    "tenant_upsert_or_remove",
+    "flow_upsert_or_remove",
+    "path_upsert_or_remove",
+    "path_health_up_down_degraded",
+    "mptcp_subflow_established_stale_removed",
+    "capacity_resource_upsert_or_remove",
+    "topology_epoch_advance"
+  ],
+  "event_dispositions": [
+    "pending",
+    "applied",
+    "deferred_not_observed",
+    "deferred_not_effective",
+    "deferred_sequence_gap",
+    "deferred_future_topology_epoch",
+    "rejected_invalid_identifier",
+    "rejected_invalid_digest",
+    "rejected_invalid_time",
+    "rejected_duplicate_event_id",
+    "rejected_duplicate_or_old_sequence",
+    "rejected_out_of_order_source_time",
+    "rejected_topology_epoch",
+    "rejected_topology_digest",
+    "rejected_invalid_epoch_advance",
+    "rejected_malformed_event"
+  ],
+  "scenarios": [
+    {
+      "id": "TRANS-00",
+      "topology": "one_session_loses_one_path_with_spare_survivor_capacity",
+      "purpose": "service-floor recovery and resource reallocation"
+    },
+    {
+      "id": "TRANS-01",
+      "topology": "100_sessions_lose_one_shared_failure_domain_synchronously",
+      "purpose": "correlated multi-session path loss"
+    },
+    {
+      "id": "TRANS-02",
+      "topology": "100_sessions_lose_paths_in_a_staggered_wave",
+      "purpose": "compare staggered and synchronized transitions"
+    },
+    {
+      "id": "TRANS-03",
+      "topology": "shared_backhaul_fails_while_access_links_remain_up",
+      "purpose": "resource dependency versus local path liveness"
+    },
+    {
+      "id": "TRANS-04",
+      "topology": "new_route_epoch_introduces_a_shared_downstream_capacity_domain",
+      "purpose": "topology epoch and resource-incidence update"
+    },
+    {
+      "id": "TRANS-05",
+      "topology": "path_flaps_with_up_down_and_degraded_events",
+      "purpose": "state stability and event chronology"
+    },
+    {
+      "id": "TRANS-06",
+      "topology": "satellite_contact_window_closes_and_opens",
+      "purpose": "contact availability mapped to path state"
+    },
+    {
+      "id": "TRANS-07",
+      "topology": "high_rtt_path_recovers_after_low_rtt_path",
+      "purpose": "packet reordering remains an external transport-lab metric"
+    },
+    {
+      "id": "TRANS-08",
+      "topology": "capacity_observation_is_delayed_after_the_path_event",
+      "purpose": "no future or not-yet-observed capacity information"
+    },
+    {
+      "id": "TRANS-09",
+      "topology": "duplicate_and_out_of_order_source_events",
+      "purpose": "idempotency and chronology negative controls"
+    },
+    {
+      "id": "TRANS-10",
+      "topology": "many_tenants_fail_over_to_one_surviving_shared_bottleneck",
+      "purpose": "shared resource load and tenant hierarchy"
+    },
+    {
+      "id": "TRANS-11",
+      "topology": "one_tenant_has_many_subflows_while_another_has_one",
+      "purpose": "tenant entitlement is not multiplied by path count"
+    },
+    {
+      "id": "TRANS-12",
+      "topology": "control_plane_telemetry_disappears_while_path_remains_live",
+      "purpose": "unknown state is not silently converted to down or capacity"
+    },
+    {
+      "id": "TRANS-13",
+      "topology": "power_loss_removes_access_aggregation_and_gateway_resources",
+      "purpose": "common-cause dependency chain and recovery"
+    }
+  ],
+  "comparators": [
+    "static_active_backup_reference",
+    "naive_all_paths_failover_negative_control",
+    "per_session_local_failover_without_cross_session_resource_allocation",
+    "tenant_resource_incidence_allocator",
+    "resource_incidence_without_tenant_normalization_negative_control",
+    "delayed_observation_negative_control",
+    "pinned_linux_mptcp_path_manager_scheduler_and_qdisc_external_lab"
+  ],
+  "required_metrics": [
+    "event_count_applied_rejected_deferred",
+    "event_disposition_by_id_and_source_sequence",
+    "event_observation_to_application_delay_ms",
+    "topology_epoch_and_state_snapshot_digest_per_tick",
+    "path_up_degraded_down_count_per_tick",
+    "paths_became_down_and_recovered_per_tick",
+    "flow_count_and_tenant_count_affected_per_tick",
+    "synchronized_path_change_count_per_tick",
+    "tenant_allocated_rate_bps_per_tick",
+    "flow_allocated_rate_bps_per_tick",
+    "path_allocated_rate_bps_per_tick",
+    "resource_allocated_and_residual_capacity_bps",
+    "resource_overcommitment_bps",
+    "service_floor_status_met_unmet_unknown_per_tenant",
+    "tenant_outage_start_time_and_duration_ms",
+    "tenant_service_floor_recovery_duration_ms",
+    "zero_allocated_rate_tenant_count",
+    "event_input_order_permutation_determinism",
+    "future_observation_or_effective_event_application_count",
+    "stale_or_wrong_epoch_event_application_count",
+    "out_of_order_or_duplicate_source_event_application_count",
+    "allocation_error_disposition",
+    "first_useful_byte_after_failure_p50_p95_p99_external_lab",
+    "useful_bytes_before_task_deadline_external_lab",
+    "queue_delay_loss_ecn_retransmission_and_reinjection_external_lab",
+    "companion_tenant_goodput_retention_external_lab"
+  ],
+  "benchmarks": [
+    {
+      "id": "TRANS_EVENT_FUTURE_001",
+      "metric": "events_applied_before_observation_or_effective_time",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TRANS_EVENT_SEQUENCE_001",
+      "metric": "duplicate_or_non_monotonic_source_events_applied",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TRANS_EPOCH_001",
+      "metric": "obsolete_or_wrong_topology_epoch_events_applied",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TRANS_RESOURCE_001",
+      "metric": "resource_allocated_rate_above_residual_capacity_bps",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TRANS_TENANT_001",
+      "metric": "tenant_flow_or_path_multiplicity_creates_extra_aggregate_entitlement",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TRANS_REPLAY_001",
+      "metric": "identical_snapshot_events_and_ticks_produce_identical_reports",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TRANS_FLOOR_001",
+      "metric": "service_floor_status_misrepresented_when_allocation_is_unknown",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "TRANS_RECOVERY_001",
+      "metric": "service_floor_recovery_time_and_tail_latency",
+      "operator": "baseline_first",
+      "target": null,
+      "target_status": "baseline_first"
+    }
+  ],
+  "verdicts": [
+    "pass",
+    "fail",
+    "inconclusive",
+    "unsupported"
+  ],
+  "evidence_classes": [
+    "deterministic_event_replay",
+    "network_namespace_or_vm_emulation",
+    "hardware_bench",
+    "field_observed"
+  ],
+  "explicit_non_claims": [
+    "This evaluator is not a Linux kernel event source, path manager, packet scheduler or route control loop.",
+    "Allocated rate is a planning output and is not measured goodput or successful application delivery.",
+    "Event source SHA-256 is syntax checked and echoed; this module does not cryptographically authenticate the event source.",
+    "Capacity inventory signatures and issuer authority are verified by a separate trust boundary.",
+    "The evaluator does not infer hidden topology or discover shared capacity dependencies.",
+    "Events not yet observed or effective at a decision tick cannot influence that tick.",
+    "A deferred event is not treated as a path failure or as available capacity.",
+    "Service-floor recovery in this evaluator is allocation restoration, not measured first-useful-byte time.",
+    "RTT, loss, queue delay, reinjection and packet reordering require an external matched namespace or hardware transport experiment.",
+    "No field, carrier, satellite or public-radio experiment is performed by this module.",
+    "A passing single replay is not programme-level statistical qualification."
+  ]
+}

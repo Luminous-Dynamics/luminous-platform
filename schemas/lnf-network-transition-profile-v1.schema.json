@@ -1,0 +1,279 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/lnf-network-transition-profile-v1.schema.json",
+  "title": "LNF Network Transition Evaluator Profile v1",
+  "description": "Strict deterministic event replay contract; validation is not a network experiment.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "status",
+    "reviewed_on",
+    "parent_issue",
+    "objective",
+    "execution_stage",
+    "architecture",
+    "bounds",
+    "event_types",
+    "event_dispositions",
+    "scenarios",
+    "comparators",
+    "required_metrics",
+    "benchmarks",
+    "verdicts",
+    "evidence_classes",
+    "explicit_non_claims"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.lnf.network-transition-profile.v1"
+    },
+    "profile_id": {
+      "const": "lnf-network-transition-evaluator-v1"
+    },
+    "status": {
+      "const": "draft_targets_not_results"
+    },
+    "reviewed_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "parent_issue": {
+      "const": 281
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "execution_stage": {
+      "const": "deterministic_event_evaluator_only"
+    },
+    "architecture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_model",
+        "event_time",
+        "observation_time",
+        "effective_time",
+        "decision_time",
+        "topology_epoch_required",
+        "source_sequence",
+        "source_and_state_digests",
+        "allocator",
+        "output_unit",
+        "actuation"
+      ],
+      "properties": {
+        "event_model": {
+          "const": "bounded_event_sourced_state_replay"
+        },
+        "event_time": {
+          "const": "occurred_at_unix_ms"
+        },
+        "observation_time": {
+          "const": "observed_at_unix_ms"
+        },
+        "effective_time": {
+          "const": "effective_at_unix_ms"
+        },
+        "decision_time": {
+          "const": "caller_supplied_strictly_increasing_unix_ms_ticks"
+        },
+        "topology_epoch_required": {
+          "const": true
+        },
+        "source_sequence": {
+          "const": "one_based_contiguous_per_source"
+        },
+        "source_and_state_digests": {
+          "const": "caller_computed_sha256_shape_checked_and_echoed_not_authenticated"
+        },
+        "allocator": {
+          "const": "tenant_resource::allocate_tenant_resource_incidence"
+        },
+        "output_unit": {
+          "const": "allocated_bits_per_second_not_measured_goodput"
+        },
+        "actuation": {
+          "const": false
+        }
+      }
+    },
+    "bounds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "events",
+        "decision_ticks",
+        "tenants",
+        "flows",
+        "paths",
+        "resources",
+        "subflows_per_path"
+      ],
+      "properties": {
+        "events": {
+          "const": 4096
+        },
+        "decision_ticks": {
+          "const": 256
+        },
+        "tenants": {
+          "const": 64
+        },
+        "flows": {
+          "const": 256
+        },
+        "paths": {
+          "const": 64
+        },
+        "resources": {
+          "const": 64
+        },
+        "subflows_per_path": {
+          "const": 256
+        }
+      }
+    },
+    "event_types": {
+      "const": [
+        "tenant_upsert_or_remove",
+        "flow_upsert_or_remove",
+        "path_upsert_or_remove",
+        "path_health_up_down_degraded",
+        "mptcp_subflow_established_stale_removed",
+        "capacity_resource_upsert_or_remove",
+        "topology_epoch_advance"
+      ]
+    },
+    "event_dispositions": {
+      "type": "array",
+      "minItems": 16,
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 14,
+      "maxItems": 14,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "topology",
+          "purpose"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^TRANS-[0-9]{2}$"
+          },
+          "topology": {
+            "type": "string",
+            "minLength": 1
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "comparators": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required_metrics": {
+      "type": "array",
+      "minItems": 26,
+      "maxItems": 26,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "benchmarks": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "metric",
+          "operator",
+          "target",
+          "target_status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^TRANS_[A-Z0-9_]{3,80}$"
+          },
+          "metric": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operator": {
+            "enum": [
+              "==",
+              "baseline_first"
+            ]
+          },
+          "target": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "target_status": {
+            "enum": [
+              "proposed_target",
+              "baseline_first"
+            ]
+          }
+        }
+      }
+    },
+    "verdicts": {
+      "const": [
+        "pass",
+        "fail",
+        "inconclusive",
+        "unsupported"
+      ]
+    },
+    "evidence_classes": {
+      "const": [
+        "deterministic_event_replay",
+        "network_namespace_or_vm_emulation",
+        "hardware_bench",
+        "field_observed"
+      ]
+    },
+    "explicit_non_claims": {
+      "type": "array",
+      "minItems": 11,
+      "maxItems": 11,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

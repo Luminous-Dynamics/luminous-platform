@@ -149,6 +149,23 @@ This is a **weighted max-min fairness allocator**, not a general maximum-sum-rat
 
 The test-only exact integer oracles are explicitly bounded to at most four paths, six resources and one million total integer assignments, where the assignment count is the product of each path's feasible integer-rate choices. They fail closed when a fixture exceeds that budget. A deterministic 432-case micro-topology corpus exercises every one of the 3^3 non-empty path/resource incidence assignments over two resources at all 4×4 small capacity pairs, comparing progressive filling against the independent weighted max-min reference. Equal fairness vectors use canonical path-ID order and a stable lexicographic rate-vector tie-break. This oracle is a micro-instance correctness reference, not a production optimizer or a performance benchmark.
 
+## Network-wide transition event evaluator
+
+`transition::evaluate_transition_trace` replays a bounded event stream at explicit decision ticks and invokes the existing tenant/resource-incidence allocator after each tick. It does not listen to a live kernel, perform failover, or control a path manager.
+
+Every event binds a stable ID, source ID and contiguous source sequence, caller-computed source digest, topology epoch/digest, occurrence time, observation time, effective time and a caller-computed frozen state-snapshot digest. A decision tick can use an event only after both observation and effective time. Sequence gaps and future topology epochs are deferred; duplicate IDs, old sequences, time rewinds, invalid digests and wrong epochs are explicitly rejected.
+
+The evaluator supports tenant/flow/path/resource upserts and removals, path up/down/degraded state, MPTCP subflow establishment/staleness/removal, resource updates and explicit topology-epoch advance. It reports per-tick allocated rates, resource ceilings, path changes, affected tenants/flows, per-tenant service-floor status and service-floor outage/recovery intervals.
+
+Important semantics:
+- `allocated_rate_bps` is a deterministic planning output, never measured goodput.
+- A service floor may be `Met`, `Unmet` or `Unknown`; a global allocation failure must not mark every tenant as definitely starved.
+- The event source SHA-256 is syntax-checked and echoed but not authenticated in this module. Signed capacity inventory remains a separate trust boundary.
+- Recovery duration means restoration of the modelled allocation floor at a decision tick. First useful byte, RTT, queues, loss, ECN and reinjection require external namespace/HIL/field measurement.
+- The bounded evaluator does not discover hidden topology or infer capacity dependencies.
+
+The campaign and proposed gates are defined in `profiles/lnf-network-transition-profile-v1.json`, linked to issue #281. Deterministic event replay is not a live-network failover result.
+
 ## Required next steps before a performance claim
 
 1. Compare model output with the exact Linux kernel MPTCP path-manager and scheduler configuration.
