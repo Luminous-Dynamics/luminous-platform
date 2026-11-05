@@ -125,6 +125,21 @@ cargo clippy --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml
 cargo fmt --manifest-path tools/connectivity-multipath-policy-core/Cargo.toml -- --check
 ```
 
+## Resource-incidence weighted max-min allocator
+
+`resource::allocate_resource_incidence_weighted_max_min` allocates rates over paths that may share some, all or none of their capacity domains. Each path carries its complete capacity-domain set; each domain carries a capacity observation, observation age and source SHA-256.
+
+The allocator:
+- enforces every domain's sum-of-path-rates ceiling;
+- starts with per-path minimum floors and fails closed if those floors overcommit any domain;
+- uses deterministic weighted max-min progressive filling;
+- freezes only paths that traverse a bottleneck that stops further progression, allowing independent paths to continue;
+- applies deterministic one-bit remainder assignment by normalized service above floor and path ID;
+- rejects missing, stale, malformed or unknown capacity evidence;
+- emits per-path rates and per-domain capacity, use, remaining capacity, provenance and binding status.
+
+Its first version is bounded to 64 paths, 128 domains, 32 domains per path, weights 1–100 and a maximum caller-declared evidence age of five minutes. It is a deterministic reference allocator, not a general LP solver, MPTCP scheduler, qdisc or route actuator. It does not authenticate the capacity source; the caller must bind the per-domain receipts into the enclosing run manifest.
+
 ## MPTCP coexistence evidence evaluator
 
 `coexistence::evaluate_best_path_improvement` and `coexistence::evaluate_shared_bottleneck_do_no_harm` evaluate paired measured summaries. They do not implement MPTCP, simulate congestion control or actuate a kernel.
