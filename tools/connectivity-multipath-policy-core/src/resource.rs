@@ -164,15 +164,15 @@ struct EligiblePath {
     domain_indexes: Vec<usize>,
 }
 
-fn is_sha256(value: &str) -> bool {
+pub(crate) fn is_sha256(value: &str) -> bool {
     value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
 }
 
-fn valid_identifier(value: &str) -> bool {
+pub(crate) fn valid_identifier(value: &str) -> bool {
     !value.trim().is_empty() && value.len() <= MAX_ID_BYTES && !value.chars().any(char::is_control)
 }
 
-fn validate_request(request: &ResourceAllocationRequest) -> Result<(), ResourceAllocationError> {
+pub(crate) fn validate_request(request: &ResourceAllocationRequest) -> Result<(), ResourceAllocationError> {
     if !is_sha256(&request.topology_sha256) {
         return Err(ResourceAllocationError::InvalidTopologyDigest);
     }
@@ -190,7 +190,7 @@ fn validate_request(request: &ResourceAllocationRequest) -> Result<(), ResourceA
     Ok(())
 }
 
-fn evidence_error(
+pub(crate) fn evidence_error(
     request: &ResourceAllocationRequest,
     evidence: &CapacityResourceEvidence,
 ) -> Option<&'static str> {
@@ -230,10 +230,41 @@ fn evidence_error(
     None
 }
 
-fn canonical_ids(ids: &[String]) -> Vec<String> {
+pub(crate) fn canonical_ids(ids: &[String]) -> Vec<String> {
     let mut result = ids.to_vec();
     result.sort();
     result
+}
+
+pub(crate) fn validate_resource_inventory(
+    request: &ResourceAllocationRequest,
+    resources: &[CapacityResource],
+) -> Result<(BTreeMap<String, usize>, Vec<Option<u64>>), ResourceAllocationError> {
+    if resources.len() > MAX_RESOURCES {
+        return Err(ResourceAllocationError::TooManyResources);
+    }
+    let mut resource_index = BTreeMap::new();
+    let mut resource_residuals = Vec::with_capacity(resources.len());
+    for (index, resource) in resources.iter().enumerate() {
+        if !valid_identifier(&resource.resource_id) {
+            return Err(ResourceAllocationError::InvalidResourceId);
+        }
+        if resource_index
+            .insert(resource.resource_id.clone(), index)
+            .is_some()
+        {
+            return Err(ResourceAllocationError::DuplicateResourceId);
+        }
+        if resource.declared_capacity_bps == 0 {
+            return Err(ResourceAllocationError::InvalidResourceCapacity);
+        }
+        if evidence_error(request, &resource.evidence).is_some() {
+            resource_residuals.push(None);
+        } else {
+            resource_residuals.push(Some(resource.residual_capacity_bps()?));
+        }
+    }
+    Ok((resource_index, resource_residuals))
 }
 
 const MAX_EXACT_INTEGER_ROUNDING_CANDIDATES: usize = 20;
