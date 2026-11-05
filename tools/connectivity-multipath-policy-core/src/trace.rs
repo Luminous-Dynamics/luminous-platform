@@ -355,14 +355,6 @@ struct TransmissionAccounting<'a> {
     records: &'a mut Vec<TraceTransmission>,
 }
 
-struct TransmissionAccounting<'a> {
-    request: &'a ScheduleRequest,
-    trace_request: &'a TraceRequest,
-    aggregate_cost_used: &'a mut u64,
-    aggregate_energy_used: &'a mut u64,
-    records: &'a mut Vec<TraceTransmission>,
-}
-
 fn record_transmission(
     state: &mut PathState,
     segment_index: u32,
