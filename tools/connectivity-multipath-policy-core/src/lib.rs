@@ -8,6 +8,7 @@ pub mod fairness;
 pub mod resource;
 pub mod tenant_resource;
 pub mod trace;
+pub mod transition;
 
 use std::collections::BTreeSet;
 
