@@ -1485,8 +1485,13 @@ mod tests {
             .expect("epoch transitions are bounded");
         assert_eq!(report.final_topology_epoch, 2);
         assert_eq!(report.ticks[0].topology_sha256, "f".repeat(64));
+        let old_epoch = report
+            .event_dispositions
+            .iter()
+            .find(|record| record.event_id == "old-epoch-event")
+            .expect("old epoch event disposition");
         assert_eq!(
-            report.event_dispositions[1].disposition,
+            old_epoch.disposition,
             EventDisposition::RejectedTopologyEpoch
         );
     }
@@ -1521,10 +1526,25 @@ mod tests {
         ];
         let report = evaluate_transition_trace(&snapshot(), &events, &[1_000, 1_100, 1_300, 1_500])
             .expect("outage and recovery trace");
+        assert_eq!(
+            report.ticks[1].path_down_count,
+            1,
+            "path-down state was not reflected in the transition tick: {:#?}",
+            report.ticks[1]
+        );
+        assert!(
+            report.ticks[1]
+                .applied_event_ids
+                .contains(&"path-a-down".to_owned()),
+            "path-down event was not applied: {:#?}",
+            report.ticks[1]
+        );
         assert!(
             report.ticks[1]
                 .service_floor_unmet_tenant_ids
-                .contains(&"tenant-a".to_owned())
+                .contains(&"tenant-a".to_owned()),
+            "tenant A floor disposition was not Unmet: {:#?}",
+            report.ticks[1]
         );
         let tenant_a = report.ticks[3]
             .tenant_outages
