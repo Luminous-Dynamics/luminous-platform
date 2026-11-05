@@ -1499,6 +1499,52 @@ mod tests {
     }
 
     #[test]
+    fn exact_integer_rounding_selects_a_feasible_combination_across_independent_resources() {
+        let paths = vec![
+            path("a", 4, 1, &["x", "y"]),
+            path("b", 4, 2, &["y"]),
+            path("c", 4, 3, &["x"]),
+        ];
+        let resources = vec![resource("x", 1, 0, 0, 0), resource("y", 1, 0, 0, 0)];
+        let report = allocate_resource_incidence(&request(), &paths, &resources)
+            .expect("valid shared-resource microtopology");
+        assert_eq!(
+            report
+                .path_allocations
+                .iter()
+                .map(|allocation| allocation.allocated_rate_bps)
+                .collect::<Vec<_>>(),
+            vec![0, 1, 1]
+        );
+        assert!(report.integer_rounding_exact);
+        assert!(report.integer_rounding_candidate_count <= MAX_EXACT_INTEGER_ROUNDING_CANDIDATES);
+        assert!(report
+            .resource_usage
+            .iter()
+            .all(|usage| usage.allocated_rate_bps <= usage.residual_capacity_bps));
+    }
+
+    #[test]
+    fn large_integer_rounding_sets_use_marked_feasible_fallback() {
+        let paths = (0..=MAX_EXACT_INTEGER_ROUNDING_CANDIDATES)
+            .map(|index| path(&format!("p{index:02}"), 10, 1, &["shared"]))
+            .collect::<Vec<_>>();
+        let resources = vec![resource("shared", 10, 0, 0, 0)];
+        let report = allocate_resource_incidence(&request(), &paths, &resources)
+            .expect("bounded fallback must remain feasible");
+        assert!(!report.integer_rounding_exact);
+        assert_eq!(
+            report.integer_rounding_candidate_count,
+            MAX_EXACT_INTEGER_ROUNDING_CANDIDATES + 1
+        );
+        assert!(report
+            .resource_usage
+            .iter()
+            .all(|usage| usage.allocated_rate_bps <= usage.residual_capacity_bps));
+        assert_eq!(report.total_allocated_rate_bps, 10);
+    }
+
+    #[test]
     fn exact_reference_rejects_unbounded_microtopology_inputs() {
         let too_many_paths = (0..=MAX_EXACT_REFERENCE_PATHS)
             .map(|index| path(&format!("p{index}"), 1, 1, &["x"]))
