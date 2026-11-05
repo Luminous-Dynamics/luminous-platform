@@ -364,11 +364,10 @@ fn progressive_fill(
             .checked_add(1)
             .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
 
-        let (all_demand_rates, all_demand_remainders) =
+        let (all_demand_rates, _) =
             candidate(paths, &allocations, &remainders, &active, max_level)?;
         if feasible(paths, &all_demand_rates, domains)? {
             allocations = all_demand_rates;
-            remainders = all_demand_remainders;
             break;
         }
 
@@ -941,7 +940,7 @@ mod tests {
 
     #[test]
     fn distinct_evidence_sources_are_preserved_per_domain() {
-        let mut x = domain("x", 100);
+        let x = domain("x", 100);
         let mut y = domain("y", 100);
         y.source_sha256 = digest('b');
         let result = allocate_resource_incidence_weighted_max_min(&request(
