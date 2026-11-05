@@ -831,6 +831,113 @@ mod tests {
         assert_eq!(result.rounding_adjustments_bps, 1);
     }
 
+    fn weighted_service_score(
+        rates: &[u64],
+        paths: &[ResourcePathDemand],
+    ) -> Vec<(u64, u32)> {
+        let mut score = paths
+            .iter()
+            .zip(rates)
+            .map(|(path, rate)| (rate.saturating_sub(path.minimum_bps), path.weight))
+            .collect::<Vec<_>>();
+        score.sort_by(|left, right| {
+            (u128::from(left.0) * u128::from(right.1))
+                .cmp(&(u128::from(right.0) * u128::from(left.1)))
+        });
+        score
+    }
+
+    fn compare_weighted_scores(
+        left: &[(u64, u32)],
+        right: &[(u64, u32)],
+    ) -> std::cmp::Ordering {
+        for (left_item, right_item) in left.iter().zip(right) {
+            let ordering = (u128::from(left_item.0) * u128::from(right_item.1))
+                .cmp(&(u128::from(right_item.0) * u128::from(left_item.1)));
+            if ordering != std::cmp::Ordering::Equal {
+                return ordering;
+            }
+        }
+        left.len().cmp(&right.len())
+    }
+
+    #[test]
+    fn weighted_progressive_fill_matches_exhaustive_shared_resource_oracle() {
+        let paths = vec![
+            path("a", 1, 5, 0, &["x"]),
+            path("b", 2, 5, 0, &["x"]),
+        ];
+        let result = allocate_resource_incidence_weighted_max_min(&request(
+            paths.clone(),
+            vec![domain("x", 5)],
+        ))
+        .expect("weighted resource allocation");
+        let actual = result
+            .paths
+            .iter()
+            .map(|path| path.allocated_bps)
+            .collect::<Vec<_>>();
+
+        let mut best: Option<Vec<(u64, u32)>> = None;
+        for a in 0..=5_u64 {
+            for b in 0..=5_u64 {
+                if a + b > 5 {
+                    continue;
+                }
+                let score = weighted_service_score(&[a, b], &paths);
+                if best.as_ref().is_none_or(|previous| {
+                    compare_weighted_scores(&score, previous) == std::cmp::Ordering::Greater
+                }) {
+                    best = Some(score);
+                }
+            }
+        }
+        assert_eq!(
+            weighted_service_score(&actual, &paths),
+            best.expect("at least one feasible allocation")
+        );
+    }
+
+    #[test]
+    fn progressive_fill_matches_exhaustive_two_domain_overlap_oracle() {
+        let paths = vec![
+            path("a", 1, 4, 0, &["x"]),
+            path("b", 1, 4, 0, &["x", "y"]),
+            path("c", 1, 4, 0, &["y"]),
+        ];
+        let result = allocate_resource_incidence_weighted_max_min(&request(
+            paths.clone(),
+            vec![domain("x", 3), domain("y", 5)],
+        ))
+        .expect("overlapping resource allocation");
+        let actual = result
+            .paths
+            .iter()
+            .map(|path| path.allocated_bps)
+            .collect::<Vec<_>>();
+
+        let mut best: Option<Vec<(u64, u32)>> = None;
+        for a in 0..=4_u64 {
+            for b in 0..=4_u64 {
+                for c in 0..=4_u64 {
+                    if a + b > 3 || b + c > 5 {
+                        continue;
+                    }
+                    let score = weighted_service_score(&[a, b, c], &paths);
+                    if best.as_ref().is_none_or(|previous| {
+                        compare_weighted_scores(&score, previous) == std::cmp::Ordering::Greater
+                    }) {
+                        best = Some(score);
+                    }
+                }
+            }
+        }
+        assert_eq!(
+            weighted_service_score(&actual, &paths),
+            best.expect("at least one feasible allocation")
+        );
+    }
+
     #[test]
     fn distinct_evidence_sources_are_preserved_per_domain() {
         let mut x = domain("x", 100);
