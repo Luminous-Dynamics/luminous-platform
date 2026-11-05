@@ -155,6 +155,9 @@ pub struct TransitionTickReport {
     pub synchronized_path_change_count: u32,
     pub zero_rate_tenant_ids: Vec<String>,
     pub service_floor_unmet_tenant_ids: Vec<String>,
+    /// Floors that cannot be individually classified because the shared
+    /// allocation failed before producing tenant allocations.
+    pub service_floor_status_unknown_tenant_ids: Vec<String>,
     pub tenant_outages: Vec<TenantOutageState>,
     pub total_allocated_rate_bps: u64,
     pub tenant_allocations: Vec<TenantRateAllocation>,
@@ -486,7 +489,7 @@ fn apply_event(
 fn effective_path(
     path: &TenantResourcePath,
     state: &MutableTransitionState,
-) -> Option<TenantResourcePath> {
+) -> Result<Option<TenantResourcePath>, TransitionError> {
     if let Some(subflows) = state.subflows.get(&path.path_id) {
         if subflows.is_empty() {
             return None;
@@ -494,8 +497,8 @@ fn effective_path(
     }
     let health = state.path_health.get(&path.path_id).copied().unwrap_or(PathHealth::Up);
     match health {
-        PathHealth::Down => None,
-        PathHealth::Up => Some(path.clone()),
+        PathHealth::Down => Ok(None),
+        PathHealth::Up => Ok(Some(path.clone())),
         PathHealth::Degraded { capacity_factor_ppm } => {
             let mut degraded = path.clone();
             let ceiling = u128::from(path.path_ceiling_bps)
@@ -503,7 +506,7 @@ fn effective_path(
                 .ok_or(TransitionError::ArithmeticOverflow)?;
             degraded.path_ceiling_bps =
                 u64::try_from(ceiling / 1_000_000).map_err(|_| TransitionError::ArithmeticOverflow)?;
-            (degraded.path_ceiling_bps > 0).then_some(degraded)
+            Ok((degraded.path_ceiling_bps > 0).then_some(degraded))
         }
     }
 }
@@ -714,7 +717,7 @@ pub fn evaluate_transition_trace(
 
         let mut paths = Vec::with_capacity(state.paths.len());
         for path in state.paths.values() {
-            if let Some(effective) = effective_path(path, &state) {
+            if let Some(effective) = effective_path(path, &state)? {
                 paths.push(effective);
             }
         }
@@ -741,6 +744,7 @@ pub fn evaluate_transition_trace(
         let mut allocation_error = None;
         let mut zero_rate_tenant_ids = Vec::new();
         let mut service_floor_unmet_tenant_ids = Vec::new();
+        let mut service_floor_status_unknown_tenant_ids = Vec::new();
         match allocation_result {
             Ok(report) => {
                 total_allocated_rate_bps = report.total_allocated_rate_bps;
@@ -759,9 +763,20 @@ pub fn evaluate_transition_trace(
             }
             Err(error) => {
                 if error == TenantResourceAllocationError::MinimumServiceInfeasible {
-                    service_floor_unmet_tenant_ids = state
-                        .tenants
-                        .values()
+                    for tenant in state.tenants.values().filter(|tenant| tenant.minimum_service_bps > 0) {
+                        let tenant_has_eligible_path = state.flows.values()
+                            .filter(|flow| flow.tenant_id == tenant.tenant_id)
+                            .flat_map(|flow| paths.iter().filter(move |path| path.flow_id == flow.flow_id))
+                            .next()
+                            .is_some();
+                        if tenant_has_eligible_path {
+                            service_floor_status_unknown_tenant_ids.push(tenant.tenant_id.clone());
+                        } else {
+                            service_floor_unmet_tenant_ids.push(tenant.tenant_id.clone());
+                        }
+                    }
+                } else {
+                    service_floor_status_unknown_tenant_ids = state.tenants.values()
                         .filter(|tenant| tenant.minimum_service_bps > 0)
                         .map(|tenant| tenant.tenant_id.clone())
                         .collect();
@@ -780,7 +795,8 @@ pub fn evaluate_transition_trace(
                 .get(tenant.tenant_id.as_str())
                 .copied()
                 .unwrap_or(0);
-            let floor_met = allocated >= tenant.minimum_service_bps && allocation_error.is_none();
+            let floor_met = tenant.minimum_service_bps == 0
+                || (allocated >= tenant.minimum_service_bps && allocation_error.is_none());
             let started = state.outage_started_at.get(&tenant.tenant_id).copied();
             let mut recovered_at = None;
             let mut last_recovery = state.last_recovery_duration.get(&tenant.tenant_id).copied();
@@ -819,7 +835,7 @@ pub fn evaluate_transition_trace(
         let mut path_up_count = 0_u32;
         let mut path_degraded_count = 0_u32;
         let mut path_down_count = 0_u32;
-        for (path_id, path) in &state.paths {
+        for path_id in state.paths.keys() {
             let health = state.path_health.get(path_id).copied().unwrap_or(PathHealth::Up);
             let subflow_down = state.subflows.get(path_id).is_some_and(BTreeSet::is_empty);
             let effective_down = health == PathHealth::Down || subflow_down;
@@ -837,7 +853,7 @@ pub fn evaluate_transition_trace(
                     paths_recovered_this_tick.push(path_id.clone());
                 }
             }
-            let _ = path;
+
         }
         previous_path_health = state
             .paths
@@ -875,6 +891,7 @@ pub fn evaluate_transition_trace(
         paths_recovered_this_tick.sort();
         zero_rate_tenant_ids.sort();
         service_floor_unmet_tenant_ids.sort();
+        service_floor_status_unknown_tenant_ids.sort();
         tenant_outages.sort_by(|left, right| left.tenant_id.cmp(&right.tenant_id));
 
         ticks.push(TransitionTickReport {
@@ -893,6 +910,7 @@ pub fn evaluate_transition_trace(
             synchronized_path_change_count: u32::try_from(changed).map_err(|_| TransitionError::ArithmeticOverflow)?,
             zero_rate_tenant_ids,
             service_floor_unmet_tenant_ids,
+            service_floor_status_unknown_tenant_ids,
             tenant_outages,
             total_allocated_rate_bps,
             tenant_allocations,
