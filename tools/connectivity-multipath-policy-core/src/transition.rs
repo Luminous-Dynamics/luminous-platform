@@ -365,10 +365,9 @@ fn validate_event_envelope(event: &TransitionEvent) -> Option<EventDisposition> 
         next_epoch,
         next_topology_sha256,
     } = &event.kind
+        && (*next_epoch == 0 || !is_sha256(next_topology_sha256))
     {
-        if *next_epoch == 0 || !is_sha256(next_topology_sha256) {
-            return Some(EventDisposition::RejectedInvalidEpochAdvance);
-        }
+        return Some(EventDisposition::RejectedInvalidEpochAdvance);
     }
     None
 }
@@ -572,10 +571,10 @@ fn effective_path(
     path: &TenantResourcePath,
     state: &MutableTransitionState,
 ) -> Result<Option<TenantResourcePath>, TransitionError> {
-    if let Some(subflows) = state.subflows.get(&path.path_id) {
-        if subflows.is_empty() {
-            return Ok(None);
-        }
+    if let Some(subflows) = state.subflows.get(&path.path_id)
+        && subflows.is_empty()
+    {
+        return Ok(None);
     }
     let health = state
         .path_health
