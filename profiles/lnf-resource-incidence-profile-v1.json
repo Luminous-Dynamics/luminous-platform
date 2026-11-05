@@ -1,0 +1,244 @@
+{
+  "schema_version": "luminous.lnf-resource-incidence-profile.v1",
+  "profile_id": "lnf-resource-incidence-weighted-max-min-v1",
+  "status": "draft_targets_not_results",
+  "reviewed_on": "2026-11-05",
+  "issue": 280,
+  "execution_stage": "deterministic_reference_allocator_only",
+  "objective": "Allocate integer path rates under every capacity-domain dependency using deterministic weighted max-min progressive filling and source-qualified fresh capacity observations.",
+  "mathematical_contract": {
+    "variables": "x_path_bps",
+    "path_constraints": [
+      "minimum_bps <= x_path_bps",
+      "x_path_bps <= demand_bps",
+      "x_path_bps >= 0"
+    ],
+    "resource_constraint": "sum(x_path_bps for paths that traverse domain d) <= capacity_domain_d_bps",
+    "policy": "weighted_max_min_progressive_filling",
+    "integer_unit": "bits_per_second",
+    "rounding": "deterministic one-bit adjustments by lowest normalized service above floor, then path ID",
+    "no_general_sum_rate_optimality_claim": true
+  },
+  "bounds": {
+    "paths_maximum": 64,
+    "capacity_domains_maximum": 128,
+    "capacity_domains_per_path_minimum": 1,
+    "capacity_domains_per_path_maximum": 32,
+    "identifier_maximum_bytes": 128,
+    "path_weight_minimum": 1,
+    "path_weight_maximum": 100,
+    "maximum_observation_age_ms_maximum": 300000
+  },
+  "evidence_contract": {
+    "each_capacity_domain_has_its_own_source_sha256": true,
+    "per_domain_observation_age_required": true,
+    "stale_observation_disposition": "explicit_error_no_allocation",
+    "unknown_capacity_domain_disposition": "explicit_error_no_allocation",
+    "source_digests_may_differ_when_each_domain_provenance_is_explicit": true,
+    "no_inferred_capacity": true
+  },
+  "scenario_ids": [
+    "RESALLOC-00",
+    "RESALLOC-01",
+    "RESALLOC-02",
+    "RESALLOC-03",
+    "RESALLOC-04",
+    "RESALLOC-05",
+    "RESALLOC-06",
+    "RESALLOC-07",
+    "RESALLOC-08",
+    "RESALLOC-09",
+    "RESALLOC-10",
+    "RESALLOC-11",
+    "RESALLOC-12",
+    "RESALLOC-13",
+    "RESALLOC-14",
+    "RESALLOC-15"
+  ],
+  "scenarios": [
+    {
+      "id": "RESALLOC-00",
+      "name": "independent-paths",
+      "purpose": "all path rates reach their demand ceilings without shared resource overcommitment"
+    },
+    {
+      "id": "RESALLOC-01",
+      "name": "shared-backhaul",
+      "purpose": "different access links consume one shared backhaul ceiling"
+    },
+    {
+      "id": "RESALLOC-02",
+      "name": "overlap-plus-independent",
+      "purpose": "shared pair freezes while an independent path continues filling"
+    },
+    {
+      "id": "RESALLOC-03",
+      "name": "overlap-chain",
+      "purpose": "A-X, B-X-Y, C-Y; only paths using a binding domain freeze"
+    },
+    {
+      "id": "RESALLOC-04",
+      "name": "demand-limited-release",
+      "purpose": "a demand-limited path releases its unused entitlement to remaining backlogged paths"
+    },
+    {
+      "id": "RESALLOC-05",
+      "name": "weighted-1-2-4",
+      "purpose": "exact 1:2:4 weighted max-min allocation on one shared resource"
+    },
+    {
+      "id": "RESALLOC-06",
+      "name": "feasible-service-floors",
+      "purpose": "all per-path floors honoured before residual sharing"
+    },
+    {
+      "id": "RESALLOC-07",
+      "name": "infeasible-shared-floor",
+      "purpose": "sum of floors above one shared capacity returns an explicit error"
+    },
+    {
+      "id": "RESALLOC-08",
+      "name": "stale-capacity",
+      "purpose": "stale domain evidence is rejected"
+    },
+    {
+      "id": "RESALLOC-09",
+      "name": "missing-capacity",
+      "purpose": "referenced domain without a capacity observation is rejected"
+    },
+    {
+      "id": "RESALLOC-10",
+      "name": "malformed-provenance",
+      "purpose": "invalid source digest is rejected"
+    },
+    {
+      "id": "RESALLOC-11",
+      "name": "invalid-domain-set",
+      "purpose": "blank, duplicate, empty or oversized domain sets are rejected"
+    },
+    {
+      "id": "RESALLOC-12",
+      "name": "input-permutation",
+      "purpose": "path and capacity input order does not change the report"
+    },
+    {
+      "id": "RESALLOC-13",
+      "name": "integer-remainder",
+      "purpose": "one-bit residual is assigned deterministically without resource overcommitment"
+    },
+    {
+      "id": "RESALLOC-14",
+      "name": "distinct-source-digests",
+      "purpose": "per-domain source digests are preserved and not conflated"
+    },
+    {
+      "id": "RESALLOC-15",
+      "name": "capacity-overflow-boundary",
+      "purpose": "checked arithmetic and all domain ceilings hold at upper bounds"
+    }
+  ],
+  "comparators": [
+    "disjoint_capacity_set_selector_v1",
+    "equal_per_path_sharing",
+    "weighted_proportional_share_reference",
+    "resource_incidence_weighted_max_min_v1",
+    "hand_calculated_exact_max_min_fixtures",
+    "linux_namespace_qdisc_measurements_future_only"
+  ],
+  "required_metrics": [
+    "total_path_rate_bps",
+    "per_path_allocated_bps",
+    "per_path_unmet_demand_bps",
+    "per_path_weight",
+    "per_path_minimum_service_floor_bps",
+    "per_path_capacity_domain_ids",
+    "per_domain_capacity_bps",
+    "per_domain_allocated_bps",
+    "per_domain_remaining_bps",
+    "per_domain_utilization_ppm",
+    "per_domain_binding_disposition",
+    "per_domain_observation_age_ms",
+    "per_domain_source_sha256",
+    "resource_capacity_overcommit_bps",
+    "minimum_service_floor_violation_count",
+    "infeasible_floor_rejection_count",
+    "stale_or_unknown_evidence_rejection_count",
+    "rounding_adjustments_bps",
+    "input_order_determinism",
+    "allocator_decision_runtime_us"
+  ],
+  "benchmarks": [
+    {
+      "id": "RESALLOC_RESOURCE_OVERCOMMIT_001",
+      "metric": "maximum_domain_capacity_overcommit_bps",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RESALLOC_FLOOR_VIOLATION_001",
+      "metric": "feasible_minimum_floor_violations",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RESALLOC_INFEASIBLE_FLOOR_001",
+      "metric": "infeasible_floor_sets_accepted",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RESALLOC_UNKNOWN_EVIDENCE_001",
+      "metric": "unknown_or_stale_capacity_evidence_accepted",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RESALLOC_REPLAY_001",
+      "metric": "same_input_permutation_report_identity_ppm",
+      "operator": "==",
+      "target": 1000000,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RESALLOC_FIXTURE_ERROR_001",
+      "metric": "known_answer_rate_error_bps",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target"
+    },
+    {
+      "id": "RESALLOC_UNUSED_CAPACITY_001",
+      "metric": "remaining_capacity_with_feasible_backlogged_demand_bps",
+      "operator": "baseline_first",
+      "target": null,
+      "target_status": "baseline_first"
+    },
+    {
+      "id": "RESALLOC_RUNTIME_001",
+      "metric": "worst_case_runtime_at_64_paths_128_domains_us",
+      "operator": "baseline_first",
+      "target": null,
+      "target_status": "baseline_first"
+    }
+  ],
+  "evidence_classes": [
+    "deterministic_unit_test",
+    "property_or_permutation_test",
+    "network_namespace_or_vm_emulation",
+    "hardware_or_field_observed"
+  ],
+  "explicit_non_claims": [
+    "This allocator is not a general-purpose LP or multi-commodity-flow solver.",
+    "Weighted max-min is the declared allocation policy, not a universal global sum-rate optimum.",
+    "Capacity-domain observations are caller-supplied and are not inferred or authenticated by this module.",
+    "Different providers, IP addresses or radio interfaces do not prove independent capacity.",
+    "A deterministic allocation result is not a measured kernel qdisc or MPTCP scheduler result.",
+    "The allocator does not change routes, sockets, qdiscs or packet scheduling.",
+    "No claim is made that this module beats CAKE, fq_codel, MPTCP congestion control or a carrier scheduler.",
+    "Benchmark targets are proposals and have not yet been measured."
+  ]
+}
