@@ -562,7 +562,7 @@ pub fn allocate_tenant_resource_incidence(
     let mut active_paths = vec![true; eligible_paths.len()];
     let mut remaining_scaled = resource_residuals
         .iter()
-        .map(|residual| residual.map(|value| rate_scaled(value)).transpose())
+        .map(|residual| residual.map(rate_scaled).transpose())
         .collect::<Result<Vec<_>, _>>()?;
 
     let maximum_iterations = eligible_paths
