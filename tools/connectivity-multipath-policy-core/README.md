@@ -138,7 +138,7 @@ The allocator:
 - rejects missing, stale, malformed or unknown capacity evidence;
 - emits per-path rates and per-domain capacity, use, remaining capacity, provenance and binding status.
 
-Its first version is bounded to 64 paths, 128 domains, 32 domains per path, weights 1–100 and a maximum caller-declared evidence age of five minutes. It is a deterministic reference allocator, not a general LP solver, MPTCP scheduler, qdisc or route actuator. It does not authenticate the capacity source; the caller must bind the per-domain receipts into the enclosing run manifest.
+Its first version is bounded to 256 paths, 128 domains, 32 domains per path, weights 1–100 and a maximum caller-declared evidence age of five minutes. It is a deterministic reference allocator, not a general LP solver, MPTCP scheduler, qdisc or route actuator. It does not authenticate the capacity source; the caller must bind the per-domain receipts into the enclosing run manifest.
 
 ## MPTCP coexistence evidence evaluator
 
