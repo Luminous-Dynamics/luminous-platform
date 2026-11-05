@@ -205,6 +205,7 @@ pub enum TransitionError {
 #[derive(Clone, Debug)]
 struct MutableTransitionState {
     topology_epoch: u64,
+    topology_epoch_started_at_unix_ms: u64,
     topology_sha256: String,
     state_snapshot_sha256: String,
     minimum_evidence_confidence_ppm: u32,
@@ -294,6 +295,7 @@ fn validate_initial(snapshot: &TransitionSnapshot) -> Result<(), TransitionError
 fn from_snapshot(snapshot: &TransitionSnapshot) -> MutableTransitionState {
     MutableTransitionState {
         topology_epoch: snapshot.topology_epoch,
+        topology_epoch_started_at_unix_ms: 0,
         topology_sha256: snapshot.topology_sha256.clone(),
         state_snapshot_sha256: snapshot.state_snapshot_sha256.clone(),
         minimum_evidence_confidence_ppm: snapshot.minimum_evidence_confidence_ppm,
@@ -534,6 +536,7 @@ fn apply_event(
                 return Err(EventDisposition::RejectedInvalidEpochAdvance);
             }
             state.topology_epoch = *next_epoch;
+            state.topology_epoch_started_at_unix_ms = event.effective_at_unix_ms;
             state.topology_sha256 = next_topology_sha256.clone();
         }
     }
@@ -578,10 +581,13 @@ fn apply_pending_events(
     order.sort_by(|left, right| {
         let a = &events[*left];
         let b = &events[*right];
-        a.source_id
-            .cmp(&b.source_id)
+        let a_epoch_advance = matches!(a.kind, TransitionEventKind::TopologyEpochAdvanced { .. });
+        let b_epoch_advance = matches!(b.kind, TransitionEventKind::TopologyEpochAdvanced { .. });
+        a.effective_at_unix_ms
+            .cmp(&b.effective_at_unix_ms)
+            .then_with(|| b_epoch_advance.cmp(&a_epoch_advance))
+            .then_with(|| a.source_id.cmp(&b.source_id))
             .then_with(|| a.source_sequence.cmp(&b.source_sequence))
-            .then_with(|| a.effective_at_unix_ms.cmp(&b.effective_at_unix_ms))
             .then_with(|| a.event_id.cmp(&b.event_id))
             .then_with(|| left.cmp(right))
     });
@@ -625,13 +631,28 @@ fn apply_pending_events(
                 record.reason = disposition_reason(record.disposition);
                 continue;
             }
-            if record.first_eligible_tick_unix_ms.is_none() {
-                record.first_eligible_tick_unix_ms = Some(tick_unix_ms);
-            }
             if event.topology_epoch > state.topology_epoch {
                 record.disposition = EventDisposition::DeferredFutureTopologyEpoch;
                 record.reason = disposition_reason(record.disposition);
                 continue;
+            }
+            if event.topology_epoch < state.topology_epoch {
+                record.disposition = EventDisposition::RejectedTopologyEpoch;
+                record.reason = disposition_reason(record.disposition);
+                progress = true;
+                continue;
+            }
+            if event.topology_sha256 != state.topology_sha256
+                || (state.topology_epoch_started_at_unix_ms > 0
+                    && event.effective_at_unix_ms < state.topology_epoch_started_at_unix_ms)
+            {
+                record.disposition = EventDisposition::RejectedTopologyEpoch;
+                record.reason = disposition_reason(record.disposition);
+                progress = true;
+                continue;
+            }
+            if record.first_eligible_tick_unix_ms.is_none() {
+                record.first_eligible_tick_unix_ms = Some(tick_unix_ms);
             }
 
             let expected_sequence = state
@@ -1248,7 +1269,7 @@ mod tests {
                 1,
                 1_100,
                 1_300,
-                1_300,
+                1_100,
                 TransitionEventKind::PathHealthChanged {
                     path_id: "path-b".to_owned(),
                     health: PathHealth::Down,
