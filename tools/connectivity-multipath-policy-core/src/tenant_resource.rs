@@ -974,7 +974,7 @@ pub fn allocate_tenant_resource_incidence(
 
     let mut tenant_allocations = Vec::with_capacity(tenant_entries.len());
     let mut minimum_service_met_tenant_ids = Vec::new();
-    for tenant_index in 0..tenant_entries.len() {
+    for (tenant_index, tenant) in tenant_entries.iter().enumerate() {
         let demand_bps = tenant_demands[tenant_index];
         let allocated_rate_bps = integer_tenant_rates[tenant_index];
         let active_flow_count = u32::try_from(
