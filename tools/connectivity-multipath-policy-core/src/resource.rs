@@ -232,6 +232,44 @@ fn canonical_ids(ids: &[String]) -> Vec<String> {
     result
 }
 
+fn compare_integer_weighted_fairness(
+    left_rates: &[u64],
+    right_rates: &[u64],
+    paths: &[EligiblePath],
+) -> std::cmp::Ordering {
+    let ordered = |rates: &[u64]| {
+        let mut values = rates
+            .iter()
+            .zip(paths)
+            .map(|(rate, path)| {
+                (
+                    *rate,
+                    path.path.weight,
+                    path.path.path_id.as_str(),
+                )
+            })
+            .collect::<Vec<_>>();
+        values.sort_by(|left, right| {
+            (u128::from(left.0) * u128::from(right.1))
+                .cmp(&(u128::from(right.0) * u128::from(left.1)))
+                .then_with(|| left.2.cmp(right.2))
+        });
+        values
+    };
+
+    let left = ordered(left_rates);
+    let right = ordered(right_rates);
+    for (left_value, right_value) in left.iter().zip(&right) {
+        let ordering = (u128::from(left_value.0) * u128::from(right_value.1))
+            .cmp(&(u128::from(right_value.0) * u128::from(left_value.1)));
+        if ordering != std::cmp::Ordering::Equal {
+            return ordering;
+        }
+    }
+    // Deterministic integer max-min tie-break: canonical path-ID order.
+    left_rates.cmp(right_rates)
+}
+
 /// Allocate path rates with deterministic weighted max-min progressive filling.
 ///
 /// The algorithm increases all active paths proportionally to their weight
@@ -525,39 +563,55 @@ pub fn allocate_resource_incidence(
                 .map_err(|_| ResourceAllocationError::ArithmeticOverflow)
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let mut fractional_order = (0..eligible.len()).collect::<Vec<_>>();
-    fractional_order.sort_by(|left, right| {
-        (rates_scaled[*right] % RATE_SCALE)
-            .cmp(&(rates_scaled[*left] % RATE_SCALE))
-            .then_with(|| {
-                eligible[*left]
-                    .path
-                    .path_id
-                    .cmp(&eligible[*right].path.path_id)
-            })
-    });
-
-    // Largest-remainder bps rounding is admitted only when every resource on
-    // the path has one full bps of residual headroom. This cannot overcommit.
-    for index in fractional_order {
-        if integer_rates[index] >= eligible[index].path.path_ceiling_bps {
-            continue;
+    let mut integer_domain_used = vec![0_u64; resources.len()];
+    for (index, item) in eligible.iter().enumerate() {
+        for domain_index in &item.domain_indexes {
+            integer_domain_used[*domain_index] = integer_domain_used[*domain_index]
+                .checked_add(integer_rates[index])
+                .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
         }
-        let fits_all_resources = eligible[index].domain_indexes.iter().all(|domain_index| {
-            let Some(capacity) = resource_residuals[*domain_index] else {
-                return false;
-            };
-            let used = eligible
-                .iter()
-                .enumerate()
-                .filter(|(_, path)| path.domain_indexes.contains(domain_index))
-                .try_fold(0_u64, |sum, (path_index, _)| {
-                    sum.checked_add(integer_rates[path_index])
-                });
-            used.is_some_and(|used| used < capacity)
-        });
-        if fits_all_resources {
-            integer_rates[index] = integer_rates[index]
+    }
+
+    // Convert the fixed-point progressive-fill result to integer bps without
+    // changing its weighted max-min objective. Largest fractional remainder
+    // is proportional apportionment, not max-min: on a one-bps bottleneck it
+    // can award the bit to a high-weight path and contradict the exact oracle.
+    // Select each residual bps by the lexicographically best sorted vector of
+    // rate/weight ratios, with canonical path-ID tie-breaking. The continuous
+    // fixed-point solution leaves fewer than one bps per active path to round.
+    for _ in 0..eligible.len() {
+        let mut best_candidate: Option<(usize, Vec<u64>)> = None;
+        for (index, item) in eligible.iter().enumerate() {
+            if integer_rates[index] >= item.path.path_ceiling_bps {
+                continue;
+            }
+            let fits_all_resources = item.domain_indexes.iter().all(|domain_index| {
+                resource_residuals[*domain_index]
+                    .is_some_and(|capacity| integer_domain_used[*domain_index] < capacity)
+            });
+            if !fits_all_resources {
+                continue;
+            }
+
+            let mut candidate = integer_rates.clone();
+            candidate[index] = candidate[index]
+                .checked_add(1)
+                .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
+            let replace = best_candidate.as_ref().is_none_or(|(_, best_rates)| {
+                compare_integer_weighted_fairness(&candidate, best_rates, &eligible)
+                    == std::cmp::Ordering::Greater
+            });
+            if replace {
+                best_candidate = Some((index, candidate));
+            }
+        }
+
+        let Some((index, next_rates)) = best_candidate else {
+            break;
+        };
+        integer_rates = next_rates;
+        for domain_index in &eligible[index].domain_indexes {
+            integer_domain_used[*domain_index] = integer_domain_used[*domain_index]
                 .checked_add(1)
                 .ok_or(ResourceAllocationError::ArithmeticOverflow)?;
         }
