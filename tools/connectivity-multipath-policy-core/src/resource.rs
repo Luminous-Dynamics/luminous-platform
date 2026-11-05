@@ -617,7 +617,7 @@ pub fn allocate_resource_incidence(
         return Err(ResourceAllocationError::InternalInvariant);
     }
 
-    let mut integer_rates = rates_scaled
+    let integer_rates = rates_scaled
         .iter()
         .map(|value| {
             u64::try_from(value / RATE_SCALE)
