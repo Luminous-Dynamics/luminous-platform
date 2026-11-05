@@ -168,7 +168,9 @@ pub(crate) fn valid_identifier(value: &str) -> bool {
     !value.trim().is_empty() && value.len() <= MAX_ID_BYTES && !value.chars().any(char::is_control)
 }
 
-pub(crate) fn validate_request(request: &ResourceAllocationRequest) -> Result<(), ResourceAllocationError> {
+pub(crate) fn validate_request(
+    request: &ResourceAllocationRequest,
+) -> Result<(), ResourceAllocationError> {
     if !is_sha256(&request.topology_sha256) {
         return Err(ResourceAllocationError::InvalidTopologyDigest);
     }
@@ -281,8 +283,7 @@ pub fn allocate_resource_incidence(
         return Err(ResourceAllocationError::TooManyResources);
     }
 
-    let (resource_index, resource_residuals) =
-        validate_resource_inventory(request, resources)?;
+    let (resource_index, resource_residuals) = validate_resource_inventory(request, resources)?;
 
     let mut seen_path_ids = BTreeSet::new();
     let mut exclusions = Vec::new();
