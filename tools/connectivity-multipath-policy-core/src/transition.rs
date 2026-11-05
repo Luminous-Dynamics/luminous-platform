@@ -208,7 +208,6 @@ pub enum TransitionError {
     TooManyDecisionTicks,
     ZeroDecisionTick,
     NonMonotonicDecisionTicks,
-    InvalidEventSet,
     ArithmeticOverflow,
 }
 
@@ -575,7 +574,7 @@ fn effective_path(
 ) -> Result<Option<TenantResourcePath>, TransitionError> {
     if let Some(subflows) = state.subflows.get(&path.path_id) {
         if subflows.is_empty() {
-            return None;
+            return Ok(None);
         }
     }
     let health = state
