@@ -114,7 +114,7 @@
     {
       "id": "TASK-04",
       "name": "deadline-infeasible-on-all-paths",
-      "purpose": "Avoid spending scarce capacity on hopeless retransmission after a task deadline is infeasible."
+      "purpose": "Avoid spending scarce capacity on hopeless retransmission after a task deadline."
     },
     {
       "id": "TASK-05",
