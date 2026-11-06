@@ -2395,14 +2395,65 @@ mod tests {
     #[test]
     fn delegation_audit_rejects_incomplete_sibling_budget_batch() {
         let result = audit_delegation_fixture_mutation(|example| {
-            example["delegation"]["fanout_batches"][0]["child_allocations"] =
-                serde_json::json!([]);
-            example["delegation"]["fanout_batches"][0]["aggregate_allocated"] =
-                serde_json::json!({
-                    "max_dispatches": 0,
-                    "max_tool_calls": 0,
-                    "max_resource_units": 0
-                });
+            let mut sibling = example["delegation"]["chain"][1].clone();
+            sibling["grant_ref"] = serde_json::json!("opaque:child-grant-003");
+            sibling["task_id"] = serde_json::json!("ATB-0002/child-002");
+            sibling["task_digest"] = serde_json::json!(
+                "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+            );
+            sibling["plan_digest"] = serde_json::json!(
+                "sha256:8888888888888888888888888888888888888888888888888888888888888888"
+            );
+            sibling["subject_principal_ref"] = serde_json::json!("opaque:agent-c");
+            sibling["issuer_principal_ref"] = example["delegation"]["chain"][0]
+                ["subject_principal_ref"].clone();
+            sibling["parent"] = serde_json::json!({
+                "grant_ref": "opaque:root-grant-002",
+                "task_id": "ATB-0002",
+                "task_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            });
+
+            example["delegation"]["chain"].as_array_mut().unwrap().push(sibling.clone());
+            example["delegation"]["acting_leaf_grant_ref"] = sibling["grant_ref"].clone();
+
+            example["delegation"]["chain"][0]["authorized_child_task_plans"]
+                .as_array_mut().unwrap().push(serde_json::json!({
+                    "task_digest": sibling["task_digest"],
+                    "plan_digest": sibling["plan_digest"]
+                }));
+            example["delegation"]["root_authorized_task_plans"]
+                .as_array_mut().unwrap().push(serde_json::json!({
+                    "task_id": sibling["task_id"],
+                    "task_digest": sibling["task_digest"],
+                    "plan_digest": sibling["plan_digest"]
+                }));
+
+            let mut edge = example["delegation"]["root_authorized_edges"][0].clone();
+            edge["child_task_digest"] = sibling["task_digest"].clone();
+            edge["child_plan_digest"] = sibling["plan_digest"].clone();
+            edge["delegatee_principal_ref"] = sibling["subject_principal_ref"].clone();
+            example["delegation"]["root_authorized_edges"]
+                .as_array_mut().unwrap().push(edge);
+
+            let mut verification = example["delegation"]["edge_verifications"][0].clone();
+            verification["child_grant_ref"] = sibling["grant_ref"].clone();
+            example["delegation"]["edge_verifications"]
+                .as_array_mut().unwrap().push(verification);
+
+            // The acting leaf and its effect evidence move to the second child,
+            // but the "complete" fan-out batch still allocates only the first.
+            example["delegation"]["participant_rechecks"][0]["leaf_grant_ref"] =
+                sibling["grant_ref"].clone();
+            example["delegation"]["participant_rechecks"][0]["leaf_task_digest"] =
+                sibling["task_digest"].clone();
+            example["delegation"]["participant_rechecks"][0]["leaf_plan_digest"] =
+                sibling["plan_digest"].clone();
+            example["delegation"]["effect_bindings"][0]["leaf_grant_ref"] =
+                sibling["grant_ref"].clone();
+            example["delegation"]["effect_bindings"][0]["leaf_task_digest"] =
+                sibling["task_digest"].clone();
+            example["delegation"]["effect_bindings"][0]["leaf_plan_digest"] =
+                sibling["plan_digest"].clone();
         });
         assert!(matches!(result, Err(CoreError::ResultViolations(_))));
     }
