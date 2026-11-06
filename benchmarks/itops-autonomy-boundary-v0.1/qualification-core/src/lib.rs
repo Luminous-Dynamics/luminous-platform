@@ -346,6 +346,534 @@ fn bool_at(root: &serde_json::Value, path: &str) -> Option<bool> {
 /// function independently checks hard mutation bounds, attempt/unknown
 /// invariants, independent oracles, service state, handoff requirements,
 /// promotion claims, resource arithmetic, and corpus binding for measured runs.
+fn json_string_set(value: &serde_json::Value, key: &str) -> BTreeSet<String> {
+    value
+        .get(key)
+        .and_then(serde_json::Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(serde_json::Value::as_str)
+        .map(str::to_string)
+        .collect()
+}
+
+fn parameter_constraint_subset(
+    child: &serde_json::Value,
+    parent: &serde_json::Value,
+) -> bool {
+    let child_name = string_at(child, "name");
+    let parent_name = string_at(parent, "name");
+    if child_name != parent_name {
+        return false;
+    }
+    match (
+        string_at(child, "kind"),
+        string_at(parent, "kind"),
+    ) {
+        (Some("exact_string"), Some("exact_string")) => {
+            string_at(child, "string_value") == string_at(parent, "string_value")
+        }
+        (Some("exact_integer"), Some("exact_integer")) => {
+            value_at(child, "integer_value").and_then(serde_json::Value::as_i64)
+                == value_at(parent, "integer_value").and_then(serde_json::Value::as_i64)
+        }
+        (Some("exact_integer"), Some("integer_range")) => {
+            let value = value_at(child, "integer_value").and_then(serde_json::Value::as_i64);
+            let min = value_at(parent, "min").and_then(serde_json::Value::as_i64);
+            let max = value_at(parent, "max").and_then(serde_json::Value::as_i64);
+            matches!((value, min, max), (Some(v), Some(lo), Some(hi)) if lo <= v && v <= hi)
+        }
+        (Some("integer_range"), Some("integer_range")) => {
+            let child_min = value_at(child, "min").and_then(serde_json::Value::as_i64);
+            let child_max = value_at(child, "max").and_then(serde_json::Value::as_i64);
+            let parent_min = value_at(parent, "min").and_then(serde_json::Value::as_i64);
+            let parent_max = value_at(parent, "max").and_then(serde_json::Value::as_i64);
+            matches!(
+                (child_min, child_max, parent_min, parent_max),
+                (Some(cl), Some(ch), Some(pl), Some(ph))
+                    if cl <= ch && cl >= pl && ch <= ph
+            )
+        }
+        _ => false,
+    }
+}
+
+fn parameter_constraints_are_subset(
+    child_scope: &serde_json::Value,
+    parent_scope: &serde_json::Value,
+) -> bool {
+    let child_constraints = value_at(child_scope, "parameter_constraints")
+        .and_then(serde_json::Value::as_array);
+    let parent_constraints = value_at(parent_scope, "parameter_constraints")
+        .and_then(serde_json::Value::as_array);
+    let (Some(child_constraints), Some(parent_constraints)) =
+        (child_constraints, parent_constraints)
+    else {
+        return false;
+    };
+
+    let mut child_names = BTreeSet::new();
+    for constraint in child_constraints {
+        let Some(name) = string_at(constraint, "name") else {
+            return false;
+        };
+        if !child_names.insert(name.to_string()) {
+            return false;
+        }
+    }
+
+    parent_constraints.iter().all(|parent| {
+        child_constraints.iter().any(|child| {
+            parameter_constraint_subset(child, parent)
+        })
+    })
+}
+
+fn delegation_scope_violations(
+    child: &serde_json::Value,
+    parent: &serde_json::Value,
+    decrement_depth: bool,
+) -> Vec<&'static str> {
+    let mut issues = Vec::new();
+
+    if string_at(child, "tenant_commitment") != string_at(parent, "tenant_commitment") {
+        issues.push("tenant_changed");
+    }
+    for (field, code) in [
+        ("target_digests", "target_scope_expanded"),
+        ("operations", "operation_scope_expanded"),
+        ("data_scope_refs", "data_scope_expanded"),
+    ] {
+        if !json_string_set(child, field).is_subset(&json_string_set(parent, field)) {
+            issues.push(code);
+        }
+    }
+    if !parameter_constraints_are_subset(child, parent) {
+        issues.push("parameter_scope_expanded_or_incomparable");
+    }
+
+    let child_not_before = string_at(child, "not_before")
+        .and_then(|value| DateTime::parse_from_rfc3339(value).ok());
+    let parent_not_before = string_at(parent, "not_before")
+        .and_then(|value| DateTime::parse_from_rfc3339(value).ok());
+    if !matches!((child_not_before, parent_not_before), (Some(c), Some(p)) if c >= p) {
+        issues.push("not_before_widened_or_invalid");
+    }
+
+    let child_expiry = string_at(child, "expires_at")
+        .and_then(|value| DateTime::parse_from_rfc3339(value).ok());
+    let parent_expiry = string_at(parent, "expires_at")
+        .and_then(|value| DateTime::parse_from_rfc3339(value).ok());
+    if !matches!((child_expiry, parent_expiry), (Some(c), Some(p)) if c <= p) {
+        issues.push("expiry_widened_or_invalid");
+    }
+
+    for (field, code) in [
+        ("max_dispatches", "dispatch_budget_expanded"),
+        ("max_tool_calls", "tool_budget_expanded"),
+        ("max_resource_units", "resource_budget_expanded"),
+        ("max_risk_level", "risk_ceiling_expanded"),
+    ] {
+        let child_value = u64_at(child, field);
+        let parent_value = u64_at(parent, field);
+        if !matches!((child_value, parent_value), (Some(c), Some(p)) if c <= p) {
+            issues.push(code);
+        }
+    }
+
+    let child_depth = u64_at(child, "remaining_delegation_depth");
+    let parent_depth = u64_at(parent, "remaining_delegation_depth");
+    let permitted_depth = parent_depth.map(|depth| {
+        if decrement_depth { depth.saturating_sub(1) } else { depth }
+    });
+    if !matches!((child_depth, permitted_depth), (Some(c), Some(p)) if c <= p) {
+        issues.push("delegation_depth_expanded");
+    }
+
+    for (field, code) in [
+        ("required_approvals", "approval_requirement_weakened"),
+        ("required_postconditions", "postcondition_weakened"),
+        ("rollback_obligations", "rollback_obligation_weakened"),
+    ] {
+        if !json_string_set(parent, field).is_subset(&json_string_set(child, field)) {
+            issues.push(code);
+        }
+    }
+    issues
+}
+
+/// Independent semantic checks for the delegation evidence block. JSON Schema
+/// validates shape; this function checks cross-record identity, scope, budget,
+/// participant/effect, and provenance relationships. It does not authenticate
+/// opaque references or prove that referenced processes are independent.
+fn audit_delegation_evidence(
+    result: &serde_json::Value,
+    case_id: &str,
+) -> Vec<String> {
+    let mut violations = Vec::new();
+    let Some(delegation) = value_at(result, "delegation") else {
+        if bool_at(result, "task_binding.delegation_required") == Some(true) {
+            violations.push(format!("{case_id}: delegation is required but evidence is absent"));
+        }
+        return violations;
+    };
+
+    let violation = |code: &str| format!("{case_id}: delegation {code}");
+    let policy_arm = string_at(delegation, "policy_arm").unwrap_or_default();
+    let root_authority = value_at(delegation, "root_authority");
+    let chain = value_at(delegation, "chain").and_then(serde_json::Value::as_array);
+    let (Some(root_authority), Some(chain)) = (root_authority, chain) else {
+        return vec![violation("root authority or chain is missing")];
+    };
+    if chain.len() < 2 {
+        violations.push(violation("chain must contain a root and at least one descendant"));
+        return violations;
+    }
+
+    let root = &chain[0];
+    let leaf = chain.last().expect("chain length checked above");
+    if string_at(root, "role") != Some("root") {
+        violations.push(violation("first chain node is not the root"));
+    }
+    if string_at(root, "grant_ref") != string_at(root_authority, "grant_ref")
+        || string_at(root, "task_id") != string_at(root_authority, "root_task_id")
+        || string_at(root, "task_digest") != string_at(root_authority, "root_task_digest")
+        || string_at(root, "plan_digest") != string_at(root_authority, "root_plan_digest")
+    {
+        violations.push(violation("root authority does not bind the first chain node"));
+    }
+
+    let mut grant_refs = BTreeSet::new();
+    let mut task_ids = BTreeSet::new();
+    for node in chain {
+        if let Some(grant_ref) = string_at(node, "grant_ref") {
+            if !grant_refs.insert(grant_ref.to_string()) {
+                violations.push(violation("duplicate grant reference in chain"));
+            }
+        }
+        if let Some(task_id) = string_at(node, "task_id") {
+            if !task_ids.insert(task_id.to_string()) {
+                violations.push(violation("duplicate task identity in chain"));
+            }
+        }
+    }
+
+    let root_scope = value_at(root, "scope");
+    let root_task_plans = value_at(delegation, "root_authorized_task_plans")
+        .and_then(serde_json::Value::as_array);
+    let root_edges = value_at(delegation, "root_authorized_edges")
+        .and_then(serde_json::Value::as_array);
+    let edge_verifications = value_at(delegation, "edge_verifications")
+        .and_then(serde_json::Value::as_array);
+
+    if policy_arm == "root_anchored_task_graph"
+        && (root_task_plans.is_none() || root_edges.is_none())
+    {
+        violations.push(violation("root-anchored policy is missing its committed task graph"));
+    }
+    if edge_verifications.map_or(0, Vec::len) != chain.len() - 1 {
+        violations.push(violation("edge verification count does not match chain length"));
+    }
+
+    for index in 1..chain.len() {
+        let parent = &chain[index - 1];
+        let child = &chain[index];
+        let parent_ref = string_at(parent, "grant_ref").unwrap_or_default();
+        let child_ref = string_at(child, "grant_ref").unwrap_or_default();
+
+        let parent_link_ok = value_at(child, "parent").is_some_and(|link| {
+            string_at(link, "grant_ref") == Some(parent_ref)
+                && string_at(link, "task_id") == string_at(parent, "task_id")
+                && string_at(link, "task_digest") == string_at(parent, "task_digest")
+        });
+        if !parent_link_ok {
+            violations.push(violation("immediate parent grant/task lineage mismatch"));
+        }
+        if string_at(child, "issuer_principal_ref")
+            != string_at(parent, "subject_principal_ref")
+        {
+            violations.push(violation("issuer/subject principal chain mismatch"));
+        }
+
+        let child_digest = string_at(child, "task_digest");
+        let child_plan = string_at(child, "plan_digest");
+        let parent_pairs = value_at(parent, "authorized_child_task_plans")
+            .and_then(serde_json::Value::as_array);
+        let parent_pair_match = parent_pairs.is_some_and(|pairs| {
+            pairs.iter().any(|pair| {
+                string_at(pair, "task_digest") == child_digest
+                    && string_at(pair, "plan_digest") == child_plan
+            })
+        });
+        if !parent_pair_match {
+            violations.push(violation("immediate parent did not authorize the exact child task/plan pair"));
+        }
+
+        let child_scope = value_at(child, "scope");
+        if let (Some(child_scope), Some(parent_scope), Some(root_scope)) =
+            (child_scope, value_at(parent, "scope"), root_scope)
+        {
+            if policy_arm == "strict_edge_attenuation" {
+                for code in delegation_scope_violations(child_scope, parent_scope, true) {
+                    violations.push(violation(code));
+                }
+            } else if policy_arm == "root_anchored_task_graph" {
+                for code in delegation_scope_violations(child_scope, root_scope, true) {
+                    violations.push(violation(code));
+                }
+            } else {
+                violations.push(violation("unknown policy arm"));
+            }
+        } else {
+            violations.push(violation("chain node scope is missing"));
+        }
+
+        if policy_arm == "root_anchored_task_graph" {
+            let task_plan_committed = root_task_plans.is_some_and(|pairs| {
+                pairs.iter().any(|pair| {
+                    string_at(pair, "task_digest") == child_digest
+                        && string_at(pair, "plan_digest") == child_plan
+                })
+            });
+            if !task_plan_committed {
+                violations.push(violation("descendant task/plan pair is absent from root manifest"));
+            }
+
+            let root_edge = root_edges.and_then(|edges| {
+                edges.iter().find(|edge| {
+                    string_at(edge, "parent_task_digest") == string_at(parent, "task_digest")
+                        && string_at(edge, "child_task_digest") == child_digest
+                        && string_at(edge, "child_plan_digest") == child_plan
+                        && string_at(edge, "delegator_principal_ref") == string_at(parent, "subject_principal_ref")
+                        && string_at(edge, "delegatee_principal_ref") == string_at(child, "subject_principal_ref")
+                })
+            });
+            if let Some(edge) = root_edge {
+                if let (Some(child_scope), Some(authorized_scope)) =
+                    (child_scope, value_at(edge, "authorized_scope"))
+                {
+                    for code in delegation_scope_violations(child_scope, authorized_scope, false) {
+                        violations.push(violation(code));
+                    }
+                } else {
+                    violations.push(violation("root delegation edge has no authorized scope"));
+                }
+            } else {
+                violations.push(violation("root task graph lacks the exact parent/child/principal edge"));
+            }
+        }
+
+        let verification = edge_verifications.and_then(|rows| {
+            rows.iter().find(|row| {
+                string_at(row, "parent_grant_ref") == Some(parent_ref)
+                    && string_at(row, "child_grant_ref") == Some(child_ref)
+            })
+        });
+        if let Some(verification) = verification {
+            if string_at(verification, "outcome") == Some("qualified")
+                && (bool_at(verification, "task_plan_pair_match") != Some(true)
+                    || bool_at(verification, "lineage_match") != Some(true)
+                    || string_at(verification, "scope_match") != Some("subset"))
+            {
+                violations.push(violation("qualified edge verification contradicts its recorded pair/lineage/scope checks"));
+            }
+        } else {
+            violations.push(violation("edge verification does not identify the chain parent and child"));
+        }
+    }
+
+    let fanout_batches = value_at(delegation, "fanout_batches")
+        .and_then(serde_json::Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    for batch in &fanout_batches {
+        let parent_ref = string_at(batch, "parent_grant_ref").unwrap_or_default();
+        let parent = chain.iter().find(|node| string_at(node, "grant_ref") == Some(parent_ref));
+        let allocations = value_at(batch, "child_allocations")
+            .and_then(serde_json::Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        let mut child_refs = BTreeSet::new();
+        let mut totals = [0_u64; 3];
+        for allocation in &allocations {
+            let child_ref = string_at(allocation, "child_grant_ref").unwrap_or_default();
+            if !child_refs.insert(child_ref.to_string()) {
+                violations.push(violation("duplicate child grant in sibling allocation batch"));
+            }
+            if !chain.iter().any(|node| string_at(node, "grant_ref") == Some(child_ref)) {
+                violations.push(violation("sibling allocation references a grant outside the chain"));
+            }
+            for (index, field) in ["max_dispatches", "max_tool_calls", "max_resource_units"].iter().enumerate() {
+                match totals[index].checked_add(u64_at(allocation, field).unwrap_or(u64::MAX)) {
+                    Some(value) => totals[index] = value,
+                    None => {
+                        totals[index] = u64::MAX;
+                        violations.push(violation("sibling allocation arithmetic overflow"));
+                    }
+                }
+            }
+        }
+
+        let aggregate = value_at(batch, "aggregate_allocated");
+        let limits = value_at(batch, "parent_budget_limit");
+        for (index, field) in ["max_dispatches", "max_tool_calls", "max_resource_units"].iter().enumerate() {
+            if u64_at(aggregate.unwrap_or(&serde_json::Value::Null), field) != Some(totals[index]) {
+                violations.push(violation("fan-out aggregate does not equal child allocations"));
+            }
+            let limit = u64_at(limits.unwrap_or(&serde_json::Value::Null), field);
+            if !matches!(limit, Some(limit) if totals[index] <= limit) {
+                violations.push(violation("fan-out allocation exceeds its recorded parent budget"));
+            }
+            if let Some(parent) = parent {
+                let parent_limit = value_at(parent, "scope")
+                    .and_then(|scope| u64_at(scope, field));
+                if !matches!((limit, parent_limit), (Some(limit), Some(parent_limit)) if limit <= parent_limit) {
+                    violations.push(violation("fan-out budget snapshot exceeds parent grant budget"));
+                }
+            } else {
+                violations.push(violation("fan-out batch parent grant is absent from chain"));
+            }
+        }
+    }
+
+    let root_ref = string_at(root, "grant_ref");
+    let leaf_ref = string_at(leaf, "grant_ref");
+    let root_digest = string_at(root, "task_digest");
+    let leaf_digest = string_at(leaf, "task_digest");
+    let leaf_plan = string_at(leaf, "plan_digest");
+    let request_digest = string_at(result, "task_binding.request_digest");
+    let target_digest = string_at(result, "task_binding.target_digest");
+    let participant_attempts = value_at(result, "participant_effect_oracle.attempts")
+        .and_then(serde_json::Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let rechecks = value_at(delegation, "participant_rechecks")
+        .and_then(serde_json::Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+
+    for recheck in &rechecks {
+        if string_at(recheck, "root_grant_ref") != root_ref
+            || string_at(recheck, "leaf_grant_ref") != leaf_ref
+            || string_at(recheck, "root_task_digest") != root_digest
+            || string_at(recheck, "leaf_task_digest") != leaf_digest
+            || string_at(recheck, "leaf_plan_digest") != leaf_plan
+            || string_at(recheck, "request_digest") != request_digest
+            || string_at(recheck, "target_digest") != target_digest
+        {
+            violations.push(violation("participant recheck is not bound to the exact root/leaf/task/plan/request/target"));
+        }
+        let attempt_id = string_at(recheck, "attempt_id");
+        if !participant_attempts.iter().any(|attempt| string_at(attempt, "attempt_id") == attempt_id) {
+            violations.push(violation("participant recheck attempt ID is absent from participant oracle"));
+        }
+    }
+
+    let dispatched = u64_at(result, "runtime_gate.dispatched_mutations").unwrap_or(0);
+    if dispatched > 0 && !rechecks.iter().any(|recheck| {
+        string_at(recheck, "decision") == Some("allow")
+            && string_at(recheck, "authority_state") == Some("active")
+            && string_at(recheck, "root_grant_ref") == root_ref
+            && string_at(recheck, "leaf_grant_ref") == leaf_ref
+    }) {
+        violations.push(violation("dispatched mutation has no active allow decision at the final participant boundary"));
+    }
+
+    let effect_bindings = value_at(delegation, "effect_bindings")
+        .and_then(serde_json::Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    for effect in &effect_bindings {
+        let attempt_id = string_at(effect, "attempt_id");
+        if string_at(effect, "root_task_digest") != root_digest
+            || string_at(effect, "leaf_grant_ref") != leaf_ref
+            || string_at(effect, "leaf_task_digest") != leaf_digest
+            || string_at(effect, "leaf_plan_digest") != leaf_plan
+            || string_at(effect, "request_digest") != request_digest
+        {
+            violations.push(violation("effect receipt is not bound to root/leaf/task/plan/request"));
+        }
+        let attempt = participant_attempts.iter().find(|attempt| {
+            string_at(attempt, "attempt_id") == attempt_id
+        });
+        if let Some(attempt) = attempt {
+            if string_at(attempt, "state") != string_at(effect, "effect_state")
+                || u64_at(attempt, "effect_count") != u64_at(effect, "effect_count")
+            {
+                violations.push(violation("effect binding contradicts participant-owned attempt state/count"));
+            }
+        } else {
+            violations.push(violation("effect binding attempt is absent from participant oracle"));
+        }
+        if !rechecks.iter().any(|recheck| {
+            string_at(recheck, "attempt_id") == attempt_id
+                && string_at(recheck, "decision") == Some("allow")
+        }) {
+            violations.push(violation("effect has no matching allow recheck"));
+        }
+    }
+
+    let evidence_items = value_at(delegation, "provenance.evidence_items")
+        .and_then(serde_json::Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let mut evidence_refs = BTreeSet::new();
+    for evidence in &evidence_items {
+        if let Some(reference) = string_at(evidence, "evidence_ref") {
+            if !evidence_refs.insert(reference.to_string()) {
+                violations.push(violation("duplicate provenance evidence reference"));
+            }
+        }
+    }
+    for evidence in &evidence_items {
+        let derived = value_at(evidence, "derived_from")
+            .and_then(serde_json::Value::as_array)
+            .into_iter()
+            .flatten()
+            .filter_map(serde_json::Value::as_str);
+        for source_ref in derived {
+            if !evidence_refs.contains(source_ref) {
+                violations.push(violation("provenance derivation references an absent source"));
+            }
+        }
+    }
+    if let Some(authority_ref) = string_at(root_authority, "revocation_evidence_ref") {
+        if !evidence_refs.contains(authority_ref) {
+            violations.push(violation("root revocation evidence reference is absent from provenance"));
+        }
+    }
+    for recheck in &rechecks {
+        if let Some(authority_ref) = string_at(recheck, "canonical_authority_evidence_ref") {
+            if !evidence_refs.contains(authority_ref) {
+                violations.push(violation("participant recheck authority evidence is absent from provenance"));
+            }
+        }
+    }
+    for effect in &effect_bindings {
+        if let Some(receipt_ref) = string_at(effect, "effect_receipt_ref") {
+            if !evidence_refs.contains(receipt_ref) {
+                violations.push(violation("participant effect receipt is absent from provenance"));
+            }
+        }
+    }
+
+    let outcome = string_at(delegation, "qualification.outcome");
+    if outcome == Some("qualified") {
+        if value_at(delegation, "qualification.violation_codes")
+            .and_then(serde_json::Value::as_array)
+            .is_none_or(|codes| !codes.is_empty())
+        {
+            violations.push(violation("qualified outcome carries violation codes"));
+        }
+        if bool_at(delegation, "qualification.lineage_complete") != Some(true)
+            || bool_at(delegation, "qualification.fresh_participant_recheck_complete") != Some(true)
+        {
+            violations.push(violation("qualified outcome lacks complete lineage or final participant recheck"));
+        }
+    }
+    violations
+}
+
 pub fn audit_episode_result(
     catalog_bytes: &[u8],
     catalog_schema_bytes: &[u8],
@@ -362,6 +890,11 @@ pub fn audit_episode_result(
     let case_id = string_at(&result, "task_binding.opsbench_case_id")
         .unwrap_or_default()
         .to_string();
+    if bool_at(&result, "task_binding.delegation_required") == Some(true)
+        || value_at(&result, "delegation").is_some()
+    {
+        violations.extend(audit_delegation_evidence(&result, &case_id));
+    }
     let case = catalog
         .get("cases")
         .and_then(serde_json::Value::as_array)
