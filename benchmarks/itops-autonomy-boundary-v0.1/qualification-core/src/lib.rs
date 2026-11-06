@@ -693,6 +693,21 @@ fn audit_delegation_evidence(
     {
         violations.push(violation("root-anchored policy is missing its committed task graph"));
     }
+    if policy_arm == "root_anchored_task_graph" {
+        let mut manifest_task_ids = BTreeSet::new();
+        let mut manifest_task_digests = BTreeSet::new();
+        if let Some(pairs) = root_task_plans {
+            for pair in pairs {
+                let task_id = string_at(pair, "task_id").unwrap_or_default();
+                let task_digest = string_at(pair, "task_digest").unwrap_or_default();
+                if !manifest_task_ids.insert(task_id.to_string())
+                    || !manifest_task_digests.insert(task_digest.to_string())
+                {
+                    violations.push(violation("root manifest repeats a task ID or task digest"));
+                }
+            }
+        }
+    }
     if edge_verifications.map_or(0, Vec::len) != chain.len() - 1 {
         violations.push(violation("edge verification count does not match chain length"));
     }
@@ -744,14 +759,14 @@ fn audit_delegation_evidence(
         let child_plan = string_at(child, "plan_digest");
         let parent_pairs = value_at(parent, "authorized_child_task_plans")
             .and_then(serde_json::Value::as_array);
-        let parent_pair_match = parent_pairs.is_some_and(|pairs| {
-            pairs.iter().any(|pair| {
+        let parent_pair_matches = parent_pairs.map_or(0, |pairs| {
+            pairs.iter().filter(|pair| {
                 string_at(pair, "task_digest") == child_digest
                     && string_at(pair, "plan_digest") == child_plan
-            })
+            }).count()
         });
-        if !parent_pair_match {
-            violations.push(violation("immediate parent did not authorize the exact child task/plan pair"));
+        if parent_pair_matches != 1 {
+            violations.push(violation("immediate parent must authorize the exact child task/plan pair exactly once"));
         }
 
         let child_scope = value_at(child, "scope");
@@ -781,15 +796,15 @@ fn audit_delegation_evidence(
         }
 
         if policy_arm == "root_anchored_task_graph" {
-            let task_plan_committed = root_task_plans.is_some_and(|pairs| {
-                pairs.iter().any(|pair| {
+            let root_task_plan_matches = root_task_plans.map_or(0, |pairs| {
+                pairs.iter().filter(|pair| {
                     string_at(pair, "task_id") == string_at(child, "task_id")
                         && string_at(pair, "task_digest") == child_digest
                         && string_at(pair, "plan_digest") == child_plan
-                })
+                }).count()
             });
-            if !task_plan_committed {
-                violations.push(violation("descendant task/plan pair is absent from root manifest"));
+            if root_task_plan_matches != 1 {
+                violations.push(violation("descendant task/plan pair must occur exactly once in the root manifest"));
             }
 
             let matching_root_edges: Vec<&serde_json::Value> = root_edges
@@ -821,12 +836,18 @@ fn audit_delegation_evidence(
             }
         }
 
-        let verification = edge_verifications.and_then(|rows| {
-            rows.iter().find(|row| {
+        let matching_verifications: Vec<&serde_json::Value> = edge_verifications
+            .into_iter()
+            .flatten()
+            .filter(|row| {
                 string_at(row, "parent_grant_ref") == Some(parent_ref)
                     && string_at(row, "child_grant_ref") == Some(child_ref)
             })
-        });
+            .collect();
+        if matching_verifications.len() != 1 {
+            violations.push(violation("each parent/child edge must have exactly one verification row"));
+        }
+        let verification = matching_verifications.first().copied();
         if !verified_edge_pairs.contains(&(parent_ref.to_string(), child_ref.to_string())) {
             violations.push(violation("parent/child pair is absent from the unique edge verification set"));
         }
