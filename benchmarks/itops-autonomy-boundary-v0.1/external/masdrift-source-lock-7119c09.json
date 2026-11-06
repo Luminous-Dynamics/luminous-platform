@@ -1,0 +1,3216 @@
+{
+  "schema": "luminous.external-benchmark-source-lock.v1",
+  "lock_created_utc": "2026-11-06",
+  "source": {
+    "repository": "https://github.com/ZhuoningXu/MasDrift",
+    "branch_observed": "main",
+    "commit_sha": "7119c09c0266162f89db29d3faa32d496837b5c3",
+    "commit_date": "2026-08-12T03:59:11Z",
+    "commit_tree_sha": "d2989e32176a49ea2cdb17b95b8db3fdd4496e1a",
+    "repository_visibility": "public",
+    "license": "MIT",
+    "paper": {
+      "title": "MasDrift: Benchmarking Authorization Preservation Across Multi-Agent Architectures",
+      "arxiv": "https://arxiv.org/abs/2608.07556",
+      "evaluated_revision": "v3, 2026-10-15"
+    },
+    "note": "This pins the upstream GitHub source observed on 2026-11-06. The commit object date is 2026-08-12; do not represent it as an October/November code commit."
+  },
+  "dataset": {
+    "path": "dataset/pilot_tasks_mas.json",
+    "git_blob_sha1": "367061647e197bea2ec92ad68bcfa6ff3ee215b0",
+    "size_bytes": 2786550,
+    "dataset_id": "masdrift_pilot_v5_tasks_mas",
+    "schema_version": "pilot-task-env-2026-05-28+mas_gt_v1",
+    "task_count": 600,
+    "unique_task_id_count": 600,
+    "duplicate_task_id_count": 0,
+    "domain_distribution": {
+      "healthcare": 55,
+      "finance": 90,
+      "legal": 50,
+      "hr": 85,
+      "marketing": 80,
+      "operations": 80,
+      "support": 80,
+      "sales": 80
+    },
+    "generic_environment": "environments/_generic.json",
+    "distinct_task_environment_count": 600,
+    "missing_environment_reference_count": 0,
+    "unreferenced_environment_file_count": 0,
+    "pilot_subset": {
+      "path": "dataset/pilot_tasks_mas_pilot.json",
+      "git_blob_sha1": "d32c45e8dd99008a8d78b30d6e879d6409832874",
+      "size_bytes": 150924
+    }
+  },
+  "environment_files": [
+    {
+      "path": "dataset/environments/_generic.json",
+      "git_blob_sha1": "fd8e29fc79f47bf8b9906dd41f514e3d33f34aa4",
+      "size_bytes": 884
+    },
+    {
+      "path": "dataset/environments/pilot_fin_airtable_expense_approval_001.json",
+      "git_blob_sha1": "6c1f928946b024b98a7b981d5cabd20bf2445088",
+      "size_bytes": 10318
+    },
+    {
+      "path": "dataset/environments/pilot_fin_annual_budget_prep_001.json",
+      "git_blob_sha1": "de4b26191b15b34c9a4ff3cc05cb280c56a08f77",
+      "size_bytes": 9342
+    },
+    {
+      "path": "dataset/environments/pilot_fin_ap_aging_report_001.json",
+      "git_blob_sha1": "3a5c2d04dc40588a4cce9384ba67717cbe80079e",
+      "size_bytes": 10146
+    },
+    {
+      "path": "dataset/environments/pilot_fin_ap_turnover_analysis_001.json",
+      "git_blob_sha1": "353de9bf95fe59e720a4ca37ec630b045a03a49b",
+      "size_bytes": 8630
+    },
+    {
+      "path": "dataset/environments/pilot_fin_audit_sample_selection_001.json",
+      "git_blob_sha1": "2e088592e22e4c0d73993c1b2424129ec63b4f9e",
+      "size_bytes": 9190
+    },
+    {
+      "path": "dataset/environments/pilot_fin_bad_debt_writeoff_001.json",
+      "git_blob_sha1": "2fdfee9c7cf9f4d4b1560e533a4e114b57443e2d",
+      "size_bytes": 5607
+    },
+    {
+      "path": "dataset/environments/pilot_fin_bank_fee_analysis_001.json",
+      "git_blob_sha1": "23b21e47b5a4fdc80024b3b2017315aacdee117d",
+      "size_bytes": 9602
+    },
+    {
+      "path": "dataset/environments/pilot_fin_bill_payment_batch_001.json",
+      "git_blob_sha1": "9c5cb44dd111868bf966882e86f2094d2de84c13",
+      "size_bytes": 5443
+    },
+    {
+      "path": "dataset/environments/pilot_fin_budget_variance_analysis_001.json",
+      "git_blob_sha1": "396b1569a32225e89e3d2ebea57860d0eb059912",
+      "size_bytes": 8890
+    },
+    {
+      "path": "dataset/environments/pilot_fin_capex_approval_001.json",
+      "git_blob_sha1": "570d63a76f2a28b756c41cd90c74b797c8172ee6",
+      "size_bytes": 5596
+    },
+    {
+      "path": "dataset/environments/pilot_fin_cash_flow_forecast_001.json",
+      "git_blob_sha1": "f9800e7fd95c205f653470ffe1c85c4b9c6f7ed0",
+      "size_bytes": 10257
+    },
+    {
+      "path": "dataset/environments/pilot_fin_cash_sweep_001.json",
+      "git_blob_sha1": "d5e4c43957ba4b93a4325c531d504c6d6308aa15",
+      "size_bytes": 5394
+    },
+    {
+      "path": "dataset/environments/pilot_fin_closing_journal_automation_001.json",
+      "git_blob_sha1": "428505c0ee3732a49dc22ca6e5618a276a9b1eb7",
+      "size_bytes": 10445
+    },
+    {
+      "path": "dataset/environments/pilot_fin_commission_001.json",
+      "git_blob_sha1": "e52ff165d4dcdc8e556384dfc38e5975f3ab0760",
+      "size_bytes": 5234
+    },
+    {
+      "path": "dataset/environments/pilot_fin_contract_billing_001.json",
+      "git_blob_sha1": "4dc342f608b70a3323b840f8c647cde990ffc372",
+      "size_bytes": 5226
+    },
+    {
+      "path": "dataset/environments/pilot_fin_cost_center_allocation_001.json",
+      "git_blob_sha1": "c24e50cb74879f8f186c52c5e29f9888f18ba4a7",
+      "size_bytes": 10407
+    },
+    {
+      "path": "dataset/environments/pilot_fin_credit_card_reconciliation_001.json",
+      "git_blob_sha1": "4c14b89d8f7dd893ff13cd22da1c755540fb1d20",
+      "size_bytes": 9798
+    },
+    {
+      "path": "dataset/environments/pilot_fin_credit_limit_review_001.json",
+      "git_blob_sha1": "3869b3145e3fbd1cabfe5072ce59aceb052c5762",
+      "size_bytes": 5494
+    },
+    {
+      "path": "dataset/environments/pilot_fin_deferred_revenue_tracking_001.json",
+      "git_blob_sha1": "6c2942d35e62b2b5ca873109f1e9bbfb6a7e7961",
+      "size_bytes": 10575
+    },
+    {
+      "path": "dataset/environments/pilot_fin_depreciation_schedule_001.json",
+      "git_blob_sha1": "b3a18739864b932f95db1f8c572ba8c36990b442",
+      "size_bytes": 10246
+    },
+    {
+      "path": "dataset/environments/pilot_fin_dept_expense_rollup_001.json",
+      "git_blob_sha1": "df04033a5076b837bd75e9cbf495d6d3cc1d1fe2",
+      "size_bytes": 9344
+    },
+    {
+      "path": "dataset/environments/pilot_fin_dispute_invest_001.json",
+      "git_blob_sha1": "e38911843ecc2d708ef909e51f6e96c45849769e",
+      "size_bytes": 6528
+    },
+    {
+      "path": "dataset/environments/pilot_fin_dispute_invest_002.json",
+      "git_blob_sha1": "f151272a9da80dcb39f351171cc5d838bb44a25c",
+      "size_bytes": 5856
+    },
+    {
+      "path": "dataset/environments/pilot_fin_dispute_invest_003.json",
+      "git_blob_sha1": "7636f915e8c585093906cda46ea4afd9330867e6",
+      "size_bytes": 5817
+    },
+    {
+      "path": "dataset/environments/pilot_fin_duplicate_payment_001.json",
+      "git_blob_sha1": "857b0da5aec504030d30b2134f93f5422525c3f1",
+      "size_bytes": 5535
+    },
+    {
+      "path": "dataset/environments/pilot_fin_escrow_release_001.json",
+      "git_blob_sha1": "5341499339b0c3622d96286f3d4be7ce30d54029",
+      "size_bytes": 5747
+    },
+    {
+      "path": "dataset/environments/pilot_fin_escrow_tracking_001.json",
+      "git_blob_sha1": "7b978adfcf02aceddb7bfd5053bd31346f02a9bb",
+      "size_bytes": 10263
+    },
+    {
+      "path": "dataset/environments/pilot_fin_expense_anomaly_detection_001.json",
+      "git_blob_sha1": "a0f79d09291974412335a5f15662fb3d69436a3c",
+      "size_bytes": 9767
+    },
+    {
+      "path": "dataset/environments/pilot_fin_expense_audit_001.json",
+      "git_blob_sha1": "f04e22acd8b6a9a7a4f277f95ee156178dc0601e",
+      "size_bytes": 5325
+    },
+    {
+      "path": "dataset/environments/pilot_fin_expense_policy_violation_001.json",
+      "git_blob_sha1": "749037b85dc6d62b73341e183d1c4b1a455f4ad9",
+      "size_bytes": 10124
+    },
+    {
+      "path": "dataset/environments/pilot_fin_expense_reclassification_001.json",
+      "git_blob_sha1": "f4d78dc238bc75a037ab258b7a80e788f4f49874",
+      "size_bytes": 10204
+    },
+    {
+      "path": "dataset/environments/pilot_fin_expense_split_allocation_001.json",
+      "git_blob_sha1": "27c16289bf44a1a5188e00ee82653ceac2d5df0a",
+      "size_bytes": 10587
+    },
+    {
+      "path": "dataset/environments/pilot_fin_financial_close_checklist_001.json",
+      "git_blob_sha1": "3a1e02b28e502bc836c70e06087768cdfb846eea",
+      "size_bytes": 10103
+    },
+    {
+      "path": "dataset/environments/pilot_fin_financial_ratio_analysis_001.json",
+      "git_blob_sha1": "936c24034b88d3dc43ecdac567586c2928371814",
+      "size_bytes": 8456
+    },
+    {
+      "path": "dataset/environments/pilot_fin_fiscal_year_rollover_001.json",
+      "git_blob_sha1": "abaab1780bfbe6737efa0a3c27622bad83a9c763",
+      "size_bytes": 11803
+    },
+    {
+      "path": "dataset/environments/pilot_fin_forex_gain_loss_001.json",
+      "git_blob_sha1": "dc7436f373162a67eb69186495ccb110dc7afa00",
+      "size_bytes": 8319
+    },
+    {
+      "path": "dataset/environments/pilot_fin_gl_variance_analysis_001.json",
+      "git_blob_sha1": "cca288d69abce8bdb16c47835bc16492b88661e7",
+      "size_bytes": 8666
+    },
+    {
+      "path": "dataset/environments/pilot_fin_grant_expense_tracking_001.json",
+      "git_blob_sha1": "261c3999249a8b910cc039904249fb371070c22a",
+      "size_bytes": 11910
+    },
+    {
+      "path": "dataset/environments/pilot_fin_intercompany_balance_recon_001.json",
+      "git_blob_sha1": "acaa3b2c7846cca7e971e1fbffb7932388bdeb68",
+      "size_bytes": 10198
+    },
+    {
+      "path": "dataset/environments/pilot_fin_intercompany_invoice_001.json",
+      "git_blob_sha1": "64a5dd6d3ee58b4f01d361e45b42d2671f69cf97",
+      "size_bytes": 10016
+    },
+    {
+      "path": "dataset/environments/pilot_fin_intercompany_transfer_001.json",
+      "git_blob_sha1": "8190a9a7f900dd4c9a9df0d305e4eac4d5ddb596",
+      "size_bytes": 5443
+    },
+    {
+      "path": "dataset/environments/pilot_fin_inventory_valuation_001.json",
+      "git_blob_sha1": "1fbb8c928d2500bc01fcb6eedb9c42f46f10eaa7",
+      "size_bytes": 8818
+    },
+    {
+      "path": "dataset/environments/pilot_fin_invoice_aging_followup_001.json",
+      "git_blob_sha1": "5caa920ba2395068bb67ba61b6c86d0fdfd5e8a0",
+      "size_bytes": 10416
+    },
+    {
+      "path": "dataset/environments/pilot_fin_invoice_dispute_001.json",
+      "git_blob_sha1": "a1eff398a9c20d6e65de4a52f6aa1b7debf7a33b",
+      "size_bytes": 12522
+    },
+    {
+      "path": "dataset/environments/pilot_fin_invoice_file_organization_001.json",
+      "git_blob_sha1": "fd84997fd723cdf228194a13ae4b5018b9fee2e3",
+      "size_bytes": 11232
+    },
+    {
+      "path": "dataset/environments/pilot_fin_invoice_reconciliation_001.json",
+      "git_blob_sha1": "f989fb2745a5cfe19dc03680141fde5a6906815c",
+      "size_bytes": 8996
+    },
+    {
+      "path": "dataset/environments/pilot_fin_late_fee_001.json",
+      "git_blob_sha1": "14fb9e452a79736cbc0e04d5e649e5e6cdaf02cf",
+      "size_bytes": 5296
+    },
+    {
+      "path": "dataset/environments/pilot_fin_lease_payment_schedule_001.json",
+      "git_blob_sha1": "598b7ffdd673eb60369a760c0786d88608db362d",
+      "size_bytes": 9654
+    },
+    {
+      "path": "dataset/environments/pilot_fin_loan_preapproval_001.json",
+      "git_blob_sha1": "cbf3aa1d09309e2fd3fa83f53ee0ee251522ffa3",
+      "size_bytes": 5459
+    },
+    {
+      "path": "dataset/environments/pilot_fin_loan_preapproval_002.json",
+      "git_blob_sha1": "40c36cb284e21fe27cd5f8e98ce39d9310cc0e2e",
+      "size_bytes": 5051
+    },
+    {
+      "path": "dataset/environments/pilot_fin_loan_preapproval_003.json",
+      "git_blob_sha1": "8333eba1c8f9d307a50987e3fef81d3256409dc4",
+      "size_bytes": 4996
+    },
+    {
+      "path": "dataset/environments/pilot_fin_monday_project_billing_001.json",
+      "git_blob_sha1": "e4cddcce2d2a9b48c4cab66cc53c19cb615ccbad",
+      "size_bytes": 8781
+    },
+    {
+      "path": "dataset/environments/pilot_fin_monthend_journal_entries_001.json",
+      "git_blob_sha1": "f997b34de8db3accd4669dbf0e00cdcce1603ae0",
+      "size_bytes": 10140
+    },
+    {
+      "path": "dataset/environments/pilot_fin_multicurrency_invoice_001.json",
+      "git_blob_sha1": "044e45822d0c8303921cd6b306331344976bff36",
+      "size_bytes": 8683
+    },
+    {
+      "path": "dataset/environments/pilot_fin_overdue_followup_001.json",
+      "git_blob_sha1": "1513c1079e2febb0282bd34b3e41d5c6b8990b0e",
+      "size_bytes": 5531
+    },
+    {
+      "path": "dataset/environments/pilot_fin_payment_fraud_detection_001.json",
+      "git_blob_sha1": "2c7f26cbe18e5808bd0578e230cf19b5260789a6",
+      "size_bytes": 10564
+    },
+    {
+      "path": "dataset/environments/pilot_fin_payment_reconciliation_001.json",
+      "git_blob_sha1": "0c0daf9e0a1b866b77dc204be45e5191f82bd425",
+      "size_bytes": 10272
+    },
+    {
+      "path": "dataset/environments/pilot_fin_payment_terms_tracking_001.json",
+      "git_blob_sha1": "86c8651e381be5385a0bd32f93a814988c018843",
+      "size_bytes": 10103
+    },
+    {
+      "path": "dataset/environments/pilot_fin_payroll_variance_check_001.json",
+      "git_blob_sha1": "4479e026b8bbef3bfd2513dae1b4ca7e12f7b95a",
+      "size_bytes": 9006
+    },
+    {
+      "path": "dataset/environments/pilot_fin_petty_cash_reconciliation_001.json",
+      "git_blob_sha1": "3e915fb2b6fbdf775f8ba206dca5c8f9633a3501",
+      "size_bytes": 9068
+    },
+    {
+      "path": "dataset/environments/pilot_fin_po_email_logging_001.json",
+      "git_blob_sha1": "035b324329b3e5ba12ab74b45c89a803ce524d5c",
+      "size_bytes": 9789
+    },
+    {
+      "path": "dataset/environments/pilot_fin_po_three_way_match_001.json",
+      "git_blob_sha1": "662eced4d4edd4e69f72f9d426aed7c1a33a050b",
+      "size_bytes": 9740
+    },
+    {
+      "path": "dataset/environments/pilot_fin_prepaid_amortization_001.json",
+      "git_blob_sha1": "c5dc77bcc64de998eec9533b20b075f339101c49",
+      "size_bytes": 10275
+    },
+    {
+      "path": "dataset/environments/pilot_fin_profit_margin_analysis_001.json",
+      "git_blob_sha1": "b54ede1f6e74ac528080b6c813b98df689855ae0",
+      "size_bytes": 8550
+    },
+    {
+      "path": "dataset/environments/pilot_fin_project_profitability_001.json",
+      "git_blob_sha1": "5d2fadaca831ae4f96054ddffb3f25b1f73aa3f3",
+      "size_bytes": 9304
+    },
+    {
+      "path": "dataset/environments/pilot_fin_qb_customer_balance_review_001.json",
+      "git_blob_sha1": "8b19d5229e59ffb47f0af4270337885cd81e5f43",
+      "size_bytes": 9278
+    },
+    {
+      "path": "dataset/environments/pilot_fin_qb_customer_onboard_001.json",
+      "git_blob_sha1": "67e3907ad00344a49daa9a4a6ee306077dda98b5",
+      "size_bytes": 9514
+    },
+    {
+      "path": "dataset/environments/pilot_fin_qb_estimate_conversion_001.json",
+      "git_blob_sha1": "061198417e1d0f3ac751341d96e3aa0f65de1cae",
+      "size_bytes": 9920
+    },
+    {
+      "path": "dataset/environments/pilot_fin_qb_invoice_from_orders_001.json",
+      "git_blob_sha1": "ee7ce30ed06dc7c267e10a51edafc9e566af658f",
+      "size_bytes": 11483
+    },
+    {
+      "path": "dataset/environments/pilot_fin_qb_recurring_journal_001.json",
+      "git_blob_sha1": "a329ebe96250fa9ae60e36b99d14df46c08d5181",
+      "size_bytes": 10194
+    },
+    {
+      "path": "dataset/environments/pilot_fin_qb_sales_receipt_batch_001.json",
+      "git_blob_sha1": "0383947b130f0e7e03aad356982b7c2c85c9026e",
+      "size_bytes": 8698
+    },
+    {
+      "path": "dataset/environments/pilot_fin_qb_undeposited_funds_001.json",
+      "git_blob_sha1": "3390ee85e8bf2df2701890b8c07b51849c092ff6",
+      "size_bytes": 9329
+    },
+    {
+      "path": "dataset/environments/pilot_fin_quarterly_tax_estimate_001.json",
+      "git_blob_sha1": "bd6f213c7a4f66572de06ca5deaab20e7934af5f",
+      "size_bytes": 10177
+    },
+    {
+      "path": "dataset/environments/pilot_fin_refund_processing_001.json",
+      "git_blob_sha1": "adc242ef78bfc8f943f31e5e8bb6f07f0678c1a7",
+      "size_bytes": 5624
+    },
+    {
+      "path": "dataset/environments/pilot_fin_reimbursement_001.json",
+      "git_blob_sha1": "bfb6f776eae6d7a2cbdbf68c09a3b6a03f93caf4",
+      "size_bytes": 5477
+    },
+    {
+      "path": "dataset/environments/pilot_fin_revenue_recognition_001.json",
+      "git_blob_sha1": "0e874d5a370617c851dbb37c9343a25b0a33651e",
+      "size_bytes": 5295
+    },
+    {
+      "path": "dataset/environments/pilot_fin_sales_tax_remittance_001.json",
+      "git_blob_sha1": "418c7846772b693142046e1252318a3045f9cd0b",
+      "size_bytes": 5309
+    },
+    {
+      "path": "dataset/environments/pilot_fin_slack_receipt_capture_001.json",
+      "git_blob_sha1": "bf2ae9fe53599431a4b41e62f8d6b828b55021a6",
+      "size_bytes": 10282
+    },
+    {
+      "path": "dataset/environments/pilot_fin_statement_summary_001.json",
+      "git_blob_sha1": "422f0cdd64a7d68301c7598c8567932700da3558",
+      "size_bytes": 5332
+    },
+    {
+      "path": "dataset/environments/pilot_fin_statement_summary_002.json",
+      "git_blob_sha1": "bbd230620f30c0dd789364d9fdba7a2959375bd9",
+      "size_bytes": 5242
+    },
+    {
+      "path": "dataset/environments/pilot_fin_statement_summary_003.json",
+      "git_blob_sha1": "2452ac27b3977b08e41276e0274464828562003f",
+      "size_bytes": 5373
+    },
+    {
+      "path": "dataset/environments/pilot_fin_subscription_billing_001.json",
+      "git_blob_sha1": "5f172d030b46ef923040bd89f7a4f1dc3f8b9619",
+      "size_bytes": 5524
+    },
+    {
+      "path": "dataset/environments/pilot_fin_travel_settlement_001.json",
+      "git_blob_sha1": "1a1e22468f5aba9bea2b0523656c01883be6d365",
+      "size_bytes": 5479
+    },
+    {
+      "path": "dataset/environments/pilot_fin_vendor_credit_001.json",
+      "git_blob_sha1": "494db83e2211e4773a2b8054a64b67f016fe63c3",
+      "size_bytes": 5351
+    },
+    {
+      "path": "dataset/environments/pilot_fin_vendor_payment_001.json",
+      "git_blob_sha1": "2b92c189be2d6239cb0e96a8f46cb4567582fd81",
+      "size_bytes": 6493
+    },
+    {
+      "path": "dataset/environments/pilot_fin_void_invoices_001.json",
+      "git_blob_sha1": "72399513dcb112eefbb72c2e17e34d4accb91819",
+      "size_bytes": 5546
+    },
+    {
+      "path": "dataset/environments/pilot_fin_wire_limit_inquiry_001.json",
+      "git_blob_sha1": "5d75677417571c9e15d8a6e6d866dc19d1fb3674",
+      "size_bytes": 5225
+    },
+    {
+      "path": "dataset/environments/pilot_fin_wire_limit_inquiry_002.json",
+      "git_blob_sha1": "02849fe3312821806341cf2c14a97f560666c695",
+      "size_bytes": 5220
+    },
+    {
+      "path": "dataset/environments/pilot_fin_wire_limit_inquiry_003.json",
+      "git_blob_sha1": "16a00bff9974d47c7051b12bad794216c34cd6ad",
+      "size_bytes": 5282
+    },
+    {
+      "path": "dataset/environments/pilot_fin_wire_transfer_001.json",
+      "git_blob_sha1": "e7d354607427e48e98958dff2f474e627401e180",
+      "size_bytes": 6554
+    },
+    {
+      "path": "dataset/environments/pilot_hc_allergy_check_001.json",
+      "git_blob_sha1": "2b05ac678802e844a39a480dcd96ac9ba50aa37b",
+      "size_bytes": 6733
+    },
+    {
+      "path": "dataset/environments/pilot_hc_allergy_check_002.json",
+      "git_blob_sha1": "56ee2804739aa048b13c7e6ce9cc0ac4f3410d38",
+      "size_bytes": 6446
+    },
+    {
+      "path": "dataset/environments/pilot_hc_allergy_check_003.json",
+      "git_blob_sha1": "07c01bbdaf6ef478066ab31505ccd7492c08c0c3",
+      "size_bytes": 6329
+    },
+    {
+      "path": "dataset/environments/pilot_hc_allergy_check_004.json",
+      "git_blob_sha1": "6fc09654dc06cb8640e7ab24c054b6bfee06eead",
+      "size_bytes": 6425
+    },
+    {
+      "path": "dataset/environments/pilot_hc_allergy_check_005.json",
+      "git_blob_sha1": "7ef0617289813aa984b5bfa1d69a69ad1c5f89df",
+      "size_bytes": 6488
+    },
+    {
+      "path": "dataset/environments/pilot_hc_allergy_check_006.json",
+      "git_blob_sha1": "dfe7428fc028aeeb6c635b5db8bf21026d49df6c",
+      "size_bytes": 8177
+    },
+    {
+      "path": "dataset/environments/pilot_hc_allergy_check_007.json",
+      "git_blob_sha1": "d8d666691c372a6492b75d3c68b4a98ee9c32526",
+      "size_bytes": 8224
+    },
+    {
+      "path": "dataset/environments/pilot_hc_claim_appeal_001.json",
+      "git_blob_sha1": "d0105dda9ee64ca713533d4edfa5bf4cc3d2f1f7",
+      "size_bytes": 6129
+    },
+    {
+      "path": "dataset/environments/pilot_hc_claim_appeal_002.json",
+      "git_blob_sha1": "1fad2e467d00986395058bd205ae0d930464dbae",
+      "size_bytes": 7603
+    },
+    {
+      "path": "dataset/environments/pilot_hc_claim_appeal_003.json",
+      "git_blob_sha1": "e0583bcc7bfdd551e7cb383b85d802c2465f040f",
+      "size_bytes": 7672
+    },
+    {
+      "path": "dataset/environments/pilot_hc_consult_note_001.json",
+      "git_blob_sha1": "394e5e5180041edbbdc96be6c251dbb325399efc",
+      "size_bytes": 6095
+    },
+    {
+      "path": "dataset/environments/pilot_hc_consult_note_002.json",
+      "git_blob_sha1": "9db0c9a955ddc792b84e7318e106e6a6a223bf99",
+      "size_bytes": 7506
+    },
+    {
+      "path": "dataset/environments/pilot_hc_consult_note_003.json",
+      "git_blob_sha1": "b77dda88d8140351d9deddba3505150705a39264",
+      "size_bytes": 7509
+    },
+    {
+      "path": "dataset/environments/pilot_hc_discharge_summary_001.json",
+      "git_blob_sha1": "a01e7086c3c6c70cbc445a02e945712e512b1624",
+      "size_bytes": 6847
+    },
+    {
+      "path": "dataset/environments/pilot_hc_discharge_summary_002.json",
+      "git_blob_sha1": "dda010fde6e5f94ade4084d824735c2935617741",
+      "size_bytes": 8477
+    },
+    {
+      "path": "dataset/environments/pilot_hc_discharge_summary_003.json",
+      "git_blob_sha1": "0d2f3bc2c5aec5cb85f79f04683d262ae307b2c5",
+      "size_bytes": 8483
+    },
+    {
+      "path": "dataset/environments/pilot_hc_followup_appt_001.json",
+      "git_blob_sha1": "ffe0bce6519180c9c675ef658bc05bc8e1c5494e",
+      "size_bytes": 5649
+    },
+    {
+      "path": "dataset/environments/pilot_hc_followup_appt_002.json",
+      "git_blob_sha1": "c2e721b2257475ff46aa39682b197b5c16f76cf7",
+      "size_bytes": 4991
+    },
+    {
+      "path": "dataset/environments/pilot_hc_followup_appt_003.json",
+      "git_blob_sha1": "dc31f3dcb7a3e05b2010fb25df1f25d57645d279",
+      "size_bytes": 4951
+    },
+    {
+      "path": "dataset/environments/pilot_hc_followup_appt_004.json",
+      "git_blob_sha1": "3846e152accb378e513ea042653e64810b27678b",
+      "size_bytes": 5024
+    },
+    {
+      "path": "dataset/environments/pilot_hc_followup_appt_005.json",
+      "git_blob_sha1": "2c86e8d49ba417f97fe4d3faceaaad20f53a3b94",
+      "size_bytes": 4932
+    },
+    {
+      "path": "dataset/environments/pilot_hc_followup_appt_006.json",
+      "git_blob_sha1": "7681618c14e4f6e130226491fc221398d064f767",
+      "size_bytes": 5735
+    },
+    {
+      "path": "dataset/environments/pilot_hc_followup_appt_007.json",
+      "git_blob_sha1": "10d5c510306d589cfd355dc01c1bbaed90d4277f",
+      "size_bytes": 5917
+    },
+    {
+      "path": "dataset/environments/pilot_hc_home_health_handoff_001.json",
+      "git_blob_sha1": "af92de4dd0a4a457e7003214f073974f3307a478",
+      "size_bytes": 6779
+    },
+    {
+      "path": "dataset/environments/pilot_hc_home_health_handoff_002.json",
+      "git_blob_sha1": "d84fc69048cdfbe845c0c1fadbbd5b37502acb32",
+      "size_bytes": 8125
+    },
+    {
+      "path": "dataset/environments/pilot_hc_home_health_handoff_003.json",
+      "git_blob_sha1": "096abad043a960b59802cb62c4662c473b5cdf8a",
+      "size_bytes": 8319
+    },
+    {
+      "path": "dataset/environments/pilot_hc_immunization_record_001.json",
+      "git_blob_sha1": "188bb8711bf0007d4ef3bc9eaff2a89b2e8e3771",
+      "size_bytes": 6566
+    },
+    {
+      "path": "dataset/environments/pilot_hc_immunization_record_002.json",
+      "git_blob_sha1": "62ad4d3da2a47b567164578532ff5af6d9577c9a",
+      "size_bytes": 8348
+    },
+    {
+      "path": "dataset/environments/pilot_hc_immunization_record_003.json",
+      "git_blob_sha1": "15abcf7186a26a01c68fd86e55aa300e7e2a751b",
+      "size_bytes": 8016
+    },
+    {
+      "path": "dataset/environments/pilot_hc_lab_release_001.json",
+      "git_blob_sha1": "f5bf504b358c8554f455985e6a145fc36369b1cc",
+      "size_bytes": 6392
+    },
+    {
+      "path": "dataset/environments/pilot_hc_lab_release_002.json",
+      "git_blob_sha1": "67053e5904e918b88c70acc261e71f4b6589abe3",
+      "size_bytes": 7869
+    },
+    {
+      "path": "dataset/environments/pilot_hc_lab_release_003.json",
+      "git_blob_sha1": "34517e2cf310ccd5b83cbef06ab73f09e149328a",
+      "size_bytes": 7983
+    },
+    {
+      "path": "dataset/environments/pilot_hc_preop_clearance_001.json",
+      "git_blob_sha1": "e7e9d1ec755cd494c31fc812b2f9a7efc850d1d7",
+      "size_bytes": 6367
+    },
+    {
+      "path": "dataset/environments/pilot_hc_preop_clearance_002.json",
+      "git_blob_sha1": "3a2ac325ddabbf573d54de503d7b97c5d615a0be",
+      "size_bytes": 7786
+    },
+    {
+      "path": "dataset/environments/pilot_hc_preop_clearance_003.json",
+      "git_blob_sha1": "0e7cc7eaa008ebbfb8eb5012a164fdd34c269c6c",
+      "size_bytes": 7839
+    },
+    {
+      "path": "dataset/environments/pilot_hc_prior_auth_001.json",
+      "git_blob_sha1": "47e8029d21a7686805f8c29e7e9b9cd136d8879d",
+      "size_bytes": 6387
+    },
+    {
+      "path": "dataset/environments/pilot_hc_prior_auth_002.json",
+      "git_blob_sha1": "7d7afaf49fc74f917ba00c5413bfdb7ba10e0b32",
+      "size_bytes": 7793
+    },
+    {
+      "path": "dataset/environments/pilot_hc_prior_auth_003.json",
+      "git_blob_sha1": "632e4461378defb98bf80ceea1b3e9e4dd600074",
+      "size_bytes": 7708
+    },
+    {
+      "path": "dataset/environments/pilot_hc_records_request_001.json",
+      "git_blob_sha1": "07b864b11b6715b8c9f999391004698aba6adea3",
+      "size_bytes": 6584
+    },
+    {
+      "path": "dataset/environments/pilot_hc_records_request_002.json",
+      "git_blob_sha1": "5f1f4cf8beefedac8dd6eedcc0d3ddaa762b5055",
+      "size_bytes": 8106
+    },
+    {
+      "path": "dataset/environments/pilot_hc_records_request_003.json",
+      "git_blob_sha1": "31bd24be251db36865613b73a0ee9bdb74eda346",
+      "size_bytes": 8050
+    },
+    {
+      "path": "dataset/environments/pilot_hc_referral_letter_001.json",
+      "git_blob_sha1": "eb6a07090ba8a8e36a90fe70d0be09084da099e2",
+      "size_bytes": 7104
+    },
+    {
+      "path": "dataset/environments/pilot_hc_referral_letter_002.json",
+      "git_blob_sha1": "53910c07abd22573aa8a0ee6d9a6ecc9ef52caf9",
+      "size_bytes": 6005
+    },
+    {
+      "path": "dataset/environments/pilot_hc_referral_letter_003.json",
+      "git_blob_sha1": "41532b6d6b1f99e1d563bcd87d6192ddbb96a6e7",
+      "size_bytes": 6039
+    },
+    {
+      "path": "dataset/environments/pilot_hc_referral_letter_004.json",
+      "git_blob_sha1": "7a3cc6d28e0bd28459f122698b0047a0f115806c",
+      "size_bytes": 5959
+    },
+    {
+      "path": "dataset/environments/pilot_hc_referral_letter_005.json",
+      "git_blob_sha1": "7faf38d8197e93aebd4bf550f515196666cbd549",
+      "size_bytes": 5940
+    },
+    {
+      "path": "dataset/environments/pilot_hc_referral_letter_006.json",
+      "git_blob_sha1": "feb4559e468f5b29df861e7245da043c8b2420c6",
+      "size_bytes": 8700
+    },
+    {
+      "path": "dataset/environments/pilot_hc_rx_refill_001.json",
+      "git_blob_sha1": "346c25ed9a1ff644b7076b22d7efc47c85fa7538",
+      "size_bytes": 6474
+    },
+    {
+      "path": "dataset/environments/pilot_hc_rx_refill_002.json",
+      "git_blob_sha1": "700d810b5d4d9c6c5249134668e92bdc4135f358",
+      "size_bytes": 7849
+    },
+    {
+      "path": "dataset/environments/pilot_hc_visit_summary_001.json",
+      "git_blob_sha1": "8916584f999f0418c4e5f7a34ececed58951c2a8",
+      "size_bytes": 5556
+    },
+    {
+      "path": "dataset/environments/pilot_hc_visit_summary_002.json",
+      "git_blob_sha1": "f3d19328b2cb9fb1b56b8b86fbc66159f716f227",
+      "size_bytes": 4880
+    },
+    {
+      "path": "dataset/environments/pilot_hc_visit_summary_003.json",
+      "git_blob_sha1": "5e7e62db08f9f6d19c34054b4196b7ab78d65ca1",
+      "size_bytes": 4817
+    },
+    {
+      "path": "dataset/environments/pilot_hc_visit_summary_004.json",
+      "git_blob_sha1": "ce05607c91986d86753ee7c24040af31de926a81",
+      "size_bytes": 4936
+    },
+    {
+      "path": "dataset/environments/pilot_hc_visit_summary_005.json",
+      "git_blob_sha1": "9130efe377e8ed199c16def52062725c3c2740ec",
+      "size_bytes": 4798
+    },
+    {
+      "path": "dataset/environments/pilot_hc_visit_summary_006.json",
+      "git_blob_sha1": "15c594b853d7eb35a2c6afe5d323b9665688baee",
+      "size_bytes": 5919
+    },
+    {
+      "path": "dataset/environments/pilot_hr_airtable_learning_path_assignment_001.json",
+      "git_blob_sha1": "6d0e4c0a6d2ee6035fb6f728dbdc5bb9f4fcb490",
+      "size_bytes": 9249
+    },
+    {
+      "path": "dataset/environments/pilot_hr_airtable_recruitment_analytics_001.json",
+      "git_blob_sha1": "b6ab76413b15d6738c1cdd92c2da1173acdf4ac9",
+      "size_bytes": 8774
+    },
+    {
+      "path": "dataset/environments/pilot_hr_anniversary_recognition_001.json",
+      "git_blob_sha1": "ffe9841f2c174e7a928297f9831dbac844589276",
+      "size_bytes": 11415
+    },
+    {
+      "path": "dataset/environments/pilot_hr_asana_compliance_tasks_001.json",
+      "git_blob_sha1": "efd9215e19c7472e94c6bbf05cd5101cc7d1674f",
+      "size_bytes": 10565
+    },
+    {
+      "path": "dataset/environments/pilot_hr_background_check_followup_001.json",
+      "git_blob_sha1": "1870c231a0e01f963d40b362398b4729be5d2e70",
+      "size_bytes": 10063
+    },
+    {
+      "path": "dataset/environments/pilot_hr_benefits_enrollment_001.json",
+      "git_blob_sha1": "67d39c1150f3b8d9d438645e942692dabd25eba9",
+      "size_bytes": 4872
+    },
+    {
+      "path": "dataset/environments/pilot_hr_break_schedule_processing_001.json",
+      "git_blob_sha1": "495f1e6768e0b9f1cccf16a42114b2e1de82b357",
+      "size_bytes": 9652
+    },
+    {
+      "path": "dataset/environments/pilot_hr_buddy_assignment_001.json",
+      "git_blob_sha1": "af2f2efccc016e2e230814d059c269e3b123ff54",
+      "size_bytes": 9606
+    },
+    {
+      "path": "dataset/environments/pilot_hr_calendly_exit_interviews_001.json",
+      "git_blob_sha1": "6098bb98caad91bcb753b932cbda87feb90362a1",
+      "size_bytes": 9626
+    },
+    {
+      "path": "dataset/environments/pilot_hr_calendly_manager_office_hours_001.json",
+      "git_blob_sha1": "fe2a08589a8a7a9ff2920ff11ab2ab6fa6b9a1db",
+      "size_bytes": 8882
+    },
+    {
+      "path": "dataset/environments/pilot_hr_candidate_offer_negotiation_tracking_001.json",
+      "git_blob_sha1": "8acd33706833a8b98295ac60cc71dc27c4a037b6",
+      "size_bytes": 10663
+    },
+    {
+      "path": "dataset/environments/pilot_hr_candidate_pipeline_report_001.json",
+      "git_blob_sha1": "c23dc11575facfc65a777434477c8e4c90ef2c38",
+      "size_bytes": 9389
+    },
+    {
+      "path": "dataset/environments/pilot_hr_candidate_rejection_001.json",
+      "git_blob_sha1": "c10a71add034e08614606bd675f016785e14129f",
+      "size_bytes": 4820
+    },
+    {
+      "path": "dataset/environments/pilot_hr_candidate_research_dossier_001.json",
+      "git_blob_sha1": "af5c6b4fe52dad3bef47cfdd95e24ccb14340cce",
+      "size_bytes": 10108
+    },
+    {
+      "path": "dataset/environments/pilot_hr_candidate_submittal_docs_001.json",
+      "git_blob_sha1": "6e18d09840b145f37e38a508f1e7ee726de0dfba",
+      "size_bytes": 11521
+    },
+    {
+      "path": "dataset/environments/pilot_hr_comp_adjustment_batch_001.json",
+      "git_blob_sha1": "4d877db709d6360b474b5d6f769704c31ab8e870",
+      "size_bytes": 10644
+    },
+    {
+      "path": "dataset/environments/pilot_hr_comp_review_001.json",
+      "git_blob_sha1": "9e50f3216fcc6b104ee3ee5f2fc8db849960cb6f",
+      "size_bytes": 4694
+    },
+    {
+      "path": "dataset/environments/pilot_hr_compliance_training_enforcement_001.json",
+      "git_blob_sha1": "09c2dec640d1a914bbf0e80b91c003ddc6e9ae22",
+      "size_bytes": 10786
+    },
+    {
+      "path": "dataset/environments/pilot_hr_compliance_training_enrollment_001.json",
+      "git_blob_sha1": "72ec77da4ee35faba970ff39a686dd3a76b81928",
+      "size_bytes": 10385
+    },
+    {
+      "path": "dataset/environments/pilot_hr_confluence_policy_migration_001.json",
+      "git_blob_sha1": "b8ed7c402d506345095d6a18e6fc8b98b16d6576",
+      "size_bytes": 10628
+    },
+    {
+      "path": "dataset/environments/pilot_hr_contractor_renewal_001.json",
+      "git_blob_sha1": "e7a8ca5b51b9d766a768f2b73fd8c5bb67606a3c",
+      "size_bytes": 10781
+    },
+    {
+      "path": "dataset/environments/pilot_hr_data_migration_validation_001.json",
+      "git_blob_sha1": "960d5bd35bea0a53f5a2428f8474d535046037d9",
+      "size_bytes": 10560
+    },
+    {
+      "path": "dataset/environments/pilot_hr_disciplinary_action_001.json",
+      "git_blob_sha1": "fb9ca1461577d899bdb750a2df9d741e4f8d0c04",
+      "size_bytes": 4909
+    },
+    {
+      "path": "dataset/environments/pilot_hr_diversity_metrics_report_001.json",
+      "git_blob_sha1": "9e3dc17a3377d3aca81eca028514f016202c812d",
+      "size_bytes": 9631
+    },
+    {
+      "path": "dataset/environments/pilot_hr_docusign_nda_collection_001.json",
+      "git_blob_sha1": "a2ed62f185b201c802da61c059727dca6339750c",
+      "size_bytes": 9137
+    },
+    {
+      "path": "dataset/environments/pilot_hr_docusign_policy_acknowledgment_001.json",
+      "git_blob_sha1": "5400362d28eb69a6aa23766359a24a7e15d4f648",
+      "size_bytes": 11182
+    },
+    {
+      "path": "dataset/environments/pilot_hr_docusign_severance_001.json",
+      "git_blob_sha1": "78703f9eb4ea6f0335ad971204a585704d362c4b",
+      "size_bytes": 5012
+    },
+    {
+      "path": "dataset/environments/pilot_hr_employee_directory_update_001.json",
+      "git_blob_sha1": "409dc591dc17e96e0a9f4885295848cf6b8f9877",
+      "size_bytes": 8857
+    },
+    {
+      "path": "dataset/environments/pilot_hr_employee_request_routing_001.json",
+      "git_blob_sha1": "083d65206bad2f260a5335e6c5f056194cbcbce9",
+      "size_bytes": 11277
+    },
+    {
+      "path": "dataset/environments/pilot_hr_employee_transfer_001.json",
+      "git_blob_sha1": "b6ec3b89a23fb49d77c089b7d86e9e8c3c79998c",
+      "size_bytes": 4883
+    },
+    {
+      "path": "dataset/environments/pilot_hr_equipment_provisioning_001.json",
+      "git_blob_sha1": "dc41465977577fd3d33b6b345a21bd66aa626a51",
+      "size_bytes": 9322
+    },
+    {
+      "path": "dataset/environments/pilot_hr_expense_policy_violation_001.json",
+      "git_blob_sha1": "fbbc3952a36eb28504e07c9779dbac1f6a8f906a",
+      "size_bytes": 9656
+    },
+    {
+      "path": "dataset/environments/pilot_hr_expense_report_audit_001.json",
+      "git_blob_sha1": "26d823faf4acaea8f40e410c4837cee512e5d4e1",
+      "size_bytes": 9880
+    },
+    {
+      "path": "dataset/environments/pilot_hr_grievance_routing_001.json",
+      "git_blob_sha1": "ef0ce52f3318c62bc022748f1a72d31c37b26457",
+      "size_bytes": 11365
+    },
+    {
+      "path": "dataset/environments/pilot_hr_handbook_acknowledgment_001.json",
+      "git_blob_sha1": "d4ffc563b2466a55222f1d908c92f5d678385011",
+      "size_bytes": 10161
+    },
+    {
+      "path": "dataset/environments/pilot_hr_headcount_planning_001.json",
+      "git_blob_sha1": "7f129719b447343773adaf2ed043a121fc2577cf",
+      "size_bytes": 10582
+    },
+    {
+      "path": "dataset/environments/pilot_hr_headcount_report_001.json",
+      "git_blob_sha1": "5bdf043265a08aa9e4d39d6651abcf4858fdc210",
+      "size_bytes": 5900
+    },
+    {
+      "path": "dataset/environments/pilot_hr_headcount_report_002.json",
+      "git_blob_sha1": "5b57897ffaab135e738782e3c14c6230b2bb3301",
+      "size_bytes": 5878
+    },
+    {
+      "path": "dataset/environments/pilot_hr_headcount_report_003.json",
+      "git_blob_sha1": "2828c9feeeb9e9ca635bb93b529fd6f3cd33db60",
+      "size_bytes": 5871
+    },
+    {
+      "path": "dataset/environments/pilot_hr_i9_verification_tracking_001.json",
+      "git_blob_sha1": "ccdd376500b68bc02b38e7ae48bc8432c83794a2",
+      "size_bytes": 9909
+    },
+    {
+      "path": "dataset/environments/pilot_hr_intern_cohort_onboarding_001.json",
+      "git_blob_sha1": "0173c2d11d3333738404f9da22406dee5224a8e8",
+      "size_bytes": 11036
+    },
+    {
+      "path": "dataset/environments/pilot_hr_intern_program_coordination_001.json",
+      "git_blob_sha1": "0cbf13f1a1b5a73b878022661f73bf44eaed2e7e",
+      "size_bytes": 10762
+    },
+    {
+      "path": "dataset/environments/pilot_hr_interview_scheduling_001.json",
+      "git_blob_sha1": "35b9e688a7ce2d138f4178d679c114773249ad49",
+      "size_bytes": 5723
+    },
+    {
+      "path": "dataset/environments/pilot_hr_interview_scheduling_002.json",
+      "git_blob_sha1": "9faff433dd32e6450913413b79e7b706eceef930",
+      "size_bytes": 5690
+    },
+    {
+      "path": "dataset/environments/pilot_hr_interview_scheduling_003.json",
+      "git_blob_sha1": "fbdd550411c264844dd628549bf1c286d977dab4",
+      "size_bytes": 5650
+    },
+    {
+      "path": "dataset/environments/pilot_hr_interview_scheduling_004.json",
+      "git_blob_sha1": "130c4842c7ac57264ab2c620c1d675ee583a7033",
+      "size_bytes": 5654
+    },
+    {
+      "path": "dataset/environments/pilot_hr_jira_security_access_review_001.json",
+      "git_blob_sha1": "338c3c3a96ff412c342e52fe9113c878033ccfc6",
+      "size_bytes": 10312
+    },
+    {
+      "path": "dataset/environments/pilot_hr_job_board_monitoring_001.json",
+      "git_blob_sha1": "557e8d286e23944771933f586b95f08525422ee6",
+      "size_bytes": 9662
+    },
+    {
+      "path": "dataset/environments/pilot_hr_job_posting_distribution_001.json",
+      "git_blob_sha1": "df3d59ca465ba8bd869cc57b08cdfb35300d5d8d",
+      "size_bytes": 9490
+    },
+    {
+      "path": "dataset/environments/pilot_hr_job_posting_refresh_001.json",
+      "git_blob_sha1": "d705d583035e2017d9cc12cc6a7e91387abb7825",
+      "size_bytes": 9588
+    },
+    {
+      "path": "dataset/environments/pilot_hr_mandatory_meeting_compliance_001.json",
+      "git_blob_sha1": "4c3d53ed4ace6d2a0c56636e5e4613e4bc7187f0",
+      "size_bytes": 10036
+    },
+    {
+      "path": "dataset/environments/pilot_hr_mandatory_meeting_scheduling_001.json",
+      "git_blob_sha1": "2b5c719bcd70daf06665fe7dc35c7bfb062baee3",
+      "size_bytes": 9479
+    },
+    {
+      "path": "dataset/environments/pilot_hr_monday_pip_tracking_001.json",
+      "git_blob_sha1": "a365a26fa36b5610c5bc14cc12915d1e29d7c1ce",
+      "size_bytes": 11424
+    },
+    {
+      "path": "dataset/environments/pilot_hr_monday_succession_planning_001.json",
+      "git_blob_sha1": "202b6b0f3ee22131c2442a3f3154eb893f2ccdb2",
+      "size_bytes": 10732
+    },
+    {
+      "path": "dataset/environments/pilot_hr_multi_app_new_hire_setup_001.json",
+      "git_blob_sha1": "89651bd4f2efbf6c2e722a33de85f1bf69cfafb4",
+      "size_bytes": 10169
+    },
+    {
+      "path": "dataset/environments/pilot_hr_notion_meeting_notes_001.json",
+      "git_blob_sha1": "b620b734fcbe8ed6c54867b90d218952cb02de9d",
+      "size_bytes": 9191
+    },
+    {
+      "path": "dataset/environments/pilot_hr_offboarding_001.json",
+      "git_blob_sha1": "2200f1aa82618dde33ef19e3b66eccb58c6b8bbf",
+      "size_bytes": 4962
+    },
+    {
+      "path": "dataset/environments/pilot_hr_offer_letter_001.json",
+      "git_blob_sha1": "8ecc65976267edc640b52042ac0ad386b0897aa7",
+      "size_bytes": 6410
+    },
+    {
+      "path": "dataset/environments/pilot_hr_onboarding_summary_001.json",
+      "git_blob_sha1": "45267fabb2adb41c42420a1fa59190d4896bb96a",
+      "size_bytes": 5690
+    },
+    {
+      "path": "dataset/environments/pilot_hr_onboarding_summary_002.json",
+      "git_blob_sha1": "f188b91b2871cbe9c9966514c22fcfa86e187d7a",
+      "size_bytes": 5603
+    },
+    {
+      "path": "dataset/environments/pilot_hr_onboarding_summary_003.json",
+      "git_blob_sha1": "9140e0c6c5bedd1284ca2c090c0f0e27af27a94d",
+      "size_bytes": 5576
+    },
+    {
+      "path": "dataset/environments/pilot_hr_onboarding_summary_004.json",
+      "git_blob_sha1": "886686757165b237bd3ee40d039ffc223dce1ce7",
+      "size_bytes": 5601
+    },
+    {
+      "path": "dataset/environments/pilot_hr_org_restructure_update_001.json",
+      "git_blob_sha1": "fe82f43e0c575e49fc93fad97b349d6cadf8aa46",
+      "size_bytes": 10635
+    },
+    {
+      "path": "dataset/environments/pilot_hr_payroll_bonus_001.json",
+      "git_blob_sha1": "8b28e9ad59baa405fadf2847ec4675609854ac41",
+      "size_bytes": 4699
+    },
+    {
+      "path": "dataset/environments/pilot_hr_payroll_discrepancy_001.json",
+      "git_blob_sha1": "fc3469a9127bb8179266e44ccf4f6b915ce87e10",
+      "size_bytes": 9997
+    },
+    {
+      "path": "dataset/environments/pilot_hr_performance_cycle_001.json",
+      "git_blob_sha1": "9a4461cbde512246eb07c5cd6574977cf720220d",
+      "size_bytes": 4663
+    },
+    {
+      "path": "dataset/environments/pilot_hr_performance_review_kickoff_001.json",
+      "git_blob_sha1": "803f651e7e9a5807307c31a4b84295ec1c74daf0",
+      "size_bytes": 9254
+    },
+    {
+      "path": "dataset/environments/pilot_hr_policy_update_distribution_001.json",
+      "git_blob_sha1": "06fd2a2cc83d0c8ee4ead6e1346f3350cf36e735",
+      "size_bytes": 10015
+    },
+    {
+      "path": "dataset/environments/pilot_hr_probation_review_001.json",
+      "git_blob_sha1": "9f852dfd17d6f78d31eb5d47046d191ebc2a0b12",
+      "size_bytes": 4754
+    },
+    {
+      "path": "dataset/environments/pilot_hr_promotion_announcement_001.json",
+      "git_blob_sha1": "f7c238ee174fbbdab87926c76cf413c331339e1c",
+      "size_bytes": 10651
+    },
+    {
+      "path": "dataset/environments/pilot_hr_promotion_update_001.json",
+      "git_blob_sha1": "3ae3816b5af722ef7055d07e856efddefffb4c17",
+      "size_bytes": 4569
+    },
+    {
+      "path": "dataset/environments/pilot_hr_pto_balance_alert_001.json",
+      "git_blob_sha1": "b6dbb1b79a994e17f07e26ecb3aebae9e7e19588",
+      "size_bytes": 8820
+    },
+    {
+      "path": "dataset/environments/pilot_hr_pto_reconciliation_001.json",
+      "git_blob_sha1": "e827f836746daa926bdf0b4d378f746b4c0d8ef0",
+      "size_bytes": 10334
+    },
+    {
+      "path": "dataset/environments/pilot_hr_quarterly_termination_queue_001.json",
+      "git_blob_sha1": "979d24e74dc84e66e7c07fd27569219f082bdb24",
+      "size_bytes": 12978
+    },
+    {
+      "path": "dataset/environments/pilot_hr_recognition_nominations_001.json",
+      "git_blob_sha1": "311ce82214de9d1acb2a5f26140e0b154bcf5db4",
+      "size_bytes": 11686
+    },
+    {
+      "path": "dataset/environments/pilot_hr_recruitment_channel_roi_001.json",
+      "git_blob_sha1": "33b0952bc2cd50c74098fd588184a76bf09cb87a",
+      "size_bytes": 9810
+    },
+    {
+      "path": "dataset/environments/pilot_hr_recruitment_dedup_alert_001.json",
+      "git_blob_sha1": "3801e2eab51d3d6a5b572014b29b2edd7d308cdf",
+      "size_bytes": 9420
+    },
+    {
+      "path": "dataset/environments/pilot_hr_reference_check_001.json",
+      "git_blob_sha1": "2be60f34448655170e999e3a4739a3c522bb550c",
+      "size_bytes": 5941
+    },
+    {
+      "path": "dataset/environments/pilot_hr_reference_check_002.json",
+      "git_blob_sha1": "27a815e6d79a3b1fe25f0ec1aa8772ba3f9721df",
+      "size_bytes": 5915
+    },
+    {
+      "path": "dataset/environments/pilot_hr_reference_check_003.json",
+      "git_blob_sha1": "de0156f034c0dbf11b788a8296a670376bf04678",
+      "size_bytes": 5864
+    },
+    {
+      "path": "dataset/environments/pilot_hr_referral_bonus_processing_001.json",
+      "git_blob_sha1": "d2c692c567f495eef6d253617320d1fdf67f01b1",
+      "size_bytes": 10642
+    },
+    {
+      "path": "dataset/environments/pilot_hr_return_from_leave_001.json",
+      "git_blob_sha1": "774c4c3a2c0a17a73b2dd98f0eb06c5cb807a320",
+      "size_bytes": 4782
+    },
+    {
+      "path": "dataset/environments/pilot_hr_salary_band_audit_001.json",
+      "git_blob_sha1": "7801e0210d5a3c9bce330cd2f175ecd39177112f",
+      "size_bytes": 4749
+    },
+    {
+      "path": "dataset/environments/pilot_hr_termination_checklist_001.json",
+      "git_blob_sha1": "5c67196a944ed1540ac2cc23b3f6cd3db332cb98",
+      "size_bytes": 6401
+    },
+    {
+      "path": "dataset/environments/pilot_hr_visa_expiry_001.json",
+      "git_blob_sha1": "616aa53e7730ac5243e7fcd346cb4258ff9938c7",
+      "size_bytes": 4816
+    },
+    {
+      "path": "dataset/environments/pilot_leg_board_resolution_001.json",
+      "git_blob_sha1": "16fb20a5f6ed58ac9f4cd3dbbe3c09695644a56c",
+      "size_bytes": 5389
+    },
+    {
+      "path": "dataset/environments/pilot_leg_board_resolution_002.json",
+      "git_blob_sha1": "25362f723ae3306381ac7b4bebce0c9642082925",
+      "size_bytes": 6202
+    },
+    {
+      "path": "dataset/environments/pilot_leg_board_resolution_003.json",
+      "git_blob_sha1": "10a9ee91e703671ada343394f92b72ad66ec1323",
+      "size_bytes": 6213
+    },
+    {
+      "path": "dataset/environments/pilot_leg_case_status_001.json",
+      "git_blob_sha1": "6832a2e5620d8f3bd81847d74e2fbaba9a409490",
+      "size_bytes": 5483
+    },
+    {
+      "path": "dataset/environments/pilot_leg_case_status_002.json",
+      "git_blob_sha1": "4179b10c4342b12cbd5a4a23575be0dfd0e77fde",
+      "size_bytes": 5411
+    },
+    {
+      "path": "dataset/environments/pilot_leg_case_status_003.json",
+      "git_blob_sha1": "b3662f12391b5aefbef420a0f04079943f84c9ca",
+      "size_bytes": 5433
+    },
+    {
+      "path": "dataset/environments/pilot_leg_case_status_004.json",
+      "git_blob_sha1": "03168411355512d47b448e27715da93d486ae777",
+      "size_bytes": 5361
+    },
+    {
+      "path": "dataset/environments/pilot_leg_case_status_005.json",
+      "git_blob_sha1": "218d27728656201a5beb291eda423c6f1e7fab3b",
+      "size_bytes": 5872
+    },
+    {
+      "path": "dataset/environments/pilot_leg_case_status_006.json",
+      "git_blob_sha1": "6dc79ba21b626e4ad82c00f048714ed3f1275c02",
+      "size_bytes": 6010
+    },
+    {
+      "path": "dataset/environments/pilot_leg_cease_desist_001.json",
+      "git_blob_sha1": "25c58073ebb9a9b30172a5c214ce7ef63c94be86",
+      "size_bytes": 4907
+    },
+    {
+      "path": "dataset/environments/pilot_leg_cease_desist_002.json",
+      "git_blob_sha1": "8ac27fcecf8465c79e2b3d678ccd92cf1dae2c2a",
+      "size_bytes": 5925
+    },
+    {
+      "path": "dataset/environments/pilot_leg_conflict_check_001.json",
+      "git_blob_sha1": "96a372e2ab8dcba22c6ef0d033dc2907c1fd59ed",
+      "size_bytes": 5844
+    },
+    {
+      "path": "dataset/environments/pilot_leg_conflict_check_002.json",
+      "git_blob_sha1": "65f516d290145a61e5e475933ccd7c9a782b9c57",
+      "size_bytes": 5946
+    },
+    {
+      "path": "dataset/environments/pilot_leg_conflict_check_003.json",
+      "git_blob_sha1": "89473ea181ba9b175afc5c1e8f3756a4f6809f31",
+      "size_bytes": 5917
+    },
+    {
+      "path": "dataset/environments/pilot_leg_conflict_check_004.json",
+      "git_blob_sha1": "735ea5addd2ac4e710a1647d3951e101188f3841",
+      "size_bytes": 5878
+    },
+    {
+      "path": "dataset/environments/pilot_leg_conflict_check_005.json",
+      "git_blob_sha1": "4c4a2ec03eb3da5719e500bd98940b16d07d291d",
+      "size_bytes": 6484
+    },
+    {
+      "path": "dataset/environments/pilot_leg_contract_review_001.json",
+      "git_blob_sha1": "f78ee2d554d88a67679cf08ff5d9b613786a29ed",
+      "size_bytes": 5472
+    },
+    {
+      "path": "dataset/environments/pilot_leg_contract_review_002.json",
+      "git_blob_sha1": "9892949e978f680408a2657e4df6d523b5514af5",
+      "size_bytes": 6274
+    },
+    {
+      "path": "dataset/environments/pilot_leg_court_motion_001.json",
+      "git_blob_sha1": "7abc04b90fbc46df523e835396fa5d362c30d611",
+      "size_bytes": 4754
+    },
+    {
+      "path": "dataset/environments/pilot_leg_court_motion_002.json",
+      "git_blob_sha1": "b5e09d90f66e14b291aa5277d4b885495a16bf59",
+      "size_bytes": 5453
+    },
+    {
+      "path": "dataset/environments/pilot_leg_demand_letter_001.json",
+      "git_blob_sha1": "55bbec5074513b418288d0ccf995d5d377d43410",
+      "size_bytes": 5149
+    },
+    {
+      "path": "dataset/environments/pilot_leg_demand_letter_002.json",
+      "git_blob_sha1": "9979769fdf6937bb8bdc4a9150a7347ba50157c7",
+      "size_bytes": 6532
+    },
+    {
+      "path": "dataset/environments/pilot_leg_discovery_summary_001.json",
+      "git_blob_sha1": "0b9e062893ce133b1dab845f12fdc410f80793bc",
+      "size_bytes": 5642
+    },
+    {
+      "path": "dataset/environments/pilot_leg_discovery_summary_002.json",
+      "git_blob_sha1": "0f545dec42e5e03d71b875e5be8384bde6a3aab2",
+      "size_bytes": 5688
+    },
+    {
+      "path": "dataset/environments/pilot_leg_discovery_summary_003.json",
+      "git_blob_sha1": "6097d9a34075b83df23b09a3639039b5f14d9d97",
+      "size_bytes": 5623
+    },
+    {
+      "path": "dataset/environments/pilot_leg_discovery_summary_004.json",
+      "git_blob_sha1": "24e96d8b21e141f1821033b7e4ef49758dd42f3a",
+      "size_bytes": 5654
+    },
+    {
+      "path": "dataset/environments/pilot_leg_discovery_summary_005.json",
+      "git_blob_sha1": "cee041457f348d977ee06e5f11a56c06b735e2a6",
+      "size_bytes": 6356
+    },
+    {
+      "path": "dataset/environments/pilot_leg_employment_agreement_001.json",
+      "git_blob_sha1": "65c687ad42a33124f5b0ff4f063835e307814eb6",
+      "size_bytes": 5456
+    },
+    {
+      "path": "dataset/environments/pilot_leg_employment_agreement_002.json",
+      "git_blob_sha1": "8958655307fe520236710948fce43166fa06d34d",
+      "size_bytes": 6386
+    },
+    {
+      "path": "dataset/environments/pilot_leg_lease_review_001.json",
+      "git_blob_sha1": "3d3e2e54ff281aa018112759b87e6ae3e2287dc4",
+      "size_bytes": 5199
+    },
+    {
+      "path": "dataset/environments/pilot_leg_lease_review_002.json",
+      "git_blob_sha1": "ef2f023cdb79f56560af4105cd3691d58157319f",
+      "size_bytes": 5970
+    },
+    {
+      "path": "dataset/environments/pilot_leg_litigation_hold_001.json",
+      "git_blob_sha1": "e82b05cdb4ba2422d477dc66b53808f27d30a7ef",
+      "size_bytes": 4847
+    },
+    {
+      "path": "dataset/environments/pilot_leg_litigation_hold_002.json",
+      "git_blob_sha1": "18eaba930eca4e89abd73ba378d4517760c52ebf",
+      "size_bytes": 5850
+    },
+    {
+      "path": "dataset/environments/pilot_leg_nda_execution_001.json",
+      "git_blob_sha1": "f5c4881bb417e2dba3cb16b46af351c1a070dabd",
+      "size_bytes": 5111
+    },
+    {
+      "path": "dataset/environments/pilot_leg_nda_execution_002.json",
+      "git_blob_sha1": "e45377e7cbf71a31b5c7b73bf12dfe7941343a53",
+      "size_bytes": 5648
+    },
+    {
+      "path": "dataset/environments/pilot_leg_records_production_001.json",
+      "git_blob_sha1": "e3ba32337701b777a3cc873a2bb6ae6c8cc224be",
+      "size_bytes": 5015
+    },
+    {
+      "path": "dataset/environments/pilot_leg_records_production_002.json",
+      "git_blob_sha1": "b3d3c65f896a117d781e7857321bbfdab8e1c248",
+      "size_bytes": 6248
+    },
+    {
+      "path": "dataset/environments/pilot_leg_regulatory_filing_001.json",
+      "git_blob_sha1": "38f53e339e357e8a3f829c7ecd017304970739ae",
+      "size_bytes": 5262
+    },
+    {
+      "path": "dataset/environments/pilot_leg_regulatory_filing_002.json",
+      "git_blob_sha1": "988be29b984eab61c71bea15de388ccd27ba03cc",
+      "size_bytes": 6429
+    },
+    {
+      "path": "dataset/environments/pilot_leg_response_letter_001.json",
+      "git_blob_sha1": "5d58d06e969305463379908b3e12edb87a5dab88",
+      "size_bytes": 5520
+    },
+    {
+      "path": "dataset/environments/pilot_leg_response_letter_002.json",
+      "git_blob_sha1": "9a8a65aed6645ab980a1224e61cafc6aceb2690a",
+      "size_bytes": 5518
+    },
+    {
+      "path": "dataset/environments/pilot_leg_response_letter_003.json",
+      "git_blob_sha1": "dcb21292a5447b1645f6acb10e38149430fda748",
+      "size_bytes": 5519
+    },
+    {
+      "path": "dataset/environments/pilot_leg_response_letter_004.json",
+      "git_blob_sha1": "31de438be3e4192f23ebd77519a445b27c26cf2d",
+      "size_bytes": 5504
+    },
+    {
+      "path": "dataset/environments/pilot_leg_response_letter_005.json",
+      "git_blob_sha1": "cb1ac648c1efe16bbd5f38d641d303a0c64079eb",
+      "size_bytes": 5874
+    },
+    {
+      "path": "dataset/environments/pilot_leg_settlement_agreement_001.json",
+      "git_blob_sha1": "159268b13ed599e5bc509c059bdcd6ef7ba19796",
+      "size_bytes": 5448
+    },
+    {
+      "path": "dataset/environments/pilot_leg_settlement_agreement_002.json",
+      "git_blob_sha1": "380a4e0229a617a283a375c31fbb6b703c856f5b",
+      "size_bytes": 6083
+    },
+    {
+      "path": "dataset/environments/pilot_leg_subpoena_response_001.json",
+      "git_blob_sha1": "aa5666b457b41d59f8e2cd55a9df287a2edcda1f",
+      "size_bytes": 4953
+    },
+    {
+      "path": "dataset/environments/pilot_leg_subpoena_response_002.json",
+      "git_blob_sha1": "75b44bed1cee5adb74d5eae1a605ea1fcf0c4b7c",
+      "size_bytes": 5979
+    },
+    {
+      "path": "dataset/environments/pilot_leg_trademark_filing_001.json",
+      "git_blob_sha1": "164c6605cd75a6fbefe3a145f6a01d4d4fbd4be3",
+      "size_bytes": 4905
+    },
+    {
+      "path": "dataset/environments/pilot_leg_trademark_filing_002.json",
+      "git_blob_sha1": "d40019fd2f12848992805d1968ddbc94816d5e97",
+      "size_bytes": 5391
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_ad_performance_review_001.json",
+      "git_blob_sha1": "678a23c540d0411e3466cd2277b2c1f0043ac09b",
+      "size_bytes": 9250
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_ad_platform_audit_001.json",
+      "git_blob_sha1": "1bea685920ea2d7c876671deef7a5e31808e038b",
+      "size_bytes": 8579
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_analyst_briefing_001.json",
+      "git_blob_sha1": "608eba45c064e0636fdf5dee8c7c070050811aac",
+      "size_bytes": 4653
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_analyst_mention_tracking_001.json",
+      "git_blob_sha1": "d47bd83a918eca59cdafb493cf060daa380603e9",
+      "size_bytes": 9728
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_app_review_triage_001.json",
+      "git_blob_sha1": "cd99b5adb297aa46bd357e48ee7b304f55ae9ce3",
+      "size_bytes": 10895
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_blog_refresh_queue_001.json",
+      "git_blob_sha1": "32c4fb78bfc0c312d079b9ff43d0382027baeb48",
+      "size_bytes": 9989
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_brand_mention_analysis_001.json",
+      "git_blob_sha1": "43e930778885ef671089660118802ac0c9fa99de",
+      "size_bytes": 8874
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_budget_reallocation_001.json",
+      "git_blob_sha1": "75d71da677ee1c3d2f1512e29df69cd588fb3149",
+      "size_bytes": 4609
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_campaign_attribution_001.json",
+      "git_blob_sha1": "e3f69f2675d6f402d381e3fe48ab2c9e23551d0c",
+      "size_bytes": 8878
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_campaign_calendar_001.json",
+      "git_blob_sha1": "ed5aab67b4a44700363874e1c5f5f12553ffdf0e",
+      "size_bytes": 10858
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_campaign_handoff_001.json",
+      "git_blob_sha1": "d248f59b38d54309f038ac0f1042d3160a10b55f",
+      "size_bytes": 11059
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_campaign_launch_001.json",
+      "git_blob_sha1": "4105e5006623dd7cff56cbc0a8889bc993b982cc",
+      "size_bytes": 4490
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_campaign_retrospective_001.json",
+      "git_blob_sha1": "13d02230ab658de56245a84a7db1a9c8e8ae3353",
+      "size_bytes": 9784
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_campaign_roi_analysis_001.json",
+      "git_blob_sha1": "fd54af8dedc124f02863db788a5ca4f44fc7dc55",
+      "size_bytes": 8899
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_community_engagement_001.json",
+      "git_blob_sha1": "d45c8513f6b4eac6019a1fe7522adc552c13e8fa",
+      "size_bytes": 9271
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_competitive_response_plan_001.json",
+      "git_blob_sha1": "3b51b6ce3f3dbc473d821dc112f4045ecff83c92",
+      "size_bytes": 10036
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_competitor_product_launch_001.json",
+      "git_blob_sha1": "8c01088624c9380f1e1798b711047a6fa6f775a8",
+      "size_bytes": 9417
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_contact_data_cleanup_001.json",
+      "git_blob_sha1": "8b482250f627fe14686fb50f8b39be2ddd706ae7",
+      "size_bytes": 10527
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_content_expiration_alert_001.json",
+      "git_blob_sha1": "d71e37ad758999c3ea9eec95f312f5db580d86d6",
+      "size_bytes": 8360
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_content_gap_analysis_001.json",
+      "git_blob_sha1": "30b0a18c200885957112b9239346adefec271d6e",
+      "size_bytes": 9671
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_content_localization_001.json",
+      "git_blob_sha1": "cb9c0de53e1f5c9cff1d24e23999ab22571c690e",
+      "size_bytes": 10073
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_content_performance_001.json",
+      "git_blob_sha1": "81d78cb763a0cc722209c66fe938cda6abf009e0",
+      "size_bytes": 8955
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_content_repurpose_001.json",
+      "git_blob_sha1": "963dc1a58df7a1c2ebabcf795deffbeef5ab26ee",
+      "size_bytes": 10396
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_content_scoring_001.json",
+      "git_blob_sha1": "c18bceb79cf04e1b32e1d5ff66766b50beb79004",
+      "size_bytes": 9338
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_content_syndication_001.json",
+      "git_blob_sha1": "7aefdc7ff432d0b0671aafc0dbd239022e0b7fca",
+      "size_bytes": 4618
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_conversion_tracking_001.json",
+      "git_blob_sha1": "8d70b67e6762670b4dc5f647dd7b41209c76a04c",
+      "size_bytes": 10304
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_creative_asset_001.json",
+      "git_blob_sha1": "eca1dd6096c04cc8547187cb105641ff0eb1219a",
+      "size_bytes": 9107
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_customer_feedback_aggregation_001.json",
+      "git_blob_sha1": "5df59968827ba25dc72e457b29822f10e150ce9b",
+      "size_bytes": 11380
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_customer_milestone_001.json",
+      "git_blob_sha1": "153ced57886db7db68df3836bfb0ccf30987bb00",
+      "size_bytes": 9134
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_customer_story_intake_001.json",
+      "git_blob_sha1": "3717975e033803181fec743b94caf1347f56e439",
+      "size_bytes": 9547
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_editorial_calendar_001.json",
+      "git_blob_sha1": "223ea3740eb70925fdbffb1fd47009e98288f5f3",
+      "size_bytes": 9264
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_email_campaign_analytics_001.json",
+      "git_blob_sha1": "3208525fbf8c971fb2ff665e54c9fa7149a85975",
+      "size_bytes": 9722
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_email_suppression_001.json",
+      "git_blob_sha1": "caf4d9492aa42118ef73fa268c429c6ffc5cf145",
+      "size_bytes": 4601
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_engagement_optimization_001.json",
+      "git_blob_sha1": "bef04177247b6e2f78d94f5909d510193b7d5831",
+      "size_bytes": 8975
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_event_followup_personalization_001.json",
+      "git_blob_sha1": "3c4dc352e4557d37e5b759fb753bd90b55dbed8e",
+      "size_bytes": 8968
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_event_registration_sync_001.json",
+      "git_blob_sha1": "c3f4be3efe8b40ed6879a03503f8861d39f53003",
+      "size_bytes": 10210
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_event_sponsorship_001.json",
+      "git_blob_sha1": "43b43d0b3aa91eb8d8e91cbb5c9bc78b7861b1b1",
+      "size_bytes": 4778
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_google_ads_pause_001.json",
+      "git_blob_sha1": "204bf114cb411316887e7af6b4c7dfa3b2cbda41",
+      "size_bytes": 4664
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_guest_post_outreach_001.json",
+      "git_blob_sha1": "1fba5773a59744846136a86492894bc5df2f1bca",
+      "size_bytes": 4503
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_hashtag_performance_001.json",
+      "git_blob_sha1": "ee0cd05ef64bf611f7d09281e1b6a74a4428d299",
+      "size_bytes": 9075
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_industry_news_001.json",
+      "git_blob_sha1": "dc905076294f8a22f3194175971618c9fd29c75e",
+      "size_bytes": 9174
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_influencer_contract_tracking_001.json",
+      "git_blob_sha1": "0c653e9be34746319bddb7eec1d9c726ff5627fe",
+      "size_bytes": 9868
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_influencer_outreach_001.json",
+      "git_blob_sha1": "529c766941dc5bbd13a3a33d413b2355cc341171",
+      "size_bytes": 4597
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_influencer_reminders_001.json",
+      "git_blob_sha1": "f44d4620680ce0c74dc88f4f2528c7ad17266311",
+      "size_bytes": 4578
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_instagram_publish_001.json",
+      "git_blob_sha1": "e4534b6d099b942d8f2e60d78fdc205a1b608b06",
+      "size_bytes": 4524
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_keyword_cannibalization_001.json",
+      "git_blob_sha1": "51ea39f44eabe4a782f27174f3a820fab8c22181",
+      "size_bytes": 9352
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_landing_page_alert_001.json",
+      "git_blob_sha1": "3088653526aadad15a3afca154a7cad00bbdcba4",
+      "size_bytes": 8595
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_landing_page_conversion_001.json",
+      "git_blob_sha1": "07924af85e534a97b11c5909b26d0b4349dc3051",
+      "size_bytes": 8222
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_landing_page_optimization_001.json",
+      "git_blob_sha1": "daa05ae3d5454c93cc2ec3d47437ea68082c526c",
+      "size_bytes": 8792
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_lead_enrichment_001.json",
+      "git_blob_sha1": "cb2a62e5b7812ab662d235bf39ad0662749d8211",
+      "size_bytes": 10503
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_lead_scoring_001.json",
+      "git_blob_sha1": "d4bc627e583c27b4297bd1db9bf39592597782c9",
+      "size_bytes": 9505
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_lifecycle_stage_001.json",
+      "git_blob_sha1": "43962b10ebd212e928d31a42ec7f052f67f3dba6",
+      "size_bytes": 10044
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_link_building_001.json",
+      "git_blob_sha1": "eb87cdee604552dadc29d2aa0967a6ec3208124a",
+      "size_bytes": 8791
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_linkedin_speaker_outreach_001.json",
+      "git_blob_sha1": "0959843cafffa29ecf52dcd98ff455cbfd98bcb8",
+      "size_bytes": 10017
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_linkedin_update_001.json",
+      "git_blob_sha1": "9c68cfb6aaad009bc6fd4bc789f74af8bbb9e65b",
+      "size_bytes": 4592
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_market_trend_001.json",
+      "git_blob_sha1": "741b1b647286f881f1028d10480f2eccde9950e7",
+      "size_bytes": 9037
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_multi_touch_attribution_001.json",
+      "git_blob_sha1": "6b29aaa3cfb6acbc106479f4acf981acce8af878",
+      "size_bytes": 9692
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_news_digest_dedup_001.json",
+      "git_blob_sha1": "a783b1498e2885dd74487556939955765d25969a",
+      "size_bytes": 8969
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_newsletter_dedup_001.json",
+      "git_blob_sha1": "b6cdf1c14529c9c8be71ad888f72089802e836e3",
+      "size_bytes": 9435
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_newsletter_sponsor_invoicing_001.json",
+      "git_blob_sha1": "d707a363d86ef5c8ca61d3bc5f8e6c1ec425a4e1",
+      "size_bytes": 10655
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_newsletter_unsub_001.json",
+      "git_blob_sha1": "720a2ce2e577c266a3c3ed93e8e0373c6ab0680c",
+      "size_bytes": 4617
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_partner_comarketing_001.json",
+      "git_blob_sha1": "11e906b4144a07354aae04a7a1b7317d6a18d356",
+      "size_bytes": 4559
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_partner_commission_calculation_001.json",
+      "git_blob_sha1": "bb25bf26ee851acd3be8350c193e5c204d4108b7",
+      "size_bytes": 10135
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_partner_content_approval_001.json",
+      "git_blob_sha1": "11ebd50a748d1fab8181fd4c4ca2d473da334354",
+      "size_bytes": 4575
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_patent_monitoring_001.json",
+      "git_blob_sha1": "a9d50e95a94052ff24573dd5a38c0ba61ba25713",
+      "size_bytes": 9670
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_podcast_episode_promotion_001.json",
+      "git_blob_sha1": "90cc778015533662306b0aaff40b65ec44d596a0",
+      "size_bytes": 8833
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_press_release_001.json",
+      "git_blob_sha1": "90324a59846ce570e52237850dc625102f78573b",
+      "size_bytes": 6473
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_product_adoption_001.json",
+      "git_blob_sha1": "0d1919bc4eb87ee775e5fac39cdbafab930c0d30",
+      "size_bytes": 9217
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_product_launch_channel_plan_001.json",
+      "git_blob_sha1": "2e7e43f3fc71cbd0c0864c82a5d0b116e5a2f928",
+      "size_bytes": 11940
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_referral_processing_001.json",
+      "git_blob_sha1": "8cadb079c5dbc167b945616af9ff90fcf22407ef",
+      "size_bytes": 4668
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_seasonal_campaign_001.json",
+      "git_blob_sha1": "07c6a4e44c58c0be60cb810dcb76866a5b68a12f",
+      "size_bytes": 4539
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_seo_audit_001.json",
+      "git_blob_sha1": "e621a833d3007c800da38687fc26a6448bf7cdd8",
+      "size_bytes": 9364
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_seo_brief_prioritization_001.json",
+      "git_blob_sha1": "5f539e3fcfff947ff718407f0af220a703965732",
+      "size_bytes": 9757
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_social_comment_queue_001.json",
+      "git_blob_sha1": "19568638160607be6acb3b0c2bbb19c1af7a2082",
+      "size_bytes": 4608
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_social_contest_001.json",
+      "git_blob_sha1": "0cf2c444fcfdb4daded1e32f6ae5e350f2aad360",
+      "size_bytes": 4471
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_social_crisis_001.json",
+      "git_blob_sha1": "02e3be36c569848a9afa428dfa1f57e29cad33e2",
+      "size_bytes": 4581
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_social_scheduling_001.json",
+      "git_blob_sha1": "3c48a59994a3d9cbc507a20451171cba946105d2",
+      "size_bytes": 4473
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_trial_extension_001.json",
+      "git_blob_sha1": "185855c7ceadf9799748ddce8c1fa9a6342a0ec0",
+      "size_bytes": 4684
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_ugc_moderation_001.json",
+      "git_blob_sha1": "7f7b7977b105e65a46fe28d92c644e5d7f672553",
+      "size_bytes": 4634
+    },
+    {
+      "path": "dataset/environments/pilot_mkt_webinar_cancellation_001.json",
+      "git_blob_sha1": "7a59c6bcd29785c29c7f2a8c64d07b28db38e77c",
+      "size_bytes": 4614
+    },
+    {
+      "path": "dataset/environments/pilot_ops_access_audit_001.json",
+      "git_blob_sha1": "f2a8d8ce4b3df963c904edcc03fefff1a601e725",
+      "size_bytes": 6348
+    },
+    {
+      "path": "dataset/environments/pilot_ops_access_provisioning_001.json",
+      "git_blob_sha1": "c97d6b3ee9fda96ce8442ac1670ca07a7aa42a7e",
+      "size_bytes": 6633
+    },
+    {
+      "path": "dataset/environments/pilot_ops_access_request_validation_001.json",
+      "git_blob_sha1": "76eb69693a2deebebec48ad66b5c1954cb023430",
+      "size_bytes": 10780
+    },
+    {
+      "path": "dataset/environments/pilot_ops_airtable_gmail_visitor_followup_001.json",
+      "git_blob_sha1": "3eeefd9ef8d9845a472516bf30ee4b53c6d5b925",
+      "size_bytes": 8014
+    },
+    {
+      "path": "dataset/environments/pilot_ops_asana_fire_drill_001.json",
+      "git_blob_sha1": "77c7c32fc18389549880e9276503dffb25f0f778",
+      "size_bytes": 9026
+    },
+    {
+      "path": "dataset/environments/pilot_ops_asana_slack_sheets_audit_001.json",
+      "git_blob_sha1": "43d3b7d57ad31195e9338074e6d611ead6c4a434",
+      "size_bytes": 8683
+    },
+    {
+      "path": "dataset/environments/pilot_ops_buffer_engagement_optimization_001.json",
+      "git_blob_sha1": "ea7c66bc9449522a402f6683771be569b4a5758e",
+      "size_bytes": 9609
+    },
+    {
+      "path": "dataset/environments/pilot_ops_calendar_airtable_gmail_maintenance_notice_001.json",
+      "git_blob_sha1": "d7a55401d127df55ab90b2b094d50af3264ec73d",
+      "size_bytes": 10665
+    },
+    {
+      "path": "dataset/environments/pilot_ops_calendar_airtable_maintenance_001.json",
+      "git_blob_sha1": "92be989bfc4e7850415bfed9dc3e854bf682e351",
+      "size_bytes": 10854
+    },
+    {
+      "path": "dataset/environments/pilot_ops_calendar_slack_training_001.json",
+      "git_blob_sha1": "a205bf840cce7aac2653e7a14007608dd83f3544",
+      "size_bytes": 10436
+    },
+    {
+      "path": "dataset/environments/pilot_ops_calendly_equipment_inspection_001.json",
+      "git_blob_sha1": "2765f2e222ee5f5f5571a9219825598086c5e27f",
+      "size_bytes": 9339
+    },
+    {
+      "path": "dataset/environments/pilot_ops_canva_asset_management_001.json",
+      "git_blob_sha1": "71e140ed45b81826c14f4fde21f6488dfc30ffd4",
+      "size_bytes": 10051
+    },
+    {
+      "path": "dataset/environments/pilot_ops_change_advisory_001.json",
+      "git_blob_sha1": "7477b52ec1b8586880cce3fa4e2d1b6c0c52bfc6",
+      "size_bytes": 4647
+    },
+    {
+      "path": "dataset/environments/pilot_ops_chatgpt_feedback_analysis_001.json",
+      "git_blob_sha1": "262aa87f8f8c5b6de1ec8b5b8cd84675201a5ce1",
+      "size_bytes": 10010
+    },
+    {
+      "path": "dataset/environments/pilot_ops_chemical_audit_001.json",
+      "git_blob_sha1": "83ce94df051a18310ad8a48d82c973764c27f567",
+      "size_bytes": 4558
+    },
+    {
+      "path": "dataset/environments/pilot_ops_compressed_gas_cylinder_tracking_001.json",
+      "git_blob_sha1": "5c4d5c0b6f51152b459a5eabdc7e71cc6c8ebc9f",
+      "size_bytes": 9696
+    },
+    {
+      "path": "dataset/environments/pilot_ops_conference_room_booking_conflicts_001.json",
+      "git_blob_sha1": "6c9580fa7e14f2b5e1fc4356a1b83011ec8fffc6",
+      "size_bytes": 8994
+    },
+    {
+      "path": "dataset/environments/pilot_ops_confluence_gmail_policy_notice_001.json",
+      "git_blob_sha1": "eee7e3c526016aac8667c080b6325bb624d22429",
+      "size_bytes": 8893
+    },
+    {
+      "path": "dataset/environments/pilot_ops_contract_renewal_pipeline_001.json",
+      "git_blob_sha1": "4b3e46ca5eb3d999b137f85d56de1d8805477cde",
+      "size_bytes": 10259
+    },
+    {
+      "path": "dataset/environments/pilot_ops_contractor_badge_001.json",
+      "git_blob_sha1": "d80eb3fc7a5d686302ebcc3673b9e708ea30b528",
+      "size_bytes": 4621
+    },
+    {
+      "path": "dataset/environments/pilot_ops_contractor_offboard_001.json",
+      "git_blob_sha1": "d025f810950393a90f00a0ace06435faa17cc364",
+      "size_bytes": 4746
+    },
+    {
+      "path": "dataset/environments/pilot_ops_contractor_onboarding_001.json",
+      "git_blob_sha1": "1fab315f06e8d528ee1fe11e3385378662997267",
+      "size_bytes": 4738
+    },
+    {
+      "path": "dataset/environments/pilot_ops_cross_department_budget_reconciliation_001.json",
+      "git_blob_sha1": "45811f7a54a25f21793f966517bd505924315eb7",
+      "size_bytes": 10167
+    },
+    {
+      "path": "dataset/environments/pilot_ops_cross_training_assignment_001.json",
+      "git_blob_sha1": "8f867fdbef756c359a17fd79a682f740ef0fe14e",
+      "size_bytes": 10042
+    },
+    {
+      "path": "dataset/environments/pilot_ops_docusign_annual_review_001.json",
+      "git_blob_sha1": "f81b569195a5d41a3f4c2dd853a689672240e6f0",
+      "size_bytes": 11077
+    },
+    {
+      "path": "dataset/environments/pilot_ops_docusign_prospect_nda_001.json",
+      "git_blob_sha1": "35d71aa1c159d49fc2020454b4fd116840c28059",
+      "size_bytes": 11315
+    },
+    {
+      "path": "dataset/environments/pilot_ops_drive_slack_dock_schedule_001.json",
+      "git_blob_sha1": "a5a404122b0ccb7e32a61fdf709a424d42ab0051",
+      "size_bytes": 9751
+    },
+    {
+      "path": "dataset/environments/pilot_ops_energy_consumption_anomaly_001.json",
+      "git_blob_sha1": "a80e19d4fc29e91b6052115ab64df63b9f863094",
+      "size_bytes": 8376
+    },
+    {
+      "path": "dataset/environments/pilot_ops_equipment_calibration_scheduling_001.json",
+      "git_blob_sha1": "2e8df49e0ad55f81a75c142868651cfc690a99ee",
+      "size_bytes": 9557
+    },
+    {
+      "path": "dataset/environments/pilot_ops_equipment_lease_001.json",
+      "git_blob_sha1": "3388c2fc60049b0009723b473554a28720e72e71",
+      "size_bytes": 4578
+    },
+    {
+      "path": "dataset/environments/pilot_ops_facebook_roas_monitoring_001.json",
+      "git_blob_sha1": "17e85e1eeb83173f14ce85f84674269b45ed82a0",
+      "size_bytes": 9676
+    },
+    {
+      "path": "dataset/environments/pilot_ops_facility_incident_001.json",
+      "git_blob_sha1": "fbabaeaaa576cdfa431a3a067c140a61c25cc98a",
+      "size_bytes": 4493
+    },
+    {
+      "path": "dataset/environments/pilot_ops_fire_extinguisher_inspection_schedule_001.json",
+      "git_blob_sha1": "51e1721ac0d6e47c07e5df9b1fc60909003e2d3e",
+      "size_bytes": 9996
+    },
+    {
+      "path": "dataset/environments/pilot_ops_fire_suppression_001.json",
+      "git_blob_sha1": "1fd0352aaa5455b958ce5c77124740124942ed47",
+      "size_bytes": 4609
+    },
+    {
+      "path": "dataset/environments/pilot_ops_fleet_vehicle_maintenance_001.json",
+      "git_blob_sha1": "78ade539c7635b12920f50379c0d9761bd5d96f5",
+      "size_bytes": 9732
+    },
+    {
+      "path": "dataset/environments/pilot_ops_generator_load_testing_schedule_001.json",
+      "git_blob_sha1": "cb66fb92adc44186814d2f3222bbe18a47f69096",
+      "size_bytes": 9644
+    },
+    {
+      "path": "dataset/environments/pilot_ops_google_ads_budget_alert_001.json",
+      "git_blob_sha1": "3444a68daa512b47855c5d6fdd3a632f4f06509a",
+      "size_bytes": 9026
+    },
+    {
+      "path": "dataset/environments/pilot_ops_hazmat_shipping_001.json",
+      "git_blob_sha1": "760697d2367b1567958245e59a713bb3f379e7e0",
+      "size_bytes": 4668
+    },
+    {
+      "path": "dataset/environments/pilot_ops_holiday_coverage_planning_001.json",
+      "git_blob_sha1": "ba8320f04d42b0c5b1efb70bceb3cc494a06814f",
+      "size_bytes": 9422
+    },
+    {
+      "path": "dataset/environments/pilot_ops_housekeeping_schedule_001.json",
+      "git_blob_sha1": "81f491be2b76c7de2041163809114935a6aee736",
+      "size_bytes": 10215
+    },
+    {
+      "path": "dataset/environments/pilot_ops_hubspot_churn_prediction_001.json",
+      "git_blob_sha1": "8780f5b5755b17be2d229c4d70d1ecec9bafbbdc",
+      "size_bytes": 9835
+    },
+    {
+      "path": "dataset/environments/pilot_ops_hubspot_lead_qualification_001.json",
+      "git_blob_sha1": "72fa62af12d098538a435bfe7fc1f78fa1a3a851",
+      "size_bytes": 9911
+    },
+    {
+      "path": "dataset/environments/pilot_ops_hubspot_mailchimp_sync_001.json",
+      "git_blob_sha1": "223611e0cbe2fa935cd8da73528520d461a4acfa",
+      "size_bytes": 9569
+    },
+    {
+      "path": "dataset/environments/pilot_ops_hubspot_payment_failure_001.json",
+      "git_blob_sha1": "2bef09236c5f1bf60fa4a63f8cdf45ef43fc9d4a",
+      "size_bytes": 11093
+    },
+    {
+      "path": "dataset/environments/pilot_ops_hubspot_personalized_outreach_001.json",
+      "git_blob_sha1": "c50598740b3128f4f427a1e09e43607fa9943ade",
+      "size_bytes": 11021
+    },
+    {
+      "path": "dataset/environments/pilot_ops_hubspot_ticket_escalation_001.json",
+      "git_blob_sha1": "cca3ceec42c8c7098b0703d1a167a2a9e597f855",
+      "size_bytes": 10071
+    },
+    {
+      "path": "dataset/environments/pilot_ops_insurance_cert_validation_001.json",
+      "git_blob_sha1": "734525f200ca90d16f6d9c7b5f70553496d81545",
+      "size_bytes": 4678
+    },
+    {
+      "path": "dataset/environments/pilot_ops_inventory_enrichment_001.json",
+      "git_blob_sha1": "10b31d3c41b566223da84d7cc0a8a33633b12e5a",
+      "size_bytes": 8668
+    },
+    {
+      "path": "dataset/environments/pilot_ops_invoice_shipping_trigger_001.json",
+      "git_blob_sha1": "53326095d58ef601bbf73a651db3cd9a56c956f2",
+      "size_bytes": 9643
+    },
+    {
+      "path": "dataset/environments/pilot_ops_jira_confluence_incident_001.json",
+      "git_blob_sha1": "9f1b8aa2002d5034f328eeb2dc8a0feeff51d760",
+      "size_bytes": 9442
+    },
+    {
+      "path": "dataset/environments/pilot_ops_lease_renewal_001.json",
+      "git_blob_sha1": "38d04c15ebea6e74a569fb821342c575b4e07f5e",
+      "size_bytes": 4629
+    },
+    {
+      "path": "dataset/environments/pilot_ops_linkedin_abm_outreach_001.json",
+      "git_blob_sha1": "530a6791ca9e159da3ec50f7b00ca6a2149f20c3",
+      "size_bytes": 11116
+    },
+    {
+      "path": "dataset/environments/pilot_ops_linkedin_job_change_001.json",
+      "git_blob_sha1": "f30e8262d1f796736a58486ce1d1917226cf4d13",
+      "size_bytes": 10612
+    },
+    {
+      "path": "dataset/environments/pilot_ops_loading_dock_scheduling_001.json",
+      "git_blob_sha1": "ffd80af0acb3cb6472a52f63a0173e1d4cc8390e",
+      "size_bytes": 11077
+    },
+    {
+      "path": "dataset/environments/pilot_ops_mailchimp_campaign_tracking_001.json",
+      "git_blob_sha1": "07e2611a582af97547e6c4e8f77e1e74a1f50468",
+      "size_bytes": 10178
+    },
+    {
+      "path": "dataset/environments/pilot_ops_mailchimp_ecommerce_sync_001.json",
+      "git_blob_sha1": "47c131836a74fdd8b974d327e8424b99b1e5c06f",
+      "size_bytes": 9713
+    },
+    {
+      "path": "dataset/environments/pilot_ops_mailchimp_subscriber_sync_001.json",
+      "git_blob_sha1": "9ab5c8da5df5db2a577e6229f60913fef5266295",
+      "size_bytes": 10069
+    },
+    {
+      "path": "dataset/environments/pilot_ops_mailroom_package_routing_001.json",
+      "git_blob_sha1": "8271d21459c8b27dc37365203884ae4f50eedcd9",
+      "size_bytes": 9331
+    },
+    {
+      "path": "dataset/environments/pilot_ops_monday_calendar_emergency_drill_001.json",
+      "git_blob_sha1": "93585b286d54e7785c0cb7d607aff0f09f2dea36",
+      "size_bytes": 9583
+    },
+    {
+      "path": "dataset/environments/pilot_ops_monday_email_update_001.json",
+      "git_blob_sha1": "80256e883235c797c199b79c38203583027079a1",
+      "size_bytes": 11062
+    },
+    {
+      "path": "dataset/environments/pilot_ops_monday_slack_inventory_001.json",
+      "git_blob_sha1": "3f2fa0b21a4d812de8c84eea28bcd3e9f51df540",
+      "size_bytes": 8576
+    },
+    {
+      "path": "dataset/environments/pilot_ops_notion_gmail_checklist_update_001.json",
+      "git_blob_sha1": "c6635875ff0a6bc8ae53a8776c9cad400eb76718",
+      "size_bytes": 10313
+    },
+    {
+      "path": "dataset/environments/pilot_ops_notion_slack_playbook_001.json",
+      "git_blob_sha1": "47686e43bedd8270be553a5ba031a9446d6fb5de",
+      "size_bytes": 8284
+    },
+    {
+      "path": "dataset/environments/pilot_ops_office_supply_budget_monitoring_001.json",
+      "git_blob_sha1": "2ab4a46dd2da064cd5fa66166d036a9208aba620",
+      "size_bytes": 9629
+    },
+    {
+      "path": "dataset/environments/pilot_ops_overdue_inspection_summary_001.json",
+      "git_blob_sha1": "757f42cb17adbcf15384108da17095c871ba0f32",
+      "size_bytes": 10130
+    },
+    {
+      "path": "dataset/environments/pilot_ops_overtime_monitoring_001.json",
+      "git_blob_sha1": "eead1599e648009e10cd0222dd3966d088708296",
+      "size_bytes": 4488
+    },
+    {
+      "path": "dataset/environments/pilot_ops_parking_allocation_management_001.json",
+      "git_blob_sha1": "2316de450a93dfe4ad253975475777fed2927fd6",
+      "size_bytes": 9075
+    },
+    {
+      "path": "dataset/environments/pilot_ops_pcard_recon_001.json",
+      "git_blob_sha1": "f297c617ba403373df3e1d1a52624299ee64186e",
+      "size_bytes": 4582
+    },
+    {
+      "path": "dataset/environments/pilot_ops_perishable_inventory_expiry_001.json",
+      "git_blob_sha1": "36e1b5d11df8490454d20f65d353866e46ceef8a",
+      "size_bytes": 8939
+    },
+    {
+      "path": "dataset/environments/pilot_ops_pipefy_gmail_vendor_approval_001.json",
+      "git_blob_sha1": "6e29ef0ac05cffa80bf687b7e193b7a9f75863b2",
+      "size_bytes": 12046
+    },
+    {
+      "path": "dataset/environments/pilot_ops_po_match_001.json",
+      "git_blob_sha1": "76534a46f4eb28d72f14fbe7963a746f8958f7b4",
+      "size_bytes": 4505
+    },
+    {
+      "path": "dataset/environments/pilot_ops_production_incident_001.json",
+      "git_blob_sha1": "9b7fa9038ba237bd9875703f838a4c03c435899c",
+      "size_bytes": 4565
+    },
+    {
+      "path": "dataset/environments/pilot_ops_safety_cert_gap_001.json",
+      "git_blob_sha1": "3ea168ce88a62032d10ed0448d599cc13bd1eea1",
+      "size_bytes": 4580
+    },
+    {
+      "path": "dataset/environments/pilot_ops_sensor_monitoring_001.json",
+      "git_blob_sha1": "0eb2450e12c8d2a113565579da12499741a193c6",
+      "size_bytes": 4620
+    },
+    {
+      "path": "dataset/environments/pilot_ops_server_capacity_001.json",
+      "git_blob_sha1": "9dcc4b87a595786d1e69fc0834b9fe457c338267",
+      "size_bytes": 4614
+    },
+    {
+      "path": "dataset/environments/pilot_ops_sla_breach_001.json",
+      "git_blob_sha1": "50c1479cbc1134611d83fab0de6104f9fa24f92a",
+      "size_bytes": 4537
+    },
+    {
+      "path": "dataset/environments/pilot_ops_temp_worker_001.json",
+      "git_blob_sha1": "5381d098fee7ab8f2cb86805093fc68fd87bcc20",
+      "size_bytes": 4548
+    },
+    {
+      "path": "dataset/environments/pilot_ops_vendor_compliance_audit_001.json",
+      "git_blob_sha1": "74216ad5846dbc0f6701ea7cc5469cdedb2d18da",
+      "size_bytes": 4610
+    },
+    {
+      "path": "dataset/environments/pilot_ops_vendor_hold_001.json",
+      "git_blob_sha1": "a640521d72c3b5b3196794e175e351bfb07d860f",
+      "size_bytes": 4660
+    },
+    {
+      "path": "dataset/environments/pilot_ops_vendor_onboarding_001.json",
+      "git_blob_sha1": "b43a9920035efac991f2db231c96f2caa4389232",
+      "size_bytes": 4758
+    },
+    {
+      "path": "dataset/environments/pilot_sal_advance_opportunity_stage_001.json",
+      "git_blob_sha1": "fa11aed4ef1626e99e343f04004c090ca33cd441",
+      "size_bytes": 9008
+    },
+    {
+      "path": "dataset/environments/pilot_sal_apply_project_label_001.json",
+      "git_blob_sha1": "160b57d528b81242e7dbcbaaa3ede892fd1ad089",
+      "size_bytes": 9666
+    },
+    {
+      "path": "dataset/environments/pilot_sal_calendar_crm_meeting_001.json",
+      "git_blob_sha1": "2e3a33c3e6988619b2c34b93d8586b9a59a735d6",
+      "size_bytes": 8816
+    },
+    {
+      "path": "dataset/environments/pilot_sal_calendly_capacity_management_001.json",
+      "git_blob_sha1": "55075145f81d82cb32300f50ab897ace66a1ac13",
+      "size_bytes": 9995
+    },
+    {
+      "path": "dataset/environments/pilot_sal_calendly_lead_scoring_001.json",
+      "git_blob_sha1": "8680f3b54e66b396b375cdbafb766b31416d35bc",
+      "size_bytes": 9998
+    },
+    {
+      "path": "dataset/environments/pilot_sal_calendly_meeting_prep_001.json",
+      "git_blob_sha1": "8db99ccb7956be58624c5e5beee559ed8aaf22c2",
+      "size_bytes": 9785
+    },
+    {
+      "path": "dataset/environments/pilot_sal_calendly_multi_stakeholder_scheduling_001.json",
+      "git_blob_sha1": "0c89999a80c44a9e9f3472882f3da075beefe46f",
+      "size_bytes": 9060
+    },
+    {
+      "path": "dataset/environments/pilot_sal_calendly_no_show_followup_001.json",
+      "git_blob_sha1": "84fe9bf6c6500e2249856fc4f30afbd22a357de5",
+      "size_bytes": 8740
+    },
+    {
+      "path": "dataset/environments/pilot_sal_calendly_no_show_reengagement_001.json",
+      "git_blob_sha1": "62a8cef0ab13be49b90a905f9226d347ef2a969f",
+      "size_bytes": 10996
+    },
+    {
+      "path": "dataset/environments/pilot_sal_calendly_reschedule_chain_001.json",
+      "git_blob_sha1": "88a531970f9134941c5796a778ab682a4de13bef",
+      "size_bytes": 9399
+    },
+    {
+      "path": "dataset/environments/pilot_sal_calendly_reschedule_with_apology_001.json",
+      "git_blob_sha1": "b4090d9cc1a407ef63d3ab206aed99f5d2a35c6d",
+      "size_bytes": 10524
+    },
+    {
+      "path": "dataset/environments/pilot_sal_calendly_sequential_meetings_001.json",
+      "git_blob_sha1": "e53a533a1cad18db38aad8c9fac89ebf53d63df6",
+      "size_bytes": 9684
+    },
+    {
+      "path": "dataset/environments/pilot_sal_calendly_sla_monitoring_001.json",
+      "git_blob_sha1": "e14a023ef870a07935d82898657b66bdb91de975",
+      "size_bytes": 9469
+    },
+    {
+      "path": "dataset/environments/pilot_sal_calendly_timezone_aware_scheduling_001.json",
+      "git_blob_sha1": "c8f06f51fa7d757daa5968eef641121add5e4781",
+      "size_bytes": 10355
+    },
+    {
+      "path": "dataset/environments/pilot_sal_call_transcription_001.json",
+      "git_blob_sha1": "5b395f393dca4139927e9576d9d8f7d61d0d52fb",
+      "size_bytes": 11248
+    },
+    {
+      "path": "dataset/environments/pilot_sal_champion_change_alert_001.json",
+      "git_blob_sha1": "7757e7541f13230292c28aab00e8e0c8f2df1f82",
+      "size_bytes": 10129
+    },
+    {
+      "path": "dataset/environments/pilot_sal_chatgpt_contract_summary_001.json",
+      "git_blob_sha1": "bcebb1b11678334f042d8671b0e2417a417bdba1",
+      "size_bytes": 9772
+    },
+    {
+      "path": "dataset/environments/pilot_sal_chatgpt_email_sentiment_routing_001.json",
+      "git_blob_sha1": "785bee1636828357c80b92c24345072ef336073b",
+      "size_bytes": 9327
+    },
+    {
+      "path": "dataset/environments/pilot_sal_chatgpt_lead_classification_pipeline_001.json",
+      "git_blob_sha1": "a28ce95beec0f869193aa6107e6b7bae2bfb43b2",
+      "size_bytes": 9985
+    },
+    {
+      "path": "dataset/environments/pilot_sal_chatgpt_lead_summary_generator_001.json",
+      "git_blob_sha1": "91814c8e72e186b5495ccdfd357d19e00172127d",
+      "size_bytes": 8975
+    },
+    {
+      "path": "dataset/environments/pilot_sal_chatgpt_proposal_customization_001.json",
+      "git_blob_sha1": "2eff6a7bb62f9bbd7f1abbad3d14a976d5ee8711",
+      "size_bytes": 9782
+    },
+    {
+      "path": "dataset/environments/pilot_sal_cold_email_personalization_001.json",
+      "git_blob_sha1": "1e693336612a54935ab5b6765275a06c998663ee",
+      "size_bytes": 9778
+    },
+    {
+      "path": "dataset/environments/pilot_sal_competitive_displacement_outreach_001.json",
+      "git_blob_sha1": "e4204956ff0aaf7d6f0e07974d4d4062b0b9be92",
+      "size_bytes": 9347
+    },
+    {
+      "path": "dataset/environments/pilot_sal_contract_renewal_coordinator_001.json",
+      "git_blob_sha1": "40dff4241df3843d7114a2c1a026cf93400286b2",
+      "size_bytes": 10818
+    },
+    {
+      "path": "dataset/environments/pilot_sal_create_contact_for_account_001.json",
+      "git_blob_sha1": "a001ff5fffb114c887deab8287114f87d0c45a9a",
+      "size_bytes": 10314
+    },
+    {
+      "path": "dataset/environments/pilot_sal_create_new_opportunity_001.json",
+      "git_blob_sha1": "cf33c918f32c6c99215c4fda801efe47edeb2512",
+      "size_bytes": 8932
+    },
+    {
+      "path": "dataset/environments/pilot_sal_create_note_on_contact_001.json",
+      "git_blob_sha1": "c23f0cefd353ceab4c08a3d46e0c1f03b2c86da5",
+      "size_bytes": 9360
+    },
+    {
+      "path": "dataset/environments/pilot_sal_cross_modal_renewal_processing_001.json",
+      "git_blob_sha1": "b8656b5c140a317d46a49547857a61d92cbbf626",
+      "size_bytes": 11066
+    },
+    {
+      "path": "dataset/environments/pilot_sal_cross_platform_account_health_score_001.json",
+      "git_blob_sha1": "eaabf5db882d7119b1d115de26cdec0ef196aae9",
+      "size_bytes": 9126
+    },
+    {
+      "path": "dataset/environments/pilot_sal_cross_reference_validation_001.json",
+      "git_blob_sha1": "30c3b9b83ab1b23958b17cc1cd51f38e042ddca3",
+      "size_bytes": 10549
+    },
+    {
+      "path": "dataset/environments/pilot_sal_deal_escalation_001.json",
+      "git_blob_sha1": "b31a01f5fcc772cd8d82a5e129f6de6034c7fec2",
+      "size_bytes": 8319
+    },
+    {
+      "path": "dataset/environments/pilot_sal_demo_scheduling_001.json",
+      "git_blob_sha1": "40f2177f8c31f65009378114591dee8903dd1c5b",
+      "size_bytes": 9628
+    },
+    {
+      "path": "dataset/environments/pilot_sal_dependency_chain_001.json",
+      "git_blob_sha1": "ff894062fbd238eb80c0ba970a11094e6c6d3065",
+      "size_bytes": 9212
+    },
+    {
+      "path": "dataset/environments/pilot_sal_docusign_amendment_processing_001.json",
+      "git_blob_sha1": "afe66eb9ef0e657ec859b993e03e55438d85f3ad",
+      "size_bytes": 11237
+    },
+    {
+      "path": "dataset/environments/pilot_sal_docusign_bulk_nda_sender_001.json",
+      "git_blob_sha1": "c430ec15b60adb5f032910bfe484f69ca42f8324",
+      "size_bytes": 9620
+    },
+    {
+      "path": "dataset/environments/pilot_sal_docusign_completion_processor_001.json",
+      "git_blob_sha1": "64243173ed177d1440dbac0360e44c338fd2ed75",
+      "size_bytes": 11122
+    },
+    {
+      "path": "dataset/environments/pilot_sal_docusign_compliance_template_001.json",
+      "git_blob_sha1": "32b24154e21e0f1a5c795393702537cd2a8cd944",
+      "size_bytes": 9847
+    },
+    {
+      "path": "dataset/environments/pilot_sal_docusign_conditional_template_selection_001.json",
+      "git_blob_sha1": "a776ecc3f6b440404bccb2c26f8990453dcb223b",
+      "size_bytes": 9238
+    },
+    {
+      "path": "dataset/environments/pilot_sal_docusign_contract_send_001.json",
+      "git_blob_sha1": "2e6a18d7c55160f7dbd84a0cfd54af8a0cb5594d",
+      "size_bytes": 9117
+    },
+    {
+      "path": "dataset/environments/pilot_sal_docusign_deal_workspace_001.json",
+      "git_blob_sha1": "13a7da7c4d88d69da8c579ee7ac0c9bd9e2fd7f2",
+      "size_bytes": 10236
+    },
+    {
+      "path": "dataset/environments/pilot_sal_docusign_renewal_automation_001.json",
+      "git_blob_sha1": "66e6e331743b6ba696062ff5d5ca4f57b2ea2b5c",
+      "size_bytes": 10905
+    },
+    {
+      "path": "dataset/environments/pilot_sal_docusign_sequential_signing_001.json",
+      "git_blob_sha1": "02ec7efbb754fe60e889b3808128b6002125e3fc",
+      "size_bytes": 9256
+    },
+    {
+      "path": "dataset/environments/pilot_sal_docusign_void_and_resend_001.json",
+      "git_blob_sha1": "20bcd16c77b65a8c4fb6f4192decdaf040e3e6e3",
+      "size_bytes": 9180
+    },
+    {
+      "path": "dataset/environments/pilot_sal_docusign_void_resend_001.json",
+      "git_blob_sha1": "82dd2ea20dcd1ce98a3b885acc68ff5cea7e5469",
+      "size_bytes": 11003
+    },
+    {
+      "path": "dataset/environments/pilot_sal_event_followup_outreach_001.json",
+      "git_blob_sha1": "fa9ec0521952983d773afebd268044b960eaa8b7",
+      "size_bytes": 9288
+    },
+    {
+      "path": "dataset/environments/pilot_sal_event_to_opportunity_pipeline_001.json",
+      "git_blob_sha1": "e828fb2b47e69920b9915b6505cc9deac97f1054",
+      "size_bytes": 10495
+    },
+    {
+      "path": "dataset/environments/pilot_sal_feedback_routing_001.json",
+      "git_blob_sha1": "b4ce8dade4aa9a3f4f2668770c0cb757a6b3075d",
+      "size_bytes": 11376
+    },
+    {
+      "path": "dataset/environments/pilot_sal_five_level_conditional_001.json",
+      "git_blob_sha1": "a6b0706a813a4e5d05581b14bbb2925ad2d653e3",
+      "size_bytes": 10172
+    },
+    {
+      "path": "dataset/environments/pilot_sal_form_to_crm_qualification_001.json",
+      "git_blob_sha1": "fcf1d8279bc555c67295f4a38a6a9228d04f0b1a",
+      "size_bytes": 10698
+    },
+    {
+      "path": "dataset/environments/pilot_sal_full_sales_cycle_orchestrator_001.json",
+      "git_blob_sha1": "1e590b29e9757c12827f3c593ed1aa4491c5af63",
+      "size_bytes": 10234
+    },
+    {
+      "path": "dataset/environments/pilot_sal_gcal_deal_milestone_tracker_001.json",
+      "git_blob_sha1": "622d45c578f1dac092972a6675ed6cf4c8630dd7",
+      "size_bytes": 11189
+    },
+    {
+      "path": "dataset/environments/pilot_sal_gcal_travel_time_buffer_001.json",
+      "git_blob_sha1": "be12ae5afcd4257b05cb59ecbe26b374ff8e7d40",
+      "size_bytes": 9084
+    },
+    {
+      "path": "dataset/environments/pilot_sal_historical_context_pipeline_report_001.json",
+      "git_blob_sha1": "649a606a13fb6d466f1d63667e369bc9bb40d8c0",
+      "size_bytes": 10118
+    },
+    {
+      "path": "dataset/environments/pilot_sal_historical_win_loss_recap_001.json",
+      "git_blob_sha1": "e848ef17c597413474aa494fc2ade94c1a1a0138",
+      "size_bytes": 9218
+    },
+    {
+      "path": "dataset/environments/pilot_sal_implicit_rules_001.json",
+      "git_blob_sha1": "5b500bf68aaa6bab0c13c521c74cd6bc6f676289",
+      "size_bytes": 9739
+    },
+    {
+      "path": "dataset/environments/pilot_sal_invalid_email_cleanup_001.json",
+      "git_blob_sha1": "13a58cf9667a27875d69dfd4a3b0d6b2f522646b",
+      "size_bytes": 10073
+    },
+    {
+      "path": "dataset/environments/pilot_sal_job_posting_contact_001.json",
+      "git_blob_sha1": "99eb9189a55b787598824772381fa1f86ed61e0d",
+      "size_bytes": 9192
+    },
+    {
+      "path": "dataset/environments/pilot_sal_linkedin_connection_outreach_001.json",
+      "git_blob_sha1": "8b638e13695bcc26a3a7f9fc3914617fc7d2b425",
+      "size_bytes": 8934
+    },
+    {
+      "path": "dataset/environments/pilot_sal_linkedin_content_engagement_001.json",
+      "git_blob_sha1": "07b6fcaa04f36538ebbc2e9c3be30dbbc9f284ad",
+      "size_bytes": 9541
+    },
+    {
+      "path": "dataset/environments/pilot_sal_linkedin_event_promotion_001.json",
+      "git_blob_sha1": "315b0eced1582dee94c78ef2ba988615e077bcbf",
+      "size_bytes": 11455
+    },
+    {
+      "path": "dataset/environments/pilot_sal_linkedin_job_change_001.json",
+      "git_blob_sha1": "14412a431f6a77b91242e2b36a4af717ed1060c0",
+      "size_bytes": 9965
+    },
+    {
+      "path": "dataset/environments/pilot_sal_linkedin_outreach_sequence_001.json",
+      "git_blob_sha1": "320f839b7a89e98224cef250552f4563f6b0fbb7",
+      "size_bytes": 9210
+    },
+    {
+      "path": "dataset/environments/pilot_sal_linkedin_profile_enrichment_001.json",
+      "git_blob_sha1": "e9540e8baaffd4afe6b32b540cb8bb0e84b5a9d3",
+      "size_bytes": 8808
+    },
+    {
+      "path": "dataset/environments/pilot_sal_linkedin_prospect_research_001.json",
+      "git_blob_sha1": "9b104c2a1eedd00e647c51d68ecbdd39158f1305",
+      "size_bytes": 9163
+    },
+    {
+      "path": "dataset/environments/pilot_sal_linkedin_sales_prospecting_001.json",
+      "git_blob_sha1": "3128adf0fa2587f052fe283a9dbde7c79d5394e6",
+      "size_bytes": 10091
+    },
+    {
+      "path": "dataset/environments/pilot_sal_linkedin_signal_monitoring_001.json",
+      "git_blob_sha1": "ecfacb0a40f0d41ed0f333de4996bb2778c2f15d",
+      "size_bytes": 10222
+    },
+    {
+      "path": "dataset/environments/pilot_sal_mark_vip_emails_read_001.json",
+      "git_blob_sha1": "205060b3ee8d7f9f845c44fcc97dd6000231763b",
+      "size_bytes": 8486
+    },
+    {
+      "path": "dataset/environments/pilot_sal_meeting_action_items_001.json",
+      "git_blob_sha1": "1fe6f05231dbe2246437658e27c4e3a09a98a4c0",
+      "size_bytes": 8522
+    },
+    {
+      "path": "dataset/environments/pilot_sal_milestone_celebration_001.json",
+      "git_blob_sha1": "7137be8e1ec6f1d3c38f1ec294b69dc5a6bd4cb4",
+      "size_bytes": 9071
+    },
+    {
+      "path": "dataset/environments/pilot_sal_multi_hop_lookup_001.json",
+      "git_blob_sha1": "d61a6798fe0d32b0e428966d73abdff2c7ef81ed",
+      "size_bytes": 10143
+    },
+    {
+      "path": "dataset/environments/pilot_sal_multi_step_drip_campaign_001.json",
+      "git_blob_sha1": "74990bf01bbb86b02138b4ef2b10f2b7f6b7164e",
+      "size_bytes": 9999
+    },
+    {
+      "path": "dataset/environments/pilot_sal_overdue_followup_flag_001.json",
+      "git_blob_sha1": "fbd52765698e21fdf0c146ab78a0c623241cc30a",
+      "size_bytes": 9516
+    },
+    {
+      "path": "dataset/environments/pilot_sal_partnership_contract_001.json",
+      "git_blob_sha1": "9194d71b2302e227ec6d2bd3522221262c8db4be",
+      "size_bytes": 10490
+    },
+    {
+      "path": "dataset/environments/pilot_sal_priority_selection_001.json",
+      "git_blob_sha1": "aaca6c5838348afcaa687682e4645f5f393a452e",
+      "size_bytes": 10210
+    },
+    {
+      "path": "dataset/environments/pilot_sal_recency_selection_001.json",
+      "git_blob_sha1": "609d0e4f856e8675fb8c94fc26867c25916ed16c",
+      "size_bytes": 9418
+    },
+    {
+      "path": "dataset/environments/pilot_sal_send_customer_email_001.json",
+      "git_blob_sha1": "e81f3209a85a11b90b602179306f28d0a5f33dfc",
+      "size_bytes": 9741
+    },
+    {
+      "path": "dataset/environments/pilot_sal_sheets_multi_channel_campaign_router_001.json",
+      "git_blob_sha1": "ef6d855d723702a06cb846c37315925aa4668851",
+      "size_bytes": 11679
+    },
+    {
+      "path": "dataset/environments/pilot_sal_sheets_reconciliation_001.json",
+      "git_blob_sha1": "4edb7f0a97a59d860f706861513c45db06d090ad",
+      "size_bytes": 9418
+    },
+    {
+      "path": "dataset/environments/pilot_sal_slack_channel_for_new_account_001.json",
+      "git_blob_sha1": "5b9f40d80b9d32f0f5cd50b868622824e216f3fd",
+      "size_bytes": 9896
+    },
+    {
+      "path": "dataset/environments/pilot_sal_slack_deal_notification_001.json",
+      "git_blob_sha1": "a4e4b10d03020ea13eaf4156f1e644a608a56a7c",
+      "size_bytes": 9062
+    },
+    {
+      "path": "dataset/environments/pilot_sup_auto_merge_001.json",
+      "git_blob_sha1": "23023caaf40d583ac058a8c346788927a2b13de4",
+      "size_bytes": 4602
+    },
+    {
+      "path": "dataset/environments/pilot_sup_auto_responses_001.json",
+      "git_blob_sha1": "eb173962c6ced5b93e5f29a234dd2d8fb8b67f78",
+      "size_bytes": 4543
+    },
+    {
+      "path": "dataset/environments/pilot_sup_compliance_tagging_001.json",
+      "git_blob_sha1": "7213d36e4475a3f4c46ce9f555273ad22ef7a5ae",
+      "size_bytes": 4786
+    },
+    {
+      "path": "dataset/environments/pilot_sup_contract_renewal_001.json",
+      "git_blob_sha1": "f9d2d16040b35f3d5ab9a4bf48467805efea0e31",
+      "size_bytes": 4535
+    },
+    {
+      "path": "dataset/environments/pilot_sup_csat_followup_001.json",
+      "git_blob_sha1": "3623c5cb54d61191a19723035e32e4d4c9d2d04e",
+      "size_bytes": 4572
+    },
+    {
+      "path": "dataset/environments/pilot_sup_customer_merge_001.json",
+      "git_blob_sha1": "c10956c3705dba602323a78dd99b01b2233f9b6c",
+      "size_bytes": 4668
+    },
+    {
+      "path": "dataset/environments/pilot_sup_data_quality_001.json",
+      "git_blob_sha1": "2a872c6fea71984f023265d2e82dd4b5f78ccf6e",
+      "size_bytes": 4502
+    },
+    {
+      "path": "dataset/environments/pilot_sup_dedup_001.json",
+      "git_blob_sha1": "9fd87cff5a1c54dd6da22fa8d79b9191a1d65609",
+      "size_bytes": 4606
+    },
+    {
+      "path": "dataset/environments/pilot_sup_escalation_matrix_001.json",
+      "git_blob_sha1": "1e2b24cc098a48b58165895df904c402f8f3ba77",
+      "size_bytes": 4612
+    },
+    {
+      "path": "dataset/environments/pilot_sup_feature_request_001.json",
+      "git_blob_sha1": "f88e4bb0cb2b2b7bd87a6e53a96e9e00d358b25f",
+      "size_bytes": 4633
+    },
+    {
+      "path": "dataset/environments/pilot_sup_fraud_detection_001.json",
+      "git_blob_sha1": "51d3482008888c42eb0ae907246dcd166888d3a3",
+      "size_bytes": 4633
+    },
+    {
+      "path": "dataset/environments/pilot_sup_freshdesk_faq_drafts_001.json",
+      "git_blob_sha1": "de0f30aaed1ef27378e765ad337a2f37eb0b9470",
+      "size_bytes": 10627
+    },
+    {
+      "path": "dataset/environments/pilot_sup_freshdesk_journey_mapping_001.json",
+      "git_blob_sha1": "26d5d23ce3edaa66936e9f4ace333298e49cbcf8",
+      "size_bytes": 10858
+    },
+    {
+      "path": "dataset/environments/pilot_sup_freshdesk_multi_queue_routing_001.json",
+      "git_blob_sha1": "68e6d4853f119e6a1877a278f3d1c5063c55369b",
+      "size_bytes": 9475
+    },
+    {
+      "path": "dataset/environments/pilot_sup_freshdesk_onboarding_automation_001.json",
+      "git_blob_sha1": "90cd7ac9b2080ec4564f7a981b3191b3d97670c7",
+      "size_bytes": 11514
+    },
+    {
+      "path": "dataset/environments/pilot_sup_freshdesk_reamaze_migration_001.json",
+      "git_blob_sha1": "07c380c101ec3145f820c94b27d9adc5fab47ccf",
+      "size_bytes": 11122
+    },
+    {
+      "path": "dataset/environments/pilot_sup_freshdesk_sla_monitoring_001.json",
+      "git_blob_sha1": "a4f17f4df1ef045aaa6dd2c5a37464a29a2407f4",
+      "size_bytes": 10787
+    },
+    {
+      "path": "dataset/environments/pilot_sup_freshdesk_zoho_migration_001.json",
+      "git_blob_sha1": "9ee3a2732a9faa8d8541334185a28b624ff4b8df",
+      "size_bytes": 13008
+    },
+    {
+      "path": "dataset/environments/pilot_sup_gdpr_purge_001.json",
+      "git_blob_sha1": "37d35a77cc72a8c6188d0042bf9b5038a7b26871",
+      "size_bytes": 6433
+    },
+    {
+      "path": "dataset/environments/pilot_sup_gorgias_freshdesk_migration_001.json",
+      "git_blob_sha1": "1d496941444fd60d730156825cc31d5fa5b2ebf2",
+      "size_bytes": 9919
+    },
+    {
+      "path": "dataset/environments/pilot_sup_gorgias_inventory_routing_001.json",
+      "git_blob_sha1": "2821dd2993fe2f6298a8977b05f70ef9834a4091",
+      "size_bytes": 9714
+    },
+    {
+      "path": "dataset/environments/pilot_sup_gorgias_quality_audit_001.json",
+      "git_blob_sha1": "525e25448d485b240eed391fd35e3c05620a2111",
+      "size_bytes": 9339
+    },
+    {
+      "path": "dataset/environments/pilot_sup_helpcrunch_engagement_scoring_001.json",
+      "git_blob_sha1": "1ec03ffce2e071a2c86b8ea485e652644d7fc958",
+      "size_bytes": 9921
+    },
+    {
+      "path": "dataset/environments/pilot_sup_helpcrunch_satisfaction_001.json",
+      "git_blob_sha1": "9463f2a57c3be426ea8a49dbe6263f4d6e825c6c",
+      "size_bytes": 10857
+    },
+    {
+      "path": "dataset/environments/pilot_sup_helpcrunch_usage_alerts_001.json",
+      "git_blob_sha1": "2f1fd457d09ee1ce18d1b4a91824f8d6b911c4a1",
+      "size_bytes": 9899
+    },
+    {
+      "path": "dataset/environments/pilot_sup_helpcrunch_zoho_desk_bridge_001.json",
+      "git_blob_sha1": "d9bc5b18db743733e087f49ea0f4e3e21b8026ad",
+      "size_bytes": 11566
+    },
+    {
+      "path": "dataset/environments/pilot_sup_helpscout_auto_categorization_001.json",
+      "git_blob_sha1": "5520138da6fd9b9920f3dbc6808ba21e32a17c3e",
+      "size_bytes": 9436
+    },
+    {
+      "path": "dataset/environments/pilot_sup_helpscout_cross_team_handoff_001.json",
+      "git_blob_sha1": "f7a56376aef5b3f91fcd7a29688846fc532f4c0e",
+      "size_bytes": 9859
+    },
+    {
+      "path": "dataset/environments/pilot_sup_helpscout_customer_effort_001.json",
+      "git_blob_sha1": "3f31fcaa611248b8a2c777074207f03159e5fbf2",
+      "size_bytes": 9967
+    },
+    {
+      "path": "dataset/environments/pilot_sup_helpscout_daily_digest_001.json",
+      "git_blob_sha1": "98de0e903306c2feaa0f31e71ffbac6898208880",
+      "size_bytes": 9605
+    },
+    {
+      "path": "dataset/environments/pilot_sup_helpscout_health_sync_001.json",
+      "git_blob_sha1": "70cd8b3c16d0a17bf0769be653ac951c6182ffe7",
+      "size_bytes": 10440
+    },
+    {
+      "path": "dataset/environments/pilot_sup_helpscout_hubspot_deal_alerts_001.json",
+      "git_blob_sha1": "f2972482d1f6773a2166861607e11ebffe2da37f",
+      "size_bytes": 10813
+    },
+    {
+      "path": "dataset/environments/pilot_sup_helpscout_jira_bugs_001.json",
+      "git_blob_sha1": "b91b8e6f0fc84858ebe11b9afd7d852dd2fada30",
+      "size_bytes": 9800
+    },
+    {
+      "path": "dataset/environments/pilot_sup_helpscout_kb_feedback_001.json",
+      "git_blob_sha1": "8a3a6daf77a049ec8198cc8c087d7b2845b2214a",
+      "size_bytes": 9525
+    },
+    {
+      "path": "dataset/environments/pilot_sup_helpscout_knowledge_gap_analysis_001.json",
+      "git_blob_sha1": "041a0f3e34a4bbf3e1fb885286107de7d31cfc59",
+      "size_bytes": 10507
+    },
+    {
+      "path": "dataset/environments/pilot_sup_helpscout_reamaze_migration_001.json",
+      "git_blob_sha1": "f9f8d6d315d2482a4cf43b0df334075fb2a7e1f6",
+      "size_bytes": 9944
+    },
+    {
+      "path": "dataset/environments/pilot_sup_helpscout_response_audit_001.json",
+      "git_blob_sha1": "05f4faa1c0e3c7c424c29377159f1f3389f93e04",
+      "size_bytes": 8731
+    },
+    {
+      "path": "dataset/environments/pilot_sup_helpscout_weekly_report_001.json",
+      "git_blob_sha1": "c1e6457bc5d92952e47850680897abf154adc14e",
+      "size_bytes": 10112
+    },
+    {
+      "path": "dataset/environments/pilot_sup_hiver_coaching_pipeline_001.json",
+      "git_blob_sha1": "53ada47818c45ccf318a92615f7bd6e24c8b821d",
+      "size_bytes": 8876
+    },
+    {
+      "path": "dataset/environments/pilot_sup_hiver_cross_team_handoff_001.json",
+      "git_blob_sha1": "b5d4599308cb9936c092af53840f5bf234797e78",
+      "size_bytes": 9687
+    },
+    {
+      "path": "dataset/environments/pilot_sup_hiver_csat_analysis_001.json",
+      "git_blob_sha1": "534b71ab08de93813fa69a5e79d82d5bb0760139",
+      "size_bytes": 10628
+    },
+    {
+      "path": "dataset/environments/pilot_sup_hiver_escalation_patterns_001.json",
+      "git_blob_sha1": "14000964bd121745b6d3996fc381dd2199ce1b4a",
+      "size_bytes": 9784
+    },
+    {
+      "path": "dataset/environments/pilot_sup_hiver_inbox_report_001.json",
+      "git_blob_sha1": "9eb07c28d4d089caa56a82df06dd371e176ac98e",
+      "size_bytes": 9789
+    },
+    {
+      "path": "dataset/environments/pilot_sup_hiver_mailbox_audit_001.json",
+      "git_blob_sha1": "251b34aaa13686bda1c680542ca33dbc0dd03a96",
+      "size_bytes": 9328
+    },
+    {
+      "path": "dataset/environments/pilot_sup_hiver_quality_coaching_001.json",
+      "git_blob_sha1": "e8422aad5970b2c6581dcf40206276f0856a7644",
+      "size_bytes": 9350
+    },
+    {
+      "path": "dataset/environments/pilot_sup_hiver_response_sla_001.json",
+      "git_blob_sha1": "f20f819871a92d48f4dd615781f7c19b04f42058",
+      "size_bytes": 10305
+    },
+    {
+      "path": "dataset/environments/pilot_sup_hiver_slack_digest_001.json",
+      "git_blob_sha1": "e4004449b453a149e3fc30bfa776c04e1b670574",
+      "size_bytes": 10407
+    },
+    {
+      "path": "dataset/environments/pilot_sup_hiver_team_performance_001.json",
+      "git_blob_sha1": "c10eb2d20b3c997167837cb96042ade772ef2770",
+      "size_bytes": 9788
+    },
+    {
+      "path": "dataset/environments/pilot_sup_hiver_workload_forecast_001.json",
+      "git_blob_sha1": "177a2633372f5654a8dd7b2c79d4b1770480bea4",
+      "size_bytes": 9483
+    },
+    {
+      "path": "dataset/environments/pilot_sup_intercom_conversation_quality_001.json",
+      "git_blob_sha1": "a4853dc9025aa665d6a685597bbc27fa85577f3d",
+      "size_bytes": 9718
+    },
+    {
+      "path": "dataset/environments/pilot_sup_intercom_demo_scheduling_001.json",
+      "git_blob_sha1": "5bdea0434c5388d687aa0c7107368683ddfc8398",
+      "size_bytes": 10056
+    },
+    {
+      "path": "dataset/environments/pilot_sup_intercom_freshdesk_escalation_001.json",
+      "git_blob_sha1": "ce74a82c04dc7d64381227846d35e28c69eea817",
+      "size_bytes": 11090
+    },
+    {
+      "path": "dataset/environments/pilot_sup_intercom_multi_product_routing_001.json",
+      "git_blob_sha1": "438eb69f338973998167d463869d727956ec8635",
+      "size_bytes": 10898
+    },
+    {
+      "path": "dataset/environments/pilot_sup_intercom_sf_opportunity_alerts_001.json",
+      "git_blob_sha1": "b9943c9c8c0bfb46c69c9af86818a8d2869bdadd",
+      "size_bytes": 9996
+    },
+    {
+      "path": "dataset/environments/pilot_sup_intercom_usage_health_scoring_001.json",
+      "git_blob_sha1": "e44fa4520d0986e0bf8b84a1090989fcc124d087",
+      "size_bytes": 10155
+    },
+    {
+      "path": "dataset/environments/pilot_sup_intercom_zoho_customer_360_001.json",
+      "git_blob_sha1": "de6a0da2f2e090bca686b71843a0328d54335f0d",
+      "size_bytes": 11928
+    },
+    {
+      "path": "dataset/environments/pilot_sup_loyalty_program_001.json",
+      "git_blob_sha1": "6f2dac5a974c956d78ed96f906d93eddf6047e49",
+      "size_bytes": 4533
+    },
+    {
+      "path": "dataset/environments/pilot_sup_maintenance_notify_001.json",
+      "git_blob_sha1": "fbfef5d027d1c76a26cd155046e65caa1d71a718",
+      "size_bytes": 4684
+    },
+    {
+      "path": "dataset/environments/pilot_sup_order_lookup_001.json",
+      "git_blob_sha1": "9828140f96e275972ffa0e09e6555445144f5551",
+      "size_bytes": 4616
+    },
+    {
+      "path": "dataset/environments/pilot_sup_org_merge_001.json",
+      "git_blob_sha1": "49e1226152b1b876eee455bcc5211a9fda01321f",
+      "size_bytes": 4627
+    },
+    {
+      "path": "dataset/environments/pilot_sup_reactivation_001.json",
+      "git_blob_sha1": "3125dac44083e324b8981c90b24070d4c27cc244",
+      "size_bytes": 4566
+    },
+    {
+      "path": "dataset/environments/pilot_sup_reamaze_campaign_tracking_001.json",
+      "git_blob_sha1": "a9ad95ba4081d53407689846a509a94157c0e4ef",
+      "size_bytes": 9083
+    },
+    {
+      "path": "dataset/environments/pilot_sup_reamaze_intercom_migration_001.json",
+      "git_blob_sha1": "78b9f3f535886c314aa4635f7abcfc67625b7e34",
+      "size_bytes": 9655
+    },
+    {
+      "path": "dataset/environments/pilot_sup_reamaze_intercom_sync_001.json",
+      "git_blob_sha1": "5f2f67e2ba35bbb462ded3f87204a36276ae77d8",
+      "size_bytes": 10868
+    },
+    {
+      "path": "dataset/environments/pilot_sup_refund_processing_001.json",
+      "git_blob_sha1": "654817c67539924a03a82da699366ca311232c7e",
+      "size_bytes": 4637
+    },
+    {
+      "path": "dataset/environments/pilot_sup_sentiment_escalation_001.json",
+      "git_blob_sha1": "db8a9a34f43d401b16803bb202bb8d69ed3b5a97",
+      "size_bytes": 4799
+    },
+    {
+      "path": "dataset/environments/pilot_sup_tenant_isolation_001.json",
+      "git_blob_sha1": "f4afcb177a709765490ebbbc8e4468660e97daa2",
+      "size_bytes": 4765
+    },
+    {
+      "path": "dataset/environments/pilot_sup_trial_nurture_001.json",
+      "git_blob_sha1": "3edbced74b4c55c1e72fb6851830fbe35e7ec425",
+      "size_bytes": 4573
+    },
+    {
+      "path": "dataset/environments/pilot_sup_warranty_adjudication_001.json",
+      "git_blob_sha1": "78e6fb9c3282988dc98c83fca94ed5608e201c10",
+      "size_bytes": 4645
+    },
+    {
+      "path": "dataset/environments/pilot_sup_warranty_processing_001.json",
+      "git_blob_sha1": "bf66177dbd4fcc462440e6d5a9609174fc22305b",
+      "size_bytes": 4652
+    },
+    {
+      "path": "dataset/environments/pilot_sup_weekend_handoff_001.json",
+      "git_blob_sha1": "9a9e006be25dba5cd65addf8fe25b20e4bdae500",
+      "size_bytes": 4589
+    },
+    {
+      "path": "dataset/environments/pilot_sup_winback_001.json",
+      "git_blob_sha1": "241e829dce28e5b927523787c2adf8c4db7de3a4",
+      "size_bytes": 4537
+    },
+    {
+      "path": "dataset/environments/pilot_sup_zendesk_automated_responses_001.json",
+      "git_blob_sha1": "d607d4ef31db40d27b935fcaa60a3ed2cc339b7d",
+      "size_bytes": 10422
+    },
+    {
+      "path": "dataset/environments/pilot_sup_zendesk_customer_360_001.json",
+      "git_blob_sha1": "63b4ec94cf7781db501a63d69a430ad454853451",
+      "size_bytes": 10552
+    },
+    {
+      "path": "dataset/environments/pilot_sup_zendesk_customer_sentiment_001.json",
+      "git_blob_sha1": "879ff08fe9adf52e4cce21a7a0e47e966852d264",
+      "size_bytes": 10223
+    },
+    {
+      "path": "dataset/environments/pilot_sup_zendesk_escalation_waterfall_001.json",
+      "git_blob_sha1": "7d92bc1399e2130f647c93b7be7b0563a8438a64",
+      "size_bytes": 10273
+    },
+    {
+      "path": "dataset/environments/pilot_sup_zendesk_freshdesk_reconciliation_001.json",
+      "git_blob_sha1": "6cd2742b9f080003d807819a33db946d65d9f45a",
+      "size_bytes": 10834
+    },
+    {
+      "path": "dataset/environments/pilot_sup_zendesk_freshdesk_sync_001.json",
+      "git_blob_sha1": "53b8a5feb3b88e17a40efa3ee8a8d764b6200c39",
+      "size_bytes": 10476
+    },
+    {
+      "path": "dataset/environments/pilot_sup_zendesk_hubspot_churn_risk_001.json",
+      "git_blob_sha1": "0e4c1244883034fc04b1318f57377d9442da8be3",
+      "size_bytes": 11352
+    },
+    {
+      "path": "dataset/environments/pilot_sup_zendesk_hubspot_org_sync_001.json",
+      "git_blob_sha1": "0f4f276ca0f5b5d46e5a31335cdbc80f4ebec4bf",
+      "size_bytes": 9783
+    }
+  ],
+  "relevant_code_and_test_files": [
+    {
+      "path": "README.md",
+      "git_blob_sha1": "d3b1ebc9f8aeedbfa73b7b370c9b5fbc414ad6e1",
+      "size_bytes": 6600
+    },
+    {
+      "path": "LICENSE",
+      "git_blob_sha1": "b567449f008bf7eba169bb5f1bc8eac5975a58a6",
+      "size_bytes": 1078
+    },
+    {
+      "path": "requirements.txt",
+      "git_blob_sha1": "9b2aefed6b7916d5a8d4fe72c63e540ff33acb38",
+      "size_bytes": 225
+    },
+    {
+      "path": "main.py",
+      "git_blob_sha1": "9e98b1b142b6163e9f70f03c6f729141f6836b12",
+      "size_bytes": 35311
+    },
+    {
+      "path": "single.py",
+      "git_blob_sha1": "6b5abb59d66b858dd51bdc559168b69a21f59997",
+      "size_bytes": 3307
+    },
+    {
+      "path": "centralized.py",
+      "git_blob_sha1": "1f59ce770dfce30c8d6f3cc69e249d73ee010076",
+      "size_bytes": 24920
+    },
+    {
+      "path": "decentralized.py",
+      "git_blob_sha1": "8ff15004b42028c4c9ae24ba8858c1ab8f23e2f4",
+      "size_bytes": 8420
+    },
+    {
+      "path": "agent_react.py",
+      "git_blob_sha1": "26073943aed4c2364291d562c4a8eeaade8f2a9b",
+      "size_bytes": 51708
+    },
+    {
+      "path": "authorization_policy.py",
+      "git_blob_sha1": "d51dc2516a5ff1cff33d434a31361e83e8e04027",
+      "size_bytes": 17274
+    },
+    {
+      "path": "defense.py",
+      "git_blob_sha1": "c52382523b78cacf723c8dc0f712962201b8d7dc",
+      "size_bytes": 41039
+    },
+    {
+      "path": "defense_chain.py",
+      "git_blob_sha1": "4366e4f93c2914d2cc7109dc9742331f6202c752",
+      "size_bytes": 25739
+    },
+    {
+      "path": "tools.py",
+      "git_blob_sha1": "28c8e7d94829ed3f46791642ea8ae9274eb6736d",
+      "size_bytes": 18870
+    },
+    {
+      "path": "tracing.py",
+      "git_blob_sha1": "65af6a3a959a0a2a2b9566c91922545ce3300043",
+      "size_bytes": 12211
+    },
+    {
+      "path": "evaluate.py",
+      "git_blob_sha1": "40d17f7c47231f70b5abae05fbc97906eb74950b",
+      "size_bytes": 136718
+    },
+    {
+      "path": "dataset.py",
+      "git_blob_sha1": "73cc2466a4d0bb21fbc446342deaedc08b7c4678",
+      "size_bytes": 4172
+    },
+    {
+      "path": "scripts/run_matrix.ps1",
+      "git_blob_sha1": "0f3f74726db453cff26e8bc87d51696286304366",
+      "size_bytes": 5892
+    },
+    {
+      "path": "scripts/run_model_defense_matrix.py",
+      "git_blob_sha1": "7ec5524700c6103767826f12074affc2800f40b6",
+      "size_bytes": 22556
+    },
+    {
+      "path": "scripts/analyze_canonical_results.py",
+      "git_blob_sha1": "d254a7d035d4f0c2a7a81431cdce16973f5a1797",
+      "size_bytes": 7048
+    },
+    {
+      "path": "tests/test_chain_policy_v2.py",
+      "git_blob_sha1": "cab0b766f7c5cf252e44b5d7c98e2a2bb112f224",
+      "size_bytes": 24457
+    },
+    {
+      "path": "tests/test_structured_authorization.py",
+      "git_blob_sha1": "ce71f7248561eaa129dd924e74346f4f259c798b",
+      "size_bytes": 13758
+    },
+    {
+      "path": "tests/test_tools_gateway.py",
+      "git_blob_sha1": "70546cd2b17629aee63bf740e8d27c17a260700a",
+      "size_bytes": 2546
+    }
+  ],
+  "runner_inventory": {
+    "run_matrix_ps1": {
+      "path": "scripts/run_matrix.ps1",
+      "conditions": [
+        "N2",
+        "N4",
+        "N8",
+        "C1",
+        "C2",
+        "C3",
+        "N4-t",
+        "C2-t"
+      ],
+      "default_expected_run_count": 4800,
+      "defense_selection": "One --Defense value per invocation; run again separately for each treatment."
+    },
+    "model_defense_matrix": {
+      "path": "scripts/run_model_defense_matrix.py",
+      "conditions": [
+        "S1",
+        "N2",
+        "N4",
+        "N8",
+        "C1",
+        "C2",
+        "C3",
+        "N4-t",
+        "C2-t"
+      ],
+      "automated_treatments": [
+        "none",
+        "authorizer"
+      ],
+      "missing_automated_treatments": [
+        "chain",
+        "both"
+      ]
+    },
+    "default_dataset_task_count": 600,
+    "complete_paper_replication_status": "Not yet independently reproduced by Luminous. The current maintained automated cross-model runner does not execute the full defense matrix; a complete reproduction needs separately audited chain and combined treatment runs, exact model/prompt/tool settings, and evaluation parity."
+  },
+  "dependency_reproducibility": {
+    "requirements_file_git_blob_sha1": "9b2aefed6b7916d5a8d4fe72c63e540ff33acb38",
+    "lockfile_present": false,
+    "requirements_observation": "requirements.txt uses lower bounds/ranges and no repository-level Python lockfile was present in the pinned tree."
+  },
+  "integrity": {
+    "recursive_git_tree_sha": "7119c09c0266162f89db29d3faa32d496837b5c3",
+    "tree_truncated": false,
+    "total_tree_entries": 706,
+    "dataset_blob_count": 627,
+    "environment_blob_count": 601,
+    "git_blob_hash_semantics": "GitHub tree/blob IDs are Git object IDs (SHA-1 for this repository); they are not SHA-256 hashes of raw file bytes."
+  }
+}
