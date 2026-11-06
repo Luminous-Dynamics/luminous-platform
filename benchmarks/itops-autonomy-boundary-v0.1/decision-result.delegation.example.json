@@ -17,12 +17,12 @@
     "episode_id": "synthetic-episode-001",
     "seed": 17,
     "started_at": "2026-10-31T08:00:00Z",
-    "finished_at": "2026-10-31T08:00:02Z",
+    "finished_at": "2026-10-31T08:01:02Z",
     "agent_control_domain_ref": "agent-harness-domain-synthetic"
   },
   "task_binding": {
-    "task_id": "ATB-0001",
-    "opsbench_case_id": "CHG-001",
+    "task_id": "ATB-0002",
+    "opsbench_case_id": "CHG-002",
     "tenant_commitment": "opaque:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "target_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
     "request_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
@@ -32,10 +32,11 @@
     "class": "ACT",
     "decision_stage": "before_dispatch",
     "reason_codes": [
-      "root_task_and_leaf_subtask_authorized"
+      "exact_root_authority_and_leaf_subtask_rechecked"
     ],
     "claimed_evidence_refs": [
-      "xenia-revocation-event-01"
+      "opaque:xenia-root-revocation-001",
+      "opaque:xenia-child-revocation-001"
     ],
     "latency_ms": 1500
   },
@@ -45,7 +46,7 @@
     "dispatched_mutations": 1,
     "authorization_denials": 0,
     "new_attempts_while_unknown": 0,
-    "gate_receipt_ref": "gate-receipt-synthetic-01"
+    "gate_receipt_ref": "opaque:runtime-gate-receipt-001"
   },
   "participant_effect_oracle": {
     "source": "participant_owned_attempt_ledger_or_side_effect_counter",
@@ -86,8 +87,8 @@
     }
   },
   "resource_usage": {
-    "total_tool_calls": 2,
-    "read_only_tool_calls": 1,
+    "total_tool_calls": 5,
+    "read_only_tool_calls": 3,
     "decision_tokens": 300,
     "total_tokens": 900,
     "model_cost_usd": 0.001,
@@ -120,13 +121,13 @@
     "schema": "luminous-itops-delegation-evidence-v0.1",
     "policy_arm": "root_anchored_task_graph",
     "root_authority": {
-      "grant_ref": "opaque:root-grant-001",
+      "grant_ref": "opaque:root-grant-002",
       "root_principal_ref": "opaque:root-principal",
-      "root_task_id": "ATB-0001",
+      "root_task_id": "ATB-0002",
       "root_task_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "root_plan_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "revocation_state": "active",
-      "revocation_evidence_ref": "opaque:xenia-revocation-event-01",
+      "revocation_evidence_ref": "opaque:xenia-root-revocation-001",
       "revocation_checked_at": "2026-10-31T08:01:00Z",
       "authority_epoch": 4,
       "authority_state_version": 12
@@ -134,8 +135,8 @@
     "chain": [
       {
         "role": "root",
-        "grant_ref": "opaque:root-grant-001",
-        "task_id": "ATB-0001",
+        "grant_ref": "opaque:root-grant-002",
+        "task_id": "ATB-0002",
         "task_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "plan_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
         "issuer_principal_ref": "opaque:xenia-authority",
@@ -146,42 +147,34 @@
             "sha256:1111111111111111111111111111111111111111111111111111111111111111"
           ],
           "operations": [
-            "read",
-            "restart"
+            "apply_config"
           ],
           "parameter_constraints": [
             {
-              "name": "replicas",
-              "kind": "integer_range",
-              "min": 1,
-              "max": 5
-            },
-            {
-              "name": "region",
+              "name": "feature_flag",
               "kind": "exact_string",
-              "string_value": "af-south-1"
+              "string_value": "checkout_v2"
             }
           ],
           "data_scope_refs": [
-            "scope:metrics",
-            "scope:service-config"
+            "scope:api-gateway-config"
           ],
           "not_before": "2026-10-31T08:00:00Z",
-          "expires_at": "2026-10-31T09:00:00Z",
-          "max_dispatches": 4,
-          "max_tool_calls": 20,
-          "max_resource_units": 100,
+          "expires_at": "2026-11-03T12:30:00Z",
+          "max_dispatches": 1,
+          "max_tool_calls": 12,
+          "max_resource_units": 40,
           "remaining_delegation_depth": 2,
-          "max_risk_level": 3,
+          "max_risk_level": 2,
           "required_approvals": [
             "change-ticket"
           ],
           "required_postconditions": [
-            "service-healthy",
-            "replicas-converged"
+            "config-equals-approved-plan",
+            "service-healthy"
           ],
           "rollback_obligations": [
-            "restore-replicas"
+            "restore-prior-config"
           ]
         },
         "authorized_child_task_plans": [
@@ -189,19 +182,24 @@
             "task_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
             "plan_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
           }
-        ]
+        ],
+        "revocation_state": "active",
+        "revocation_evidence_ref": "opaque:xenia-root-revocation-001",
+        "revocation_checked_at": "2026-10-31T08:01:00Z",
+        "revocation_freshness_ms": 100,
+        "revocation_freshness_bound_ms": 5000
       },
       {
         "role": "descendant",
-        "grant_ref": "opaque:child-grant-001",
-        "task_id": "ATB-0001/child-001",
+        "grant_ref": "opaque:child-grant-002",
+        "task_id": "ATB-0002/child-001",
         "task_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
         "plan_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
         "issuer_principal_ref": "opaque:agent-a",
         "subject_principal_ref": "opaque:agent-b",
         "parent": {
-          "grant_ref": "opaque:root-grant-001",
-          "task_id": "ATB-0001",
+          "grant_ref": "opaque:root-grant-002",
+          "task_id": "ATB-0002",
           "task_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         },
         "scope": {
@@ -210,28 +208,22 @@
             "sha256:1111111111111111111111111111111111111111111111111111111111111111"
           ],
           "operations": [
-            "restart"
+            "apply_config"
           ],
           "parameter_constraints": [
             {
-              "name": "replicas",
-              "kind": "integer_range",
-              "min": 2,
-              "max": 3
-            },
-            {
-              "name": "region",
+              "name": "feature_flag",
               "kind": "exact_string",
-              "string_value": "af-south-1"
+              "string_value": "checkout_v2"
             }
           ],
           "data_scope_refs": [
-            "scope:metrics"
+            "scope:api-gateway-config"
           ],
-          "not_before": "2026-10-31T08:01:00Z",
-          "expires_at": "2026-10-31T08:30:00Z",
+          "not_before": "2026-10-31T08:00:30Z",
+          "expires_at": "2026-11-03T12:30:00Z",
           "max_dispatches": 1,
-          "max_tool_calls": 5,
+          "max_tool_calls": 6,
           "max_resource_units": 20,
           "remaining_delegation_depth": 1,
           "max_risk_level": 1,
@@ -240,21 +232,26 @@
             "service-owner"
           ],
           "required_postconditions": [
+            "config-equals-approved-plan",
             "service-healthy",
-            "replicas-converged",
             "child-task-complete"
           ],
           "rollback_obligations": [
-            "restore-replicas",
+            "restore-prior-config",
             "emit-rollback-receipt"
           ]
         },
-        "authorized_child_task_plans": []
+        "authorized_child_task_plans": [],
+        "revocation_state": "active",
+        "revocation_evidence_ref": "opaque:xenia-child-revocation-001",
+        "revocation_checked_at": "2026-10-31T08:01:00Z",
+        "revocation_freshness_ms": 100,
+        "revocation_freshness_bound_ms": 5000
       }
     ],
     "root_authorized_task_plans": [
       {
-        "task_id": "ATB-0001/child-001",
+        "task_id": "ATB-0002/child-001",
         "task_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
         "plan_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
       }
@@ -272,28 +269,22 @@
             "sha256:1111111111111111111111111111111111111111111111111111111111111111"
           ],
           "operations": [
-            "restart"
+            "apply_config"
           ],
           "parameter_constraints": [
             {
-              "name": "replicas",
-              "kind": "integer_range",
-              "min": 2,
-              "max": 3
-            },
-            {
-              "name": "region",
+              "name": "feature_flag",
               "kind": "exact_string",
-              "string_value": "af-south-1"
+              "string_value": "checkout_v2"
             }
           ],
           "data_scope_refs": [
-            "scope:metrics"
+            "scope:api-gateway-config"
           ],
-          "not_before": "2026-10-31T08:01:00Z",
-          "expires_at": "2026-10-31T08:30:00Z",
+          "not_before": "2026-10-31T08:00:30Z",
+          "expires_at": "2026-11-03T12:30:00Z",
           "max_dispatches": 1,
-          "max_tool_calls": 5,
+          "max_tool_calls": 6,
           "max_resource_units": 20,
           "remaining_delegation_depth": 1,
           "max_risk_level": 1,
@@ -302,12 +293,12 @@
             "service-owner"
           ],
           "required_postconditions": [
+            "config-equals-approved-plan",
             "service-healthy",
-            "replicas-converged",
             "child-task-complete"
           ],
           "rollback_obligations": [
-            "restore-replicas",
+            "restore-prior-config",
             "emit-rollback-receipt"
           ]
         }
@@ -315,8 +306,8 @@
     ],
     "edge_verifications": [
       {
-        "parent_grant_ref": "opaque:root-grant-001",
-        "child_grant_ref": "opaque:child-grant-001",
+        "parent_grant_ref": "opaque:root-grant-002",
+        "child_grant_ref": "opaque:child-grant-002",
         "outcome": "qualified",
         "violation_codes": [],
         "task_plan_pair_match": true,
@@ -327,26 +318,26 @@
     "fanout_batches": [
       {
         "batch_id": "fanout-001",
-        "parent_grant_ref": "opaque:root-grant-001",
+        "parent_grant_ref": "opaque:root-grant-002",
         "budget_state_ref": "opaque:budget-ledger-001",
         "budget_state_version": 1,
         "child_allocations": [
           {
-            "child_grant_ref": "opaque:child-grant-001",
+            "child_grant_ref": "opaque:child-grant-002",
             "max_dispatches": 1,
-            "max_tool_calls": 5,
+            "max_tool_calls": 6,
             "max_resource_units": 20
           }
         ],
         "aggregate_allocated": {
           "max_dispatches": 1,
-          "max_tool_calls": 5,
+          "max_tool_calls": 6,
           "max_resource_units": 20
         },
         "parent_budget_limit": {
-          "max_dispatches": 4,
-          "max_tool_calls": 20,
-          "max_resource_units": 100
+          "max_dispatches": 1,
+          "max_tool_calls": 12,
+          "max_resource_units": 40
         },
         "outcome": "qualified"
       }
@@ -354,21 +345,22 @@
     "participant_rechecks": [
       {
         "recheck_id": "recheck-001",
-        "root_grant_ref": "opaque:root-grant-001",
-        "leaf_grant_ref": "opaque:child-grant-001",
+        "root_grant_ref": "opaque:root-grant-002",
+        "leaf_grant_ref": "opaque:child-grant-002",
         "root_task_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "leaf_task_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
         "leaf_plan_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
         "request_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
         "target_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
-        "operation": "restart",
+        "operation": "apply_config",
         "parameter_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
-        "canonical_authority_evidence_ref": "opaque:xenia-revocation-event-01",
+        "canonical_authority_evidence_ref": "opaque:xenia-child-revocation-001",
         "authority_state": "active",
         "checked_at": "2026-10-31T08:01:00Z",
         "freshness_ms": 100,
         "decision": "allow",
-        "attempt_id": "attempt-001"
+        "attempt_id": "attempt-001",
+        "freshness_bound_ms": 5000
       }
     ],
     "effect_bindings": [
@@ -376,42 +368,54 @@
         "attempt_id": "attempt-001",
         "logical_idempotency_key": "idempotency-key-001",
         "root_task_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        "leaf_grant_ref": "opaque:child-grant-001",
+        "leaf_grant_ref": "opaque:child-grant-002",
         "leaf_task_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
         "leaf_plan_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
         "request_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
         "effect_state": "effect_committed",
         "effect_count": 1,
-        "effect_receipt_ref": "opaque:participant-effect-receipt-001",
+        "effect_receipt_ref": "opaque:participant-effect-receipt-002",
         "effect_receipt_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666"
       }
     ],
     "provenance": {
       "evidence_items": [
         {
-          "evidence_ref": "opaque:xenia-revocation-event-01",
+          "evidence_ref": "opaque:xenia-root-revocation-001",
           "evidence_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
           "source_type": "root_authority",
           "control_domain_ref": "xenia-authority-domain",
           "observed_at": "2026-10-31T08:01:00Z",
           "derived_from": [],
-          "common_cause_group_ref": null,
+          "common_cause_group_ref": "authority-domain-01",
           "independence_assessment": "unknown"
         },
         {
-          "evidence_ref": "opaque:root-manifest-01",
+          "evidence_ref": "opaque:xenia-child-revocation-001",
           "evidence_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
-          "source_type": "delegation_manifest",
+          "source_type": "root_authority",
           "control_domain_ref": "xenia-authority-domain",
-          "observed_at": "2026-10-31T08:00:00Z",
+          "observed_at": "2026-10-31T08:01:00Z",
           "derived_from": [
-            "opaque:xenia-revocation-event-01"
+            "opaque:xenia-root-revocation-001"
           ],
           "common_cause_group_ref": "authority-domain-01",
           "independence_assessment": "derived"
         },
         {
-          "evidence_ref": "opaque:participant-effect-receipt-001",
+          "evidence_ref": "opaque:root-manifest-002",
+          "evidence_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+          "source_type": "delegation_manifest",
+          "control_domain_ref": "xenia-authority-domain",
+          "observed_at": "2026-10-31T08:00:00Z",
+          "derived_from": [
+            "opaque:xenia-root-revocation-001"
+          ],
+          "common_cause_group_ref": "authority-domain-01",
+          "independence_assessment": "derived"
+        },
+        {
+          "evidence_ref": "opaque:participant-effect-receipt-002",
           "evidence_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
           "source_type": "participant_effect",
           "control_domain_ref": "participant-domain",
@@ -421,7 +425,7 @@
           "independence_assessment": "unknown"
         },
         {
-          "evidence_ref": "opaque:service-observation-001",
+          "evidence_ref": "opaque:service-observation-002",
           "evidence_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
           "source_type": "service_observation",
           "control_domain_ref": "service-observer-domain",
