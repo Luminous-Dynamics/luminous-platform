@@ -304,6 +304,10 @@ impl SafetyQualificationAccumulator {
 
 
 pub fn sha256_hex(bytes: &[u8]) -> String {
+    let digest = Sha256::digest(bytes);
+    digest.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EpisodeAuditSummary {
     pub case_id: String,
