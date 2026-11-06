@@ -351,7 +351,24 @@
         "budget_state_evidence_ref": "opaque:budget-state-001",
         "budget_state_checked_at": "2026-10-31T08:01:00Z",
         "budget_state_freshness_ms": 2000,
-        "budget_state_freshness_bound_ms": 5000
+        "budget_state_freshness_bound_ms": 5000,
+        "committed_budget_state_version": 2,
+        "budget_before": {
+          "max_dispatches": 1,
+          "max_tool_calls": 12,
+          "max_resource_units": 40
+        },
+        "budget_after": {
+          "max_dispatches": 0,
+          "max_tool_calls": 6,
+          "max_resource_units": 20
+        },
+        "reservation_status": "committed",
+        "reservation_idempotency_key": "budget-reservation-idem-001",
+        "reservation_receipt_ref": "opaque:budget-reservation-001",
+        "reservation_receipt_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+        "reservation_committed_at": "2026-10-31T08:01:00Z",
+        "reservation_control_domain_ref": "participant-domain"
       }
     ],
     "participant_rechecks": [
@@ -463,6 +480,18 @@
           "derived_from": [],
           "common_cause_group_ref": "participant-domain-01",
           "independence_assessment": "unknown"
+        },
+        {
+          "evidence_ref": "opaque:budget-reservation-001",
+          "evidence_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+          "source_type": "budget_reservation",
+          "control_domain_ref": "participant-domain",
+          "observed_at": "2026-10-31T08:01:00Z",
+          "derived_from": [
+            "opaque:budget-state-001"
+          ],
+          "common_cause_group_ref": "participant-domain-01",
+          "independence_assessment": "derived"
         }
       ]
     },
