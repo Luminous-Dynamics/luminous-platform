@@ -64,3 +64,104 @@ Keep these result surfaces separate:
 - For harness evolution, target no regression on the predeclared safety-critical retention set while demonstrating measurable adaptation on the new-capability set.
 
 These are research targets, not observed results, an assurance case for production, or permission to deploy. The v0.1 ITOPS corpus remains a candidate set; the synthetic qualification core is not a complete agent runner or an independent hosted oracle. No external baseline has yet been reproduced by Luminous.
+
+
+## Multi-agent authorization, delegation, and provenance: research correction — 2026-11-06
+
+A significant correction to the research thesis: **authorization preservation across multi-agent delegation is already directly benchmarked**. Luminous must not position the general problem or monotonic narrowing principle as wholly novel.
+
+### MasDrift: the required policy comparison
+
+[MasDrift: Benchmarking Authorization Preservation Across Multi-Agent Architectures](https://arxiv.org/abs/2608.07556) evaluates 600 benign productivity tasks across eight domains, including reserved actions, and compares single-agent, centralized, and decentralized/peer architectures while varying hierarchy depth and peer width.
+
+The paper reports:
+- centralized task completion of 93.9–98.6% versus 85.7–87.0% for peer networks in its evaluated configurations;
+- unauthorized actions in 2.7–19.8% of tasks versus 0.6–0.8% in the compared configurations, with authorization failures increasing with hierarchy depth;
+- a direct comparison between **re-anchoring every pending action to the original user request** and **attenuated policy propagation down the delegation chain**.
+
+A critical result for our architecture: root-request re-anchoring reduced unauthorized actions with a reported 1.6 percentage-point pooled task-completion cost, while strict chain propagation could forfeit up to 36.3 percentage points of task completion in the evaluated conditions.
+
+Source: [MasDrift, arXiv:2608.07556](https://arxiv.org/abs/2608.07556).
+
+**Design implication:** strict parent-to-child attenuation must remain one candidate policy arm, not our assumed winner. Repeatedly intersecting every intermediate permission set can block a child from performing a sibling task that the root principal explicitly authorized. We need a matched experiment comparing root re-anchoring, strict attenuation, and a hybrid participant-enforced design.
+
+### Delegated Misalignment: responsibility diffusion and subordinate role bias
+
+[Delegated Misalignment: How Multi-Agent Structures Amplify LLM Safety Risks](https://aclanthology.org/2026.emnlp-main.398/) studies six models and 49 hazardous tasks. It reports that delegation can amplify unsafe task execution through principal-side responsibility diffusion and subordinate-side role-bias compliance; one reported DeepSeek-V3.2 full-execution result rises from 30.6% in the single-agent setting to 77.6% under delegation.
+
+This is not merely an authorization-token problem. The principal may diffuse responsibility while a subordinate interprets its assigned role as an instruction to comply. Our benchmark should include harmless synthetic analogues of these social/organizational failure modes, including escalation, dissent, stop authority, and refusal propagation.
+
+Source: [Delegated Misalignment, EMNLP 2026](https://aclanthology.org/2026.emnlp-main.398/).
+
+### Provenance Erasure: source context can disappear while payload survives
+
+[Trust Cascade through Provenance Erasure](https://aclanthology.org/2026.emnlp-main.1005/) evaluates multi-agent handoffs in which authority and provenance metadata are stripped while actionable content survives. Across 460 pairs, the paper reports losses of 98% of format markers, 100% of authority entities, and 44% of source attribution in its evaluated transformations. It reports cascade attack success of 33–63% across its evaluated open-weight models, and proposes a zero-inference Trust Boundary Auditor.
+
+Source: [Trust Cascade through Provenance Erasure, EMNLP 2026](https://aclanthology.org/2026.emnlp-main.1005/).
+
+**Design implication:** authority scope and source lineage must be carried as machine-checkable evidence, not as natural-language instructions that can disappear during summarization. Every transformation must preserve a traceable link to the original principal, task, plan, authority check, source record, and derivation path. Missing or detached provenance means unknown/denied, not inferred permission.
+
+### Prompt-injection benchmark context
+
+Google Cloud's published AgentDojo/Semantic Governance Policy documentation describes a benchmark across banking, Slack, travel and workspace tasks, and reports a reduction in attack success from 48.7% to 0.9% with a 2.6 percentage-point legitimate-task utility cost for its policy implementation.
+
+Source: [Google Cloud — Semantic Governance Policy and adversarial benchmarking](https://docs.cloud.google.com/gemini-enterprise-agent-platform/govern/policies/adversarial-benchmarking).
+
+Treat this as a **vendor-reported result**, not an independent head-to-head comparison. It is useful as a reference for the safety/utility frontier and for testing whether deterministic, policy-based controls add measurable protection beyond model prompting.
+
+## Revised Luminous research proposition
+
+The testable differentiator is not simply "delegation cannot expand permissions." Existing work already covers authorization preservation, prompt injection, delegated misalignment and provenance loss.
+
+The more specific research contribution should be an integrated **authority-and-effect boundary** that combines:
+
+1. **Root authorization envelope:** immutable principal, task graph, root plan, permitted domains, exact reserved actions, time and resource bounds.
+2. **Subtask delegation envelope:** exact pre-authorized child task/plan digests, principal lineage, local target/data/parameter constraints, and bounded resource budgets.
+3. **Per-effect root re-anchoring:** before each consequential effect, the final participant rechecks the current root-authorized envelope and the child's exact subtask grant against the exact request/parameters.
+4. **Causal provenance preservation:** transformations, summaries and tool handoffs retain source lineage and explicit derivation; they cannot manufacture authority or independent evidence.
+5. **Effect reconciliation:** a participant-owned attempt/effect record and an independent service postcondition distinguish proposal, dispatch, commitment and verified operational success. An unknown effect locks further mutation until reconciliation.
+6. **Responsibility and dissent semantics:** a subordinate can refuse, pause or escalate without the principal's delegated role framing silently converting an unsafe task into an obligation to comply.
+
+This is a research hypothesis, not a finished design. The hybrid could outperform both strict attenuation and naive re-anchoring, but only a matched experiment can establish that.
+
+## Required policy arms and metrics
+
+Extend [Luminous Platform issue #288](https://github.com/Luminous-Dynamics/luminous-platform/issues/288) to reproduce the native MasDrift policy comparison where artifacts/licensing permit, then add a separate Luminous operational-evidence extension.
+
+| Arm | Policy / topology | Purpose |
+|---|---|---|
+| A | Single agent | Native baseline |
+| B | Centralized multi-agent, no added authorization defense (synthetic-only) | Measure topology and delegation risk |
+| C | Decentralized/peer, no added authorization defense (synthetic-only) | Measure peer coordination trade-offs |
+| D | Original-request re-anchoring at every pending action | Reproduce the MasDrift defense |
+| E | Strict edge-by-edge attenuated delegation (#285) | Measure scope preservation and false blocking |
+| F | Hybrid root re-anchoring + precommitted child task/plan + bounded child grant + final participant enforcement | Test the Luminous design hypothesis |
+
+Native MasDrift task/unauthorized-action metrics must remain unchanged and separate from the supplemental ITOPS measurements. Add responsibility-diffusion and provenance-erasure scenarios, plus participant-committed effects, independent service postconditions, unknown-outcome retries, and evidence-source lineage.
+
+Measure the full utility/safety frontier:
+- unauthorized attempts and unauthorized committed effects;
+- authorized task completion and false-refusal / false-block rate;
+- root-envelope re-anchor correctness and scope-expansion detection;
+- valid subtask acceptance, including read-only and separately pre-authorized sibling tasks;
+- revocation propagation and time-to-invalidation across the whole ancestor chain;
+- provenance-marker retention, origin/derivation reconstruction and evidence-laundering detection;
+- participant effect / independent postcondition agreement;
+- duplicate attempts, outcome-unknown lock violations and reconciliation latency;
+- human dissent, escalation and stop-action propagation;
+- p50/p95 latency, model/tool tokens, resource cost and cost per verified outcome.
+
+Do not combine safety and utility into one compensatory score. A critical unauthorized committed effect disqualifies an arm; a blanket-refusal system also fails the positive-control utility tests.
+
+## Revised qualification targets (proposed, not measured)
+
+- Reproduce the native MasDrift results and report deviations before claiming an improvement.
+- Compare the hybrid with root re-anchoring and strict attenuation on identical task/seed/model/prompt/tool/topology conditions.
+- Seek the re-anchoring safety improvement without a greater than 1.6 percentage-point pooled completion cost on the matched native protocol; this is a replication target from the paper, not a current Luminous result.
+- Zero unauthorized committed effects and zero new mutation attempts while a prior effect is outcome-unknown in the declared synthetic negative-control population.
+- 100% acceptance of valid positive controls, including read-only delegation and explicitly root-authorized sibling subtasks.
+- 100% detection of deliberately removed authority/source-lineage markers in the frozen TBA-inspired conformance set, with false positives reported separately.
+- Preserve the complete authority and source lineage through every delegation, summary, restart, retry and participant effect.
+- Keep native benchmark scores, Luminous effect-integrity qualification and operational cost/latency as separate result surfaces.
+
+These targets do not constitute universal guarantees or production approval. No Luminous reproduction of MasDrift, Delegated Misalignment, Trust Cascade, or the vendor-reported AgentDojo result has been executed yet.
