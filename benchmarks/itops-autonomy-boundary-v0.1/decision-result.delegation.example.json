@@ -73,7 +73,7 @@
     "independent_of_agent": true,
     "state": "healthy",
     "observed_at": "2026-10-31T08:01:01Z",
-    "freshness_ms": 100,
+    "freshness_ms": 1000,
     "evidence_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
     "evidence_ref": "opaque:service-observation-002"
   },
