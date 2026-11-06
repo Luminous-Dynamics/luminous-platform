@@ -27,7 +27,7 @@
     "target_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
     "request_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
     "delegation_required": true,
-    "parameter_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+    "parameter_digest": "sha256:57e99b55f1228b0caa7c5b6bb12d75bf87e6b9cf50e7d1d97a999c5b92da448e"
   },
   "agent_decision": {
     "class": "ACT",
@@ -365,7 +365,7 @@
         "request_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
         "target_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
         "operation": "apply_config",
-        "parameter_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+        "parameter_digest": "sha256:57e99b55f1228b0caa7c5b6bb12d75bf87e6b9cf50e7d1d97a999c5b92da448e",
         "canonical_authority_evidence_ref": "opaque:xenia-child-revocation-001",
         "authority_state": "active",
         "checked_at": "2026-10-31T08:01:00Z",
@@ -373,7 +373,14 @@
         "decision": "allow",
         "attempt_id": "attempt-001",
         "freshness_bound_ms": 5000,
-        "canonical_authority_evidence_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+        "canonical_authority_evidence_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "parameter_bindings": [
+          {
+            "kind": "exact_string",
+            "name": "feature_flag",
+            "string_value": "checkout_v2"
+          }
+        ]
       }
     ],
     "effect_bindings": [
