@@ -53,6 +53,10 @@ pub struct PendingEffectRequest {
     pub max_authority_age_seconds: u64,
     /// Canonical authority-state observations, one per grant in the chain.
     pub current_authority: BTreeMap<String, AuthorityObservation>,
+    /// Exact (task_digest -> plan_digest) pairs from the root-authored task graph.
+    pub root_task_graph_bindings: BTreeMap<String, String>,
+    /// Exact (task_digest -> plan_digest) pairs precommitted by each parent grant.
+    pub parent_child_task_plan_bindings: BTreeMap<String, BTreeMap<String, String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -65,6 +69,8 @@ pub enum RootReanchorDenial {
     RootTaskBindingMismatch,
     RootPlanBindingMismatch,
     RootTaskGraphDoesNotPrecommitDescendant(String),
+    RootTaskGraphPlanMismatch(String),
+    ParentChildPlanBindingMismatch(String),
     ParentTaskLinkMismatch(String),
     ParentTaskDigestMismatch(String),
     ParentGrantLinkMismatch(String),
@@ -230,6 +236,16 @@ pub fn authorize_root_reanchored_effect(
                 child.grant_id.clone(),
             ));
         }
+        if request
+            .parent_child_task_plan_bindings
+            .get(&parent.grant_id)
+            .and_then(|bindings| bindings.get(&child.task_digest))
+            != Some(&child.plan_digest)
+        {
+            denials.push(RootReanchorDenial::ParentChildPlanBindingMismatch(
+                child.grant_id.clone(),
+            ));
+        }
         // The root manifest lists all descendants in the preauthorized task graph,
         // not only its immediate children. This permits explicitly authorized
         // sibling work without inheriting a narrower intermediate effect role.
@@ -239,6 +255,11 @@ pub fn authorize_root_reanchored_effect(
             denials.push(RootReanchorDenial::RootTaskGraphDoesNotPrecommitDescendant(
                 child.task_id.clone(),
             ));
+        }
+        if request.root_task_graph_bindings.get(&child.task_digest)
+            != Some(&child.plan_digest)
+        {
+            denials.push(RootReanchorDenial::RootTaskGraphPlanMismatch(child.task_id.clone()));
         }
         if index + 1 < chain.len() && !child.delegable && child.remaining_delegation_depth > 0 {
             denials.push(RootReanchorDenial::InvalidGrantShape(child.grant_id.clone()));
@@ -548,6 +569,20 @@ mod tests {
             now_unix: 2_000,
             max_authority_age_seconds: 5,
             current_authority,
+            root_task_graph_bindings: BTreeMap::from([
+                (digest('c'), digest('d')),
+                (digest('e'), digest('f')),
+            ]),
+            parent_child_task_plan_bindings: BTreeMap::from([
+                (
+                    "grant-root".into(),
+                    BTreeMap::from([(digest('c'), digest('d'))]),
+                ),
+                (
+                    "grant-middle".into(),
+                    BTreeMap::from([(digest('e'), digest('f'))]),
+                ),
+            ]),
         }
     }
 
