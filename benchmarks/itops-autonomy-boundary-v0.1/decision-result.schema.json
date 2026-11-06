@@ -308,7 +308,8 @@
               "effect_count",
               "sequence",
               "dispatched_while_prior_unknown",
-              "in_current_episode"
+              "in_current_episode",
+              "dispatched_at"
             ],
             "properties": {
               "attempt_id": {
@@ -342,6 +343,10 @@
               },
               "in_current_episode": {
                 "type": "boolean"
+              },
+              "dispatched_at": {
+                "type": "string",
+                "format": "date-time"
               }
             },
             "additionalProperties": false
@@ -859,7 +864,8 @@
         "revocation_evidence_ref",
         "revocation_checked_at",
         "revocation_freshness_ms",
-        "revocation_freshness_bound_ms"
+        "revocation_freshness_bound_ms",
+        "revocation_evidence_digest"
       ],
       "properties": {
         "role": {
@@ -963,6 +969,10 @@
         "revocation_freshness_bound_ms": {
           "type": "integer",
           "minimum": 1
+        },
+        "revocation_evidence_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
         }
       },
       "allOf": [
@@ -1129,7 +1139,8 @@
             "root_plan_digest",
             "revocation_state",
             "revocation_evidence_ref",
-            "revocation_checked_at"
+            "revocation_checked_at",
+            "revocation_evidence_digest"
           ],
           "properties": {
             "grant_ref": {
@@ -1174,6 +1185,10 @@
             "authority_state_version": {
               "type": "integer",
               "minimum": 0
+            },
+            "revocation_evidence_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
             }
           }
         },
@@ -1320,7 +1335,12 @@
               "aggregate_allocated",
               "parent_budget_limit",
               "outcome",
-              "batch_complete"
+              "batch_complete",
+              "budget_state_digest",
+              "budget_state_evidence_ref",
+              "budget_state_checked_at",
+              "budget_state_freshness_ms",
+              "budget_state_freshness_bound_ms"
             ],
             "properties": {
               "batch_id": {
@@ -1361,6 +1381,26 @@
               },
               "batch_complete": {
                 "const": true
+              },
+              "budget_state_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "budget_state_evidence_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "budget_state_checked_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "budget_state_freshness_ms": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "budget_state_freshness_bound_ms": {
+                "type": "integer",
+                "minimum": 1
               }
             }
           }
@@ -1388,7 +1428,8 @@
               "freshness_ms",
               "decision",
               "attempt_id",
-              "freshness_bound_ms"
+              "freshness_bound_ms",
+              "canonical_authority_evidence_digest"
             ],
             "properties": {
               "recheck_id": {
@@ -1465,6 +1506,10 @@
               "freshness_bound_ms": {
                 "type": "integer",
                 "minimum": 1
+              },
+              "canonical_authority_evidence_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
               }
             }
           }
@@ -1587,7 +1632,8 @@
                       "participant_effect",
                       "service_observation",
                       "agent_claim",
-                      "other"
+                      "other",
+                      "budget_state"
                     ]
                   },
                   "control_domain_ref": {
