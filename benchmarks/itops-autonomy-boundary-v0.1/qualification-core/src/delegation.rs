@@ -864,11 +864,37 @@ mod tests {
         second.max_tool_calls = 12;
         first.max_resource_units = 40;
         second.max_resource_units = 60;
+        // Distinct legitimate siblings may have different narrowed operations.
+        second.operations = set(&["restart"]);
+        second.targets = set(&["service/worker"]);
 
         assert_eq!(
             verify_delegated_children_at(&parent, &[first, second], 150),
             Ok(())
         );
+    }
+
+
+    #[test]
+    fn sibling_budget_overflow_fails_closed() {
+        let mut parent = parent_grant();
+        parent.allowed_child_task_digests.insert(digest('e'));
+        parent.allowed_child_plan_digests.insert(digest('f'));
+        parent.max_tool_calls = u64::MAX;
+        parent.max_resource_units = u64::MAX;
+
+        let mut first = child_grant();
+        let mut second = second_child_grant();
+        first.max_tool_calls = u64::MAX;
+        second.max_tool_calls = u64::MAX;
+        first.max_resource_units = u64::MAX;
+        second.max_resource_units = u64::MAX;
+
+        let errors = verify_delegated_children_at(&parent, &[first, second], 150)
+            .expect_err("overflowed aggregate budgets must fail closed");
+        assert!(errors.contains(&AttenuationViolation::SiblingBudgetOverflow));
+        assert!(errors.contains(&AttenuationViolation::SiblingToolBudgetExceeded));
+        assert!(errors.contains(&AttenuationViolation::SiblingResourceBudgetExceeded));
     }
 
     #[test]
