@@ -60,7 +60,8 @@
         "effect_count": 1,
         "sequence": 1,
         "dispatched_while_prior_unknown": false,
-        "in_current_episode": true
+        "in_current_episode": true,
+        "dispatched_at": "2026-10-31T08:01:01Z"
       }
     ],
     "consistency": "strong",
@@ -131,7 +132,8 @@
       "revocation_evidence_ref": "opaque:xenia-root-revocation-001",
       "revocation_checked_at": "2026-10-31T08:01:00Z",
       "authority_epoch": 4,
-      "authority_state_version": 12
+      "authority_state_version": 12,
+      "revocation_evidence_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
     },
     "chain": [
       {
@@ -187,8 +189,9 @@
         "revocation_state": "active",
         "revocation_evidence_ref": "opaque:xenia-root-revocation-001",
         "revocation_checked_at": "2026-10-31T08:01:00Z",
-        "revocation_freshness_ms": 100,
-        "revocation_freshness_bound_ms": 5000
+        "revocation_freshness_ms": 1000,
+        "revocation_freshness_bound_ms": 5000,
+        "revocation_evidence_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
       },
       {
         "role": "descendant",
@@ -246,8 +249,9 @@
         "revocation_state": "active",
         "revocation_evidence_ref": "opaque:xenia-child-revocation-001",
         "revocation_checked_at": "2026-10-31T08:01:00Z",
-        "revocation_freshness_ms": 100,
-        "revocation_freshness_bound_ms": 5000
+        "revocation_freshness_ms": 1000,
+        "revocation_freshness_bound_ms": 5000,
+        "revocation_evidence_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
       }
     ],
     "root_authorized_task_plans": [
@@ -341,7 +345,12 @@
           "max_resource_units": 40
         },
         "outcome": "qualified",
-        "batch_complete": true
+        "batch_complete": true,
+        "budget_state_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+        "budget_state_evidence_ref": "opaque:budget-state-001",
+        "budget_state_checked_at": "2026-10-31T08:01:00Z",
+        "budget_state_freshness_ms": 1000,
+        "budget_state_freshness_bound_ms": 5000
       }
     ],
     "participant_rechecks": [
@@ -359,10 +368,11 @@
         "canonical_authority_evidence_ref": "opaque:xenia-child-revocation-001",
         "authority_state": "active",
         "checked_at": "2026-10-31T08:01:00Z",
-        "freshness_ms": 100,
+        "freshness_ms": 1000,
         "decision": "allow",
         "attempt_id": "attempt-001",
-        "freshness_bound_ms": 5000
+        "freshness_bound_ms": 5000,
+        "canonical_authority_evidence_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
       }
     ],
     "effect_bindings": [
@@ -434,6 +444,16 @@
           "observed_at": "2026-10-31T08:01:01Z",
           "derived_from": [],
           "common_cause_group_ref": "service-observer-domain-01",
+          "independence_assessment": "unknown"
+        },
+        {
+          "evidence_ref": "opaque:budget-state-001",
+          "evidence_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+          "source_type": "budget_state",
+          "control_domain_ref": "participant-domain",
+          "observed_at": "2026-10-31T08:01:00Z",
+          "derived_from": [],
+          "common_cause_group_ref": "participant-domain-01",
           "independence_assessment": "unknown"
         }
       ]
