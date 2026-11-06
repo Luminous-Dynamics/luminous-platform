@@ -207,7 +207,6 @@ fn grant_shape_is_valid(grant: &DelegatedAuthorityGrant) -> bool {
         && set_is_valid(&grant.data_scopes)
         && bounds_are_valid(&grant.parameter_bounds)
         && grant.not_before_unix < grant.expires_at_unix
-        && grant.max_dispatches >= 0
         && grant.max_tool_calls > 0
         && grant.max_resource_units > 0
         && obligation_set_is_valid(&grant.required_approvals)
@@ -1565,7 +1564,6 @@ mod tests {
 
 
     fn second_child_grant() -> DelegatedAuthorityGrant {
-        let parent = parent_grant();
         let mut child = child_grant();
         child.grant_id = "grant-child-2".into();
         child.task_id = "task-child-2".into();
