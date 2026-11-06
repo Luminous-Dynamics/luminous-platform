@@ -93,6 +93,8 @@ pub struct DelegatedAuthorityGrant {
     /// The parent explicitly commits to the exact child task digests it may delegate.
     pub allowed_child_task_digests: BTreeSet<String>,
     pub allowed_child_plan_digests: BTreeSet<String>,
+    /// Exact task-digest to plan-digest pairs authorized by this parent.
+    pub allowed_child_task_plans: BTreeMap<String, String>,
     /// Root task/plan commitments for all authorized descendants, not only direct children.
     pub allowed_descendant_task_plans: BTreeMap<String, String>,
     /// Exact root-precommitted parent→child graph edges and principal assignments.
@@ -213,6 +215,7 @@ fn grant_shape_is_valid(grant: &DelegatedAuthorityGrant) -> bool {
         && obligation_set_is_valid(&grant.rollback_obligations)
         && grant.allowed_child_task_digests.iter().all(|digest| digest_is_sha256(digest))
         && grant.allowed_child_plan_digests.iter().all(|digest| digest_is_sha256(digest))
+        && grant.allowed_child_task_plans.iter().all(|(task, plan)| digest_is_sha256(task) && digest_is_sha256(plan))
         && grant.allowed_descendant_task_plans.iter().all(|(task, plan)| digest_is_sha256(task) && digest_is_sha256(plan))
         && grant.authorized_delegation_edges.iter().all(|edge| {
             let scope = &edge.authorized_scope;
@@ -301,6 +304,11 @@ pub fn check_attenuation(
         violations.push(AttenuationViolation::ChildTaskDigestNotAllowed);
     }
     if !parent.allowed_child_plan_digests.contains(&child.plan_digest) {
+        violations.push(AttenuationViolation::ChildPlanDigestNotAllowed);
+    }
+    if parent.allowed_child_task_plans.get(&child.task_digest)
+        != Some(&child.plan_digest)
+    {
         violations.push(AttenuationViolation::ChildPlanDigestNotAllowed);
     }
     if child.tenant_binding != parent.tenant_binding {
@@ -797,6 +805,11 @@ pub fn verify_root_anchored_chain_at(
         if !parent.allowed_child_plan_digests.contains(&child.plan_digest) {
             violations.push(AttenuationViolation::ChildPlanDigestNotAllowed);
         }
+        if parent.allowed_child_task_plans.get(&child.task_digest)
+            != Some(&child.plan_digest)
+        {
+            violations.push(AttenuationViolation::ChildPlanDigestNotAllowed);
+        }
         if root.allowed_descendant_task_plans.get(&child.task_digest)
             != Some(&child.plan_digest)
         {
@@ -1211,8 +1224,9 @@ mod tests {
             required_approvals: set(&["change-ticket"]),
             required_postconditions: set(&["service-healthy", "replicas-converged"]),
             rollback_obligations: set(&["restore-replicas"]),
-            allowed_child_task_digests: set(&[&digest('c')]),
+            allowed_child_task_digests: set(&[&digest('c'), &digest('e')]),
             allowed_child_plan_digests: set(&[&digest('d')]),
+            allowed_child_task_plans: BTreeMap::from([(digest('c'), digest('d')), (digest('e'), digest('f'))]),
             allowed_descendant_task_plans: BTreeMap::from([(digest('c'), digest('d')), (digest('e'), digest('f'))]),
             authorized_delegation_edges: BTreeSet::from([
                 RootDelegationEdge {
@@ -1284,6 +1298,7 @@ mod tests {
             rollback_obligations: set(&["restore-replicas", "emit-rollback-receipt"]),
             allowed_child_task_digests: set(&[&digest('e')]),
             allowed_child_plan_digests: set(&[&digest('f')]),
+            allowed_child_task_plans: BTreeMap::from([(digest('e'), digest('f'))]),
             allowed_descendant_task_plans: BTreeMap::new(),
             authorized_delegation_edges: BTreeSet::new(),
             delegable: true,
@@ -1442,6 +1457,25 @@ mod tests {
         ));
     }
 
+
+    #[test]
+    fn parent_child_task_and_plan_digests_must_be_an_exact_pair() {
+        let mut parent = parent_grant();
+        parent.allowed_child_task_digests.insert(digest('e'));
+        parent.allowed_child_plan_digests.insert(digest('f'));
+        parent.allowed_child_task_plans.insert(digest('e'), digest('d'));
+        let mut child = second_child_grant();
+        child.plan_digest = digest('f');
+
+        // Both digests are individually present, but this exact combination
+        // was never authorized by the parent.
+        assert!(parent.allowed_child_task_digests.contains(&child.task_digest));
+        assert!(parent.allowed_child_plan_digests.contains(&child.plan_digest));
+        assert!(check_attenuation(&parent, &child).unwrap_err().contains(
+            &AttenuationViolation::ChildPlanDigestNotAllowed
+        ));
+    }
+
     #[test]
     fn child_plan_digest_must_be_precommitted_by_parent() {
         let parent = parent_grant();
@@ -1521,6 +1555,7 @@ mod tests {
             rollback_obligations: parent.rollback_obligations.clone(),
             allowed_child_task_digests: BTreeSet::new(),
             allowed_child_plan_digests: BTreeSet::new(),
+            allowed_child_task_plans: BTreeMap::new(),
             allowed_descendant_task_plans: BTreeMap::new(),
             authorized_delegation_edges: BTreeSet::new(),
             delegable: false,
@@ -1538,6 +1573,7 @@ mod tests {
         child.plan_digest = digest('f');
         child.allowed_child_task_digests.clear();
         child.allowed_child_plan_digests.clear();
+        child.allowed_child_task_plans.clear();
         child
     }
 
