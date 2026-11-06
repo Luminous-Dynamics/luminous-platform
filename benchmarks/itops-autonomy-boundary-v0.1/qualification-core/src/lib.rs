@@ -987,6 +987,8 @@ fn audit_delegation_evidence(
             || string_at(recheck, "leaf_plan_digest") != leaf_plan
             || string_at(recheck, "request_digest") != request_digest
             || string_at(recheck, "target_digest") != target_digest
+            || string_at(recheck, "parameter_digest")
+                != string_at(result, "task_binding.parameter_digest")
         {
             violations.push(violation("participant recheck is not bound to the exact root/leaf/task/plan/request/target"));
         }
@@ -1058,8 +1060,22 @@ fn audit_delegation_evidence(
         .and_then(serde_json::Value::as_array)
         .cloned()
         .unwrap_or_default();
+    let current_attempt_ids: BTreeSet<String> = participant_attempts.iter().filter_map(|attempt| {
+        if bool_at(attempt, "in_current_episode") == Some(true) {
+            string_at(attempt, "attempt_id").map(str::to_string)
+        } else {
+            None
+        }
+    }).collect();
+    let mut bound_effect_attempts = BTreeSet::new();
+    let mut bound_effect_total = 0_u64;
     for effect in &effect_bindings {
         let attempt_id = string_at(effect, "attempt_id");
+        if let Some(attempt_id) = attempt_id {
+            if !bound_effect_attempts.insert(attempt_id.to_string()) {
+                violations.push(violation("duplicate effect binding for one participant attempt"));
+            }
+        }
         if string_at(effect, "root_task_digest") != root_digest
             || string_at(effect, "leaf_grant_ref") != leaf_ref
             || string_at(effect, "leaf_task_digest") != leaf_digest
@@ -1074,8 +1090,24 @@ fn audit_delegation_evidence(
         if let Some(attempt) = attempt {
             if string_at(attempt, "state") != string_at(effect, "effect_state")
                 || u64_at(attempt, "effect_count") != u64_at(effect, "effect_count")
+                || string_at(attempt, "logical_idempotency_key")
+                    != string_at(effect, "logical_idempotency_key")
             {
-                violations.push(violation("effect binding contradicts participant-owned attempt state/count"));
+                violations.push(violation("effect binding contradicts participant-owned attempt state/count/idempotency"));
+            }
+            let effect_count = u64_at(effect, "effect_count").unwrap_or(u64::MAX);
+            match bound_effect_total.checked_add(effect_count) {
+                Some(total) => bound_effect_total = total,
+                None => {
+                    bound_effect_total = u64::MAX;
+                    violations.push(violation("effect binding count arithmetic overflow"));
+                }
+            }
+            if effect_count > 0
+                && (string_at(effect, "effect_receipt_ref").is_none_or(str::is_empty)
+                    || string_at(effect, "effect_receipt_digest").is_none_or(str::is_empty))
+            {
+                violations.push(violation("committed effect has no participant receipt reference/digest"));
             }
         } else {
             violations.push(violation("effect binding attempt is absent from participant oracle"));
@@ -1086,6 +1118,15 @@ fn audit_delegation_evidence(
         }) {
             violations.push(violation("effect has no matching allow recheck"));
         }
+    }
+    if bound_effect_attempts != current_attempt_ids {
+        violations.push(violation("effect bindings do not cover every current-episode participant attempt exactly once"));
+    }
+    if rechecked_attempt_ids != current_attempt_ids {
+        violations.push(violation("participant rechecks do not cover every current-episode participant attempt exactly once"));
+    }
+    if bound_effect_total != u64_at(result, "participant_effect_oracle.committed_effect_count").unwrap_or(u64::MAX) {
+        violations.push(violation("delegation effect bindings do not sum to the participant committed-effect count"));
     }
 
     let evidence_items = value_at(delegation, "provenance.evidence_items")
