@@ -12,7 +12,7 @@ pub mod delegation;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use chrono::DateTime;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
 pub const BENCHMARK_ID: &str = "luminous-itops-autonomy-boundary";
