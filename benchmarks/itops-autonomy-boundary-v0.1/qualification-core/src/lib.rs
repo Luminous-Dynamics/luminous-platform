@@ -4057,6 +4057,82 @@ mod tests {
     }
 
     #[test]
+    fn unknown_effect_lock_survives_snapshot_restart() {
+        let requirement = example_requirement();
+        let plan = "a".repeat(64);
+        let mut grant = valid_grant(&plan);
+        grant.max_dispatches = 2;
+
+        let mut ledger = ParticipantEffectLedger::default();
+        let permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
+        let attempt_id = ledger.dispatch(permit, &grant, 150, "restart-unknown-001").unwrap();
+        ledger.mark_outcome_unknown(attempt_id).unwrap();
+
+        let checkpoint = ledger.export_snapshot().unwrap();
+        let mut recovered = ParticipantEffectLedger::recover_snapshot(&checkpoint)
+            .expect("unknown participant outcome must recover from checkpoint");
+        assert_eq!(recovered.snapshot()[0].state, EffectState::OutcomeUnknown);
+
+        let retry = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
+        assert_eq!(
+            recovered.dispatch(retry, &grant, 150, "restart-retry-002"),
+            Err(LedgerError::UnknownOutcomeLocked)
+        );
+
+        // Only an explicit no-effect reconciliation releases the lock.
+        recovered.reconcile_no_effect(attempt_id).unwrap();
+        let next = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
+        assert_eq!(
+            recovered.dispatch(next, &grant, 150, "restart-after-reconcile-003"),
+            Ok(2)
+        );
+    }
+
+    #[test]
+    fn committed_effect_and_idempotency_history_survive_snapshot_restart() {
+        let requirement = example_requirement();
+        let plan = "a".repeat(64);
+        let mut grant = valid_grant(&plan);
+        grant.max_dispatches = 2;
+
+        let mut ledger = ParticipantEffectLedger::default();
+        let permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
+        let attempt_id = ledger.dispatch(permit, &grant, 150, "restart-commit-001").unwrap();
+        ledger.commit_effect(attempt_id).unwrap();
+
+        let checkpoint = ledger.export_snapshot().unwrap();
+        let mut recovered = ParticipantEffectLedger::recover_snapshot(&checkpoint)
+            .expect("committed participant effect must survive restart");
+        assert_eq!(recovered.snapshot()[0].state, EffectState::Committed);
+        assert_eq!(recovered.snapshot()[0].committed_effect_count, 1);
+
+        let replay = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
+        assert_eq!(
+            recovered.dispatch(replay, &grant, 150, "restart-commit-001"),
+            Err(LedgerError::DuplicateIdempotencyKey)
+        );
+    }
+
+    #[test]
+    fn recovery_rejects_checkpoint_with_regressed_attempt_counter() {
+        let requirement = example_requirement();
+        let plan = "a".repeat(64);
+        let grant = valid_grant(&plan);
+        let mut ledger = ParticipantEffectLedger::default();
+        let permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
+        ledger.dispatch(permit, &grant, 150, "restart-counter-001").unwrap();
+
+        let checkpoint = ledger.export_snapshot().unwrap();
+        let mut value: serde_json::Value = serde_json::from_slice(&checkpoint).unwrap();
+        value["next_attempt_id"] = serde_json::json!(0);
+        let tampered = serde_json::to_vec(&value).unwrap();
+        assert!(matches!(
+            ParticipantEffectLedger::recover_snapshot(&tampered),
+            Err(CoreError::ResultViolations(_))
+        ));
+    }
+
+    #[test]
     fn stale_and_future_observations_are_unknown() {
         let observation = ServiceObservation {
             source: "synthetic-health-probe".into(),
