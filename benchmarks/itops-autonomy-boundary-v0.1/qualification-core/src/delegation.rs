@@ -706,6 +706,7 @@ pub fn audit_delegation_evidence(
     let mut lineage_complete_authority = true;
     let mut has_unknown_authority = false;
     let mut has_known_denial = false;
+    let mut has_revoked_ancestor = false;
     let mut all_ancestor_authority_fresh = true;
 
     for grant in &mut grants {
@@ -723,6 +724,7 @@ pub fn audit_delegation_evidence(
                     "active" => {}
                     "revoked" => {
                         grant.revoked = true;
+                        has_revoked_ancestor = true;
                         has_known_denial = true;
                         violations.push(format!("ANCESTOR_GRANT_REVOKED:{}", grant.grant_id));
                     }
@@ -750,6 +752,13 @@ pub fn audit_delegation_evidence(
         violations.push("AUTHORITY_CHECK_COUNT_MISMATCH".to_string());
     }
     lineage_complete &= lineage_complete_authority;
+    let expected_chain_authority_state = if has_unknown_authority {
+        "unknown"
+    } else if has_revoked_ancestor {
+        "revoked"
+    } else {
+        "active"
+    };
 
     if let Err(chain_violations) = verify_delegation_chain_at(&grants, bundle.evaluated_at_unix) {
         has_known_denial = true;
@@ -823,12 +832,9 @@ pub fn audit_delegation_evidence(
         }
     }
 
-    let leaf_authority_state = authority_by_grant
-        .get(leaf.grant_id.as_str())
-        .map(|check| check.state.as_str());
-    if leaf_authority_state != Some(participant.authority_state.as_str()) {
+    if participant.authority_state != expected_chain_authority_state {
         has_unknown_authority = true;
-        violations.push("PARTICIPANT_LEAF_AUTHORITY_STATE_MISMATCH".to_string());
+        violations.push("PARTICIPANT_CHAIN_AUTHORITY_STATE_MISMATCH".to_string());
     }
     if bundle.authority_checks.iter().any(|check| {
         check.checked_at_unix > participant.checked_at_unix
@@ -839,11 +845,7 @@ pub fn audit_delegation_evidence(
     if !lineage_complete {
         has_unknown_authority = true;
     }
-    if participant.authority_state == "revoked" {
-        has_known_denial = true;
-    } else if participant.authority_state == "unknown" {
-        has_unknown_authority = true;
-    } else if participant.authority_state != "active" {
+    if !matches!(participant.authority_state.as_str(), "active" | "revoked" | "unknown") {
         has_unknown_authority = true;
         violations.push("PARTICIPANT_AUTHORITY_STATE_INVALID".to_string());
     }
