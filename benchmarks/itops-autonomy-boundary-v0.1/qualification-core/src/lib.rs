@@ -7,6 +7,8 @@
 //! qualification. A future runner must place the gate, participant oracle,
 //! and service observer in separate processes/control domains.
 
+pub mod session_composition;
+
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use chrono::DateTime;
