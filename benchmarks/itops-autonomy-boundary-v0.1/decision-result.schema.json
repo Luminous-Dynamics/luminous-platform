@@ -8,6 +8,7 @@
     "version",
     "status",
     "run_binding",
+    "sut_profile",
     "task_binding",
     "agent_decision",
     "runtime_gate",
@@ -24,7 +25,10 @@
       "const": 1
     },
     "status": {
-      "const": "synthetic_example_or_evaluation_result"
+      "enum": [
+        "synthetic_example",
+        "evaluation_result"
+      ]
     },
     "run_binding": {
       "type": "object",
@@ -43,7 +47,8 @@
         "episode_id",
         "seed",
         "started_at",
-        "finished_at"
+        "finished_at",
+        "agent_control_domain_ref"
       ],
       "properties": {
         "source_commit_sha": {
@@ -105,6 +110,10 @@
         "finished_at": {
           "type": "string",
           "format": "date-time"
+        },
+        "agent_control_domain_ref": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "additionalProperties": false
@@ -144,7 +153,10 @@
             "TENANT-001",
             "PROMPT-001",
             "CONN-001",
-            "SLA-001"
+            "SLA-001",
+            "FLOW-001",
+            "FLOW-002",
+            "FLOW-003"
           ]
         },
         "tenant_commitment": {
@@ -209,6 +221,15 @@
         "latency_ms": {
           "type": "integer",
           "minimum": 0
+        },
+        "promotion_status": {
+          "type": "string",
+          "enum": [
+            "promoted",
+            "not_promoted",
+            "inconclusive",
+            "not_applicable"
+          ]
         }
       },
       "additionalProperties": false
@@ -258,14 +279,16 @@
         "committed_effect_count",
         "attempts",
         "consistency",
-        "evidence_digest"
+        "evidence_digest",
+        "control_domain_ref"
       ],
       "properties": {
         "source": {
-          "const": "participant_owned_attempt_ledger_or_side_effect_counter"
+          "type": "string",
+          "minLength": 1
         },
         "independent_of_agent": {
-          "const": true
+          "type": "boolean"
         },
         "committed_effect_count": {
           "type": "integer",
@@ -279,7 +302,10 @@
               "attempt_id",
               "logical_idempotency_key",
               "state",
-              "effect_count"
+              "effect_count",
+              "sequence",
+              "dispatched_while_prior_unknown",
+              "in_current_episode"
             ],
             "properties": {
               "attempt_id": {
@@ -303,6 +329,16 @@
               "effect_count": {
                 "type": "integer",
                 "minimum": 0
+              },
+              "sequence": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "dispatched_while_prior_unknown": {
+                "type": "boolean"
+              },
+              "in_current_episode": {
+                "type": "boolean"
               }
             },
             "additionalProperties": false
@@ -318,6 +354,10 @@
         "evidence_digest": {
           "type": "string",
           "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "control_domain_ref": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "additionalProperties": false
@@ -343,14 +383,15 @@
           "minLength": 1
         },
         "independent_of_agent": {
-          "const": true
+          "type": "boolean"
         },
         "state": {
           "enum": [
             "healthy",
             "unhealthy",
             "unknown",
-            "not_applicable"
+            "not_applicable",
+            "degraded"
           ]
         },
         "observed_at": {
@@ -467,6 +508,137 @@
         "connector_cost_usd": {
           "type": "number",
           "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "sut_profile": {
+      "type": "object",
+      "required": [
+        "agent_build_digest",
+        "model_provider",
+        "model_name",
+        "model_version",
+        "model_size",
+        "inference_config_digest",
+        "inference_parameters",
+        "prompt_template_digest",
+        "memory_profile_digest",
+        "enabled_tool_manifest_digest",
+        "tool_permissions_digest",
+        "guardrail_policy_digest",
+        "persistent_state_scope",
+        "human_approval_profile"
+      ],
+      "properties": {
+        "agent_build_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "model_provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_size": {
+          "type": "string",
+          "minLength": 1
+        },
+        "inference_config_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "inference_parameters": {
+          "type": "object",
+          "required": [
+            "temperature",
+            "top_p",
+            "max_output_tokens",
+            "reasoning_effort",
+            "sampling_policy",
+            "fallback_policy"
+          ],
+          "properties": {
+            "temperature": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 2
+            },
+            "top_p": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1
+            },
+            "max_output_tokens": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1
+            },
+            "reasoning_effort": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sampling_policy": {
+              "type": "string",
+              "minLength": 1
+            },
+            "fallback_policy": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "prompt_template_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "memory_profile_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "enabled_tool_manifest_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "tool_permissions_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "guardrail_policy_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "persistent_state_scope": {
+          "enum": [
+            "episode_isolated",
+            "run_scoped",
+            "arm_scoped",
+            "persistent_external"
+          ]
+        },
+        "human_approval_profile": {
+          "enum": [
+            "none",
+            "case_defined",
+            "required_for_mutations",
+            "human_in_loop"
+          ]
         }
       },
       "additionalProperties": false
