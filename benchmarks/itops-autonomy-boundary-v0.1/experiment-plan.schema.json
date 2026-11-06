@@ -1,0 +1,431 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/itops-experiment-plan-v0.1.schema.json",
+  "title": "ITOPS Autonomy Boundary Experiment Plan v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "benchmark_id",
+    "plan_id",
+    "version",
+    "status",
+    "preregistered_at",
+    "corpus_digest",
+    "analysis_code_digest",
+    "estimand",
+    "strata",
+    "sampling",
+    "reset_contract",
+    "dependence",
+    "arms",
+    "comparison",
+    "stopping_rule",
+    "inference",
+    "reporting"
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "nonempty": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    }
+  },
+  "properties": {
+    "benchmark_id": {
+      "const": "luminous-itops-autonomy-boundary"
+    },
+    "plan_id": {
+      "$ref": "#/$defs/nonempty"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "status": {
+      "enum": [
+        "preregistered",
+        "superseded"
+      ]
+    },
+    "preregistered_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "corpus_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "analysis_code_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "estimand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target_population",
+        "primary_outcome",
+        "critical_event_definition",
+        "interpretation_ceiling"
+      ],
+      "properties": {
+        "target_population": {
+          "$ref": "#/$defs/nonempty"
+        },
+        "primary_outcome": {
+          "enum": [
+            "critical_violation_probability",
+            "verified_task_completion",
+            "paired_verified_utility"
+          ]
+        },
+        "critical_event_definition": {
+          "$ref": "#/$defs/nonempty"
+        },
+        "interpretation_ceiling": {
+          "const": "Applies only to the declared synthetic population, task-family mixture, SUT profile, and sampling design; not a universal production-risk bound."
+        }
+      }
+    },
+    "strata": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "stratum_id",
+          "task_families",
+          "authority_states",
+          "fault_classes",
+          "minimum_episodes_per_arm",
+          "population_weight"
+        ],
+        "properties": {
+          "stratum_id": {
+            "$ref": "#/$defs/nonempty"
+          },
+          "task_families": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/nonempty"
+            },
+            "uniqueItems": true
+          },
+          "authority_states": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/nonempty"
+            },
+            "uniqueItems": true
+          },
+          "fault_classes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/nonempty"
+            },
+            "uniqueItems": true
+          },
+          "minimum_episodes_per_arm": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "population_weight": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      }
+    },
+    "sampling": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "design",
+        "target_episode_count_per_arm",
+        "seed_algorithm",
+        "seed_manifest_digest",
+        "seed_schedule_digest",
+        "seed_reuse",
+        "randomization_commitment"
+      ],
+      "properties": {
+        "design": {
+          "enum": [
+            "stratified_randomized",
+            "blocked_randomized"
+          ]
+        },
+        "target_episode_count_per_arm": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "seed_algorithm": {
+          "type": "string",
+          "minLength": 1
+        },
+        "seed_manifest_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "seed_schedule_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "seed_reuse": {
+          "const": "forbidden_across_episode_instances"
+        },
+        "randomization_commitment": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "reset_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "environment",
+        "tenant",
+        "participant_ledger",
+        "service_observer",
+        "agent_state",
+        "reset_receipt_required"
+      ],
+      "properties": {
+        "environment": {
+          "const": "fresh_isolated_instance_per_episode"
+        },
+        "tenant": {
+          "const": "fresh_synthetic_tenant_per_episode"
+        },
+        "participant_ledger": {
+          "const": "empty_episode_scoped_ledger_per_episode"
+        },
+        "service_observer": {
+          "const": "fresh_episode_scoped_observer_state_per_episode"
+        },
+        "agent_state": {
+          "enum": [
+            "reset_each_episode",
+            "cluster_and_report_carryover"
+          ]
+        },
+        "reset_receipt_required": {
+          "const": true
+        }
+      }
+    },
+    "dependence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "analysis_unit",
+        "dependence_keys",
+        "cluster_if_shared_state",
+        "cross_episode_memory"
+      ],
+      "properties": {
+        "analysis_unit": {
+          "enum": [
+            "episode",
+            "cluster"
+          ]
+        },
+        "dependence_keys": {
+          "type": "array",
+          "minItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "task_template_id",
+              "scenario_variant_digest",
+              "seed_lineage_id",
+              "agent_session_id",
+              "environment_instance_id",
+              "oracle_instance_id",
+              "infrastructure_failure_domain_id"
+            ]
+          }
+        },
+        "cluster_if_shared_state": {
+          "const": true
+        },
+        "cross_episode_memory": {
+          "enum": [
+            "disabled",
+            "treated_as_shared_cluster"
+          ]
+        }
+      }
+    },
+    "arms": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "arm_id",
+          "role",
+          "system_profile_digest",
+          "environment_boundary"
+        ],
+        "properties": {
+          "arm_id": {
+            "$ref": "#/$defs/nonempty"
+          },
+          "role": {
+            "enum": [
+              "runbook_baseline",
+              "ungated_synthetic_only_agent",
+              "exact_scope_gated_agent"
+            ]
+          },
+          "system_profile_digest": {
+            "$ref": "#/$defs/sha256"
+          },
+          "environment_boundary": {
+            "enum": [
+              "synthetic_only",
+              "runbook_fixture"
+            ]
+          }
+        }
+      }
+    },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "paired_blocks",
+        "block_keys",
+        "primary_pairwise_contrast",
+        "multiple_comparison_policy"
+      ],
+      "properties": {
+        "paired_blocks": {
+          "const": true
+        },
+        "block_keys": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "scenario_variant_digest",
+              "seed_lineage_id",
+              "stratum_id"
+            ]
+          }
+        },
+        "primary_pairwise_contrast": {
+          "const": "exact_scope_gated_agent_vs_runbook_baseline"
+        },
+        "multiple_comparison_policy": {
+          "enum": [
+            "holm_bonferroni",
+            "hierarchical_preregistered",
+            "descriptive_only"
+          ]
+        }
+      }
+    },
+    "stopping_rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "fixed_sample_size",
+        "optional_stopping",
+        "exclusion_policy",
+        "failed_run_policy"
+      ],
+      "properties": {
+        "mode": {
+          "const": "fixed_sample_size_by_stratum"
+        },
+        "fixed_sample_size": {
+          "const": true
+        },
+        "optional_stopping": {
+          "const": false
+        },
+        "exclusion_policy": {
+          "const": "no_posthoc_exclusions; all started episodes retained with explicit terminal status"
+        },
+        "failed_run_policy": {
+          "const": "retain_and_score_as_inconclusive_or_failure_per_preregistered_rule"
+        }
+      }
+    },
+    "inference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "confidence_level",
+        "independent_unit",
+        "zero_event_method",
+        "report_each_stratum",
+        "pooled_weighting"
+      ],
+      "properties": {
+        "confidence_level": {
+          "const": 0.95
+        },
+        "independent_unit": {
+          "enum": [
+            "episode",
+            "cluster"
+          ]
+        },
+        "zero_event_method": {
+          "enum": [
+            "stratified_clopper_pearson_bonferroni_one_sided",
+            "cluster_conservative_one_sided"
+          ]
+        },
+        "report_each_stratum": {
+          "const": true
+        },
+        "pooled_weighting": {
+          "enum": [
+            "preregistered_population_weights",
+            "no_pooled_estimate"
+          ]
+        }
+      }
+    },
+    "reporting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "publish_raw_receipt_digest",
+        "publish_analysis_digest",
+        "publish_arm_profiles",
+        "publish_cluster_counts",
+        "publish_missing_runs"
+      ],
+      "properties": {
+        "publish_raw_receipt_digest": {
+          "const": true
+        },
+        "publish_analysis_digest": {
+          "const": true
+        },
+        "publish_arm_profiles": {
+          "const": true
+        },
+        "publish_cluster_counts": {
+          "const": true
+        },
+        "publish_missing_runs": {
+          "const": true
+        }
+      }
+    }
+  }
+}
