@@ -703,7 +703,7 @@ pub fn audit_delegation_evidence(
         match authority_by_grant.get(grant.grant_id.as_str()).copied() {
             Some(check) => {
                 let fresh = check.checked_at_unix <= bundle.evaluated_at_unix
-                    && (bundle.evaluated_at_unix - check.checked_at_unix) as u64
+                    && bundle.evaluated_at_unix.saturating_sub(check.checked_at_unix) as u64
                         <= bundle.max_authority_age_seconds;
                 if !fresh {
                     all_ancestor_authority_fresh = false;
@@ -772,7 +772,7 @@ pub fn audit_delegation_evidence(
     }
 
     let participant_fresh = participant.checked_at_unix <= bundle.evaluated_at_unix
-        && (bundle.evaluated_at_unix - participant.checked_at_unix) as u64
+        && bundle.evaluated_at_unix.saturating_sub(participant.checked_at_unix) as u64
             <= bundle.max_authority_age_seconds;
     if !participant_fresh {
         all_ancestor_authority_fresh = false;
@@ -814,6 +814,22 @@ pub fn audit_delegation_evidence(
         }
     }
 
+    let leaf_authority_state = authority_by_grant
+        .get(leaf.grant_id.as_str())
+        .map(|check| check.state.as_str());
+    if leaf_authority_state != Some(participant.authority_state.as_str()) {
+        has_unknown_authority = true;
+        violations.push("PARTICIPANT_LEAF_AUTHORITY_STATE_MISMATCH".to_string());
+    }
+    if bundle.authority_checks.iter().any(|check| {
+        check.checked_at_unix > participant.checked_at_unix
+    }) {
+        has_unknown_authority = true;
+        violations.push("PARTICIPANT_RECHECK_PRECEDES_AUTHORITY_EVIDENCE".to_string());
+    }
+    if !lineage_complete {
+        has_unknown_authority = true;
+    }
     if participant.authority_state == "revoked" {
         has_known_denial = true;
     } else if participant.authority_state == "unknown" {
