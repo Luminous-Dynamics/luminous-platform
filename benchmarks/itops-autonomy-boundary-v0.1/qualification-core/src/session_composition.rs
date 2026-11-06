@@ -173,6 +173,20 @@ impl SessionCompositionPolicy {
     }
 }
 
+/// Versioned snapshot format for deterministic session recovery tests.
+/// This schema identifier is not a signature and does not authenticate the
+/// participant journal or prove durable storage.
+const SESSION_COMPOSITION_SNAPSHOT_SCHEMA: &str =
+    "luminous-itops-session-composition-snapshot-v0.1";
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SessionCompositionSnapshot {
+    schema: String,
+    version: u32,
+    state: SessionCompositionState,
+}
+
 impl SessionCompositionState {
     pub fn new(policy: &SessionCompositionPolicy) -> Result<Self, SessionCompositionViolation> {
         policy.validate()?;
@@ -183,6 +197,119 @@ impl SessionCompositionState {
             version: 0,
             effects: Vec::new(),
         })
+    }
+
+    /// Export a deterministic, versioned session checkpoint for restart tests.
+    pub fn export_snapshot(&self) -> Result<Vec<u8>, SessionCompositionViolation> {
+        let snapshot = SessionCompositionSnapshot {
+            schema: SESSION_COMPOSITION_SNAPSHOT_SCHEMA.into(),
+            version: 1,
+            state: self.clone(),
+        };
+        serde_json::to_vec(&snapshot).map_err(|_| SessionCompositionViolation::InvalidSnapshot)
+    }
+
+    /// Recover a session checkpoint and validate the effect-history invariants.
+    /// This proves internal consistency only; it does not authenticate the
+    /// journal, its writer, or its fsync/transactional durability.
+    pub fn recover_snapshot(bytes: &[u8]) -> Result<Self, SessionCompositionViolation> {
+        let snapshot: SessionCompositionSnapshot = serde_json::from_slice(bytes)
+            .map_err(|_| SessionCompositionViolation::InvalidSnapshot)?;
+        if snapshot.schema != SESSION_COMPOSITION_SNAPSHOT_SCHEMA || snapshot.version != 1 {
+            return Err(SessionCompositionViolation::InvalidSnapshot);
+        }
+        let state = snapshot.state;
+        if !nonempty(&state.session_id)
+            || !sha256_digest_is_valid(&state.policy_digest)
+            || state.policy_version == 0
+            || state.version < state.effects.len() as u64
+        {
+            return Err(SessionCompositionViolation::InvalidSnapshot);
+        }
+
+        let mut action_ids = BTreeSet::new();
+        let mut effect_refs = BTreeSet::new();
+        let mut attempt_ids = BTreeSet::new();
+        let mut idempotency_keys = BTreeSet::new();
+        let mut known_effects: BTreeMap<String, &SessionEffectRecord> = BTreeMap::new();
+        let mut previous_admission_version = 0_u64;
+
+        for (index, effect) in state.effects.iter().enumerate() {
+            let expected_sequence = u64::try_from(index)
+                .ok()
+                .and_then(|value| value.checked_add(1))
+                .ok_or(SessionCompositionViolation::InvalidSnapshot)?;
+            if effect.admission_sequence != expected_sequence
+                || effect.admitted_at_state_version <= previous_admission_version
+                || effect.admitted_at_state_version > state.version
+                || effect.policy_version != state.policy_version
+                || !nonempty(&effect.action_id)
+                || !nonempty(&effect.effect_ref)
+                || !nonempty(&effect.attempt_id)
+                || !nonempty(&effect.idempotency_key)
+                || !nonempty(&effect.operation)
+                || !action_ids.insert(effect.action_id.as_str())
+                || !effect_refs.insert(effect.effect_ref.as_str())
+                || !attempt_ids.insert(effect.attempt_id.as_str())
+                || !idempotency_keys.insert(effect.idempotency_key.as_str())
+                || effect.data_labels.iter().any(|label| !nonempty(label))
+            {
+                return Err(SessionCompositionViolation::InvalidSnapshot);
+            }
+            previous_admission_version = effect.admitted_at_state_version;
+
+            match (&effect.recipient_ref, effect.recipient_class) {
+                (None, None) if effect.reserved_transfer_units == 0
+                    && effect.committed_transfer_units == 0 => {}
+                (Some(recipient), Some(class))
+                    if nonempty(recipient) && class != RecipientClass::UnapprovedExternal => {}
+                _ if effect.reserved_transfer_units > 0
+                    || effect.committed_transfer_units > 0 =>
+                {
+                    return Err(SessionCompositionViolation::InvalidSnapshot);
+                }
+                _ => {}
+            }
+
+            match effect.state {
+                SessionEffectState::AcceptedPending | SessionEffectState::OutcomeUnknown => {
+                    if effect.committed_transfer_units != 0 {
+                        return Err(SessionCompositionViolation::InvalidSnapshot);
+                    }
+                }
+                SessionEffectState::EffectCommitted => {
+                    if effect.reserved_transfer_units != 0 {
+                        return Err(SessionCompositionViolation::InvalidSnapshot);
+                    }
+                }
+                SessionEffectState::ReconciledNoEffect => {
+                    if effect.reserved_transfer_units != 0
+                        || effect.committed_transfer_units != 0
+                    {
+                        return Err(SessionCompositionViolation::InvalidSnapshot);
+                    }
+                }
+                SessionEffectState::Conflicting => {
+                    if effect.reserved_transfer_units != effect.committed_transfer_units {
+                        return Err(SessionCompositionViolation::InvalidSnapshot);
+                    }
+                }
+            }
+
+            for source_ref in &effect.source_effect_refs {
+                let source = known_effects
+                    .get(source_ref)
+                    .ok_or(SessionCompositionViolation::InvalidSnapshot)?;
+                if source.state != SessionEffectState::EffectCommitted
+                    || !source.data_labels.is_subset(&effect.data_labels)
+                {
+                    return Err(SessionCompositionViolation::InvalidSnapshot);
+                }
+            }
+            known_effects.insert(effect.effect_ref.clone(), effect);
+        }
+
+        Ok(state)
     }
 
     /// Pure preview. It never mutates session state and can score a denied
@@ -215,6 +342,12 @@ impl SessionCompositionState {
         }
         if !policy.allowed_operations.contains(&proposal.operation) {
             return Err(SessionCompositionViolation::OperationNotAllowed);
+        }
+
+        if proposal.transfer_units > 0
+            && (proposal.recipient_ref.is_none() || proposal.recipient_class.is_none())
+        {
+            return Err(SessionCompositionViolation::RecipientBindingIncomplete);
         }
 
         match (&proposal.recipient_ref, proposal.recipient_class) {
