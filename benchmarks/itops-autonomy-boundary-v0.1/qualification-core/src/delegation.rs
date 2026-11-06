@@ -157,7 +157,7 @@ fn grant_shape_is_valid(grant: &DelegatedAuthorityGrant) -> bool {
         && set_is_valid(&grant.data_scopes)
         && bounds_are_valid(&grant.parameter_bounds)
         && grant.not_before_unix < grant.expires_at_unix
-        && grant.max_dispatches > 0
+        && grant.max_dispatches >= 0
         && grant.max_tool_calls > 0
         && grant.max_resource_units > 0
         && obligation_set_is_valid(&grant.required_approvals)
@@ -507,6 +507,17 @@ mod tests {
         let parent = parent_grant();
         let child = child_grant();
         assert_eq!(check_attenuation(&parent, &child), Ok(()));
+        assert_eq!(verify_delegation_at(&parent, &child, 150), Ok(()));
+    }
+
+
+    #[test]
+    fn zero_mutation_budget_allows_safe_read_only_delegation() {
+        let mut parent = parent_grant();
+        parent.max_dispatches = 0;
+        let mut child = child_grant();
+        child.max_dispatches = 0;
+        child.operations = set(&["read"]);
         assert_eq!(verify_delegation_at(&parent, &child, 150), Ok(()));
     }
 
