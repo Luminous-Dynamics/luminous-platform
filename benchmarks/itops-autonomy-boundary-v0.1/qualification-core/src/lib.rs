@@ -2625,6 +2625,45 @@ mod tests {
     }
 
     #[test]
+    fn delegation_audit_rejects_parameter_value_outside_leaf_scope_even_with_matching_digest() {
+        let result = audit_delegation_fixture_mutation(|example| {
+            example["delegation"]["participant_rechecks"][0]["parameter_bindings"][0]["string_value"] =
+                serde_json::json!("admin_mode");
+            let mut bindings = example["delegation"]["participant_rechecks"][0]["parameter_bindings"]
+                .as_array().unwrap().clone();
+            bindings.sort_by(|left, right| {
+                string_at(left, "name").cmp(&string_at(right, "name"))
+            });
+            let bytes = serde_json::to_vec(&bindings).unwrap();
+            let digest = format!("sha256:{}", sha256_hex(&bytes));
+            example["delegation"]["participant_rechecks"][0]["parameter_digest"] =
+                serde_json::json!(&digest);
+            example["task_binding"]["parameter_digest"] = serde_json::json!(digest);
+        });
+        assert!(matches!(result, Err(CoreError::ResultViolations(_))));
+    }
+
+    #[test]
+    fn delegation_audit_recomputes_canonical_parameter_digest() {
+        let result = audit_delegation_fixture_mutation(|example| {
+            let wrong = "sha256:9999999999999999999999999999999999999999999999999999999999999999";
+            example["delegation"]["participant_rechecks"][0]["parameter_digest"] =
+                serde_json::json!(wrong);
+            example["task_binding"]["parameter_digest"] = serde_json::json!(wrong);
+        });
+        assert!(matches!(result, Err(CoreError::ResultViolations(_))));
+    }
+
+    #[test]
+    fn delegation_audit_rejects_dispatch_at_leaf_expiry_boundary() {
+        let result = audit_delegation_fixture_mutation(|example| {
+            example["delegation"]["chain"][1]["scope"]["expires_at"] =
+                serde_json::json!("2026-10-31T08:01:01Z");
+        });
+        assert!(matches!(result, Err(CoreError::ResultViolations(_))));
+    }
+
+    #[test]
     fn full_schema_rejects_unknown_case_ids_and_invalid_date_time() {
         let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
         let mut catalog: serde_json::Value = serde_json::from_slice(
