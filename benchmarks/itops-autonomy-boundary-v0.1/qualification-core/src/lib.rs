@@ -9,6 +9,7 @@
 
 pub mod delegation;
 pub mod trust_boundary;
+pub mod harness_evolution;
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
