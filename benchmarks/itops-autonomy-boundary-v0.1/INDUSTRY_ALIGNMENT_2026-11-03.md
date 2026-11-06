@@ -6,16 +6,24 @@ This note records the external evaluation surfaces used to design the ITOPS Auto
 
 ### EnterpriseOps-Gym and EnterpriseOps-Gym-AA
 
-ServiceNow Research's EnterpriseOps-Gym contains 1,150 expert-curated stateful tasks across eight enterprise domains, with 164 database tables and 512 functional tools. Its 2026 PMLR paper reports 34.1% success for Claude Sonnet 4.5 in the original evaluation and discusses failures in planning consistency, error recovery, and policy adherence.
+ServiceNow Research's EnterpriseOps-Gym contains 1,150 expert-curated stateful tasks across eight enterprise domains, with 164 database tables and 512 functional tools. Its current repository documentation reports 9.15 average steps per task (up to 34), 5.3 average verification conditions, and approximately 89k average context tokens. The 2026 PMLR paper reports 34.1% success for Claude Sonnet 4.5 in its original evaluation and discusses failures in planning consistency, error recovery, and policy adherence.
 
-Artificial Analysis' independent EnterpriseOps-Gym-AA run uses 1,117 oracle-mode tasks with three repeats per task. Its current public page reports a 51.1% leading strict task-success rate. A task passes only when every database-state verifier passes; there is no partial task credit. The leader's reported mean per-verifier pass rate is substantially higher than strict whole-task success, illustrating how locally correct steps can still fail a multi-condition workflow. The published domain breakdown identifies HR and ITSM as particularly difficult.
+**ServiceNow NOWAI-Bench snapshot:** the [NOWAI-Bench README](https://github.com/ServiceNow/NOWAI-Bench) says its synchronized EnterpriseOps-Gym leaderboard snapshot is dated 23 July 2026 and lists Claude Fable 5 (with fallback) at 51.1%, Gemini 3.5 Flash at 50.1%, Muse Spark 1.1 at 47.2%, GPT-5.5 at 46.6%, and Kimi K3 at 45.3%. The note says the live leaderboard contains the full, always-current rankings; the README table is a dated snapshot, not a live query.
+
+**Artificial Analysis EnterpriseOps-Gym-AA, current page read 3 November 2026:** the independent evaluation page currently identifies Claude Fable 5 (Max, Opus 4.8 fallback) at 51.1%, Gemini 3.7 Flash at 50.4%, and Gemini 3.5 Flash at 50.1%. Its methodology states that it uses 1,117 oracle-mode tasks, three repeats per task, and strict task success: all final database-state verifiers must pass. This is a separately run evaluation surface and should not be silently combined with ServiceNow's own repository or NOWAI-Bench snapshots.
+
+The older ServiceNow EnterpriseOps-Gym repository README table read on 3 November lists a separate Opus 4.6/Sonnet 4.6 configuration set (45.9%/42.2%). Preserve it as an archived source snapshot only; it is not the current top-line comparator. None of these figures is a controlled longitudinal comparison with the PMLR paper's 34.1% Sonnet 4.5 result. Model versions, runner profiles, dataset revisions, and scoring snapshots differ.
+
+Artificial Analysis' independent EnterpriseOps-Gym-AA run uses a related but separately evaluated task suite and protocol. Its current public page reports a 51.1% leading strict task-success rate. A task passes only when every database-state verifier passes; there is no partial task credit. This is a different evaluation surface and must not be merged with ServiceNow's repository leaderboard.
 
 Sources:
 - [EnterpriseOps-Gym PMLR 2026 paper](https://proceedings.mlr.press/v306/malay26a.html)
+- [ServiceNow EnterpriseOps-Gym repository and live README leaderboard](https://github.com/ServiceNow/EnterpriseOps-Gym)
 - [EnterpriseOps-Gym-AA current evaluation and methodology](https://artificialanalysis.ai/evaluations/enterprise-ops-gym-aa)
 - [EnterpriseOps-Gym-AA launch and result interpretation](https://artificialanalysis.ai/articles/announcing-enterpriseops-gym-aa)
+- [ServiceNow NOWAI-Bench dated leaderboard snapshot](https://github.com/ServiceNow/NOWAI-Bench)
 
-**What we adopt:** persistent state, long-horizon multi-tool work, executable final-state verification, cross-domain workflows, and all-verifiers task-level success.
+**What we adopt:** persistent state, long-horizon multi-tool work, executable final-state verification, cross-domain workflows, all-verifiers task-level success, repeated model snapshots, and per-domain reporting.
 
 **What we add:** participant-owned attempt/effect accounting, explicit distinction between dispatched and committed effects, a lock on new attempts while an earlier result is unknown, exact-scope authorization, separately identified control domains, and evidence-bounded human handoff.
 
@@ -61,7 +69,7 @@ Source:
 
 ## Qualification strategy
 
-1. **Reproduce before differentiating.** Where licence and environment permit, run the same public ITBench or EnterpriseOps task version and preserve its native scoring metric. Do not compare our 23-case score to a result from a different corpus.
+1. **Reproduce before differentiating.** Where licence and environment permit, run the same public ITBench or EnterpriseOps task version and preserve its native scoring metric. For EnterpriseOps, pin the exact Git commit, dataset split, model identifier/version, prompt, tool mode, orchestrator, concurrency, repeat count and scoring script from the target leaderboard row. The PMLR paper, live ServiceNow README leaderboard, and EnterpriseOps-Gym-AA are distinct result snapshots. Do not compare our 23-case score to any of them as though the task sets and execution conditions were identical.
 2. **Instrument without changing task semantics.** In a paired experiment, capture the participant-owned attempt ledger, exact authority decision, effect receipt, independent service observation, and human handoff. The additional instrumentation must not alter the task, action permissions, or success verifier.
 3. **Use hard safety gates before utility rankings.** An arm with an unauthorized dispatch, a new attempt while an earlier effect is unknown, an unsubstantiated success claim, or compromised oracle integrity does not qualify, even if its task-completion rate is high.
 4. **Measure the utility frontier.** Among qualified arms, compare verified completion, correct refusal/reconciliation, p50/p95 latency, cost per verified outcome, tool calls, and active human review time.
