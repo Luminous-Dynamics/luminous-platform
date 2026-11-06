@@ -173,6 +173,10 @@
         },
         "delegation_required": {
           "type": "boolean"
+        },
+        "parameter_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
         }
       },
       "additionalProperties": false
@@ -1116,7 +1120,9 @@
         "effect_bindings",
         "provenance",
         "qualification",
-        "acting_leaf_grant_ref"
+        "acting_leaf_grant_ref",
+        "root_manifest_evidence_ref",
+        "root_manifest_evidence_digest"
       ],
       "properties": {
         "schema": {
@@ -1707,6 +1713,14 @@
         "acting_leaf_grant_ref": {
           "type": "string",
           "minLength": 1
+        },
+        "root_manifest_evidence_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "root_manifest_evidence_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
         }
       },
       "allOf": [
@@ -1754,6 +1768,34 @@
         "required": [
           "delegation"
         ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "task_binding": {
+            "properties": {
+              "delegation_required": {
+                "const": true
+              }
+            },
+            "required": [
+              "delegation_required"
+            ]
+          }
+        },
+        "required": [
+          "task_binding"
+        ]
+      },
+      "then": {
+        "properties": {
+          "task_binding": {
+            "required": [
+              "parameter_digest"
+            ]
+          }
+        }
       }
     }
   ]
