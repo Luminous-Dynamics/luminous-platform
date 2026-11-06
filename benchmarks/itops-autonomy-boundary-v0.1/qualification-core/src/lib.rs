@@ -433,6 +433,92 @@ fn parameter_constraints_are_subset(
     })
 }
 
+fn parameter_binding_satisfies_constraint(
+    binding: &serde_json::Value,
+    constraint: &serde_json::Value,
+) -> bool {
+    if string_at(binding, "name") != string_at(constraint, "name") {
+        return false;
+    }
+    match (string_at(binding, "kind"), string_at(constraint, "kind")) {
+        (Some("exact_string"), Some("exact_string")) => {
+            string_at(binding, "string_value") == string_at(constraint, "string_value")
+        }
+        (Some("exact_integer"), Some("exact_integer")) => {
+            value_at(binding, "integer_value").and_then(serde_json::Value::as_i64)
+                == value_at(constraint, "integer_value").and_then(serde_json::Value::as_i64)
+        }
+        (Some("exact_integer"), Some("integer_range")) => {
+            let value = value_at(binding, "integer_value").and_then(serde_json::Value::as_i64);
+            let min = value_at(constraint, "min").and_then(serde_json::Value::as_i64);
+            let max = value_at(constraint, "max").and_then(serde_json::Value::as_i64);
+            matches!((value, min, max), (Some(v), Some(lo), Some(hi)) if lo <= v && v <= hi)
+        }
+        _ => false,
+    }
+}
+
+/// Checks actual synthetic request parameter values against the acting leaf's
+/// scope and recomputes their canonical digest. This closes the gap between a
+/// claimed parameter digest and inspectable parameter semantics in the fixture.
+fn audit_parameter_bindings(
+    recheck: &serde_json::Value,
+    leaf_scope: &serde_json::Value,
+    result: &serde_json::Value,
+) -> Vec<&'static str> {
+    let mut issues = Vec::new();
+    let bindings = value_at(recheck, "parameter_bindings")
+        .and_then(serde_json::Value::as_array);
+    let constraints = value_at(leaf_scope, "parameter_constraints")
+        .and_then(serde_json::Value::as_array);
+    let (Some(bindings), Some(constraints)) = (bindings, constraints) else {
+        return vec!["parameter_bindings_or_constraints_missing"];
+    };
+
+    let mut binding_names = BTreeSet::new();
+    for binding in bindings {
+        let Some(name) = string_at(binding, "name") else {
+            issues.push("parameter_binding_name_missing");
+            continue;
+        };
+        if !binding_names.insert(name.to_string()) {
+            issues.push("duplicate_parameter_binding_name");
+        }
+        let matching: Vec<&serde_json::Value> = constraints.iter()
+            .filter(|constraint| string_at(constraint, "name") == Some(name))
+            .collect();
+        if matching.len() != 1 {
+            issues.push("parameter_binding_not_uniquely_constrained");
+        } else if !parameter_binding_satisfies_constraint(binding, matching[0]) {
+            issues.push("parameter_value_outside_leaf_scope");
+        }
+    }
+
+    let constraint_names: BTreeSet<String> = constraints.iter()
+        .filter_map(|constraint| string_at(constraint, "name").map(str::to_string))
+        .collect();
+    if constraint_names != binding_names {
+        issues.push("parameter_bindings_do_not_cover_exact_leaf_parameter_scope");
+    }
+
+    let mut canonical_bindings = bindings.to_vec();
+    canonical_bindings.sort_by(|left, right| {
+        string_at(left, "name").cmp(&string_at(right, "name"))
+    });
+    match serde_json::to_vec(&canonical_bindings) {
+        Ok(bytes) => {
+            let computed = format!("sha256:{}", sha256_hex(&bytes));
+            if string_at(recheck, "parameter_digest") != Some(computed.as_str())
+                || string_at(result, "task_binding.parameter_digest") != Some(computed.as_str())
+            {
+                issues.push("parameter_digest_does_not_match_canonical_bindings");
+            }
+        }
+        Err(_) => issues.push("parameter_bindings_cannot_be_canonicalized"),
+    }
+    issues
+}
+
 fn delegation_parent_budget_violations(
     child: &serde_json::Value,
     parent: &serde_json::Value,
@@ -1027,6 +1113,16 @@ fn audit_delegation_evidence(
         let attempt = participant_attempts.iter().find(|attempt| {
             string_at(attempt, "attempt_id") == attempt_id
         });
+        if let Some(attempt) = attempt {
+            let dispatch_ms = timestamp_millis_at(attempt, "dispatched_at");
+            let not_before_ms = timestamp_millis_at(leaf, "scope.not_before");
+            let expires_at_ms = timestamp_millis_at(leaf, "scope.expires_at");
+            if !matches!((dispatch_ms, not_before_ms, expires_at_ms),
+                (Some(dispatch), Some(not_before), Some(expires)) if dispatch >= not_before && dispatch < expires)
+            {
+                violations.push(violation("participant dispatch occurred outside the acting leaf grant validity window"));
+            }
+        }
         let checked_ms = timestamp_millis_at(recheck, "checked_at");
         if !matches!((run_started_ms, run_finished_ms, checked_ms),
             (Some(start), Some(finish), Some(checked)) if checked >= start && checked <= finish)
@@ -1068,6 +1164,13 @@ fn audit_delegation_evidence(
             || !target.is_some_and(|value| permitted_targets.contains(value))
         {
             violations.push(violation("participant recheck operation/target is outside the acting leaf scope"));
+        }
+        for code in audit_parameter_bindings(
+            recheck,
+            value_at(leaf, "scope").unwrap_or(&serde_json::Value::Null),
+            result,
+        ) {
+            violations.push(violation(code));
         }
     }
 
