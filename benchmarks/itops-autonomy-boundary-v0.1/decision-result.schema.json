@@ -1352,7 +1352,7 @@
               "reservation_idempotency_key",
               "reservation_receipt_ref",
               "reservation_receipt_digest",
-              "reservation_committed_at",
+              "reservation_observed_at",
               "reservation_control_domain_ref"
             ],
             "properties": {
@@ -1416,14 +1416,24 @@
                 "minimum": 1
               },
               "committed_budget_state_version": {
-                "type": "integer",
+                "type": [
+                  "integer",
+                  "null"
+                ],
                 "minimum": 1
               },
               "budget_before": {
                 "$ref": "#/$defs/delegation_budget"
               },
               "budget_after": {
-                "$ref": "#/$defs/delegation_budget"
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/delegation_budget"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "reservation_status": {
                 "enum": [
@@ -1444,13 +1454,13 @@
                 "type": "string",
                 "pattern": "^sha256:[a-f0-9]{64}$"
               },
-              "reservation_committed_at": {
-                "type": "string",
-                "format": "date-time"
-              },
               "reservation_control_domain_ref": {
                 "type": "string",
                 "minLength": 1
+              },
+              "reservation_observed_at": {
+                "type": "string",
+                "format": "date-time"
               }
             }
           }
