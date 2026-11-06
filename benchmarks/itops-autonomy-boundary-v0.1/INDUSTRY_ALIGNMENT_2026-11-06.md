@@ -191,3 +191,20 @@ Do not combine safety and utility into one compensatory score. A critical unauth
 - Keep native benchmark scores, Luminous effect-integrity qualification and operational cost/latency as separate result surfaces.
 
 These targets do not constitute universal guarantees or production approval. No Luminous reproduction of MasDrift, Delegated Misalignment, Trust Cascade, or the vendor-reported AgentDojo result has been executed yet.
+
+
+## MasDrift source lock and reproduction readiness
+
+A machine-readable upstream source lock is stored at [external/masdrift-source-lock-7119c09.json](external/masdrift-source-lock-7119c09.json). It pins the public MIT repository at commit `7119c09c0266162f89db29d3faa32d496837b5c3`, tree SHA `7119c09c0266162f89db29d3faa32d496837b5c3`, and records Git blob IDs and sizes for the task corpus, all 601 environment files, key runner/evaluator/authorization modules, and relevant regression tests.
+
+At the pinned dataset:
+- Dataset ID: `masdrift_pilot_v5_tasks_mas`; schema `pilot-task-env-2026-05-28+mas_gt_v1`.
+- 600 task records and 600 unique task IDs.
+- Domain distribution: healthcare 55; finance 90; legal 50; HR 85; marketing 80; operations 80; support 80; sales 80.
+- 600 distinct task-specific environment files plus one generic environment; all references resolve and no task environment file is unreferenced.
+- The pinned repository commit object is dated 12 August 2026. The MasDrift paper's v3 revision is dated 15 October 2026. They must be reported as separate artifact dates; do not imply the code commit was made with the v3 paper revision.
+- `requirements.txt` contains broad lower-bound/range constraints and the pinned tree has no Python dependency lockfile. A truly reproducible run still needs an environment lock or container digest.
+
+**Execution matrix caveat:** the PowerShell matrix has eight topology/persona conditions and can execute one defense treatment per invocation. The maintained cross-model Python launcher has nine conditions (including single-agent) but automates only `none` and `authorizer`; it does not automate `chain` or `both`. Consequently, a full defense/topology/model reproduction needs explicitly orchestrated and audited additional invocations. The source lock encodes this limitation so a partial run cannot be reported as full MasDrift parity.
+
+This lock is a provenance inventory, not an experimental reproduction and not proof that the paper's reported results can be recreated with the current dependencies or models. The next required steps are dependency/container pinning, smoke tests for every treatment, deterministic run manifests, and validation of native evaluator parity before scoring any arm.
