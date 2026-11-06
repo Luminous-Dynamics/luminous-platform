@@ -873,14 +873,24 @@ mod tests {
 
     #[test]
     fn sibling_fanout_rejects_duplicate_grant_and_task_ids() {
-        let parent = parent_grant();
-        let first = child_grant();
-        let mut second = first.clone();
-        second.grant_id = "grant-child-duplicate-task".into();
+        let mut parent = parent_grant();
+        parent.allowed_child_task_digests.insert(digest('e'));
+        parent.allowed_child_plan_digests.insert(digest('f'));
 
-        let errors = verify_delegated_children_at(&parent, &[first, second], 150)
-            .expect_err("duplicated task and grant identities must not qualify");
-        assert!(errors.contains(&AttenuationViolation::DuplicateChildTask));
+        let first = child_grant();
+        let mut duplicate_task = first.clone();
+        duplicate_task.grant_id = "grant-child-distinct".into();
+        let task_errors =
+            verify_delegated_children_at(&parent, &[first.clone(), duplicate_task], 150)
+                .expect_err("duplicate task identity must not qualify");
+        assert!(task_errors.contains(&AttenuationViolation::DuplicateChildTask));
+
+        let mut duplicate_grant = second_child_grant();
+        duplicate_grant.grant_id = first.grant_id.clone();
+        let grant_errors =
+            verify_delegated_children_at(&parent, &[first, duplicate_grant], 150)
+                .expect_err("duplicate grant identity must not qualify");
+        assert!(grant_errors.contains(&AttenuationViolation::DuplicateChildGrant));
     }
 
     #[test]
