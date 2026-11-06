@@ -40,6 +40,32 @@ These are individual Internet-Drafts, not adopted IETF standards or normative re
 - [AINETOps Problem Statement, draft-rqd-ainetops-problem-statement-00](https://datatracker.ietf.org/doc/html/draft-rqd-ainetops-problem-statement-00)
 - [Benchmarking Methodology for AI Agents in Network Operations, draft-contreras-bpm-ai-agent-benchmarking-00](https://datatracker.ietf.org/doc/draft-contreras-bpm-ai-agent-benchmarking/)
 
+## Authorization-control and self-evolution benchmark designs
+
+### VerifiedWork Control (UpCube / Ethen, 3 October 2026)
+
+[VerifiedWork Control: Evaluating Delegation, Approval, Revocation, and Agent Authority](https://upcube.ai/resources/research/verifiedwork-control) is a directly relevant **benchmark design**, not a completed public benchmark campaign. It already proposes eight dimensions: out-of-scope denial, exact-action approval binding, approval replay/staleness, revocation, budgets including parallel subagents, delegation attenuation, never-delegable permissions, and prompt-injection resistance.
+
+Its most useful methodological contribution is the separation of two evaluation layers:
+1. **Enforcement layer:** does deterministic runtime enforcement deny unauthorized operations regardless of what the agent attempts?
+2. **Agent behavior:** does the agent avoid violations, handle denials appropriately, and report truthfully?
+
+It also proposes null, adversarial and honest scripted agents; pre-run expected decisions checked against an independent oracle; reordered replay; revocation-latency distributions under load; and false-denial / valid-task utility metrics. This is a strong design to crosswalk against rather than a field whose general problem statement Luminous can claim to have invented.
+
+Evidence must be read carefully. The broader VerifiedWork Control track is explicitly labelled a proposed design and has not been run. It cites one published system card from a single pinned Ethen build: 194 of 197 enumerated conditions matched prediction and oracle on two ordered passes. The authors state that this provides no population or live-traffic claim and involved no statistical test. Its approximately 5-second agent-stop and 30-second p99 no-new-consequential-action targets are proposed engineering targets, not published measured distributions.
+
+**Luminous implication:** adopt the two-layer reporting, adversarial/benign/null reference controls, reordered replay, explicit false-deny metrics, and under-load revocation distributions. Extend them with root-vs-chain-vs-hybrid delegation policy comparisons, participant-committed effects, unknown-outcome reconciliation, source/common-cause provenance, and independent service postconditions. Do not claim these basic enforcement dimensions as unique.
+
+Source: [VerifiedWork Control](https://upcube.ai/resources/research/verifiedwork-control).
+
+### HarnessEvolve: self-evolving agent systems
+
+[HarnessEvolve (arXiv:2609.00829)](https://arxiv.org/abs/2609.00829) studies self-evolution through reference trajectories, separating execution, evaluation, optimization and acceptance gating. It identifies credit-assignment failure, shortcut learning and catastrophic forgetting as central risks. Its approach compares failed executions with reference trajectories and gates changes on quality and non-regression.
+
+This complements EVOHARNESSBENCH: one evaluates preservation/adaptation as the supplied harness changes; the other proposes a method for making harness updates safer. Neither should be collapsed into an ITOPS task-success result. Luminous should test whether a new model, skill, tool or policy update preserves already-qualified authority, revocation, provenance and unknown-outcome properties while improving held-out operational utility.
+
+Source: [HarnessEvolve (arXiv:2609.00829)](https://arxiv.org/abs/2609.00829).
+
 ## What Luminous should measure—and what it should not claim
 
 Do not claim that the delegation-narrowing principle itself is novel; the AINETOps draft already identifies it. The research contribution to test is whether the rule can be made executable and enforced at the final participant boundary across nested task/plan digests, tenant/target/operation/parameter/data constraints, expiry, budgets, revocation, risk, approvals, rollback and postconditions—with source lineage and independently observed effects.
