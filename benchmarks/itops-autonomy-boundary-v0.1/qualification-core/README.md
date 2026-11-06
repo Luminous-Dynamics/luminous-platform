@@ -40,7 +40,9 @@ This crate is the first executable building block for the runner requested in
   it verifies every edge and rejects duplicate child grant/task IDs or aggregate
   dispatch/tool/resource allocations above the parent's supplied budgets. The caller
   must submit the complete sibling batch; repeated fan-out decisions need a shared
-  external budget ledger rather than repeated isolated predicate calls.
+  external budget ledger rather than repeated isolated predicate calls. Aggregate arithmetic
+  uses checked addition and fails closed on overflow; separate legitimate siblings may carry
+  distinct narrowed target/operation sets.
 - Recomputes service-observer freshness from RFC3339 timestamps against a
   provisional 5,000 ms catalogue ceiling; stale observations must be unknown.
 - Requires participant attempt sequence, episode membership, and logical idempotency evidence. It reconciles current-episode attempt counts with the runtime-gate counter, rejects duplicate idempotency attempts, and rejects any attempt dispatched while a prior outcome was unknown.
@@ -54,7 +56,7 @@ This crate is the first executable building block for the runner requested in
   `1 - 0.05^(1/n)`; the episodes must be independent Bernoulli trials under
   one pinned arm/configuration. Identity deduplication alone does not prove
   statistical independence.
-- Includes 55 unit-test sources for catalog loading, schema/meta-schema
+- Includes 56 unit-test sources for catalog loading, schema/meta-schema
   validity and rejection, evidence-integrity and hard-safety gates, scoreable
   wrong-decision/incomplete-handoff/forbidden-promotion outcomes, exact corpus
   binding, exact-scope authorization, dispatch-time grant revalidation, grant
