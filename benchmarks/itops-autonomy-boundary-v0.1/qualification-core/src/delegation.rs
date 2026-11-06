@@ -466,6 +466,14 @@ pub fn verify_root_reanchored_child_at(
     if !root.allowed_child_plan_digests.contains(&child.plan_digest) {
         violations.push(AttenuationViolation::ChildPlanDigestNotAllowed);
     }
+    // The root authorizes the overall task graph; the immediate parent must
+    // also precommit the exact next hop it is allowed to create.
+    if !parent.allowed_child_task_digests.contains(&child.task_digest) {
+        violations.push(AttenuationViolation::ChildTaskDigestNotAllowed);
+    }
+    if !parent.allowed_child_plan_digests.contains(&child.plan_digest) {
+        violations.push(AttenuationViolation::ChildPlanDigestNotAllowed);
+    }
 
     // Task-specific action scopes are anchored to the root, not recursively
     // intersected with an intermediate agent's narrower sibling-task scope.
@@ -1145,8 +1153,8 @@ mod tests {
         root.allowed_child_task_digests = set(&[&digest('c'), &digest('g'), &digest('j')]);
         root.allowed_child_plan_digests = set(&[&digest('d'), &digest('h'), &digest('k')]);
         let mut parent = child_grant();
-        parent.allowed_child_task_digests.clear();
-        parent.allowed_child_plan_digests.clear();
+        parent.allowed_child_task_digests = set(&[&digest('g'), &digest('j')]);
+        parent.allowed_child_plan_digests = set(&[&digest('h'), &digest('k')]);
         (root, parent)
     }
 
@@ -1183,6 +1191,19 @@ mod tests {
             root_reanchored_sibling(&root, &parent, 'g', "service/worker", "restart");
         child.task_digest = digest('z');
         child.plan_digest = digest('y');
+        let errors =
+            verify_root_reanchored_child_at(&[root, parent], &child, 150).unwrap_err();
+        assert!(errors.contains(&AttenuationViolation::ChildTaskDigestNotAllowed));
+        assert!(errors.contains(&AttenuationViolation::ChildPlanDigestNotAllowed));
+    }
+
+    #[test]
+    fn root_reanchor_requires_immediate_parent_precommitment_too() {
+        let (root, mut parent) = root_and_narrow_parent();
+        let child =
+            root_reanchored_sibling(&root, &parent, 'g', "service/worker", "restart");
+        parent.allowed_child_task_digests.clear();
+        parent.allowed_child_plan_digests.clear();
         let errors =
             verify_root_reanchored_child_at(&[root, parent], &child, 150).unwrap_err();
         assert!(errors.contains(&AttenuationViolation::ChildTaskDigestNotAllowed));
