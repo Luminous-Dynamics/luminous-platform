@@ -914,6 +914,85 @@ pub fn verify_delegated_children_at(
     }
 }
 
+/// Verifies an entire root-authorized sibling batch and accounts for shared
+/// budgets against the common immediate parent. The ancestors slice contains the
+/// root through the immediate parent; children is the complete fan-out being
+/// authorized in this decision. Repeated decisions still require durable
+/// participant-owned budget state.
+pub fn verify_root_anchored_children_at(
+    ancestors: &[DelegatedAuthorityGrant],
+    children: &[DelegatedAuthorityGrant],
+    now_unix: i64,
+) -> Result<(), Vec<AttenuationViolation>> {
+    if children.is_empty() {
+        return Ok(());
+    }
+    if ancestors.is_empty() {
+        return Err(vec![AttenuationViolation::InvalidRootAnchoredChain]);
+    }
+
+    let parent = ancestors.last().expect("non-empty ancestors checked above");
+    let mut violations = Vec::new();
+    let mut grant_ids = BTreeSet::new();
+    let mut task_ids = BTreeSet::new();
+    let mut dispatch_budget = 0_u64;
+    let mut tool_budget = 0_u64;
+    let mut resource_budget = 0_u64;
+
+    for child in children {
+        if !grant_ids.insert(child.grant_id.as_str()) {
+            violations.push(AttenuationViolation::DuplicateChildGrant);
+        }
+        if !task_ids.insert(child.task_id.as_str()) {
+            violations.push(AttenuationViolation::DuplicateChildTask);
+        }
+
+        let mut chain = ancestors.to_vec();
+        chain.push(child.clone());
+        if let Err(mut edge_violations) = verify_root_anchored_chain_at(&chain, now_unix) {
+            violations.append(&mut edge_violations);
+        }
+
+        match dispatch_budget.checked_add(child.max_dispatches) {
+            Some(total) => dispatch_budget = total,
+            None => {
+                dispatch_budget = u64::MAX;
+                violations.push(AttenuationViolation::SiblingBudgetOverflow);
+            }
+        }
+        match tool_budget.checked_add(child.max_tool_calls) {
+            Some(total) => tool_budget = total,
+            None => {
+                tool_budget = u64::MAX;
+                violations.push(AttenuationViolation::SiblingBudgetOverflow);
+            }
+        }
+        match resource_budget.checked_add(child.max_resource_units) {
+            Some(total) => resource_budget = total,
+            None => {
+                resource_budget = u64::MAX;
+                violations.push(AttenuationViolation::SiblingBudgetOverflow);
+            }
+        }
+    }
+
+    if dispatch_budget > parent.max_dispatches {
+        violations.push(AttenuationViolation::SiblingDispatchBudgetExceeded);
+    }
+    if tool_budget > parent.max_tool_calls {
+        violations.push(AttenuationViolation::SiblingToolBudgetExceeded);
+    }
+    if resource_budget > parent.max_resource_units {
+        violations.push(AttenuationViolation::SiblingResourceBudgetExceeded);
+    }
+
+    if violations.is_empty() {
+        Ok(())
+    } else {
+        Err(violations)
+    }
+}
+
 /// Verifies every parent-child edge and rejects repeated grant/task identities.
 /// The first entry must be the root grant and the last entry the acting leaf.
 /// This remains a pure benchmark predicate: production must resolve fresh
@@ -1586,6 +1665,48 @@ mod tests {
             verify_root_anchored_chain_at(&[root, parent, child], 150),
             Ok(())
         );
+    }
+
+
+    #[test]
+    fn root_anchored_siblings_allow_precommitted_distinct_root_scopes() {
+        let root = parent_grant();
+        let first = child_grant();
+        let mut second = second_child_grant();
+        second.subject_principal = "agent-c".into();
+        second.targets = set(&["service/worker"]);
+        second.operations = set(&["restart"]);
+        second.data_scopes = set(&["service-config"]);
+        second.parameter_bounds.insert(
+            "replicas".into(),
+            ParameterBound::IntegerRange { min: 4, max: 5 },
+        );
+
+        assert!(check_attenuation(&root, &second).is_err());
+        assert_eq!(
+            verify_root_anchored_children_at(&[root], &[first, second], 150),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn root_anchored_siblings_share_parent_budgets() {
+        let root = parent_grant();
+        let mut first = child_grant();
+        let mut second = second_child_grant();
+        second.subject_principal = "agent-c".into();
+        first.max_dispatches = 3;
+        second.max_dispatches = 3;
+        first.max_tool_calls = 12;
+        second.max_tool_calls = 12;
+        first.max_resource_units = 60;
+        second.max_resource_units = 60;
+
+        let errors = verify_root_anchored_children_at(&[root], &[first, second], 150)
+            .expect_err("aggregate sibling allocations must not exceed root budget");
+        assert!(errors.contains(&AttenuationViolation::SiblingDispatchBudgetExceeded));
+        assert!(errors.contains(&AttenuationViolation::SiblingToolBudgetExceeded));
+        assert!(errors.contains(&AttenuationViolation::SiblingResourceBudgetExceeded));
     }
 
     #[test]
