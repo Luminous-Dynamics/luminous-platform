@@ -24,6 +24,19 @@ This crate is the first executable building block for the runner requested in
   revocation, expiry, or target/operation/plan rebinding.
 - Implements a deterministic participant-effect ledger model with idempotency
   keys and an unknown-outcome lock.
+- Implements an experimental session-wide composition-closure model for
+  Luminous Platform issue #293. Each proposal is evaluated against the complete
+  prior effect history, exact session/policy digest and compare-and-swap state
+  version. It preserves data labels through source-effect references and
+  transformations; rejects forbidden data-recipient and operation-pair
+  compositions; enforces cumulative transfer/recipient caps; and keeps
+  accepted-pending, unknown and conflicting effects reserved until a
+  participant-owned reconciliation or commit transition. An in-process
+  two-thread test admits at most one proposal from a shared stale version.
+  This is a deterministic state-machine model, not proof of distributed
+  linearizability, durable journaling, cross-host fencing or canonical Xenia
+  authority. Production enforcement still requires participant-owned atomic
+  state transitions, crash recovery and a source-bound effect oracle.
 - Adds a pure monotonic-delegation attenuation verifier. A child must preserve
   root task and plan identity, link to its immediate parent and issuer, and use
   task and plan digests explicitly precommitted by the parent. Targets,
@@ -77,7 +90,7 @@ This crate is the first executable building block for the runner requested in
   `1 - 0.05^(1/n)`; the episodes must be independent Bernoulli trials under
   one pinned arm/configuration. Identity deduplication alone does not prove
   statistical independence.
-- Includes 92 unit-test cases (58 qualification-core and 34 delegation-module tests) for catalog loading, schema/meta-schema
+- Includes 110 unit-test cases (92 qualification/delegation and 18 session-composition) (58 qualification-core and 34 delegation-module tests) for catalog loading, schema/meta-schema
   validity and rejection, evidence-integrity and hard-safety gates, scoreable
   wrong-decision/incomplete-handoff/forbidden-promotion outcomes, exact corpus
   binding, exact-scope authorization, dispatch-time grant revalidation, grant
@@ -123,8 +136,10 @@ zero underlying risk. The CLI accepts optional paths in this order:
 ## Explicit non-claims
 
 This is not yet an agent runner, production runtime gate, independent process
-boundary, independent service observer, or measured benchmark. The complete JSON Schema validator and semantic result auditor are present, but have not yet been compiled or run. The effect ledger and observer are in-process
-deterministic models for unit testing. The next issue #213 stages are process
+boundary, independent service observer, or measured benchmark. The complete JSON Schema validator and semantic result auditor are present, but have not yet been compiled or run. The effect ledger, observer and session-composition state machine are in-process
+deterministic models for unit testing. Session composition is a benchmark
+policy model only; it is not a durable distributed participant journal or a
+production information-flow enforcement boundary. The next issue #213 stages are process
 separation, an isolated synthetic episode environment, result generation and
 validation, and repeated experiment arms. The corpus remains
 `candidate_not_frozen`.
