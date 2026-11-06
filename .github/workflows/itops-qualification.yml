@@ -25,7 +25,7 @@ jobs:
       RUST_BACKTRACE: 1
     steps:
       - name: Checkout exact pull-request head
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
@@ -40,22 +40,24 @@ jobs:
       - name: Resolve and fingerprint locked dependency graph
         working-directory: benchmarks/itops-autonomy-boundary-v0.1/qualification-core
         run: |
-          cargo generate-lockfile
+          if [ ! -f Cargo.lock ]; then
+            cargo generate-lockfile
+          fi
           sha256sum Cargo.lock | tee cargo-lockfile.sha256
           cargo metadata --format-version 1 --locked > cargo-metadata.json
 
-      - name: Apply canonical Rust formatting
-        run: cargo fmt --manifest-path benchmarks/itops-autonomy-boundary-v0.1/qualification-core/Cargo.toml --all
-
-      - name: Publish rustfmt-normalized source for exact-head review
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - name: Publish exact dependency lock and metadata
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: itops-rustfmt-${{ github.event.pull_request.head.sha }}
-          path: benchmarks/itops-autonomy-boundary-v0.1/qualification-core/src/
+          name: itops-rust-dependency-lock-${{ github.event.pull_request.head.sha }}
+          path: |
+            benchmarks/itops-autonomy-boundary-v0.1/qualification-core/Cargo.lock
+            benchmarks/itops-autonomy-boundary-v0.1/qualification-core/cargo-lockfile.sha256
+            benchmarks/itops-autonomy-boundary-v0.1/qualification-core/cargo-metadata.json
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 90
 
-      - name: Verify Rust formatting
+      - name: Verify Rust formatting without modifying the checked-out head
         run: cargo fmt --manifest-path benchmarks/itops-autonomy-boundary-v0.1/qualification-core/Cargo.toml --all -- --check
 
       - name: Run qualification and adversarial semantic tests
