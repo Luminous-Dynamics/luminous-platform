@@ -24,6 +24,11 @@ This crate is the first executable building block for the runner requested in
   revocation, expiry, or target/operation/plan rebinding.
 - Implements a deterministic participant-effect ledger model with idempotency
   keys and an unknown-outcome lock.
+- Adds a versioned participant-effect checkpoint/recovery model. Restart validation
+  rejects regressed counters, duplicate attempt IDs/idempotency keys, malformed effect
+  counts, and unresolved attempts that are not terminal; an `outcome_unknown` lock and
+  committed-effect history survive a valid snapshot round-trip. This is a serialized
+  test model, not a durable/fsync-backed production journal or process-isolation proof.
 - Models atomic delegation-budget fan-out reservation with a versioned compare-and-swap
   ledger: complete sibling allocations are checked and deducted once, stale concurrent
   writes conflict, exact idempotent retries return the original receipt, and key reuse
@@ -83,7 +88,7 @@ This crate is the first executable building block for the runner requested in
   `1 - 0.05^(1/n)`; the episodes must be independent Bernoulli trials under
   one pinned arm/configuration. Identity deduplication alone does not prove
   statistical independence.
-- Includes 99 unit-test cases (58 qualification-core and 41 delegation-module tests) for catalog loading, schema/meta-schema
+- Includes 102 unit-test cases (61 qualification-core and 41 delegation-module tests) for catalog loading, schema/meta-schema
   validity and rejection, evidence-integrity and hard-safety gates, scoreable
   wrong-decision/incomplete-handoff/forbidden-promotion outcomes, exact corpus
   binding, exact-scope authorization, dispatch-time grant revalidation, grant
