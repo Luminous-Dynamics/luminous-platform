@@ -562,6 +562,12 @@ fn delegation_scope_violations(
 /// validates shape; this function checks cross-record identity, scope, budget,
 /// participant/effect, and provenance relationships. It does not authenticate
 /// opaque references or prove that referenced processes are independent.
+fn timestamp_millis_at(root: &serde_json::Value, path: &str) -> Option<i64> {
+    string_at(root, path)
+        .and_then(|value| DateTime::parse_from_rfc3339(value).ok())
+        .map(|value| value.timestamp_millis())
+}
+
 fn audit_delegation_evidence(
     result: &serde_json::Value,
     case_id: &str,
@@ -588,12 +594,10 @@ fn audit_delegation_evidence(
 
     let root = &chain[0];
     let acting_leaf_ref = string_at(delegation, "acting_leaf_grant_ref");
-    let leaf = chain.iter().find(|node| {
-        string_at(node, "grant_ref") == acting_leaf_ref
-    }).unwrap_or_else(|| {
-        violations.push(violation("acting leaf grant is absent from delegation chain"));
-        chain.last().expect("chain length checked above")
-    });
+    let leaf = chain.last().expect("chain length checked above");
+    if acting_leaf_ref != string_at(leaf, "grant_ref") {
+        violations.push(violation("acting leaf must be the terminal grant in the ordered delegation chain"));
+    }
     if string_at(root, "role") != Some("root") {
         violations.push(violation("first chain node is not the root"));
     }
@@ -616,11 +620,9 @@ fn audit_delegation_evidence(
         violations.push(violation("root authority and root-node revocation timestamps disagree"));
     }
 
-    let run_started = string_at(result, "run_binding.started_at")
-        .and_then(|value| DateTime::parse_from_rfc3339(value).ok());
-    let run_finished = string_at(result, "run_binding.finished_at")
-        .and_then(|value| DateTime::parse_from_rfc3339(value).ok());
-    if !matches!((run_started, run_finished), (Some(start), Some(finish)) if start <= finish) {
+    let run_started_ms = timestamp_millis_at(result, "run_binding.started_at");
+    let run_finished_ms = timestamp_millis_at(result, "run_binding.finished_at");
+    if !matches!((run_started_ms, run_finished_ms), (Some(start), Some(finish)) if start <= finish) {
         violations.push(violation("run start/finish timestamps are missing or reversed"));
     }
 
@@ -632,18 +634,25 @@ fn audit_delegation_evidence(
         }
         let freshness = u64_at(node, "revocation_freshness_ms");
         let freshness_bound = u64_at(node, "revocation_freshness_bound_ms");
-        if !matches!((freshness, freshness_bound), (Some(age), Some(bound)) if age <= bound) {
-            violations.push(violation("chain grant revocation evidence is stale or unbounded"));
+        let checked_ms = timestamp_millis_at(node, "revocation_checked_at");
+        let recomputed_age = run_finished_ms
+            .zip(checked_ms)
+            .and_then(|(finish, checked)| finish.checked_sub(checked))
+            .and_then(|age| u64::try_from(age).ok());
+        if !matches!((freshness, freshness_bound, recomputed_age),
+            (Some(claimed), Some(bound), Some(actual)) if claimed == actual && actual <= bound)
+        {
+            violations.push(violation("chain grant revocation freshness is stale, unbounded, or disagrees with timestamps"));
         }
-        let checked_at = string_at(node, "revocation_checked_at")
-            .and_then(|value| DateTime::parse_from_rfc3339(value).ok());
-        if !matches!((run_started, run_finished, checked_at),
+        if !matches!((run_started_ms, run_finished_ms, checked_ms),
             (Some(start), Some(finish), Some(checked)) if checked >= start && checked <= finish)
         {
             violations.push(violation("chain grant revocation check is outside the episode interval"));
         }
-        if string_at(node, "revocation_evidence_ref").is_none_or(str::is_empty) {
-            violations.push(violation("chain grant revocation evidence reference is missing"));
+        if string_at(node, "revocation_evidence_ref").is_none_or(str::is_empty)
+            || string_at(node, "revocation_evidence_digest").is_none_or(str::is_empty)
+        {
+            violations.push(violation("chain grant revocation evidence reference/digest is missing"));
         }
 
         if let Some(grant_ref) = string_at(node, "grant_ref") {
