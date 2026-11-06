@@ -1105,7 +1105,8 @@
         "participant_rechecks",
         "effect_bindings",
         "provenance",
-        "qualification"
+        "qualification",
+        "acting_leaf_grant_ref"
       ],
       "properties": {
         "schema": {
@@ -1318,7 +1319,8 @@
               "child_allocations",
               "aggregate_allocated",
               "parent_budget_limit",
-              "outcome"
+              "outcome",
+              "batch_complete"
             ],
             "properties": {
               "batch_id": {
@@ -1356,6 +1358,9 @@
                   "denied",
                   "unknown"
                 ]
+              },
+              "batch_complete": {
+                "const": true
               }
             }
           }
@@ -1652,6 +1657,10 @@
               "type": "boolean"
             }
           }
+        },
+        "acting_leaf_grant_ref": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "allOf": [
