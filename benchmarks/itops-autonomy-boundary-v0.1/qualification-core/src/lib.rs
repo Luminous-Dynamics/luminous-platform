@@ -1150,6 +1150,11 @@ fn audit_delegation_evidence(
             if !evidence_refs.contains(reference) {
                 violations.push(violation("chain grant revocation evidence is absent from provenance"));
             }
+            if evidence_digests.get(reference)
+                != string_at(node, "revocation_evidence_digest").map(str::to_string).as_ref()
+            {
+                violations.push(violation("chain grant revocation evidence digest disagrees with provenance"));
+            }
         }
     }
     for evidence in &evidence_items {
@@ -1165,14 +1170,37 @@ fn audit_delegation_evidence(
         }
     }
     if let Some(authority_ref) = string_at(root_authority, "revocation_evidence_ref") {
-        if !evidence_refs.contains(authority_ref) {
-            violations.push(violation("root revocation evidence reference is absent from provenance"));
+        if !evidence_refs.contains(authority_ref)
+            || evidence_digests.get(authority_ref)
+                != string_at(root_authority, "revocation_evidence_digest").map(str::to_string).as_ref()
+        {
+            violations.push(violation("root revocation evidence reference/digest is absent or inconsistent in provenance"));
+        }
+    }
+    if let (Some(manifest_ref), Some(manifest_digest)) = (root_manifest_ref, root_manifest_digest) {
+        if !evidence_refs.contains(manifest_ref)
+            || evidence_digests.get(manifest_ref) != Some(&manifest_digest.to_string())
+        {
+            violations.push(violation("root task graph manifest reference/digest is absent or inconsistent in provenance"));
         }
     }
     for recheck in &rechecks {
         if let Some(authority_ref) = string_at(recheck, "canonical_authority_evidence_ref") {
-            if !evidence_refs.contains(authority_ref) {
-                violations.push(violation("participant recheck authority evidence is absent from provenance"));
+            if !evidence_refs.contains(authority_ref)
+                || evidence_digests.get(authority_ref)
+                    != string_at(recheck, "canonical_authority_evidence_digest").map(str::to_string).as_ref()
+            {
+                violations.push(violation("participant recheck authority evidence reference/digest is absent or inconsistent in provenance"));
+            }
+        }
+    }
+    for batch in &fanout_batches {
+        if let Some(budget_ref) = string_at(batch, "budget_state_evidence_ref") {
+            if !evidence_refs.contains(budget_ref)
+                || evidence_digests.get(budget_ref)
+                    != string_at(batch, "budget_state_digest").map(str::to_string).as_ref()
+            {
+                violations.push(violation("fan-out budget state reference/digest is absent or inconsistent in provenance"));
             }
         }
     }
