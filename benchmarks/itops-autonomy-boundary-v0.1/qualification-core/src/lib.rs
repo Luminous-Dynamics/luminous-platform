@@ -1062,10 +1062,34 @@ fn audit_delegation_evidence(result: &serde_json::Value, case_id: &str) -> Vec<S
                 "fan-out budget snapshot timestamp is outside the episode interval",
             ));
         }
-        let expected_next_version = u64_at(batch, "budget_state_version")
-            .and_then(|version| version.checked_add(1));
-        if expected_next_version != u64_at(batch, "committed_budget_state_version") {
-            violations.push(violation("budget reservation does not advance the ledger version exactly once"));
+        let reservation_status = string_at(batch, "reservation_status").unwrap_or_default();
+        let version_before = u64_at(batch, "budget_state_version");
+        let version_after = u64_at(batch, "committed_budget_state_version");
+        let expected_next_version = version_before.and_then(|version| version.checked_add(1));
+        match reservation_status {
+            "committed" => {
+                if expected_next_version != version_after {
+                    violations.push(violation("committed budget reservation does not advance the ledger version exactly once"));
+                }
+            }
+            "not_committed" => {
+                if version_before != version_after {
+                    violations.push(violation("not-committed budget reservation changes the ledger version"));
+                }
+            }
+            "unknown" => {
+                if version_after.is_some()
+                    || value_at(batch, "budget_after").is_some_and(|value| !value.is_null())
+                {
+                    violations.push(violation("unknown budget reservation must not claim an after-version or after-balance"));
+                }
+                if u64_at(result, "runtime_gate.dispatched_mutations").unwrap_or(0) != 0
+                    || u64_at(result, "runtime_gate.new_attempts_while_unknown").unwrap_or(u64::MAX) != 0
+                {
+                    violations.push(violation("unknown budget reservation must block all mutation and new attempts"));
+                }
+            }
+            _ => violations.push(violation("unrecognized budget reservation status")),
         }
         let reservation_key = string_at(batch, "reservation_idempotency_key");
         if reservation_key.is_none_or(str::is_empty)
@@ -1073,10 +1097,18 @@ fn audit_delegation_evidence(result: &serde_json::Value, case_id: &str) -> Vec<S
         {
             violations.push(violation("budget reservation idempotency key is missing or reused"));
         }
-        if string_at(batch, "reservation_status") != Some("committed") {
-            violations.push(violation("fan-out reservation is not committed"));
+        if string_at(batch, "reservation_status") != Some("committed")
+            && string_at(batch, "outcome") == Some("qualified")
+        {
+            violations.push(violation("qualified fan-out has no committed atomic reservation"));
         }
-        let reservation_time = timestamp_millis_at(batch, "reservation_committed_at");
+        if string_at(batch, "reservation_status") == Some("not_committed")
+            && (u64_at(result, "runtime_gate.dispatched_mutations").unwrap_or(0) != 0
+                || u64_at(result, "participant_effect_oracle.committed_effect_count").unwrap_or(0) != 0)
+        {
+            violations.push(violation("non-committed fan-out reservation is followed by a dispatched or committed effect"));
+        }
+        let reservation_time = timestamp_millis_at(batch, "reservation_observed_at");
         if !matches!((run_started_ms, run_finished_ms, snapshot_checked_ms, reservation_time),
             (Some(start), Some(finish), Some(snapshot), Some(reserved))
                 if reserved >= snapshot && reserved >= start && reserved <= finish)
@@ -1100,10 +1132,25 @@ fn audit_delegation_evidence(result: &serde_json::Value, case_id: &str) -> Vec<S
             let after = budget_after.and_then(|value| u64_at(value, field));
             let parent_limit = value_at(batch, "parent_budget_limit")
                 .and_then(|value| u64_at(value, field));
-            if !matches!((before, allocated, after), (Some(before), Some(allocated), Some(after))
-                if before.checked_sub(allocated) == Some(after))
-            {
-                violations.push(violation("budget-after state is not the exact checked subtraction of the complete fan-out allocation"));
+            match reservation_status {
+                "committed" => {
+                    if !matches!((before, allocated, after), (Some(before), Some(allocated), Some(after))
+                        if before.checked_sub(allocated) == Some(after))
+                    {
+                        violations.push(violation("committed budget-after state is not the exact checked subtraction of the complete fan-out allocation"));
+                    }
+                }
+                "not_committed" => {
+                    if before != after {
+                        violations.push(violation("not-committed reservation changes available budget"));
+                    }
+                }
+                "unknown" => {
+                    if after.is_some() {
+                        violations.push(violation("unknown reservation exposes a purported post-reservation budget"));
+                    }
+                }
+                _ => {}
             }
             if !matches!((before, parent_limit), (Some(before), Some(limit)) if before <= limit) {
                 violations.push(violation("available budget before reservation exceeds the parent grant limit"));
