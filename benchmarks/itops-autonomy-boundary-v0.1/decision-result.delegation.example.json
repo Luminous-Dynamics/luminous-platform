@@ -26,7 +26,8 @@
     "tenant_commitment": "opaque:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "target_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
     "request_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
-    "delegation_required": true
+    "delegation_required": true,
+    "parameter_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
   },
   "agent_decision": {
     "class": "ACT",
@@ -189,7 +190,7 @@
         "revocation_state": "active",
         "revocation_evidence_ref": "opaque:xenia-root-revocation-001",
         "revocation_checked_at": "2026-10-31T08:01:00Z",
-        "revocation_freshness_ms": 1000,
+        "revocation_freshness_ms": 2000,
         "revocation_freshness_bound_ms": 5000,
         "revocation_evidence_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
       },
@@ -249,7 +250,7 @@
         "revocation_state": "active",
         "revocation_evidence_ref": "opaque:xenia-child-revocation-001",
         "revocation_checked_at": "2026-10-31T08:01:00Z",
-        "revocation_freshness_ms": 1000,
+        "revocation_freshness_ms": 2000,
         "revocation_freshness_bound_ms": 5000,
         "revocation_evidence_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
       }
@@ -349,7 +350,7 @@
         "budget_state_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
         "budget_state_evidence_ref": "opaque:budget-state-001",
         "budget_state_checked_at": "2026-10-31T08:01:00Z",
-        "budget_state_freshness_ms": 1000,
+        "budget_state_freshness_ms": 2000,
         "budget_state_freshness_bound_ms": 5000
       }
     ],
@@ -464,6 +465,8 @@
       "lineage_complete": true,
       "fresh_participant_recheck_complete": true
     },
-    "acting_leaf_grant_ref": "opaque:child-grant-002"
+    "acting_leaf_grant_ref": "opaque:child-grant-002",
+    "root_manifest_evidence_ref": "opaque:root-manifest-002",
+    "root_manifest_evidence_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
   }
 }
