@@ -212,10 +212,22 @@ fn grant_shape_is_valid(grant: &DelegatedAuthorityGrant) -> bool {
         && obligation_set_is_valid(&grant.required_approvals)
         && obligation_set_is_valid(&grant.required_postconditions)
         && obligation_set_is_valid(&grant.rollback_obligations)
-        && grant.allowed_child_task_digests.iter().all(|digest| digest_is_sha256(digest))
-        && grant.allowed_child_plan_digests.iter().all(|digest| digest_is_sha256(digest))
-        && grant.allowed_child_task_plans.iter().all(|(task, plan)| digest_is_sha256(task) && digest_is_sha256(plan))
-        && grant.allowed_descendant_task_plans.iter().all(|(task, plan)| digest_is_sha256(task) && digest_is_sha256(plan))
+        && grant
+            .allowed_child_task_digests
+            .iter()
+            .all(|digest| digest_is_sha256(digest))
+        && grant
+            .allowed_child_plan_digests
+            .iter()
+            .all(|digest| digest_is_sha256(digest))
+        && grant
+            .allowed_child_task_plans
+            .iter()
+            .all(|(task, plan)| digest_is_sha256(task) && digest_is_sha256(plan))
+        && grant
+            .allowed_descendant_task_plans
+            .iter()
+            .all(|(task, plan)| digest_is_sha256(task) && digest_is_sha256(plan))
         && grant.authorized_delegation_edges.iter().all(|edge| {
             let scope = &edge.authorized_scope;
             digest_is_sha256(&edge.parent_task_digest)
@@ -299,15 +311,19 @@ pub fn check_attenuation(
     if child.task_id == parent.task_id {
         violations.push(AttenuationViolation::ChildTaskIdNotDistinct);
     }
-    if !parent.allowed_child_task_digests.contains(&child.task_digest) {
+    if !parent
+        .allowed_child_task_digests
+        .contains(&child.task_digest)
+    {
         violations.push(AttenuationViolation::ChildTaskDigestNotAllowed);
     }
-    if !parent.allowed_child_plan_digests.contains(&child.plan_digest) {
+    if !parent
+        .allowed_child_plan_digests
+        .contains(&child.plan_digest)
+    {
         violations.push(AttenuationViolation::ChildPlanDigestNotAllowed);
     }
-    if parent.allowed_child_task_plans.get(&child.task_digest)
-        != Some(&child.plan_digest)
-    {
+    if parent.allowed_child_task_plans.get(&child.task_digest) != Some(&child.plan_digest) {
         violations.push(AttenuationViolation::ChildPlanDigestNotAllowed);
     }
     if child.tenant_binding != parent.tenant_binding {
@@ -351,21 +367,28 @@ pub fn check_attenuation(
     if child.max_resource_units > parent.max_resource_units {
         violations.push(AttenuationViolation::ResourceBudgetExpanded);
     }
-    if child.remaining_delegation_depth
-        > parent.remaining_delegation_depth.saturating_sub(1)
-    {
+    if child.remaining_delegation_depth > parent.remaining_delegation_depth.saturating_sub(1) {
         violations.push(AttenuationViolation::DelegationDepthExpanded);
     }
     if child.max_risk_level > parent.max_risk_level {
         violations.push(AttenuationViolation::RiskCeilingExpanded);
     }
-    if !parent.required_approvals.is_subset(&child.required_approvals) {
+    if !parent
+        .required_approvals
+        .is_subset(&child.required_approvals)
+    {
         violations.push(AttenuationViolation::ApprovalRequirementWeakened);
     }
-    if !parent.required_postconditions.is_subset(&child.required_postconditions) {
+    if !parent
+        .required_postconditions
+        .is_subset(&child.required_postconditions)
+    {
         violations.push(AttenuationViolation::PostconditionWeakened);
     }
-    if !parent.rollback_obligations.is_subset(&child.rollback_obligations) {
+    if !parent
+        .rollback_obligations
+        .is_subset(&child.rollback_obligations)
+    {
         violations.push(AttenuationViolation::RollbackObligationWeakened);
     }
     if child.delegable && child.remaining_delegation_depth == 0 {
@@ -535,10 +558,16 @@ pub fn verify_root_reanchored_child_at(
     }
     // The root authorizes the overall task graph; the immediate parent must
     // also precommit the exact next hop it is allowed to create.
-    if !parent.allowed_child_task_digests.contains(&child.task_digest) {
+    if !parent
+        .allowed_child_task_digests
+        .contains(&child.task_digest)
+    {
         violations.push(AttenuationViolation::ChildTaskDigestNotAllowed);
     }
-    if !parent.allowed_child_plan_digests.contains(&child.plan_digest) {
+    if !parent
+        .allowed_child_plan_digests
+        .contains(&child.plan_digest)
+    {
         violations.push(AttenuationViolation::ChildPlanDigestNotAllowed);
     }
 
@@ -575,14 +604,10 @@ pub fn verify_root_reanchored_child_at(
     {
         violations.push(AttenuationViolation::ExpiryWidened);
     }
-    if child.max_dispatches > root.max_dispatches
-        || child.max_dispatches > parent.max_dispatches
-    {
+    if child.max_dispatches > root.max_dispatches || child.max_dispatches > parent.max_dispatches {
         violations.push(AttenuationViolation::DispatchBudgetExpanded);
     }
-    if child.max_tool_calls > root.max_tool_calls
-        || child.max_tool_calls > parent.max_tool_calls
-    {
+    if child.max_tool_calls > root.max_tool_calls || child.max_tool_calls > parent.max_tool_calls {
         violations.push(AttenuationViolation::ToolBudgetExpanded);
     }
     if child.max_resource_units > root.max_resource_units
@@ -590,23 +615,25 @@ pub fn verify_root_reanchored_child_at(
     {
         violations.push(AttenuationViolation::ResourceBudgetExpanded);
     }
-    if child.remaining_delegation_depth
-        > parent.remaining_delegation_depth.saturating_sub(1)
-    {
+    if child.remaining_delegation_depth > parent.remaining_delegation_depth.saturating_sub(1) {
         violations.push(AttenuationViolation::DelegationDepthExpanded);
     }
-    if child.max_risk_level > root.max_risk_level
-        || child.max_risk_level > parent.max_risk_level
-    {
+    if child.max_risk_level > root.max_risk_level || child.max_risk_level > parent.max_risk_level {
         violations.push(AttenuationViolation::RiskCeilingExpanded);
     }
     if !root.required_approvals.is_subset(&child.required_approvals) {
         violations.push(AttenuationViolation::ApprovalRequirementWeakened);
     }
-    if !root.required_postconditions.is_subset(&child.required_postconditions) {
+    if !root
+        .required_postconditions
+        .is_subset(&child.required_postconditions)
+    {
         violations.push(AttenuationViolation::PostconditionWeakened);
     }
-    if !root.rollback_obligations.is_subset(&child.rollback_obligations) {
+    if !root
+        .rollback_obligations
+        .is_subset(&child.rollback_obligations)
+    {
         violations.push(AttenuationViolation::RollbackObligationWeakened);
     }
 
@@ -765,9 +792,7 @@ pub fn verify_root_anchored_chain_at(
         if !parent.delegable || parent.remaining_delegation_depth == 0 {
             violations.push(AttenuationViolation::ParentCannotDelegate);
         }
-        if child.root_task_id != root.root_task_id
-            || child.root_task_id != parent.root_task_id
-        {
+        if child.root_task_id != root.root_task_id || child.root_task_id != parent.root_task_id {
             violations.push(AttenuationViolation::RootTaskChanged);
         }
         if child.root_task_digest != root.root_task_digest
@@ -798,20 +823,22 @@ pub fn verify_root_anchored_chain_at(
         if child.task_id == parent.task_id {
             violations.push(AttenuationViolation::ChildTaskIdNotDistinct);
         }
-        if !parent.allowed_child_task_digests.contains(&child.task_digest) {
+        if !parent
+            .allowed_child_task_digests
+            .contains(&child.task_digest)
+        {
             violations.push(AttenuationViolation::ChildTaskDigestNotAllowed);
         }
-        if !parent.allowed_child_plan_digests.contains(&child.plan_digest) {
-            violations.push(AttenuationViolation::ChildPlanDigestNotAllowed);
-        }
-        if parent.allowed_child_task_plans.get(&child.task_digest)
-            != Some(&child.plan_digest)
+        if !parent
+            .allowed_child_plan_digests
+            .contains(&child.plan_digest)
         {
             violations.push(AttenuationViolation::ChildPlanDigestNotAllowed);
         }
-        if root.allowed_descendant_task_plans.get(&child.task_digest)
-            != Some(&child.plan_digest)
-        {
+        if parent.allowed_child_task_plans.get(&child.task_digest) != Some(&child.plan_digest) {
+            violations.push(AttenuationViolation::ChildPlanDigestNotAllowed);
+        }
+        if root.allowed_descendant_task_plans.get(&child.task_digest) != Some(&child.plan_digest) {
             violations.push(AttenuationViolation::RootDescendantTaskPlanNotAllowed);
         }
 
@@ -831,19 +858,30 @@ pub fn verify_root_anchored_chain_at(
             || !child.targets.is_subset(&authorized_scope.targets)
             || !child.operations.is_subset(&authorized_scope.operations)
             || !child.data_scopes.is_subset(&authorized_scope.data_scopes)
-            || authorized_scope.parameter_bounds.iter().any(|(name, bound)| {
-                child.parameter_bounds.get(name)
-                    .is_none_or(|child_bound| !parameter_bound_is_subset(child_bound, bound))
-            })
+            || authorized_scope
+                .parameter_bounds
+                .iter()
+                .any(|(name, bound)| {
+                    child
+                        .parameter_bounds
+                        .get(name)
+                        .is_none_or(|child_bound| !parameter_bound_is_subset(child_bound, bound))
+                })
             || child.not_before_unix < authorized_scope.not_before_unix
             || child.expires_at_unix > authorized_scope.expires_at_unix
             || child.max_dispatches > authorized_scope.max_dispatches
             || child.max_tool_calls > authorized_scope.max_tool_calls
             || child.max_resource_units > authorized_scope.max_resource_units
             || child.max_risk_level > authorized_scope.max_risk_level
-            || !authorized_scope.required_approvals.is_subset(&child.required_approvals)
-            || !authorized_scope.required_postconditions.is_subset(&child.required_postconditions)
-            || !authorized_scope.rollback_obligations.is_subset(&child.rollback_obligations)
+            || !authorized_scope
+                .required_approvals
+                .is_subset(&child.required_approvals)
+            || !authorized_scope
+                .required_postconditions
+                .is_subset(&child.required_postconditions)
+            || !authorized_scope
+                .rollback_obligations
+                .is_subset(&child.rollback_obligations)
         {
             violations.push(AttenuationViolation::RootAuthorizedSubtaskScopeExpanded);
         }
@@ -856,7 +894,9 @@ pub fn verify_root_anchored_chain_at(
             || !child.operations.is_subset(&root.operations)
             || !child.data_scopes.is_subset(&root.data_scopes)
             || root.parameter_bounds.iter().any(|(name, bound)| {
-                child.parameter_bounds.get(name)
+                child
+                    .parameter_bounds
+                    .get(name)
                     .is_none_or(|child_bound| !parameter_bound_is_subset(child_bound, bound))
             })
             || child.max_risk_level > root.max_risk_level
@@ -866,8 +906,12 @@ pub fn verify_root_anchored_chain_at(
             || child.max_tool_calls > root.max_tool_calls
             || child.max_resource_units > root.max_resource_units
             || !root.required_approvals.is_subset(&child.required_approvals)
-            || !root.required_postconditions.is_subset(&child.required_postconditions)
-            || !root.rollback_obligations.is_subset(&child.rollback_obligations)
+            || !root
+                .required_postconditions
+                .is_subset(&child.required_postconditions)
+            || !root
+                .rollback_obligations
+                .is_subset(&child.rollback_obligations)
         {
             violations.push(AttenuationViolation::RootEnvelopeScopeExpanded);
         }
@@ -889,21 +933,28 @@ pub fn verify_root_anchored_chain_at(
         if child.max_resource_units > parent.max_resource_units {
             violations.push(AttenuationViolation::ResourceBudgetExpanded);
         }
-        if child.remaining_delegation_depth
-            > parent.remaining_delegation_depth.saturating_sub(1)
-        {
+        if child.remaining_delegation_depth > parent.remaining_delegation_depth.saturating_sub(1) {
             violations.push(AttenuationViolation::DelegationDepthExpanded);
         }
         if child.max_risk_level > parent.max_risk_level {
             violations.push(AttenuationViolation::RiskCeilingExpanded);
         }
-        if !parent.required_approvals.is_subset(&child.required_approvals) {
+        if !parent
+            .required_approvals
+            .is_subset(&child.required_approvals)
+        {
             violations.push(AttenuationViolation::ApprovalRequirementWeakened);
         }
-        if !parent.required_postconditions.is_subset(&child.required_postconditions) {
+        if !parent
+            .required_postconditions
+            .is_subset(&child.required_postconditions)
+        {
             violations.push(AttenuationViolation::PostconditionWeakened);
         }
-        if !parent.rollback_obligations.is_subset(&child.rollback_obligations) {
+        if !parent
+            .rollback_obligations
+            .is_subset(&child.rollback_obligations)
+        {
             violations.push(AttenuationViolation::RollbackObligationWeakened);
         }
     }
@@ -1104,10 +1155,7 @@ pub fn verify_delegation_chain_at(
     }
 }
 
-fn parameter_bound_is_subset(
-    child: &ParameterBound,
-    parent: &ParameterBound,
-) -> bool {
+fn parameter_bound_is_subset(child: &ParameterBound, parent: &ParameterBound) -> bool {
     match (child, parent) {
         (ParameterBound::ExactString(child), ParameterBound::ExactString(parent)) => {
             child == parent
@@ -1115,10 +1163,9 @@ fn parameter_bound_is_subset(
         (ParameterBound::ExactInteger(child), ParameterBound::ExactInteger(parent)) => {
             child == parent
         }
-        (
-            ParameterBound::ExactInteger(value),
-            ParameterBound::IntegerRange { min, max },
-        ) => value >= min && value <= max,
+        (ParameterBound::ExactInteger(value), ParameterBound::IntegerRange { min, max }) => {
+            value >= min && value <= max
+        }
         (
             ParameterBound::IntegerRange {
                 min: child_min,
@@ -1153,8 +1200,14 @@ mod tests {
             targets: set(&["service/api"]),
             operations: set(&["read"]),
             parameter_bounds: BTreeMap::from([
-                ("replicas".into(), ParameterBound::IntegerRange { min: 2, max: 3 }),
-                ("region".into(), ParameterBound::ExactString("af-south-1".into())),
+                (
+                    "replicas".into(),
+                    ParameterBound::IntegerRange { min: 2, max: 3 },
+                ),
+                (
+                    "region".into(),
+                    ParameterBound::ExactString("af-south-1".into()),
+                ),
             ]),
             data_scopes: set(&["metrics"]),
             not_before_unix: 120,
@@ -1175,8 +1228,14 @@ mod tests {
             targets: set(&["service/worker"]),
             operations: set(&["restart"]),
             parameter_bounds: BTreeMap::from([
-                ("replicas".into(), ParameterBound::IntegerRange { min: 4, max: 5 }),
-                ("region".into(), ParameterBound::ExactString("af-south-1".into())),
+                (
+                    "replicas".into(),
+                    ParameterBound::IntegerRange { min: 4, max: 5 },
+                ),
+                (
+                    "region".into(),
+                    ParameterBound::ExactString("af-south-1".into()),
+                ),
             ]),
             data_scopes: set(&["service-config"]),
             not_before_unix: 140,
@@ -1209,8 +1268,14 @@ mod tests {
             targets: set(&["service/api", "service/worker"]),
             operations: set(&["read", "restart"]),
             parameter_bounds: BTreeMap::from([
-                ("replicas".into(), ParameterBound::IntegerRange { min: 1, max: 5 }),
-                ("region".into(), ParameterBound::ExactString("af-south-1".into())),
+                (
+                    "replicas".into(),
+                    ParameterBound::IntegerRange { min: 1, max: 5 },
+                ),
+                (
+                    "region".into(),
+                    ParameterBound::ExactString("af-south-1".into()),
+                ),
             ]),
             data_scopes: set(&["metrics", "service-config"]),
             not_before_unix: 100,
@@ -1225,8 +1290,14 @@ mod tests {
             rollback_obligations: set(&["restore-replicas"]),
             allowed_child_task_digests: set(&[&digest('c'), &digest('e')]),
             allowed_child_plan_digests: set(&[&digest('d'), &digest('f')]),
-            allowed_child_task_plans: BTreeMap::from([(digest('c'), digest('d')), (digest('e'), digest('f'))]),
-            allowed_descendant_task_plans: BTreeMap::from([(digest('c'), digest('d')), (digest('e'), digest('f'))]),
+            allowed_child_task_plans: BTreeMap::from([
+                (digest('c'), digest('d')),
+                (digest('e'), digest('f')),
+            ]),
+            allowed_descendant_task_plans: BTreeMap::from([
+                (digest('c'), digest('d')),
+                (digest('e'), digest('f')),
+            ]),
             authorized_delegation_edges: BTreeSet::from([
                 RootDelegationEdge {
                     parent_task_digest: digest('a'),
@@ -1277,8 +1348,14 @@ mod tests {
             targets: set(&["service/api"]),
             operations: set(&["read"]),
             parameter_bounds: BTreeMap::from([
-                ("replicas".into(), ParameterBound::IntegerRange { min: 2, max: 3 }),
-                ("region".into(), ParameterBound::ExactString("af-south-1".into())),
+                (
+                    "replicas".into(),
+                    ParameterBound::IntegerRange { min: 2, max: 3 },
+                ),
+                (
+                    "region".into(),
+                    ParameterBound::ExactString("af-south-1".into()),
+                ),
             ]),
             data_scopes: set(&["metrics"]),
             not_before_unix: 120,
@@ -1313,7 +1390,6 @@ mod tests {
         assert_eq!(verify_delegation_at(&parent, &child, 150), Ok(()));
     }
 
-
     #[test]
     fn zero_mutation_budget_allows_safe_read_only_delegation() {
         let mut parent = parent_grant();
@@ -1328,10 +1404,9 @@ mod tests {
     fn exact_integer_inside_parent_range_is_accepted() {
         let parent = parent_grant();
         let mut child = child_grant();
-        child.parameter_bounds.insert(
-            "replicas".into(),
-            ParameterBound::ExactInteger(3),
-        );
+        child
+            .parameter_bounds
+            .insert("replicas".into(), ParameterBound::ExactInteger(3));
         assert_eq!(check_attenuation(&parent, &child), Ok(()));
     }
 
@@ -1372,10 +1447,9 @@ mod tests {
     fn incomparable_parameter_types_fail_closed() {
         let parent = parent_grant();
         let mut child = child_grant();
-        child.parameter_bounds.insert(
-            "replicas".into(),
-            ParameterBound::ExactString("3".into()),
-        );
+        child
+            .parameter_bounds
+            .insert("replicas".into(), ParameterBound::ExactString("3".into()));
         assert!(check_attenuation(&parent, &child).unwrap_err().contains(
             &AttenuationViolation::ParameterScopeExpanded("replicas".into())
         ));
@@ -1441,9 +1515,11 @@ mod tests {
         let parent = parent_grant();
         let mut child = child_grant();
         child.grant_id = parent.grant_id.clone();
-        assert!(check_attenuation(&parent, &child).unwrap_err().contains(
-            &AttenuationViolation::ChildGrantIdNotDistinct
-        ));
+        assert!(
+            check_attenuation(&parent, &child)
+                .unwrap_err()
+                .contains(&AttenuationViolation::ChildGrantIdNotDistinct)
+        );
     }
 
     #[test]
@@ -1456,23 +1532,34 @@ mod tests {
         assert!(errors.contains(&AttenuationViolation::ChildPlanDigestNotAllowed));
     }
 
-
     #[test]
     fn parent_child_task_and_plan_digests_must_be_an_exact_pair() {
         let mut parent = parent_grant();
         parent.allowed_child_task_digests.insert(digest('e'));
         parent.allowed_child_plan_digests.insert(digest('f'));
-        parent.allowed_child_task_plans.insert(digest('e'), digest('d'));
+        parent
+            .allowed_child_task_plans
+            .insert(digest('e'), digest('d'));
         let mut child = second_child_grant();
         child.plan_digest = digest('f');
 
         // Both digests are individually present, but this exact combination
         // was never authorized by the parent.
-        assert!(parent.allowed_child_task_digests.contains(&child.task_digest));
-        assert!(parent.allowed_child_plan_digests.contains(&child.plan_digest));
-        assert!(check_attenuation(&parent, &child).unwrap_err().contains(
-            &AttenuationViolation::ChildPlanDigestNotAllowed
-        ));
+        assert!(
+            parent
+                .allowed_child_task_digests
+                .contains(&child.task_digest)
+        );
+        assert!(
+            parent
+                .allowed_child_plan_digests
+                .contains(&child.plan_digest)
+        );
+        assert!(
+            check_attenuation(&parent, &child)
+                .unwrap_err()
+                .contains(&AttenuationViolation::ChildPlanDigestNotAllowed)
+        );
     }
 
     #[test]
@@ -1480,9 +1567,11 @@ mod tests {
         let parent = parent_grant();
         let mut child = child_grant();
         child.plan_digest = digest('e');
-        assert!(check_attenuation(&parent, &child).unwrap_err().contains(
-            &AttenuationViolation::ChildPlanDigestNotAllowed
-        ));
+        assert!(
+            check_attenuation(&parent, &child)
+                .unwrap_err()
+                .contains(&AttenuationViolation::ChildPlanDigestNotAllowed)
+        );
     }
 
     #[test]
@@ -1491,9 +1580,11 @@ mod tests {
         let child = child_grant();
         parent.delegable = false;
         parent.remaining_delegation_depth = 0;
-        assert!(check_attenuation(&parent, &child).unwrap_err().contains(
-            &AttenuationViolation::ParentCannotDelegate
-        ));
+        assert!(
+            check_attenuation(&parent, &child)
+                .unwrap_err()
+                .contains(&AttenuationViolation::ParentCannotDelegate)
+        );
     }
 
     #[test]
@@ -1501,23 +1592,31 @@ mod tests {
         let mut parent = parent_grant();
         let child = child_grant();
         parent.revoked = true;
-        assert!(verify_delegation_at(&parent, &child, 150).unwrap_err().contains(
-            &AttenuationViolation::ParentRevoked
-        ));
+        assert!(
+            verify_delegation_at(&parent, &child, 150)
+                .unwrap_err()
+                .contains(&AttenuationViolation::ParentRevoked)
+        );
 
         parent.revoked = false;
-        assert!(verify_delegation_at(&parent, &child, 500).unwrap_err().contains(
-            &AttenuationViolation::ParentExpired
-        ));
-        assert!(verify_delegation_at(&parent, &child, 300).unwrap_err().contains(
-            &AttenuationViolation::ChildExpired
-        ));
+        assert!(
+            verify_delegation_at(&parent, &child, 500)
+                .unwrap_err()
+                .contains(&AttenuationViolation::ParentExpired)
+        );
+        assert!(
+            verify_delegation_at(&parent, &child, 300)
+                .unwrap_err()
+                .contains(&AttenuationViolation::ChildExpired)
+        );
 
         let mut revoked_child = child;
         revoked_child.revoked = true;
-        assert!(verify_delegation_at(&parent, &revoked_child, 150).unwrap_err().contains(
-            &AttenuationViolation::ChildRevoked
-        ));
+        assert!(
+            verify_delegation_at(&parent, &revoked_child, 150)
+                .unwrap_err()
+                .contains(&AttenuationViolation::ChildRevoked)
+        );
     }
 
     fn grandchild_grant(parent: &DelegatedAuthorityGrant) -> DelegatedAuthorityGrant {
@@ -1539,7 +1638,10 @@ mod tests {
             operations: set(&["read"]),
             parameter_bounds: BTreeMap::from([
                 ("replicas".into(), ParameterBound::ExactInteger(2)),
-                ("region".into(), ParameterBound::ExactString("af-south-1".into())),
+                (
+                    "region".into(),
+                    ParameterBound::ExactString("af-south-1".into()),
+                ),
             ]),
             data_scopes: set(&["metrics"]),
             not_before_unix: 140,
@@ -1562,7 +1664,6 @@ mod tests {
         }
     }
 
-
     fn second_child_grant() -> DelegatedAuthorityGrant {
         let mut child = child_grant();
         child.grant_id = "grant-child-2".into();
@@ -1574,7 +1675,6 @@ mod tests {
         child.allowed_child_task_plans.clear();
         child
     }
-
 
     fn root_reanchored_sibling(
         root: &DelegatedAuthorityGrant,
@@ -1627,10 +1727,8 @@ mod tests {
         let mut parent = child_grant();
         parent.allowed_child_task_digests = set(&[&digest('1'), &digest('3')]);
         parent.allowed_child_plan_digests = set(&[&digest('2'), &digest('4')]);
-        parent.allowed_child_task_plans = BTreeMap::from([
-            (digest('1'), digest('2')),
-            (digest('3'), digest('4')),
-        ]);
+        parent.allowed_child_task_plans =
+            BTreeMap::from([(digest('1'), digest('2')), (digest('3'), digest('4'))]);
         (root, parent)
     }
 
@@ -1640,11 +1738,19 @@ mod tests {
         // The parent is narrowed to service/api + read. The root pre-authorized
         // another task on service/worker + restart, so the child need not be
         // crippled by the parent's unrelated task-specific scope.
-        let child =
-            root_reanchored_sibling(&root, &parent, 'g', "service/worker", "restart");
-        assert!(grant_shape_is_valid(&root), "root grant shape is invalid: {root:#?}");
-        assert!(grant_shape_is_valid(&parent), "intermediate grant shape is invalid: {parent:#?}");
-        assert!(grant_shape_is_valid(&child), "child grant shape is invalid: {child:#?}");
+        let child = root_reanchored_sibling(&root, &parent, 'g', "service/worker", "restart");
+        assert!(
+            grant_shape_is_valid(&root),
+            "root grant shape is invalid: {root:#?}"
+        );
+        assert!(
+            grant_shape_is_valid(&parent),
+            "intermediate grant shape is invalid: {parent:#?}"
+        );
+        assert!(
+            grant_shape_is_valid(&child),
+            "child grant shape is invalid: {child:#?}"
+        );
         assert!(child.targets.is_disjoint(&parent.targets));
         assert!(child.operations.is_disjoint(&parent.operations));
         assert_eq!(
@@ -1656,22 +1762,21 @@ mod tests {
     #[test]
     fn root_reanchor_still_denies_scope_outside_root_envelope() {
         let (root, parent) = root_and_narrow_parent();
-        let child =
-            root_reanchored_sibling(&root, &parent, 'g', "service/database", "restart");
-        assert!(verify_root_reanchored_child_at(&[root, parent], &child, 150)
-            .unwrap_err()
-            .contains(&AttenuationViolation::TargetScopeExpanded));
+        let child = root_reanchored_sibling(&root, &parent, 'g', "service/database", "restart");
+        assert!(
+            verify_root_reanchored_child_at(&[root, parent], &child, 150)
+                .unwrap_err()
+                .contains(&AttenuationViolation::TargetScopeExpanded)
+        );
     }
 
     #[test]
     fn root_reanchor_requires_root_precommitment_of_task_and_plan() {
         let (root, parent) = root_and_narrow_parent();
-        let mut child =
-            root_reanchored_sibling(&root, &parent, 'g', "service/worker", "restart");
+        let mut child = root_reanchored_sibling(&root, &parent, 'g', "service/worker", "restart");
         child.task_digest = digest('z');
         child.plan_digest = digest('y');
-        let errors =
-            verify_root_reanchored_child_at(&[root, parent], &child, 150).unwrap_err();
+        let errors = verify_root_reanchored_child_at(&[root, parent], &child, 150).unwrap_err();
         assert!(errors.contains(&AttenuationViolation::ChildTaskDigestNotAllowed));
         assert!(errors.contains(&AttenuationViolation::ChildPlanDigestNotAllowed));
     }
@@ -1679,12 +1784,10 @@ mod tests {
     #[test]
     fn root_reanchor_requires_immediate_parent_precommitment_too() {
         let (root, mut parent) = root_and_narrow_parent();
-        let child =
-            root_reanchored_sibling(&root, &parent, 'g', "service/worker", "restart");
+        let child = root_reanchored_sibling(&root, &parent, 'g', "service/worker", "restart");
         parent.allowed_child_task_digests.clear();
         parent.allowed_child_plan_digests.clear();
-        let errors =
-            verify_root_reanchored_child_at(&[root, parent], &child, 150).unwrap_err();
+        let errors = verify_root_reanchored_child_at(&[root, parent], &child, 150).unwrap_err();
         assert!(errors.contains(&AttenuationViolation::ChildTaskDigestNotAllowed));
         assert!(errors.contains(&AttenuationViolation::ChildPlanDigestNotAllowed));
     }
@@ -1692,20 +1795,23 @@ mod tests {
     #[test]
     fn root_reanchor_requires_delegable_active_parent_and_root() {
         let (mut root, mut parent) = root_and_narrow_parent();
-        let child =
-            root_reanchored_sibling(&root, &parent, 'g', "service/worker", "restart");
+        let child = root_reanchored_sibling(&root, &parent, 'g', "service/worker", "restart");
         parent.delegable = false;
         parent.remaining_delegation_depth = 0;
-        assert!(verify_root_reanchored_child_at(&[root.clone(), parent.clone()], &child, 150)
-            .unwrap_err()
-            .contains(&AttenuationViolation::ParentCannotDelegate));
+        assert!(
+            verify_root_reanchored_child_at(&[root.clone(), parent.clone()], &child, 150)
+                .unwrap_err()
+                .contains(&AttenuationViolation::ParentCannotDelegate)
+        );
 
         parent.delegable = true;
         parent.remaining_delegation_depth = 1;
         root.revoked = true;
-        assert!(verify_root_reanchored_child_at(&[root, parent], &child, 150)
-            .unwrap_err()
-            .contains(&AttenuationViolation::ParentRevoked));
+        assert!(
+            verify_root_reanchored_child_at(&[root, parent], &child, 150)
+                .unwrap_err()
+                .contains(&AttenuationViolation::ParentRevoked)
+        );
     }
 
     #[test]
@@ -1713,14 +1819,13 @@ mod tests {
         let (mut root, mut parent) = root_and_narrow_parent();
         root.allowed_child_task_digests.insert(digest('3'));
         root.allowed_child_plan_digests.insert(digest('4'));
-        root.allowed_child_task_plans.insert(digest('3'), digest('4'));
+        root.allowed_child_task_plans
+            .insert(digest('3'), digest('4'));
         parent.max_dispatches = 3;
         parent.max_tool_calls = 6;
         parent.max_resource_units = 12;
-        let first =
-            root_reanchored_sibling(&root, &parent, 'g', "service/worker", "restart");
-        let mut second =
-            root_reanchored_sibling(&root, &parent, 'j', "service/api", "read");
+        let first = root_reanchored_sibling(&root, &parent, 'g', "service/worker", "restart");
+        let mut second = root_reanchored_sibling(&root, &parent, 'j', "service/api", "read");
         second.grant_id = "grant-hybrid-j".into();
         second.task_id = "task-hybrid-j".into();
         second.task_digest = digest('3');
@@ -1730,13 +1835,17 @@ mod tests {
         second.max_resource_units = 7;
 
         assert_eq!(
-            verify_root_reanchored_children_at(&[root.clone(), parent.clone()], &[first.clone(), second.clone()], 150),
+            verify_root_reanchored_children_at(
+                &[root.clone(), parent.clone()],
+                &[first.clone(), second.clone()],
+                150
+            ),
             Ok(())
         );
         let mut over = second;
         over.max_dispatches = 3;
-        let errors = verify_root_reanchored_children_at(&[root, parent], &[first, over], 150)
-            .unwrap_err();
+        let errors =
+            verify_root_reanchored_children_at(&[root, parent], &[first, over], 150).unwrap_err();
         assert!(errors.contains(&AttenuationViolation::SiblingDispatchBudgetExceeded));
     }
 
@@ -1795,8 +1904,6 @@ mod tests {
         );
     }
 
-
-
     #[test]
     fn root_anchor_allows_a_precommitted_sibling_scope_outside_parent_scope() {
         let root = parent_grant();
@@ -1823,7 +1930,6 @@ mod tests {
             Ok(())
         );
     }
-
 
     #[test]
     fn root_anchored_siblings_allow_precommitted_distinct_root_scopes() {
@@ -1886,9 +1992,11 @@ mod tests {
         let parent = child_grant();
         let mut child = grandchild_grant(&parent);
         child.targets = set(&["service/admin"]);
-        assert!(verify_root_anchored_chain_at(&[root, parent, child], 150)
-            .unwrap_err()
-            .contains(&AttenuationViolation::RootEnvelopeScopeExpanded));
+        assert!(
+            verify_root_anchored_chain_at(&[root, parent, child], 150)
+                .unwrap_err()
+                .contains(&AttenuationViolation::RootEnvelopeScopeExpanded)
+        );
     }
 
     #[test]
@@ -1897,12 +2005,12 @@ mod tests {
         root.allowed_descendant_task_plans.remove(&digest('e'));
         let parent = child_grant();
         let child = grandchild_grant(&parent);
-        assert!(verify_root_anchored_chain_at(&[root, parent, child], 150)
-            .unwrap_err()
-            .contains(&AttenuationViolation::RootDescendantTaskPlanNotAllowed));
+        assert!(
+            verify_root_anchored_chain_at(&[root, parent, child], 150)
+                .unwrap_err()
+                .contains(&AttenuationViolation::RootDescendantTaskPlanNotAllowed)
+        );
     }
-
-
 
     #[test]
     fn root_anchor_rejects_scope_mutation_within_global_envelope() {
@@ -1918,9 +2026,11 @@ mod tests {
             "replicas".into(),
             ParameterBound::IntegerRange { min: 2, max: 3 },
         );
-        assert!(verify_root_anchored_chain_at(&[root, parent, child], 150)
-            .unwrap_err()
-            .contains(&AttenuationViolation::RootAuthorizedSubtaskScopeExpanded));
+        assert!(
+            verify_root_anchored_chain_at(&[root, parent, child], 150)
+                .unwrap_err()
+                .contains(&AttenuationViolation::RootAuthorizedSubtaskScopeExpanded)
+        );
     }
 
     #[test]
@@ -1929,8 +2039,8 @@ mod tests {
         let mut parent = child_grant();
         let mut child = grandchild_grant(&parent);
         child.subject_principal = "agent-unapproved".into();
-        let errors = verify_root_anchored_chain_at(&[root, parent.clone(), child], 150)
-            .unwrap_err();
+        let errors =
+            verify_root_anchored_chain_at(&[root, parent.clone(), child], 150).unwrap_err();
         assert!(errors.contains(&AttenuationViolation::RootDelegationEdgeNotAllowed));
 
         // A root-approved task/plan pair is not sufficient if the wrong
@@ -1938,9 +2048,11 @@ mod tests {
         parent.subject_principal = "agent-wrong".into();
         let child = grandchild_grant(&parent);
         let root = parent_grant();
-        assert!(verify_root_anchored_chain_at(&[root, parent, child], 150)
-            .unwrap_err()
-            .contains(&AttenuationViolation::RootDelegationEdgeNotAllowed));
+        assert!(
+            verify_root_anchored_chain_at(&[root, parent, child], 150)
+                .unwrap_err()
+                .contains(&AttenuationViolation::RootDelegationEdgeNotAllowed)
+        );
     }
 
     #[test]
@@ -1949,9 +2061,11 @@ mod tests {
         let mut parent = child_grant();
         parent.allowed_child_plan_digests.clear();
         let child = grandchild_grant(&parent);
-        assert!(verify_root_anchored_chain_at(&[root, parent, child], 150)
-            .unwrap_err()
-            .contains(&AttenuationViolation::ChildPlanDigestNotAllowed));
+        assert!(
+            verify_root_anchored_chain_at(&[root, parent, child], 150)
+                .unwrap_err()
+                .contains(&AttenuationViolation::ChildPlanDigestNotAllowed)
+        );
     }
 
     #[test]
@@ -1990,9 +2104,8 @@ mod tests {
 
         let mut duplicate_grant = second_child_grant();
         duplicate_grant.grant_id = first.grant_id.clone();
-        let grant_errors =
-            verify_delegated_children_at(&parent, &[first, duplicate_grant], 150)
-                .expect_err("duplicate grant identity must not qualify");
+        let grant_errors = verify_delegated_children_at(&parent, &[first, duplicate_grant], 150)
+            .expect_err("duplicate grant identity must not qualify");
         assert!(grant_errors.contains(&AttenuationViolation::DuplicateChildGrant));
     }
 
