@@ -1226,7 +1226,7 @@ mod tests {
         second.plan_digest = digest('k');
         second.max_dispatches = 1;
         second.max_tool_calls = 4;
-        second.max_resource_units = 8;
+        second.max_resource_units = 7;
 
         assert_eq!(
             verify_root_reanchored_children_at(&[root.clone(), parent.clone()], &[first.clone(), second.clone()], 150),
