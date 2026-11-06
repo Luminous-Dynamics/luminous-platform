@@ -1348,4 +1348,55 @@ mod tests {
         assert!(audit.violations.iter().any(|code| code.contains("ParentTaskLinkMismatch")));
     }
 
+
+    #[test]
+    fn trust_boundary_auditor_rejects_erased_authority_principal_marker() {
+        let schema = include_str!("../../delegation-evidence.schema.json");
+        let fixture = include_str!("../fixtures/delegation-chain-positive.json");
+        let mut value: serde_json::Value = serde_json::from_str(fixture).unwrap();
+        value["chain"][1]
+            .as_object_mut()
+            .unwrap()
+            .remove("issuer_principal_ref");
+        let bytes = serde_json::to_vec(&value).unwrap();
+        let error = audit_delegation_evidence(&bytes, schema.as_bytes())
+            .expect_err("authority principal erasure must fail schema validation");
+        assert!(error.contains("delegation evidence schema"));
+    }
+
+    #[test]
+    fn trust_boundary_auditor_rejects_erased_source_attribution_marker() {
+        let schema = include_str!("../../delegation-evidence.schema.json");
+        let fixture = include_str!("../fixtures/delegation-chain-positive.json");
+        let mut value: serde_json::Value = serde_json::from_str(fixture).unwrap();
+        value["evidence_lineage"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|record| record["evidence_ref"] == "participant-recheck")
+            .unwrap()
+            .as_object_mut()
+            .unwrap()
+            .remove("source_ref");
+        let bytes = serde_json::to_vec(&value).unwrap();
+        let error = audit_delegation_evidence(&bytes, schema.as_bytes())
+            .expect_err("source attribution erasure must fail schema validation");
+        assert!(error.contains("delegation evidence schema"));
+    }
+
+    #[test]
+    fn trust_boundary_auditor_rejects_erased_authority_reference_marker() {
+        let schema = include_str!("../../delegation-evidence.schema.json");
+        let fixture = include_str!("../fixtures/delegation-chain-positive.json");
+        let mut value: serde_json::Value = serde_json::from_str(fixture).unwrap();
+        value["authority_checks"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove("evidence_ref");
+        let bytes = serde_json::to_vec(&value).unwrap();
+        let error = audit_delegation_evidence(&bytes, schema.as_bytes())
+            .expect_err("authority evidence reference erasure must fail schema validation");
+        assert!(error.contains("delegation evidence schema"));
+    }
+
 }
