@@ -1,0 +1,409 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/vendor-adapter-capability-registry-v1.schema.json",
+  "title": "Luminous Vendor Adapter Capability Registry v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "as_of",
+    "registry_state",
+    "contract_version",
+    "operation_catalog",
+    "adapters",
+    "explicit_non_claims"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.vendor-adapter-capability-registry.v1"
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date"
+    },
+    "registry_state": {
+      "const": "design_baseline_not_implemented"
+    },
+    "contract_version": {
+      "type": "string",
+      "pattern": "^v[0-9]+\\.[0-9]+$"
+    },
+    "operation_catalog": {
+      "type": "array",
+      "minItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation",
+          "risk_class",
+          "description",
+          "automatic_retry_after_uncertain_outcome"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "inventory_read",
+              "health_read",
+              "version_read",
+              "configuration_export",
+              "configuration_plan",
+              "configuration_apply",
+              "oem_firmware_update",
+              "oem_firmware_recovery",
+              "alternative_os_flash",
+              "entitlement_read",
+              "lifecycle_read"
+            ]
+          },
+          "risk_class": {
+            "enum": [
+              "read_only",
+              "planning",
+              "configuration_mutation",
+              "disruptive_lifecycle",
+              "reflash"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 12
+          },
+          "automatic_retry_after_uncertain_outcome": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "adapters": {
+      "type": "array",
+      "minItems": 4,
+      "uniqueItems": false,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "adapter_id",
+          "vendor",
+          "product_families",
+          "maturity",
+          "implementation_state",
+          "model_scope_state",
+          "region_scope_state",
+          "management_methods",
+          "source_urls",
+          "operations",
+          "known_boundaries",
+          "maturity_evidence_refs"
+        ],
+        "properties": {
+          "adapter_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          },
+          "vendor": {
+            "type": "string",
+            "minLength": 2
+          },
+          "product_families": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 2
+            }
+          },
+          "maturity": {
+            "enum": [
+              "A0_DISCOVERED",
+              "A1_READ_ONLY_TESTED",
+              "A2_STATE_CONTRACT_TESTED",
+              "A3_CHANGE_QUALIFIED",
+              "A4_FIRMWARE_RECOVERY_QUALIFIED",
+              "A5_SERVICEABLE"
+            ]
+          },
+          "implementation_state": {
+            "enum": [
+              "NOT_IMPLEMENTED",
+              "PROTOTYPE_UNTESTED",
+              "LAB_TESTED",
+              "QUALIFIED"
+            ]
+          },
+          "model_scope_state": {
+            "enum": [
+              "family_research_only",
+              "exact_models_pinned",
+              "exact_models_tested"
+            ]
+          },
+          "region_scope_state": {
+            "enum": [
+              "not_assessed",
+              "region_scoped",
+              "global_scope_assessed"
+            ]
+          },
+          "management_methods": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "vendor_api",
+                "vendor_cli",
+                "netconf",
+                "restconf",
+                "gnmi",
+                "snmpv3",
+                "local_console",
+                "vendor_dashboard",
+                "unsupported_or_undetermined"
+              ]
+            }
+          },
+          "source_urls": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uri",
+              "pattern": "^https://"
+            }
+          },
+          "operations": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "operation",
+                "state"
+              ],
+              "properties": {
+                "operation": {
+                  "enum": [
+                    "inventory_read",
+                    "health_read",
+                    "version_read",
+                    "configuration_export",
+                    "configuration_plan",
+                    "configuration_apply",
+                    "oem_firmware_update",
+                    "oem_firmware_recovery",
+                    "alternative_os_flash",
+                    "entitlement_read",
+                    "lifecycle_read"
+                  ]
+                },
+                "state": {
+                  "enum": [
+                    "planned",
+                    "unsupported",
+                    "implemented_untested",
+                    "tested"
+                  ]
+                },
+                "rationale": {
+                  "type": "string",
+                  "minLength": 8
+                },
+                "evidence_refs": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "minLength": 8
+                  }
+                },
+                "tested_scope": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "model",
+                    "product_family",
+                    "hardware_revision",
+                    "software_version",
+                    "region",
+                    "test_environment"
+                  ],
+                  "properties": {
+                    "model": {
+                      "type": "string",
+                      "minLength": 2
+                    },
+                    "product_family": {
+                      "type": "string",
+                      "minLength": 2
+                    },
+                    "hardware_revision": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "software_version": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "region": {
+                      "type": "string",
+                      "minLength": 2
+                    },
+                    "test_environment": {
+                      "type": "string",
+                      "minLength": 5
+                    }
+                  }
+                },
+                "tested_revision": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{40}$"
+                },
+                "security_controls": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "action_digest_bound_authorization",
+                    "fresh_prestate_required",
+                    "uncertain_outcome_policy",
+                    "recovery_evidence_refs"
+                  ],
+                  "properties": {
+                    "action_digest_bound_authorization": {
+                      "type": "boolean"
+                    },
+                    "fresh_prestate_required": {
+                      "type": "boolean"
+                    },
+                    "uncertain_outcome_policy": {
+                      "enum": [
+                        "NEVER_AUTOMATIC_REPLAY",
+                        "REPLAY_ONLY_AFTER_VERIFIED_IDEMPOTENCY"
+                      ]
+                    },
+                    "recovery_evidence_refs": {
+                      "type": "array",
+                      "uniqueItems": true,
+                      "items": {
+                        "type": "string",
+                        "minLength": 8
+                      }
+                    }
+                  }
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "state": {
+                        "const": "tested"
+                      }
+                    },
+                    "required": [
+                      "state"
+                    ]
+                  },
+                  "then": {
+                    "required": [
+                      "evidence_refs",
+                      "tested_scope",
+                      "tested_revision"
+                    ],
+                    "properties": {
+                      "evidence_refs": {
+                        "minItems": 1
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "state": {
+                        "const": "unsupported"
+                      }
+                    },
+                    "required": [
+                      "state"
+                    ]
+                  },
+                  "then": {
+                    "required": [
+                      "rationale"
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "known_boundaries": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 12
+            }
+          },
+          "maturity_evidence_refs": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 8
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "maturity": {
+                  "enum": [
+                    "A1_READ_ONLY_TESTED",
+                    "A2_STATE_CONTRACT_TESTED",
+                    "A3_CHANGE_QUALIFIED",
+                    "A4_FIRMWARE_RECOVERY_QUALIFIED",
+                    "A5_SERVICEABLE"
+                  ]
+                }
+              },
+              "required": [
+                "maturity"
+              ]
+            },
+            "then": {
+              "properties": {
+                "model_scope_state": {
+                  "enum": [
+                    "exact_models_pinned",
+                    "exact_models_tested"
+                  ]
+                },
+                "implementation_state": {
+                  "enum": [
+                    "LAB_TESTED",
+                    "QUALIFIED"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "explicit_non_claims": {
+      "type": "array",
+      "minItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 20
+      }
+    }
+  }
+}
