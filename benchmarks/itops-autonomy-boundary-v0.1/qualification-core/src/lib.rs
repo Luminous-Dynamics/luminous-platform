@@ -1350,6 +1350,43 @@ mod tests {
     }
 
     #[test]
+    fn root_anchored_delegation_episode_passes_additive_result_schema() {
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let example = fs::read(manifest.join("../../decision-result.delegation.example.json"))
+            .expect("delegation result example must be present");
+        let schema = fs::read(manifest.join("../../decision-result.schema.json"))
+            .expect("result schema must be present");
+        validate_draft2020_12(&example, &schema)
+            .expect("delegation result must satisfy the complete additive schema");
+    }
+
+    #[test]
+    fn delegation_required_episode_cannot_omit_delegation_evidence() {
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let mut example: serde_json::Value = serde_json::from_slice(
+            &fs::read(manifest.join("../../decision-result.delegation.example.json")).unwrap()
+        ).unwrap();
+        let schema = fs::read(manifest.join("../../decision-result.schema.json")).unwrap();
+        example.as_object_mut().unwrap().remove("delegation");
+        let bytes = serde_json::to_vec(&example).unwrap();
+        assert!(validate_draft2020_12(&bytes, &schema).is_err());
+    }
+
+    #[test]
+    fn root_anchored_result_requires_precommitted_graph_edges() {
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let mut example: serde_json::Value = serde_json::from_slice(
+            &fs::read(manifest.join("../../decision-result.delegation.example.json")).unwrap()
+        ).unwrap();
+        let schema = fs::read(manifest.join("../../decision-result.schema.json")).unwrap();
+        example["delegation"]
+            .as_object_mut().unwrap()
+            .remove("root_authorized_edges");
+        let bytes = serde_json::to_vec(&example).unwrap();
+        assert!(validate_draft2020_12(&bytes, &schema).is_err());
+    }
+
+    #[test]
     fn full_schema_rejects_unknown_case_ids_and_invalid_date_time() {
         let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
         let mut catalog: serde_json::Value = serde_json::from_slice(
