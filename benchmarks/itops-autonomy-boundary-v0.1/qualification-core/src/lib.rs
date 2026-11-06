@@ -2063,6 +2063,88 @@ mod tests {
         assert!(validate_draft2020_12(&bytes, &schema).is_err());
     }
 
+    fn audit_delegation_fixture_mutation(
+        mutate: impl FnOnce(&mut serde_json::Value),
+    ) -> Result<EpisodeAuditSummary, CoreError> {
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let catalog = fs::read(manifest.join("../case-catalog.v0.1.json")).unwrap();
+        let catalog_schema = fs::read(manifest.join("../case-catalog.schema.json")).unwrap();
+        let result_schema = fs::read(manifest.join("../decision-result.schema.json")).unwrap();
+        let mut example: serde_json::Value = serde_json::from_slice(
+            &fs::read(manifest.join("../decision-result.delegation.example.json")).unwrap()
+        ).unwrap();
+        mutate(&mut example);
+        let bytes = serde_json::to_vec(&example).unwrap();
+        audit_episode_result(&catalog, &catalog_schema, &bytes, &result_schema)
+    }
+
+    #[test]
+    fn delegated_chg002_fixture_passes_full_episode_and_semantic_audit() {
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let catalog = fs::read(manifest.join("../case-catalog.v0.1.json")).unwrap();
+        let catalog_schema = fs::read(manifest.join("../case-catalog.schema.json")).unwrap();
+        let example = fs::read(manifest.join("../decision-result.delegation.example.json")).unwrap();
+        let result_schema = fs::read(manifest.join("../decision-result.schema.json")).unwrap();
+
+        let summary = audit_episode_result(
+            &catalog,
+            &catalog_schema,
+            &example,
+            &result_schema,
+        ).expect("positive delegated CHG-002 episode must pass every semantic gate");
+        assert_eq!(summary.case_id, "CHG-002");
+        assert!(summary.decision_class_matches);
+        assert!(summary.task_contract_success);
+        assert_eq!(summary.dispatched_mutations, 1);
+        assert_eq!(summary.committed_effect_count, 1);
+        assert_eq!(summary.service_state, "healthy");
+    }
+
+    #[test]
+    fn delegation_audit_rejects_uncommitted_operation_scope() {
+        let result = audit_delegation_fixture_mutation(|example| {
+            example["delegation"]["chain"][1]["scope"]["operations"] =
+                serde_json::json!(["read"]);
+        });
+        assert!(matches!(result, Err(CoreError::ResultViolations(_))));
+    }
+
+    #[test]
+    fn delegation_audit_rejects_revoked_descendant_even_when_root_is_active() {
+        let result = audit_delegation_fixture_mutation(|example| {
+            example["delegation"]["chain"][1]["revocation_state"] =
+                serde_json::json!("revoked");
+        });
+        assert!(matches!(result, Err(CoreError::ResultViolations(_))));
+    }
+
+    #[test]
+    fn delegation_audit_rejects_sibling_budget_aggregate_mismatch() {
+        let result = audit_delegation_fixture_mutation(|example| {
+            example["delegation"]["fanout_batches"][0]["aggregate_allocated"]["max_tool_calls"] =
+                serde_json::json!(7);
+        });
+        assert!(matches!(result, Err(CoreError::ResultViolations(_))));
+    }
+
+    #[test]
+    fn delegation_audit_rejects_final_recheck_request_substitution() {
+        let result = audit_delegation_fixture_mutation(|example| {
+            example["delegation"]["participant_rechecks"][0]["request_digest"] =
+                serde_json::json!("sha256:9999999999999999999999999999999999999999999999999999999999999999");
+        });
+        assert!(matches!(result, Err(CoreError::ResultViolations(_))));
+    }
+
+    #[test]
+    fn delegation_audit_rejects_effect_receipt_provenance_digest_mismatch() {
+        let result = audit_delegation_fixture_mutation(|example| {
+            example["delegation"]["provenance"]["evidence_items"][3]["evidence_digest"] =
+                serde_json::json!("sha256:9999999999999999999999999999999999999999999999999999999999999999");
+        });
+        assert!(matches!(result, Err(CoreError::ResultViolations(_))));
+    }
+
     #[test]
     fn full_schema_rejects_unknown_case_ids_and_invalid_date_time() {
         let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
