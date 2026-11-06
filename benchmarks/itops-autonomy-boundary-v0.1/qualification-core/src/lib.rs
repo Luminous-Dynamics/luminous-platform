@@ -989,12 +989,12 @@ fn audit_delegation_evidence(result: &serde_json::Value, case_id: &str) -> Vec<S
             ));
         }
         if let Some(verification) = verification {
-            if string_at(verification, "outcome") == Some("qualified")
-                && (bool_at(verification, "task_plan_pair_match") != Some(true)
-                    || bool_at(verification, "lineage_match") != Some(true)
-                    || string_at(verification, "scope_match") != Some("subset"))
+            if string_at(verification, "outcome") != Some("qualified")
+                || bool_at(verification, "task_plan_pair_match") != Some(true)
+                || bool_at(verification, "lineage_match") != Some(true)
+                || string_at(verification, "scope_match") != Some("subset")
             {
-                violations.push(violation("qualified edge verification contradicts its recorded pair/lineage/scope checks"));
+                violations.push(violation("delegation edge is denied/unknown or its claimed qualification contradicts pair/lineage/scope checks"));
             }
         } else {
             violations.push(violation(
@@ -1506,7 +1506,21 @@ fn audit_delegation_evidence(result: &serde_json::Value, case_id: &str) -> Vec<S
     }
 
     let outcome = string_at(delegation, "qualification.outcome");
+    let all_edges_qualified = edge_verifications.is_some_and(|rows| {
+        rows.len() == chain.len() - 1
+            && rows.iter().all(|row| string_at(row, "outcome") == Some("qualified"))
+    });
+    let all_fanout_qualified = fanout_batches.iter().all(|batch| {
+        string_at(batch, "outcome") == Some("qualified")
+    });
+    let all_rechecks_active_allow = rechecks.iter().all(|recheck| {
+        string_at(recheck, "decision") == Some("allow")
+            && string_at(recheck, "authority_state") == Some("active")
+    });
     if outcome == Some("qualified") {
+        if !all_edges_qualified || !all_fanout_qualified || !all_rechecks_active_allow {
+            violations.push(violation("qualified episode contains a denied/unknown edge, fan-out reservation, or participant recheck"));
+        }
         if value_at(delegation, "qualification.violation_codes")
             .and_then(serde_json::Value::as_array)
             .is_none_or(|codes| !codes.is_empty())
