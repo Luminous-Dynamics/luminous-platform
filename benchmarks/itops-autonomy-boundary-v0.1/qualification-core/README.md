@@ -35,6 +35,22 @@ This crate is the first executable building block for the runner requested in
   and supplied revocation/validity state for every ancestor. This is a pure
   synthetic predicate, not Xenia grant issuance or proof that revocation data
   is fresh at a real participant boundary.
+  A second, experimental root-anchored policy arm is also implemented. The root
+  task graph precommits every descendant task/plan digest and each exact delegation
+  edge (parent task digest, child task/plan digest, delegator and delegatee
+  principal), with a task-specific scope envelope for tenant, targets, operations,
+  parameter bounds, data scopes, time, budgets, risk and inherited obligations.
+  Every immediate parent must still be allowed to delegate and precommit its
+  immediate child; every descendant must fit both the global root envelope and
+  its exact root-authorized edge. Unlike strict attenuation, it does not
+  recursively intersect the child's service/operation scope with an unrelated
+  intermediate sibling scope. This is a separate experiment arm, not a claim
+  that root re-anchoring alone is sufficient or superior.
+  Root-anchored batch verification checks a complete sibling fan-out and
+  aggregates dispatch/tool/resource budgets. Repeated batches still require
+  durable participant-owned budget accounting. Neither verifier authenticates
+  the root graph, proves that supplied task/plan digests commit to real payloads,
+  or enforces a live request at the participant boundary.
   A zero-mutation budget remains valid for a bounded read-only delegated task,
   so this model does not reward blanket refusal. For a complete sibling fan-out batch,
   it verifies every edge and rejects duplicate child grant/task IDs or aggregate
