@@ -2008,9 +2008,10 @@ mod tests {
 
         let mut duplicate = grandchild;
         duplicate.grant_id = child.grant_id.clone();
-        assert!(verify_delegation_chain_at(&[root, child, duplicate], 150)
-            .unwrap_err()
-            .contains(&AttenuationViolation::DuplicateGrantInChain));
+        assert!(
+            verify_delegation_chain_at(&[root, child, duplicate], 150)
+                .unwrap_err()
+                .contains(&AttenuationViolation::DuplicateGrantInChain)
+        );
     }
-
 }
