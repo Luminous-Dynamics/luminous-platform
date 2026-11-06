@@ -848,7 +848,8 @@
         "plan_digest",
         "issuer_principal_ref",
         "subject_principal_ref",
-        "scope"
+        "scope",
+        "authorized_child_task_plans"
       ],
       "properties": {
         "role": {
@@ -904,6 +905,28 @@
             "task_digest": {
               "type": "string",
               "pattern": "^sha256:[a-f0-9]{64}$"
+            }
+          }
+        },
+        "authorized_child_task_plans": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task_digest",
+              "plan_digest"
+            ],
+            "properties": {
+              "task_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "plan_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              }
             }
           }
         }
