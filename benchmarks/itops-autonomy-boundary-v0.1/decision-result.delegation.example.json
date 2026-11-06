@@ -340,7 +340,8 @@
           "max_tool_calls": 12,
           "max_resource_units": 40
         },
-        "outcome": "qualified"
+        "outcome": "qualified",
+        "batch_complete": true
       }
     ],
     "participant_rechecks": [
@@ -442,6 +443,7 @@
       "violation_codes": [],
       "lineage_complete": true,
       "fresh_participant_recheck_complete": true
-    }
+    },
+    "acting_leaf_grant_ref": "opaque:child-grant-002"
   }
 }
