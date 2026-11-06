@@ -44,7 +44,18 @@ jobs:
           sha256sum Cargo.lock | tee cargo-lockfile.sha256
           cargo metadata --format-version 1 --locked > cargo-metadata.json
 
-      - name: Check Rust formatting
+      - name: Apply canonical Rust formatting
+        run: cargo fmt --manifest-path benchmarks/itops-autonomy-boundary-v0.1/qualification-core/Cargo.toml --all
+
+      - name: Publish rustfmt-normalized source for exact-head review
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: itops-rustfmt-${{ github.event.pull_request.head.sha }}
+          path: benchmarks/itops-autonomy-boundary-v0.1/qualification-core/src/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Verify Rust formatting
         run: cargo fmt --manifest-path benchmarks/itops-autonomy-boundary-v0.1/qualification-core/Cargo.toml --all -- --check
 
       - name: Run qualification and adversarial semantic tests
