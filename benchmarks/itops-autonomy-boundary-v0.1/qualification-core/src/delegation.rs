@@ -1413,6 +1413,22 @@ mod tests {
         std::iter::repeat_n(ch, 64).collect()
     }
 
+    fn ledger_budget(dispatches: u64, tool_calls: u64, resource_units: u64) -> DelegationBudget {
+        DelegationBudget { dispatches, tool_calls, resource_units }
+    }
+
+    fn allocation(
+        child_grant_ref: &str,
+        dispatches: u64,
+        tool_calls: u64,
+        resource_units: u64,
+    ) -> DelegationBudgetAllocation {
+        DelegationBudgetAllocation {
+            child_grant_ref: child_grant_ref.into(),
+            budget: ledger_budget(dispatches, tool_calls, resource_units),
+        }
+    }
+
     fn set(values: &[&str]) -> BTreeSet<String> {
         BTreeSet::from_iter(values.iter().map(|value| (*value).to_string()))
     }
@@ -1603,6 +1619,180 @@ mod tests {
             delegable: true,
             revoked: false,
         }
+    }
+
+
+    #[test]
+    fn budget_ledger_atomically_reserves_complete_sibling_fanout() {
+        let mut ledger = DelegationBudgetLedger::default();
+        assert_eq!(
+            ledger.register_parent("root-grant", ledger_budget(4, 20, 100)),
+            Ok(DelegationBudgetSnapshot {
+                version: 0,
+                available: ledger_budget(4, 20, 100),
+            })
+        );
+
+        let allocations = vec![
+            allocation("child-a", 1, 6, 20),
+            allocation("child-b", 2, 8, 30),
+        ];
+        let receipt = ledger
+            .reserve_fanout("root-grant", 0, "batch-001", "idem-001", &allocations)
+            .unwrap();
+
+        assert_eq!(receipt.version_before, 0);
+        assert_eq!(receipt.version_after, 1);
+        assert_eq!(receipt.allocated, ledger_budget(3, 14, 50));
+        assert_eq!(receipt.available_before, ledger_budget(4, 20, 100));
+        assert_eq!(receipt.available_after, ledger_budget(1, 6, 50));
+        assert_eq!(
+            ledger.snapshot("root-grant"),
+            Ok(DelegationBudgetSnapshot {
+                version: 1,
+                available: ledger_budget(1, 6, 50),
+            })
+        );
+    }
+
+    #[test]
+    fn concurrent_fanout_with_stale_version_cannot_reuse_parent_budget() {
+        let mut ledger = DelegationBudgetLedger::default();
+        ledger
+            .register_parent("root-grant", ledger_budget(2, 10, 40))
+            .unwrap();
+
+        let first = vec![allocation("child-a", 2, 8, 30)];
+        let second = vec![allocation("child-b", 1, 5, 20)];
+
+        ledger
+            .reserve_fanout("root-grant", 0, "batch-a", "idem-a", &first)
+            .unwrap();
+        assert_eq!(
+            ledger.reserve_fanout("root-grant", 0, "batch-b", "idem-b", &second),
+            Err(DelegationBudgetLedgerError::VersionConflict {
+                expected: 0,
+                actual: 1,
+            })
+        );
+        assert_eq!(
+            ledger.snapshot("root-grant").unwrap().available,
+            ledger_budget(0, 2, 10)
+        );
+    }
+
+    #[test]
+    fn exact_idempotent_reservation_replay_returns_receipt_without_double_spend() {
+        let mut ledger = DelegationBudgetLedger::default();
+        ledger
+            .register_parent("root-grant", ledger_budget(2, 10, 40))
+            .unwrap();
+        let allocations = vec![allocation("child-a", 1, 4, 15)];
+
+        let first = ledger
+            .reserve_fanout("root-grant", 0, "batch-a", "idem-a", &allocations)
+            .unwrap();
+        let replay = ledger
+            .reserve_fanout("root-grant", 0, "batch-a", "idem-a", &allocations)
+            .unwrap();
+
+        assert_eq!(replay, first);
+        assert_eq!(ledger.snapshot("root-grant").unwrap().version, 1);
+        assert_eq!(
+            ledger.snapshot("root-grant").unwrap().available,
+            ledger_budget(1, 6, 25)
+        );
+    }
+
+    #[test]
+    fn idempotency_key_cannot_be_rebound_to_a_different_allocation() {
+        let mut ledger = DelegationBudgetLedger::default();
+        ledger
+            .register_parent("root-grant", ledger_budget(4, 20, 100))
+            .unwrap();
+        let first = vec![allocation("child-a", 1, 4, 15)];
+        let changed = vec![allocation("child-a", 1, 5, 15)];
+        ledger
+            .reserve_fanout("root-grant", 0, "batch-a", "idem-a", &first)
+            .unwrap();
+
+        assert_eq!(
+            ledger.reserve_fanout("root-grant", 0, "batch-a", "idem-a", &changed),
+            Err(DelegationBudgetLedgerError::IdempotencyKeyConflict)
+        );
+        assert_eq!(ledger.snapshot("root-grant").unwrap().version, 1);
+    }
+
+    #[test]
+    fn over_budget_fanout_is_rejected_without_mutating_ledger() {
+        let mut ledger = DelegationBudgetLedger::default();
+        ledger
+            .register_parent("root-grant", ledger_budget(1, 5, 10))
+            .unwrap();
+        let allocations = vec![allocation("child-a", 2, 4, 8)];
+
+        assert_eq!(
+            ledger.reserve_fanout("root-grant", 0, "batch-a", "idem-a", &allocations),
+            Err(DelegationBudgetLedgerError::BudgetExceeded)
+        );
+        assert_eq!(ledger.snapshot("root-grant").unwrap().version, 0);
+        assert_eq!(
+            ledger.snapshot("root-grant").unwrap().available,
+            ledger_budget(1, 5, 10)
+        );
+    }
+
+    #[test]
+    fn duplicate_child_or_duplicate_batch_cannot_consume_budget_twice() {
+        let mut ledger = DelegationBudgetLedger::default();
+        ledger
+            .register_parent("root-grant", ledger_budget(3, 12, 60))
+            .unwrap();
+        let duplicate_children = vec![
+            allocation("child-a", 1, 2, 10),
+            allocation("child-a", 1, 2, 10),
+        ];
+        assert_eq!(
+            ledger.reserve_fanout(
+                "root-grant",
+                0,
+                "batch-a",
+                "idem-a",
+                &duplicate_children
+            ),
+            Err(DelegationBudgetLedgerError::DuplicateChildAllocation)
+        );
+
+        let valid = vec![allocation("child-a", 1, 2, 10)];
+        ledger
+            .reserve_fanout("root-grant", 0, "batch-a", "idem-a", &valid)
+            .unwrap();
+        assert_eq!(
+            ledger.reserve_fanout("root-grant", 1, "batch-a", "idem-b", &valid),
+            Err(DelegationBudgetLedgerError::DuplicateBatchId)
+        );
+        assert_eq!(ledger.snapshot("root-grant").unwrap().version, 1);
+    }
+
+    #[test]
+    fn aggregate_budget_overflow_fails_closed_without_mutation() {
+        let mut ledger = DelegationBudgetLedger::default();
+        ledger
+            .register_parent(
+                "root-grant",
+                ledger_budget(u64::MAX, u64::MAX, u64::MAX),
+            )
+            .unwrap();
+        let allocations = vec![
+            allocation("child-a", 1, u64::MAX, 10),
+            allocation("child-b", 1, 1, 10),
+        ];
+
+        assert_eq!(
+            ledger.reserve_fanout("root-grant", 0, "batch-a", "idem-a", &allocations),
+            Err(DelegationBudgetLedgerError::ArithmeticOverflow)
+        );
+        assert_eq!(ledger.snapshot("root-grant").unwrap().version, 0);
     }
 
     #[test]
