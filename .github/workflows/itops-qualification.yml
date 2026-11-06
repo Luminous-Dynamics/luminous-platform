@@ -3,7 +3,7 @@ name: ITOPS Qualification Core
 on:
   pull_request:
     branches:
-      - itops-delegation-attenuation-contract-v0-1
+      - itops-preregistered-campaign-plan-2026-11-03
     paths:
       - "benchmarks/itops-autonomy-boundary-v0.1/**"
       - ".github/workflows/itops-qualification.yml"
