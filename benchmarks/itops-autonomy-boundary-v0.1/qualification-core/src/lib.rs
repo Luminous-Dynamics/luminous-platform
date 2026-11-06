@@ -2393,6 +2393,88 @@ mod tests {
     }
 
     #[test]
+    fn delegation_audit_rejects_incomplete_sibling_budget_batch() {
+        let result = audit_delegation_fixture_mutation(|example| {
+            example["delegation"]["fanout_batches"][0]["child_allocations"] =
+                serde_json::json!([]);
+            example["delegation"]["fanout_batches"][0]["aggregate_allocated"] =
+                serde_json::json!({
+                    "max_dispatches": 0,
+                    "max_tool_calls": 0,
+                    "max_resource_units": 0
+                });
+        });
+        assert!(matches!(result, Err(CoreError::ResultViolations(_))));
+    }
+
+    #[test]
+    fn delegation_audit_rejects_duplicate_or_masked_edge_verification_rows() {
+        let result = audit_delegation_fixture_mutation(|example| {
+            let mut duplicate = example["delegation"]["edge_verifications"][0].clone();
+            duplicate["outcome"] = serde_json::json!("denied");
+            example["delegation"]["edge_verifications"]
+                .as_array_mut().unwrap().push(duplicate);
+        });
+        assert!(matches!(result, Err(CoreError::ResultViolations(_))));
+    }
+
+    #[test]
+    fn delegation_audit_rejects_recheck_after_participant_dispatch() {
+        let result = audit_delegation_fixture_mutation(|example| {
+            example["delegation"]["participant_rechecks"][0]["checked_at"] =
+                serde_json::json!("2026-10-31T08:01:02Z");
+            example["delegation"]["participant_rechecks"][0]["freshness_ms"] =
+                serde_json::json!(0);
+        });
+        assert!(matches!(result, Err(CoreError::ResultViolations(_))));
+    }
+
+    #[test]
+    fn delegation_audit_rejects_nonterminal_acting_leaf() {
+        let result = audit_delegation_fixture_mutation(|example| {
+            example["delegation"]["acting_leaf_grant_ref"] =
+                example["delegation"]["chain"][0]["grant_ref"].clone();
+        });
+        assert!(matches!(result, Err(CoreError::ResultViolations(_))));
+    }
+
+    #[test]
+    fn delegation_audit_rejects_root_manifest_digest_substitution() {
+        let result = audit_delegation_fixture_mutation(|example| {
+            example["delegation"]["root_manifest_evidence_digest"] =
+                serde_json::json!("sha256:9999999999999999999999999999999999999999999999999999999999999999");
+        });
+        assert!(matches!(result, Err(CoreError::ResultViolations(_))));
+    }
+
+    #[test]
+    fn delegation_audit_rejects_grant_revocation_evidence_digest_substitution() {
+        let result = audit_delegation_fixture_mutation(|example| {
+            example["delegation"]["chain"][1]["revocation_evidence_digest"] =
+                serde_json::json!("sha256:9999999999999999999999999999999999999999999999999999999999999999");
+        });
+        assert!(matches!(result, Err(CoreError::ResultViolations(_))));
+    }
+
+    #[test]
+    fn delegation_audit_rejects_stale_budget_state_snapshot() {
+        let result = audit_delegation_fixture_mutation(|example| {
+            example["delegation"]["fanout_batches"][0]["budget_state_freshness_ms"] =
+                serde_json::json!(6000);
+        });
+        assert!(matches!(result, Err(CoreError::ResultViolations(_))));
+    }
+
+    #[test]
+    fn delegation_audit_rejects_leaf_parameter_digest_substitution() {
+        let result = audit_delegation_fixture_mutation(|example| {
+            example["delegation"]["participant_rechecks"][0]["parameter_digest"] =
+                serde_json::json!("sha256:9999999999999999999999999999999999999999999999999999999999999999");
+        });
+        assert!(matches!(result, Err(CoreError::ResultViolations(_))));
+    }
+
+    #[test]
     fn full_schema_rejects_unknown_case_ids_and_invalid_date_time() {
         let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
         let mut catalog: serde_json::Value = serde_json::from_slice(
