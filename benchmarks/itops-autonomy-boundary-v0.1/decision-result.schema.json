@@ -170,6 +170,9 @@
         "request_digest": {
           "type": "string",
           "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "delegation_required": {
+          "type": "boolean"
         }
       },
       "additionalProperties": false
@@ -642,7 +645,999 @@
         }
       },
       "additionalProperties": false
+    },
+    "delegation": {
+      "$ref": "#/$defs/delegation_evidence"
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$defs": {
+    "delegation_parameter_constraint": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "name",
+            "kind",
+            "string_value"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "kind": {
+              "const": "exact_string"
+            },
+            "string_value": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "name",
+            "kind",
+            "integer_value"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "kind": {
+              "const": "exact_integer"
+            },
+            "integer_value": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "name",
+            "kind",
+            "min",
+            "max"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "kind": {
+              "const": "integer_range"
+            },
+            "min": {
+              "type": "integer"
+            },
+            "max": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "authorized_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tenant_commitment",
+        "target_digests",
+        "operations",
+        "parameter_constraints",
+        "data_scope_refs",
+        "not_before",
+        "expires_at",
+        "max_dispatches",
+        "max_tool_calls",
+        "max_resource_units",
+        "remaining_delegation_depth",
+        "max_risk_level",
+        "required_approvals",
+        "required_postconditions",
+        "rollback_obligations"
+      ],
+      "properties": {
+        "tenant_commitment": {
+          "type": "string",
+          "pattern": "^(hmac-sha256|opaque):[A-Za-z0-9_-]{32,128}$"
+        },
+        "target_digests": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        },
+        "operations": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "parameter_constraints": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/delegation_parameter_constraint"
+          }
+        },
+        "data_scope_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "not_before": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "max_dispatches": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_tool_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_resource_units": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "remaining_delegation_depth": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_risk_level": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "required_approvals": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required_postconditions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "rollback_obligations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "delegation_node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "grant_ref",
+        "task_id",
+        "task_digest",
+        "plan_digest",
+        "issuer_principal_ref",
+        "subject_principal_ref",
+        "scope"
+      ],
+      "properties": {
+        "role": {
+          "enum": [
+            "root",
+            "descendant"
+          ]
+        },
+        "grant_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "task_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "task_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "plan_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "issuer_principal_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subject_principal_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scope": {
+          "$ref": "#/$defs/authorized_scope"
+        },
+        "parent": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "grant_ref",
+            "task_id",
+            "task_digest"
+          ],
+          "properties": {
+            "grant_ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "task_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "task_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "role": {
+                "const": "root"
+              }
+            },
+            "required": [
+              "role"
+            ]
+          },
+          "then": {
+            "not": {
+              "required": [
+                "parent"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "role": {
+                "const": "descendant"
+              }
+            },
+            "required": [
+              "role"
+            ]
+          },
+          "then": {
+            "required": [
+              "parent"
+            ]
+          }
+        }
+      ]
+    },
+    "root_delegation_edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parent_task_digest",
+        "child_task_digest",
+        "child_plan_digest",
+        "delegator_principal_ref",
+        "delegatee_principal_ref",
+        "authorized_scope"
+      ],
+      "properties": {
+        "parent_task_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "child_task_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "child_plan_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "delegator_principal_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "delegatee_principal_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authorized_scope": {
+          "$ref": "#/$defs/authorized_scope"
+        }
+      }
+    },
+    "delegation_child_allocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "child_grant_ref",
+        "max_dispatches",
+        "max_tool_calls",
+        "max_resource_units"
+      ],
+      "properties": {
+        "child_grant_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "max_dispatches": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_tool_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_resource_units": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "delegation_budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_dispatches",
+        "max_tool_calls",
+        "max_resource_units"
+      ],
+      "properties": {
+        "max_dispatches": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_tool_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_resource_units": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "delegation_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "policy_arm",
+        "root_authority",
+        "chain",
+        "edge_verifications",
+        "fanout_batches",
+        "participant_rechecks",
+        "effect_bindings",
+        "provenance",
+        "qualification"
+      ],
+      "properties": {
+        "schema": {
+          "const": "luminous-itops-delegation-evidence-v0.1"
+        },
+        "policy_arm": {
+          "enum": [
+            "strict_edge_attenuation",
+            "root_anchored_task_graph"
+          ]
+        },
+        "root_authority": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "grant_ref",
+            "root_principal_ref",
+            "root_task_id",
+            "root_task_digest",
+            "root_plan_digest",
+            "revocation_state",
+            "revocation_evidence_ref",
+            "revocation_checked_at"
+          ],
+          "properties": {
+            "grant_ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "root_principal_ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "root_task_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "root_task_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "root_plan_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "revocation_state": {
+              "enum": [
+                "active",
+                "revoked",
+                "unknown"
+              ]
+            },
+            "revocation_evidence_ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "revocation_checked_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "authority_epoch": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "authority_state_version": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "chain": {
+          "type": "array",
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/delegation_node"
+                },
+                {
+                  "properties": {
+                    "role": {
+                      "const": "root"
+                    }
+                  },
+                  "required": [
+                    "role"
+                  ]
+                }
+              ]
+            }
+          ],
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/delegation_node"
+              },
+              {
+                "properties": {
+                  "role": {
+                    "const": "descendant"
+                  }
+                },
+                "required": [
+                  "role"
+                ]
+              }
+            ]
+          }
+        },
+        "root_authorized_task_plans": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task_id",
+              "task_digest",
+              "plan_digest"
+            ],
+            "properties": {
+              "task_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "task_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "plan_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              }
+            }
+          }
+        },
+        "root_authorized_edges": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/root_delegation_edge"
+          }
+        },
+        "edge_verifications": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "parent_grant_ref",
+              "child_grant_ref",
+              "outcome",
+              "violation_codes",
+              "task_plan_pair_match",
+              "lineage_match",
+              "scope_match"
+            ],
+            "properties": {
+              "parent_grant_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "child_grant_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "outcome": {
+                "enum": [
+                  "qualified",
+                  "denied",
+                  "unknown"
+                ]
+              },
+              "violation_codes": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "task_plan_pair_match": {
+                "type": "boolean"
+              },
+              "lineage_match": {
+                "type": "boolean"
+              },
+              "scope_match": {
+                "enum": [
+                  "subset",
+                  "expanded",
+                  "unknown"
+                ]
+              }
+            }
+          }
+        },
+        "fanout_batches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "batch_id",
+              "parent_grant_ref",
+              "budget_state_ref",
+              "budget_state_version",
+              "child_allocations",
+              "aggregate_allocated",
+              "parent_budget_limit",
+              "outcome"
+            ],
+            "properties": {
+              "batch_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "parent_grant_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "budget_state_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "budget_state_version": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "child_allocations": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "$ref": "#/$defs/delegation_child_allocation"
+                }
+              },
+              "aggregate_allocated": {
+                "$ref": "#/$defs/delegation_budget"
+              },
+              "parent_budget_limit": {
+                "$ref": "#/$defs/delegation_budget"
+              },
+              "outcome": {
+                "enum": [
+                  "qualified",
+                  "denied",
+                  "unknown"
+                ]
+              }
+            }
+          }
+        },
+        "participant_rechecks": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "recheck_id",
+              "root_grant_ref",
+              "leaf_grant_ref",
+              "root_task_digest",
+              "leaf_task_digest",
+              "leaf_plan_digest",
+              "request_digest",
+              "target_digest",
+              "operation",
+              "parameter_digest",
+              "canonical_authority_evidence_ref",
+              "authority_state",
+              "checked_at",
+              "freshness_ms",
+              "decision",
+              "attempt_id"
+            ],
+            "properties": {
+              "recheck_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "root_grant_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "leaf_grant_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "root_task_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "leaf_task_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "leaf_plan_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "request_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "target_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "operation": {
+                "type": "string",
+                "minLength": 1
+              },
+              "parameter_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "canonical_authority_evidence_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "authority_state": {
+                "enum": [
+                  "active",
+                  "revoked",
+                  "unknown",
+                  "stale"
+                ]
+              },
+              "checked_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "freshness_ms": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "decision": {
+                "enum": [
+                  "allow",
+                  "deny",
+                  "unknown"
+                ]
+              },
+              "attempt_id": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "effect_bindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "attempt_id",
+              "logical_idempotency_key",
+              "root_task_digest",
+              "leaf_grant_ref",
+              "leaf_task_digest",
+              "leaf_plan_digest",
+              "request_digest",
+              "effect_state",
+              "effect_count"
+            ],
+            "properties": {
+              "attempt_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "logical_idempotency_key": {
+                "type": "string",
+                "minLength": 1
+              },
+              "root_task_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "leaf_grant_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "leaf_task_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "leaf_plan_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "request_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "effect_state": {
+                "enum": [
+                  "not_attempted",
+                  "dispatched",
+                  "effect_committed",
+                  "outcome_unknown",
+                  "no_effect",
+                  "conflicting"
+                ]
+              },
+              "effect_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "effect_receipt_ref": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "effect_receipt_digest": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^sha256:[a-f0-9]{64}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "evidence_items"
+          ],
+          "properties": {
+            "evidence_items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "evidence_ref",
+                  "evidence_digest",
+                  "source_type",
+                  "control_domain_ref",
+                  "observed_at",
+                  "derived_from",
+                  "common_cause_group_ref",
+                  "independence_assessment"
+                ],
+                "properties": {
+                  "evidence_ref": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "evidence_digest": {
+                    "type": "string",
+                    "pattern": "^sha256:[a-f0-9]{64}$"
+                  },
+                  "source_type": {
+                    "enum": [
+                      "root_authority",
+                      "delegation_manifest",
+                      "participant_recheck",
+                      "participant_effect",
+                      "service_observation",
+                      "agent_claim",
+                      "other"
+                    ]
+                  },
+                  "control_domain_ref": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "observed_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "derived_from": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "common_cause_group_ref": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "independence_assessment": {
+                    "enum": [
+                      "independent",
+                      "derived",
+                      "common_cause",
+                      "unknown"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "qualification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "outcome",
+            "violation_codes",
+            "lineage_complete",
+            "fresh_participant_recheck_complete"
+          ],
+          "properties": {
+            "outcome": {
+              "enum": [
+                "qualified",
+                "denied",
+                "unknown"
+              ]
+            },
+            "violation_codes": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "lineage_complete": {
+              "type": "boolean"
+            },
+            "fresh_participant_recheck_complete": {
+              "type": "boolean"
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "policy_arm": {
+                "const": "root_anchored_task_graph"
+              }
+            },
+            "required": [
+              "policy_arm"
+            ]
+          },
+          "then": {
+            "required": [
+              "root_authorized_task_plans",
+              "root_authorized_edges"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "task_binding": {
+            "properties": {
+              "delegation_required": {
+                "const": true
+              }
+            },
+            "required": [
+              "delegation_required"
+            ]
+          }
+        },
+        "required": [
+          "task_binding"
+        ]
+      },
+      "then": {
+        "required": [
+          "delegation"
+        ]
+      }
+    }
+  ]
 }
