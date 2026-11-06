@@ -1181,6 +1181,229 @@ fn parameter_bound_is_subset(child: &ParameterBound, parent: &ParameterBound) ->
     }
 }
 
+/// Aggregate dispatch/tool/resource allocation carried by one delegated child.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct DelegationBudget {
+    pub dispatches: u64,
+    pub tool_calls: u64,
+    pub resource_units: u64,
+}
+
+impl DelegationBudget {
+    fn checked_add(self, other: Self) -> Option<Self> {
+        Some(Self {
+            dispatches: self.dispatches.checked_add(other.dispatches)?,
+            tool_calls: self.tool_calls.checked_add(other.tool_calls)?,
+            resource_units: self.resource_units.checked_add(other.resource_units)?,
+        })
+    }
+
+    fn checked_sub(self, other: Self) -> Option<Self> {
+        Some(Self {
+            dispatches: self.dispatches.checked_sub(other.dispatches)?,
+            tool_calls: self.tool_calls.checked_sub(other.tool_calls)?,
+            resource_units: self.resource_units.checked_sub(other.resource_units)?,
+        })
+    }
+
+    fn covers(self, other: Self) -> bool {
+        self.dispatches >= other.dispatches
+            && self.tool_calls >= other.tool_calls
+            && self.resource_units >= other.resource_units
+    }
+}
+
+/// One child's immutable allocation in a complete fan-out reservation.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct DelegationBudgetAllocation {
+    pub child_grant_ref: String,
+    pub budget: DelegationBudget,
+}
+
+/// Participant-owned ledger view. In production this state must live in a
+/// durable, transactionally updated store; this in-memory model only tests the
+/// compare-and-swap semantics deterministically.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DelegationBudgetSnapshot {
+    pub version: u64,
+    pub available: DelegationBudget,
+}
+
+/// Receipt for one complete atomic fan-out reservation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DelegationBudgetReservationReceipt {
+    pub parent_grant_ref: String,
+    pub batch_id: String,
+    pub idempotency_key: String,
+    pub version_before: u64,
+    pub version_after: u64,
+    pub available_before: DelegationBudget,
+    pub allocated: DelegationBudget,
+    pub available_after: DelegationBudget,
+    pub allocations: Vec<DelegationBudgetAllocation>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DelegationBudgetLedgerError {
+    InvalidReference,
+    ParentAlreadyRegistered,
+    ParentNotRegistered,
+    VersionConflict { expected: u64, actual: u64 },
+    DuplicateBatchId,
+    IdempotencyKeyConflict,
+    DuplicateChildAllocation,
+    ArithmeticOverflow,
+    BudgetExceeded,
+    VersionOverflow,
+}
+
+#[derive(Debug, Clone)]
+struct DelegationBudgetAccount {
+    snapshot: DelegationBudgetSnapshot,
+    batch_ids: BTreeSet<String>,
+    reservations_by_key:
+        BTreeMap<String, (String, Vec<DelegationBudgetAllocation>, DelegationBudgetReservationReceipt)>,
+}
+
+/// Deterministic compare-and-swap budget ledger used by the synthetic ITOPS
+/// qualification model. A complete fan-out is reserved in one versioned
+/// mutation, so sibling agents cannot each spend the same parent allowance.
+#[derive(Debug, Clone, Default)]
+pub struct DelegationBudgetLedger {
+    accounts: BTreeMap<String, DelegationBudgetAccount>,
+}
+
+impl DelegationBudgetLedger {
+    pub fn register_parent(
+        &mut self,
+        parent_grant_ref: &str,
+        initial_budget: DelegationBudget,
+    ) -> Result<DelegationBudgetSnapshot, DelegationBudgetLedgerError> {
+        if parent_grant_ref.trim().is_empty() {
+            return Err(DelegationBudgetLedgerError::InvalidReference);
+        }
+        if self.accounts.contains_key(parent_grant_ref) {
+            return Err(DelegationBudgetLedgerError::ParentAlreadyRegistered);
+        }
+        let snapshot = DelegationBudgetSnapshot {
+            version: 0,
+            available: initial_budget,
+        };
+        self.accounts.insert(
+            parent_grant_ref.to_string(),
+            DelegationBudgetAccount {
+                snapshot,
+                batch_ids: BTreeSet::new(),
+                reservations_by_key: BTreeMap::new(),
+            },
+        );
+        Ok(snapshot)
+    }
+
+    pub fn snapshot(
+        &self,
+        parent_grant_ref: &str,
+    ) -> Result<DelegationBudgetSnapshot, DelegationBudgetLedgerError> {
+        self.accounts
+            .get(parent_grant_ref)
+            .map(|account| account.snapshot)
+            .ok_or(DelegationBudgetLedgerError::ParentNotRegistered)
+    }
+
+    /// Atomically reserves every child allocation in a fan-out. A replay with
+    /// the same idempotency key and identical batch is read-only and returns
+    /// the original receipt. Rebinding that key or using a stale version fails.
+    pub fn reserve_fanout(
+        &mut self,
+        parent_grant_ref: &str,
+        expected_version: u64,
+        batch_id: &str,
+        idempotency_key: &str,
+        allocations: &[DelegationBudgetAllocation],
+    ) -> Result<DelegationBudgetReservationReceipt, DelegationBudgetLedgerError> {
+        if parent_grant_ref.trim().is_empty()
+            || batch_id.trim().is_empty()
+            || idempotency_key.trim().is_empty()
+            || allocations.is_empty()
+        {
+            return Err(DelegationBudgetLedgerError::InvalidReference);
+        }
+
+        let account = self
+            .accounts
+            .get_mut(parent_grant_ref)
+            .ok_or(DelegationBudgetLedgerError::ParentNotRegistered)?;
+
+        if let Some((existing_batch, existing_allocations, receipt)) =
+            account.reservations_by_key.get(idempotency_key)
+        {
+            if existing_batch == batch_id && existing_allocations == allocations {
+                return Ok(receipt.clone());
+            }
+            return Err(DelegationBudgetLedgerError::IdempotencyKeyConflict);
+        }
+        if account.batch_ids.contains(batch_id) {
+            return Err(DelegationBudgetLedgerError::DuplicateBatchId);
+        }
+        if account.snapshot.version != expected_version {
+            return Err(DelegationBudgetLedgerError::VersionConflict {
+                expected: expected_version,
+                actual: account.snapshot.version,
+            });
+        }
+
+        let mut child_refs = BTreeSet::new();
+        let mut aggregate = DelegationBudget::default();
+        for allocation in allocations {
+            if allocation.child_grant_ref.trim().is_empty() {
+                return Err(DelegationBudgetLedgerError::InvalidReference);
+            }
+            if !child_refs.insert(allocation.child_grant_ref.as_str()) {
+                return Err(DelegationBudgetLedgerError::DuplicateChildAllocation);
+            }
+            aggregate = aggregate
+                .checked_add(allocation.budget)
+                .ok_or(DelegationBudgetLedgerError::ArithmeticOverflow)?;
+        }
+
+        let before = account.snapshot;
+        if !before.available.covers(aggregate) {
+            return Err(DelegationBudgetLedgerError::BudgetExceeded);
+        }
+        let after_available = before
+            .available
+            .checked_sub(aggregate)
+            .ok_or(DelegationBudgetLedgerError::BudgetExceeded)?;
+        let next_version = before
+            .version
+            .checked_add(1)
+            .ok_or(DelegationBudgetLedgerError::VersionOverflow)?;
+
+        let receipt = DelegationBudgetReservationReceipt {
+            parent_grant_ref: parent_grant_ref.to_string(),
+            batch_id: batch_id.to_string(),
+            idempotency_key: idempotency_key.to_string(),
+            version_before: before.version,
+            version_after: next_version,
+            available_before: before.available,
+            allocated: aggregate,
+            available_after: after_available,
+            allocations: allocations.to_vec(),
+        };
+
+        account.snapshot = DelegationBudgetSnapshot {
+            version: next_version,
+            available: after_available,
+        };
+        account.batch_ids.insert(batch_id.to_string());
+        account.reservations_by_key.insert(
+            idempotency_key.to_string(),
+            (batch_id.to_string(), allocations.to_vec(), receipt.clone()),
+        );
+        Ok(receipt)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
