@@ -6,6 +6,7 @@
 //! Xenia; the final participant must independently recheck current authority.
 
 use std::collections::{BTreeMap, BTreeSet};
+use serde::Deserialize;
 
 /// A deliberately small constraint language with decidable subset checks.
 /// Unsupported or incomparable constraint forms are rejected, never guessed.
@@ -157,7 +158,6 @@ fn grant_shape_is_valid(grant: &DelegatedAuthorityGrant) -> bool {
         && set_is_valid(&grant.data_scopes)
         && bounds_are_valid(&grant.parameter_bounds)
         && grant.not_before_unix < grant.expires_at_unix
-        && grant.max_dispatches >= 0
         && grant.max_tool_calls > 0
         && grant.max_resource_units > 0
         && obligation_set_is_valid(&grant.required_approvals)
@@ -404,6 +404,496 @@ fn parameter_bound_is_subset(
         // A type change or incomparable constraint is not a valid narrowing.
         _ => false,
     }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DelegationEvidenceBundle {
+    schema: String,
+    version: u32,
+    status: String,
+    outcome: String,
+    agent_control_domain_ref: String,
+    evaluated_at_unix: i64,
+    max_authority_age_seconds: u64,
+    chain: Vec<DelegationGrantRecord>,
+    authority_checks: Vec<AuthorityStateCheck>,
+    participant_recheck: ParticipantBoundaryRecheck,
+    evidence_lineage: Vec<DelegationEvidenceLineage>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+struct DelegationGrantRecord {
+    grant_id: String,
+    issuer_principal_ref: String,
+    subject_principal_ref: String,
+    root_task_id: String,
+    root_task_digest: String,
+    root_plan_digest: String,
+    task_id: String,
+    task_digest: String,
+    plan_digest: String,
+    parent_task_id: Option<String>,
+    parent_task_digest: Option<String>,
+    parent_grant_id: Option<String>,
+    tenant_commitment: String,
+    targets: BTreeSet<String>,
+    operations: BTreeSet<String>,
+    parameter_bounds: BTreeMap<String, TraceParameterBound>,
+    data_scopes: BTreeSet<String>,
+    not_before_unix: i64,
+    expires_at_unix: i64,
+    max_dispatches: u64,
+    max_tool_calls: u64,
+    max_resource_units: u64,
+    remaining_delegation_depth: u32,
+    max_risk_level: u8,
+    required_approvals: BTreeSet<String>,
+    required_postconditions: BTreeSet<String>,
+    rollback_obligations: BTreeSet<String>,
+    allowed_child_task_digests: BTreeSet<String>,
+    allowed_child_plan_digests: BTreeSet<String>,
+    delegable: bool,
+    revoked: bool,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+enum TraceParameterBound {
+    ExactString { value: String },
+    ExactInteger { value: i64 },
+    IntegerRange { min: i64, max: i64 },
+}
+
+impl From<TraceParameterBound> for ParameterBound {
+    fn from(value: TraceParameterBound) -> Self {
+        match value {
+            TraceParameterBound::ExactString { value } => Self::ExactString(value),
+            TraceParameterBound::ExactInteger { value } => Self::ExactInteger(value),
+            TraceParameterBound::IntegerRange { min, max } => Self::IntegerRange { min, max },
+        }
+    }
+}
+
+impl From<DelegationGrantRecord> for DelegatedAuthorityGrant {
+    fn from(value: DelegationGrantRecord) -> Self {
+        Self {
+            grant_id: value.grant_id,
+            issuer_principal: value.issuer_principal_ref,
+            subject_principal: value.subject_principal_ref,
+            root_task_id: value.root_task_id,
+            root_task_digest: value.root_task_digest,
+            root_plan_digest: value.root_plan_digest,
+            task_id: value.task_id,
+            task_digest: value.task_digest,
+            plan_digest: value.plan_digest,
+            parent_task_id: value.parent_task_id,
+            parent_task_digest: value.parent_task_digest,
+            parent_grant_id: value.parent_grant_id,
+            tenant_binding: value.tenant_commitment,
+            targets: value.targets,
+            operations: value.operations,
+            parameter_bounds: value.parameter_bounds
+                .into_iter()
+                .map(|(key, bound)| (key, bound.into()))
+                .collect(),
+            data_scopes: value.data_scopes,
+            not_before_unix: value.not_before_unix,
+            expires_at_unix: value.expires_at_unix,
+            max_dispatches: value.max_dispatches,
+            max_tool_calls: value.max_tool_calls,
+            max_resource_units: value.max_resource_units,
+            remaining_delegation_depth: value.remaining_delegation_depth,
+            max_risk_level: value.max_risk_level,
+            required_approvals: value.required_approvals,
+            required_postconditions: value.required_postconditions,
+            rollback_obligations: value.rollback_obligations,
+            allowed_child_task_digests: value.allowed_child_task_digests,
+            allowed_child_plan_digests: value.allowed_child_plan_digests,
+            delegable: value.delegable,
+            revoked: value.revoked,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct AuthorityStateCheck {
+    grant_id: String,
+    state: String,
+    checked_at_unix: i64,
+    evidence_ref: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ParticipantBoundaryRecheck {
+    participant_ref: String,
+    control_domain_ref: String,
+    checked_at_unix: i64,
+    leaf_grant_id: String,
+    leaf_task_id: String,
+    leaf_task_digest: String,
+    leaf_plan_digest: String,
+    request_digest: String,
+    authority_state: String,
+    decision: String,
+    evidence_ref: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DelegationEvidenceLineage {
+    evidence_ref: String,
+    kind: String,
+    source_ref: String,
+    control_domain_ref: String,
+    derived_from: Vec<String>,
+    digest: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DelegationEvidenceAudit {
+    pub attenuation_qualified: bool,
+    pub computed_outcome: String,
+    pub declared_outcome_matches: bool,
+    pub participant_recheck_bound_to_leaf: bool,
+    pub participant_decision_correct: bool,
+    pub all_ancestor_authority_fresh: bool,
+    pub evidence_lineage_complete: bool,
+    pub root_task_id: String,
+    pub root_task_digest: String,
+    pub root_plan_digest: String,
+    pub leaf_grant_id: String,
+    pub leaf_task_id: String,
+    pub leaf_task_digest: String,
+    pub leaf_plan_digest: String,
+    pub request_digest: String,
+    pub participant_recheck_ref: String,
+    pub violations: Vec<String>,
+}
+
+fn prefixed_sha256_is_valid(value: &str) -> bool {
+    value.strip_prefix("sha256:").is_some_and(digest_is_sha256)
+}
+
+fn evidence_depends_on_kind(
+    evidence_ref: &str,
+    wanted_kind: &str,
+    by_ref: &BTreeMap<&str, &DelegationEvidenceLineage>,
+    visited: &mut BTreeSet<String>,
+) -> bool {
+    if !visited.insert(evidence_ref.to_string()) {
+        return false;
+    }
+    let Some(record) = by_ref.get(evidence_ref).copied() else {
+        return false;
+    };
+    record.kind == wanted_kind
+        || record.derived_from.iter().any(|parent| {
+            evidence_depends_on_kind(parent, wanted_kind, by_ref, visited)
+        })
+}
+
+fn evidence_graph_is_acyclic(
+    evidence_ref: &str,
+    by_ref: &BTreeMap<&str, &DelegationEvidenceLineage>,
+    visiting: &mut BTreeSet<String>,
+    visited: &mut BTreeSet<String>,
+) -> bool {
+    if visited.contains(evidence_ref) {
+        return true;
+    }
+    if !visiting.insert(evidence_ref.to_string()) {
+        return false;
+    }
+    let Some(record) = by_ref.get(evidence_ref).copied() else {
+        return false;
+    };
+    for parent in &record.derived_from {
+        if !evidence_graph_is_acyclic(parent, by_ref, visiting, visited) {
+            return false;
+        }
+    }
+    visiting.remove(evidence_ref);
+    visited.insert(evidence_ref.to_string());
+    true
+}
+
+/// Schema and semantic audit for the machine-readable delegation evidence contract.
+///
+/// This validates internal structure, monotonic authority narrowing, ancestor
+/// status freshness, evidence references and the final participant recheck.
+/// It cannot authenticate referenced authority evidence or prove actual process
+/// isolation; those require canonical adapters and independent deployment review.
+pub fn audit_delegation_evidence(
+    bundle_bytes: &[u8],
+    schema_bytes: &[u8],
+) -> Result<DelegationEvidenceAudit, String> {
+    crate::validate_draft2020_12(bundle_bytes, schema_bytes)
+        .map_err(|error| format!("delegation evidence schema: {error}"))?;
+    let bundle: DelegationEvidenceBundle = serde_json::from_slice(bundle_bytes)
+        .map_err(|error| format!("delegation evidence decode: {error}"))?;
+
+    let mut violations = Vec::new();
+    let mut lineage_complete = true;
+    if bundle.schema != "luminous-itops-delegation-evidence-v0.1"
+        || bundle.version != 1
+        || bundle.status != "synthetic_example_or_evaluation_result"
+    {
+        violations.push("DELEGATION_SCHEMA_OR_STATUS_MISMATCH".to_string());
+    }
+    if !nonempty(&bundle.agent_control_domain_ref) {
+        violations.push("AGENT_CONTROL_DOMAIN_MISSING".to_string());
+    }
+
+    let mut by_ref: BTreeMap<&str, &DelegationEvidenceLineage> = BTreeMap::new();
+    for item in &bundle.evidence_lineage {
+        if by_ref.insert(item.evidence_ref.as_str(), item).is_some() {
+            violations.push(format!("DUPLICATE_EVIDENCE_REF:{}", item.evidence_ref));
+            lineage_complete = false;
+        }
+        if !nonempty(&item.evidence_ref)
+            || !nonempty(&item.source_ref)
+            || !nonempty(&item.control_domain_ref)
+            || !prefixed_sha256_is_valid(&item.digest)
+        {
+            violations.push(format!("MALFORMED_EVIDENCE_LINEAGE:{}", item.evidence_ref));
+            lineage_complete = false;
+        }
+    }
+    for item in &bundle.evidence_lineage {
+        for parent in &item.derived_from {
+            if parent == &item.evidence_ref || !by_ref.contains_key(parent.as_str()) {
+                violations.push(format!("LINEAGE_MISSING_OR_SELF_REFERENCE:{}", item.evidence_ref));
+                lineage_complete = false;
+            }
+        }
+        let mut visiting = BTreeSet::new();
+        let mut visited = BTreeSet::new();
+        if !evidence_graph_is_acyclic(
+            &item.evidence_ref,
+            &by_ref,
+            &mut visiting,
+            &mut visited,
+        ) {
+            violations.push(format!("EVIDENCE_LINEAGE_CYCLE:{}", item.evidence_ref));
+            lineage_complete = false;
+        }
+    }
+
+    let mut authority_by_grant: BTreeMap<&str, &AuthorityStateCheck> = BTreeMap::new();
+    for check in &bundle.authority_checks {
+        if authority_by_grant.insert(check.grant_id.as_str(), check).is_some() {
+            violations.push(format!("DUPLICATE_AUTHORITY_CHECK:{}", check.grant_id));
+            lineage_complete = false;
+        }
+        match by_ref.get(check.evidence_ref.as_str()).copied() {
+            Some(item)
+                if item.kind == "canonical_authority"
+                    && item.derived_from.is_empty()
+                    && item.control_domain_ref != bundle.agent_control_domain_ref => {}
+            _ => {
+                violations.push(format!("AUTHORITY_EVIDENCE_NOT_CANONICAL_SOURCE:{}", check.grant_id));
+                lineage_complete = false;
+            }
+        }
+    }
+
+    let mut grants: Vec<DelegatedAuthorityGrant> =
+        bundle.chain.iter().cloned().map(Into::into).collect();
+    let mut lineage_complete_authority = true;
+    let mut has_unknown_authority = false;
+    let mut has_known_denial = false;
+    let mut has_revoked_ancestor = false;
+    let mut all_ancestor_authority_fresh = true;
+
+    for grant in &mut grants {
+        match authority_by_grant.get(grant.grant_id.as_str()).copied() {
+            Some(check) => {
+                let fresh = check.checked_at_unix <= bundle.evaluated_at_unix
+                    && bundle.evaluated_at_unix.saturating_sub(check.checked_at_unix) as u64
+                        <= bundle.max_authority_age_seconds;
+                if !fresh {
+                    all_ancestor_authority_fresh = false;
+                    has_unknown_authority = true;
+                    violations.push(format!("ANCESTOR_AUTHORITY_STALE_OR_FUTURE:{}", grant.grant_id));
+                }
+                match check.state.as_str() {
+                    "active" => {}
+                    "revoked" => {
+                        grant.revoked = true;
+                        has_revoked_ancestor = true;
+                        has_known_denial = true;
+                        violations.push(format!("ANCESTOR_GRANT_REVOKED:{}", grant.grant_id));
+                    }
+                    "unknown" => {
+                        has_unknown_authority = true;
+                        all_ancestor_authority_fresh = false;
+                        violations.push(format!("ANCESTOR_AUTHORITY_UNKNOWN:{}", grant.grant_id));
+                    }
+                    _ => {
+                        has_unknown_authority = true;
+                        all_ancestor_authority_fresh = false;
+                        violations.push(format!("ANCESTOR_AUTHORITY_STATE_INVALID:{}", grant.grant_id));
+                    }
+                }
+            }
+            None => {
+                has_unknown_authority = true;
+                all_ancestor_authority_fresh = false;
+                violations.push(format!("ANCESTOR_AUTHORITY_CHECK_MISSING:{}", grant.grant_id));
+            }
+        }
+    }
+    if authority_by_grant.len() != grants.len() {
+        lineage_complete_authority = false;
+        violations.push("AUTHORITY_CHECK_COUNT_MISMATCH".to_string());
+    }
+    lineage_complete &= lineage_complete_authority;
+    let expected_chain_authority_state = if has_unknown_authority {
+        "unknown"
+    } else if has_revoked_ancestor {
+        "revoked"
+    } else {
+        "active"
+    };
+
+    if let Err(chain_violations) = verify_delegation_chain_at(&grants, bundle.evaluated_at_unix) {
+        has_known_denial = true;
+        for violation in chain_violations {
+            violations.push(format!("ATTENUATION:{violation:?}"));
+        }
+    }
+
+    let mut computed_outcome = if has_unknown_authority {
+        "unknown"
+    } else if has_known_denial {
+        "denied"
+    } else {
+        "qualified"
+    };
+
+    let Some(leaf) = grants.last() else {
+        return Err("delegation chain empty after schema validation".to_string());
+    };
+    let participant = &bundle.participant_recheck;
+    let participant_recheck_bound_to_leaf =
+        participant.leaf_grant_id == leaf.grant_id
+            && participant.leaf_task_id == leaf.task_id
+            && participant.leaf_task_digest == leaf.task_digest
+            && participant.leaf_plan_digest == leaf.plan_digest
+            && prefixed_sha256_is_valid(&participant.request_digest);
+    if !participant_recheck_bound_to_leaf {
+        violations.push("PARTICIPANT_RECHECK_NOT_BOUND_TO_EXACT_LEAF".to_string());
+    }
+
+    let participant_fresh = participant.checked_at_unix <= bundle.evaluated_at_unix
+        && bundle.evaluated_at_unix.saturating_sub(participant.checked_at_unix) as u64
+            <= bundle.max_authority_age_seconds;
+    if !participant_fresh {
+        all_ancestor_authority_fresh = false;
+        has_unknown_authority = true;
+        violations.push("PARTICIPANT_RECHECK_STALE_OR_FUTURE".to_string());
+    }
+
+    match by_ref.get(participant.evidence_ref.as_str()).copied() {
+        Some(item)
+            if item.kind == "participant_recheck"
+                && item.source_ref == participant.participant_ref
+                && item.control_domain_ref == participant.control_domain_ref
+                && item.control_domain_ref != bundle.agent_control_domain_ref => {
+            let authority_refs: BTreeSet<&str> = bundle
+                .authority_checks
+                .iter()
+                .map(|check| check.evidence_ref.as_str())
+                .collect();
+            let derived: BTreeSet<&str> =
+                item.derived_from.iter().map(String::as_str).collect();
+            if !authority_refs.is_subset(&derived) {
+                lineage_complete = false;
+                violations.push("PARTICIPANT_RECHECK_MISSING_AUTHORITY_LINEAGE".to_string());
+            }
+            let mut visited = BTreeSet::new();
+            if evidence_depends_on_kind(
+                &participant.evidence_ref,
+                "agent_summary",
+                &by_ref,
+                &mut visited,
+            ) {
+                lineage_complete = false;
+                violations.push("PARTICIPANT_RECHECK_DERIVED_FROM_AGENT_SUMMARY".to_string());
+            }
+        }
+        _ => {
+            lineage_complete = false;
+            violations.push("PARTICIPANT_RECHECK_SOURCE_NOT_INDEPENDENTLY_RECORDED".to_string());
+        }
+    }
+
+    if participant.authority_state != expected_chain_authority_state {
+        has_unknown_authority = true;
+        violations.push("PARTICIPANT_CHAIN_AUTHORITY_STATE_MISMATCH".to_string());
+    }
+    if bundle.authority_checks.iter().any(|check| {
+        check.checked_at_unix > participant.checked_at_unix
+    }) {
+        has_unknown_authority = true;
+        violations.push("PARTICIPANT_RECHECK_PRECEDES_AUTHORITY_EVIDENCE".to_string());
+    }
+    if !lineage_complete {
+        has_unknown_authority = true;
+    }
+    if !matches!(participant.authority_state.as_str(), "active" | "revoked" | "unknown") {
+        has_unknown_authority = true;
+        violations.push("PARTICIPANT_AUTHORITY_STATE_INVALID".to_string());
+    }
+    computed_outcome = if has_unknown_authority {
+        "unknown"
+    } else if has_known_denial {
+        "denied"
+    } else {
+        computed_outcome
+    };
+
+    let declared_outcome_matches = bundle.outcome == computed_outcome;
+    if !declared_outcome_matches {
+        violations.push("DECLARED_DELEGATION_OUTCOME_MISMATCH".to_string());
+    }
+    let expected_decision = match computed_outcome {
+        "qualified" => "authorized",
+        "denied" => "denied",
+        _ => "unknown",
+    };
+    let participant_decision_correct = participant.decision == expected_decision;
+    if !participant_decision_correct {
+        violations.push("PARTICIPANT_DECISION_DOES_NOT_MATCH_AUTHORITY_RESULT".to_string());
+    }
+
+    Ok(DelegationEvidenceAudit {
+        attenuation_qualified: computed_outcome == "qualified"
+            && declared_outcome_matches
+            && participant_decision_correct
+            && participant_recheck_bound_to_leaf
+            && lineage_complete,
+        computed_outcome: computed_outcome.to_string(),
+        declared_outcome_matches,
+        participant_recheck_bound_to_leaf,
+        participant_decision_correct,
+        all_ancestor_authority_fresh,
+        evidence_lineage_complete: lineage_complete,
+        root_task_id: grants.first().map(|grant| grant.root_task_id.clone()).unwrap_or_default(),
+        root_task_digest: grants.first().map(|grant| grant.root_task_digest.clone()).unwrap_or_default(),
+        root_plan_digest: grants.first().map(|grant| grant.root_plan_digest.clone()).unwrap_or_default(),
+        leaf_grant_id: leaf.grant_id.clone(),
+        leaf_task_id: leaf.task_id.clone(),
+        leaf_task_digest: leaf.task_digest.clone(),
+        leaf_plan_digest: leaf.plan_digest.clone(),
+        request_digest: participant.request_digest.clone(),
+        participant_recheck_ref: participant.evidence_ref.clone(),
+        violations,
+    })
 }
 
 #[cfg(test)]
@@ -742,6 +1232,171 @@ mod tests {
         assert!(verify_delegation_chain_at(&[root, child, duplicate], 150)
             .unwrap_err()
             .contains(&AttenuationViolation::DuplicateGrantInChain));
+    }
+
+
+    #[test]
+    fn evidence_bundle_audits_three_agent_read_only_chain() {
+        let schema = include_str!("../../delegation-evidence.schema.json");
+        let fixture = include_str!("../fixtures/delegation-chain-positive.json");
+        let audit = audit_delegation_evidence(fixture.as_bytes(), schema.as_bytes())
+            .expect("positive delegation evidence must pass schema and semantic audit");
+        assert!(audit.attenuation_qualified, "{:?}", audit.violations);
+        assert_eq!(audit.computed_outcome, "qualified");
+        assert!(audit.declared_outcome_matches);
+        assert!(audit.participant_recheck_bound_to_leaf);
+        assert!(audit.participant_decision_correct);
+        assert!(audit.all_ancestor_authority_fresh);
+        assert!(audit.evidence_lineage_complete);
+    }
+
+    #[test]
+    fn one_hop_delegation_evidence_is_qualified() {
+        let schema = include_str!("../../delegation-evidence.schema.json");
+        let fixture = include_str!("../fixtures/delegation-one-hop-positive.json");
+        let audit = audit_delegation_evidence(fixture.as_bytes(), schema.as_bytes()).unwrap();
+        assert!(audit.attenuation_qualified, "{:?}", audit.violations);
+        assert_eq!(audit.computed_outcome, "qualified");
+        assert_eq!(audit.leaf_task_id, "task-child");
+    }
+
+    #[test]
+    fn revoked_ancestor_is_a_known_denial_not_a_leaf_state_mismatch() {
+        let schema = include_str!("../../delegation-evidence.schema.json");
+        let fixture = include_str!("../fixtures/delegation-chain-revoked-ancestor.json");
+        let audit = audit_delegation_evidence(fixture.as_bytes(), schema.as_bytes()).unwrap();
+        assert!(!audit.attenuation_qualified);
+        assert_eq!(audit.computed_outcome, "denied");
+        assert!(audit.declared_outcome_matches);
+        assert!(audit.participant_decision_correct);
+        assert!(audit.violations.iter().any(|code| code.contains("ANCESTOR_GRANT_REVOKED")));
+        assert!(!audit.violations.iter().any(|code| code.contains("CHAIN_AUTHORITY_STATE_MISMATCH")));
+    }
+
+    #[test]
+    fn evidence_bundle_records_known_scope_expansion_as_denied() {
+        let schema = include_str!("../../delegation-evidence.schema.json");
+        let fixture = include_str!("../fixtures/delegation-chain-positive.json");
+        let mut value: serde_json::Value = serde_json::from_str(fixture).unwrap();
+        value["chain"][1]["targets"] = serde_json::json!(["service/api", "service/worker"]);
+        value["outcome"] = serde_json::json!("denied");
+        value["participant_recheck"]["authority_state"] = serde_json::json!("active");
+        value["participant_recheck"]["decision"] = serde_json::json!("denied");
+        let bytes = serde_json::to_vec(&value).unwrap();
+        let audit = audit_delegation_evidence(&bytes, schema.as_bytes()).unwrap();
+        assert!(!audit.attenuation_qualified);
+        assert_eq!(audit.computed_outcome, "denied");
+        assert!(audit.declared_outcome_matches);
+        assert!(audit.participant_decision_correct);
+        assert!(audit.violations.iter().any(|code| code.contains("TargetScopeExpanded")));
+    }
+
+    #[test]
+    fn evidence_bundle_requires_fresh_authority_for_every_ancestor() {
+        let schema = include_str!("../../delegation-evidence.schema.json");
+        let fixture = include_str!("../fixtures/delegation-chain-positive.json");
+        let mut value: serde_json::Value = serde_json::from_str(fixture).unwrap();
+        value["authority_checks"][0]["checked_at_unix"] = serde_json::json!(1000);
+        value["outcome"] = serde_json::json!("unknown");
+        value["participant_recheck"]["authority_state"] = serde_json::json!("unknown");
+        value["participant_recheck"]["decision"] = serde_json::json!("unknown");
+        let bytes = serde_json::to_vec(&value).unwrap();
+        let audit = audit_delegation_evidence(&bytes, schema.as_bytes()).unwrap();
+        assert_eq!(audit.computed_outcome, "unknown");
+        assert!(!audit.all_ancestor_authority_fresh);
+        assert!(audit.participant_decision_correct);
+        assert!(audit.violations.iter().any(|code| code.contains("STALE_OR_FUTURE")));
+    }
+
+    #[test]
+    fn evidence_bundle_rejects_agent_laundered_participant_recheck() {
+        let schema = include_str!("../../delegation-evidence.schema.json");
+        let fixture = include_str!("../fixtures/delegation-chain-positive.json");
+        let mut value: serde_json::Value = serde_json::from_str(fixture).unwrap();
+        value["evidence_lineage"].as_array_mut().unwrap().push(serde_json::json!({
+            "evidence_ref": "agent-summary",
+            "kind": "agent_summary",
+            "source_ref": "agent-output",
+            "control_domain_ref": "agent-domain",
+            "derived_from": [],
+            "digest": format!("sha256:{}", "9".repeat(64))
+        }));
+        value["evidence_lineage"]
+            .as_array_mut().unwrap()
+            .iter_mut()
+            .find(|record| record["evidence_ref"] == "participant-recheck")
+            .unwrap()["derived_from"]
+            .as_array_mut().unwrap()
+            .push(serde_json::json!("agent-summary"));
+        let bytes = serde_json::to_vec(&value).unwrap();
+        let audit = audit_delegation_evidence(&bytes, schema.as_bytes()).unwrap();
+        assert!(audit.violations.iter().any(|code| code.contains("DERIVED_FROM_AGENT_SUMMARY")));
+        assert!(!audit.evidence_lineage_complete);
+    }
+
+    #[test]
+    fn evidence_bundle_rejects_misordered_hops_and_leaf_substitution() {
+        let schema = include_str!("../../delegation-evidence.schema.json");
+        let fixture = include_str!("../fixtures/delegation-chain-positive.json");
+        let mut value: serde_json::Value = serde_json::from_str(fixture).unwrap();
+        value["chain"].as_array_mut().unwrap().swap(1, 2);
+        value["participant_recheck"]["leaf_task_id"] = serde_json::json!("other-task");
+        let bytes = serde_json::to_vec(&value).unwrap();
+        let audit = audit_delegation_evidence(&bytes, schema.as_bytes()).unwrap();
+        assert!(!audit.attenuation_qualified);
+        assert!(!audit.participant_recheck_bound_to_leaf);
+        assert!(audit.violations.iter().any(|code| code.contains("ParentTaskLinkMismatch")));
+    }
+
+
+    #[test]
+    fn trust_boundary_auditor_rejects_erased_authority_principal_marker() {
+        let schema = include_str!("../../delegation-evidence.schema.json");
+        let fixture = include_str!("../fixtures/delegation-chain-positive.json");
+        let mut value: serde_json::Value = serde_json::from_str(fixture).unwrap();
+        value["chain"][1]
+            .as_object_mut()
+            .unwrap()
+            .remove("issuer_principal_ref");
+        let bytes = serde_json::to_vec(&value).unwrap();
+        let error = audit_delegation_evidence(&bytes, schema.as_bytes())
+            .expect_err("authority principal erasure must fail schema validation");
+        assert!(error.contains("delegation evidence schema"));
+    }
+
+    #[test]
+    fn trust_boundary_auditor_rejects_erased_source_attribution_marker() {
+        let schema = include_str!("../../delegation-evidence.schema.json");
+        let fixture = include_str!("../fixtures/delegation-chain-positive.json");
+        let mut value: serde_json::Value = serde_json::from_str(fixture).unwrap();
+        value["evidence_lineage"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|record| record["evidence_ref"] == "participant-recheck")
+            .unwrap()
+            .as_object_mut()
+            .unwrap()
+            .remove("source_ref");
+        let bytes = serde_json::to_vec(&value).unwrap();
+        let error = audit_delegation_evidence(&bytes, schema.as_bytes())
+            .expect_err("source attribution erasure must fail schema validation");
+        assert!(error.contains("delegation evidence schema"));
+    }
+
+    #[test]
+    fn trust_boundary_auditor_rejects_erased_authority_reference_marker() {
+        let schema = include_str!("../../delegation-evidence.schema.json");
+        let fixture = include_str!("../fixtures/delegation-chain-positive.json");
+        let mut value: serde_json::Value = serde_json::from_str(fixture).unwrap();
+        value["authority_checks"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove("evidence_ref");
+        let bytes = serde_json::to_vec(&value).unwrap();
+        let error = audit_delegation_evidence(&bytes, schema.as_bytes())
+            .expect_err("authority evidence reference erasure must fail schema validation");
+        assert!(error.contains("delegation evidence schema"));
     }
 
 }

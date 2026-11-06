@@ -304,6 +304,10 @@ impl SafetyQualificationAccumulator {
 
 
 pub fn sha256_hex(bytes: &[u8]) -> String {
+    let digest = Sha256::digest(bytes);
+    digest.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EpisodeAuditSummary {
     pub case_id: String,
@@ -743,8 +747,68 @@ pub fn audit_episode_result(
     })
 }
 
-    let digest = Sha256::digest(bytes);
-    digest.iter().map(|byte| format!("{byte:02x}")).collect()
+/// Audit an episode together with its separately stored delegation evidence bundle.
+///
+/// The legacy episode format remains valid for non-delegated tasks. Delegated
+/// tasks call this entry point so the exact bundle bytes, root/leaf lineage,
+/// and final participant recheck are bound into the episode result.
+pub fn audit_episode_result_with_delegation(
+    catalog_bytes: &[u8],
+    catalog_schema_bytes: &[u8],
+    result_bytes: &[u8],
+    result_schema_bytes: &[u8],
+    delegation_bundle_bytes: &[u8],
+    delegation_schema_bytes: &[u8],
+) -> Result<(EpisodeAuditSummary, delegation::DelegationEvidenceAudit), CoreError> {
+    let episode = audit_episode_result(
+        catalog_bytes,
+        catalog_schema_bytes,
+        result_bytes,
+        result_schema_bytes,
+    )?;
+    let delegation_audit = delegation::audit_delegation_evidence(
+        delegation_bundle_bytes,
+        delegation_schema_bytes,
+    )
+    .map_err(|error| CoreError::ResultViolations(vec![error]))?;
+
+    let result: serde_json::Value = serde_json::from_slice(result_bytes)?;
+    let Some(link) = result.get("delegation_evidence") else {
+        return Err(CoreError::ResultViolations(vec![
+            "delegated episode is missing delegation_evidence result binding".to_string(),
+        ]));
+    };
+    let bundle_digest = format!("sha256:{}", sha256_hex(delegation_bundle_bytes));
+    let expected = [
+        ("schema", "luminous-itops-delegation-evidence-v0.1"),
+        ("bundle_digest", bundle_digest.as_str()),
+        ("outcome", delegation_audit.computed_outcome.as_str()),
+        ("root_task_id", delegation_audit.root_task_id.as_str()),
+        ("root_task_digest", delegation_audit.root_task_digest.as_str()),
+        ("root_plan_digest", delegation_audit.root_plan_digest.as_str()),
+        ("leaf_grant_id", delegation_audit.leaf_grant_id.as_str()),
+        ("leaf_task_id", delegation_audit.leaf_task_id.as_str()),
+        ("leaf_task_digest", delegation_audit.leaf_task_digest.as_str()),
+        ("leaf_plan_digest", delegation_audit.leaf_plan_digest.as_str()),
+        ("request_digest", delegation_audit.request_digest.as_str()),
+        ("participant_recheck_ref", delegation_audit.participant_recheck_ref.as_str()),
+    ];
+    let mut mismatches = Vec::new();
+    for (field, expected_value) in expected {
+        if link.get(field).and_then(serde_json::Value::as_str) != Some(expected_value) {
+            mismatches.push(format!(
+                "delegation_evidence.{field} does not bind to the audited bundle"
+            ));
+        }
+    }
+    if link.get("version").and_then(serde_json::Value::as_u64) != Some(1) {
+        mismatches.push("delegation_evidence.version mismatch".to_string());
+    }
+    if !mismatches.is_empty() {
+        return Err(CoreError::ResultViolations(mismatches));
+    }
+
+    Ok((episode, delegation_audit))
 }
 
 /// Parse and validate the candidate catalog while preserving its exact-byte digest.
@@ -2120,6 +2184,100 @@ mod tests {
             ledger.dispatch(duplicate_permit, &grant, 150, "idem-001"),
             Err(LedgerError::DuplicateIdempotencyKey)
         );
+    }
+
+    #[test]
+    fn sha256_helper_matches_known_vector() {
+        assert_eq!(
+            sha256_hex(b"abc"),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
+    }
+
+    #[test]
+    fn delegated_episode_binds_exact_bundle_digest_and_leaf_lineage() {
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let catalog = std::fs::read(manifest.join("../case-catalog.v0.1.json")).unwrap();
+        let catalog_schema = std::fs::read(manifest.join("../case-catalog.schema.json")).unwrap();
+        let result_schema = std::fs::read(manifest.join("../decision-result.schema.json")).unwrap();
+        let result_example = std::fs::read(manifest.join("../decision-result.example.json")).unwrap();
+        let delegation_schema = include_str!("../../delegation-evidence.schema.json");
+        let bundle = include_str!("../fixtures/delegation-chain-positive.json").as_bytes();
+        let delegation_audit = delegation::audit_delegation_evidence(
+            bundle,
+            delegation_schema.as_bytes(),
+        ).unwrap();
+        assert!(delegation_audit.attenuation_qualified, "{:?}", delegation_audit.violations);
+
+        let mut result: serde_json::Value = serde_json::from_slice(&result_example).unwrap();
+        result["delegation_evidence"] = serde_json::json!({
+            "schema": "luminous-itops-delegation-evidence-v0.1",
+            "version": 1,
+            "bundle_digest": format!("sha256:{}", sha256_hex(bundle)),
+            "outcome": delegation_audit.computed_outcome,
+            "root_task_id": delegation_audit.root_task_id,
+            "root_task_digest": delegation_audit.root_task_digest,
+            "root_plan_digest": delegation_audit.root_plan_digest,
+            "leaf_grant_id": delegation_audit.leaf_grant_id,
+            "leaf_task_id": delegation_audit.leaf_task_id,
+            "leaf_task_digest": delegation_audit.leaf_task_digest,
+            "leaf_plan_digest": delegation_audit.leaf_plan_digest,
+            "request_digest": delegation_audit.request_digest,
+            "participant_recheck_ref": delegation_audit.participant_recheck_ref
+        });
+        let result_bytes = serde_json::to_vec(&result).unwrap();
+        let (_episode, linked_audit) = audit_episode_result_with_delegation(
+            &catalog,
+            &catalog_schema,
+            &result_bytes,
+            &result_schema,
+            bundle,
+            delegation_schema.as_bytes(),
+        ).expect("episode result must bind exact delegation bundle and leaf");
+        assert!(linked_audit.attenuation_qualified);
+        assert!(linked_audit.participant_recheck_bound_to_leaf);
+    }
+
+    #[test]
+    fn delegated_episode_rejects_bundle_digest_or_leaf_substitution() {
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let catalog = std::fs::read(manifest.join("../case-catalog.v0.1.json")).unwrap();
+        let catalog_schema = std::fs::read(manifest.join("../case-catalog.schema.json")).unwrap();
+        let result_schema = std::fs::read(manifest.join("../decision-result.schema.json")).unwrap();
+        let result_example = std::fs::read(manifest.join("../decision-result.example.json")).unwrap();
+        let delegation_schema = include_str!("../../delegation-evidence.schema.json");
+        let bundle = include_str!("../fixtures/delegation-chain-positive.json").as_bytes();
+        let audit = delegation::audit_delegation_evidence(
+            bundle,
+            delegation_schema.as_bytes(),
+        ).unwrap();
+
+        let mut result: serde_json::Value = serde_json::from_slice(&result_example).unwrap();
+        result["delegation_evidence"] = serde_json::json!({
+            "schema": "luminous-itops-delegation-evidence-v0.1",
+            "version": 1,
+            "bundle_digest": format!("sha256:{}", sha256_hex(bundle)),
+            "outcome": audit.computed_outcome,
+            "root_task_id": audit.root_task_id,
+            "root_task_digest": audit.root_task_digest,
+            "root_plan_digest": audit.root_plan_digest,
+            "leaf_grant_id": audit.leaf_grant_id,
+            "leaf_task_id": "substituted-task",
+            "leaf_task_digest": audit.leaf_task_digest,
+            "leaf_plan_digest": audit.leaf_plan_digest,
+            "request_digest": audit.request_digest,
+            "participant_recheck_ref": audit.participant_recheck_ref
+        });
+        let result_bytes = serde_json::to_vec(&result).unwrap();
+        let error = audit_episode_result_with_delegation(
+            &catalog,
+            &catalog_schema,
+            &result_bytes,
+            &result_schema,
+            bundle,
+            delegation_schema.as_bytes(),
+        ).expect_err("leaf substitution must fail bundle/result binding");
+        assert!(error.to_string().contains("leaf_task_id"));
     }
 
     #[test]

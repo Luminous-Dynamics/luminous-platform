@@ -1,0 +1,454 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/itops-delegation-evidence-v0.1.schema.json",
+  "title": "ITOPS Delegation Evidence Bundle v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "status",
+    "outcome",
+    "agent_control_domain_ref",
+    "evaluated_at_unix",
+    "max_authority_age_seconds",
+    "chain",
+    "authority_checks",
+    "participant_recheck",
+    "evidence_lineage"
+  ],
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "prefixed_digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "string_set": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/ref"
+      }
+    },
+    "obligation_set": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/ref"
+      }
+    },
+    "parameter_bound": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "exact_string"
+            },
+            "value": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "exact_integer"
+            },
+            "value": {
+              "type": "integer"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "min",
+            "max"
+          ],
+          "properties": {
+            "kind": {
+              "const": "integer_range"
+            },
+            "min": {
+              "type": "integer"
+            },
+            "max": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
+    "grant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "grant_id",
+        "issuer_principal_ref",
+        "subject_principal_ref",
+        "root_task_id",
+        "root_task_digest",
+        "root_plan_digest",
+        "task_id",
+        "task_digest",
+        "plan_digest",
+        "parent_task_id",
+        "parent_task_digest",
+        "parent_grant_id",
+        "tenant_commitment",
+        "targets",
+        "operations",
+        "parameter_bounds",
+        "data_scopes",
+        "not_before_unix",
+        "expires_at_unix",
+        "max_dispatches",
+        "max_tool_calls",
+        "max_resource_units",
+        "remaining_delegation_depth",
+        "max_risk_level",
+        "required_approvals",
+        "required_postconditions",
+        "rollback_obligations",
+        "allowed_child_task_digests",
+        "allowed_child_plan_digests",
+        "delegable",
+        "revoked"
+      ],
+      "properties": {
+        "grant_id": {
+          "$ref": "#/$defs/ref"
+        },
+        "issuer_principal_ref": {
+          "$ref": "#/$defs/ref"
+        },
+        "subject_principal_ref": {
+          "$ref": "#/$defs/ref"
+        },
+        "root_task_id": {
+          "$ref": "#/$defs/ref"
+        },
+        "root_task_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "root_plan_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "task_id": {
+          "$ref": "#/$defs/ref"
+        },
+        "task_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "plan_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "parent_task_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "parent_task_digest": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "parent_grant_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "tenant_commitment": {
+          "$ref": "#/$defs/ref"
+        },
+        "targets": {
+          "$ref": "#/$defs/string_set"
+        },
+        "operations": {
+          "$ref": "#/$defs/string_set"
+        },
+        "parameter_bounds": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/parameter_bound"
+          }
+        },
+        "data_scopes": {
+          "$ref": "#/$defs/string_set"
+        },
+        "not_before_unix": {
+          "type": "integer"
+        },
+        "expires_at_unix": {
+          "type": "integer"
+        },
+        "max_dispatches": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_tool_calls": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_resource_units": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "remaining_delegation_depth": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_risk_level": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "required_approvals": {
+          "$ref": "#/$defs/obligation_set"
+        },
+        "required_postconditions": {
+          "$ref": "#/$defs/obligation_set"
+        },
+        "rollback_obligations": {
+          "$ref": "#/$defs/obligation_set"
+        },
+        "allowed_child_task_digests": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/digest"
+          }
+        },
+        "allowed_child_plan_digests": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/digest"
+          }
+        },
+        "delegable": {
+          "type": "boolean"
+        },
+        "revoked": {
+          "type": "boolean"
+        }
+      }
+    },
+    "authority_check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "grant_id",
+        "state",
+        "checked_at_unix",
+        "evidence_ref"
+      ],
+      "properties": {
+        "grant_id": {
+          "$ref": "#/$defs/ref"
+        },
+        "state": {
+          "enum": [
+            "active",
+            "revoked",
+            "unknown"
+          ]
+        },
+        "checked_at_unix": {
+          "type": "integer"
+        },
+        "evidence_ref": {
+          "$ref": "#/$defs/ref"
+        }
+      }
+    },
+    "participant_recheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "participant_ref",
+        "control_domain_ref",
+        "checked_at_unix",
+        "leaf_grant_id",
+        "leaf_task_id",
+        "leaf_task_digest",
+        "leaf_plan_digest",
+        "request_digest",
+        "authority_state",
+        "decision",
+        "evidence_ref"
+      ],
+      "properties": {
+        "participant_ref": {
+          "$ref": "#/$defs/ref"
+        },
+        "control_domain_ref": {
+          "$ref": "#/$defs/ref"
+        },
+        "checked_at_unix": {
+          "type": "integer"
+        },
+        "leaf_grant_id": {
+          "$ref": "#/$defs/ref"
+        },
+        "leaf_task_id": {
+          "$ref": "#/$defs/ref"
+        },
+        "leaf_task_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "leaf_plan_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "request_digest": {
+          "$ref": "#/$defs/prefixed_digest"
+        },
+        "authority_state": {
+          "enum": [
+            "active",
+            "revoked",
+            "unknown"
+          ]
+        },
+        "decision": {
+          "enum": [
+            "authorized",
+            "denied",
+            "unknown"
+          ]
+        },
+        "evidence_ref": {
+          "$ref": "#/$defs/ref"
+        }
+      }
+    },
+    "lineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_ref",
+        "kind",
+        "source_ref",
+        "control_domain_ref",
+        "derived_from",
+        "digest"
+      ],
+      "properties": {
+        "evidence_ref": {
+          "$ref": "#/$defs/ref"
+        },
+        "kind": {
+          "enum": [
+            "canonical_authority",
+            "participant_recheck",
+            "agent_summary"
+          ]
+        },
+        "source_ref": {
+          "$ref": "#/$defs/ref"
+        },
+        "control_domain_ref": {
+          "$ref": "#/$defs/ref"
+        },
+        "derived_from": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/ref"
+          }
+        },
+        "digest": {
+          "$ref": "#/$defs/prefixed_digest"
+        }
+      }
+    }
+  },
+  "properties": {
+    "schema": {
+      "const": "luminous-itops-delegation-evidence-v0.1"
+    },
+    "version": {
+      "const": 1
+    },
+    "status": {
+      "const": "synthetic_example_or_evaluation_result"
+    },
+    "outcome": {
+      "enum": [
+        "qualified",
+        "denied",
+        "unknown"
+      ]
+    },
+    "agent_control_domain_ref": {
+      "$ref": "#/$defs/ref"
+    },
+    "evaluated_at_unix": {
+      "type": "integer"
+    },
+    "max_authority_age_seconds": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "chain": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/grant"
+      }
+    },
+    "authority_checks": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/authority_check"
+      }
+    },
+    "participant_recheck": {
+      "$ref": "#/$defs/participant_recheck"
+    },
+    "evidence_lineage": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 256,
+      "items": {
+        "$ref": "#/$defs/lineage"
+      }
+    }
+  }
+}

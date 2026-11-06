@@ -1,0 +1,269 @@
+{
+  "schema": "luminous-itops-delegation-evidence-v0.1",
+  "version": 1,
+  "status": "synthetic_example_or_evaluation_result",
+  "outcome": "unknown",
+  "agent_control_domain_ref": "agent-domain",
+  "evaluated_at_unix": 2000,
+  "max_authority_age_seconds": 5,
+  "chain": [
+    {
+      "grant_id": "grant-root",
+      "issuer_principal_ref": "xenia-authority",
+      "subject_principal_ref": "agent-a",
+      "root_task_id": "task-root",
+      "root_task_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "root_plan_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "task_id": "task-root",
+      "task_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "plan_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "parent_task_id": null,
+      "parent_task_digest": null,
+      "parent_grant_id": null,
+      "tenant_commitment": "opaque:tenant-001",
+      "targets": [
+        "service/api",
+        "service/worker"
+      ],
+      "operations": [
+        "read",
+        "restart"
+      ],
+      "parameter_bounds": {
+        "replicas": {
+          "kind": "integer_range",
+          "min": 1,
+          "max": 5
+        },
+        "region": {
+          "kind": "exact_string",
+          "value": "af-south-1"
+        }
+      },
+      "data_scopes": [
+        "metrics",
+        "service-config"
+      ],
+      "not_before_unix": 100,
+      "expires_at_unix": 500,
+      "max_dispatches": 4,
+      "max_tool_calls": 20,
+      "max_resource_units": 100,
+      "remaining_delegation_depth": 2,
+      "max_risk_level": 3,
+      "required_approvals": [
+        "change-ticket"
+      ],
+      "required_postconditions": [
+        "service-healthy",
+        "replicas-converged"
+      ],
+      "rollback_obligations": [
+        "restore-replicas"
+      ],
+      "allowed_child_task_digests": [
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      ],
+      "allowed_child_plan_digests": [
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      ],
+      "delegable": true,
+      "revoked": false
+    },
+    {
+      "grant_id": "grant-child",
+      "issuer_principal_ref": "agent-a",
+      "subject_principal_ref": "agent-b",
+      "root_task_id": "task-root",
+      "root_task_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "root_plan_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "task_id": "task-child",
+      "task_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "plan_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "parent_task_id": "task-root",
+      "parent_task_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "parent_grant_id": "grant-root",
+      "tenant_commitment": "opaque:tenant-001",
+      "targets": [
+        "service/api"
+      ],
+      "operations": [
+        "read"
+      ],
+      "parameter_bounds": {
+        "replicas": {
+          "kind": "integer_range",
+          "min": 2,
+          "max": 3
+        },
+        "region": {
+          "kind": "exact_string",
+          "value": "af-south-1"
+        }
+      },
+      "data_scopes": [
+        "metrics"
+      ],
+      "not_before_unix": 120,
+      "expires_at_unix": 300,
+      "max_dispatches": 0,
+      "max_tool_calls": 5,
+      "max_resource_units": 20,
+      "remaining_delegation_depth": 1,
+      "max_risk_level": 1,
+      "required_approvals": [
+        "change-ticket",
+        "service-owner"
+      ],
+      "required_postconditions": [
+        "service-healthy",
+        "replicas-converged",
+        "child-complete"
+      ],
+      "rollback_obligations": [
+        "restore-replicas",
+        "emit-rollback-receipt"
+      ],
+      "allowed_child_task_digests": [
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      ],
+      "allowed_child_plan_digests": [
+        "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      ],
+      "delegable": true,
+      "revoked": false
+    },
+    {
+      "grant_id": "grant-leaf",
+      "issuer_principal_ref": "agent-b",
+      "subject_principal_ref": "agent-c",
+      "root_task_id": "task-root",
+      "root_task_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "root_plan_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "task_id": "task-leaf",
+      "task_digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "plan_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "parent_task_id": "task-child",
+      "parent_task_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "parent_grant_id": "grant-child",
+      "tenant_commitment": "opaque:tenant-001",
+      "targets": [
+        "service/api"
+      ],
+      "operations": [
+        "read"
+      ],
+      "parameter_bounds": {
+        "replicas": {
+          "kind": "exact_integer",
+          "value": 2
+        },
+        "region": {
+          "kind": "exact_string",
+          "value": "af-south-1"
+        }
+      },
+      "data_scopes": [
+        "metrics"
+      ],
+      "not_before_unix": 140,
+      "expires_at_unix": 200,
+      "max_dispatches": 0,
+      "max_tool_calls": 2,
+      "max_resource_units": 5,
+      "remaining_delegation_depth": 0,
+      "max_risk_level": 0,
+      "required_approvals": [
+        "change-ticket",
+        "service-owner",
+        "security-review"
+      ],
+      "required_postconditions": [
+        "service-healthy",
+        "replicas-converged",
+        "child-complete",
+        "leaf-complete"
+      ],
+      "rollback_obligations": [
+        "restore-replicas",
+        "emit-rollback-receipt",
+        "verify-rollback"
+      ],
+      "allowed_child_task_digests": [],
+      "allowed_child_plan_digests": [],
+      "delegable": false,
+      "revoked": false
+    }
+  ],
+  "authority_checks": [
+    {
+      "grant_id": "grant-root",
+      "state": "active",
+      "checked_at_unix": 1000,
+      "evidence_ref": "auth-root"
+    },
+    {
+      "grant_id": "grant-child",
+      "state": "active",
+      "checked_at_unix": 1998,
+      "evidence_ref": "auth-child"
+    },
+    {
+      "grant_id": "grant-leaf",
+      "state": "active",
+      "checked_at_unix": 1998,
+      "evidence_ref": "auth-leaf"
+    }
+  ],
+  "participant_recheck": {
+    "participant_ref": "participant-controller",
+    "control_domain_ref": "participant-domain",
+    "checked_at_unix": 2000,
+    "leaf_grant_id": "grant-leaf",
+    "leaf_task_id": "task-leaf",
+    "leaf_task_digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "leaf_plan_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "request_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+    "authority_state": "unknown",
+    "decision": "unknown",
+    "evidence_ref": "participant-recheck"
+  },
+  "evidence_lineage": [
+    {
+      "evidence_ref": "auth-root",
+      "kind": "canonical_authority",
+      "source_ref": "xenia-state-0",
+      "control_domain_ref": "xenia-domain",
+      "derived_from": [],
+      "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "evidence_ref": "auth-child",
+      "kind": "canonical_authority",
+      "source_ref": "xenia-state-1",
+      "control_domain_ref": "xenia-domain",
+      "derived_from": [],
+      "digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    {
+      "evidence_ref": "auth-leaf",
+      "kind": "canonical_authority",
+      "source_ref": "xenia-state-2",
+      "control_domain_ref": "xenia-domain",
+      "derived_from": [],
+      "digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+    },
+    {
+      "evidence_ref": "participant-recheck",
+      "kind": "participant_recheck",
+      "source_ref": "participant-controller",
+      "control_domain_ref": "participant-domain",
+      "derived_from": [
+        "auth-root",
+        "auth-child",
+        "auth-leaf"
+      ],
+      "digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888"
+    }
+  ]
+}
