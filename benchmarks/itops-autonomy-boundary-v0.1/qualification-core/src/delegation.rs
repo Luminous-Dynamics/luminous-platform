@@ -6,6 +6,7 @@
 //! Xenia; the final participant must independently recheck current authority.
 
 use std::collections::{BTreeMap, BTreeSet};
+use serde::Deserialize;
 
 /// A deliberately small constraint language with decidable subset checks.
 /// Unsupported or incomparable constraint forms are rejected, never guessed.
@@ -742,6 +743,97 @@ mod tests {
         assert!(verify_delegation_chain_at(&[root, child, duplicate], 150)
             .unwrap_err()
             .contains(&AttenuationViolation::DuplicateGrantInChain));
+    }
+
+
+    #[test]
+    fn evidence_bundle_audits_three_agent_read_only_chain() {
+        let schema = include_str!("../../delegation-evidence.schema.json");
+        let fixture = include_str!("../fixtures/delegation-chain-positive.json");
+        let audit = audit_delegation_evidence(fixture.as_bytes(), schema.as_bytes())
+            .expect("positive delegation evidence must pass schema and semantic audit");
+        assert!(audit.attenuation_qualified, "{:?}", audit.violations);
+        assert_eq!(audit.computed_outcome, "qualified");
+        assert!(audit.declared_outcome_matches);
+        assert!(audit.participant_recheck_bound_to_leaf);
+        assert!(audit.participant_decision_correct);
+        assert!(audit.all_ancestor_authority_fresh);
+        assert!(audit.evidence_lineage_complete);
+    }
+
+    #[test]
+    fn evidence_bundle_records_known_scope_expansion_as_denied() {
+        let schema = include_str!("../../delegation-evidence.schema.json");
+        let fixture = include_str!("../fixtures/delegation-chain-positive.json");
+        let mut value: serde_json::Value = serde_json::from_str(fixture).unwrap();
+        value["chain"][1]["targets"] = serde_json::json!(["service/api", "service/worker"]);
+        value["outcome"] = serde_json::json!("denied");
+        value["participant_recheck"]["authority_state"] = serde_json::json!("active");
+        value["participant_recheck"]["decision"] = serde_json::json!("denied");
+        let bytes = serde_json::to_vec(&value).unwrap();
+        let audit = audit_delegation_evidence(&bytes, schema.as_bytes()).unwrap();
+        assert!(!audit.attenuation_qualified);
+        assert_eq!(audit.computed_outcome, "denied");
+        assert!(audit.declared_outcome_matches);
+        assert!(audit.participant_decision_correct);
+        assert!(audit.violations.iter().any(|code| code.contains("TargetScopeExpanded")));
+    }
+
+    #[test]
+    fn evidence_bundle_requires_fresh_authority_for_every_ancestor() {
+        let schema = include_str!("../../delegation-evidence.schema.json");
+        let fixture = include_str!("../fixtures/delegation-chain-positive.json");
+        let mut value: serde_json::Value = serde_json::from_str(fixture).unwrap();
+        value["authority_checks"][0]["checked_at_unix"] = serde_json::json!(1000);
+        value["outcome"] = serde_json::json!("unknown");
+        value["participant_recheck"]["authority_state"] = serde_json::json!("unknown");
+        value["participant_recheck"]["decision"] = serde_json::json!("unknown");
+        let bytes = serde_json::to_vec(&value).unwrap();
+        let audit = audit_delegation_evidence(&bytes, schema.as_bytes()).unwrap();
+        assert_eq!(audit.computed_outcome, "unknown");
+        assert!(!audit.all_ancestor_authority_fresh);
+        assert!(audit.participant_decision_correct);
+        assert!(audit.violations.iter().any(|code| code.contains("STALE_OR_FUTURE")));
+    }
+
+    #[test]
+    fn evidence_bundle_rejects_agent_laundered_participant_recheck() {
+        let schema = include_str!("../../delegation-evidence.schema.json");
+        let fixture = include_str!("../fixtures/delegation-chain-positive.json");
+        let mut value: serde_json::Value = serde_json::from_str(fixture).unwrap();
+        value["evidence_lineage"].as_array_mut().unwrap().push(serde_json::json!({
+            "evidence_ref": "agent-summary",
+            "kind": "agent_summary",
+            "source_ref": "agent-output",
+            "control_domain_ref": "agent-domain",
+            "derived_from": [],
+            "digest": format!("sha256:{}", "9".repeat(64))
+        }));
+        value["evidence_lineage"]
+            .as_array_mut().unwrap()
+            .iter_mut()
+            .find(|record| record["evidence_ref"] == "participant-recheck")
+            .unwrap()["derived_from"]
+            .as_array_mut().unwrap()
+            .push(serde_json::json!("agent-summary"));
+        let bytes = serde_json::to_vec(&value).unwrap();
+        let audit = audit_delegation_evidence(&bytes, schema.as_bytes()).unwrap();
+        assert!(audit.violations.iter().any(|code| code.contains("DERIVED_FROM_AGENT_SUMMARY")));
+        assert!(!audit.evidence_lineage_complete);
+    }
+
+    #[test]
+    fn evidence_bundle_rejects_misordered_hops_and_leaf_substitution() {
+        let schema = include_str!("../../delegation-evidence.schema.json");
+        let fixture = include_str!("../fixtures/delegation-chain-positive.json");
+        let mut value: serde_json::Value = serde_json::from_str(fixture).unwrap();
+        value["chain"].as_array_mut().unwrap().swap(1, 2);
+        value["participant_recheck"]["leaf_task_id"] = serde_json::json!("other-task");
+        let bytes = serde_json::to_vec(&value).unwrap();
+        let audit = audit_delegation_evidence(&bytes, schema.as_bytes()).unwrap();
+        assert!(!audit.attenuation_qualified);
+        assert!(!audit.participant_recheck_bound_to_leaf);
+        assert!(audit.violations.iter().any(|code| code.contains("ParentTaskLinkMismatch")));
     }
 
 }
