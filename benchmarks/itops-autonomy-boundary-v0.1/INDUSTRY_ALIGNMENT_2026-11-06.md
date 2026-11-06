@@ -182,6 +182,50 @@ The September 2026 review [Authorization Architectures for Tool-Using AI Agents]
 
 This reinforces the need for a layered benchmark: a model-behavior arm, a deterministic governance arm, a participant/effect arm, and an operational postcondition/reliability arm. No one layer can substitute for the others.
 
+## New November research: composition closure and evolving authorization
+
+### Bounded Agents — session-wide composition closure
+
+[Bounded Agents: Delegation Security for Multi-Agent AI Systems (arXiv:2608.15888)](https://arxiv.org/abs/2608.15888) formalizes the **Agentic Principal Chain**: authorization state follows principals across a delegated session, and decisions are evaluated against accumulated session history. Its central observation is that per-action checks are insufficient. Reading a confidential document and sending an email may each be individually allowed, yet the combination can still violate a data-release rule.
+
+It introduces composition closure for prohibited action combinations and reports Blast Radius Monotonicity across delegation, with 99 depth-2-to-8 chain scenarios. Its evaluation covers 3,154 instances; reported AgentDojo exfiltration fell from 75–100% to 0% across four domains and it blocked 544 InjecAgent data-stealing cases. Intent binding also reduced destruction and manipulation in the tested settings. The paper explicitly limits Composition Soundness to a complete effective restriction set and serialized admission, and reports utility reductions of 8.6 and 13.9 percentage points in two settings.
+
+**Implication:** add an ITOPS **session-state/composition** dimension, not just more child-scope tests. Test individually valid actions whose cumulative sequence is prohibited; data-read → transform/summarize → external release; cumulative amount/recipient budgets; fan-out and parallel admission; retry/restart; and pending/unknown effects. Require linearizable admission or an equivalent state-version compare-and-swap for decisions whose validity depends on shared history. This is not provided by the current stateless delegation predicate. Track it in [issue #293](https://github.com/Luminous-Dynamics/luminous-platform/issues/293).
+
+Source: [Bounded Agents paper](https://arxiv.org/abs/2608.15888).
+
+### AgentCap — capability tokens and argument provenance at the tool boundary
+
+[AgentCap (arXiv:2611.00729, submitted 31 October 2026)](https://arxiv.org/abs/2611.00729) externalizes authorization from the LLM and mediates tool calls through an MCP wrapper. Its abstract describes short-lived, budget-bounded capability tokens, workflow prerequisites, mutually exclusive authority, provenance checks for security-sensitive arguments, and session-bound parent-child delegation with budget/lifetime attenuation. It reports zero attack success for GPT-5.4 on AgentDojo and InjecAgent in the evaluated settings, with legitimate operations preserved in the authors' controlled scenarios.
+
+**Implication:** compare against AgentCap's exact-action, short-lived capability and argument-provenance controls. Luminous's potential extension is not merely another wrapper: a cross-system participant/effect contract, durable aggregate budget and session state, final request recheck, partial-commit reconciliation, and independently sourced postconditions. We have not independently reproduced AgentCap's results; the paper's abstract claims apply to its own scenarios and configuration.
+
+Source: [AgentCap paper](https://arxiv.org/abs/2611.00729).
+
+### DelegationBench — ask/act/clarify/refuse and judgment-to-action gap
+
+[DelegationBench (arXiv:2610.05532, 4 October 2026)](https://arxiv.org/abs/2610.05532) contains 156 scenarios, 48 matched pairs and 7,800 primary evaluations across ten models from five families. It distinguishes four outcomes: act, ask permission, ask for missing information, and refuse. It reports a responsiveness gap (a simple keyword rule had high label agreement yet changed its decision in only 9/48 matched pairs), wording sensitivity up to 52.5 percentage points, and a judgment-to-action gap: every evaluated model asked less often while using tools than while judging a proposed action; one fell from 47.5% to 4.2%.
+
+**Implication:** add matched-pair sensitivity and actual action traces to ITOPS. Measure false-denials and overreach separately; distinguish permission questions from missing-information questions; follow what happens after an answer; compare pre-action judgment with the tool action actually taken. Do not optimize for maximum refusal.
+
+Source: [DelegationBench paper](https://arxiv.org/abs/2610.05532).
+
+### APort Vault — consequential payment effects and valid utility
+
+[APort Vault (arXiv:2609.22076, 18 September 2026)](https://aport.io/research/aport-vault-benchmarking-ai-agent-payment-authorization/) reports 225,964 completed evaluations across 14 models, five policy configurations and two replay tracks. At Levels 2–4, unpermitted recipient transfers were 140/76,842 with the model alone and 0/69,297 behind its pre-action layer (105 vs 0 on 68,970 matched triples). This was not deny-everything: 25,370 payments executed behind the layer, with 187/25,640 transfer calls denied, 148 for forbidden recipients. Its paper explicitly warns that attack cohorts vary by level and that request, successful payment, authorization decision, recipient membership and unpermitted transfer must be reported separately.
+
+**Implication:** preserve event-level distinctions between attempted action, authorization, dispatch, committed effect, recipient/target membership, and effect reconciliation. Report authorized work that succeeds alongside prohibited effects blocked. Keep denominators and matched cohorts explicit.
+
+Source: [APort Vault paper and result description](https://aport.io/research/aport-vault-benchmarking-ai-agent-payment-authorization/).
+
+### Rethinking Access Control for AI Agents — four layers, evolving plans
+
+The 4 November 2026 survey [Rethinking Access Control for AI Agents: Recent Advances and Open Challenges (arXiv:2611.06764)](https://arxiv.org/abs/2611.06764) classifies the field into policy specification/derivation, identity/delegation, action/resource enforcement, and information-flow control. It argues that plans determine which permissions are needed; contextual information can inform decisions without becoming authority; restrictions must retain meaning across interfaces; and authorization must be reevaluated as workflows evolve. It emphasizes that one valid permission at one boundary does not establish permission at the next boundary.
+
+**Implication:** make information-flow provenance and interface-preserving constraints explicit in the benchmark. A read grant does not imply disclosure; an approval for a draft does not imply permission to send it; a cached or derived artifact does not retain authority merely because its source was once readable.
+
+Source: [Rethinking Access Control paper](https://arxiv.org/abs/2611.06764).
+
 ### Matched comparison design
 
 Use a common scenario/task manifest and run the same model, harness, context, tools, budget and seed through these arms:
