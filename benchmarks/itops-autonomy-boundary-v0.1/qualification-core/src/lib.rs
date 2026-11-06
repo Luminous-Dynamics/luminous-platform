@@ -2465,7 +2465,8 @@ pub fn authorize_mutation(
     })
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum EffectState {
     Dispatched,
     OutcomeUnknown,
@@ -2473,7 +2474,8 @@ pub enum EffectState {
     NoEffect,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct EffectAttempt {
     pub attempt_id: u64,
     pub idempotency_key: String,
@@ -2499,6 +2501,22 @@ pub enum LedgerError {
     PermitExpired,
     AttemptNotFound,
     InvalidTransition,
+    AttemptIdOverflow,
+}
+
+/// Versioned serializable checkpoint used to test participant-ledger recovery.
+/// It is a synthetic snapshot format, not an authenticated or crash-atomic
+/// production journal.
+const PARTICIPANT_EFFECT_LEDGER_SNAPSHOT_SCHEMA: &str =
+    "luminous-itops-participant-effect-ledger-snapshot-v0.1";
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ParticipantEffectLedgerSnapshot {
+    schema: String,
+    version: u32,
+    next_attempt_id: u64,
+    attempts: Vec<EffectAttempt>,
 }
 
 /// Participant-owned effect-ledger model.
@@ -2513,6 +2531,85 @@ pub struct ParticipantEffectLedger {
 }
 
 impl ParticipantEffectLedger {
+    /// Export a deterministic versioned checkpoint for restart tests.
+    pub fn export_snapshot(&self) -> Result<Vec<u8>, CoreError> {
+        let snapshot = ParticipantEffectLedgerSnapshot {
+            schema: PARTICIPANT_EFFECT_LEDGER_SNAPSHOT_SCHEMA.into(),
+            version: 1,
+            next_attempt_id: self.next_attempt_id,
+            attempts: self.attempts.clone(),
+        };
+        Ok(serde_json::to_vec(&snapshot)?)
+    }
+
+    /// Recover and semantically validate a checkpoint. An unresolved attempt
+    /// must remain the terminal attempt so the dispatch lock survives restart.
+    pub fn recover_snapshot(bytes: &[u8]) -> Result<Self, CoreError> {
+        let snapshot: ParticipantEffectLedgerSnapshot = serde_json::from_slice(bytes)?;
+        if snapshot.schema != PARTICIPANT_EFFECT_LEDGER_SNAPSHOT_SCHEMA || snapshot.version != 1 {
+            return Err(CoreError::ResultViolations(vec![
+                "participant effect ledger snapshot schema/version is unsupported".into(),
+            ]));
+        }
+
+        let mut attempt_ids = BTreeSet::new();
+        let mut idempotency_keys = BTreeSet::new();
+        let mut previous_attempt_id = 0_u64;
+        for (index, attempt) in snapshot.attempts.iter().enumerate() {
+            if attempt.attempt_id == 0
+                || attempt.attempt_id <= previous_attempt_id
+                || !attempt_ids.insert(attempt.attempt_id)
+            {
+                return Err(CoreError::ResultViolations(vec![
+                    "participant effect ledger attempt IDs are not strictly increasing and unique".into(),
+                ]));
+            }
+            previous_attempt_id = attempt.attempt_id;
+            if attempt.idempotency_key.trim().is_empty()
+                || !idempotency_keys.insert(attempt.idempotency_key.as_str())
+                || attempt.grant_id.trim().is_empty()
+                || attempt.tenant_binding.trim().is_empty()
+                || attempt.target_binding.trim().is_empty()
+                || attempt.operation.trim().is_empty()
+                || attempt.plan_sha256.len() != 64
+            {
+                return Err(CoreError::ResultViolations(vec![
+                    "participant effect ledger contains an invalid or duplicate attempt binding".into(),
+                ]));
+            }
+            match attempt.state {
+                EffectState::Dispatched | EffectState::OutcomeUnknown => {
+                    if attempt.committed_effect_count != 0 || index + 1 != snapshot.attempts.len() {
+                        return Err(CoreError::ResultViolations(vec![
+                            "unresolved participant attempt is inconsistent or is not terminal in the recovered ledger".into(),
+                        ]));
+                    }
+                }
+                EffectState::Committed if attempt.committed_effect_count == 0 => {
+                    return Err(CoreError::ResultViolations(vec![
+                        "committed participant attempt has no committed effect".into(),
+                    ]));
+                }
+                EffectState::NoEffect if attempt.committed_effect_count != 0 => {
+                    return Err(CoreError::ResultViolations(vec![
+                        "no-effect participant attempt reports a committed effect".into(),
+                    ]));
+                }
+                _ => {}
+            }
+        }
+        if snapshot.next_attempt_id < previous_attempt_id {
+            return Err(CoreError::ResultViolations(vec![
+                "participant effect ledger next-attempt counter regresses behind recorded attempts".into(),
+            ]));
+        }
+
+        Ok(Self {
+            attempts: snapshot.attempts,
+            next_attempt_id: snapshot.next_attempt_id,
+        })
+    }
+
     pub fn snapshot(&self) -> &[EffectAttempt] {
         &self.attempts
     }
@@ -2585,7 +2682,7 @@ impl ParticipantEffectLedger {
             return Err(LedgerError::GrantUseLimitReached);
         }
 
-        self.next_attempt_id += 1;
+        self.next_attempt_id = self.next_attempt_id.checked_add(1).ok_or(LedgerError::AttemptIdOverflow)?;
         let id = self.next_attempt_id;
         self.attempts.push(EffectAttempt {
             attempt_id: id,
