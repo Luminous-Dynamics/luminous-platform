@@ -587,7 +587,13 @@ fn audit_delegation_evidence(
     }
 
     let root = &chain[0];
-    let leaf = chain.last().expect("chain length checked above");
+    let acting_leaf_ref = string_at(delegation, "acting_leaf_grant_ref");
+    let leaf = chain.iter().find(|node| {
+        string_at(node, "grant_ref") == acting_leaf_ref
+    }).unwrap_or_else(|| {
+        violations.push(violation("acting leaf grant is absent from delegation chain"));
+        chain.last().expect("chain length checked above")
+    });
     if string_at(root, "role") != Some("root") {
         violations.push(violation("first chain node is not the root"));
     }
@@ -670,12 +676,20 @@ fn audit_delegation_evidence(
     }
 
     for index in 1..chain.len() {
-        let parent = &chain[index - 1];
         let child = &chain[index];
-        let parent_ref = string_at(parent, "grant_ref").unwrap_or_default();
         let child_ref = string_at(child, "grant_ref").unwrap_or_default();
+        let parent_link = value_at(child, "parent");
+        let parent_ref_from_link = parent_link.and_then(|link| string_at(link, "grant_ref"));
+        let parent = chain[..index].iter().find(|candidate| {
+            string_at(candidate, "grant_ref") == parent_ref_from_link
+        });
+        let Some(parent) = parent else {
+            violations.push(violation("child parent grant is absent or appears after the child in the delegation graph"));
+            continue;
+        };
+        let parent_ref = string_at(parent, "grant_ref").unwrap_or_default();
 
-        let parent_link_ok = value_at(child, "parent").is_some_and(|link| {
+        let parent_link_ok = parent_link.is_some_and(|link| {
             string_at(link, "grant_ref") == Some(parent_ref)
                 && string_at(link, "task_id") == string_at(parent, "task_id")
                 && string_at(link, "task_digest") == string_at(parent, "task_digest")
@@ -790,10 +804,21 @@ fn audit_delegation_evidence(
     for batch in &fanout_batches {
         let parent_ref = string_at(batch, "parent_grant_ref").unwrap_or_default();
         let parent = chain.iter().find(|node| string_at(node, "grant_ref") == Some(parent_ref));
+        if bool_at(batch, "batch_complete") != Some(true) {
+            violations.push(violation("fan-out budget batch is not declared complete"));
+        }
         let allocations = value_at(batch, "child_allocations")
             .and_then(serde_json::Value::as_array)
             .cloned()
             .unwrap_or_default();
+        let expected_children: BTreeSet<String> = chain.iter().filter_map(|node| {
+            let link = value_at(node, "parent")?;
+            if string_at(link, "grant_ref") == Some(parent_ref) {
+                string_at(node, "grant_ref").map(str::to_string)
+            } else {
+                None
+            }
+        }).collect();
         let mut child_refs = BTreeSet::new();
         let mut totals = [0_u64; 3];
         for allocation in &allocations {
@@ -801,8 +826,19 @@ fn audit_delegation_evidence(
             if !child_refs.insert(child_ref.to_string()) {
                 violations.push(violation("duplicate child grant in sibling allocation batch"));
             }
-            if !chain.iter().any(|node| string_at(node, "grant_ref") == Some(child_ref)) {
-                violations.push(violation("sibling allocation references a grant outside the chain"));
+            let allocated_child = chain.iter().find(|node| {
+                string_at(node, "grant_ref") == Some(child_ref)
+            });
+            if let Some(allocated_child) = allocated_child {
+                for field in ["max_dispatches", "max_tool_calls", "max_resource_units"] {
+                    let child_budget = value_at(allocated_child, "scope")
+                        .and_then(|scope| u64_at(scope, field));
+                    if child_budget != u64_at(allocation, field) {
+                        violations.push(violation("sibling allocation does not equal child grant budget"));
+                    }
+                }
+            } else {
+                violations.push(violation("sibling allocation references a grant outside the delegation graph"));
             }
             for (index, field) in ["max_dispatches", "max_tool_calls", "max_resource_units"].iter().enumerate() {
                 match totals[index].checked_add(u64_at(allocation, field).unwrap_or(u64::MAX)) {
@@ -815,6 +851,9 @@ fn audit_delegation_evidence(
             }
         }
 
+        if child_refs != expected_children {
+            violations.push(violation("fan-out batch does not contain every direct delegated child exactly once"));
+        }
         let aggregate = value_at(batch, "aggregate_allocated");
         let limits = value_at(batch, "parent_budget_limit");
         for (index, field) in ["max_dispatches", "max_tool_calls", "max_resource_units"].iter().enumerate() {
@@ -838,7 +877,7 @@ fn audit_delegation_evidence(
     }
 
     let root_ref = string_at(root, "grant_ref");
-    let leaf_ref = string_at(leaf, "grant_ref");
+    let leaf_ref = acting_leaf_ref;
     let root_digest = string_at(root, "task_digest");
     let leaf_digest = string_at(leaf, "task_digest");
     let leaf_plan = string_at(leaf, "plan_digest");
