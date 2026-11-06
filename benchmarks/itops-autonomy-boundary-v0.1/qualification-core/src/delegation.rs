@@ -61,6 +61,7 @@ pub struct DelegatedAuthorityGrant {
 
     /// The parent explicitly commits to the exact child task digests it may delegate.
     pub allowed_child_task_digests: BTreeSet<String>,
+    pub allowed_child_plan_digests: BTreeSet<String>,
     pub delegable: bool,
     pub revoked: bool,
 }
@@ -85,6 +86,10 @@ pub enum AttenuationViolation {
     PrincipalChainMismatch,
     ChildTaskIdNotDistinct,
     ChildTaskDigestNotAllowed,
+    ChildPlanDigestNotAllowed,
+    InvalidChainLength,
+    DuplicateGrantInChain,
+    DuplicateTaskInChain,
     TenantChanged,
     TargetScopeExpanded,
     OperationScopeExpanded,
@@ -159,6 +164,7 @@ fn grant_shape_is_valid(grant: &DelegatedAuthorityGrant) -> bool {
         && obligation_set_is_valid(&grant.required_postconditions)
         && obligation_set_is_valid(&grant.rollback_obligations)
         && grant.allowed_child_task_digests.iter().all(|digest| digest_is_sha256(digest))
+        && grant.allowed_child_plan_digests.iter().all(|digest| digest_is_sha256(digest))
         && (grant.delegable || grant.remaining_delegation_depth == 0)
         && match (
             &grant.parent_task_id,
@@ -168,6 +174,7 @@ fn grant_shape_is_valid(grant: &DelegatedAuthorityGrant) -> bool {
             (None, None, None) => {
                 grant.task_id == grant.root_task_id
                     && grant.task_digest == grant.root_task_digest
+                    && grant.plan_digest == grant.root_plan_digest
             }
             (Some(task), Some(digest), Some(parent_grant)) => {
                 nonempty(task) && digest_is_sha256(digest) && nonempty(parent_grant)
@@ -221,6 +228,9 @@ pub fn check_attenuation(
     }
     if !parent.allowed_child_task_digests.contains(&child.task_digest) {
         violations.push(AttenuationViolation::ChildTaskDigestNotAllowed);
+    }
+    if !parent.allowed_child_plan_digests.contains(&child.plan_digest) {
+        violations.push(AttenuationViolation::ChildPlanDigestNotAllowed);
     }
     if child.tenant_binding != parent.tenant_binding {
         violations.push(AttenuationViolation::TenantChanged);
@@ -294,6 +304,8 @@ pub fn check_attenuation(
 /// Checks attenuation and the supplied current-time/revocation state.
 /// The caller must provide fresh canonical authority state at the final
 /// participant boundary; this pure function cannot prove that the input is fresh.
+/// For a multi-hop chain, use this check on every edge or call
+/// `verify_delegation_chain_at` so every ancestor is checked at the same time.
 pub fn verify_delegation_at(
     parent: &DelegatedAuthorityGrant,
     child: &DelegatedAuthorityGrant,
@@ -318,6 +330,43 @@ pub fn verify_delegation_at(
     }
     if now_unix >= child.expires_at_unix {
         violations.push(AttenuationViolation::ChildExpired);
+    }
+
+    if violations.is_empty() {
+        Ok(())
+    } else {
+        Err(violations)
+    }
+}
+
+/// Verifies every parent-child edge and rejects repeated grant/task identities.
+/// The first entry must be the root grant and the last entry the acting leaf.
+/// This remains a pure benchmark predicate: production must resolve fresh
+/// canonical revocation state for every ancestor at the final participant.
+pub fn verify_delegation_chain_at(
+    grants: &[DelegatedAuthorityGrant],
+    now_unix: i64,
+) -> Result<(), Vec<AttenuationViolation>> {
+    let mut violations = Vec::new();
+    if grants.len() < 2 {
+        return Err(vec![AttenuationViolation::InvalidChainLength]);
+    }
+
+    let mut grant_ids = BTreeSet::new();
+    let mut task_ids = BTreeSet::new();
+    for grant in grants {
+        if !grant_ids.insert(grant.grant_id.as_str()) {
+            violations.push(AttenuationViolation::DuplicateGrantInChain);
+        }
+        if !task_ids.insert(grant.task_id.as_str()) {
+            violations.push(AttenuationViolation::DuplicateTaskInChain);
+        }
+    }
+
+    for edge in grants.windows(2) {
+        if let Err(mut edge_violations) = verify_delegation_at(&edge[0], &edge[1], now_unix) {
+            violations.append(&mut edge_violations);
+        }
     }
 
     if violations.is_empty() {
@@ -403,6 +452,7 @@ mod tests {
             required_postconditions: set(&["service-healthy", "replicas-converged"]),
             rollback_obligations: set(&["restore-replicas"]),
             allowed_child_task_digests: set(&[&digest('c')]),
+            allowed_child_plan_digests: set(&[&digest('d')]),
             delegable: true,
             revoked: false,
         }
@@ -445,7 +495,8 @@ mod tests {
                 "child-task-complete",
             ]),
             rollback_obligations: set(&["restore-replicas", "emit-rollback-receipt"]),
-            allowed_child_task_digests: BTreeSet::new(),
+            allowed_child_task_digests: set(&[&digest('e')]),
+            allowed_child_plan_digests: set(&[&digest('f')]),
             delegable: true,
             revoked: false,
         }
@@ -582,6 +633,16 @@ mod tests {
     }
 
     #[test]
+    fn child_plan_digest_must_be_precommitted_by_parent() {
+        let parent = parent_grant();
+        let mut child = child_grant();
+        child.plan_digest = digest('e');
+        assert!(check_attenuation(&parent, &child).unwrap_err().contains(
+            &AttenuationViolation::ChildPlanDigestNotAllowed
+        ));
+    }
+
+    #[test]
     fn nondelegable_parent_and_exhausted_depth_are_rejected() {
         let mut parent = parent_grant();
         let child = child_grant();
@@ -615,4 +676,61 @@ mod tests {
             &AttenuationViolation::ChildRevoked
         ));
     }
+
+    fn grandchild_grant(parent: &DelegatedAuthorityGrant) -> DelegatedAuthorityGrant {
+        DelegatedAuthorityGrant {
+            grant_id: "grant-grandchild".into(),
+            issuer_principal: parent.subject_principal.clone(),
+            subject_principal: "agent-c".into(),
+            root_task_id: parent.root_task_id.clone(),
+            root_task_digest: parent.root_task_digest.clone(),
+            root_plan_digest: parent.root_plan_digest.clone(),
+            task_id: "task-grandchild".into(),
+            task_digest: digest('e'),
+            plan_digest: digest('f'),
+            parent_task_id: Some(parent.task_id.clone()),
+            parent_task_digest: Some(parent.task_digest.clone()),
+            parent_grant_id: Some(parent.grant_id.clone()),
+            tenant_binding: parent.tenant_binding.clone(),
+            targets: set(&["service/api"]),
+            operations: set(&["read"]),
+            parameter_bounds: BTreeMap::from([
+                ("replicas".into(), ParameterBound::ExactInteger(2)),
+                ("region".into(), ParameterBound::ExactString("af-south-1".into())),
+            ]),
+            data_scopes: set(&["metrics"]),
+            not_before_unix: 140,
+            expires_at_unix: 200,
+            max_dispatches: 1,
+            max_tool_calls: 2,
+            max_resource_units: 5,
+            remaining_delegation_depth: 0,
+            max_risk_level: 0,
+            required_approvals: parent.required_approvals.clone(),
+            required_postconditions: parent.required_postconditions.clone(),
+            rollback_obligations: parent.rollback_obligations.clone(),
+            allowed_child_task_digests: BTreeSet::new(),
+            allowed_child_plan_digests: BTreeSet::new(),
+            delegable: false,
+            revoked: false,
+        }
+    }
+
+    #[test]
+    fn every_edge_in_a_three_agent_chain_must_attenuate() {
+        let root = parent_grant();
+        let child = child_grant();
+        let grandchild = grandchild_grant(&child);
+        assert_eq!(
+            verify_delegation_chain_at(&[root.clone(), child.clone(), grandchild.clone()], 150),
+            Ok(())
+        );
+
+        let mut duplicate = grandchild;
+        duplicate.grant_id = child.grant_id.clone();
+        assert!(verify_delegation_chain_at(&[root, child, duplicate], 150)
+            .unwrap_err()
+            .contains(&AttenuationViolation::DuplicateGrantInChain));
+    }
+
 }
