@@ -849,7 +849,12 @@
         "issuer_principal_ref",
         "subject_principal_ref",
         "scope",
-        "authorized_child_task_plans"
+        "authorized_child_task_plans",
+        "revocation_state",
+        "revocation_evidence_ref",
+        "revocation_checked_at",
+        "revocation_freshness_ms",
+        "revocation_freshness_bound_ms"
       ],
       "properties": {
         "role": {
@@ -929,6 +934,30 @@
               }
             }
           }
+        },
+        "revocation_state": {
+          "enum": [
+            "active",
+            "revoked",
+            "unknown",
+            "stale"
+          ]
+        },
+        "revocation_evidence_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revocation_checked_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "revocation_freshness_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "revocation_freshness_bound_ms": {
+          "type": "integer",
+          "minimum": 1
         }
       },
       "allOf": [
@@ -1348,7 +1377,8 @@
               "checked_at",
               "freshness_ms",
               "decision",
-              "attempt_id"
+              "attempt_id",
+              "freshness_bound_ms"
             ],
             "properties": {
               "recheck_id": {
@@ -1421,6 +1451,10 @@
               "attempt_id": {
                 "type": "string",
                 "minLength": 1
+              },
+              "freshness_bound_ms": {
+                "type": "integer",
+                "minimum": 1
               }
             }
           }
