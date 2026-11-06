@@ -1251,6 +1251,29 @@ mod tests {
     }
 
     #[test]
+    fn one_hop_delegation_evidence_is_qualified() {
+        let schema = include_str!("../../delegation-evidence.schema.json");
+        let fixture = include_str!("../fixtures/delegation-one-hop-positive.json");
+        let audit = audit_delegation_evidence(fixture.as_bytes(), schema.as_bytes()).unwrap();
+        assert!(audit.attenuation_qualified, "{:?}", audit.violations);
+        assert_eq!(audit.computed_outcome, "qualified");
+        assert_eq!(audit.leaf_task_id, "task-child");
+    }
+
+    #[test]
+    fn revoked_ancestor_is_a_known_denial_not_a_leaf_state_mismatch() {
+        let schema = include_str!("../../delegation-evidence.schema.json");
+        let fixture = include_str!("../fixtures/delegation-chain-revoked-ancestor.json");
+        let audit = audit_delegation_evidence(fixture.as_bytes(), schema.as_bytes()).unwrap();
+        assert!(!audit.attenuation_qualified);
+        assert_eq!(audit.computed_outcome, "denied");
+        assert!(audit.declared_outcome_matches);
+        assert!(audit.participant_decision_correct);
+        assert!(audit.violations.iter().any(|code| code.contains("ANCESTOR_GRANT_REVOKED")));
+        assert!(!audit.violations.iter().any(|code| code.contains("CHAIN_AUTHORITY_STATE_MISMATCH")));
+    }
+
+    #[test]
     fn evidence_bundle_records_known_scope_expansion_as_denied() {
         let schema = include_str!("../../delegation-evidence.schema.json");
         let fixture = include_str!("../fixtures/delegation-chain-positive.json");
