@@ -472,8 +472,8 @@ pub fn evaluate_harness_promotion(
                 .entry(candidate_trial.task_family.clone())
                 .or_default();
             family.heldout_trials += 1;
-            family.baseline_passes += usize::from(baseline_trial.outcome == TrialOutcome::Pass);
-            family.candidate_passes += usize::from(candidate_trial.outcome == TrialOutcome::Pass);
+            family.baseline_passes += if baseline_trial.outcome == TrialOutcome::Pass { 1 } else { 0 };
+            family.candidate_passes += if candidate_trial.outcome == TrialOutcome::Pass { 1 } else { 0 };
         }
     }
 
