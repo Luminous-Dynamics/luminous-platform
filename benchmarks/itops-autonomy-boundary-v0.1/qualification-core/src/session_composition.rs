@@ -108,6 +108,7 @@ pub enum SessionCompositionViolation {
     OperationNotAllowed,
     RecipientBindingIncomplete,
     RecipientNotAllowed,
+    RecipientClassNotPermitted,
     DuplicateActionId,
     DuplicateEffectRef,
     DuplicateAttemptId,
@@ -203,6 +204,9 @@ impl SessionCompositionState {
 
         match (&proposal.recipient_ref, proposal.recipient_class) {
             (None, None) => {}
+            (Some(_), Some(RecipientClass::UnapprovedExternal)) => {
+                return Err(SessionCompositionViolation::RecipientClassNotPermitted);
+            }
             (Some(recipient), Some(_)) if nonempty(recipient) => {
                 if !policy.allowed_recipient_refs.contains(recipient) {
                     return Err(SessionCompositionViolation::RecipientNotAllowed);
@@ -803,6 +807,44 @@ mod tests {
         fourth.recipient_class = Some(RecipientClass::Internal);
         fourth.transfer_units = 1;
         assert!(state.evaluate(&policy(), &fourth).is_ok());
+    }
+
+
+    #[test]
+    fn explicitly_unapproved_external_recipient_class_is_denied() {
+        let state = state();
+        let mut proposal = action(1, "send_email", 0);
+        proposal.recipient_ref = Some("recipient:approved-partner".into());
+        proposal.recipient_class = Some(RecipientClass::UnapprovedExternal);
+        assert_eq!(
+            state.evaluate(&policy(), &proposal),
+            Err(SessionCompositionViolation::RecipientClassNotPermitted)
+        );
+    }
+
+    #[test]
+    fn distinct_recipient_budget_blocks_two_individually_allowlisted_recipients() {
+        let mut restricted = policy();
+        restricted.max_distinct_recipients = 1;
+        let mut state = SessionCompositionState::new(&restricted).unwrap();
+
+        let mut first = action(1, "internal_transfer", 0);
+        first.recipient_ref = Some("recipient:internal-finance".into());
+        first.recipient_class = Some(RecipientClass::Internal);
+        first.transfer_units = 1;
+        state.admit(&restricted, first).unwrap();
+
+        let mut second = action(2, "internal_transfer", state.version);
+        second.recipient_ref = Some("recipient:approved-partner".into());
+        second.recipient_class = Some(RecipientClass::ApprovedExternal);
+        second.transfer_units = 1;
+        assert!(restricted.allowed_recipient_refs.contains(
+            second.recipient_ref.as_ref().unwrap()
+        ));
+        assert_eq!(
+            state.evaluate(&restricted, &second),
+            Err(SessionCompositionViolation::DistinctRecipientLimitExceeded)
+        );
     }
 
     #[test]
