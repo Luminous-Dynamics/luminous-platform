@@ -1150,8 +1150,8 @@ fn audit_delegation_evidence(
             if !evidence_refs.contains(reference) {
                 violations.push(violation("chain grant revocation evidence is absent from provenance"));
             }
-            if evidence_digests.get(reference)
-                != string_at(node, "revocation_evidence_digest").map(str::to_string).as_ref()
+            if evidence_digests.get(reference).map(String::as_str)
+                != string_at(node, "revocation_evidence_digest")
             {
                 violations.push(violation("chain grant revocation evidence digest disagrees with provenance"));
             }
@@ -1171,15 +1171,15 @@ fn audit_delegation_evidence(
     }
     if let Some(authority_ref) = string_at(root_authority, "revocation_evidence_ref") {
         if !evidence_refs.contains(authority_ref)
-            || evidence_digests.get(authority_ref)
-                != string_at(root_authority, "revocation_evidence_digest").map(str::to_string).as_ref()
+            || evidence_digests.get(authority_ref).map(String::as_str)
+                != string_at(root_authority, "revocation_evidence_digest")
         {
             violations.push(violation("root revocation evidence reference/digest is absent or inconsistent in provenance"));
         }
     }
     if let (Some(manifest_ref), Some(manifest_digest)) = (root_manifest_ref, root_manifest_digest) {
         if !evidence_refs.contains(manifest_ref)
-            || evidence_digests.get(manifest_ref) != Some(&manifest_digest.to_string())
+            || evidence_digests.get(manifest_ref).map(String::as_str) != Some(manifest_digest)
         {
             violations.push(violation("root task graph manifest reference/digest is absent or inconsistent in provenance"));
         }
@@ -1187,8 +1187,8 @@ fn audit_delegation_evidence(
     for recheck in &rechecks {
         if let Some(authority_ref) = string_at(recheck, "canonical_authority_evidence_ref") {
             if !evidence_refs.contains(authority_ref)
-                || evidence_digests.get(authority_ref)
-                    != string_at(recheck, "canonical_authority_evidence_digest").map(str::to_string).as_ref()
+                || evidence_digests.get(authority_ref).map(String::as_str)
+                    != string_at(recheck, "canonical_authority_evidence_digest")
             {
                 violations.push(violation("participant recheck authority evidence reference/digest is absent or inconsistent in provenance"));
             }
@@ -1197,8 +1197,8 @@ fn audit_delegation_evidence(
     for batch in &fanout_batches {
         if let Some(budget_ref) = string_at(batch, "budget_state_evidence_ref") {
             if !evidence_refs.contains(budget_ref)
-                || evidence_digests.get(budget_ref)
-                    != string_at(batch, "budget_state_digest").map(str::to_string).as_ref()
+                || evidence_digests.get(budget_ref).map(String::as_str)
+                    != string_at(batch, "budget_state_digest")
             {
                 violations.push(violation("fan-out budget state reference/digest is absent or inconsistent in provenance"));
             }
@@ -1209,8 +1209,8 @@ fn audit_delegation_evidence(
             if !evidence_refs.contains(receipt_ref) {
                 violations.push(violation("participant effect receipt is absent from provenance"));
             }
-            if evidence_digests.get(receipt_ref)
-                != string_at(effect, "effect_receipt_digest").map(str::to_string).as_ref()
+            if evidence_digests.get(receipt_ref).map(String::as_str)
+                != string_at(effect, "effect_receipt_digest")
             {
                 violations.push(violation("participant effect receipt digest disagrees with provenance"));
             }
@@ -1218,8 +1218,8 @@ fn audit_delegation_evidence(
     }
     if let Some(observer_ref) = string_at(result, "service_observer.evidence_ref") {
         if !evidence_refs.contains(observer_ref)
-            || evidence_digests.get(observer_ref)
-                != string_at(result, "service_observer.evidence_digest").map(str::to_string).as_ref()
+            || evidence_digests.get(observer_ref).map(String::as_str)
+                != string_at(result, "service_observer.evidence_digest")
         {
             violations.push(violation("service observer reference/digest is absent or inconsistent in provenance"));
         }
