@@ -847,11 +847,48 @@ fn audit_delegation_evidence(
         .and_then(serde_json::Value::as_array)
         .cloned()
         .unwrap_or_default();
+    let expected_batch_parents: BTreeSet<String> = chain.iter().skip(1).filter_map(|node| {
+        value_at(node, "parent").and_then(|parent| string_at(parent, "grant_ref"))
+            .map(str::to_string)
+    }).collect();
+    let mut observed_batch_parents = BTreeSet::new();
     for batch in &fanout_batches {
         let parent_ref = string_at(batch, "parent_grant_ref").unwrap_or_default();
+        if !observed_batch_parents.insert(parent_ref.to_string()) {
+            violations.push(violation("duplicate budget batch for the same parent grant"));
+        }
         let parent = chain.iter().find(|node| string_at(node, "grant_ref") == Some(parent_ref));
+        if string_at(batch, "budget_state_ref").is_none_or(str::is_empty)
+            || u64_at(batch, "budget_state_version").is_none_or(|version| version == 0)
+            || string_at(batch, "budget_state_evidence_ref").is_none_or(str::is_empty)
+            || string_at(batch, "budget_state_digest").is_none_or(str::is_empty)
+        {
+            violations.push(violation("fan-out batch lacks a versioned, digest-bound budget-state snapshot"));
+        }
         if bool_at(batch, "batch_complete") != Some(true) {
             violations.push(violation("fan-out budget batch is not declared complete"));
+        }
+        let snapshot_age = u64_at(batch, "budget_state_freshness_ms");
+        let snapshot_bound = u64_at(batch, "budget_state_freshness_bound_ms");
+        let snapshot_checked_ms = timestamp_millis_at(batch, "budget_state_checked_at");
+        let recomputed_snapshot_age = run_finished_ms
+            .zip(snapshot_checked_ms)
+            .and_then(|(finish, checked)| finish.checked_sub(checked))
+            .and_then(|age| u64::try_from(age).ok());
+        if !matches!((snapshot_age, snapshot_bound, recomputed_snapshot_age),
+            (Some(claimed), Some(bound), Some(actual)) if claimed == actual && actual <= bound)
+        {
+            violations.push(violation("fan-out budget snapshot is stale, unbounded, or disagrees with timestamps"));
+        }
+        if !matches!((run_started_ms, run_finished_ms, snapshot_checked_ms),
+            (Some(start), Some(finish), Some(checked)) if checked >= start && checked <= finish)
+        {
+            violations.push(violation("fan-out budget snapshot timestamp is outside the episode interval"));
+        }
+        if string_at(batch, "outcome") != Some("qualified")
+            && string_at(delegation, "qualification.outcome") == Some("qualified")
+        {
+            violations.push(violation("qualified delegation contains a denied or unknown fan-out batch"));
         }
         let allocations = value_at(batch, "child_allocations")
             .and_then(serde_json::Value::as_array)
@@ -920,6 +957,9 @@ fn audit_delegation_evidence(
                 violations.push(violation("fan-out batch parent grant is absent from chain"));
             }
         }
+    }
+    if observed_batch_parents != expected_batch_parents {
+        violations.push(violation("fan-out batches do not cover every direct parent with children exactly once"));
     }
 
     let root_ref = string_at(root, "grant_ref");
