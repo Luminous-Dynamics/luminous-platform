@@ -97,7 +97,7 @@ A positive root-anchored delegated episode fixture is available at `../decision-
 
 ## Run
 
-The draft PR's base branch now defines `.github/workflows/itops-qualification.yml`. For pull requests targeting this branch it pins Rust 1.90.0 and runs formatting, all qualification-core tests, and Clippy with warnings denied. The workflow generates and fingerprints a lockfile for each run because this standalone crate does not yet commit one. A workflow definition is not a test result; only exact-head run and job evidence qualifies the code.
+The draft PR's base branch now defines `.github/workflows/itops-qualification.yml`. For pull requests targeting this branch it pins Rust 1.90.0, applies rustfmt, publishes normalized source as an exact-head artifact, verifies formatting, runs all qualification-core tests, and runs Clippy with warnings denied. The workflow generates and fingerprints a lockfile for each run because this standalone crate does not yet commit one. A workflow definition is not a test result; only exact-head run and job evidence qualifies the code.
 
 
 From this directory:
