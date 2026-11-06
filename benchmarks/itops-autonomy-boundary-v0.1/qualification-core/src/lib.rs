@@ -901,6 +901,7 @@ fn audit_delegation_evidence(
         .cloned()
         .unwrap_or_default();
 
+    let mut rechecked_attempt_ids = BTreeSet::new();
     for recheck in &rechecks {
         if string_at(recheck, "root_grant_ref") != root_ref
             || string_at(recheck, "leaf_grant_ref") != leaf_ref
@@ -912,26 +913,57 @@ fn audit_delegation_evidence(
         {
             violations.push(violation("participant recheck is not bound to the exact root/leaf/task/plan/request/target"));
         }
-        let checked_at = string_at(recheck, "checked_at")
-            .and_then(|value| DateTime::parse_from_rfc3339(value).ok());
-        if !matches!((run_started, run_finished, checked_at),
+        let attempt_id = string_at(recheck, "attempt_id");
+        if let Some(attempt_id) = attempt_id {
+            if !rechecked_attempt_ids.insert(attempt_id.to_string()) {
+                violations.push(violation("multiple participant rechecks reuse the same attempt ID"));
+            }
+        }
+
+        let attempt = participant_attempts.iter().find(|attempt| {
+            string_at(attempt, "attempt_id") == attempt_id
+        });
+        let checked_ms = timestamp_millis_at(recheck, "checked_at");
+        if !matches!((run_started_ms, run_finished_ms, checked_ms),
             (Some(start), Some(finish), Some(checked)) if checked >= start && checked <= finish)
         {
             violations.push(violation("participant recheck timestamp is outside the episode interval"));
         }
         let freshness = u64_at(recheck, "freshness_ms");
         let freshness_bound = u64_at(recheck, "freshness_bound_ms");
-        if !matches!((freshness, freshness_bound), (Some(age), Some(bound)) if age <= bound) {
-            violations.push(violation("participant authority recheck is stale or has no freshness bound"));
+        if let Some(attempt) = attempt {
+            let dispatched_ms = timestamp_millis_at(attempt, "dispatched_at");
+            let recomputed_age = dispatched_ms
+                .zip(checked_ms)
+                .and_then(|(dispatched, checked)| dispatched.checked_sub(checked))
+                .and_then(|age| u64::try_from(age).ok());
+            if !matches!((freshness, freshness_bound, recomputed_age),
+                (Some(claimed), Some(bound), Some(actual)) if claimed == actual && actual <= bound)
+            {
+                violations.push(violation("participant authority recheck freshness is stale, unbounded, after dispatch, or disagrees with timestamps"));
+            }
+        } else {
+            violations.push(violation("participant recheck attempt ID is absent from participant oracle"));
         }
+
         if string_at(recheck, "decision") == Some("allow")
             && string_at(recheck, "authority_state") != Some("active")
         {
             violations.push(violation("allow decision is not backed by active authority state"));
         }
-        let attempt_id = string_at(recheck, "attempt_id");
-        if !participant_attempts.iter().any(|attempt| string_at(attempt, "attempt_id") == attempt_id) {
-            violations.push(violation("participant recheck attempt ID is absent from participant oracle"));
+        if string_at(recheck, "canonical_authority_evidence_ref").is_none_or(str::is_empty)
+            || string_at(recheck, "canonical_authority_evidence_digest").is_none_or(str::is_empty)
+        {
+            violations.push(violation("participant recheck lacks canonical authority evidence reference/digest"));
+        }
+        let operation = string_at(recheck, "operation");
+        let target = string_at(recheck, "target_digest");
+        let permitted_operations = json_string_set(value_at(leaf, "scope").unwrap_or(&serde_json::Value::Null), "operations");
+        let permitted_targets = json_string_set(value_at(leaf, "scope").unwrap_or(&serde_json::Value::Null), "target_digests");
+        if !operation.is_some_and(|value| permitted_operations.contains(value))
+            || !target.is_some_and(|value| permitted_targets.contains(value))
+        {
+            violations.push(violation("participant recheck operation/target is outside the acting leaf scope"));
         }
     }
 
