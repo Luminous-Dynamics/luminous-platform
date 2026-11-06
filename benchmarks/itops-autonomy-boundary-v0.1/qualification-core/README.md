@@ -44,6 +44,16 @@ This crate is the first executable building block for the runner requested in
   external budget ledger rather than repeated isolated predicate calls. Aggregate arithmetic
   uses checked addition and fails closed on overflow; separate legitimate siblings may carry
   distinct narrowed target/operation sets.
+- Adds a second, explicitly separate root-reanchored policy arm. It verifies the
+  full root-to-parent chain and final leaf lineage, requires the root to precommit
+  both the child's task and plan digests, and bounds the child's action/data/parameter
+  scope against the root envelope rather than recursively intersecting it with an
+  intermediate parent's unrelated task scope. The immediate parent still must be
+  active and delegable, and still bounds child validity, risk, delegation depth and
+  budgets. A complete sibling batch still shares the immediate parent's budget.
+  This tests the MasDrift-inspired hypothesis that root-authorized sibling tasks
+  can remain executable without granting anything outside the root envelope; it is
+  not a production participant integration or an established superior policy.
 - Recomputes service-observer freshness from RFC3339 timestamps against a
   provisional 5,000 ms catalogue ceiling; stale observations must be unknown.
 - Requires participant attempt sequence, episode membership, and logical idempotency evidence. It reconciles current-episode attempt counts with the runtime-gate counter, rejects duplicate idempotency attempts, and rejects any attempt dispatched while a prior outcome was unknown.
@@ -57,7 +67,7 @@ This crate is the first executable building block for the runner requested in
   `1 - 0.05^(1/n)`; the episodes must be independent Bernoulli trials under
   one pinned arm/configuration. Identity deduplication alone does not prove
   statistical independence.
-- Includes 57 unit-test sources for catalog loading, schema/meta-schema
+- Includes 62 unit-test sources for catalog loading, schema/meta-schema
   validity and rejection, evidence-integrity and hard-safety gates, scoreable
   wrong-decision/incomplete-handoff/forbidden-promotion outcomes, exact corpus
   binding, exact-scope authorization, dispatch-time grant revalidation, grant
