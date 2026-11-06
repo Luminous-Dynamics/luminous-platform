@@ -8,6 +8,7 @@
 //! and service observer in separate processes/control domains.
 
 pub mod delegation;
+pub mod trust_boundary;
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
