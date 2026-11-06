@@ -40,7 +40,7 @@ pub struct RootDelegationEdge {
 
 /// A deliberately small constraint language with decidable subset checks.
 /// Unsupported or incomparable constraint forms are rejected, never guessed.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ParameterBound {
     ExactString(String),
     ExactInteger(i64),
