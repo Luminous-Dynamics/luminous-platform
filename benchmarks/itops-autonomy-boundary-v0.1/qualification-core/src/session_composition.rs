@@ -7,7 +7,7 @@
 //! canonical authority/revocation lookup, and crash-safe effect reconciliation.
 
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// Coarse destination class used by composition rules.
 /// Recipient identity/entitlement remains an external canonical authority fact.
@@ -263,12 +263,7 @@ impl SessionCompositionState {
                     && effect.committed_transfer_units == 0 => {}
                 (Some(recipient), Some(class))
                     if nonempty(recipient) && class != RecipientClass::UnapprovedExternal => {}
-                _ if effect.reserved_transfer_units > 0
-                    || effect.committed_transfer_units > 0 =>
-                {
-                    return Err(SessionCompositionViolation::InvalidSnapshot);
-                }
-                _ => {}
+                _ => return Err(SessionCompositionViolation::InvalidSnapshot),
             }
 
             match effect.state {
