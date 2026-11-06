@@ -43,7 +43,16 @@ jobs:
           if [ ! -f Cargo.lock ]; then
             cargo generate-lockfile
           fi
-          sha256sum Cargo.lock | tee cargo-lockfile.sha256
+          actual_lock_sha="$(sha256sum Cargo.lock | awk '{print $1}')"
+          if [ -f cargo-lockfile.sha256 ]; then
+            expected_lock_sha="$(awk 'NR == 1 {print $1}' cargo-lockfile.sha256)"
+            if [ "$actual_lock_sha" != "$expected_lock_sha" ]; then
+              echo "::error::Cargo.lock digest mismatch: expected $expected_lock_sha, got $actual_lock_sha"
+              exit 1
+            fi
+          else
+            printf '%s  Cargo.lock\n' "$actual_lock_sha" > cargo-lockfile.sha256
+          fi
           cargo metadata --format-version 1 --locked > cargo-metadata.json
 
       - name: Publish exact dependency lock and metadata
