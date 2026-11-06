@@ -1352,9 +1352,9 @@ mod tests {
     #[test]
     fn root_anchored_delegation_episode_passes_additive_result_schema() {
         let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
-        let example = fs::read(manifest.join("../../decision-result.delegation.example.json"))
+        let example = fs::read(manifest.join("../decision-result.delegation.example.json"))
             .expect("delegation result example must be present");
-        let schema = fs::read(manifest.join("../../decision-result.schema.json"))
+        let schema = fs::read(manifest.join("../decision-result.schema.json"))
             .expect("result schema must be present");
         validate_draft2020_12(&example, &schema)
             .expect("delegation result must satisfy the complete additive schema");
