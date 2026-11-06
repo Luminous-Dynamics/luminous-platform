@@ -542,10 +542,48 @@ fn audit_delegation_evidence(
     {
         violations.push(violation("root authority does not bind the first chain node"));
     }
+    if string_at(root_authority, "revocation_state") != Some("active")
+        || string_at(root_authority, "revocation_evidence_ref")
+            != string_at(root, "revocation_evidence_ref")
+    {
+        violations.push(violation("root authority and root-node revocation state/evidence disagree"));
+    }
+    if string_at(root_authority, "revocation_checked_at")
+        != string_at(root, "revocation_checked_at")
+    {
+        violations.push(violation("root authority and root-node revocation timestamps disagree"));
+    }
+
+    let run_started = string_at(result, "run_binding.started_at")
+        .and_then(|value| DateTime::parse_from_rfc3339(value).ok());
+    let run_finished = string_at(result, "run_binding.finished_at")
+        .and_then(|value| DateTime::parse_from_rfc3339(value).ok());
+    if !matches!((run_started, run_finished), (Some(start), Some(finish)) if start <= finish) {
+        violations.push(violation("run start/finish timestamps are missing or reversed"));
+    }
 
     let mut grant_refs = BTreeSet::new();
     let mut task_ids = BTreeSet::new();
     for node in chain {
+        if string_at(node, "revocation_state") != Some("active") {
+            violations.push(violation("chain grant revocation state is not active"));
+        }
+        let freshness = u64_at(node, "revocation_freshness_ms");
+        let freshness_bound = u64_at(node, "revocation_freshness_bound_ms");
+        if !matches!((freshness, freshness_bound), (Some(age), Some(bound)) if age <= bound) {
+            violations.push(violation("chain grant revocation evidence is stale or unbounded"));
+        }
+        let checked_at = string_at(node, "revocation_checked_at")
+            .and_then(|value| DateTime::parse_from_rfc3339(value).ok());
+        if !matches!((run_started, run_finished, checked_at),
+            (Some(start), Some(finish), Some(checked)) if checked >= start && checked <= finish)
+        {
+            violations.push(violation("chain grant revocation check is outside the episode interval"));
+        }
+        if string_at(node, "revocation_evidence_ref").is_none_or(str::is_empty) {
+            violations.push(violation("chain grant revocation evidence reference is missing"));
+        }
+
         if let Some(grant_ref) = string_at(node, "grant_ref") {
             if !grant_refs.insert(grant_ref.to_string()) {
                 violations.push(violation("duplicate grant reference in chain"));
@@ -763,6 +801,23 @@ fn audit_delegation_evidence(
         {
             violations.push(violation("participant recheck is not bound to the exact root/leaf/task/plan/request/target"));
         }
+        let checked_at = string_at(recheck, "checked_at")
+            .and_then(|value| DateTime::parse_from_rfc3339(value).ok());
+        if !matches!((run_started, run_finished, checked_at),
+            (Some(start), Some(finish), Some(checked)) if checked >= start && checked <= finish)
+        {
+            violations.push(violation("participant recheck timestamp is outside the episode interval"));
+        }
+        let freshness = u64_at(recheck, "freshness_ms");
+        let freshness_bound = u64_at(recheck, "freshness_bound_ms");
+        if !matches!((freshness, freshness_bound), (Some(age), Some(bound)) if age <= bound) {
+            violations.push(violation("participant authority recheck is stale or has no freshness bound"));
+        }
+        if string_at(recheck, "decision") == Some("allow")
+            && string_at(recheck, "authority_state") != Some("active")
+        {
+            violations.push(violation("allow decision is not backed by active authority state"));
+        }
         let attempt_id = string_at(recheck, "attempt_id");
         if !participant_attempts.iter().any(|attempt| string_at(attempt, "attempt_id") == attempt_id) {
             violations.push(violation("participant recheck attempt ID is absent from participant oracle"));
@@ -818,10 +873,21 @@ fn audit_delegation_evidence(
         .cloned()
         .unwrap_or_default();
     let mut evidence_refs = BTreeSet::new();
+    let mut evidence_digests = BTreeMap::new();
     for evidence in &evidence_items {
         if let Some(reference) = string_at(evidence, "evidence_ref") {
             if !evidence_refs.insert(reference.to_string()) {
                 violations.push(violation("duplicate provenance evidence reference"));
+            }
+            if let Some(digest) = string_at(evidence, "evidence_digest") {
+                evidence_digests.insert(reference.to_string(), digest.to_string());
+            }
+        }
+    }
+    for node in chain {
+        if let Some(reference) = string_at(node, "revocation_evidence_ref") {
+            if !evidence_refs.contains(reference) {
+                violations.push(violation("chain grant revocation evidence is absent from provenance"));
             }
         }
     }
@@ -854,7 +920,22 @@ fn audit_delegation_evidence(
             if !evidence_refs.contains(receipt_ref) {
                 violations.push(violation("participant effect receipt is absent from provenance"));
             }
+            if evidence_digests.get(receipt_ref)
+                != string_at(effect, "effect_receipt_digest").map(str::to_string).as_ref()
+            {
+                violations.push(violation("participant effect receipt digest disagrees with provenance"));
+            }
         }
+    }
+    if let Some(observer_ref) = string_at(result, "service_observer.evidence_ref") {
+        if !evidence_refs.contains(observer_ref)
+            || evidence_digests.get(observer_ref)
+                != string_at(result, "service_observer.evidence_digest").map(str::to_string).as_ref()
+        {
+            violations.push(violation("service observer reference/digest is absent or inconsistent in provenance"));
+        }
+    } else {
+        violations.push(violation("service observer evidence reference is missing"));
     }
 
     let outcome = string_at(delegation, "qualification.outcome");
