@@ -1225,7 +1225,7 @@ mod tests {
             required_postconditions: set(&["service-healthy", "replicas-converged"]),
             rollback_obligations: set(&["restore-replicas"]),
             allowed_child_task_digests: set(&[&digest('c'), &digest('e')]),
-            allowed_child_plan_digests: set(&[&digest('d')]),
+            allowed_child_plan_digests: set(&[&digest('d'), &digest('f')]),
             allowed_child_task_plans: BTreeMap::from([(digest('c'), digest('d')), (digest('e'), digest('f'))]),
             allowed_descendant_task_plans: BTreeMap::from([(digest('c'), digest('d')), (digest('e'), digest('f'))]),
             authorized_delegation_edges: BTreeSet::from([
@@ -1340,9 +1340,9 @@ mod tests {
     fn child_cannot_expand_target_operation_or_data_scope() {
         let parent = parent_grant();
         let mut child = child_grant();
-        child.targets = set(&["service/api", "service/worker"]);
-        child.operations = set(&["read", "restart"]);
-        child.data_scopes = set(&["metrics", "service-config"]);
+        child.targets = set(&["service/admin"]);
+        child.operations = set(&["delete"]);
+        child.data_scopes = set(&["secrets"]);
         let errors = check_attenuation(&parent, &child).unwrap_err();
         assert!(errors.contains(&AttenuationViolation::TargetScopeExpanded));
         assert!(errors.contains(&AttenuationViolation::OperationScopeExpanded));
@@ -1451,10 +1451,10 @@ mod tests {
     fn child_task_digest_must_be_precommitted_by_parent() {
         let parent = parent_grant();
         let mut child = child_grant();
-        child.task_digest = digest('e');
-        assert!(check_attenuation(&parent, &child).unwrap_err().contains(
-            &AttenuationViolation::ChildTaskDigestNotAllowed
-        ));
+        child.task_digest = digest('z');
+        let errors = check_attenuation(&parent, &child).unwrap_err();
+        assert!(errors.contains(&AttenuationViolation::ChildTaskDigestNotAllowed));
+        assert!(errors.contains(&AttenuationViolation::ChildPlanDigestNotAllowed));
     }
 
 
@@ -1591,6 +1591,7 @@ mod tests {
         child.task_digest = digest(suffix);
         child.plan_digest = digest(if suffix == 'g' { 'h' } else { 'i' });
         child.issuer_principal = parent.subject_principal.clone();
+        child.subject_principal = format!("agent-{suffix}");
         child.root_task_id = root.root_task_id.clone();
         child.root_task_digest = root.root_task_digest.clone();
         child.root_plan_digest = root.root_plan_digest.clone();
@@ -1826,6 +1827,11 @@ mod tests {
             "replicas".into(),
             ParameterBound::IntegerRange { min: 4, max: 5 },
         );
+        second.not_before_unix = 140;
+        second.expires_at_unix = 200;
+        second.max_dispatches = 1;
+        second.max_tool_calls = 5;
+        second.max_resource_units = 20;
 
         assert!(check_attenuation(&root, &second).is_err());
         assert_eq!(
@@ -1925,7 +1931,7 @@ mod tests {
         let child = grandchild_grant(&parent);
         assert!(verify_root_anchored_chain_at(&[root, parent, child], 150)
             .unwrap_err()
-            .contains(&AttenuationViolation::ChildTaskDigestNotAllowed));
+            .contains(&AttenuationViolation::ChildPlanDigestNotAllowed));
     }
 
     #[test]
