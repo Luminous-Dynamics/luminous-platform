@@ -113,7 +113,7 @@ fn nonempty(value: &str) -> bool {
     !value.trim().is_empty()
 }
 
-fn digest_is_sha256(value: &str) -> bool {
+pub(crate) fn digest_is_sha256(value: &str) -> bool {
     value.len() == 64
         && value
             .bytes()
@@ -376,7 +376,7 @@ pub fn verify_delegation_chain_at(
     }
 }
 
-fn parameter_bound_is_subset(
+pub(crate) fn parameter_bound_is_subset(
     child: &ParameterBound,
     parent: &ParameterBound,
 ) -> bool {
