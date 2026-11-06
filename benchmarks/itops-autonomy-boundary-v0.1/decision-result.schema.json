@@ -642,6 +642,80 @@
         }
       },
       "additionalProperties": false
+    },
+    "delegation_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "version",
+        "bundle_digest",
+        "outcome",
+        "root_task_id",
+        "root_task_digest",
+        "root_plan_digest",
+        "leaf_grant_id",
+        "leaf_task_id",
+        "leaf_task_digest",
+        "leaf_plan_digest",
+        "request_digest",
+        "participant_recheck_ref"
+      ],
+      "properties": {
+        "schema": {
+          "const": "luminous-itops-delegation-evidence-v0.1"
+        },
+        "version": {
+          "const": 1
+        },
+        "bundle_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "outcome": {
+          "enum": [
+            "qualified",
+            "denied",
+            "unknown"
+          ]
+        },
+        "root_task_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "root_task_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "root_plan_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "leaf_grant_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "leaf_task_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "leaf_task_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "leaf_plan_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "request_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "participant_recheck_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
     }
   },
   "additionalProperties": false
