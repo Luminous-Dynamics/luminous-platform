@@ -7,6 +7,17 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+/// One exact delegation edge precommitted in the root task graph. Principals are
+/// opaque canonical references; the benchmark predicate does not authenticate them.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct RootDelegationEdge {
+    pub parent_task_digest: String,
+    pub child_task_digest: String,
+    pub child_plan_digest: String,
+    pub delegator_principal: String,
+    pub delegatee_principal: String,
+}
+
 /// A deliberately small constraint language with decidable subset checks.
 /// Unsupported or incomparable constraint forms are rejected, never guessed.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -64,6 +75,8 @@ pub struct DelegatedAuthorityGrant {
     pub allowed_child_plan_digests: BTreeSet<String>,
     /// Root task/plan commitments for all authorized descendants, not only direct children.
     pub allowed_descendant_task_plans: BTreeMap<String, String>,
+    /// Exact root-precommitted parent→child graph edges and principal assignments.
+    pub authorized_delegation_edges: BTreeSet<RootDelegationEdge>,
     pub delegable: bool,
     pub revoked: bool,
 }
@@ -91,6 +104,7 @@ pub enum AttenuationViolation {
     ChildTaskDigestNotAllowed,
     ChildPlanDigestNotAllowed,
     RootDescendantTaskPlanNotAllowed,
+    RootDelegationEdgeNotAllowed,
     RootEnvelopeScopeExpanded,
     InvalidRootAnchoredChain,
     RootReanchorMissingAncestors,
@@ -179,6 +193,7 @@ fn grant_shape_is_valid(grant: &DelegatedAuthorityGrant) -> bool {
         && grant.allowed_child_task_digests.iter().all(|digest| digest_is_sha256(digest))
         && grant.allowed_child_plan_digests.iter().all(|digest| digest_is_sha256(digest))
         && grant.allowed_descendant_task_plans.iter().all(|(task, plan)| digest_is_sha256(task) && digest_is_sha256(plan))
+        && grant.authorized_delegation_edges.iter().all(|edge| digest_is_sha256(&edge.parent_task_digest) && digest_is_sha256(&edge.child_task_digest) && digest_is_sha256(&edge.child_plan_digest) && nonempty(&edge.delegator_principal) && nonempty(&edge.delegatee_principal))
         && (grant.delegable || grant.remaining_delegation_depth == 0)
         && match (
             &grant.parent_task_id,
@@ -748,6 +763,17 @@ pub fn verify_root_anchored_chain_at(
             violations.push(AttenuationViolation::RootDescendantTaskPlanNotAllowed);
         }
 
+        let authorized_edge = RootDelegationEdge {
+            parent_task_digest: parent.task_digest.clone(),
+            child_task_digest: child.task_digest.clone(),
+            child_plan_digest: child.plan_digest.clone(),
+            delegator_principal: parent.subject_principal.clone(),
+            delegatee_principal: child.subject_principal.clone(),
+        };
+        if !root.authorized_delegation_edges.contains(&authorized_edge) {
+            violations.push(AttenuationViolation::RootDelegationEdgeNotAllowed);
+        }
+
         // Every descendant's scope must fit the original root envelope. It may
         // differ from an intermediate parent's scope only when the exact
         // descendant task and plan are precommitted above.
@@ -1003,6 +1029,29 @@ mod tests {
             allowed_child_task_digests: set(&[&digest('c')]),
             allowed_child_plan_digests: set(&[&digest('d')]),
             allowed_descendant_task_plans: BTreeMap::from([(digest('c'), digest('d')), (digest('e'), digest('f'))]),
+            authorized_delegation_edges: BTreeSet::from([
+                RootDelegationEdge {
+                    parent_task_digest: digest('a'),
+                    child_task_digest: digest('c'),
+                    child_plan_digest: digest('d'),
+                    delegator_principal: "agent-a".into(),
+                    delegatee_principal: "agent-b".into(),
+                },
+                RootDelegationEdge {
+                    parent_task_digest: digest('c'),
+                    child_task_digest: digest('e'),
+                    child_plan_digest: digest('f'),
+                    delegator_principal: "agent-b".into(),
+                    delegatee_principal: "agent-c".into(),
+                },
+                RootDelegationEdge {
+                    parent_task_digest: digest('a'),
+                    child_task_digest: digest('e'),
+                    child_plan_digest: digest('f'),
+                    delegator_principal: "agent-a".into(),
+                    delegatee_principal: "agent-c".into(),
+                },
+            ]),
             delegable: true,
             revoked: false,
         }
@@ -1048,6 +1097,7 @@ mod tests {
             allowed_child_task_digests: set(&[&digest('e')]),
             allowed_child_plan_digests: set(&[&digest('f')]),
             allowed_descendant_task_plans: BTreeMap::new(),
+            authorized_delegation_edges: BTreeSet::new(),
             delegable: true,
             revoked: false,
         }
@@ -1284,6 +1334,7 @@ mod tests {
             allowed_child_task_digests: BTreeSet::new(),
             allowed_child_plan_digests: BTreeSet::new(),
             allowed_descendant_task_plans: BTreeMap::new(),
+            authorized_delegation_edges: BTreeSet::new(),
             delegable: false,
             revoked: false,
         }
@@ -1557,6 +1608,27 @@ mod tests {
         assert!(verify_root_anchored_chain_at(&[root, parent, child], 150)
             .unwrap_err()
             .contains(&AttenuationViolation::RootDescendantTaskPlanNotAllowed));
+    }
+
+
+    #[test]
+    fn root_anchor_rejects_uncommitted_delegation_parent_or_recipient() {
+        let root = parent_grant();
+        let mut parent = child_grant();
+        let mut child = grandchild_grant(&parent);
+        child.subject_principal = "agent-unapproved".into();
+        let errors = verify_root_anchored_chain_at(&[root, parent.clone(), child], 150)
+            .unwrap_err();
+        assert!(errors.contains(&AttenuationViolation::RootDelegationEdgeNotAllowed));
+
+        // A root-approved task/plan pair is not sufficient if the wrong
+        // intermediate agent is the delegator.
+        parent.subject_principal = "agent-wrong".into();
+        let child = grandchild_grant(&parent);
+        let root = parent_grant();
+        assert!(verify_root_anchored_chain_at(&[root, parent, child], 150)
+            .unwrap_err()
+            .contains(&AttenuationViolation::RootDelegationEdgeNotAllowed));
     }
 
     #[test]
