@@ -62,6 +62,8 @@ pub struct DelegatedAuthorityGrant {
     /// The parent explicitly commits to the exact child task digests it may delegate.
     pub allowed_child_task_digests: BTreeSet<String>,
     pub allowed_child_plan_digests: BTreeSet<String>,
+    /// Root task/plan commitments for all authorized descendants, not only direct children.
+    pub allowed_descendant_task_plans: BTreeMap<String, String>,
     pub delegable: bool,
     pub revoked: bool,
 }
@@ -88,6 +90,9 @@ pub enum AttenuationViolation {
     ChildTaskIdNotDistinct,
     ChildTaskDigestNotAllowed,
     ChildPlanDigestNotAllowed,
+    RootDescendantTaskPlanNotAllowed,
+    RootEnvelopeScopeExpanded,
+    InvalidRootAnchoredChain,
     RootReanchorMissingAncestors,
     InvalidChainLength,
     DuplicateGrantInChain,
@@ -173,6 +178,7 @@ fn grant_shape_is_valid(grant: &DelegatedAuthorityGrant) -> bool {
         && obligation_set_is_valid(&grant.rollback_obligations)
         && grant.allowed_child_task_digests.iter().all(|digest| digest_is_sha256(digest))
         && grant.allowed_child_plan_digests.iter().all(|digest| digest_is_sha256(digest))
+        && grant.allowed_descendant_task_plans.iter().all(|(task, plan)| digest_is_sha256(task) && digest_is_sha256(plan))
         && (grant.delegable || grant.remaining_delegation_depth == 0)
         && match (
             &grant.parent_task_id,
@@ -625,6 +631,190 @@ pub fn verify_root_reanchored_children_at(
     }
 }
 
+/// Root-anchored authorization is a separate policy arm from strict edge-by-edge
+/// attenuation. Every descendant must be precommitted by the root task graph and
+/// explicitly delegated by its immediate parent, but its execution scope is
+/// compared to the root envelope rather than recursively intersected with each
+/// intermediate agent's execution scope. This allows a parent to delegate a
+/// different root-authorized sibling subtask without gaining authority itself.
+///
+/// The chain still enforces immutable lineage, principal continuity, immediate
+/// parent child-digest commitments, validity/revocation, and per-edge budgets.
+/// This pure predicate does not authenticate the root manifest or enforce a live
+/// participant-side request check.
+pub fn verify_root_anchored_chain_at(
+    grants: &[DelegatedAuthorityGrant],
+    now_unix: i64,
+) -> Result<(), Vec<AttenuationViolation>> {
+    if grants.len() < 2 {
+        return Err(vec![AttenuationViolation::InvalidRootAnchoredChain]);
+    }
+
+    let root = &grants[0];
+    let mut violations = Vec::new();
+    if !grant_shape_is_valid(root) {
+        violations.push(AttenuationViolation::InvalidParentShape);
+    }
+    if root.revoked {
+        violations.push(AttenuationViolation::ParentRevoked);
+    }
+    if now_unix < root.not_before_unix {
+        violations.push(AttenuationViolation::ParentNotYetValid);
+    }
+    if now_unix >= root.expires_at_unix {
+        violations.push(AttenuationViolation::ParentExpired);
+    }
+
+    let mut grant_ids = BTreeSet::new();
+    let mut task_ids = BTreeSet::new();
+    for grant in grants {
+        if !grant_ids.insert(grant.grant_id.as_str()) {
+            violations.push(AttenuationViolation::DuplicateGrantInChain);
+        }
+        if !task_ids.insert(grant.task_id.as_str()) {
+            violations.push(AttenuationViolation::DuplicateTaskInChain);
+        }
+    }
+
+    for edge in grants.windows(2) {
+        let parent = &edge[0];
+        let child = &edge[1];
+        if !grant_shape_is_valid(child) {
+            violations.push(AttenuationViolation::InvalidChildShape);
+        }
+        if parent.revoked {
+            violations.push(AttenuationViolation::ParentRevoked);
+        }
+        if child.revoked {
+            violations.push(AttenuationViolation::ChildRevoked);
+        }
+        if now_unix < parent.not_before_unix {
+            violations.push(AttenuationViolation::ParentNotYetValid);
+        }
+        if now_unix >= parent.expires_at_unix {
+            violations.push(AttenuationViolation::ParentExpired);
+        }
+        if now_unix < child.not_before_unix {
+            violations.push(AttenuationViolation::ChildNotYetValid);
+        }
+        if now_unix >= child.expires_at_unix {
+            violations.push(AttenuationViolation::ChildExpired);
+        }
+
+        if !parent.delegable || parent.remaining_delegation_depth == 0 {
+            violations.push(AttenuationViolation::ParentCannotDelegate);
+        }
+        if child.root_task_id != root.root_task_id
+            || child.root_task_id != parent.root_task_id
+        {
+            violations.push(AttenuationViolation::RootTaskChanged);
+        }
+        if child.root_task_digest != root.root_task_digest
+            || child.root_task_digest != parent.root_task_digest
+        {
+            violations.push(AttenuationViolation::RootTaskDigestChanged);
+        }
+        if child.root_plan_digest != root.root_plan_digest
+            || child.root_plan_digest != parent.root_plan_digest
+        {
+            violations.push(AttenuationViolation::RootPlanChanged);
+        }
+        if child.parent_task_id.as_deref() != Some(parent.task_id.as_str()) {
+            violations.push(AttenuationViolation::ParentTaskLinkMismatch);
+        }
+        if child.parent_task_digest.as_deref() != Some(parent.task_digest.as_str()) {
+            violations.push(AttenuationViolation::ParentTaskDigestMismatch);
+        }
+        if child.parent_grant_id.as_deref() != Some(parent.grant_id.as_str()) {
+            violations.push(AttenuationViolation::ParentGrantLinkMismatch);
+        }
+        if child.issuer_principal != parent.subject_principal {
+            violations.push(AttenuationViolation::PrincipalChainMismatch);
+        }
+        if child.grant_id == parent.grant_id {
+            violations.push(AttenuationViolation::ChildGrantIdNotDistinct);
+        }
+        if child.task_id == parent.task_id {
+            violations.push(AttenuationViolation::ChildTaskIdNotDistinct);
+        }
+        if !parent.allowed_child_task_digests.contains(&child.task_digest)
+            || !parent.allowed_child_plan_digests.contains(&child.plan_digest)
+        {
+            violations.push(AttenuationViolation::ChildTaskDigestNotAllowed);
+        }
+        if root.allowed_descendant_task_plans.get(&child.task_digest)
+            != Some(&child.plan_digest)
+        {
+            violations.push(AttenuationViolation::RootDescendantTaskPlanNotAllowed);
+        }
+
+        // Every descendant's scope must fit the original root envelope. It may
+        // differ from an intermediate parent's scope only when the exact
+        // descendant task and plan are precommitted above.
+        if child.tenant_binding != root.tenant_binding
+            || !child.targets.is_subset(&root.targets)
+            || !child.operations.is_subset(&root.operations)
+            || !child.data_scopes.is_subset(&root.data_scopes)
+            || root.parameter_bounds.iter().any(|(name, bound)| {
+                child.parameter_bounds.get(name)
+                    .is_none_or(|child_bound| !parameter_bound_is_subset(child_bound, bound))
+            })
+            || child.max_risk_level > root.max_risk_level
+            || child.expires_at_unix > root.expires_at_unix
+            || child.not_before_unix < root.not_before_unix
+            || child.max_dispatches > root.max_dispatches
+            || child.max_tool_calls > root.max_tool_calls
+            || child.max_resource_units > root.max_resource_units
+            || !root.required_approvals.is_subset(&child.required_approvals)
+            || !root.required_postconditions.is_subset(&child.required_postconditions)
+            || !root.rollback_obligations.is_subset(&child.rollback_obligations)
+        {
+            violations.push(AttenuationViolation::RootEnvelopeScopeExpanded);
+        }
+
+        // Delegators may not grant children more lifetime, budget, risk, or
+        // inherited obligations than the authority they hold to create them.
+        if child.not_before_unix < parent.not_before_unix {
+            violations.push(AttenuationViolation::NotBeforeWidened);
+        }
+        if child.expires_at_unix > parent.expires_at_unix {
+            violations.push(AttenuationViolation::ExpiryWidened);
+        }
+        if child.max_dispatches > parent.max_dispatches {
+            violations.push(AttenuationViolation::DispatchBudgetExpanded);
+        }
+        if child.max_tool_calls > parent.max_tool_calls {
+            violations.push(AttenuationViolation::ToolBudgetExpanded);
+        }
+        if child.max_resource_units > parent.max_resource_units {
+            violations.push(AttenuationViolation::ResourceBudgetExpanded);
+        }
+        if child.remaining_delegation_depth
+            > parent.remaining_delegation_depth.saturating_sub(1)
+        {
+            violations.push(AttenuationViolation::DelegationDepthExpanded);
+        }
+        if child.max_risk_level > parent.max_risk_level {
+            violations.push(AttenuationViolation::RiskCeilingExpanded);
+        }
+        if !parent.required_approvals.is_subset(&child.required_approvals) {
+            violations.push(AttenuationViolation::ApprovalRequirementWeakened);
+        }
+        if !parent.required_postconditions.is_subset(&child.required_postconditions) {
+            violations.push(AttenuationViolation::PostconditionWeakened);
+        }
+        if !parent.rollback_obligations.is_subset(&child.rollback_obligations) {
+            violations.push(AttenuationViolation::RollbackObligationWeakened);
+        }
+    }
+
+    if violations.is_empty() {
+        Ok(())
+    } else {
+        Err(violations)
+    }
+}
+
 /// Verifies one complete sibling-delegation batch against a parent's remaining
 /// transferable budgets. Each child must independently attenuate from the same
 /// parent, and the sum of child dispatch/tool/resource allocations must not
@@ -812,6 +1002,7 @@ mod tests {
             rollback_obligations: set(&["restore-replicas"]),
             allowed_child_task_digests: set(&[&digest('c')]),
             allowed_child_plan_digests: set(&[&digest('d')]),
+            allowed_descendant_task_plans: BTreeMap::from([(digest('c'), digest('d')), (digest('e'), digest('f'))]),
             delegable: true,
             revoked: false,
         }
@@ -856,6 +1047,7 @@ mod tests {
             rollback_obligations: set(&["restore-replicas", "emit-rollback-receipt"]),
             allowed_child_task_digests: set(&[&digest('e')]),
             allowed_child_plan_digests: set(&[&digest('f')]),
+            allowed_descendant_task_plans: BTreeMap::new(),
             delegable: true,
             revoked: false,
         }
@@ -1091,6 +1283,7 @@ mod tests {
             rollback_obligations: parent.rollback_obligations.clone(),
             allowed_child_task_digests: BTreeSet::new(),
             allowed_child_plan_digests: BTreeSet::new(),
+            allowed_descendant_task_plans: BTreeMap::new(),
             delegable: false,
             revoked: false,
         }
@@ -1315,6 +1508,67 @@ mod tests {
         );
     }
 
+
+
+    #[test]
+    fn root_anchor_allows_a_precommitted_sibling_scope_outside_parent_scope() {
+        let root = parent_grant();
+        let parent = child_grant();
+        let mut child = grandchild_grant(&parent);
+
+        // Parent was delegated API/read. The root explicitly pre-authorized a
+        // distinct worker/restart subtask and the intermediate parent committed
+        // to that exact child task+plan. Strict recursive attenuation blocks it.
+        child.targets = set(&["service/worker"]);
+        child.operations = set(&["restart"]);
+        child.data_scopes = set(&["service-config"]);
+        child.parameter_bounds.insert(
+            "replicas".into(),
+            ParameterBound::IntegerRange { min: 4, max: 5 },
+        );
+        child.max_dispatches = 1;
+        child.max_tool_calls = 2;
+        child.max_resource_units = 5;
+
+        assert!(check_attenuation(&parent, &child).is_err());
+        assert_eq!(
+            verify_root_anchored_chain_at(&[root, parent, child], 150),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn root_anchor_rejects_a_child_scope_outside_the_root_envelope() {
+        let root = parent_grant();
+        let parent = child_grant();
+        let mut child = grandchild_grant(&parent);
+        child.targets = set(&["service/admin"]);
+        assert!(verify_root_anchored_chain_at(&[root, parent, child], 150)
+            .unwrap_err()
+            .contains(&AttenuationViolation::RootEnvelopeScopeExpanded));
+    }
+
+    #[test]
+    fn root_anchor_requires_precommitted_descendant_task_and_plan() {
+        let mut root = parent_grant();
+        root.allowed_descendant_task_plans.remove(&digest('e'));
+        let parent = child_grant();
+        let child = grandchild_grant(&parent);
+        assert!(verify_root_anchored_chain_at(&[root, parent, child], 150)
+            .unwrap_err()
+            .contains(&AttenuationViolation::RootDescendantTaskPlanNotAllowed));
+    }
+
+    #[test]
+    fn root_anchor_still_requires_the_immediate_parent_to_delegate_exact_child() {
+        let root = parent_grant();
+        let mut parent = child_grant();
+        parent.allowed_child_plan_digests.clear();
+        let child = grandchild_grant(&parent);
+        assert!(verify_root_anchored_chain_at(&[root, parent, child], 150)
+            .unwrap_err()
+            .contains(&AttenuationViolation::ChildTaskDigestNotAllowed));
+    }
 
     #[test]
     fn sibling_budget_overflow_fails_closed() {
