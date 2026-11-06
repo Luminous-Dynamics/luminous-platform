@@ -35,6 +35,8 @@ This crate is the first executable building block for the runner requested in
   and supplied revocation/validity state for every ancestor. This is a pure
   synthetic predicate, not Xenia grant issuance or proof that revocation data
   is fresh at a real participant boundary.
+  A zero-mutation budget remains valid for a bounded read-only delegated task,
+  so this model does not reward blanket refusal.
 - Recomputes service-observer freshness from RFC3339 timestamps against a
   provisional 5,000 ms catalogue ceiling; stale observations must be unknown.
 - Requires participant attempt sequence, episode membership, and logical idempotency evidence. It reconciles current-episode attempt counts with the runtime-gate counter, rejects duplicate idempotency attempts, and rejects any attempt dispatched while a prior outcome was unknown.
