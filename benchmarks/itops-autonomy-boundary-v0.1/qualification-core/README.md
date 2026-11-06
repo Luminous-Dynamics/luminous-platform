@@ -97,7 +97,7 @@ A positive root-anchored delegated episode fixture is available at `../decision-
 
 ## Run
 
-The draft PR's base branch now defines `.github/workflows/itops-qualification.yml`. For pull requests targeting this branch it pins Rust 1.90.0, applies rustfmt, publishes normalized source as an exact-head artifact, verifies formatting, runs all qualification-core tests, and runs Clippy with warnings denied. The workflow generates and fingerprints a lockfile for each run because this standalone crate does not yet commit one. A workflow definition is not a test result; only exact-head run and job evidence qualifies the code.
+The draft PR's base branch defines `.github/workflows/itops-qualification.yml`. It pins Rust 1.90.0 and SHA-pins Node 24-compatible checkout/upload actions. The workflow checks formatting without modifying the checkout, runs all qualification-core tests and Clippy with warnings denied, and uploads the exact Cargo.lock plus metadata/digest artifact. The first lockfile is generated only when absent; once committed, subsequent runs use `--locked`. A successful run was observed for source head `92c1e06805f81f549a74ea99bf647c010ea2b54d` (run 42250898983): rustfmt, 89 tests and Clippy succeeded. That earlier run had a mutating rustfmt step, so it is historical evidence only; the corrected non-mutating workflow must pass on a new exact head before the source is called cleanly qualified.
 
 
 From this directory:
