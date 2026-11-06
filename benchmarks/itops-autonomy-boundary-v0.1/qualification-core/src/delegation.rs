@@ -84,6 +84,7 @@ pub enum AttenuationViolation {
     ParentTaskDigestMismatch,
     ParentGrantLinkMismatch,
     PrincipalChainMismatch,
+    ChildGrantIdNotDistinct,
     ChildTaskIdNotDistinct,
     ChildTaskDigestNotAllowed,
     ChildPlanDigestNotAllowed,
@@ -228,6 +229,9 @@ pub fn check_attenuation(
     }
     if child.issuer_principal != parent.subject_principal {
         violations.push(AttenuationViolation::PrincipalChainMismatch);
+    }
+    if child.grant_id == parent.grant_id {
+        violations.push(AttenuationViolation::ChildGrantIdNotDistinct);
     }
     if child.task_id == parent.task_id {
         violations.push(AttenuationViolation::ChildTaskIdNotDistinct);
@@ -710,6 +714,16 @@ mod tests {
         assert!(errors.contains(&AttenuationViolation::ParentGrantLinkMismatch));
         assert!(errors.contains(&AttenuationViolation::PrincipalChainMismatch));
         assert!(errors.contains(&AttenuationViolation::ChildTaskIdNotDistinct));
+    }
+
+    #[test]
+    fn child_grant_id_must_not_reuse_parent_grant_id() {
+        let parent = parent_grant();
+        let mut child = child_grant();
+        child.grant_id = parent.grant_id.clone();
+        assert!(check_attenuation(&parent, &child).unwrap_err().contains(
+            &AttenuationViolation::ChildGrantIdNotDistinct
+        ));
     }
 
     #[test]
