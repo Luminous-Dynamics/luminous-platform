@@ -4089,6 +4089,60 @@ mod tests {
     }
 
     #[test]
+    fn dispatched_before_response_survives_crash_and_keeps_mutation_lock() {
+        let requirement = example_requirement();
+        let plan = "a".repeat(64);
+        let mut grant = valid_grant(&plan);
+        grant.max_dispatches = 2;
+
+        let mut ledger = ParticipantEffectLedger::default();
+        let permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
+        let attempt_id = ledger.dispatch(permit, &grant, 150, "crash-after-dispatch-001").unwrap();
+
+        let checkpoint = ledger.export_snapshot().unwrap();
+        let mut recovered = ParticipantEffectLedger::recover_snapshot(&checkpoint)
+            .expect("accepted dispatch must survive process restart");
+        assert_eq!(recovered.snapshot()[0].state, EffectState::Dispatched);
+
+        let retry = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
+        assert_eq!(
+            recovered.dispatch(retry, &grant, 150, "crash-retry-002"),
+            Err(LedgerError::UnknownOutcomeLocked)
+        );
+
+        // The original attempt remains the only unresolved attempt until
+        // reconciliation or a participant-owned committed-effect record.
+        assert_eq!(recovered.snapshot()[0].attempt_id, attempt_id);
+    }
+
+    #[test]
+    fn recovery_rejects_attempts_appended_after_an_unresolved_effect() {
+        let requirement = example_requirement();
+        let plan = "a".repeat(64);
+        let grant = valid_grant(&plan);
+        let mut ledger = ParticipantEffectLedger::default();
+        let permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
+        let attempt_id = ledger.dispatch(permit, &grant, 150, "crash-unresolved-001").unwrap();
+        ledger.mark_outcome_unknown(attempt_id).unwrap();
+
+        let checkpoint = ledger.export_snapshot().unwrap();
+        let mut value: serde_json::Value = serde_json::from_slice(&checkpoint).unwrap();
+        let mut impossible_later_attempt = value["attempts"][0].clone();
+        impossible_later_attempt["attempt_id"] = serde_json::json!(2);
+        impossible_later_attempt["idempotency_key"] =
+            serde_json::json!("impossible-attempt-after-unknown");
+        impossible_later_attempt["state"] = serde_json::json!("no_effect");
+        value["attempts"].as_array_mut().unwrap().push(impossible_later_attempt);
+        value["next_attempt_id"] = serde_json::json!(2);
+
+        let tampered = serde_json::to_vec(&value).unwrap();
+        assert!(matches!(
+            ParticipantEffectLedger::recover_snapshot(&tampered),
+            Err(CoreError::ResultViolations(_))
+        ));
+    }
+
+    #[test]
     fn committed_effect_and_idempotency_history_survive_snapshot_restart() {
         let requirement = example_requirement();
         let plan = "a".repeat(64);
