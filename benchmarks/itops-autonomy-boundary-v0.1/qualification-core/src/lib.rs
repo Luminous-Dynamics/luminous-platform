@@ -665,15 +665,15 @@ fn audit_delegation_evidence(
             violations.push(violation("chain grant revocation evidence reference/digest is missing"));
         }
 
-        if let Some(grant_ref) = string_at(node, "grant_ref") {
-            if !grant_refs.insert(grant_ref.to_string()) {
-                violations.push(violation("duplicate grant reference in chain"));
-            }
+        if let Some(grant_ref) = string_at(node, "grant_ref")
+            && !grant_refs.insert(grant_ref.to_string())
+        {
+            violations.push(violation("duplicate grant reference in chain"));
         }
-        if let Some(task_id) = string_at(node, "task_id") {
-            if !task_ids.insert(task_id.to_string()) {
-                violations.push(violation("duplicate task identity in chain"));
-            }
+        if let Some(task_id) = string_at(node, "task_id")
+            && !task_ids.insert(task_id.to_string())
+        {
+            violations.push(violation("duplicate task identity in chain"));
         }
     }
 
@@ -1018,10 +1018,10 @@ fn audit_delegation_evidence(
             violations.push(violation("participant recheck is not bound to the exact root/leaf/task/plan/request/target"));
         }
         let attempt_id = string_at(recheck, "attempt_id");
-        if let Some(attempt_id) = attempt_id {
-            if !rechecked_attempt_ids.insert(attempt_id.to_string()) {
-                violations.push(violation("multiple participant rechecks reuse the same attempt ID"));
-            }
+        if let Some(attempt_id) = attempt_id
+            && !rechecked_attempt_ids.insert(attempt_id.to_string())
+        {
+            violations.push(violation("multiple participant rechecks reuse the same attempt ID"));
         }
 
         let attempt = participant_attempts.iter().find(|attempt| {
@@ -1096,10 +1096,10 @@ fn audit_delegation_evidence(
     let mut bound_effect_total = 0_u64;
     for effect in &effect_bindings {
         let attempt_id = string_at(effect, "attempt_id");
-        if let Some(attempt_id) = attempt_id {
-            if !bound_effect_attempts.insert(attempt_id.to_string()) {
-                violations.push(violation("duplicate effect binding for one participant attempt"));
-            }
+        if let Some(attempt_id) = attempt_id
+            && !bound_effect_attempts.insert(attempt_id.to_string())
+        {
+            violations.push(violation("duplicate effect binding for one participant attempt"));
         }
         if string_at(effect, "root_task_digest") != root_digest
             || string_at(effect, "leaf_grant_ref") != leaf_ref
@@ -1194,39 +1194,35 @@ fn audit_delegation_evidence(
             }
         }
     }
-    if let Some(authority_ref) = string_at(root_authority, "revocation_evidence_ref") {
-        if !evidence_refs.contains(authority_ref)
+    if let Some(authority_ref) = string_at(root_authority, "revocation_evidence_ref")
+        && (!evidence_refs.contains(authority_ref)
             || evidence_digests.get(authority_ref).map(String::as_str)
-                != string_at(root_authority, "revocation_evidence_digest")
-        {
-            violations.push(violation("root revocation evidence reference/digest is absent or inconsistent in provenance"));
-        }
+                != string_at(root_authority, "revocation_evidence_digest"))
+    {
+        violations.push(violation("root revocation evidence reference/digest is absent or inconsistent in provenance"));
     }
-    if let (Some(manifest_ref), Some(manifest_digest)) = (root_manifest_ref, root_manifest_digest) {
-        if !evidence_refs.contains(manifest_ref)
-            || evidence_digests.get(manifest_ref).map(String::as_str) != Some(manifest_digest)
-        {
-            violations.push(violation("root task graph manifest reference/digest is absent or inconsistent in provenance"));
-        }
+    if let (Some(manifest_ref), Some(manifest_digest)) = (root_manifest_ref, root_manifest_digest)
+        && (!evidence_refs.contains(manifest_ref)
+            || evidence_digests.get(manifest_ref).map(String::as_str) != Some(manifest_digest))
+    {
+        violations.push(violation("root task graph manifest reference/digest is absent or inconsistent in provenance"));
     }
     for recheck in &rechecks {
-        if let Some(authority_ref) = string_at(recheck, "canonical_authority_evidence_ref") {
-            if !evidence_refs.contains(authority_ref)
+        if let Some(authority_ref) = string_at(recheck, "canonical_authority_evidence_ref")
+            && (!evidence_refs.contains(authority_ref)
                 || evidence_digests.get(authority_ref).map(String::as_str)
-                    != string_at(recheck, "canonical_authority_evidence_digest")
-            {
-                violations.push(violation("participant recheck authority evidence reference/digest is absent or inconsistent in provenance"));
-            }
+                    != string_at(recheck, "canonical_authority_evidence_digest"))
+        {
+            violations.push(violation("participant recheck authority evidence reference/digest is absent or inconsistent in provenance"));
         }
     }
     for batch in &fanout_batches {
-        if let Some(budget_ref) = string_at(batch, "budget_state_evidence_ref") {
-            if !evidence_refs.contains(budget_ref)
+        if let Some(budget_ref) = string_at(batch, "budget_state_evidence_ref")
+            && (!evidence_refs.contains(budget_ref)
                 || evidence_digests.get(budget_ref).map(String::as_str)
-                    != string_at(batch, "budget_state_digest")
-            {
-                violations.push(violation("fan-out budget state reference/digest is absent or inconsistent in provenance"));
-            }
+                    != string_at(batch, "budget_state_digest"))
+        {
+            violations.push(violation("fan-out budget state reference/digest is absent or inconsistent in provenance"));
         }
     }
     for effect in &effect_bindings {
@@ -1416,20 +1412,20 @@ pub fn audit_episode_result(
     if observer_domain.is_none_or(str::is_empty) {
         violations.push(format!("{case_id}: service-observer control-domain identity is missing"));
     }
-    if let (Some(agent), Some(participant)) = (agent_domain, participant_domain) {
-        if agent == participant {
-            violations.push(format!("{case_id}: agent and participant oracle share a control domain"));
-        }
+    if let (Some(agent), Some(participant)) = (agent_domain, participant_domain)
+        && agent == participant
+    {
+        violations.push(format!("{case_id}: agent and participant oracle share a control domain"));
     }
-    if let (Some(agent), Some(observer)) = (agent_domain, observer_domain) {
-        if agent == observer {
-            violations.push(format!("{case_id}: agent and service observer share a control domain"));
-        }
+    if let (Some(agent), Some(observer)) = (agent_domain, observer_domain)
+        && agent == observer
+    {
+        violations.push(format!("{case_id}: agent and service observer share a control domain"));
     }
-    if let (Some(participant), Some(observer)) = (participant_domain, observer_domain) {
-        if participant == observer {
-            violations.push(format!("{case_id}: participant oracle and service observer share a control domain"));
-        }
+    if let (Some(participant), Some(observer)) = (participant_domain, observer_domain)
+        && participant == observer
+    {
+        violations.push(format!("{case_id}: participant oracle and service observer share a control domain"));
     }
 
     let expected_effects = string_at(case, "oracle_contract.participant_effects").unwrap_or_default();
