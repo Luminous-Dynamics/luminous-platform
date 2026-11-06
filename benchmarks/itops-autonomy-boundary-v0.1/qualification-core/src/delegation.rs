@@ -7,6 +7,25 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+/// Exact constraints precommitted for one root-authorized subtask edge.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct RootAuthorizedTaskScope {
+    pub tenant_binding: String,
+    pub targets: BTreeSet<String>,
+    pub operations: BTreeSet<String>,
+    pub parameter_bounds: BTreeMap<String, ParameterBound>,
+    pub data_scopes: BTreeSet<String>,
+    pub not_before_unix: i64,
+    pub expires_at_unix: i64,
+    pub max_dispatches: u64,
+    pub max_tool_calls: u64,
+    pub max_resource_units: u64,
+    pub max_risk_level: u8,
+    pub required_approvals: BTreeSet<String>,
+    pub required_postconditions: BTreeSet<String>,
+    pub rollback_obligations: BTreeSet<String>,
+}
+
 /// One exact delegation edge precommitted in the root task graph. Principals are
 /// opaque canonical references; the benchmark predicate does not authenticate them.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -16,6 +35,7 @@ pub struct RootDelegationEdge {
     pub child_plan_digest: String,
     pub delegator_principal: String,
     pub delegatee_principal: String,
+    pub authorized_scope: RootAuthorizedTaskScope,
 }
 
 /// A deliberately small constraint language with decidable subset checks.
@@ -105,6 +125,7 @@ pub enum AttenuationViolation {
     ChildPlanDigestNotAllowed,
     RootDescendantTaskPlanNotAllowed,
     RootDelegationEdgeNotAllowed,
+    RootAuthorizedSubtaskScopeExpanded,
     RootEnvelopeScopeExpanded,
     InvalidRootAnchoredChain,
     RootReanchorMissingAncestors,
@@ -193,7 +214,25 @@ fn grant_shape_is_valid(grant: &DelegatedAuthorityGrant) -> bool {
         && grant.allowed_child_task_digests.iter().all(|digest| digest_is_sha256(digest))
         && grant.allowed_child_plan_digests.iter().all(|digest| digest_is_sha256(digest))
         && grant.allowed_descendant_task_plans.iter().all(|(task, plan)| digest_is_sha256(task) && digest_is_sha256(plan))
-        && grant.authorized_delegation_edges.iter().all(|edge| digest_is_sha256(&edge.parent_task_digest) && digest_is_sha256(&edge.child_task_digest) && digest_is_sha256(&edge.child_plan_digest) && nonempty(&edge.delegator_principal) && nonempty(&edge.delegatee_principal))
+        && grant.authorized_delegation_edges.iter().all(|edge| {
+            let scope = &edge.authorized_scope;
+            digest_is_sha256(&edge.parent_task_digest)
+                && digest_is_sha256(&edge.child_task_digest)
+                && digest_is_sha256(&edge.child_plan_digest)
+                && nonempty(&edge.delegator_principal)
+                && nonempty(&edge.delegatee_principal)
+                && nonempty(&scope.tenant_binding)
+                && set_is_valid(&scope.targets)
+                && set_is_valid(&scope.operations)
+                && bounds_are_valid(&scope.parameter_bounds)
+                && set_is_valid(&scope.data_scopes)
+                && scope.not_before_unix < scope.expires_at_unix
+                && scope.max_tool_calls > 0
+                && scope.max_resource_units > 0
+                && obligation_set_is_valid(&scope.required_approvals)
+                && obligation_set_is_valid(&scope.required_postconditions)
+                && obligation_set_is_valid(&scope.rollback_obligations)
+        })
         && (grant.delegable || grant.remaining_delegation_depth == 0)
         && match (
             &grant.parent_task_id,
@@ -763,15 +802,37 @@ pub fn verify_root_anchored_chain_at(
             violations.push(AttenuationViolation::RootDescendantTaskPlanNotAllowed);
         }
 
-        let authorized_edge = RootDelegationEdge {
-            parent_task_digest: parent.task_digest.clone(),
-            child_task_digest: child.task_digest.clone(),
-            child_plan_digest: child.plan_digest.clone(),
-            delegator_principal: parent.subject_principal.clone(),
-            delegatee_principal: child.subject_principal.clone(),
-        };
-        if !root.authorized_delegation_edges.contains(&authorized_edge) {
+        let authorized_edge = root.authorized_delegation_edges.iter().find(|edge| {
+            edge.parent_task_digest == parent.task_digest
+                && edge.child_task_digest == child.task_digest
+                && edge.child_plan_digest == child.plan_digest
+                && edge.delegator_principal == parent.subject_principal
+                && edge.delegatee_principal == child.subject_principal
+        });
+        let Some(authorized_edge) = authorized_edge else {
             violations.push(AttenuationViolation::RootDelegationEdgeNotAllowed);
+            continue;
+        };
+        let authorized_scope = &authorized_edge.authorized_scope;
+        if child.tenant_binding != authorized_scope.tenant_binding
+            || !child.targets.is_subset(&authorized_scope.targets)
+            || !child.operations.is_subset(&authorized_scope.operations)
+            || !child.data_scopes.is_subset(&authorized_scope.data_scopes)
+            || authorized_scope.parameter_bounds.iter().any(|(name, bound)| {
+                child.parameter_bounds.get(name)
+                    .is_none_or(|child_bound| !parameter_bound_is_subset(child_bound, bound))
+            })
+            || child.not_before_unix < authorized_scope.not_before_unix
+            || child.expires_at_unix > authorized_scope.expires_at_unix
+            || child.max_dispatches > authorized_scope.max_dispatches
+            || child.max_tool_calls > authorized_scope.max_tool_calls
+            || child.max_resource_units > authorized_scope.max_resource_units
+            || child.max_risk_level > authorized_scope.max_risk_level
+            || !authorized_scope.required_approvals.is_subset(&child.required_approvals)
+            || !authorized_scope.required_postconditions.is_subset(&child.required_postconditions)
+            || !authorized_scope.rollback_obligations.is_subset(&child.rollback_obligations)
+        {
+            violations.push(AttenuationViolation::RootAuthorizedSubtaskScopeExpanded);
         }
 
         // Every descendant's scope must fit the original root envelope. It may
@@ -1073,6 +1134,50 @@ mod tests {
         BTreeSet::from_iter(values.iter().map(|value| (*value).to_string()))
     }
 
+    fn root_child_scope() -> RootAuthorizedTaskScope {
+        RootAuthorizedTaskScope {
+            tenant_binding: "tenant-1".into(),
+            targets: set(&["service/api"]),
+            operations: set(&["read"]),
+            parameter_bounds: BTreeMap::from([
+                ("replicas".into(), ParameterBound::IntegerRange { min: 2, max: 3 }),
+                ("region".into(), ParameterBound::ExactString("af-south-1".into())),
+            ]),
+            data_scopes: set(&["metrics"]),
+            not_before_unix: 120,
+            expires_at_unix: 300,
+            max_dispatches: 1,
+            max_tool_calls: 5,
+            max_resource_units: 20,
+            max_risk_level: 1,
+            required_approvals: set(&["change-ticket"]),
+            required_postconditions: set(&["service-healthy", "replicas-converged"]),
+            rollback_obligations: set(&["restore-replicas"]),
+        }
+    }
+
+    fn root_grandchild_scope() -> RootAuthorizedTaskScope {
+        RootAuthorizedTaskScope {
+            tenant_binding: "tenant-1".into(),
+            targets: set(&["service/worker"]),
+            operations: set(&["restart"]),
+            parameter_bounds: BTreeMap::from([
+                ("replicas".into(), ParameterBound::IntegerRange { min: 4, max: 5 }),
+                ("region".into(), ParameterBound::ExactString("af-south-1".into())),
+            ]),
+            data_scopes: set(&["service-config"]),
+            not_before_unix: 140,
+            expires_at_unix: 200,
+            max_dispatches: 1,
+            max_tool_calls: 5,
+            max_resource_units: 20,
+            max_risk_level: 1,
+            required_approvals: set(&["change-ticket"]),
+            required_postconditions: set(&["service-healthy", "replicas-converged"]),
+            rollback_obligations: set(&["restore-replicas"]),
+        }
+    }
+
     fn parent_grant() -> DelegatedAuthorityGrant {
         DelegatedAuthorityGrant {
             grant_id: "grant-root".into(),
@@ -1115,6 +1220,7 @@ mod tests {
                     child_plan_digest: digest('d'),
                     delegator_principal: "agent-a".into(),
                     delegatee_principal: "agent-b".into(),
+                    authorized_scope: root_child_scope(),
                 },
                 RootDelegationEdge {
                     parent_task_digest: digest('c'),
@@ -1122,6 +1228,7 @@ mod tests {
                     child_plan_digest: digest('f'),
                     delegator_principal: "agent-b".into(),
                     delegatee_principal: "agent-c".into(),
+                    authorized_scope: root_grandchild_scope(),
                 },
                 RootDelegationEdge {
                     parent_task_digest: digest('a'),
@@ -1129,6 +1236,7 @@ mod tests {
                     child_plan_digest: digest('f'),
                     delegator_principal: "agent-a".into(),
                     delegatee_principal: "agent-c".into(),
+                    authorized_scope: root_grandchild_scope(),
                 },
             ]),
             delegable: true,
@@ -1731,6 +1839,26 @@ mod tests {
             .contains(&AttenuationViolation::RootDescendantTaskPlanNotAllowed));
     }
 
+
+
+    #[test]
+    fn root_anchor_rejects_scope_mutation_within_global_envelope() {
+        let root = parent_grant();
+        let parent = child_grant();
+        let mut child = grandchild_grant(&parent);
+        // API/read is still inside the global root envelope, but the exact
+        // root-authorized subtask edge is worker/restart.
+        child.targets = set(&["service/api"]);
+        child.operations = set(&["read"]);
+        child.data_scopes = set(&["metrics"]);
+        child.parameter_bounds.insert(
+            "replicas".into(),
+            ParameterBound::IntegerRange { min: 2, max: 3 },
+        );
+        assert!(verify_root_anchored_chain_at(&[root, parent, child], 150)
+            .unwrap_err()
+            .contains(&AttenuationViolation::RootAuthorizedSubtaskScopeExpanded));
+    }
 
     #[test]
     fn root_anchor_rejects_uncommitted_delegation_parent_or_recipient() {
