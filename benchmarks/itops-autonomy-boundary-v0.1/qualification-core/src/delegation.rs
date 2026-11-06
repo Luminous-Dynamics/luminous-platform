@@ -562,6 +562,15 @@ pub struct DelegationEvidenceAudit {
     pub participant_decision_correct: bool,
     pub all_ancestor_authority_fresh: bool,
     pub evidence_lineage_complete: bool,
+    pub root_task_id: String,
+    pub root_task_digest: String,
+    pub root_plan_digest: String,
+    pub leaf_grant_id: String,
+    pub leaf_task_id: String,
+    pub leaf_task_digest: String,
+    pub leaf_plan_digest: String,
+    pub request_digest: String,
+    pub participant_recheck_ref: String,
     pub violations: Vec<String>,
 }
 
@@ -872,6 +881,15 @@ pub fn audit_delegation_evidence(
         participant_decision_correct,
         all_ancestor_authority_fresh,
         evidence_lineage_complete: lineage_complete,
+        root_task_id: grants.first().map(|grant| grant.root_task_id.clone()).unwrap_or_default(),
+        root_task_digest: grants.first().map(|grant| grant.root_task_digest.clone()).unwrap_or_default(),
+        root_plan_digest: grants.first().map(|grant| grant.root_plan_digest.clone()).unwrap_or_default(),
+        leaf_grant_id: leaf.grant_id.clone(),
+        leaf_task_id: leaf.task_id.clone(),
+        leaf_task_digest: leaf.task_digest.clone(),
+        leaf_plan_digest: leaf.plan_digest.clone(),
+        request_digest: participant.request_digest.clone(),
+        participant_recheck_ref: participant.evidence_ref.clone(),
         violations,
     })
 }
