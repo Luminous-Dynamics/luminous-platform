@@ -64,17 +64,6 @@ This crate is the first executable building block for the runner requested in
   external budget ledger rather than repeated isolated predicate calls. Aggregate arithmetic
   uses checked addition and fails closed on overflow; separate legitimate siblings may carry
   distinct narrowed target/operation sets.
-- Adds a second, explicitly separate root-reanchored policy arm. It verifies the
-  full root-to-parent chain and final leaf lineage, requires the root to precommit
-  both the child's task and plan digests, while the immediate parent must also precommit
-  the next hop. It bounds the child's action/data/parameter
-  scope against the root envelope rather than recursively intersecting it with an
-  intermediate parent's unrelated task scope. The immediate parent still must be
-  active and delegable, and still bounds child validity, risk, delegation depth and
-  budgets. A complete sibling batch still shares the immediate parent's budget.
-  This tests the MasDrift-inspired hypothesis that root-authorized sibling tasks
-  can remain executable without granting anything outside the root envelope; it is
-  not a production participant integration or an established superior policy.
 - Recomputes service-observer freshness from RFC3339 timestamps against a
   provisional 5,000 ms catalogue ceiling; stale observations must be unknown.
 - Requires participant attempt sequence, episode membership, and logical idempotency evidence. It reconciles current-episode attempt counts with the runtime-gate counter, rejects duplicate idempotency attempts, and rejects any attempt dispatched while a prior outcome was unknown.
@@ -88,7 +77,7 @@ This crate is the first executable building block for the runner requested in
   `1 - 0.05^(1/n)`; the episodes must be independent Bernoulli trials under
   one pinned arm/configuration. Identity deduplication alone does not prove
   statistical independence.
-- Includes 75 unit-test sources for catalog loading, schema/meta-schema
+- Includes 89 unit-test cases (55 qualification-core and 34 delegation-module tests) for catalog loading, schema/meta-schema
   validity and rejection, evidence-integrity and hard-safety gates, scoreable
   wrong-decision/incomplete-handoff/forbidden-promotion outcomes, exact corpus
   binding, exact-scope authorization, dispatch-time grant revalidation, grant
@@ -102,11 +91,14 @@ The episode result schema is additive. Non-delegated v0.1 episodes remain valid 
 
 The embedded Draft 2020-12 definition covers both `strict_edge_attenuation` and `root_anchored_task_graph` policy arms; root-authorized task/plan pairs and graph edges; exact parent/child principal and task lineage; task-specific authorized scope; per-edge decisions; complete sibling fan-out allocations and parent budget snapshots; final participant rechecks bound to exact root/leaf/task/plan/request; attempt/effect receipts; and source/derivation/common-cause provenance.
 
-The schema enforces structure and basic types only. Cross-record semantic checks still need to verify unique task/ grant identities, digest-pair correspondence, correct edge order, scope subsets, timestamp order, aggregate fan-out sums, recheck/effect binding, and evidence-reference closure. A schema-valid opaque reference is not an authenticated identity, fresh revocation proof, independent observation, or participant enforcement receipt.
+The schema enforces structure and basic types; the Rust semantic auditor now checks unique grant/task identity, ordered parent links, exact parent and root task/plan pairs, root-edge and task-specific scope matching, unique edge-verification coverage, complete sibling fan-out batches, checked aggregate budget arithmetic, versioned/fresh budget-state snapshots, per-grant revocation freshness, final recheck-before-dispatch ordering, exact target/operation/parameter binding, one-to-one participant attempt/effect binding, and provenance-reference/digest closure. A schema-valid opaque reference is still not an authenticated identity, fresh revocation proof, independent observation, or participant enforcement receipt.
 
 A positive root-anchored delegated episode fixture is available at `../decision-result.delegation.example.json`. The existing non-delegated example remains unchanged to preserve the compatibility control.
 
 ## Run
+
+The draft PR's base branch now defines `.github/workflows/itops-qualification.yml`. For pull requests targeting this branch it pins Rust 1.90.0 and runs formatting, all qualification-core tests, and Clippy with warnings denied. The workflow generates and fingerprints a lockfile for each run because this standalone crate does not yet commit one. A workflow definition is not a test result; only exact-head run and job evidence qualifies the code.
+
 
 From this directory:
 
