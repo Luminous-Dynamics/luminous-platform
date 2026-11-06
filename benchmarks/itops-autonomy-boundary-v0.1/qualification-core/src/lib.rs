@@ -304,6 +304,10 @@ impl SafetyQualificationAccumulator {
 
 
 pub fn sha256_hex(bytes: &[u8]) -> String {
+    let digest = Sha256::digest(bytes);
+    digest.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EpisodeAuditSummary {
     pub case_id: String,
@@ -1665,10 +1669,6 @@ pub fn audit_episode_result(
         handoff_required: actual_handoff,
         catalog_sha256: loaded.catalog_sha256,
     })
-}
-
-    let digest = Sha256::digest(bytes);
-    digest.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
 /// Parse and validate the candidate catalog while preserving its exact-byte digest.
