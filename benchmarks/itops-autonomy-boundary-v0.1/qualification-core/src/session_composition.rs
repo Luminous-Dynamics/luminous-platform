@@ -6,11 +6,13 @@
 //! A production participant must implement linearizable durable admission,
 //! canonical authority/revocation lookup, and crash-safe effect reconciliation.
 
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
 /// Coarse destination class used by composition rules.
 /// Recipient identity/entitlement remains an external canonical authority fact.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum RecipientClass {
     Internal,
     ApprovedExternal,
@@ -18,7 +20,8 @@ pub enum RecipientClass {
 }
 
 /// The participant-owned state of one admitted action/effect.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum SessionEffectState {
     AcceptedPending,
     EffectCommitted,
@@ -28,14 +31,16 @@ pub enum SessionEffectState {
 }
 
 /// A forbidden composition is expressed independently of any particular agent.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ForbiddenDataRecipientPair {
     pub data_label: String,
     pub recipient_class: RecipientClass,
 }
 
 /// A versioned set of session restrictions for the frozen benchmark scenario.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SessionCompositionPolicy {
     pub session_id: String,
     pub policy_digest: String,
@@ -51,7 +56,8 @@ pub struct SessionCompositionPolicy {
 /// One proposed action. Data-source references identify prior effects whose
 /// data is being read, summarized, transformed, or disclosed by this action.
 /// Output data labels must preserve all source/direct labels.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SessionActionProposal {
     pub session_id: String,
     pub action_id: String,
@@ -70,7 +76,8 @@ pub struct SessionActionProposal {
 }
 
 /// One append-only record in the synthetic participant/session ledger.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SessionEffectRecord {
     pub effect_ref: String,
     pub action_id: String,
@@ -90,10 +97,12 @@ pub struct SessionEffectRecord {
 }
 
 /// Minimal state snapshot against which a proposal is admitted.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SessionCompositionState {
     pub session_id: String,
     pub policy_digest: String,
+    pub policy_version: u64,
     pub version: u64,
     pub effects: Vec<SessionEffectRecord>,
 }
@@ -104,6 +113,8 @@ pub enum SessionCompositionViolation {
     InvalidProposal,
     SessionMismatch,
     PolicyDigestMismatch,
+    PolicyVersionMismatch,
+    InvalidSnapshot,
     StaleSessionStateVersion,
     OperationNotAllowed,
     RecipientBindingIncomplete,
@@ -168,6 +179,7 @@ impl SessionCompositionState {
         Ok(Self {
             session_id: policy.session_id.clone(),
             policy_digest: policy.policy_digest.clone(),
+            policy_version: policy.policy_version,
             version: 0,
             effects: Vec::new(),
         })
@@ -186,6 +198,9 @@ impl SessionCompositionState {
         }
         if self.policy_digest != policy.policy_digest || proposal.policy_digest != policy.policy_digest {
             return Err(SessionCompositionViolation::PolicyDigestMismatch);
+        }
+        if self.policy_version != policy.policy_version {
+            return Err(SessionCompositionViolation::PolicyVersionMismatch);
         }
         if self.version != proposal.expected_session_state_version {
             return Err(SessionCompositionViolation::StaleSessionStateVersion);
@@ -371,6 +386,7 @@ impl SessionCompositionState {
         &mut self,
         attempt_id: &str,
     ) -> Result<(), SessionCompositionViolation> {
+        let next_version = self.next_version()?;
         let record = self
             .effects
             .iter_mut()
@@ -385,7 +401,8 @@ impl SessionCompositionState {
         record.state = SessionEffectState::ReconciledNoEffect;
         record.reserved_transfer_units = 0;
         record.committed_transfer_units = 0;
-        self.bump_version()
+        self.version = next_version;
+        Ok(())
     }
 
     pub fn commit_effect(
@@ -393,6 +410,7 @@ impl SessionCompositionState {
         attempt_id: &str,
         actual_transfer_units: u64,
     ) -> Result<(), SessionCompositionViolation> {
+        let next_version = self.next_version()?;
         let record = self
             .effects
             .iter_mut()
@@ -408,13 +426,14 @@ impl SessionCompositionState {
             record.state = SessionEffectState::Conflicting;
             record.reserved_transfer_units = actual_transfer_units;
             record.committed_transfer_units = actual_transfer_units;
-            self.bump_version()?;
+            self.version = next_version;
             return Err(SessionCompositionViolation::CommittedEffectExceededReservation);
         }
         record.state = SessionEffectState::EffectCommitted;
         record.committed_transfer_units = actual_transfer_units;
         record.reserved_transfer_units = 0;
-        self.bump_version()
+        self.version = next_version;
+        Ok(())
     }
 
     fn transition(
@@ -422,6 +441,7 @@ impl SessionCompositionState {
         attempt_id: &str,
         next: SessionEffectState,
     ) -> Result<(), SessionCompositionViolation> {
+        let next_version = self.next_version()?;
         let record = self
             .effects
             .iter_mut()
@@ -433,15 +453,14 @@ impl SessionCompositionState {
             return Err(SessionCompositionViolation::InvalidEffectTransition);
         }
         record.state = next;
-        self.bump_version()
+        self.version = next_version;
+        Ok(())
     }
 
-    fn bump_version(&mut self) -> Result<(), SessionCompositionViolation> {
-        self.version = self
-            .version
+    fn next_version(&self) -> Result<u64, SessionCompositionViolation> {
+        self.version
             .checked_add(1)
-            .ok_or(SessionCompositionViolation::SessionStateVersionOverflow)?;
-        Ok(())
+            .ok_or(SessionCompositionViolation::SessionStateVersionOverflow)
     }
 }
 
