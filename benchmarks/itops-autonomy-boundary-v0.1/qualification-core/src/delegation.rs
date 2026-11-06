@@ -791,10 +791,11 @@ pub fn verify_root_anchored_chain_at(
         if child.task_id == parent.task_id {
             violations.push(AttenuationViolation::ChildTaskIdNotDistinct);
         }
-        if !parent.allowed_child_task_digests.contains(&child.task_digest)
-            || !parent.allowed_child_plan_digests.contains(&child.plan_digest)
-        {
+        if !parent.allowed_child_task_digests.contains(&child.task_digest) {
             violations.push(AttenuationViolation::ChildTaskDigestNotAllowed);
+        }
+        if !parent.allowed_child_plan_digests.contains(&child.plan_digest) {
+            violations.push(AttenuationViolation::ChildPlanDigestNotAllowed);
         }
         if root.allowed_descendant_task_plans.get(&child.task_digest)
             != Some(&child.plan_digest)
@@ -1146,9 +1147,9 @@ mod tests {
             data_scopes: set(&["metrics"]),
             not_before_unix: 120,
             expires_at_unix: 300,
-            max_dispatches: 1,
-            max_tool_calls: 5,
-            max_resource_units: 20,
+            max_dispatches: 4,
+            max_tool_calls: 20,
+            max_resource_units: 100,
             max_risk_level: 1,
             required_approvals: set(&["change-ticket"]),
             required_postconditions: set(&["service-healthy", "replicas-converged"]),
