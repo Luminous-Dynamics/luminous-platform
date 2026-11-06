@@ -1433,7 +1433,8 @@
               "decision",
               "attempt_id",
               "freshness_bound_ms",
-              "canonical_authority_evidence_digest"
+              "canonical_authority_evidence_digest",
+              "parameter_bindings"
             ],
             "properties": {
               "recheck_id": {
@@ -1514,6 +1515,14 @@
               "canonical_authority_evidence_digest": {
                 "type": "string",
                 "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "parameter_bindings": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "$ref": "#/$defs/delegation_parameter_binding"
+                }
               }
             }
           }
@@ -1739,6 +1748,52 @@
               "root_authorized_edges"
             ]
           }
+        }
+      ]
+    },
+    "delegation_parameter_binding": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "name",
+            "kind",
+            "string_value"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "kind": {
+              "const": "exact_string"
+            },
+            "string_value": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "name",
+            "kind",
+            "integer_value"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "kind": {
+              "const": "exact_integer"
+            },
+            "integer_value": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
         }
       ]
     }
