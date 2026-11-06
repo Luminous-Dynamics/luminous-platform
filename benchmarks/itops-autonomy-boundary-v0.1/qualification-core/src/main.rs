@@ -78,5 +78,7 @@ fn main() {
             workflow.plan_sha256
         );
     }
-    println!("NOTE=The CLI audits a synthetic receipt against the candidate case contract. It does not execute an agent or provide process isolation, an independent hosted oracle, or measured benchmark results.");
+    println!(
+        "NOTE=The CLI audits a synthetic receipt against the candidate case contract. It does not execute an agent or provide process isolation, an independent hosted oracle, or measured benchmark results."
+    );
 }
