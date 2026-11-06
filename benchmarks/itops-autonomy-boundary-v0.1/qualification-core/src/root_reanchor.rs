@@ -615,6 +615,35 @@ mod tests {
     }
 
     #[test]
+    fn root_reanchor_rejects_task_digest_and_plan_digest_cross_pairing() {
+        let chain = grants();
+        let mut pending = request(&chain);
+        pending.root_task_graph_bindings.insert(digest('e'), digest('d'));
+        let error = authorize_root_reanchored_effect(&chain, &pending)
+            .expect_err("root task graph must precommit the exact digest pair");
+        assert!(error.iter().any(|item| matches!(
+            item,
+            RootReanchorDenial::RootTaskGraphPlanMismatch(task) if task == "task-leaf"
+        )));
+    }
+
+    #[test]
+    fn root_reanchor_rejects_parent_task_digest_and_plan_digest_cross_pairing() {
+        let chain = grants();
+        let mut pending = request(&chain);
+        pending.parent_child_task_plan_bindings
+            .get_mut("grant-middle")
+            .unwrap()
+            .insert(digest('e'), digest('d'));
+        let error = authorize_root_reanchored_effect(&chain, &pending)
+            .expect_err("parent delegation must precommit the exact digest pair");
+        assert!(error.iter().any(|item| matches!(
+            item,
+            RootReanchorDenial::ParentChildPlanBindingMismatch(id) if id == "grant-leaf"
+        )));
+    }
+
+    #[test]
     fn root_reanchor_rejects_leaf_scope_expansion_beyond_root() {
         let mut chain = grants();
         chain[2].operations = set(&["delete_database"]);
