@@ -429,6 +429,62 @@ fn parameter_constraints_are_subset(
     })
 }
 
+fn delegation_parent_budget_violations(
+    child: &serde_json::Value,
+    parent: &serde_json::Value,
+    decrement_depth: bool,
+) -> Vec<&'static str> {
+    let mut issues = Vec::new();
+    let child_not_before = string_at(child, "not_before")
+        .and_then(|value| DateTime::parse_from_rfc3339(value).ok());
+    let parent_not_before = string_at(parent, "not_before")
+        .and_then(|value| DateTime::parse_from_rfc3339(value).ok());
+    if !matches!((child_not_before, parent_not_before), (Some(c), Some(p)) if c >= p) {
+        issues.push("not_before_widened_or_invalid");
+    }
+
+    let child_expiry = string_at(child, "expires_at")
+        .and_then(|value| DateTime::parse_from_rfc3339(value).ok());
+    let parent_expiry = string_at(parent, "expires_at")
+        .and_then(|value| DateTime::parse_from_rfc3339(value).ok());
+    if !matches!((child_expiry, parent_expiry), (Some(c), Some(p)) if c <= p) {
+        issues.push("expiry_widened_or_invalid");
+    }
+
+    for (field, code) in [
+        ("max_dispatches", "dispatch_budget_expanded"),
+        ("max_tool_calls", "tool_budget_expanded"),
+        ("max_resource_units", "resource_budget_expanded"),
+        ("max_risk_level", "risk_ceiling_expanded"),
+    ] {
+        if !matches!((u64_at(child, field), u64_at(parent, field)),
+            (Some(c), Some(p)) if c <= p)
+        {
+            issues.push(code);
+        }
+    }
+
+    let child_depth = u64_at(child, "remaining_delegation_depth");
+    let parent_depth = u64_at(parent, "remaining_delegation_depth");
+    let permitted_depth = parent_depth.map(|depth| {
+        if decrement_depth { depth.saturating_sub(1) } else { depth }
+    });
+    if !matches!((child_depth, permitted_depth), (Some(c), Some(p)) if c <= p) {
+        issues.push("delegation_depth_expanded");
+    }
+
+    for (field, code) in [
+        ("required_approvals", "approval_requirement_weakened"),
+        ("required_postconditions", "postcondition_weakened"),
+        ("rollback_obligations", "rollback_obligation_weakened"),
+    ] {
+        if !json_string_set(child, field).is_superset(&json_string_set(parent, field)) {
+            issues.push(code);
+        }
+    }
+    issues
+}
+
 fn delegation_scope_violations(
     child: &serde_json::Value,
     parent: &serde_json::Value,
@@ -657,6 +713,13 @@ fn audit_delegation_evidence(
                 }
             } else if policy_arm == "root_anchored_task_graph" {
                 for code in delegation_scope_violations(child_scope, root_scope, true) {
+                    violations.push(violation(code));
+                }
+                // Root authorization may permit a sibling subtask outside the
+                // intermediate agent's target/operation/data scope, but the
+                // intermediate agent cannot delegate more time, risk, budget,
+                // depth, approvals or rollback obligations than it holds.
+                for code in delegation_parent_budget_violations(child_scope, parent_scope, true) {
                     violations.push(violation(code));
                 }
             } else {
