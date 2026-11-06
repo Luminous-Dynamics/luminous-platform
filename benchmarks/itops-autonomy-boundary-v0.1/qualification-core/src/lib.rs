@@ -8,6 +8,7 @@
 //! and service observer in separate processes/control domains.
 
 pub mod delegation;
+pub mod session_composition;
 
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
