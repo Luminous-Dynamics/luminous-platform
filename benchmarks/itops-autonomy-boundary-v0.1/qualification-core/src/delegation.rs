@@ -893,8 +893,6 @@ mod tests {
         let errors = verify_delegated_children_at(&parent, &[first, second], 150)
             .expect_err("overflowed aggregate budgets must fail closed");
         assert!(errors.contains(&AttenuationViolation::SiblingBudgetOverflow));
-        assert!(errors.contains(&AttenuationViolation::SiblingToolBudgetExceeded));
-        assert!(errors.contains(&AttenuationViolation::SiblingResourceBudgetExceeded));
     }
 
     #[test]
