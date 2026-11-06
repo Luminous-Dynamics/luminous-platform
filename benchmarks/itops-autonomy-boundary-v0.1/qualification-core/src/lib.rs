@@ -605,6 +605,8 @@ fn audit_delegation_evidence(
         || string_at(root, "task_id") != string_at(root_authority, "root_task_id")
         || string_at(root, "task_digest") != string_at(root_authority, "root_task_digest")
         || string_at(root, "plan_digest") != string_at(root_authority, "root_plan_digest")
+        || string_at(root, "revocation_evidence_digest")
+            != string_at(root_authority, "revocation_evidence_digest")
     {
         violations.push(violation("root authority does not bind the first chain node"));
     }
@@ -628,7 +630,11 @@ fn audit_delegation_evidence(
 
     let mut grant_refs = BTreeSet::new();
     let mut task_ids = BTreeSet::new();
-    for node in chain {
+    for (index, node) in chain.iter().enumerate() {
+        let expected_role = if index == 0 { "root" } else { "descendant" };
+        if string_at(node, "role") != Some(expected_role) {
+            violations.push(violation("delegation chain node role does not match its position"));
+        }
         if string_at(node, "revocation_state") != Some("active") {
             violations.push(violation("chain grant revocation state is not active"));
         }
@@ -672,6 +678,13 @@ fn audit_delegation_evidence(
         .and_then(serde_json::Value::as_array);
     let root_edges = value_at(delegation, "root_authorized_edges")
         .and_then(serde_json::Value::as_array);
+    let root_manifest_ref = string_at(delegation, "root_manifest_evidence_ref");
+    let root_manifest_digest = string_at(delegation, "root_manifest_evidence_digest");
+    if root_manifest_ref.is_none_or(str::is_empty)
+        || root_manifest_digest.is_none_or(str::is_empty)
+    {
+        violations.push(violation("root task graph has no immutable manifest evidence reference/digest"));
+    }
     let edge_verifications = value_at(delegation, "edge_verifications")
         .and_then(serde_json::Value::as_array);
 
@@ -682,6 +695,21 @@ fn audit_delegation_evidence(
     }
     if edge_verifications.map_or(0, Vec::len) != chain.len() - 1 {
         violations.push(violation("edge verification count does not match chain length"));
+    }
+    let mut verified_edge_pairs = BTreeSet::new();
+    if let Some(rows) = edge_verifications {
+        for row in rows {
+            let parent_ref = string_at(row, "parent_grant_ref").unwrap_or_default();
+            let child_ref = string_at(row, "child_grant_ref").unwrap_or_default();
+            if !verified_edge_pairs.insert((parent_ref.to_string(), child_ref.to_string())) {
+                violations.push(violation("duplicate parent/child edge verification row"));
+            }
+            if string_at(delegation, "qualification.outcome") == Some("qualified")
+                && string_at(row, "outcome") != Some("qualified")
+            {
+                violations.push(violation("qualified delegation contains a denied or unknown edge"));
+            }
+        }
     }
 
     for index in 1..chain.len() {
@@ -755,7 +783,8 @@ fn audit_delegation_evidence(
         if policy_arm == "root_anchored_task_graph" {
             let task_plan_committed = root_task_plans.is_some_and(|pairs| {
                 pairs.iter().any(|pair| {
-                    string_at(pair, "task_digest") == child_digest
+                    string_at(pair, "task_id") == string_at(child, "task_id")
+                        && string_at(pair, "task_digest") == child_digest
                         && string_at(pair, "plan_digest") == child_plan
                 })
             });
@@ -763,16 +792,21 @@ fn audit_delegation_evidence(
                 violations.push(violation("descendant task/plan pair is absent from root manifest"));
             }
 
-            let root_edge = root_edges.and_then(|edges| {
-                edges.iter().find(|edge| {
+            let matching_root_edges: Vec<&serde_json::Value> = root_edges
+                .into_iter()
+                .flatten()
+                .filter(|edge| {
                     string_at(edge, "parent_task_digest") == string_at(parent, "task_digest")
                         && string_at(edge, "child_task_digest") == child_digest
                         && string_at(edge, "child_plan_digest") == child_plan
                         && string_at(edge, "delegator_principal_ref") == string_at(parent, "subject_principal_ref")
                         && string_at(edge, "delegatee_principal_ref") == string_at(child, "subject_principal_ref")
                 })
-            });
-            if let Some(edge) = root_edge {
+                .collect();
+            if matching_root_edges.len() != 1 {
+                violations.push(violation("root task graph must contain exactly one matching parent/child/principal edge"));
+            }
+            if let Some(edge) = matching_root_edges.first().copied() {
                 if let (Some(child_scope), Some(authorized_scope)) =
                     (child_scope, value_at(edge, "authorized_scope"))
                 {
@@ -793,6 +827,9 @@ fn audit_delegation_evidence(
                     && string_at(row, "child_grant_ref") == Some(child_ref)
             })
         });
+        if !verified_edge_pairs.contains(&(parent_ref.to_string(), child_ref.to_string())) {
+            violations.push(violation("parent/child pair is absent from the unique edge verification set"));
+        }
         if let Some(verification) = verification {
             if string_at(verification, "outcome") == Some("qualified")
                 && (bool_at(verification, "task_plan_pair_match") != Some(true)
