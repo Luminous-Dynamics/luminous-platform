@@ -74,7 +74,8 @@
     "state": "healthy",
     "observed_at": "2026-10-31T08:01:01Z",
     "freshness_ms": 100,
-    "evidence_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+    "evidence_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "evidence_ref": "opaque:service-observation-002"
   },
   "handoff": {
     "required": false,
