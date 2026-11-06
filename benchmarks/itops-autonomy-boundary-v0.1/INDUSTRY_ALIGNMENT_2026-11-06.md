@@ -28,6 +28,40 @@ Keep it distinct from ServiceNow's own repository leaderboard snapshot (Opus 4.6
 
 Source: [BenchLeader, EnterpriseOps-Gym leaderboard, data as of 5 November 2026](https://www.benchleader.com/benchmarks/aa_enterprise_ops_gym).
 
+## Additional frontier benchmark surfaces — checked 6 November 2026
+
+### EnterpriseOps-Gym-AA: strict end-state task success
+
+Artificial Analysis' live page reports 27 of 51 model configurations with current displayed results. Its highest scores are Claude Fable 5 (Max, Opus 4.8 fallback) 51.1%, Gemini 3.7 Flash (Medium) 50.4%, and Gemini 3.5 Flash (High) 50.1%. Its methodology uses three repeats per task, oracle tool mode, and SQL verification of the final underlying database state; a task earns no credit unless every verifier passes. It also exposes cost per task, output tokens and domain-level performance.
+
+This remains the closest broad industry comparator for Luminous's enterprise workflows. But it is a **model+harness result**, not a direct comparison of operation-control architectures. Luminous should use the same model/configuration and task set in a matched baseline to estimate the architecture's incremental effect, and must preserve native task semantics.
+
+Source: [Artificial Analysis — EnterpriseOps-Gym-AA](https://artificialanalysis.ai/evaluations/enterprise-ops-gym-aa).
+
+### ITBench-AA: SRE diagnosis, not remediation
+
+Artificial Analysis' ITBench-AA evaluates 59 Kubernetes incident tasks (40 public and 19 private) with three repeats. Agents inspect offline incident snapshots containing alerts, events, traces, metrics and topology, and identify the root-cause entities. The headline metric is **average precision at full recall**, not task-completion percentage. The current displayed leaders are GPT-5.6 Sol (Max) at 56.2%, Step 5 Preview at 55.6%, and Gemini 3.8 Flash (High) at 52.5%.
+
+The broader original ITBench framework covers 94 real-world scenarios across SRE, CISO and FinOps; its paper abstract reports best agent resolution rates of 13.8% for SRE, 25.2% for CISO and 0% for FinOps. Those resolution figures are distinct from the ITBench-AA root-cause precision leaderboard and must not be substituted for it.
+
+**Luminous implication:** add a diagnostic arm that scores root-cause precision/recall separately from action authorization, participant effects, and verified repair. A correct diagnosis is not a safe or completed remediation.
+
+Sources: [Artificial Analysis — ITBench-AA](https://artificialanalysis.ai/evaluations/itbench-aa); [ITBench paper and benchmark hub](https://github.com/itbench-hub/ITBench).
+
+### APEX-Agents: long-horizon professional workflows
+
+Mercor's APEX-Agents currently lists 31 professional-work worlds and 240 tasks across corporate law, management consulting and investment banking. Its tasks require multi-step work across applications and are graded against expert-authored rubrics with an LM judge. The displayed Pass@1 leaderboard on 6 November 2026 shows Gemini 4 Carbon High at 84.2% ±4.3%, Gemini 4 Argon High at 82.4% ±4.3%, and Hy4 High at 77.6% ±4.5%. The benchmark exposes both Pass@1 (perfect rubric completion on one attempt) and mean-score reporting; these are not interchangeable.
+
+This is adjacent evidence for long-horizon cross-application capability—not IT operations or participant-level safety. Use the open subset to evaluate persistence, handoffs, tool/skill evolution and cost/time tradeoffs; do not compare its score directly with EnterpriseOps-Gym.
+
+Source: [Mercor — APEX-Agents leaderboard](https://www.mercor.com/apex/apex-agents-leaderboard/).
+
+### AutomationBench-AA: partial credit must remain separate
+
+BenchLeader's 4 November 2026 snapshot reports Gemini 4 Carbon (High) at 77.8% on AutomationBench-AA. The benchmark gives partial credit for objective completion. That is useful for diagnosing incremental progress through a workflow, but it cannot be compared with EnterpriseOps-Gym's all-verifiers-must-pass strict success rate. A partially completed change with an unsafe side effect must not become a successful operational outcome in Luminous's qualification model.
+
+Source: [BenchLeader — AutomationBench leaderboard](https://www.benchleader.com/benchmarks/aa_automationbench).
+
 ## Continuous site reliability and harness evolution
 
 **SRE-Marathon** is a complementary continuous-operation benchmark, not another EnterpriseOps score. Its September 2026 paper describes a two-zone Kubernetes deployment, persistent agent workspace, fixed-cadence invocations, overlapping seeded faults and code/configuration changes through the same repair pipeline. Across three applications and roughly sixty faults per run, the best of ten methods reports 41.3/100. The authors identify a gap between correlation/localization and completing repairs while faults remain active.
@@ -90,6 +124,21 @@ Source: [VerifiedWork Control](https://upcube.ai/resources/research/verifiedwork
 This complements EVOHARNESSBENCH: one evaluates preservation/adaptation as the supplied harness changes; the other proposes a method for making harness updates safer. Neither should be collapsed into an ITOPS task-success result. Luminous should test whether a new model, skill, tool or policy update preserves already-qualified authority, revocation, provenance and unknown-outcome properties while improving held-out operational utility.
 
 Source: [HarnessEvolve (arXiv:2609.00829)](https://arxiv.org/abs/2609.00829).
+
+## Updated benchmark programme
+
+Keep scorecards native and separate; report task success, safety enforcement, agent behavior, diagnosis, remediation and resource efficiency as different dimensions.
+
+| Surface | Native measure | Initial target |
+|---|---|---|
+| EnterpriseOps-Gym-AA | Strict all-verifier final database-state success | Reproduce the matched baseline; then target ≥5 percentage-point uplift with the same model/configuration and no hard-safety regression |
+| ITBench-AA | Average precision at full recall | Reproduce native metric first; target ≥56.2% on the same tasks/model/harness, with separate false-positive and root-cause attribution analysis |
+| SRE-Marathon | Continuous fault-resolution score | Reproduce 41.3/100 first; then target >50/100 while maintaining zero unauthorized effects and no retry during unknown outcomes |
+| APEX-Agents | Pass@1 and mean rubric score | Reproduce the open subset; preserve or improve Pass@1 while reducing cost/time and retaining evidence lineage |
+| AutomationBench-AA | Partial objective credit | Use only as diagnostic progress; never treat partial completion as strict operational success |
+| Delegation / runtime enforcement | Unauthorized attempt/effect, false-denial, revocation latency, provenance retention, over-disclosure, scope loss, effect reconciliation | Zero unauthorized committed effects; zero new mutation while prior outcome unknown; 100% valid positive-control acceptance and known expansion rejection in the frozen conformance corpus |
+
+The most important experimental comparison is not a raw model leaderboard. Run the **same model, task, tool manifest, token/tool budget and environment** in matched arms: model-only; model with baseline guardrails; strict recursive attenuation; root-anchored task graph; and root-anchored delegation with participant-side enforcement and durable shared budgets. Include honest, null and adversarial scripted agents so deterministic control-plane behavior is measured separately from agent behavior. Measure false-denial and safe-task utility alongside unauthorized effects; a controller that blocks every action must fail the positive controls.
 
 ## What Luminous should measure—and what it should not claim
 
