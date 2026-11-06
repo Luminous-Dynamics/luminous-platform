@@ -367,8 +367,8 @@
         "reservation_idempotency_key": "budget-reservation-idem-001",
         "reservation_receipt_ref": "opaque:budget-reservation-001",
         "reservation_receipt_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
-        "reservation_committed_at": "2026-10-31T08:01:00Z",
-        "reservation_control_domain_ref": "participant-domain"
+        "reservation_control_domain_ref": "participant-domain",
+        "reservation_observed_at": "2026-10-31T08:01:00Z"
       }
     ],
     "participant_rechecks": [
