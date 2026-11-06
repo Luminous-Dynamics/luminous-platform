@@ -32,7 +32,15 @@ This crate is the first executable building block for the runner requested in
   cumulative transfer/recipient caps, and keeps accepted-pending, unknown and
   conflicting effects reserved until a participant-owned reconciliation or
   commit transition. A two-thread stale-version test demonstrates that only
-  one proposal based on the same in-memory version is admitted.
+  one proposal based on the same in-memory version is admitted. Effect-state
+  transitions preflight the next session version before mutation, so version
+  overflow cannot leave a partially changed record. Non-zero transfers require
+  explicit recipient identity and class binding. The model now exports and
+  recovers a versioned session snapshot, validating unique action/effect/attempt/
+  idempotency identities, monotonic admission versions, and committed-source
+  lineage across transformations; unresolved budget reservations and taint survive
+  a valid restart round-trip. Snapshot recovery is an internal-consistency check,
+  not journal authentication, fsync durability, or process isolation.
   This is a deterministic in-process state machine—not proof of distributed
   linearizability, durable journaling, cross-host fencing, or canonical Xenia
   authority. Production enforcement still requires participant-owned atomic
@@ -50,13 +58,15 @@ This crate is the first executable building block for the runner requested in
   `1 - 0.05^(1/n)`; the episodes must be independent Bernoulli trials under
   one pinned arm/configuration. Identity deduplication alone does not prove
   statistical independence.
-- Includes 56 unit-test cases (38 qualification-core and 18 session-composition) for catalog loading, schema/meta-schema
+- Includes 66 unit-test cases (38 qualification-core and 28 session-composition) for catalog loading, schema/meta-schema
   validity and rejection, evidence-integrity and hard-safety gates, scoreable
   wrong-decision/incomplete-handoff/forbidden-promotion outcomes, exact corpus
   binding, exact-scope authorization, dispatch-time grant revalidation, grant
   budgets, idempotency, unresolved-attempt locking, observer freshness,
   pairwise-distinct declared oracle control domains, and zero-event statistical
-  safety qualification.
+  safety qualification. Session-composition tests also cover snapshot/restart
+  preservation of unknown reservations and taint, tampered lineage/IDs/versions,
+  recipient-binding completeness, and overflow atomicity.
 
 ## Run
 
