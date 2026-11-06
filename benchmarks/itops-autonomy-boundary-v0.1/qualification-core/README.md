@@ -96,6 +96,16 @@ This crate is the first executable building block for the runner requested in
   pairwise-distinct declared oracle control domains, and zero-event statistical
   safety qualification.
 
+## Multi-agent delegation evidence
+
+The episode result schema is additive. Non-delegated v0.1 episodes remain valid without a delegation object. A scenario sets `task_binding.delegation_required: true` to require the top-level `delegation` evidence object.
+
+The embedded Draft 2020-12 definition covers both `strict_edge_attenuation` and `root_anchored_task_graph` policy arms; root-authorized task/plan pairs and graph edges; exact parent/child principal and task lineage; task-specific authorized scope; per-edge decisions; complete sibling fan-out allocations and parent budget snapshots; final participant rechecks bound to exact root/leaf/task/plan/request; attempt/effect receipts; and source/derivation/common-cause provenance.
+
+The schema enforces structure and basic types only. Cross-record semantic checks still need to verify unique task/ grant identities, digest-pair correspondence, correct edge order, scope subsets, timestamp order, aggregate fan-out sums, recheck/effect binding, and evidence-reference closure. A schema-valid opaque reference is not an authenticated identity, fresh revocation proof, independent observation, or participant enforcement receipt.
+
+A positive root-anchored delegated episode fixture is available at `../decision-result.delegation.example.json`. The existing non-delegated example remains unchanged to preserve the compatibility control.
+
 ## Run
 
 From this directory:
