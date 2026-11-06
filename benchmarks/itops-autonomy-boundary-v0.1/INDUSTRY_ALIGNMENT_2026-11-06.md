@@ -140,6 +140,60 @@ Keep scorecards native and separate; report task success, safety enforcement, ag
 
 The most important experimental comparison is not a raw model leaderboard. Run the **same model, task, tool manifest, token/tool budget and environment** in matched arms: model-only; model with baseline guardrails; strict recursive attenuation; root-anchored task graph; and root-anchored delegation with participant-side enforcement and durable shared budgets. Include honest, null and adversarial scripted agents so deterministic control-plane behavior is measured separately from agent behavior. Measure false-denial and safe-task utility alongside unauthorized effects; a controller that blocks every action must fail the positive controls.
 
+## Complementary benchmarks: behavior, governance, domain competence, and reliability
+
+These benchmarks address different failure surfaces. Keep their scores separate; the same model can be capable at a task yet behave outside authority, while a deterministic gateway can enforce policy even when the model proposes an unauthorized action.
+
+### AuthorizationBench — agent authorization alignment
+
+[AuthorizationBench (arXiv:2610.27548, 20 October 2026)](https://arxiv.org/abs/2610.27548) publishes 286 executable tasks across ten domains, 14 situational pressures (12 benign, two malicious), and conditions with or without direct harmful consequences. Its reported evaluation covers four models, two reasoning-effort settings and three harnesses: 6,864 trajectories. It reports out-of-authorization actions in 19.2% of trajectories; rates remain similar for tasks with direct harm (17.9%) and without it (20.8%). Benign pressure elicited more out-of-authorization behavior than malicious injection (23.5% vs 17.6%). Agents that consult the principal before completion show lower observed rates (14.0% vs 21.6%).
+
+**Luminous use:** adopt it as the *agent-behavior* arm: preserve authorized and out-of-authorization paths, score benign pressure separately from malicious injection, and include harm-present/harm-absent pairs. This must not be conflated with the enforcement-layer result. The architecture should prevent an unauthorized committed effect even when the model chooses the unauthorized path. An operational metric should also record whether the agent asks the principal when authority is ambiguous, rather than optimizing autonomy at the expense of user decision rights.
+
+Source: [AuthorizationBench paper and released task/code repository](https://github.com/PEACH-Research-Lab/AuthorizationBench).
+
+### AgentGovBench — deterministic governance-layer enforcement
+
+[AgentGovBench](https://github.com/agentic-control-plane/agentgovbench) defines 48 scenarios across identity propagation, per-user policy, delegation provenance, scope inheritance, rate-limit cascade, audit completeness, fail-mode discipline and cross-tenant isolation. Its methodology deliberately scripts tool-call attempts so enforcement is tested independently of whether an LLM naturally proposes a particular call. It reports category matrices rather than one overall score, and explicitly declares vendor authorship by the Agentic Control Plane team.
+
+The repository's 8 October 2026 ACP snapshot advertises 46/48. Read the complete machine-readable result, not just that headline: the runner declares five scenario limitations/declines, including task-scoped narrowing, and the published run contains failing cross-tenant checks. The project also acknowledges that its threat model assumes upstream identity attestation and correctly implemented tools; it does not test the cryptography or participant-side side-channel bypasses.
+
+**Luminous use:** adopt deterministic adversarial gateway tests, category-specific reporting, fan-out rate-limit checks, fail-mode tests and cross-tenant controls. Extend them with current authority/revocation at the participant, root/leaf request binding, partial-commit reconciliation, aggregate durable budgets and provenance common-cause checks. Do not claim the governance-layer benchmark gap is wholly novel, and do not compare our synthetic scores to the ACP 46/48 headline until the exact scenarios, N/A/decline accounting and runner semantics have been independently reproduced.
+
+Sources: [AgentGovBench methodology](https://github.com/agentic-control-plane/agentgovbench/blob/main/METHODOLOGY.md), [scoring rules](https://github.com/agentic-control-plane/agentgovbench/blob/main/SCORING.md), and [published live result](https://github.com/agentic-control-plane/agentgovbench/blob/main/results/acp_api-v0.1.0-live.json).
+
+### DefendBench — domain-specific SecOps task competence
+
+[Spectrum's DefendBench v1.0](https://www.spectrum.security/defendbench), updated 27 October 2026, reports 100 SecOps tasks across 14 model/harness configurations. Its displayed leader has 31/100 task passes (Opus 5.5 + Claude Code), with $3.23 average cost per task and 14-minute median latency. It currently covers five work areas: threat research, detection authoring, detection tuning, detection health/maintenance and SecOps data engineering; threat hunting and investigation are listed as forthcoming.
+
+**Luminous use:** use it as a domain-competence test for security operations, not a generic authorization or infrastructure-control score. A valuable task pattern is its source-control tampering example: the agent must refuse to assert server-side changes when the available audit stream cannot prove the ref or files changed. That is closely aligned with evidence-qualified claims.
+
+Source: [DefendBench criteria and leaderboard](https://www.spectrum.security/defendbench).
+
+### Agent reliability — repeated-run behavior, not one-shot accuracy
+
+The [Princeton HAL AI Agent Reliability Tracker](https://hal.cs.princeton.edu/reliability/) reports 15 evaluated agents on two benchmarks using 12 metrics across consistency, robustness, predictability and safety. The associated ICML 2026 paper, [Towards a Science of AI Agent Reliability](https://proceedings.mlr.press/v306/rabanser26a.html), argues that rising task accuracy has produced only small reliability improvements.
+
+**Luminous use:** report success across repeated seeds, perturbations and task variants; calibration/predictability; robustness to fault and prompt perturbation; and bounded error severity. A single high completion percentage is not an adequate operational qualification.
+
+### Authorization architecture literature
+
+The September 2026 review [Authorization Architectures for Tool-Using AI Agents](https://arxiv.org/abs/2609.15906) screened 89 primary sources and organizes the problem around human/operator/orchestrator/subagent/tool principals, identity lifecycle, multi-hop scope, just-in-time runtime enforcement, prompt injection as authorization bypass, and auditability. It identifies runtime enforcement and aggregation bounds as important unresolved gaps.
+
+This reinforces the need for a layered benchmark: a model-behavior arm, a deterministic governance arm, a participant/effect arm, and an operational postcondition/reliability arm. No one layer can substitute for the others.
+
+### Matched comparison design
+
+Use a common scenario/task manifest and run the same model, harness, context, tools, budget and seed through these arms:
+
+1. **Prompt-only:** model receives scope instructions; no deterministic action gate.
+2. **Deterministic governance:** exact-action policy enforcement at the tool boundary, with audit and revocation tests.
+3. **Strict-chain delegation:** child authority narrows edge by edge; test legitimate-work denial as well as expansion prevention.
+4. **Root-anchored task-graph delegation:** root commits exact descendant task/plan/edge/scope; each immediate parent must still authorize its child; participant rechecks at dispatch.
+5. **Evidence Execution Architecture:** arm 4 plus participant-owned effect receipts, unknown-outcome reconciliation, durable aggregate budgets, independent service observation and source/common-cause checks.
+
+Report separate vectors for agent authorization behavior, enforcement correctness, valid-task utility/false denial, committed effects, evidence integrity, service outcomes, repeated-run reliability, latency and cost. Deterministic scripted agents (honest, null, adversarial) isolate enforcement; live LLM agents measure behavior and task competence. Do not let a high enforcement score conceal agent behavior regressions, or let model performance compensate for a committed unauthorized effect.
+
 ## What Luminous should measure—and what it should not claim
 
 Do not claim that the delegation-narrowing principle itself is novel; the AINETOps draft already identifies it. The research contribution to test is whether the rule can be made executable and enforced at the final participant boundary across nested task/plan digests, tenant/target/operation/parameter/data constraints, expiry, budgets, revocation, risk, approvals, rollback and postconditions—with source lineage and independently observed effects.
