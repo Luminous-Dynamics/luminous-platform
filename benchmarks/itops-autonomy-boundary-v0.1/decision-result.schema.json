@@ -1344,7 +1344,16 @@
               "budget_state_evidence_ref",
               "budget_state_checked_at",
               "budget_state_freshness_ms",
-              "budget_state_freshness_bound_ms"
+              "budget_state_freshness_bound_ms",
+              "committed_budget_state_version",
+              "budget_before",
+              "budget_after",
+              "reservation_status",
+              "reservation_idempotency_key",
+              "reservation_receipt_ref",
+              "reservation_receipt_digest",
+              "reservation_committed_at",
+              "reservation_control_domain_ref"
             ],
             "properties": {
               "batch_id": {
@@ -1405,6 +1414,43 @@
               "budget_state_freshness_bound_ms": {
                 "type": "integer",
                 "minimum": 1
+              },
+              "committed_budget_state_version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "budget_before": {
+                "$ref": "#/$defs/delegation_budget"
+              },
+              "budget_after": {
+                "$ref": "#/$defs/delegation_budget"
+              },
+              "reservation_status": {
+                "enum": [
+                  "committed",
+                  "not_committed",
+                  "unknown"
+                ]
+              },
+              "reservation_idempotency_key": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reservation_receipt_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reservation_receipt_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "reservation_committed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "reservation_control_domain_ref": {
+                "type": "string",
+                "minLength": 1
               }
             }
           }
@@ -1646,7 +1692,8 @@
                       "service_observation",
                       "agent_claim",
                       "other",
-                      "budget_state"
+                      "budget_state",
+                      "budget_reservation"
                     ]
                   },
                   "control_domain_ref": {
