@@ -1017,6 +1017,7 @@ fn audit_delegation_evidence(result: &serde_json::Value, case_id: &str) -> Vec<S
         })
         .collect();
     let mut observed_batch_parents = BTreeSet::new();
+    let mut reservation_keys = BTreeSet::new();
     for batch in &fanout_batches {
         let parent_ref = string_at(batch, "parent_grant_ref").unwrap_or_default();
         if !observed_batch_parents.insert(parent_ref.to_string()) {
@@ -1028,7 +1029,8 @@ fn audit_delegation_evidence(result: &serde_json::Value, case_id: &str) -> Vec<S
             .iter()
             .find(|node| string_at(node, "grant_ref") == Some(parent_ref));
         if string_at(batch, "budget_state_ref").is_none_or(str::is_empty)
-            || u64_at(batch, "budget_state_version").is_none_or(|version| version == 0)
+            || u64_at(batch, "budget_state_version").is_none()
+            || u64_at(batch, "committed_budget_state_version").is_none()
             || string_at(batch, "budget_state_evidence_ref").is_none_or(str::is_empty)
             || string_at(batch, "budget_state_digest").is_none_or(str::is_empty)
         {
@@ -1060,6 +1062,54 @@ fn audit_delegation_evidence(result: &serde_json::Value, case_id: &str) -> Vec<S
                 "fan-out budget snapshot timestamp is outside the episode interval",
             ));
         }
+        let expected_next_version = u64_at(batch, "budget_state_version")
+            .and_then(|version| version.checked_add(1));
+        if expected_next_version != u64_at(batch, "committed_budget_state_version") {
+            violations.push(violation("budget reservation does not advance the ledger version exactly once"));
+        }
+        let reservation_key = string_at(batch, "reservation_idempotency_key");
+        if reservation_key.is_none_or(str::is_empty)
+            || reservation_key.is_some_and(|key| !reservation_keys.insert(key.to_string()))
+        {
+            violations.push(violation("budget reservation idempotency key is missing or reused"));
+        }
+        if string_at(batch, "reservation_status") != Some("committed") {
+            violations.push(violation("fan-out reservation is not committed"));
+        }
+        let reservation_time = timestamp_millis_at(batch, "reservation_committed_at");
+        if !matches!((run_started_ms, run_finished_ms, snapshot_checked_ms, reservation_time),
+            (Some(start), Some(finish), Some(snapshot), Some(reserved))
+                if reserved >= snapshot && reserved >= start && reserved <= finish)
+        {
+            violations.push(violation("budget reservation timestamp is absent, precedes its snapshot, or lies outside the episode"));
+        }
+        let participant_domain = string_at(result, "participant_effect_oracle.control_domain_ref");
+        if participant_domain.is_none()
+            || string_at(batch, "reservation_control_domain_ref") != participant_domain
+            || string_at(batch, "reservation_control_domain_ref")
+                == string_at(result, "run_binding.agent_control_domain_ref")
+        {
+            violations.push(violation("budget reservation is not bound to the participant control domain"));
+        }
+        let budget_before = value_at(batch, "budget_before");
+        let budget_after = value_at(batch, "budget_after");
+        let aggregate_budget = value_at(batch, "aggregate_allocated");
+        for field in ["max_dispatches", "max_tool_calls", "max_resource_units"] {
+            let before = budget_before.and_then(|value| u64_at(value, field));
+            let allocated = aggregate_budget.and_then(|value| u64_at(value, field));
+            let after = budget_after.and_then(|value| u64_at(value, field));
+            let parent_limit = value_at(batch, "parent_budget_limit")
+                .and_then(|value| u64_at(value, field));
+            if !matches!((before, allocated, after), (Some(before), Some(allocated), Some(after))
+                if before.checked_sub(allocated) == Some(after))
+            {
+                violations.push(violation("budget-after state is not the exact checked subtraction of the complete fan-out allocation"));
+            }
+            if !matches!((before, parent_limit), (Some(before), Some(limit)) if before <= limit) {
+                violations.push(violation("available budget before reservation exceeds the parent grant limit"));
+            }
+        }
+
         if string_at(batch, "outcome") != Some("qualified")
             && string_at(delegation, "qualification.outcome") == Some("qualified")
         {
@@ -1466,6 +1516,19 @@ fn audit_delegation_evidence(result: &serde_json::Value, case_id: &str) -> Vec<S
         }
     }
     for batch in &fanout_batches {
+        if let Some(reservation_ref) = string_at(batch, "reservation_receipt_ref")
+            && (!evidence_refs.contains(reservation_ref)
+                || evidence_digests.get(reservation_ref).map(String::as_str)
+                    != string_at(batch, "reservation_receipt_digest")
+                || !evidence_items.iter().any(|item| {
+                    string_at(item, "evidence_ref") == Some(reservation_ref)
+                        && string_at(item, "source_type") == Some("budget_reservation")
+                }))
+        {
+            violations.push(violation(
+                "atomic budget reservation receipt reference/digest is absent or inconsistent in provenance",
+            ));
+        }
         if let Some(budget_ref) = string_at(batch, "budget_state_evidence_ref")
             && (!evidence_refs.contains(budget_ref)
                 || evidence_digests.get(budget_ref).map(String::as_str)
