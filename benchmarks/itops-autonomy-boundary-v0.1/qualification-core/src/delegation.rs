@@ -1635,6 +1635,9 @@ mod tests {
         // crippled by the parent's unrelated task-specific scope.
         let child =
             root_reanchored_sibling(&root, &parent, 'g', "service/worker", "restart");
+        assert!(grant_shape_is_valid(&root), "root grant shape is invalid: {root:#?}");
+        assert!(grant_shape_is_valid(&parent), "intermediate grant shape is invalid: {parent:#?}");
+        assert!(grant_shape_is_valid(&child), "child grant shape is invalid: {child:#?}");
         assert!(child.targets.is_disjoint(&parent.targets));
         assert!(child.operations.is_disjoint(&parent.operations));
         assert_eq!(
@@ -1833,7 +1836,16 @@ mod tests {
         second.max_tool_calls = 5;
         second.max_resource_units = 20;
 
-        assert!(check_attenuation(&root, &second).is_err());
+        let narrowed_parent = child_grant();
+        let mut strict_candidate = second.clone();
+        strict_candidate.issuer_principal = narrowed_parent.subject_principal.clone();
+        strict_candidate.parent_task_id = Some(narrowed_parent.task_id.clone());
+        strict_candidate.parent_task_digest = Some(narrowed_parent.task_digest.clone());
+        strict_candidate.parent_grant_id = Some(narrowed_parent.grant_id.clone());
+        let strict_errors = check_attenuation(&narrowed_parent, &strict_candidate).unwrap_err();
+        assert!(strict_errors.contains(&AttenuationViolation::TargetScopeExpanded));
+        assert!(strict_errors.contains(&AttenuationViolation::OperationScopeExpanded));
+
         assert_eq!(
             verify_root_anchored_children_at(&[root], &[first, second], 150),
             Ok(())
