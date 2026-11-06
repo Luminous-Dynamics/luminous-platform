@@ -3429,7 +3429,8 @@ mod tests {
         let permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
         ledger.dispatch(permit, &grant, 150, "idem-001").unwrap();
 
-        let duplicate_permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
+        let duplicate_permit =
+            authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
         assert_eq!(
             ledger.dispatch(duplicate_permit, &grant, 150, "idem-001"),
             Err(LedgerError::DuplicateIdempotencyKey)
