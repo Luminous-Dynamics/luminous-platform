@@ -690,6 +690,211 @@ mod tests {
         send
     }
 
+
+    #[test]
+    fn session_snapshot_roundtrip_preserves_unknown_budget_reservation() {
+        let mut state = state();
+        let mut first = action(1, "internal_transfer", 0);
+        first.recipient_ref = Some("recipient:internal-finance".into());
+        first.recipient_class = Some(RecipientClass::Internal);
+        first.transfer_units = 8;
+        let record = state.admit(&policy(), first).unwrap();
+        state.mark_unknown(&record.attempt_id).unwrap();
+
+        let checkpoint = state.export_snapshot().unwrap();
+        let recovered = SessionCompositionState::recover_snapshot(&checkpoint)
+            .expect("unknown reservation must survive session restart");
+        assert_eq!(recovered.version, state.version);
+        assert_eq!(recovered.effects, state.effects);
+        assert_eq!(recovered.effects[0].state, SessionEffectState::OutcomeUnknown);
+
+        let mut second = action(2, "internal_transfer", recovered.version);
+        second.recipient_ref = Some("recipient:internal-finance".into());
+        second.recipient_class = Some(RecipientClass::Internal);
+        second.transfer_units = 3;
+        assert_eq!(
+            recovered.evaluate(&policy(), &second),
+            Err(SessionCompositionViolation::AggregateTransferBudgetExceeded)
+        );
+    }
+
+    #[test]
+    fn session_snapshot_roundtrip_preserves_committed_data_taint() {
+        let mut state = state();
+        let read = confidential_read(&mut state);
+        approve_read(&mut state, &read.attempt_id);
+
+        let mut summarize = action(2, "summarize_document", state.version);
+        summarize.source_effect_refs = set(&[&read.effect_ref]);
+        summarize.declared_output_data_labels = set(&["confidential"]);
+        let summary = state.admit(&policy(), summarize).unwrap();
+        state.commit_effect(&summary.attempt_id, 0).unwrap();
+
+        let checkpoint = state.export_snapshot().unwrap();
+        let recovered = SessionCompositionState::recover_snapshot(&checkpoint)
+            .expect("committed source and inherited labels must survive restart");
+        assert!(recovered.effects[1].data_labels.contains("confidential"));
+
+        let send = external_send(&recovered, 3, &summary.effect_ref);
+        assert_eq!(
+            recovered.evaluate(&policy(), &send),
+            Err(SessionCompositionViolation::ForbiddenDataRecipientComposition)
+        );
+    }
+
+    #[test]
+    fn session_snapshot_rejects_erased_lineage_after_a_transform() {
+        let mut state = state();
+        let read = confidential_read(&mut state);
+        approve_read(&mut state, &read.attempt_id);
+
+        let mut summarize = action(2, "summarize_document", state.version);
+        summarize.source_effect_refs = set(&[&read.effect_ref]);
+        summarize.declared_output_data_labels = set(&["confidential"]);
+        let summary = state.admit(&policy(), summarize).unwrap();
+        state.commit_effect(&summary.attempt_id, 0).unwrap();
+
+        let checkpoint = state.export_snapshot().unwrap();
+        let mut value: serde_json::Value = serde_json::from_slice(&checkpoint).unwrap();
+        value["state"]["effects"][1]["data_labels"] = serde_json::json!([]);
+        let tampered = serde_json::to_vec(&value).unwrap();
+        assert_eq!(
+            SessionCompositionState::recover_snapshot(&tampered),
+            Err(SessionCompositionViolation::InvalidSnapshot)
+        );
+    }
+
+    #[test]
+    fn session_snapshot_rejects_duplicate_idempotency_and_effect_identity() {
+        let mut state = state();
+        state.admit(&policy(), action(1, "read_document", 0)).unwrap();
+        let mut second = action(2, "read_document", state.version);
+        second.idempotency_key = "idempotency-1".into();
+        state.admit(&policy(), second).unwrap();
+
+        let checkpoint = state.export_snapshot().unwrap();
+        assert_eq!(
+            SessionCompositionState::recover_snapshot(&checkpoint),
+            Err(SessionCompositionViolation::InvalidSnapshot)
+        );
+    }
+
+    #[test]
+    fn session_snapshot_rejects_regressed_state_and_admission_versions() {
+        let mut state = state();
+        state.admit(&policy(), action(1, "read_document", 0)).unwrap();
+        let checkpoint = state.export_snapshot().unwrap();
+        let mut value: serde_json::Value = serde_json::from_slice(&checkpoint).unwrap();
+
+        value["state"]["version"] = serde_json::json!(0);
+        let tampered = serde_json::to_vec(&value).unwrap();
+        assert_eq!(
+            SessionCompositionState::recover_snapshot(&tampered),
+            Err(SessionCompositionViolation::InvalidSnapshot)
+        );
+
+        let mut value: serde_json::Value = serde_json::from_slice(&checkpoint).unwrap();
+        value["state"]["effects"][0]["admitted_at_state_version"] = serde_json::json!(0);
+        let tampered = serde_json::to_vec(&value).unwrap();
+        assert_eq!(
+            SessionCompositionState::recover_snapshot(&tampered),
+            Err(SessionCompositionViolation::InvalidSnapshot)
+        );
+    }
+
+    #[test]
+    fn session_snapshot_rejects_source_edges_that_do_not_point_to_prior_committed_data() {
+        let mut state = state();
+        let read = confidential_read(&mut state);
+        approve_read(&mut state, &read.attempt_id);
+
+        let mut summarize = action(2, "summarize_document", state.version);
+        summarize.source_effect_refs = set(&[&read.effect_ref]);
+        summarize.declared_output_data_labels = set(&["confidential"]);
+        state.admit(&policy(), summarize).unwrap();
+
+        let checkpoint = state.export_snapshot().unwrap();
+        let mut value: serde_json::Value = serde_json::from_slice(&checkpoint).unwrap();
+        value["state"]["effects"][1]["source_effect_refs"] =
+            serde_json::json!(["missing-or-later-source"]);
+        let tampered = serde_json::to_vec(&value).unwrap();
+        assert_eq!(
+            SessionCompositionState::recover_snapshot(&tampered),
+            Err(SessionCompositionViolation::InvalidSnapshot)
+        );
+    }
+
+    #[test]
+    fn version_overflow_does_not_partially_mutate_effect_transitions() {
+        let mut state = state();
+        let mut proposal = action(1, "internal_transfer", 0);
+        proposal.recipient_ref = Some("recipient:internal-finance".into());
+        proposal.recipient_class = Some(RecipientClass::Internal);
+        proposal.transfer_units = 1;
+        let record = state.admit(&policy(), proposal).unwrap();
+        state.version = u64::MAX;
+
+        assert_eq!(
+            state.mark_unknown(&record.attempt_id),
+            Err(SessionCompositionViolation::SessionStateVersionOverflow)
+        );
+        assert_eq!(
+            state.commit_effect(&record.attempt_id, 1),
+            Err(SessionCompositionViolation::SessionStateVersionOverflow)
+        );
+        assert_eq!(
+            state.reconcile_no_effect(&record.attempt_id),
+            Err(SessionCompositionViolation::SessionStateVersionOverflow)
+        );
+        assert_eq!(state.version, u64::MAX);
+        assert_eq!(state.effects[0].state, SessionEffectState::AcceptedPending);
+        assert_eq!(state.effects[0].reserved_transfer_units, 1);
+        assert_eq!(state.effects[0].committed_transfer_units, 0);
+    }
+
+    #[test]
+    fn transfer_with_positive_amount_requires_recipient_and_class_binding() {
+        let state = state();
+        let mut proposal = action(1, "internal_transfer", 0);
+        proposal.transfer_units = 1;
+        assert_eq!(
+            state.evaluate(&policy(), &proposal),
+            Err(SessionCompositionViolation::RecipientBindingIncomplete)
+        );
+    }
+
+    #[test]
+    fn recovered_state_rejects_recipient_erasure_from_reserved_transfer() {
+        let mut state = state();
+        let mut proposal = action(1, "internal_transfer", 0);
+        proposal.recipient_ref = Some("recipient:internal-finance".into());
+        proposal.recipient_class = Some(RecipientClass::Internal);
+        proposal.transfer_units = 2;
+        state.admit(&policy(), proposal).unwrap();
+
+        let checkpoint = state.export_snapshot().unwrap();
+        let mut value: serde_json::Value = serde_json::from_slice(&checkpoint).unwrap();
+        value["state"]["effects"][0]["recipient_ref"] = serde_json::Value::Null;
+        value["state"]["effects"][0]["recipient_class"] = serde_json::Value::Null;
+        let tampered = serde_json::to_vec(&value).unwrap();
+        assert_eq!(
+            SessionCompositionState::recover_snapshot(&tampered),
+            Err(SessionCompositionViolation::InvalidSnapshot)
+        );
+    }
+
+    #[test]
+    fn stale_policy_version_is_rejected_even_when_policy_digest_is_reused() {
+        let state = state();
+        let mut updated_policy = policy();
+        updated_policy.policy_version += 1;
+        let proposal = action(1, "read_document", 0);
+        assert_eq!(
+            state.evaluate(&updated_policy, &proposal),
+            Err(SessionCompositionViolation::PolicyVersionMismatch)
+        );
+    }
+
     #[test]
     fn individually_allowed_read_and_send_are_denied_as_a_forbidden_composition() {
         let mut state = state();
