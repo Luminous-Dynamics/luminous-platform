@@ -1364,9 +1364,9 @@ mod tests {
     fn delegation_required_episode_cannot_omit_delegation_evidence() {
         let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
         let mut example: serde_json::Value = serde_json::from_slice(
-            &fs::read(manifest.join("../../decision-result.delegation.example.json")).unwrap()
+            &fs::read(manifest.join("../decision-result.delegation.example.json")).unwrap()
         ).unwrap();
-        let schema = fs::read(manifest.join("../../decision-result.schema.json")).unwrap();
+        let schema = fs::read(manifest.join("../decision-result.schema.json")).unwrap();
         example.as_object_mut().unwrap().remove("delegation");
         let bytes = serde_json::to_vec(&example).unwrap();
         assert!(validate_draft2020_12(&bytes, &schema).is_err());
@@ -1376,9 +1376,9 @@ mod tests {
     fn root_anchored_result_requires_precommitted_graph_edges() {
         let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
         let mut example: serde_json::Value = serde_json::from_slice(
-            &fs::read(manifest.join("../../decision-result.delegation.example.json")).unwrap()
+            &fs::read(manifest.join("../decision-result.delegation.example.json")).unwrap()
         ).unwrap();
-        let schema = fs::read(manifest.join("../../decision-result.schema.json")).unwrap();
+        let schema = fs::read(manifest.join("../decision-result.schema.json")).unwrap();
         example["delegation"]
             .as_object_mut().unwrap()
             .remove("root_authorized_edges");
