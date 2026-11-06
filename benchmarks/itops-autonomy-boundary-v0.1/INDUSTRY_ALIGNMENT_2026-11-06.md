@@ -195,7 +195,7 @@ These targets do not constitute universal guarantees or production approval. No 
 
 ## MasDrift source lock and reproduction readiness
 
-A machine-readable upstream source lock is stored at [external/masdrift-source-lock-7119c09.json](external/masdrift-source-lock-7119c09.json). It pins the public MIT repository at commit `7119c09c0266162f89db29d3faa32d496837b5c3`, tree SHA `7119c09c0266162f89db29d3faa32d496837b5c3`, and records Git blob IDs and sizes for the task corpus, all 601 environment files, key runner/evaluator/authorization modules, and relevant regression tests.
+A machine-readable upstream source lock is stored at [external/masdrift-source-lock-7119c09.json](external/masdrift-source-lock-7119c09.json). It pins the public MIT repository at commit `7119c09c0266162f89db29d3faa32d496837b5c3` and commit-tree SHA `d2989e32176a49ea2cdb17b95b8db3fdd4496e1a`, and records Git blob IDs and sizes for the task corpus, all 601 environment files, key runner/evaluator/authorization modules, and relevant regression tests.
 
 At the pinned dataset:
 - Dataset ID: `masdrift_pilot_v5_tasks_mas`; schema `pilot-task-env-2026-05-28+mas_gt_v1`.
