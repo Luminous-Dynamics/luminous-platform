@@ -90,6 +90,12 @@ pub enum AttenuationViolation {
     InvalidChainLength,
     DuplicateGrantInChain,
     DuplicateTaskInChain,
+    DuplicateChildGrant,
+    DuplicateChildTask,
+    SiblingDispatchBudgetExceeded,
+    SiblingToolBudgetExceeded,
+    SiblingResourceBudgetExceeded,
+    SiblingBudgetOverflow,
     TenantChanged,
     TargetScopeExpanded,
     OperationScopeExpanded,
@@ -330,6 +336,79 @@ pub fn verify_delegation_at(
     }
     if now_unix >= child.expires_at_unix {
         violations.push(AttenuationViolation::ChildExpired);
+    }
+
+    if violations.is_empty() {
+        Ok(())
+    } else {
+        Err(violations)
+    }
+}
+
+/// Verifies one complete sibling-delegation batch against a parent's remaining
+/// transferable budgets. Each child must independently attenuate from the same
+/// parent, and the sum of child dispatch/tool/resource allocations must not
+/// exceed the supplied parent budgets. Call this once for the complete fan-out
+/// decision; repeated calls require an external shared budget ledger and are
+/// not made safe by this pure predicate.
+pub fn verify_delegated_children_at(
+    parent: &DelegatedAuthorityGrant,
+    children: &[DelegatedAuthorityGrant],
+    now_unix: i64,
+) -> Result<(), Vec<AttenuationViolation>> {
+    if children.is_empty() {
+        return Ok(());
+    }
+
+    let mut violations = Vec::new();
+    let mut grant_ids = BTreeSet::new();
+    let mut task_ids = BTreeSet::new();
+    let mut dispatch_budget = 0_u64;
+    let mut tool_budget = 0_u64;
+    let mut resource_budget = 0_u64;
+
+    for child in children {
+        if !grant_ids.insert(child.grant_id.as_str()) {
+            violations.push(AttenuationViolation::DuplicateChildGrant);
+        }
+        if !task_ids.insert(child.task_id.as_str()) {
+            violations.push(AttenuationViolation::DuplicateChildTask);
+        }
+        if let Err(mut edge_violations) = verify_delegation_at(parent, child, now_unix) {
+            violations.append(&mut edge_violations);
+        }
+
+        match dispatch_budget.checked_add(child.max_dispatches) {
+            Some(total) => dispatch_budget = total,
+            None => {
+                dispatch_budget = u64::MAX;
+                violations.push(AttenuationViolation::SiblingBudgetOverflow);
+            }
+        }
+        match tool_budget.checked_add(child.max_tool_calls) {
+            Some(total) => tool_budget = total,
+            None => {
+                tool_budget = u64::MAX;
+                violations.push(AttenuationViolation::SiblingBudgetOverflow);
+            }
+        }
+        match resource_budget.checked_add(child.max_resource_units) {
+            Some(total) => resource_budget = total,
+            None => {
+                resource_budget = u64::MAX;
+                violations.push(AttenuationViolation::SiblingBudgetOverflow);
+            }
+        }
+    }
+
+    if dispatch_budget > parent.max_dispatches {
+        violations.push(AttenuationViolation::SiblingDispatchBudgetExceeded);
+    }
+    if tool_budget > parent.max_tool_calls {
+        violations.push(AttenuationViolation::SiblingToolBudgetExceeded);
+    }
+    if resource_budget > parent.max_resource_units {
+        violations.push(AttenuationViolation::SiblingResourceBudgetExceeded);
     }
 
     if violations.is_empty() {
@@ -725,6 +804,83 @@ mod tests {
             delegable: false,
             revoked: false,
         }
+    }
+
+
+    fn second_child_grant() -> DelegatedAuthorityGrant {
+        let parent = parent_grant();
+        let mut child = child_grant();
+        child.grant_id = "grant-child-2".into();
+        child.task_id = "task-child-2".into();
+        child.task_digest = digest('e');
+        child.plan_digest = digest('f');
+        child.allowed_child_task_digests.clear();
+        child.allowed_child_plan_digests.clear();
+        child
+    }
+
+    #[test]
+    fn sibling_children_cannot_each_reuse_the_full_parent_budget() {
+        let mut parent = parent_grant();
+        parent.allowed_child_task_digests.insert(digest('e'));
+        parent.allowed_child_plan_digests.insert(digest('f'));
+        let mut first = child_grant();
+        let mut second = second_child_grant();
+
+        // Each grant independently stays within the parent's limits, but the
+        // combined fan-out exceeds all three shared budgets.
+        first.max_dispatches = 2;
+        second.max_dispatches = 3;
+        first.max_tool_calls = 10;
+        second.max_tool_calls = 11;
+        first.max_resource_units = 50;
+        second.max_resource_units = 60;
+
+        assert!(first.max_dispatches <= parent.max_dispatches);
+        assert!(second.max_dispatches <= parent.max_dispatches);
+        assert!(first.max_tool_calls <= parent.max_tool_calls);
+        assert!(second.max_tool_calls <= parent.max_tool_calls);
+        assert!(first.max_resource_units <= parent.max_resource_units);
+        assert!(second.max_resource_units <= parent.max_resource_units);
+
+        let errors = verify_delegated_children_at(&parent, &[first, second], 150)
+            .expect_err("sibling budget reuse must be denied");
+        assert!(errors.contains(&AttenuationViolation::SiblingDispatchBudgetExceeded));
+        assert!(errors.contains(&AttenuationViolation::SiblingToolBudgetExceeded));
+        assert!(errors.contains(&AttenuationViolation::SiblingResourceBudgetExceeded));
+    }
+
+    #[test]
+    fn sibling_allocations_within_shared_budgets_are_accepted() {
+        let mut parent = parent_grant();
+        parent.allowed_child_task_digests.insert(digest('e'));
+        parent.allowed_child_plan_digests.insert(digest('f'));
+        let mut first = child_grant();
+        let mut second = second_child_grant();
+
+        first.max_dispatches = 2;
+        second.max_dispatches = 2;
+        first.max_tool_calls = 8;
+        second.max_tool_calls = 12;
+        first.max_resource_units = 40;
+        second.max_resource_units = 60;
+
+        assert_eq!(
+            verify_delegated_children_at(&parent, &[first, second], 150),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn sibling_fanout_rejects_duplicate_grant_and_task_ids() {
+        let parent = parent_grant();
+        let first = child_grant();
+        let mut second = first.clone();
+        second.grant_id = "grant-child-duplicate-task".into();
+
+        let errors = verify_delegated_children_at(&parent, &[first, second], 150)
+            .expect_err("duplicated task and grant identities must not qualify");
+        assert!(errors.contains(&AttenuationViolation::DuplicateChildTask));
     }
 
     #[test]
