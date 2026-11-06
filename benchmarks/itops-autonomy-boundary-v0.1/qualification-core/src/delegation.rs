@@ -1588,8 +1588,8 @@ mod tests {
         let mut child = second_child_grant();
         child.grant_id = format!("grant-hybrid-{suffix}");
         child.task_id = format!("task-hybrid-{suffix}");
-        child.task_digest = digest(suffix);
-        child.plan_digest = digest(if suffix == 'g' { 'h' } else { 'i' });
+        child.task_digest = digest(if suffix == 'g' { '1' } else { '3' });
+        child.plan_digest = digest(if suffix == 'g' { '2' } else { '4' });
         child.issuer_principal = parent.subject_principal.clone();
         child.subject_principal = format!("agent-{suffix}");
         child.root_task_id = root.root_task_id.clone();
@@ -1619,11 +1619,20 @@ mod tests {
 
     fn root_and_narrow_parent() -> (DelegatedAuthorityGrant, DelegatedAuthorityGrant) {
         let mut root = parent_grant();
-        root.allowed_child_task_digests = set(&[&digest('c'), &digest('g'), &digest('j')]);
-        root.allowed_child_plan_digests = set(&[&digest('d'), &digest('h'), &digest('k')]);
+        root.allowed_child_task_digests = set(&[&digest('c'), &digest('1'), &digest('3')]);
+        root.allowed_child_plan_digests = set(&[&digest('d'), &digest('2'), &digest('4')]);
+        root.allowed_child_task_plans = BTreeMap::from([
+            (digest('c'), digest('d')),
+            (digest('1'), digest('2')),
+            (digest('3'), digest('4')),
+        ]);
         let mut parent = child_grant();
-        parent.allowed_child_task_digests = set(&[&digest('g'), &digest('j')]);
-        parent.allowed_child_plan_digests = set(&[&digest('h'), &digest('k')]);
+        parent.allowed_child_task_digests = set(&[&digest('1'), &digest('3')]);
+        parent.allowed_child_plan_digests = set(&[&digest('2'), &digest('4')]);
+        parent.allowed_child_task_plans = BTreeMap::from([
+            (digest('1'), digest('2')),
+            (digest('3'), digest('4')),
+        ]);
         (root, parent)
     }
 
@@ -1704,8 +1713,9 @@ mod tests {
     #[test]
     fn root_reanchored_siblings_share_the_parent_budget_but_keep_task_scopes() {
         let (mut root, mut parent) = root_and_narrow_parent();
-        root.allowed_child_task_digests.insert(digest('j'));
-        root.allowed_child_plan_digests.insert(digest('k'));
+        root.allowed_child_task_digests.insert(digest('3'));
+        root.allowed_child_plan_digests.insert(digest('4'));
+        root.allowed_child_task_plans.insert(digest('3'), digest('4'));
         parent.max_dispatches = 3;
         parent.max_tool_calls = 6;
         parent.max_resource_units = 12;
@@ -1715,8 +1725,8 @@ mod tests {
             root_reanchored_sibling(&root, &parent, 'j', "service/api", "read");
         second.grant_id = "grant-hybrid-j".into();
         second.task_id = "task-hybrid-j".into();
-        second.task_digest = digest('j');
-        second.plan_digest = digest('k');
+        second.task_digest = digest('3');
+        second.plan_digest = digest('4');
         second.max_dispatches = 1;
         second.max_tool_calls = 4;
         second.max_resource_units = 7;
