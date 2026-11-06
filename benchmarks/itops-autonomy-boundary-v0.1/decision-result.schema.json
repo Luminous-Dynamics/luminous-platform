@@ -312,8 +312,7 @@
               "effect_count",
               "sequence",
               "dispatched_while_prior_unknown",
-              "in_current_episode",
-              "dispatched_at"
+              "in_current_episode"
             ],
             "properties": {
               "attempt_id": {
@@ -383,8 +382,7 @@
         "state",
         "observed_at",
         "freshness_ms",
-        "evidence_digest",
-        "evidence_ref"
+        "evidence_digest"
       ],
       "properties": {
         "source": {
@@ -1794,6 +1792,45 @@
             "required": [
               "parameter_digest"
             ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "task_binding": {
+            "properties": {
+              "delegation_required": {
+                "const": true
+              }
+            },
+            "required": [
+              "delegation_required"
+            ]
+          }
+        },
+        "required": [
+          "task_binding"
+        ]
+      },
+      "then": {
+        "properties": {
+          "service_observer": {
+            "required": [
+              "evidence_ref"
+            ]
+          },
+          "participant_effect_oracle": {
+            "properties": {
+              "attempts": {
+                "items": {
+                  "required": [
+                    "dispatched_at"
+                  ]
+                }
+              }
+            }
           }
         }
       }
