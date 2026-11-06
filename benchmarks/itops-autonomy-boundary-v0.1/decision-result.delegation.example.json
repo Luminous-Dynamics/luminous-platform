@@ -183,7 +183,13 @@
           "rollback_obligations": [
             "restore-replicas"
           ]
-        }
+        },
+        "authorized_child_task_plans": [
+          {
+            "task_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "plan_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          }
+        ]
       },
       {
         "role": "descendant",
@@ -242,7 +248,8 @@
             "restore-replicas",
             "emit-rollback-receipt"
           ]
-        }
+        },
+        "authorized_child_task_plans": []
       }
     ],
     "root_authorized_task_plans": [
