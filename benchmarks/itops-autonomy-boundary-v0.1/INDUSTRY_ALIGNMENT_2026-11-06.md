@@ -20,6 +20,14 @@ Sources checked:
 - [ServiceNow — NOWAI-Bench dated snapshot](https://github.com/ServiceNow/NOWAI-Bench)
 - [Original EnterpriseOps-Gym PMLR 2026 paper](https://proceedings.mlr.press/v306/malay26a.html)
 
+### EnterpriseOps-Gym-AA leaderboard snapshot (5 November 2026)
+
+A secondary aggregator, [BenchLeader's EnterpriseOps-Gym page](https://www.benchleader.com/benchmarks/aa_enterprise_ops_gym), reports the Artificial Analysis public leaderboard as of 5 November 2026, with 50 model configurations: Claude Fable 5 (max) 51.1%, Gemini 3.7 Flash 50.4%, Gemini 3.5 Flash 50.1%, DeepSeek V4 Pro 49.6%, Grok 4.6 48.3%, Qwen3.8 Max 47.6%, and Claude Opus 5 47.5%. It states the listed benchmark result is sourced from Artificial Analysis; this is an aggregator view of that evaluation, not an independent re-run. Scores are model results, not agent-platform/system guarantees.
+
+Keep it distinct from ServiceNow's own repository leaderboard snapshot (Opus 4.6 at 45.9% in the README source checked earlier), NOWAI-Bench's 23 July historical snapshot, and the original PMLR result (Sonnet 4.5 at 34.1%). These are different models, snapshots and execution surfaces; do not interpret the rows as a controlled longitudinal series.
+
+Source: [BenchLeader, EnterpriseOps-Gym leaderboard, data as of 5 November 2026](https://www.benchleader.com/benchmarks/aa_enterprise_ops_gym).
+
 ## Continuous site reliability and harness evolution
 
 **SRE-Marathon** is a complementary continuous-operation benchmark, not another EnterpriseOps score. Its September 2026 paper describes a two-zone Kubernetes deployment, persistent agent workspace, fixed-cadence invocations, overlapping seeded faults and code/configuration changes through the same repair pipeline. Across three applications and roughly sixty faults per run, the best of ten methods reports 41.3/100. The authors identify a gap between correlation/localization and completing repairs while faults remain active.
@@ -39,6 +47,23 @@ The November 2026 AINETOps problem-statement Internet-Draft describes fragmented
 These are individual Internet-Drafts, not adopted IETF standards or normative requirements:
 - [AINETOps Problem Statement, draft-rqd-ainetops-problem-statement-00](https://datatracker.ietf.org/doc/html/draft-rqd-ainetops-problem-statement-00)
 - [Benchmarking Methodology for AI Agents in Network Operations, draft-contreras-bpm-ai-agent-benchmarking-00](https://datatracker.ietf.org/doc/draft-contreras-bpm-ai-agent-benchmarking/)
+
+## Runtime-enforcement research landscape
+
+### Beyond Guardrails: Systematic Review of Runtime Enforcement for Secure AI Agents
+
+The review [Beyond Guardrails: Runtime Enforcement for Secure AI Agents](https://doi.org/10.62762/JRSC.2026.526903), published 17 October 2026 in the *Journal of Reliable and Secure Computing*, screened and coded 58 primary studies published or publicly available from January 2023 through September 2026. It reports:
+
+- 33/58 studies (56.9%) enforce primarily at the tool/action boundary;
+- 18/58 (31.0%) enforce inside the agent runtime or harness;
+- only 7/58 (12.1%) focus primarily on OS/process/execution boundaries;
+- authorization/privilege control appears in 41/58 (70.7%) and action validation in 34/58 (58.6%).
+
+The review identifies durable authorization, multi-agent delegation, cross-layer enforcement, recovery from partially committed effects, and standardized evaluation as open problems. Its common architectural pattern is a model-proposed action separated from an independently enforceable decision point before external effect.
+
+**Luminous implication:** the credible research opportunity is not another natural-language guardrail or an additional policy wrapper. It is a cross-layer authority/effect chain in which Xenia supplies current canonical authority, a participant enforces the exact request at dispatch, Nixward/host boundaries constrain execution, participant-owned state records actual effects, and an independently sourced observer evaluates postconditions. Recovery after partial commitment and restart/replay must be tested explicitly. This review is a literature map, not evidence that this architecture is already built or superior.
+
+Source: [Wu et al., Beyond Guardrails (2026), DOI 10.62762/JRSC.2026.526903](https://doi.org/10.62762/JRSC.2026.526903).
 
 ## Authorization-control and self-evolution benchmark designs
 
