@@ -24,6 +24,12 @@ This crate is the first executable building block for the runner requested in
   revocation, expiry, or target/operation/plan rebinding.
 - Implements a deterministic participant-effect ledger model with idempotency
   keys and an unknown-outcome lock.
+- Models atomic delegation-budget fan-out reservation with a versioned compare-and-swap
+  ledger: complete sibling allocations are checked and deducted once, stale concurrent
+  writes conflict, exact idempotent retries return the original receipt, and key reuse
+  with changed allocations, duplicate child grants, overflow, and over-budget batches
+  fail closed. This is an in-memory qualification model; it does not provide durable,
+  cross-process participant reservation or crash recovery.
 - Adds a pure monotonic-delegation attenuation verifier. A child must preserve
   root task and plan identity, link to its immediate parent and issuer, and use
   task and plan digests explicitly precommitted by the parent. Targets,
@@ -77,7 +83,7 @@ This crate is the first executable building block for the runner requested in
   `1 - 0.05^(1/n)`; the episodes must be independent Bernoulli trials under
   one pinned arm/configuration. Identity deduplication alone does not prove
   statistical independence.
-- Includes 92 unit-test cases (58 qualification-core and 34 delegation-module tests) for catalog loading, schema/meta-schema
+- Includes 99 unit-test cases (58 qualification-core and 41 delegation-module tests) for catalog loading, schema/meta-schema
   validity and rejection, evidence-integrity and hard-safety gates, scoreable
   wrong-decision/incomplete-handoff/forbidden-promotion outcomes, exact corpus
   binding, exact-scope authorization, dispatch-time grant revalidation, grant
