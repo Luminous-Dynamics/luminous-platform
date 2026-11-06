@@ -24,7 +24,8 @@ This crate is the first executable building block for the runner requested in
   revocation, expiry, or target/operation/plan rebinding.
 - Implements a deterministic participant-effect ledger model with idempotency
   keys and an unknown-outcome lock.
-- Covers one-hop and multi-hop positive controls plus scope expansion, revoked ancestor, stale ancestor, misordered chain, and evidence-laundering negative fixtures; the delegation module currently has 21 authored unit-test sources.
+- Includes zero-inference trust-boundary tests that reject erasure of issuer/principal, canonical authority-evidence reference, and evidence-source attribution fields rather than inferring missing authority from agent narrative.
+- Covers one-hop and multi-hop positive controls plus scope expansion, revoked ancestor, stale ancestor, misordered chain, and evidence-laundering negative fixtures; the delegation module currently has 24 authored unit-test sources.
 - Audits a separate Draft 2020-12 delegation evidence bundle with one-hop and three-agent chains, exact authority references for every ancestor, freshness bounds, evidence-lineage DAG checks, and a final participant-boundary recheck bound to the exact leaf grant/task/plan/request. The audit rejects agent-derived participant evidence, stale/future authority checks, missing ancestors and mismatched participant decisions. It is a synthetic verifier: source authenticity and actual process isolation still require trusted deployment adapters.
 - Binds a delegated episode result to the exact bundle SHA-256 and cross-checks root and leaf lineage using `audit_episode_result_with_delegation`. The delegation field is optional in the existing episode-result schema, preserving non-delegated episode compatibility.
 - Adds a pure monotonic-delegation attenuation verifier. A child must preserve
@@ -53,7 +54,7 @@ This crate is the first executable building block for the runner requested in
   `1 - 0.05^(1/n)`; the episodes must be independent Bernoulli trials under
   one pinned arm/configuration. Identity deduplication alone does not prove
   statistical independence.
-- Includes 62 unit-test sources for catalog loading, schema/meta-schema
+- Includes 65 unit-test sources for catalog loading, schema/meta-schema
   validity and rejection, evidence-integrity and hard-safety gates, scoreable
   wrong-decision/incomplete-handoff/forbidden-promotion outcomes, exact corpus
   binding, exact-scope authorization, dispatch-time grant revalidation, grant
