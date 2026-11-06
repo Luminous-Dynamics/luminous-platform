@@ -77,7 +77,7 @@ This crate is the first executable building block for the runner requested in
   `1 - 0.05^(1/n)`; the episodes must be independent Bernoulli trials under
   one pinned arm/configuration. Identity deduplication alone does not prove
   statistical independence.
-- Includes 89 unit-test cases (55 qualification-core and 34 delegation-module tests) for catalog loading, schema/meta-schema
+- Includes 92 unit-test cases (58 qualification-core and 34 delegation-module tests) for catalog loading, schema/meta-schema
   validity and rejection, evidence-integrity and hard-safety gates, scoreable
   wrong-decision/incomplete-handoff/forbidden-promotion outcomes, exact corpus
   binding, exact-scope authorization, dispatch-time grant revalidation, grant
@@ -91,13 +91,13 @@ The episode result schema is additive. Non-delegated v0.1 episodes remain valid 
 
 The embedded Draft 2020-12 definition covers both `strict_edge_attenuation` and `root_anchored_task_graph` policy arms; root-authorized task/plan pairs and graph edges; exact parent/child principal and task lineage; task-specific authorized scope; per-edge decisions; complete sibling fan-out allocations and parent budget snapshots; final participant rechecks bound to exact root/leaf/task/plan/request; attempt/effect receipts; and source/derivation/common-cause provenance.
 
-The schema enforces structure and basic types; the Rust semantic auditor now checks unique grant/task identity, ordered parent links, exact parent and root task/plan pairs, root-edge and task-specific scope matching, unique edge-verification coverage, complete sibling fan-out batches, checked aggregate budget arithmetic, versioned/fresh budget-state snapshots, per-grant revocation freshness, final recheck-before-dispatch ordering, exact target/operation/parameter binding, one-to-one participant attempt/effect binding, and provenance-reference/digest closure. A schema-valid opaque reference is still not an authenticated identity, fresh revocation proof, independent observation, or participant enforcement receipt.
+The schema enforces structure and basic types; the Rust semantic auditor now checks unique grant/task identity, ordered parent links, exact parent and root task/plan pairs, root-edge and task-specific scope matching, unique edge-verification coverage, complete sibling fan-out batches, checked aggregate budget arithmetic, versioned/fresh budget-state snapshots, per-grant revocation freshness, final recheck-before-dispatch ordering, exact target/operation/parameter binding including actual typed synthetic parameter values and a recomputed canonical parameter digest, leaf-grant expiry at dispatch, one-to-one participant attempt/effect binding, and provenance-reference/digest closure. A schema-valid opaque reference is still not an authenticated identity, fresh revocation proof, independent observation, or participant enforcement receipt.
 
 A positive root-anchored delegated episode fixture is available at `../decision-result.delegation.example.json`. The existing non-delegated example remains unchanged to preserve the compatibility control.
 
 ## Run
 
-The draft PR's base branch defines `.github/workflows/itops-qualification.yml`. It pins Rust 1.90.0 and SHA-pins Node 24-compatible checkout/upload actions. The workflow checks formatting without modifying the checkout, runs all qualification-core tests and Clippy with warnings denied, and uploads the exact Cargo.lock plus metadata/digest artifact. The first lockfile is generated only when absent; once committed, subsequent runs use `--locked`. A successful run was observed for source head `92c1e06805f81f549a74ea99bf647c010ea2b54d` (run 42250898983): rustfmt, 89 tests and Clippy succeeded. That earlier run had a mutating rustfmt step, so it is historical evidence only; the corrected non-mutating workflow must pass on a new exact head before the source is called cleanly qualified.
+The draft PR's base branch defines `.github/workflows/itops-qualification.yml`. It pins Rust 1.90.0 and SHA-pins Node 24-compatible checkout/upload actions. The workflow checks formatting without modifying the checkout, runs all qualification-core tests and Clippy with warnings denied, and uploads the exact Cargo.lock plus metadata/digest artifact. The lockfile is generated only for the first run if it is not yet committed; the resulting artifact is the source for committing the lockfile so later runs use the exact graph with `--locked`. The first lockfile is generated only when absent; once committed, subsequent runs use `--locked`. A successful run was observed for source head `92c1e06805f81f549a74ea99bf647c010ea2b54d` (run 42250898983): rustfmt, 89 tests and Clippy succeeded. That earlier run had a mutating rustfmt step, so it is historical evidence only; the corrected non-mutating workflow must pass on a new exact head before the source is called cleanly qualified.
 
 
 From this directory:
