@@ -134,3 +134,9 @@ This draft establishes only a proposed structural integration contract and synth
 
 - Platform #185, #214, #257, #268, #274, #297, #299.
 - Symthaea #10105 and #10109.
+ 
+## Executable validator
+
+The `validator/` crate provides a pinned Rust Draft 2020-12 validator with format assertions and a semantic fixture audit. It distinguishes structurally invalid fixtures from structurally valid but unauthorized cases such as a purpose mismatch. The workflow checks the exact PR head with Rust 1.90.0, publishes the generated Cargo.lock/metadata, runs formatting, tests and Clippy with warnings denied.
+
+The validator checks fixture semantics only. It does not resolve live Xenia references, verify Xenia signatures/revocation authenticity, reserve a live budget, execute a collector, or prove observer independence.
