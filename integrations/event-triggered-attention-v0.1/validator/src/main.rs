@@ -266,25 +266,23 @@ fn audit_pair(watch_raw: &str, result_raw: &str, label: &str) -> Result<(), Stri
         ));
     }
 
-    if string_at(&result, &["admission", "outcome"]) == Some("admitted") {
-        if number_at(&watch, &["authority_context", "authority_epoch"])
+    if string_at(&result, &["admission", "outcome"]) == Some("admitted")
+        && number_at(&watch, &["authority_context", "authority_epoch"])
             != number_at(&result, &["admission", "authority_epoch"])
-        {
-            return Err(format!(
-                "{label}: admission authority epoch differs from watch request"
-            ));
-        }
+    {
+        return Err(format!(
+            "{label}: admission authority epoch differs from watch request"
+        ));
     }
 
     let delivery = string_at(&result, &["event_delivery", "status"]);
-    if matches!(delivery, Some("matched" | "delivery_gap")) {
-        if string_at(&watch, &["source", "control_domain_ref"])
+    if matches!(delivery, Some("matched" | "delivery_gap"))
+        && string_at(&watch, &["source", "control_domain_ref"])
             != string_at(&result, &["event_delivery", "source_control_domain_ref"])
-        {
-            return Err(format!(
-                "{label}: event source control domain differs from watch source"
-            ));
-        }
+    {
+        return Err(format!(
+            "{label}: event source control domain differs from watch source"
+        ));
     }
 
     let max_wakeups = number_at(&watch, &["resource_budget", "max_wakeups"])
