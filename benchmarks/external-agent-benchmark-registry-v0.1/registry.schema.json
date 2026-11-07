@@ -229,7 +229,8 @@
             "primary_url",
             "source_kind",
             "reference_id",
-            "capture"
+            "capture",
+            "repository_commit_sha"
           ],
           "properties": {
             "primary_url": {
@@ -298,6 +299,13 @@
                   "minLength": 1
                 }
               }
+            },
+            "repository_commit_sha": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{40}$"
             }
           }
         },
