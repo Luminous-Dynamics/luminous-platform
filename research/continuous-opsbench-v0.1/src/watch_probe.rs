@@ -550,14 +550,24 @@ pub fn run_scripted_episode<P: ProbePolicy>(
         .collect();
 
     let selected_probe_id = match policy.select_probe(&wake, &eligible_probe_ids) {
-        Some(probe_id)
-            if eligible_probe_ids
-                .iter()
-                .any(|eligible| eligible == &probe_id) =>
-        {
+        Some(probe_id) if eligible_probe_ids.iter().any(|eligible| eligible == &probe_id) => {
             probe_id
         }
-        _ => {
+        Some(probe_id) => {
+            let mut result = empty_result(
+                watch,
+                authority,
+                EpisodeStatus::ProbeDenied,
+                TerminalDisposition::Abstain,
+                delivered_events,
+                duplicate_events,
+                rejected_scope_events,
+                wakeups,
+            );
+            result.selected_probe_id = Some(probe_id);
+            return Ok(result);
+        }
+        None => {
             return Ok(empty_result(
                 watch,
                 authority,
