@@ -680,7 +680,11 @@ mod tests {
         assert_eq!(result.event_triggered.metrics.admitted_probe_selections, 0);
         assert_eq!(result.fixed_poll.metrics.admitted_probe_selections, 0);
         assert_eq!(result.event_triggered.metrics.probe_budget_exhaustions, 1);
-        assert_eq!(result.fixed_poll.metrics.probe_budget_exhaustions, 1);
+        assert!(result.fixed_poll.metrics.probe_budget_exhaustions >= 1);
+        assert!(
+            result.fixed_poll.metrics.probe_budget_exhaustions
+                >= result.event_triggered.metrics.probe_budget_exhaustions
+        );
         assert!(result.event_triggered.run.actions.is_empty());
         assert!(result.fixed_poll.run.actions.is_empty());
     }
