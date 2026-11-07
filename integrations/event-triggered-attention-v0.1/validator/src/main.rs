@@ -519,20 +519,25 @@ mod tests {
     #[test]
     fn watch_request_digest_must_bind_exact_input_bytes() {
         let mut result = parse(RESULT_MATCHED, "matched").unwrap();
-        result["watch_request_digest"] =
-            Value::String("sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".into());
-        assert!(audit_pair(
-            WATCH_POSITIVE,
-            &serde_json::to_string(&result).unwrap(),
-            "wrong-watch-digest"
-        ).is_err());
+        result["watch_request_digest"] = Value::String(
+            "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".into(),
+        );
+        assert!(
+            audit_pair(
+                WATCH_POSITIVE,
+                &serde_json::to_string(&result).unwrap(),
+                "wrong-watch-digest"
+            )
+            .is_err()
+        );
     }
 
     #[test]
     fn watch_request_digest_must_bind_exact_input_bytes() {
         let mut result = parse(RESULT_MATCHED, "matched").unwrap();
-        result["watch_request_digest"] =
-            Value::String("sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".into());
+        result["watch_request_digest"] = Value::String(
+            "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".into(),
+        );
         assert!(
             audit_pair(
                 WATCH_POSITIVE,
