@@ -24,6 +24,59 @@ This crate is the first executable building block for the runner requested in
   revocation, expiry, or target/operation/plan rebinding.
 - Implements a deterministic participant-effect ledger model with idempotency
   keys and an unknown-outcome lock.
+- Adds a versioned participant-effect checkpoint/recovery model. Restart validation
+  rejects regressed counters, duplicate attempt IDs/idempotency keys, malformed effect
+  counts, and unresolved attempts that are not terminal; an `outcome_unknown` lock and
+  committed-effect history survive a valid snapshot round-trip. Tests cover crashes
+  after dispatch/before response, unresolved outcome, committed effects, impossible
+  post-unknown histories, and counter regression. This is a serialized test model,
+  not a durable/fsync-backed production journal or process-isolation proof.
+- Models atomic delegation-budget fan-out reservation with a versioned compare-and-swap
+  ledger: complete sibling allocations are checked and deducted once, stale concurrent
+  writes conflict, exact idempotent retries return the original receipt, and key reuse
+  with changed allocations, duplicate child grants, overflow, and over-budget batches
+  fail closed. This is an in-memory qualification model; it does not provide durable,
+  cross-process participant reservation or crash recovery.
+- Adds a pure monotonic-delegation attenuation verifier. A child must preserve
+  root task and plan identity, link to its immediate parent and issuer, and use
+  task and plan digests explicitly precommitted by the parent. Targets,
+  operations, parameter constraints, and data scopes must be subsets; time,
+  dispatch/tool/resource budgets, delegation depth, and risk ceilings may only
+  decrease; inherited approval, postcondition, and rollback obligations may
+  only grow. Omitted or incomparable parameter constraints fail closed.
+  Multi-hop verification checks every edge, duplicate grant/task identities,
+  and supplied revocation/validity state for every ancestor. This is a pure
+  synthetic predicate, not Xenia grant issuance or proof that revocation data
+  is fresh at a real participant boundary.
+  A second, experimental root-anchored policy arm is also implemented. The root
+  task graph precommits every descendant task/plan digest and each exact delegation
+  edge (parent task digest, child task/plan digest, delegator and delegatee
+  principal), with a task-specific scope envelope for tenant, targets, operations,
+  parameter bounds, data scopes, time, budgets, risk and inherited obligations.
+  Every immediate parent must still be allowed to delegate and precommit its
+  immediate child; every descendant must fit both the global root envelope and
+  its exact root-authorized edge. Unlike strict attenuation, it does not
+  recursively intersect the child's service/operation scope with an unrelated
+  intermediate sibling scope. This is a separate experiment arm, not a claim
+  that root re-anchoring alone is sufficient or superior.
+  Root-anchored batch verification checks a complete sibling fan-out and
+  aggregates dispatch/tool/resource budgets. Repeated batches still require
+  durable participant-owned budget accounting. Neither verifier authenticates
+  the root graph, proves that supplied task/plan digests commit to real payloads,
+  or enforces a live request at the participant boundary.
+  The immediate parent must also authorize the exact task-digest/plan-digest pair; two
+  independently allowed digests cannot be cross-paired. Each root edge carries a
+  task-specific scope envelope, so a leaf cannot alter its subtask scope merely because
+  the altered scope remains inside the broader root envelope.
+  A zero-mutation budget remains valid for a bounded read-only delegated task,
+  so this model does not reward blanket refusal. For a complete sibling fan-out batch,
+  it verifies every edge and rejects duplicate child grant/task IDs or aggregate
+  dispatch/tool/resource allocations above the parent's supplied budgets; parent/child
+  grant-ID reuse is rejected as well. The caller
+  must submit the complete sibling batch; repeated fan-out decisions need a shared
+  external budget ledger rather than repeated isolated predicate calls. Aggregate arithmetic
+  uses checked addition and fails closed on overflow; separate legitimate siblings may carry
+  distinct narrowed target/operation sets.
 - Recomputes service-observer freshness from RFC3339 timestamps against a
   provisional 5,000 ms catalogue ceiling; stale observations must be unknown.
 - Requires participant attempt sequence, episode membership, and logical idempotency evidence. It reconciles current-episode attempt counts with the runtime-gate counter, rejects duplicate idempotency attempts, and rejects any attempt dispatched while a prior outcome was unknown.
@@ -37,7 +90,7 @@ This crate is the first executable building block for the runner requested in
   `1 - 0.05^(1/n)`; the episodes must be independent Bernoulli trials under
   one pinned arm/configuration. Identity deduplication alone does not prove
   statistical independence.
-- Includes 38 unit-test sources for catalog loading, schema/meta-schema
+- Includes 104 unit-test cases (63 qualification-core and 41 delegation-module tests) for catalog loading, schema/meta-schema
   validity and rejection, evidence-integrity and hard-safety gates, scoreable
   wrong-decision/incomplete-handoff/forbidden-promotion outcomes, exact corpus
   binding, exact-scope authorization, dispatch-time grant revalidation, grant
@@ -45,7 +98,20 @@ This crate is the first executable building block for the runner requested in
   pairwise-distinct declared oracle control domains, and zero-event statistical
   safety qualification.
 
+## Multi-agent delegation evidence
+
+The episode result schema is additive. Non-delegated v0.1 episodes remain valid without a delegation object. A scenario sets `task_binding.delegation_required: true` to require the top-level `delegation` evidence object.
+
+The embedded Draft 2020-12 definition covers both `strict_edge_attenuation` and `root_anchored_task_graph` policy arms; root-authorized task/plan pairs and graph edges; exact parent/child principal and task lineage; task-specific authorized scope; per-edge decisions; complete sibling fan-out allocations and parent budget snapshots; final participant rechecks bound to exact root/leaf/task/plan/request; attempt/effect receipts; and source/derivation/common-cause provenance.
+
+The schema enforces structure and basic types; the Rust semantic auditor now checks unique grant/task identity, ordered parent links, exact parent and root task/plan pairs, root-edge and task-specific scope matching, unique edge-verification coverage, complete sibling fan-out batches, checked aggregate budget arithmetic, versioned/fresh budget-state snapshots, per-grant revocation freshness, final recheck-before-dispatch ordering, exact target/operation/parameter binding including actual typed synthetic parameter values and a recomputed canonical parameter digest, leaf-grant expiry at dispatch, one-to-one participant attempt/effect binding, and provenance-reference/digest closure. A schema-valid opaque reference is still not an authenticated identity, fresh revocation proof, independent observation, or participant enforcement receipt.
+
+A positive root-anchored delegated episode fixture is available at `../decision-result.delegation.example.json`. The existing non-delegated example remains unchanged to preserve the compatibility control.
+
 ## Run
+
+The draft PR's base branch defines `.github/workflows/itops-qualification.yml`. It pins Rust 1.90.0 and SHA-pins the checkout and artifact-upload actions. The workflow checks formatting without modifying the checkout, runs the full qualification-core test suite with `--locked`, runs Clippy with warnings denied, and publishes the exact Cargo.lock, lock digest and Cargo metadata as a build artifact. At exact source head `1fc7ee140d13f3d892d34f3fe9f7641aa55ffcc8`, workflow run [42261520615](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/42261520615) completed successfully: `cargo fmt --check` passed, **92 tests passed (0 failed)** under Rust 1.90.0, and Clippy completed with `-D warnings`. Artifact `itops-rust-dependency-lock-1fc7ee140d13f3d892d34f3fe9f7641aa55ffcc8` was published with archive digest `sha256:0446d83594208739a07f39ad04846eeb2445468e2b3c876ede37e6f5a8b0c95d`. This qualifies the synthetic Rust/schema/evaluator model at that exact head; it is not a production participant integration or an external benchmark/SOTA result.
+
 
 From this directory:
 
