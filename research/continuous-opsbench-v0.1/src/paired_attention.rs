@@ -23,12 +23,6 @@ pub enum AttentionMode {
 }
 
 impl AttentionMode {
-    fn as_str(self) -> &'static str {
-        match self {
-            Self::FixedPolling => "fixed-poll",
-            Self::EventTriggered => "event-triggered",
-        }
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -36,7 +30,6 @@ pub struct AttentionExperimentConfig {
     pub fixed_poll_interval_ticks: u32,
     pub failed_ppm_wake_threshold: u32,
     pub queue_depth_wake_threshold: u64,
-    pub api_capacity_setpoint: u64,
     /// Per-arm ceiling on admitted probe selections, not cognitive invocations.
     pub probe_budget_per_arm: usize,
 }
@@ -78,7 +71,6 @@ pub struct AttentionMetrics {
     pub no_eligible_probe_wakeups: usize,
     pub probe_budget_exhaustions: usize,
     pub wake_budget_exhaustions: usize,
-    pub proposed_actions: usize,
     pub wakes: Vec<AttentionWakeRecord>,
     pub selections: Vec<ProbeSelectionRecord>,
 }
@@ -131,8 +123,6 @@ struct AttentionController<'a> {
     policy: &'a mut dyn ProbePolicy,
     metrics: AttentionMetrics,
     previous_condition: bool,
-    next_event_sequence: u64,
-    action_issued: bool,
 }
 
 impl AttentionController<'_> {
@@ -177,12 +167,15 @@ impl AttentionController<'_> {
             return None;
         }
 
-        self.next_event_sequence = self.next_event_sequence.saturating_add(1);
+        let sequence = self.metrics.selections.len() as u64 + 1;
         let event = EventEnvelope {
             event_id: format!(
                 "attention-{}-{}",
-                self.mode.as_str(),
-                self.next_event_sequence
+                match self.mode {
+                    AttentionMode::FixedPolling => "fixed-poll",
+                    AttentionMode::EventTriggered => "event-triggered",
+                },
+                sequence
             ),
             source_id: self.watch.source_id.clone(),
             sequence: self.next_event_sequence,
@@ -241,7 +234,9 @@ impl StabilityController for AttentionController<'_> {
     fn propose(&mut self, observation: &PlantObservation) -> Vec<ControlOperation> {
         self.metrics.monitor_checks += 1;
         let condition_met = self.condition_met(observation);
-        let wake = self.should_wake(observation, condition_met);
+        let watch_active = observation.tick as u64 >= self.watch.starts_at_tick
+            && (observation.tick as u64) < self.watch.expires_at_tick;
+        let wake = watch_active && self.should_wake(observation, condition_met);
         self.previous_condition = condition_met;
 
         if !wake {
@@ -272,14 +267,9 @@ impl StabilityController for AttentionController<'_> {
             return Vec::new();
         }
 
-        if self.select_probe(observation).is_some() && !self.action_issued {
-            self.action_issued = true;
-            self.metrics.proposed_actions += 1;
-            return vec![ControlOperation::SetApiCapacity(
-                self.config.api_capacity_setpoint,
-            )];
-        }
-
+        // Selecting a read-only probe is not authority to mutate the plant.
+        // This attention study measures wake and selection behavior only.
+        let _ = self.select_probe(observation);
         Vec::new()
     }
 }
@@ -338,7 +328,6 @@ pub fn run_paired_attention_experiment(
 ) -> Result<PairedAttentionResult, AttentionError> {
     if attention.fixed_poll_interval_ticks == 0
         || attention.failed_ppm_wake_threshold > 1_000_000
-        || attention.api_capacity_setpoint == 0
     {
         return Err(AttentionError::InvalidAttentionConfig);
     }
@@ -357,8 +346,6 @@ pub fn run_paired_attention_experiment(
         policy: fixed_policy,
         metrics: AttentionMetrics::default(),
         previous_condition: false,
-        next_event_sequence: 0,
-        action_issued: false,
     };
     let fixed_run = run_stability_closed_loop(plant, &mut fixed_controller)?;
     let mut fixed_metrics = fixed_controller.metrics;
@@ -448,7 +435,6 @@ mod tests {
             fixed_poll_interval_ticks: 4,
             failed_ppm_wake_threshold: 100_000,
             queue_depth_wake_threshold: 8,
-            api_capacity_setpoint: 150,
             probe_budget_per_arm: 1,
         }
     }
@@ -538,35 +524,30 @@ mod tests {
     }
 
     #[test]
-    fn no_action_counterfactual_is_a_separate_plant_run() {
+    fn read_only_probe_selection_never_authorizes_control_actions() {
         let result = paired();
         assert_eq!(result.no_action_baseline.samples.len(), 32);
         assert_eq!(result.fixed_poll.run.stability.samples.len(), 32);
         assert_eq!(result.event_triggered.run.stability.samples.len(), 32);
-        assert!(
-            result.no_action_baseline.metrics.slo_violation_integral_request_ms
-                > result
-                    .event_triggered
-                    .run
-                    .stability
-                    .metrics
-                    .slo_violation_integral_request_ms
+        assert!(result.fixed_poll.run.actions.is_empty());
+        assert!(result.event_triggered.run.actions.is_empty());
+        assert_eq!(
+            result.no_action_baseline.samples,
+            result.fixed_poll.run.stability.samples
+        );
+        assert_eq!(
+            result.no_action_baseline.samples,
+            result.event_triggered.run.stability.samples
         );
     }
 
     #[test]
-    fn action_traces_are_replay_qualified_by_existing_plant_runner() {
+    fn empty_action_traces_are_replay_qualified_by_existing_plant_runner() {
         let result = paired();
-        assert_eq!(result.event_triggered.run.actions.len(), 1);
-        assert_eq!(result.fixed_poll.run.actions.len(), 1);
-        assert!(
-            result
-                .event_triggered
-                .run
-                .stability
-                .metrics
-                .final_no_intervention_tail_healthy
-        );
+        assert!(result.event_triggered.run.actions.is_empty());
+        assert!(result.fixed_poll.run.actions.is_empty());
+        assert!(result.event_triggered.run.decisions.len() > 0);
+        assert!(result.fixed_poll.run.decisions.len() > 0);
     }
 
     #[test]
@@ -591,7 +572,7 @@ mod tests {
         .unwrap();
         assert_eq!(result.event_triggered.metrics.admitted_probe_selections, 0);
         assert!(result.event_triggered.metrics.no_eligible_probe_wakeups > 0);
-        assert_eq!(result.event_triggered.run.actions.len(), 0);
+        assert!(result.event_triggered.run.actions.is_empty());
     }
 
     #[test]
@@ -642,6 +623,6 @@ mod tests {
         assert_eq!(result.event_triggered.metrics.probe_budget_exhaustions, 1);
         assert_eq!(result.fixed_poll.metrics.probe_budget_exhaustions, 1);
         assert_eq!(result.event_triggered.run.actions.len(), 0);
-        assert_eq!(result.fixed_poll.run.actions.len(), 0);
+        assert!(result.fixed_poll.run.actions.is_empty());
     }
 }
