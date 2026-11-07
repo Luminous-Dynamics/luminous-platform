@@ -52,15 +52,7 @@
       "readiness_state",
       "observed_at",
       "source_revision"
-    ],
-    "resource_ceiling": {
-      "max_duration_ms": 2000,
-      "max_cpu_millicores": 250,
-      "max_memory_bytes": 67108864,
-      "max_io_bytes": 1048576,
-      "max_network_bytes": 262144,
-      "max_result_rows": 10
-    }
+    ]
   },
   "session_budget": {
     "budget_state_ref": "opaque:session-budget-0001",
