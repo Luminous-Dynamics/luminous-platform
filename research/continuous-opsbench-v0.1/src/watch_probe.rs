@@ -270,6 +270,19 @@ fn validate_authority(authority: &AuthoritySnapshot) -> Result<(), EpisodeError>
     Ok(())
 }
 
+/// Check the currentness of an authority snapshot for one bounded watch.
+/// This is only a structural/snapshot check; production use must resolve the
+/// Xenia capability and revocation state at the actual data-access boundary.
+pub(crate) fn watch_authority_is_current(
+    watch: &WatchSpec,
+    authority: &AuthoritySnapshot,
+    at_tick: u64,
+) -> Result<bool, EpisodeError> {
+    validate_watch(watch)?;
+    validate_authority(authority)?;
+    Ok(authority.current_for(watch, at_tick))
+}
+
 /// Return only probe identifiers eligible under the exact watch scope and
 /// current authority snapshot. This is the shared policy-context filter used
 /// both by the scripted episode evaluator and paired attention experiments.
