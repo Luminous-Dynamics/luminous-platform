@@ -30,6 +30,7 @@ const LIMITATIONS: &[&str] = &[
     "A well-bound manifest does not authenticate the source, producer, tenant, calibration issuer, instrument, or physical measurement.",
     "The manifest and this report are unsigned; successful verification is not authorization, regulatory certification, quality release, or machine-control permission.",
     "The implementation is a separate Rust crate but shares serde_json and sha2 dependencies with the producer. A second implementation in a different language/library and an authenticated attestation layer remain further independence steps.",
+    "Artifact bytes are not embedded in the manifest. Verifiers must obtain each artifact and independently recompute its digest before relying on the references.",
 ];
 
 fn main() -> ExitCode {

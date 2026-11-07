@@ -32,10 +32,10 @@ jobs:
             echo "present=false" >> "$GITHUB_OUTPUT"
             echo "No validator crate in this documentation-only revision; formatting job is not applicable."
           fi
-      - uses: dtolnay/rust-toolchain@stable
+      # Pin rustfmt and compiler together; a moving stable toolchain changes formatter output.
+      - uses: dtolnay/rust-toolchain@1.96.0
         if: steps.source.outputs.present == 'true'
         with:
-          toolchain: stable
           components: rustfmt
       - name: Check formatting
         if: steps.source.outputs.present == 'true'
@@ -60,10 +60,10 @@ jobs:
             echo "present=false" >> "$GITHUB_OUTPUT"
             echo "No validator crate in this documentation-only revision; semantic tests are not applicable."
           fi
-      - uses: dtolnay/rust-toolchain@stable
+      # Use the same pinned compiler as formatting and semantic tests.
+      - uses: dtolnay/rust-toolchain@1.96.0
         if: steps.source.outputs.present == 'true'
         with:
-          toolchain: stable
           components: clippy
       - name: Run executable conformance tests
         if: steps.source.outputs.present == 'true'
