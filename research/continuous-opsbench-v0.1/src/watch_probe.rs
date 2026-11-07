@@ -729,6 +729,52 @@ mod tests {
         assert!(result.decision_value.is_none());
     }
 
+
+    #[test]
+    fn observation_bound_to_another_target_is_rejected() {
+        let mut mismatched = observation();
+        mismatched.target_id = "service-b".into();
+        let result = run(
+            &[event(10, "queue_pressure", true)],
+            &authority(),
+            catalog_entry(true),
+            CollectionOutcome::Completed(mismatched),
+            impact(),
+        );
+        assert_eq!(result.status, EpisodeStatus::ObservationRejected);
+        assert!(result.decision_value.is_none());
+    }
+
+    #[test]
+    fn impact_bound_to_another_target_remains_unknown() {
+        let mismatched = ImpactOutcome::Observed(ImpactObservation {
+            impact_id: "impact-1".into(),
+            digest: "sha256:impact-a".into(),
+            probe_id: "probe-queue-depth".into(),
+            operation_digest: "sha256:operation-a".into(),
+            tenant_id: "tenant-a".into(),
+            target_id: "service-b".into(),
+            purpose_id: "incident-diagnosis".into(),
+            observer_control_domain: "independent-observer".into(),
+            window_start_tick: 4,
+            window_end_tick: 5,
+            measured_at_tick: 5,
+            cpu_milliticks: 12,
+            io_bytes: 128,
+            complete: true,
+        });
+        let result = run(
+            &[event(10, "queue_pressure", true)],
+            &authority(),
+            catalog_entry(true),
+            CollectionOutcome::Completed(observation()),
+            mismatched,
+        );
+        assert_eq!(result.status, EpisodeStatus::ImpactUnknown);
+        assert_eq!(result.impact, ImpactDisposition::Unknown);
+        assert!(result.decision_value.is_none());
+    }
+
     #[test]
     fn revoked_during_dormancy_prevents_probe_admission() {
         let mut revoked = authority();
