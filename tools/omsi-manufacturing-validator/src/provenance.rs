@@ -649,16 +649,7 @@ mod tests {
         projection["projection"]["source_quality_claim"]["raw_status"] = json!("ACCEPTED");
         let projection_bytes =
             serde_json::to_vec_pretty(&projection).expect("projection serializes");
-        let result = super::create_provenance_manifest(
-            &artifacts[0],
-            &artifacts[1],
-            &artifacts[2],
-            &artifacts[3],
-            &projection_bytes,
-            &artifacts[5],
-            &artifacts[6],
-            &artifacts[7],
-        );
+        let result = super::create_provenance_manifest(artifact_refs_with(&artifacts, 4, &projection_bytes));
         assert!(result
             .unwrap_err()
             .contains("differs from a fresh adapter re-execution"));
@@ -670,16 +661,7 @@ mod tests {
         let mut coverage: Value = serde_json::from_slice(&artifacts[3]).expect("coverage parses");
         coverage["status"] = json!("schema_coverage_incomplete");
         let coverage_bytes = serde_json::to_vec_pretty(&coverage).expect("coverage serializes");
-        let result = super::create_provenance_manifest(
-            &artifacts[0],
-            &artifacts[1],
-            &artifacts[2],
-            &coverage_bytes,
-            &artifacts[4],
-            &artifacts[5],
-            &artifacts[6],
-            &artifacts[7],
-        );
+        let result = super::create_provenance_manifest(artifact_refs_with(&artifacts, 3, &coverage_bytes));
         assert!(result.unwrap_err().contains("differs from a fresh audit"));
     }
 
@@ -689,16 +671,7 @@ mod tests {
         let mut envelope: Value = serde_json::from_slice(&artifacts[7]).expect("envelope parses");
         envelope["artifact_binding"]["digest"] = json!("0".repeat(64));
         let envelope_bytes = serde_json::to_vec_pretty(&envelope).expect("envelope serializes");
-        let result = super::create_provenance_manifest(
-            &artifacts[0],
-            &artifacts[1],
-            &artifacts[2],
-            &artifacts[3],
-            &artifacts[4],
-            &artifacts[5],
-            &artifacts[6],
-            &envelope_bytes,
-        );
+        let result = super::create_provenance_manifest(artifact_refs_with(&artifacts, 7, &envelope_bytes));
         assert!(result
             .unwrap_err()
             .contains("replay envelope does not verify"));
@@ -713,16 +686,7 @@ mod tests {
             .unwrap()
             .remove("additionalProperties");
         let schema_bytes = serde_json::to_vec(&schema).unwrap();
-        let result = super::create_provenance_manifest(
-            &artifacts[0],
-            &schema_bytes,
-            &artifacts[2],
-            &artifacts[3],
-            &artifacts[4],
-            &artifacts[5],
-            &artifacts[6],
-            &artifacts[7],
-        );
+        let result = super::create_provenance_manifest(artifact_refs_with(&artifacts, 1, &schema_bytes));
         assert!(result
             .unwrap_err()
             .contains("schema coverage is not complete"));
