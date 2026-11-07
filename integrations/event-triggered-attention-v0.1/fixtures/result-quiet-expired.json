@@ -2,7 +2,7 @@
   "schema": "luminous-event-watch-result-v0.1",
   "version": 1,
   "watch_id": "watch-quiet-expired",
-  "watch_request_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "watch_request_digest": "sha256:daf91292465c19c436c4ad5f67bce41c45bc8cf36a9df5671011d54d032b7f09",
   "admission": {
     "outcome": "admitted",
     "evaluated_at": "2026-11-07T12:00:00Z",
