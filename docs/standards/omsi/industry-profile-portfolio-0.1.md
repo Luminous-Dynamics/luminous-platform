@@ -326,6 +326,12 @@ The following work items make the portfolio actionable. They remain in design, r
 ### Industrial maintenance
 - [EV-CBM-A1 / Symtropy issue #3014](https://github.com/Luminous-Dynamics/symtropy/issues/3014) and [PR #3015](https://github.com/Luminous-Dynamics/symtropy/pull/3015) add a deterministic single-machine event reference under the wider [EV-FACTORY-CBM-001 #2619](https://github.com/Luminous-Dynamics/symtropy/issues/2619). This Tier-A oracle is deliberately not a degradation predictor, maintenance policy engine or factory DES. It establishes state-transition and horizon-accounting semantics first.
 
+### PNT resilience and edge intelligence
+- [OMSI-PNT-001 #297](https://github.com/Luminous-Dynamics/luminous-platform/issues/297) and [PNT profile PR #298](https://github.com/Luminous-Dynamics/luminous-platform/pull/298) compose Symthaea EMSR, Mycelix Position, Symtropy, Sol-Atlas, SOMA and platform authority boundaries. The draft profile does not establish receiver, detector, service or sector qualification.
+- Symthaea's 2026 EMSR programme includes cross-dataset, cross-scenario, meta-learning, multimodal and RAIM comparators; it now explicitly binds ground-truth/oracle provenance in the run receipt and tracks semantic oracle-independence validation separately (#10826).
+- [OMSI-EDGE-SENSOR-001 #300](https://github.com/Luminous-Dynamics/luminous-platform/issues/300) defines low-power edge sensor/AI nodes as auxiliary, privacy-bounded instruments. ESP32 candidates are board-specific; they do not substitute for qualified PNT receivers or raw-IF front ends.
+- [LP-PRODUCT-001 #301](https://github.com/Luminous-Dynamics/luminous-platform/issues/301) freezes the first deployable sovereign edge operations package, its build-vs-compose boundary and lab comparison matrix. It composes Nixward, sovereign-boot, Xenia, OMSI and existing vendor/update tools rather than replacing them.
+
 ### Portfolio control
 
 When a new vertical is proposed, update this register only after the profile has a decision owner, domain boundary, reference model, source-rights inventory, negative controls, independent verifier and explicit evidence ceiling. A new issue or PR is a work item, not an evidence-stage promotion.
