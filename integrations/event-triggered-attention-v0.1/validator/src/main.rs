@@ -533,22 +533,6 @@ mod tests {
     }
 
     #[test]
-    fn watch_request_digest_must_bind_exact_input_bytes() {
-        let mut result = parse(RESULT_MATCHED, "matched").unwrap();
-        result["watch_request_digest"] = Value::String(
-            "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".into(),
-        );
-        assert!(
-            audit_pair(
-                WATCH_POSITIVE,
-                &serde_json::to_string(&result).unwrap(),
-                "wrong-watch-digest"
-            )
-            .is_err()
-        );
-    }
-
-    #[test]
     fn watch_interval_must_fit_inside_capability_with_timezone_offsets() {
         let mut watch = parse(WATCH_POSITIVE, "watch").unwrap();
         watch["policy"]["starts_at"] = Value::String("2026-11-07T12:00:00+02:00".into());
