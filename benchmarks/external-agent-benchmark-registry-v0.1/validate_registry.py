@@ -87,8 +87,8 @@ def semantic_errors(snapshot: dict[str, Any]) -> list[str]:
                     errors.append(f"{rid}/{mid}: owner claim has no value")
                 continue
 
-            numerator = metric["numerator"]
-            denominator = metric["denominator"]
+            numerator = metric.get("numerator")
+            denominator = metric.get("denominator")
             if numerator is None or denominator is None or denominator <= 0:
                 errors.append(f"{rid}/{mid}: derived count metric requires a positive denominator")
                 continue
