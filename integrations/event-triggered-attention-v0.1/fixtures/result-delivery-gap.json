@@ -26,7 +26,8 @@
     "status": "delivery_gap",
     "event_count": 0,
     "cursor_before": "cursor:100",
-    "cursor_after": "cursor:102"
+    "cursor_after": "cursor:102",
+    "source_control_domain_ref": "source-domain:service-observer-a"
   },
   "wake": {
     "disposition": "escalate",
