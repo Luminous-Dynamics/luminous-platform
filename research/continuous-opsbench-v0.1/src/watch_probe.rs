@@ -933,7 +933,7 @@ mod tests {
             cpu_milliticks: 12,
             io_bytes: 128,
             complete: true,
-        });
+        }));
         let result = run(
             &[event(10, "queue_pressure", true)],
             &authority(), catalog_entry(true),
