@@ -8,9 +8,8 @@
 //! production event-bus or collector runtime.
 
 use crate::stability::{
-    run_stability_closed_loop, run_stability_scenario, ClosedLoopRun, ControlOperation,
-    Controller, PlantObservation, StabilityConfig, StabilityController, StabilityError,
-    StabilityRun,
+    run_stability_closed_loop, run_stability_scenario, ClosedLoopRun, ControlOperation, Controller,
+    PlantObservation, StabilityConfig, StabilityController, StabilityError, StabilityRun,
 };
 use crate::watch_probe::{
     eligible_probe_ids_for_watch, AuthoritySnapshot, EpisodeError, EventEnvelope,
@@ -285,10 +284,7 @@ impl StabilityController for AttentionController<'_> {
     }
 }
 
-fn finalize_metrics(
-    metrics: &mut AttentionMetrics,
-    run: &ClosedLoopRun,
-) {
+fn finalize_metrics(metrics: &mut AttentionMetrics, run: &ClosedLoopRun) {
     let first_fault_tick = run
         .stability
         .samples
@@ -307,8 +303,7 @@ fn finalize_metrics(
     if let Some(wake) = first_true_wake {
         metrics.first_verified_wake_tick = Some(wake.decision_tick);
         if let Some(fault_tick) = first_fault_tick {
-            metrics.detection_latency_ticks =
-                Some(wake.decision_tick.saturating_sub(fault_tick));
+            metrics.detection_latency_ticks = Some(wake.decision_tick.saturating_sub(fault_tick));
         }
     } else if first_fault_tick.is_some() {
         metrics.missed_fault_episodes = 1;
@@ -350,12 +345,7 @@ pub fn run_paired_attention_experiment(
 
     // Validate watch and authority shape before either arm runs, even when a
     // quiet scenario never wakes and therefore never requests a probe.
-    let _ = eligible_probe_ids_for_watch(
-        watch,
-        authority,
-        watch.starts_at_tick,
-        catalog,
-    )?;
+    let _ = eligible_probe_ids_for_watch(watch, authority, watch.starts_at_tick, catalog)?;
     let no_action_baseline = run_stability_scenario(plant, &[])?;
 
     let mut fixed_controller = AttentionController {
@@ -537,8 +527,14 @@ mod tests {
         assert_eq!(result.fixed_poll.metrics.missed_fault_episodes, 0);
         assert_eq!(result.event_triggered.metrics.probe_selection_calls, 1);
         assert_eq!(result.fixed_poll.metrics.probe_selection_calls, 1);
-        assert!(result.event_triggered.metrics.detection_latency_ticks.unwrap()
-            < result.fixed_poll.metrics.detection_latency_ticks.unwrap());
+        assert!(
+            result
+                .event_triggered
+                .metrics
+                .detection_latency_ticks
+                .unwrap()
+                < result.fixed_poll.metrics.detection_latency_ticks.unwrap()
+        );
     }
 
     #[test]
@@ -547,8 +543,15 @@ mod tests {
         assert_eq!(result.no_action_baseline.samples.len(), 32);
         assert_eq!(result.fixed_poll.run.stability.samples.len(), 32);
         assert_eq!(result.event_triggered.run.stability.samples.len(), 32);
-        assert!(result.no_action_baseline.metrics.slo_violation_integral_request_ms
-            > result.event_triggered.run.stability.metrics.slo_violation_integral_request_ms);
+        assert!(
+            result.no_action_baseline.metrics.slo_violation_integral_request_ms
+                > result
+                    .event_triggered
+                    .run
+                    .stability
+                    .metrics
+                    .slo_violation_integral_request_ms
+        );
     }
 
     #[test]
@@ -556,7 +559,14 @@ mod tests {
         let result = paired();
         assert_eq!(result.event_triggered.run.actions.len(), 1);
         assert_eq!(result.fixed_poll.run.actions.len(), 1);
-        assert!(result.event_triggered.run.stability.metrics.final_no_intervention_tail_healthy);
+        assert!(
+            result
+                .event_triggered
+                .run
+                .stability
+                .metrics
+                .final_no_intervention_tail_healthy
+        );
     }
 
     #[test]
@@ -570,9 +580,15 @@ mod tests {
             selected_probe_id: Some("probe-queue-depth".into()),
         };
         let result = run_paired_attention_experiment(
-            &plant(), &attention(), &watch(), &expired, &catalog(),
-            &mut fixed, &mut event,
-        ).unwrap();
+            &plant(),
+            &attention(),
+            &watch(),
+            &expired,
+            &catalog(),
+            &mut fixed,
+            &mut event,
+        )
+        .unwrap();
         assert_eq!(result.event_triggered.metrics.admitted_probe_selections, 0);
         assert!(result.event_triggered.metrics.no_eligible_probe_wakeups > 0);
         assert_eq!(result.event_triggered.run.actions.len(), 0);
@@ -587,9 +603,15 @@ mod tests {
             selected_probe_id: Some("probe-not-eligible".into()),
         };
         let result = run_paired_attention_experiment(
-            &plant(), &attention(), &watch(), &authority(), &catalog(),
-            &mut fixed, &mut event,
-        ).unwrap();
+            &plant(),
+            &attention(),
+            &watch(),
+            &authority(),
+            &catalog(),
+            &mut fixed,
+            &mut event,
+        )
+        .unwrap();
         assert_eq!(result.event_triggered.metrics.denied_probe_selections, 1);
         assert_eq!(result.event_triggered.metrics.admitted_probe_selections, 0);
         assert_eq!(result.event_triggered.run.actions.len(), 0);
@@ -606,9 +628,15 @@ mod tests {
             selected_probe_id: Some("probe-queue-depth".into()),
         };
         let result = run_paired_attention_experiment(
-            &plant(), &config, &watch(), &authority(), &catalog(),
-            &mut fixed, &mut event,
-        ).unwrap();
+            &plant(),
+            &config,
+            &watch(),
+            &authority(),
+            &catalog(),
+            &mut fixed,
+            &mut event,
+        )
+        .unwrap();
         assert_eq!(result.event_triggered.metrics.admitted_probe_selections, 0);
         assert_eq!(result.fixed_poll.metrics.admitted_probe_selections, 0);
         assert_eq!(result.event_triggered.metrics.probe_budget_exhaustions, 1);
