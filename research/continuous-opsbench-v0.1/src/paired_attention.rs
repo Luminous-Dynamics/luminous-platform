@@ -360,8 +360,7 @@ pub fn run_paired_attention_experiment(
         policy: event_policy,
         metrics: AttentionMetrics::default(),
         previous_condition: false,
-        next_event_sequence: 0,
-        action_issued: false,
+        next_event_sequence: watch.first_sequence.saturating_sub(1),
     };
     let event_run = run_stability_closed_loop(plant, &mut event_controller)?;
     let mut event_metrics = event_controller.metrics;
@@ -622,7 +621,7 @@ mod tests {
         assert_eq!(result.fixed_poll.metrics.admitted_probe_selections, 0);
         assert_eq!(result.event_triggered.metrics.probe_budget_exhaustions, 1);
         assert_eq!(result.fixed_poll.metrics.probe_budget_exhaustions, 1);
-        assert_eq!(result.event_triggered.run.actions.len(), 0);
+        assert!(result.event_triggered.run.actions.is_empty());
         assert!(result.fixed_poll.run.actions.is_empty());
     }
 }
