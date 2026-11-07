@@ -551,7 +551,8 @@ mod tests {
             &catalog(),
             &mut fixed,
             &mut event,
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(result.event_triggered.metrics.cognitive_invocations, 0);
         assert_eq!(result.event_triggered.metrics.admitted_probe_selections, 0);
