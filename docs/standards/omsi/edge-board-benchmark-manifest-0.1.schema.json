@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:omsi:edge-board-benchmark:0.1",
+  "title": "OMSI edge intelligence board qualification manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "version", "state", "owner_issue", "workload_profile", "board_candidates", "comparators", "metric_tracks", "scenarios", "run_records", "claim_ceiling"],
+  "properties": {
+    "schema": { "const": "omsi.edge-intelligence-benchmark" },
+    "version": { "const": "0.1.0-draft" },
+    "state": { "const": "DESIGN_NOT_EXECUTED" },
+    "owner_issue": { "const": 300 },
+    "workload_profile": { "$ref": "#/$defs/workload" },
+    "board_candidates": { "type": "array", "minItems": 2, "items": { "$ref": "#/$defs/board" } },
+    "comparators": { "type": "array", "minItems": 3, "items": { "type": "string" }, "uniqueItems": true },
+    "metric_tracks": { "type": "array", "minItems": 5, "items": { "type": "string" }, "uniqueItems": true },
+    "scenarios": { "type": "array", "minItems": 8, "items": { "$ref": "#/$defs/scenario" } },
+    "run_records": { "type": "array", "items": { "$ref": "#/$defs/run" } },
+    "claim_ceiling": { "type": "array", "minItems": 3, "items": { "type": "string" }, "uniqueItems": true }
+  },
+  "$defs": {
+    "workload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "mode", "input_profile", "target_task", "input_identity_rule", "retention_policy"],
+      "properties": {
+        "id": { "const": "EDGE-SENSOR-FEATURE-WINDOW-001" },
+        "mode": { "const": "synthetic_and_recorded_non_transmitting_sensor_features_only" },
+        "input_profile": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["window_duration_ms", "feature_rate_hz", "feature_channels", "numeric_representation", "timestamp_basis"],
+          "properties": {
+            "window_duration_ms": { "type": "integer", "minimum": 1 },
+            "feature_rate_hz": { "type": "integer", "minimum": 1 },
+            "feature_channels": { "type": "array", "minItems": 1, "items": { "type": "string" }, "uniqueItems": true },
+            "numeric_representation": { "enum": ["int16_fixed_point", "float32_reference"] },
+            "timestamp_basis": { "enum": ["qualified_source_time_with_uncertainty", "synthetic_monotonic_epoch"] }
+          }
+        },
+        "target_task": { "enum": ["equipment_anomaly_ranking", "sensor_fault_detection", "bounded_event_classification"] },
+        "input_identity_rule": { "const": "identical_frozen_window_bytes_and_labels_for_all_comparators" },
+        "retention_policy": { "const": "raw_measurements_local_only_unless_explicitly_authorized" }
+      }
+    },
+    "board": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate_id", "soc_family", "selection_state", "datasheet_status", "hardware_identity", "connectivity", "runtime_profiles", "qualification_gates"],
+      "properties": {
+        "candidate_id": { "enum": ["ESP32-S3-CANDIDATE", "ESP32-P4-CANDIDATE"] },
+        "soc_family": { "enum": ["ESP32-S3", "ESP32-P4"] },
+        "selection_state": { "const": "UNSELECTED_EXACT_BOARD_REQUIRED" },
+        "datasheet_status": { "enum": ["CURRENT_FAMILY_DOCUMENT_TO_PIN", "PRELIMINARY_DOCUMENT"] },
+        "hardware_identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["board_manufacturer", "board_model", "board_revision", "module_part", "soc_revision", "flash_bytes", "psram_bytes", "schematic_sha256", "bom_sha256"],
+          "properties": {
+            "board_manufacturer": { "type": ["string", "null"] },
+            "board_model": { "type": ["string", "null"] },
+            "board_revision": { "type": ["string", "null"] },
+            "module_part": { "type": ["string", "null"] },
+            "soc_revision": { "type": ["string", "null"] },
+            "flash_bytes": { "type": ["integer", "null"], "minimum": 0 },
+            "psram_bytes": { "type": ["integer", "null"], "minimum": 0 },
+            "schematic_sha256": { "type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$" },
+            "bom_sha256": { "type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$" }
+          }
+        },
+        "connectivity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["wifi", "bluetooth", "companion_part"],
+          "properties": {
+            "wifi": { "enum": ["integrated", "companion", "none", "unknown"] },
+            "bluetooth": { "enum": ["integrated", "companion", "none", "unknown"] },
+            "companion_part": { "type": ["string", "null"] }
+          }
+        },
+        "runtime_profiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["runtime", "version", "quantization_modes", "operator_map_digest", "compiler_flags_digest"],
+            "properties": {
+              "runtime": { "enum": ["ESP-DL", "TFLite-Micro", "non-ML-reference"] },
+              "version": { "type": "string" },
+              "quantization_modes": { "type": "array", "items": { "enum": ["FP32", "INT8", "W8A8", "W8A16", "W16A16", "NOT_APPLICABLE"] }, "uniqueItems": true },
+              "operator_map_digest": { "type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$" },
+              "compiler_flags_digest": { "type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$" }
+            }
+          }
+        },
+        "qualification_gates": {
+          "type": "array",
+          "minItems": 5,
+          "items": { "enum": ["reproducible_firmware_build", "secure_boot", "flash_encryption", "signed_ota", "rollback_recovery", "anti_rollback", "debug_interface_policy", "offline_buffer_integrity", "privacy_exfiltration_test"] },
+          "uniqueItems": true
+        }
+      }
+    },
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "purpose", "stimulus", "expected_behavior", "non_compensatory"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^EDGE-[0-9]{3}$" },
+        "purpose": { "type": "string", "minLength": 1 },
+        "stimulus": { "enum": ["nominal_input", "sensor_missing", "sensor_stuck_or_saturated", "calibration_expired", "clock_reset_or_uncorrelated", "model_ood", "network_partition", "buffer_overflow", "power_loss_during_update", "unsigned_or_replayed_firmware", "quantization_threshold_flip", "raw_data_export_attempt"] },
+        "expected_behavior": { "enum": ["process_with_receipt", "mark_measurement_unknown", "reject_reliance_and_abstain", "continue_local_and_buffer", "report_sample_loss", "reject_firmware_and_recover", "mark_quantization_regression", "deny_export"] },
+        "non_compensatory": { "type": "boolean", "const": true }
+      }
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run_id", "board_candidate_id", "board_identity_digest", "firmware_digest", "runtime_version", "model_digest", "input_corpus_digest", "state"],
+      "properties": {
+        "run_id": { "type": "string" },
+        "board_candidate_id": { "enum": ["ESP32-S3-CANDIDATE", "ESP32-P4-CANDIDATE"] },
+        "board_identity_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "firmware_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "runtime_version": { "type": "string" },
+        "model_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "input_corpus_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "state": { "enum": ["PLANNED", "EXECUTED", "INDEPENDENTLY_VERIFIED", "REJECTED"] }
+      }
+    }
+  }
+}
