@@ -270,6 +270,43 @@ fn validate_authority(authority: &AuthoritySnapshot) -> Result<(), EpisodeError>
     Ok(())
 }
 
+/// Return only probe identifiers eligible under the exact watch scope and
+/// current authority snapshot. This is the shared policy-context filter used
+/// both by the scripted episode evaluator and paired attention experiments.
+/// The raw catalog is never returned to a policy.
+pub fn eligible_probe_ids_for_watch(
+    watch: &WatchSpec,
+    authority: &AuthoritySnapshot,
+    current_tick: u64,
+    catalog: &[ProbeCatalogEntry],
+) -> Result<Vec<String>, EpisodeError> {
+    validate_watch(watch)?;
+    validate_authority(authority)?;
+    if !authority.current_for(watch, current_tick) {
+        return Ok(Vec::new());
+    }
+
+    let mut seen_probe_ids = BTreeSet::new();
+    let mut eligible = Vec::new();
+    for entry in catalog.iter().filter(|entry| {
+        entry.read_only
+            && non_empty(&entry.probe_id)
+            && non_empty(&entry.operation_digest)
+            && non_empty(&entry.collector_control_domain)
+            && entry.tenant_id == watch.tenant_id
+            && entry.target_id == watch.target_id
+            && entry.purpose_id == watch.purpose_id
+            && entry.maximum_duration_ticks > 0
+            && entry.maximum_duration_ticks <= watch.max_probe_duration_ticks
+    }) {
+        if !seen_probe_ids.insert(entry.probe_id.as_str()) {
+            return Err(EpisodeError::InvalidProbeCatalog);
+        }
+        eligible.push(entry.probe_id.clone());
+    }
+    Ok(eligible)
+}
+
 #[allow(clippy::too_many_arguments)] // Explicitly constructs a result from independent counters.
 fn empty_result(
     watch: &WatchSpec,
@@ -513,23 +550,15 @@ pub fn run_scripted_episode<P: ProbePolicy>(
         event,
         authority_epoch: authority.epoch,
     };
-    // Construct a capability-minimal view before policy selection. The
-    // policy never sees other tenants' probes, write-capable entries, or
-    // out-of-purpose/out-of-target catalog metadata.
-    let mut eligible_probes: Vec<&ProbeCatalogEntry> = Vec::new();
-    let mut seen_probe_ids = BTreeSet::new();
-    for entry in catalog.iter().filter(|entry| {
-        entry.read_only
-            && non_empty(&entry.probe_id)
-            && non_empty(&entry.operation_digest)
-            && non_empty(&entry.collector_control_domain)
-            && entry.tenant_id == watch.tenant_id
-            && entry.target_id == watch.target_id
-            && entry.purpose_id == watch.purpose_id
-            && entry.maximum_duration_ticks > 0
-            && entry.maximum_duration_ticks <= watch.max_probe_duration_ticks
-    }) {
-        if !seen_probe_ids.insert(entry.probe_id.as_str()) {
+    // Reuse the same capability-minimal catalog filter as the paired runner.
+    let eligible_probe_ids = match eligible_probe_ids_for_watch(
+        watch,
+        authority,
+        current_tick,
+        catalog,
+    ) {
+        Ok(ids) => ids,
+        Err(EpisodeError::InvalidProbeCatalog) => {
             return Ok(empty_result(
                 watch,
                 authority,
@@ -541,12 +570,8 @@ pub fn run_scripted_episode<P: ProbePolicy>(
                 wakeups,
             ));
         }
-        eligible_probes.push(entry);
-    }
-    let eligible_probe_ids: Vec<String> = eligible_probes
-        .iter()
-        .map(|entry| entry.probe_id.clone())
-        .collect();
+        Err(error) => return Err(error),
+    };
 
     let selected_probe_id = match policy.select_probe(&wake, &eligible_probe_ids) {
         Some(probe_id)
@@ -584,9 +609,8 @@ pub fn run_scripted_episode<P: ProbePolicy>(
         }
     };
 
-    let probe = eligible_probes
+    let probe = catalog
         .iter()
-        .copied()
         .find(|entry| entry.probe_id == selected_probe_id)
         .ok_or(EpisodeError::InvalidProbeCatalog)?;
 
