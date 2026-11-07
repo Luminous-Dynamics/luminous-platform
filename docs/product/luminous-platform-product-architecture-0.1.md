@@ -287,6 +287,37 @@ A mapping exercise is not compliance or certification.
 - Repair-aware device qualification: #131
 - Open-hardware gateway: #71
 
+## 11.1 AI, edge signal processing and ESP terminology
+
+This architecture separates three concepts that are easy to conflate:
+
+### A. Embedded ESP32 edge intelligence
+
+ESP32-S3/P4/S31-class boards are optional edge peripherals under OMSI-EDGE-SENSOR-001 #300. Appropriate initial uses include temperature/power/vibration/tamper/network-health telemetry, local threshold/statistical checks, small quantized inference, bounded buffering and offline event summaries.
+
+They are **not presumed to be wideband RF/IF digitizers, calibrated GNSS receivers or PNT integrity authorities**. If spectrum data are required, a separately qualified RF receiver/front end, antenna, sampling clock, calibration and acquisition pipeline must provide the measurements. The ESP32 may process low-rate derived features or auxiliary health data only where exact-board tests demonstrate sufficient memory, throughput, latency and energy.
+
+### B. AI for recorded RF/spectrum observations
+
+For recorded receive-side I/Q or receiver telemetry, AI may assist open-set signal-family classification, anomaly ranking, uncertainty estimation and abstention. It must preserve an explicit unknown class and must not infer malicious intent or an emitter's identity/location. Symthaea tracks this separately in EMSR-RF-OPENSET-001 #10893, with the 2026 RF-RPL paper as an open-set semi-supervised comparator. This is a research track, not a deployed capability.
+
+### C. ESP as extrasensory perception
+
+Extrasensory perception (ESP) is an unestablished research hypothesis, tracked separately as anomalous-information acquisition in Symthaea #10843. The platform may host isolated, preregistered experiment workflow and evidence capture, but no ESP/AIA result may feed PNT, spectrum, safety, security, financial, medical or operational decisions. A statistical anomaly or positive pilot is not proof of consciousness, telepathy, precognition or a non-local mechanism.
+
+The three meanings are kept separate in names, schemas, evaluation and product claims. "ESP32", "RF signal processing" and "extrasensory perception" are not interchangeable product capabilities.
+
+## 11.2 Product deployment tiers
+
+The first deployable Luminous Platform product remains a local-first site/device lifecycle package. Industry profiles are admitted as separate, evidence-gated verticals:
+
+1. **Platform Core:** device inventory, version/firmware/configuration state, local observability, maintenance workflow, approvals, effect boundary and independent recovery receipts.
+2. **Edge Intelligence:** optional exact-board sensor nodes, calibrated auxiliary measurements, bounded inference and offline buffering.
+3. **Industry profiles:** PNT/telecom, maritime/ports, transport, industrial, utilities and emergency operations. Each profile has its own measurements, domain thresholds, standards mappings and authority owners.
+4. **Research workspaces:** isolated benchmark and exploratory scientific experiments (including AIA/ESP) with separate data stores, preregistration and claim ceilings; never an operational signal path.
+
+This decomposition lets Luminous Platform package Symthaea, Mycelix, Symtropy and Sol-Atlas without making the platform another cognitive engine, navigation system, physics simulator or evidence ledger.
+
 ## 12. Claim ceiling
 
 This document is a proposed product architecture. It does not establish production readiness, customer deployment, update-system superiority, industrial interoperability, security certification, PNT integrity, airworthiness, maritime qualification or autonomous safe operation. Every consequential effect remains within the existing participant and authority boundary.
