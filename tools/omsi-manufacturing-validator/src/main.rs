@@ -203,16 +203,16 @@ fn run() -> Result<u8, String> {
             let semantic_input = read_bytes_bounded(&args[7], MAX_ADAPTER_INPUT_BYTES)?;
             let semantic_report = read_bytes_bounded(&args[8], MAX_ADAPTER_INPUT_BYTES)?;
             let replay_envelope = read_bytes_bounded(&args[9], MAX_ADAPTER_INPUT_BYTES)?;
-            let manifest = provenance::create_provenance_manifest(
-                &source_record,
-                &source_schema,
-                &adapter_map,
-                &schema_coverage_report,
-                &projection_report,
-                &semantic_input,
-                &semantic_report,
-                &replay_envelope,
-            )?;
+            let manifest = provenance::create_provenance_manifest(provenance::ProvenanceArtifacts {
+                source_record_bytes: &source_record,
+                source_schema_bytes: &source_schema,
+                adapter_map_bytes: &adapter_map,
+                schema_coverage_report_bytes: &schema_coverage_report,
+                projection_report_bytes: &projection_report,
+                semantic_input_bytes: &semantic_input,
+                semantic_report_bytes: &semantic_report,
+                replay_envelope_bytes: &replay_envelope,
+            })?;
             println!(
                 "{}",
                 serde_json::to_string_pretty(&manifest)
@@ -232,14 +232,16 @@ fn run() -> Result<u8, String> {
             let replay_envelope = read_bytes_bounded(&args[10], MAX_ADAPTER_INPUT_BYTES)?;
             let verification = provenance::verify_provenance_manifest(
                 &manifest,
-                &source_record,
-                &source_schema,
-                &adapter_map,
-                &schema_coverage_report,
-                &projection_report,
-                &semantic_input,
-                &semantic_report,
-                &replay_envelope,
+                provenance::ProvenanceArtifacts {
+                    source_record_bytes: &source_record,
+                    source_schema_bytes: &source_schema,
+                    adapter_map_bytes: &adapter_map,
+                    schema_coverage_report_bytes: &schema_coverage_report,
+                    projection_report_bytes: &projection_report,
+                    semantic_input_bytes: &semantic_input,
+                    semantic_report_bytes: &semantic_report,
+                    replay_envelope_bytes: &replay_envelope,
+                }
             );
             println!(
                 "{}",
