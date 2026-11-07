@@ -41,9 +41,11 @@ At the time of this draft (7 November 2026), Symthaea PR #10105 provides a robus
 - decision-aware-probe-binding.schema.json: cross-record outcome. It stores references/digests for the authority decision, reservation, observation, independent impact record and optional evaluation. It does not duplicate canonical receipt payloads.
 - fixtures/proposal-positive.json: valid synthetic robust-EIG proposal.
 - fixtures/proposal-write-capability-rejected.json: intentionally invalid: write-capable probe.
+- fixtures/proposal-metric-mismatch-rejected.json: intentionally invalid: planner method and predicted metric disagree.
 - fixtures/binding-completed.json: synthetic admitted/completed example with separate observation and impact receipts.
 - fixtures/binding-unknown-impact.json: admitted probe whose collection/impact outcome remains unknown. It must not receive zero-impact or successful evaluation credit.
 - fixtures/binding-denied.json: denied request with no collection and no impact measurement.
+- fixtures/binding-completed-without-impact-rejected.json: intentionally invalid: completion is claimed without a canonical probe-impact receipt.
 
 ## Security and semantic rules
 
