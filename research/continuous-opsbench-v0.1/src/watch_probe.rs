@@ -84,11 +84,8 @@ pub struct WakeContext {
 /// A policy proposes only a catalog identifier. It cannot supply an operation,
 /// target, tenant, purpose, credential, or permission.
 pub trait ProbePolicy {
-    fn select_probe(
-        &mut self,
-        wake: &WakeContext,
-        catalog: &[ProbeCatalogEntry],
-    ) -> Option<String>;
+    fn select_probe(&mut self, wake: &WakeContext, catalog: &[ProbeCatalogEntry])
+        -> Option<String>;
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -324,12 +321,24 @@ pub fn run_scripted_episode<P: ProbePolicy>(
 
     if current_tick < watch.starts_at_tick {
         return Ok(empty_result(
-            watch, authority, EpisodeStatus::NotStarted, TerminalDisposition::Stop, 0, 0, 0, 0,
+            watch,
+            authority,
+            EpisodeStatus::NotStarted,
+            TerminalDisposition::Stop,
+            0,
+            0,
+            0,
         ));
     }
     if current_tick >= watch.expires_at_tick {
         return Ok(empty_result(
-            watch, authority, EpisodeStatus::Expired, TerminalDisposition::Stop, 0, 0, 0, 0,
+            watch,
+            authority,
+            EpisodeStatus::Expired,
+            TerminalDisposition::Stop,
+            0,
+            0,
+            0,
         ));
     }
     if !authority.current_for(watch, current_tick) {
@@ -338,7 +347,10 @@ pub fn run_scripted_episode<P: ProbePolicy>(
             authority,
             EpisodeStatus::AuthorityRevokedOrExpired,
             TerminalDisposition::Escalate,
-            0, 0, 0, 0,
+            0,
+            0,
+            0,
+            0,
         ));
     }
 
@@ -381,16 +393,26 @@ pub fn run_scripted_episode<P: ProbePolicy>(
             }
             if event.sequence != last.saturating_add(1) {
                 return Ok(empty_result(
-                    watch, authority, EpisodeStatus::DeliveryGap,
-                    TerminalDisposition::Escalate, delivered_events,
-                    duplicate_events, rejected_scope_events, 0,
+                    watch,
+                    authority,
+                    EpisodeStatus::DeliveryGap,
+                    TerminalDisposition::Escalate,
+                    delivered_events,
+                    duplicate_events,
+                    rejected_scope_events,
+                    0,
                 ));
             }
         } else if event.sequence != watch.first_sequence {
             return Ok(empty_result(
-                watch, authority, EpisodeStatus::DeliveryGap,
-                TerminalDisposition::Escalate, delivered_events,
-                duplicate_events, rejected_scope_events, 0,
+                watch,
+                authority,
+                EpisodeStatus::DeliveryGap,
+                TerminalDisposition::Escalate,
+                delivered_events,
+                duplicate_events,
+                rejected_scope_events,
+                0,
             ));
         }
         last_sequence = Some(event.sequence);
@@ -404,9 +426,14 @@ pub fn run_scripted_episode<P: ProbePolicy>(
 
         if !authority.current_for(watch, event.delivered_at_tick) {
             return Ok(empty_result(
-                watch, authority, EpisodeStatus::AuthorityRevokedOrExpired,
-                TerminalDisposition::Escalate, delivered_events,
-                duplicate_events, rejected_scope_events, 0,
+                watch,
+                authority,
+                EpisodeStatus::AuthorityRevokedOrExpired,
+                TerminalDisposition::Escalate,
+                delivered_events,
+                duplicate_events,
+                rejected_scope_events,
+                0,
             ));
         }
 
@@ -428,8 +455,14 @@ pub fn run_scripted_episode<P: ProbePolicy>(
         Some(event) => event,
         None => {
             return Ok(empty_result(
-                watch, authority, EpisodeStatus::Quiet, TerminalDisposition::Stop,
-                delivered_events, duplicate_events, rejected_scope_events, 0,
+                watch,
+                authority,
+                EpisodeStatus::Quiet,
+                TerminalDisposition::Stop,
+                delivered_events,
+                duplicate_events,
+                rejected_scope_events,
+                0,
             ));
         }
     };
@@ -437,8 +470,14 @@ pub fn run_scripted_episode<P: ProbePolicy>(
     let wakeups = 1usize;
     if wakeups > watch.max_wakeups as usize {
         return Ok(empty_result(
-            watch, authority, EpisodeStatus::Expired, TerminalDisposition::Escalate,
-            delivered_events, duplicate_events, rejected_scope_events, wakeups,
+            watch,
+            authority,
+            EpisodeStatus::Expired,
+            TerminalDisposition::Escalate,
+            delivered_events,
+            duplicate_events,
+            rejected_scope_events,
+            wakeups,
         ));
     }
 
@@ -451,19 +490,33 @@ pub fn run_scripted_episode<P: ProbePolicy>(
         Some(probe_id) if non_empty(&probe_id) => probe_id,
         _ => {
             return Ok(empty_result(
-                watch, authority, EpisodeStatus::NoProbeSelected,
-                TerminalDisposition::AskPrincipal, delivered_events,
-                duplicate_events, rejected_scope_events, wakeups,
+                watch,
+                authority,
+                EpisodeStatus::NoProbeSelected,
+                TerminalDisposition::AskPrincipal,
+                delivered_events,
+                duplicate_events,
+                rejected_scope_events,
+                wakeups,
             ));
         }
     };
 
-    let probe = match catalog.iter().find(|entry| entry.probe_id == selected_probe_id) {
+    let probe = match catalog
+        .iter()
+        .find(|entry| entry.probe_id == selected_probe_id)
+    {
         Some(probe) => probe,
         None => {
             let mut result = empty_result(
-                watch, authority, EpisodeStatus::ProbeDenied, TerminalDisposition::Abstain,
-                delivered_events, duplicate_events, rejected_scope_events, wakeups,
+                watch,
+                authority,
+                EpisodeStatus::ProbeDenied,
+                TerminalDisposition::Abstain,
+                delivered_events,
+                duplicate_events,
+                rejected_scope_events,
+                wakeups,
             );
             result.selected_probe_id = Some(selected_probe_id);
             return Ok(result);
@@ -484,16 +537,28 @@ pub fn run_scripted_episode<P: ProbePolicy>(
 
     if !eligible {
         let mut result = empty_result(
-            watch, authority, EpisodeStatus::ProbeDenied, TerminalDisposition::Abstain,
-            delivered_events, duplicate_events, rejected_scope_events, wakeups,
+            watch,
+            authority,
+            EpisodeStatus::ProbeDenied,
+            TerminalDisposition::Abstain,
+            delivered_events,
+            duplicate_events,
+            rejected_scope_events,
+            wakeups,
         );
         result.selected_probe_id = Some(selected_probe_id);
         return Ok(result);
     }
 
     let mut result = empty_result(
-        watch, authority, EpisodeStatus::ProbeNotStarted, TerminalDisposition::Abstain,
-        delivered_events, duplicate_events, rejected_scope_events, wakeups,
+        watch,
+        authority,
+        EpisodeStatus::ProbeNotStarted,
+        TerminalDisposition::Abstain,
+        delivered_events,
+        duplicate_events,
+        rejected_scope_events,
+        wakeups,
     );
     result.selected_probe_id = Some(selected_probe_id);
     result.probe_admitted = true;
@@ -710,23 +775,36 @@ mod tests {
             selected_probe_id: Some(entry.probe_id.clone()),
         };
         run_scripted_episode(
-            &watch(), authority, &[entry], events, 6, &mut policy,
-            collection, impact, &truth(),
-        ).unwrap()
+            &watch(),
+            authority,
+            &[entry],
+            events,
+            6,
+            &mut policy,
+            collection,
+            impact,
+            &truth(),
+        )
+        .unwrap()
     }
 
     #[test]
     fn valid_watch_probe_observation_impact_and_decision_path_completes() {
         let result = run(
             &[event(10, "queue_pressure", true)],
-            &authority(), catalog_entry(true),
-            CollectionOutcome::Completed(Box::new(observation())), impact(),
+            &authority(),
+            catalog_entry(true),
+            CollectionOutcome::Completed(Box::new(observation())),
+            impact(),
         );
         assert_eq!(result.status, EpisodeStatus::Completed);
         assert_eq!(result.terminal, TerminalDisposition::Stop);
         assert_eq!(result.wakeups, 1);
         assert_eq!(result.consequential_mutation_attempts, 0);
-        assert_eq!(result.decision_value.unwrap().realized_loss_reduction_ppm, 300_000);
+        assert_eq!(
+            result.decision_value.unwrap().realized_loss_reduction_ppm,
+            300_000
+        );
     }
 
 
@@ -845,7 +923,8 @@ mod tests {
             CollectionOutcome::NotStarted,
             ImpactOutcome::NotMeasured,
             &truth(),
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(result.status, EpisodeStatus::NotStarted);
         assert_eq!(result.delivered_events, 0);
     }
@@ -856,8 +935,10 @@ mod tests {
         revoked.revoked_at_tick = Some(3);
         let result = run(
             &[event(10, "queue_pressure", true)],
-            &revoked, catalog_entry(true),
-            CollectionOutcome::Completed(Box::new(observation())), impact(),
+            &revoked,
+            catalog_entry(true),
+            CollectionOutcome::Completed(Box::new(observation())),
+            impact(),
         );
         assert_eq!(result.status, EpisodeStatus::AuthorityRevokedOrExpired);
         assert!(!result.probe_admitted);
@@ -872,8 +953,10 @@ mod tests {
                 event(10, "irrelevant", false),
                 event(11, "queue_pressure", true),
             ],
-            &authority(), catalog_entry(true),
-            CollectionOutcome::Completed(Box::new(observation())), impact(),
+            &authority(),
+            catalog_entry(true),
+            CollectionOutcome::Completed(Box::new(observation())),
+            impact(),
         );
         assert_eq!(result.duplicate_events, 1);
         assert_eq!(result.wakeups, 1);
@@ -884,8 +967,10 @@ mod tests {
     fn sequence_gap_escalates_without_probe() {
         let result = run(
             &[event(10, "irrelevant", false), event(12, "queue_pressure", true)],
-            &authority(), catalog_entry(true),
-            CollectionOutcome::Completed(Box::new(observation())), impact(),
+            &authority(),
+            catalog_entry(true),
+            CollectionOutcome::Completed(Box::new(observation())),
+            impact(),
         );
         assert_eq!(result.status, EpisodeStatus::DeliveryGap);
         assert!(!result.probe_admitted);
@@ -895,8 +980,10 @@ mod tests {
     fn write_capable_probe_is_denied() {
         let result = run(
             &[event(10, "queue_pressure", true)],
-            &authority(), catalog_entry(false),
-            CollectionOutcome::Completed(Box::new(observation())), impact(),
+            &authority(),
+            catalog_entry(false),
+            CollectionOutcome::Completed(Box::new(observation())),
+            impact(),
         );
         assert_eq!(result.status, EpisodeStatus::ProbeDenied);
         assert!(!result.probe_admitted);
@@ -907,8 +994,10 @@ mod tests {
     fn unknown_probe_impact_is_not_zero_or_success() {
         let result = run(
             &[event(10, "queue_pressure", true)],
-            &authority(), catalog_entry(true),
-            CollectionOutcome::Completed(Box::new(observation())), ImpactOutcome::Unknown,
+            &authority(),
+            catalog_entry(true),
+            CollectionOutcome::Completed(Box::new(observation())),
+            ImpactOutcome::Unknown,
         );
         assert_eq!(result.status, EpisodeStatus::ImpactUnknown);
         assert_eq!(result.impact, ImpactDisposition::Unknown);
@@ -936,8 +1025,10 @@ mod tests {
         }));
         let result = run(
             &[event(10, "queue_pressure", true)],
-            &authority(), catalog_entry(true),
-            CollectionOutcome::Completed(Box::new(observation())), same_domain,
+            &authority(),
+            catalog_entry(true),
+            CollectionOutcome::Completed(Box::new(observation())),
+            same_domain,
         );
         assert_eq!(result.status, EpisodeStatus::ImpactIndependenceConflict);
         assert_eq!(result.decision_value, None);
@@ -947,8 +1038,10 @@ mod tests {
     fn timed_out_collector_still_running_is_unknown_and_not_retried() {
         let result = run(
             &[event(10, "queue_pressure", true)],
-            &authority(), catalog_entry(true),
-            CollectionOutcome::TimedOutStillRunning, ImpactOutcome::NotMeasured,
+            &authority(),
+            catalog_entry(true),
+            CollectionOutcome::TimedOutStillRunning,
+            ImpactOutcome::NotMeasured,
         );
         assert_eq!(result.status, EpisodeStatus::ProbeOutcomeUnknown);
         assert_eq!(result.terminal, TerminalDisposition::Escalate);
@@ -960,8 +1053,10 @@ mod tests {
     fn no_matching_event_remains_quiet_without_probe() {
         let result = run(
             &[event(10, "irrelevant", false)],
-            &authority(), catalog_entry(true),
-            CollectionOutcome::NotStarted, ImpactOutcome::NotMeasured,
+            &authority(),
+            catalog_entry(true),
+            CollectionOutcome::NotStarted,
+            ImpactOutcome::NotMeasured,
         );
         assert_eq!(result.status, EpisodeStatus::Quiet);
         assert_eq!(result.wakeups, 0);
@@ -974,8 +1069,10 @@ mod tests {
         wrong_scope.tenant_id = "tenant-b".into();
         let result = run(
             &[wrong_scope],
-            &authority(), catalog_entry(true),
-            CollectionOutcome::NotStarted, ImpactOutcome::NotMeasured,
+            &authority(),
+            catalog_entry(true),
+            CollectionOutcome::NotStarted,
+            ImpactOutcome::NotMeasured,
         );
         assert_eq!(result.status, EpisodeStatus::Quiet);
         assert_eq!(result.rejected_scope_events, 1);
