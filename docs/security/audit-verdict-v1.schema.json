@@ -1,0 +1,366 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/security-audit/verdict-v1.schema.json",
+  "title": "Luminous Security Audit Aggregate Verdict v1",
+  "description": "Producer-side aggregate result for one exact GitHub Actions audit run. This schema does not authenticate the workflow or establish an independent trust root.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "repository",
+    "subject_sha",
+    "audit_engine_sha",
+    "workflow_ref",
+    "workflow_sha",
+    "workflow_run_url",
+    "generated_at_utc",
+    "aggregate_artifact_retention_days",
+    "run_id",
+    "run_attempt",
+    "workflow_job_result",
+    "rustsec_job_result",
+    "npm_job_result",
+    "audit_rust",
+    "audit_node",
+    "required_lanes",
+    "non_blocking_findings_present",
+    "non_blocking_finding_sources",
+    "status",
+    "failure_reasons",
+    "evidence_files"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous.security-audit.verdict.v1"
+    },
+    "repository": {
+      "type": "string",
+      "pattern": "^[^/]+/[^/]+$"
+    },
+    "subject_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "audit_engine_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[0-9]+$"
+    },
+    "run_attempt": {
+      "type": "string",
+      "pattern": "^[0-9]+$"
+    },
+    "workflow_job_result": {
+      "enum": [
+        "success",
+        "failure",
+        "cancelled",
+        "skipped"
+      ]
+    },
+    "rustsec_job_result": {
+      "enum": [
+        "success",
+        "failure",
+        "cancelled",
+        "skipped"
+      ]
+    },
+    "npm_job_result": {
+      "enum": [
+        "success",
+        "failure",
+        "cancelled",
+        "skipped"
+      ]
+    },
+    "required_lanes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workflow_security",
+        "rustsec",
+        "npm"
+      ],
+      "properties": {
+        "workflow_security": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "INCOMPLETE"
+          ]
+        },
+        "rustsec": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "INCOMPLETE",
+            "SKIPPED_NOT_REQUESTED"
+          ]
+        },
+        "npm": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "INCOMPLETE",
+            "SKIPPED_NOT_REQUESTED"
+          ]
+        }
+      }
+    },
+    "status": {
+      "enum": [
+        "PASS",
+        "PASS_WITH_FINDINGS",
+        "FAIL",
+        "INCOMPLETE"
+      ]
+    },
+    "failure_reasons": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "evidence_files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "audit_rust": {
+      "type": "boolean"
+    },
+    "audit_node": {
+      "type": "boolean"
+    },
+    "workflow_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "workflow_sha": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        {
+          "const": "unknown"
+        }
+      ]
+    },
+    "workflow_run_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "generated_at_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "aggregate_artifact_retention_days": {
+      "const": 30
+    },
+    "non_blocking_findings_present": {
+      "type": "boolean"
+    },
+    "non_blocking_finding_sources": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "rustsec_warnings",
+          "npm_below_threshold"
+        ]
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "PASS"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "failure_reasons": {
+            "maxItems": 0
+          },
+          "required_lanes": {
+            "properties": {
+              "workflow_security": {
+                "const": "PASS"
+              },
+              "rustsec": {
+                "enum": [
+                  "PASS",
+                  "SKIPPED_NOT_REQUESTED"
+                ]
+              },
+              "npm": {
+                "enum": [
+                  "PASS",
+                  "SKIPPED_NOT_REQUESTED"
+                ]
+              }
+            }
+          },
+          "non_blocking_findings_present": {
+            "const": false
+          },
+          "non_blocking_finding_sources": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "PASS_WITH_FINDINGS"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "failure_reasons": {
+            "maxItems": 0
+          },
+          "required_lanes": {
+            "properties": {
+              "workflow_security": {
+                "const": "PASS"
+              },
+              "rustsec": {
+                "enum": [
+                  "PASS",
+                  "SKIPPED_NOT_REQUESTED"
+                ]
+              },
+              "npm": {
+                "enum": [
+                  "PASS",
+                  "SKIPPED_NOT_REQUESTED"
+                ]
+              }
+            }
+          },
+          "non_blocking_findings_present": {
+            "const": true
+          },
+          "non_blocking_finding_sources": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "FAIL",
+              "INCOMPLETE"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "failure_reasons": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "non_blocking_finding_sources": {
+            "contains": {
+              "const": "rustsec_warnings"
+            }
+          }
+        },
+        "required": [
+          "non_blocking_finding_sources"
+        ]
+      },
+      "then": {
+        "properties": {
+          "audit_rust": {
+            "const": true
+          },
+          "required_lanes": {
+            "properties": {
+              "rustsec": {
+                "const": "PASS"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "non_blocking_finding_sources": {
+            "contains": {
+              "const": "npm_below_threshold"
+            }
+          }
+        },
+        "required": [
+          "non_blocking_finding_sources"
+        ]
+      },
+      "then": {
+        "properties": {
+          "audit_node": {
+            "const": true
+          },
+          "required_lanes": {
+            "properties": {
+              "npm": {
+                "const": "PASS"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
