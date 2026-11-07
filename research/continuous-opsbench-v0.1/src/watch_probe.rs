@@ -163,6 +163,7 @@ pub struct EvaluatorTruth {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EpisodeStatus {
+    NotStarted,
     Quiet,
     Expired,
     DeliveryGap,
@@ -225,6 +226,7 @@ pub struct EpisodeResult {
 pub enum EpisodeError {
     InvalidWatch,
     InvalidAuthority,
+    InvalidEventIdentity,
     EventTimeRegression,
     InvalidEventTime,
     InvalidEvaluatorLoss,
@@ -318,6 +320,11 @@ pub fn run_scripted_episode<P: ProbePolicy>(
         return Err(EpisodeError::InvalidEvaluatorLoss);
     }
 
+    if current_tick < watch.starts_at_tick {
+        return Ok(empty_result(
+            watch, authority, EpisodeStatus::NotStarted, TerminalDisposition::Stop, 0, 0, 0, 0,
+        ));
+    }
     if current_tick >= watch.expires_at_tick {
         return Ok(empty_result(
             watch, authority, EpisodeStatus::Expired, TerminalDisposition::Stop, 0, 0, 0, 0,
@@ -341,11 +348,19 @@ pub fn run_scripted_episode<P: ProbePolicy>(
     let mut matching_event = None;
 
     for event in events {
+        if !non_empty(&event.event_id) || event.sequence == 0 {
+            return Err(EpisodeError::InvalidEventIdentity);
+        }
         if previous_delivery_tick.is_some_and(|previous| event.delivered_at_tick < previous) {
             return Err(EpisodeError::EventTimeRegression);
         }
         previous_delivery_tick = Some(event.delivered_at_tick);
 
+        // The harness may hold future scripted events; they are not delivered
+        // to the watch until the episode clock reaches their delivery tick.
+        if event.delivered_at_tick > current_tick {
+            break;
+        }
         if event.observed_at_tick > event.delivered_at_tick {
             return Err(EpisodeError::InvalidEventTime);
         }
@@ -773,6 +788,64 @@ mod tests {
         assert_eq!(result.status, EpisodeStatus::ImpactUnknown);
         assert_eq!(result.impact, ImpactDisposition::Unknown);
         assert!(result.decision_value.is_none());
+    }
+
+
+    #[test]
+    fn future_event_is_not_delivered_early() {
+        let mut future = event(10, "queue_pressure", true);
+        future.delivered_at_tick = 7;
+        let result = run(
+            &[future],
+            &authority(),
+            catalog_entry(true),
+            CollectionOutcome::NotStarted,
+            ImpactOutcome::NotMeasured,
+        );
+        assert_eq!(result.status, EpisodeStatus::Quiet);
+        assert_eq!(result.wakeups, 0);
+    }
+
+    #[test]
+    fn empty_event_identity_is_rejected() {
+        let mut invalid = event(10, "queue_pressure", true);
+        invalid.event_id.clear();
+        let mut policy = ScriptedProbePolicy {
+            selected_probe_id: Some("probe-queue-depth".into()),
+        };
+        let result = run_scripted_episode(
+            &watch(),
+            &authority(),
+            &[catalog_entry(true)],
+            &[invalid],
+            6,
+            &mut policy,
+            CollectionOutcome::NotStarted,
+            ImpactOutcome::NotMeasured,
+            &truth(),
+        );
+        assert_eq!(result, Err(EpisodeError::InvalidEventIdentity));
+    }
+
+    #[test]
+    fn watch_before_start_does_not_consume_events() {
+        let mut not_started = watch();
+        not_started.starts_at_tick = 7;
+        let result = run_scripted_episode(
+            &not_started,
+            &authority(),
+            &[catalog_entry(true)],
+            &[event(10, "queue_pressure", true)],
+            6,
+            &mut ScriptedProbePolicy {
+                selected_probe_id: Some("probe-queue-depth".into()),
+            },
+            CollectionOutcome::NotStarted,
+            ImpactOutcome::NotMeasured,
+            &truth(),
+        ).unwrap();
+        assert_eq!(result.status, EpisodeStatus::NotStarted);
+        assert_eq!(result.delivered_events, 0);
     }
 
     #[test]
