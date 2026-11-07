@@ -41,3 +41,7 @@ This is a schema/validator/fixture tranche only. It does not establish delivery 
 ## Exact request/result binding
 
 Each `watch_request_digest` is SHA-256 over the exact UTF-8 bytes of the submitted watch-request payload, including its terminating newline where present. The paired Rust auditor recomputes the digest and rejects a well-formed but unrelated value. A runtime must hash the exact request bytes it received and persist/replay those bytes; it must not parse and reserialize them before digest verification. This is a byte commitment, not proof that Xenia references or source assertions are authentic; those still require resolution through the canonical owner systems.
+
+## Deterministic bounded predicate evaluator
+
+`validator/src/predicate.rs` provides a pure, non-LLM reference evaluator for the declared operators: `equals`, `not_equals`, integer-only `greater_than` / `greater_or_equal`, string/array `contains`, `present`, and `absent`. It traverses object-only dotted field paths, performs no type coercion, and returns `Indeterminate` for missing comparison inputs or incompatible types. It rejects malformed paths and unknown operators. The caller must resolve `expected_value_digest` through the authorized source/adapter before supplying the expected JSON value. The evaluator does not fetch events, verify producers, schedule wakes, or grant mutation authority.
