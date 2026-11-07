@@ -105,3 +105,19 @@ cargo clippy --all-targets --locked -- -D warnings
 ```
 
 No local or CI result is claimed by this change. Exact-head qualification is required before the code is treated as a qualified implementation slice.
+
+## Paired attention experiment v0.1
+
+The additive `src/paired_attention.rs` module reuses the existing deterministic stability plant and compares two policies on the **same immutable plant configuration and noise vectors**:
+
+- **Fixed polling:** invokes the policy at a configured cadence, including quiet polls.
+- **Event-triggered:** runs a lightweight observation monitor each actionable tick but invokes the policy only on a rising edge of the watched condition.
+- **No-action counterfactual:** runs the same plant with no controller actions.
+
+Both controller arms receive only the delayed/noisy `PlantObservation` and the eligible read-only probe identifier set produced by the shared `eligible_probe_ids_for_watch` filter. An out-of-set policy proposal is denied. Watch wakeups and probe selections have separate budgets. A selected read-only probe ID is only a proposal: it does not create a plant control action or authorize mutation. Both attention arms run the same no-action plant, so plant outcomes must match; remediation belongs in a later separately-authorized experiment. The evaluator compares wake records against actual plant samples only after each arm to report false wakes, missed fault episodes and event-to-wake latency.
+
+The module includes eight paired-run tests covering invocation reduction, detection latency, no-action comparison, watch activation during a persistent fault, watch expiry during a persistent fault, authority expiry, out-of-set probe rejection, and a zero-probe-budget negative control.
+
+**Metric boundary:** `monitor_checks` are deterministic monitor callbacks, not LLM calls. `cognitive_invocations` count scheduled policy invocations. `probe_selection_calls` and `admitted_probe_selections` count selection proposals, not actual remote collector executions. The module does not yet consume independent source/impact receipts for every paired wake; that is the next #320 integration increment. A synthetic plant pass is not a live SRE benchmark result.
+
+**Claim ceiling:** the experiment is an offline paired controller comparison on a deterministic synthetic service model. It does not prove production event-delivery guarantees, model superiority, live Xenia authority enforcement, actual probe resource externality, independent observer authenticity or performance on SREGym/SRE-Marathon.
