@@ -28,17 +28,20 @@
       "source": {
         "primary_url": "https://radarhq.io/blog/sregym-leaderboard",
         "additional_urls": [
-          "https://www.sregym.com/leaderboard"
+          "https://www.sregym.com/leaderboard",
+          "https://github.com/SREGym/SREGym-website/blob/main/lib/leaderboard-data.ts",
+          "https://github.com/SREGym/SREGym-website/blob/main/public/data/sregym-0508-problems.csv"
         ],
         "source_kind": "vendor_blog",
-        "reference_id": "SREGym-0508",
+        "reference_id": "SREGym-website/main/lib/leaderboard-data.ts",
         "raw_git_blob_sha": "bdb3c26b361cbfcdb7e68425af65f4b0d51434b1",
         "capture": {
           "status": "raw_git_blob_sha_only",
           "captured_at": "2026-11-07",
           "content_sha256": null,
-          "note": "Maintainer website data-source blob SHA was recorded in the research handoff; page bytes have not been captured into this registry, so this is not represented as a SHA-256 content digest."
-        }
+          "note": "Verified against official SREGym-website main commit c4101aace3578353c96a2d837f60e48c3e95d9c4; source file Git blob SHA is recorded separately. The blob SHA is Git's SHA-1 object ID, not a SHA-256 digest of a captured web page."
+        },
+        "repository_commit_sha": "c4101aace3578353c96a2d837f60e48c3e95d9c4"
       },
       "protocol": {
         "task_count": 90,
@@ -161,7 +164,8 @@
       "source": {
         "primary_url": "https://www.sregym.com/leaderboard",
         "additional_urls": [
-          "https://www.sregym.com/problems/cohorts/sregym-lite"
+          "https://www.sregym.com/problems/cohorts/sregym-lite",
+          "https://github.com/SREGym/SREGym-website/blob/main/public/data/sregym-lite-1004-problems.csv"
         ],
         "source_kind": "maintainer_leaderboard",
         "reference_id": "SREGym-Lite-1004",
@@ -171,7 +175,8 @@
           "captured_at": "2026-11-07",
           "content_sha256": null,
           "note": "Rendered official leaderboard and cohort metadata inspected; HTML/data bytes not retained in this registry."
-        }
+        },
+        "repository_commit_sha": "c4101aace3578353c96a2d837f60e48c3e95d9c4"
       },
       "protocol": {
         "task_count": 17,
@@ -245,7 +250,8 @@
           "captured_at": "2026-11-07",
           "content_sha256": null,
           "note": "Paper abstract and reported results inspected; PDF source bytes not captured into this registry."
-        }
+        },
+        "repository_commit_sha": null
       },
       "protocol": {
         "task_count": null,
@@ -348,7 +354,8 @@
           "captured_at": "2026-11-07",
           "content_sha256": null,
           "note": "Public per-fault results and summary inspected; source dataset bytes not captured here."
-        }
+        },
+        "repository_commit_sha": null
       },
       "protocol": {
         "task_count": 50,
@@ -483,7 +490,8 @@
           "captured_at": "2026-11-07",
           "content_sha256": null,
           "note": "Public benchmark report and model result table inspected; raw run packets not archived by this registry."
-        }
+        },
+        "repository_commit_sha": null
       },
       "protocol": {
         "task_count": 62,
@@ -604,7 +612,8 @@
           "captured_at": "2026-11-07",
           "content_sha256": null,
           "note": "Report, rubric version and repository commit inspected; run packet bytes not archived by this registry."
-        }
+        },
+        "repository_commit_sha": "fc232a3fb38b2d49d5fbc8589071623e13f2c963"
       },
       "protocol": {
         "task_count": 21,
@@ -723,7 +732,8 @@
           "captured_at": "2026-11-07",
           "content_sha256": null,
           "note": "Methodology and current leaderboard text inspected; raw task snapshots not archived."
-        }
+        },
+        "repository_commit_sha": null
       },
       "protocol": {
         "task_count": 59,
@@ -799,7 +809,8 @@
           "captured_at": "2026-11-07",
           "content_sha256": null,
           "note": "Proceedings paper abstract and metadata inspected; PDF source bytes not archived by this registry."
-        }
+        },
+        "repository_commit_sha": null
       },
       "protocol": {
         "task_count": 1150,
@@ -876,7 +887,8 @@
           "captured_at": "2026-11-07",
           "content_sha256": null,
           "note": "Full project page and repository commit inspected; dataset/source bytes not captured here."
-        }
+        },
+        "repository_commit_sha": "3d8660f55e06c1f623698d002cc1a6438e507cf3"
       },
       "protocol": {
         "task_count": 95,
@@ -1037,7 +1049,8 @@
           "captured_at": "2026-11-07",
           "content_sha256": null,
           "note": "Repository main commit pinned; root LICENSE is MIT; scenario/task and output bytes not captured in this registry."
-        }
+        },
+        "repository_commit_sha": "71eb5696b094b8c104650a7d7e8c77ce23514e38"
       },
       "protocol": {
         "task_count": 48,
@@ -1114,7 +1127,8 @@
           "captured_at": "2026-11-07",
           "content_sha256": null,
           "note": "Current preprint version inspected: v3, submitted 26 Sep 2026; source paper bytes not archived in this registry."
-        }
+        },
+        "repository_commit_sha": null
       },
       "protocol": {
         "task_count": 802,
@@ -1212,7 +1226,8 @@
           "captured_at": "2026-11-07",
           "content_sha256": null,
           "note": "Public company report inspected; AlertEval dataset and raw scoring artifacts are internal/not captured."
-        }
+        },
+        "repository_commit_sha": null
       },
       "protocol": {
         "task_count": null,
@@ -1307,7 +1322,8 @@
           "captured_at": "2026-11-07",
           "content_sha256": null,
           "note": "NIST project description inspected; no benchmark score or source bytes are published in this registry snapshot."
-        }
+        },
+        "repository_commit_sha": null
       },
       "protocol": {
         "task_count": null,
