@@ -448,7 +448,7 @@ pub fn run_scripted_episode<P: ProbePolicy>(
         && probe.tenant_id == watch.tenant_id
         && probe.target_id == watch.target_id
         && probe.purpose_id == watch.purpose_id
-        && probe.source_id == watch.source_id
+        && non_empty(&probe.source_id)
         && probe.maximum_duration_ticks > 0
         && probe.maximum_duration_ticks <= watch.max_probe_duration_ticks
         && authority.current_for(watch, current_tick);
@@ -488,6 +488,7 @@ pub fn run_scripted_episode<P: ProbePolicy>(
         && non_empty(&observation.control_domain)
         && observation.source_id == probe.source_id
         && observation.control_domain == probe.collector_control_domain
+        && observation.observed_at_tick >= wake.event.delivered_at_tick
         && observation.observed_at_tick <= current_tick
         && current_tick.saturating_sub(observation.observed_at_tick)
             <= watch.max_observation_age_ticks;
@@ -592,7 +593,7 @@ mod tests {
             tenant_id: "tenant-a".into(),
             target_id: "service-a".into(),
             purpose_id: "incident-diagnosis".into(),
-            source_id: "events-a".into(),
+            source_id: "diagnostic-collector".into(),
             collector_control_domain: "collector-domain".into(),
             read_only,
             maximum_duration_ticks: 2,
@@ -618,7 +619,7 @@ mod tests {
         SourceObservation {
             observation_id: "observation-1".into(),
             digest: "sha256:observation-a".into(),
-            source_id: "events-a".into(),
+            source_id: "diagnostic-collector".into(),
             control_domain: "collector-domain".into(),
             observed_at_tick: 4,
         }
