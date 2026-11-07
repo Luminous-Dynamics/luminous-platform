@@ -1,0 +1,84 @@
+{
+  "schema": "luminous-decision-aware-probe-proposal-v0.1",
+  "version": 1,
+  "proposal_id": "dap-invalid-metric-0001",
+  "proposed_action": "READ_ONLY_PROBE",
+  "episode": {
+    "episode_ref": "opaque:episode-synthetic-0001",
+    "tenant_commitment": "opaque:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "principal_ref": "did:example:planner-synthetic",
+    "session_ref": "opaque:session-synthetic-0001",
+    "target_ref": "urn:service:synthetic:payments-api",
+    "target_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "topology_epoch": 7,
+    "topology_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "planner": {
+    "planner_id": "symthaea",
+    "api_ref": "symthaea::rea_investigator::decision_aware_v0.1-proposed",
+    "build_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "result_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "method": "worst_case_eig",
+    "hypothesis_set_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "scenario_set_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+    "scenario_count": 3,
+    "predicted_quantity": {
+      "metric": "expected_eig",
+      "value": 0.18,
+      "unit": "nats"
+    },
+    "top_rank_stability": 0.8,
+    "claim_ceiling": [
+      "caller_supplied_priors",
+      "caller_supplied_likelihoods",
+      "finite_scenario_set_only",
+      "not_executed",
+      "no_authority_granted"
+    ]
+  },
+  "probe": {
+    "catalog_snapshot_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+    "catalog_entry_ref": "urn:probe:synthetic:service-readiness",
+    "catalog_entry_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+    "operation_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+    "input_schema_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "output_contract_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "capability": "read_only",
+    "target_ref": "urn:service:synthetic:payments-api",
+    "target_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "data_scope_commitment": "opaque:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "privacy_class": "internal",
+    "expected_observation_fields": [
+      "readiness_state",
+      "observed_at",
+      "source_revision"
+    ]
+  },
+  "session_budget": {
+    "budget_state_ref": "opaque:session-budget-0001",
+    "budget_state_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "budget_state_version": 4,
+    "requested_reservation": {
+      "probe_calls": 1,
+      "resource_ceiling": {
+        "max_duration_ms": 2000,
+        "max_cpu_millicores": 250,
+        "max_memory_bytes": 67108864,
+        "max_io_bytes": 1048576,
+        "max_network_bytes": 262144,
+        "max_result_rows": 10
+      }
+    }
+  },
+  "freshness": {
+    "max_observation_age_ms": 5000,
+    "required_valid_after": "2026-11-07T07:00:00Z",
+    "deadline_at": "2026-11-07T07:05:00Z"
+  },
+  "stop_policy": {
+    "stop_when_predicted_value_non_positive": true,
+    "abstain_on_missing_required_provenance": true,
+    "escalate_when_impact_unknown": true,
+    "max_additional_probe_calls": 1
+  }
+}
