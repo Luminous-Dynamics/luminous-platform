@@ -266,6 +266,7 @@ fn validate_authority(authority: &AuthoritySnapshot) -> Result<(), EpisodeError>
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)] // Explicitly constructs a result from independent counters.
 fn empty_result(
     watch: &WatchSpec,
     authority: &AuthoritySnapshot,
@@ -301,6 +302,7 @@ fn empty_result(
 /// catalog. The current tick, collector result, impact result and evaluator
 /// decision-loss truth are not passed to it. One episode can acquire at most
 /// one probe; an unknown timed-out collection is never retried here.
+#[allow(clippy::too_many_arguments)] // Inputs deliberately keep hidden evaluator truth separate from the policy argument.
 pub fn run_scripted_episode<P: ProbePolicy>(
     watch: &WatchSpec,
     authority: &AuthoritySnapshot,
