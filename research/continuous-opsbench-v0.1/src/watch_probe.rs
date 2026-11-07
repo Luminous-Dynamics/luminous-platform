@@ -6,8 +6,6 @@
 //! production event bus, authenticate publishers, execute a collector, or grant
 //! mutation authority.
 
-use std::collections::BTreeSet;
-
 pub const MAX_RISK_PPM: u32 = 1_000_000;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
