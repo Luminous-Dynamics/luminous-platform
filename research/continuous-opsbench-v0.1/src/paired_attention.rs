@@ -235,7 +235,13 @@ impl StabilityController for AttentionController<'_> {
         let condition_met = self.condition_met(observation);
         let watch_active = observation.tick as u64 >= self.watch.starts_at_tick
             && (observation.tick as u64) < self.watch.expires_at_tick;
-        let wake = watch_active && self.should_wake(observation, condition_met);
+        if !watch_active {
+            // Do not carry a pre-subscription condition across the watch
+            // boundary; a condition already true at activation must wake.
+            self.previous_condition = false;
+            return Vec::new();
+        }
+        let wake = self.should_wake(observation, condition_met);
         self.previous_condition = condition_met;
 
         if !wake {
@@ -498,6 +504,57 @@ mod tests {
             &mut event,
         )
         .unwrap()
+    }
+
+
+    #[test]
+    fn event_triggered_watch_activating_during_existing_fault_still_wakes() {
+        let mut watch = watch();
+        watch.starts_at_tick = 12;
+        let mut fixed = ScriptedProbePolicy {
+            selected_probe_id: Some("probe-queue-depth".into()),
+        };
+        let mut event = ScriptedProbePolicy {
+            selected_probe_id: Some("probe-queue-depth".into()),
+        };
+        let result = run_paired_attention_experiment(
+            &plant(),
+            &attention(),
+            &watch,
+            &authority(),
+            &catalog(),
+            &mut fixed,
+            &mut event,
+        ).unwrap();
+
+        assert_eq!(result.event_triggered.metrics.first_verified_wake_tick, Some(12));
+        assert_eq!(result.event_triggered.metrics.missed_fault_episodes, 0);
+        assert_eq!(result.event_triggered.metrics.admitted_probe_selections, 1);
+    }
+
+    #[test]
+    fn expired_watch_does_not_keep_triggering_on_a_persistent_fault() {
+        let mut watch = watch();
+        watch.expires_at_tick = 9;
+        let mut fixed = ScriptedProbePolicy {
+            selected_probe_id: Some("probe-queue-depth".into()),
+        };
+        let mut event = ScriptedProbePolicy {
+            selected_probe_id: Some("probe-queue-depth".into()),
+        };
+        let result = run_paired_attention_experiment(
+            &plant(),
+            &attention(),
+            &watch,
+            &authority(),
+            &catalog(),
+            &mut fixed,
+            &mut event,
+        ).unwrap();
+
+        assert_eq!(result.event_triggered.metrics.cognitive_invocations, 0);
+        assert_eq!(result.event_triggered.metrics.admitted_probe_selections, 0);
+        assert_eq!(result.event_triggered.metrics.missed_fault_episodes, 1);
     }
 
     #[test]
