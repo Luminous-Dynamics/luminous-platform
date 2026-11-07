@@ -73,6 +73,8 @@ Reuse the platform failure-semantics contract in [#283](https://github.com/Lumin
 - Symthaea EMSR programme: [#10775](https://github.com/Luminous-Dynamics/symthaea/issues/10775)
 - Dataset/split/run receipt contract: [#10814](https://github.com/Luminous-Dynamics/symthaea/issues/10814), draft [PR #10821](https://github.com/Luminous-Dynamics/symthaea/pull/10821)
 - SOMA positioning adapter: [#10824](https://github.com/Luminous-Dynamics/symthaea/issues/10824)
+- Platform edge sensor node profile: [#300](https://github.com/Luminous-Dynamics/luminous-platform/issues/300)
+- First deployable platform product slice: [#301](https://github.com/Luminous-Dynamics/luminous-platform/issues/301)
 - Ground-truth/oracle independence: [#10826](https://github.com/Luminous-Dynamics/symthaea/issues/10826)
 - Mycelix spatial truth: [#413](https://github.com/Luminous-Dynamics/mycelix/issues/413)
 - Fusion admission versus mathematical precision: [#417](https://github.com/Luminous-Dynamics/mycelix/issues/417)
@@ -233,6 +235,18 @@ Use, when the exact input type permits:
 9. Symthaea assessment and ablations;
 10. integrated OMSI evidence-qualified service workflow.
 
+#### 7.2.1 Reproducible 2026 comparator set
+
+The Symthaea EMSR benchmark charter maintains the complete paper-level reproduction plan. The PNT profile calls out the following published results so no mixed-split score is mistaken for transfer performance:
+
+- IEEE Access (2026): >90% average in-domain accuracy but <=66% average cross-dataset performance across the reported study conditions. https://doi.org/10.1109/ACCESS.2026.3693081
+- NAVITEC (2026): CNN versus MAML cross-testing over TEXBAT/OAKBAT/FGI-SpoofRepo; MAML with post-correlation Doppler features is the reported strongest cross-testing method. https://doi.org/10.1109/NAVITEC202669090.2026.11692526
+- ION GNSS+ (2026): 96.4% detection and 2.26% false alarms on a mixed TEXBAT split, versus 58.6% detection in the reported harder cross-scenario evaluation. https://doi.org/10.33012/2026.20700
+- Explainable multimodal classifier (May 2026): 99.33% on simulated test data; not a field-performance comparator. https://doi.org/10.1007/s10207-026-01267-5
+- RAIM-driven semi-supervised maritime method (July 2026): candidate maritime comparator, not a certified integrity method. https://doi.org/10.1016/j.asr.2026.07.097
+
+Required interpretation: reproduce the exact task, feature pipeline, dataset rights, receiver, scenario, split and false-alarm budget before comparing. Keep mixed-split, cross-dataset, cross-receiver and cross-scenario results in separate result lanes. The hardest scenario-family holdout remains a primary metric.
+
 Do not compare a simulated-data headline with field-campaign data or a receiver-native protection level with an ML anomaly score as though they measured the same construct.
 
 ### 7.3 Ground-truth independence
@@ -253,10 +267,23 @@ Holochain/Mycelix and transparency/evidence services carry significant events, s
 
 Location precision, target identity, vessel/vehicle/asset trajectory, receiver metadata and critical-infrastructure dependency information are privacy/security-sensitive. Read-only projections may be delayed, approximate, region-only or redacted. A public map is not permission to expose people, cargo or sensitive infrastructure state.
 
+## 8.1 Edge intelligence and embedded sensor nodes
+
+Luminous Platform may deploy low-power edge nodes for auxiliary equipment/environmental telemetry and bounded local inference. These nodes are subordinate instruments, not independent PNT receivers or RF acquisition systems.
+
+Candidate Espressif families for exact-board evaluation include ESP32-S3, ESP32-P4 and ESP32-S31. Chip-level capability is not board qualification. For PNT-adjacent use, a node may report temperature, power-rail condition, vibration, enclosure/tamper state, network/clock status and receiver-reported health over an authorized interface. It must not be described as a GNSS raw-IF digitizer, spoofing detector or PNT integrity authority unless a separate qualified receiver/front-end and acquisition chain provide that evidence.
+
+The edge measurement envelope binds exact board/revision, sensor part/revision, calibration, units, uncertainty, local clock/boot epoch, firmware/model/configuration digests, retention and privacy policy. Local inference is advisory, uncertainty-bearing and abstaining; it cannot authorize a protected action or promote a service state by itself.
+
+Implementation ownership and benchmarks are tracked in [OMSI-EDGE-SENSOR-001 #300](https://github.com/Luminous-Dynamics/luminous-platform/issues/300). The first deployable platform slice is tracked in [LP-PRODUCT-001 #301](https://github.com/Luminous-Dynamics/luminous-platform/issues/301).
+
 ## 9. Standards and external references
 
 The profile maintains a version-pinned reference registry per industry track. Candidate reference families include:
 - NIST AI RMF and its developing Trustworthy AI in Critical Infrastructure profile (ongoing profile work, not a completed PNT standard): https://www.nist.gov/programs-projects/concept-note-ai-rmf-profile-trustworthy-ai-critical-infrastructure
+- NISTIR 8620 (2026) on digital-twin interoperability, VVUQ, cybersecurity and workforce challenges: https://doi.org/10.6028/NIST.IR.8620
+- IDTA Asset Administration Shell Release 26-01 (including API v3.2.0) for industrial asset/twin information exchange where applicable: https://industrialdigitaltwin.org/en/content-hub/aasspecifications
+- ISO 23247-1:2021, the published manufacturing digital-twin framework; applicability is sector/profile-specific: https://www.iso.org/standard/75066.html
 - IETF RFC 9943 / SCITT for signed-statement transparency and independently verifiable receipts: https://www.rfc-editor.org/rfc/rfc9943
 - W3C Verifiable Credentials Data Model 2.0 for issuer/holder/verifier credential exchange where suitable: https://www.w3.org/TR/vc-data-model-2.0/
 - OpenTelemetry semantic conventions for telemetry naming, resource identity and event correlation, not as a substitute for measurement or evidence semantics: https://opentelemetry.io/docs/specs/otel/semantic-conventions/
