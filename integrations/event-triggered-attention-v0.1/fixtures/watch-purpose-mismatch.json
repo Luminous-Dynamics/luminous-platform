@@ -1,0 +1,67 @@
+{
+  "schema": "luminous-event-watch-request-v0.1",
+  "version": 1,
+  "watch_id": "watch-purpose-mismatch",
+  "task_binding": {
+    "episode_ref": "opaque:episode-001",
+    "episode_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "tenant_ref": "tenant:lab-a",
+    "principal_ref": "did:example:operator-01",
+    "session_ref": "opaque:xenia-session-01",
+    "intent_ref": "opaque:intent-001",
+    "intent_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "purpose_ref": "opaque:purpose-watch-service-recovery",
+    "purpose_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "target_ref": "service:payments-api",
+    "target_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+  },
+  "authority_context": {
+    "xenia_capability_ref": "opaque:xenia-capability-01",
+    "xenia_capability_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "consent_request_ref": "opaque:consent-001",
+    "authority_epoch": 7,
+    "capability_expires_at": "2026-11-07T14:00:00Z",
+    "revocation_snapshot_ref": "opaque:revocation-snapshot-001",
+    "revocation_snapshot_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666"
+  },
+  "source": {
+    "source_ref": "cloud-events:service-health",
+    "source_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+    "control_domain_ref": "source-domain:service-observer-a",
+    "event_contract_ref": "opaque:operations-event-v1",
+    "event_contract_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+    "clock_domain_ref": "clock:observer-monotonic-epoch-4",
+    "allowed_event_types": [
+      "com.luminous.service.health.changed",
+      "com.luminous.deployment.completed"
+    ],
+    "max_source_age_ms": 15000
+  },
+  "condition": {
+    "condition_ref": "opaque:condition-service-healthy",
+    "condition_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+    "language": "bounded_predicate_v1",
+    "field_path": "service.health.state",
+    "operator": "equals",
+    "expected_value_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "persistence": "persistent"
+  },
+  "policy": {
+    "requested_purpose_ref": "opaque:purpose-unapproved-export",
+    "action_after_wake": "wake_agent",
+    "starts_at": "2026-11-07T12:00:00Z",
+    "expires_at": "2026-11-07T13:00:00Z",
+    "max_detection_latency_ms": 30000,
+    "allow_poll_fallback": false,
+    "poll_fallback_min_interval_ms": null,
+    "human_notification_policy": "on_gap_or_revocation"
+  },
+  "resource_budget": {
+    "max_event_checks": 20000,
+    "max_watch_duration_ms": 3600000,
+    "max_wakeups": 8,
+    "max_llm_wakeups": 4,
+    "max_poll_fallback_per_minute": 0,
+    "max_event_bytes": 10485760
+  }
+}
