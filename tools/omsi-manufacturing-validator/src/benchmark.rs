@@ -110,7 +110,9 @@ pub fn run(
             .and_then(Value::as_str)
             .unwrap_or("unknown")
             .to_owned();
-        let counter = outcome_counts.entry(outcome).or_insert_with(|| json!(0_u64));
+        let counter = outcome_counts
+            .entry(outcome)
+            .or_insert_with(|| json!(0_u64));
         *counter = json!(counter.as_u64().unwrap_or(0) + 1);
     }
 
@@ -164,8 +166,13 @@ pub fn run(
     let envelope_create_phase_started = Instant::now();
     for _ in 0..iterations_per_case {
         for case in &cases {
-            let envelope = create_replay_envelope(black_box(case.bytes.as_slice()))
-                .map_err(|error| format!("throughput envelope creation failed for {}: {error}", case.id))?;
+            let envelope =
+                create_replay_envelope(black_box(case.bytes.as_slice())).map_err(|error| {
+                    format!(
+                        "throughput envelope creation failed for {}: {error}",
+                        case.id
+                    )
+                })?;
             black_box(envelope);
         }
     }
@@ -305,8 +312,7 @@ fn summarize(
     // The outer timer measures actual full-phase elapsed wall time.
     let wall_seconds = wall_clock_elapsed_ns as f64 / 1_000_000_000.0;
     let wall_clock_operations_per_second = count as f64 / wall_seconds;
-    let wall_clock_mib_per_second =
-        total_input_bytes as f64 / (1024.0 * 1024.0) / wall_seconds;
+    let wall_clock_mib_per_second = total_input_bytes as f64 / (1024.0 * 1024.0) / wall_seconds;
 
     json!({
         "phase": phase,
@@ -389,7 +395,10 @@ mod tests {
         );
         assert_eq!(report["status"], "measured_no_acceptance_claim");
         assert_eq!(report["authority"], "performance_observation_only");
-        assert_eq!(report["corpus"]["digest_scope"], "exact_vector_document_bytes");
+        assert_eq!(
+            report["corpus"]["digest_scope"],
+            "exact_vector_document_bytes"
+        );
         assert_eq!(report["corpus"]["case_ids"][0], "test-vector");
         assert_eq!(report["run"]["sample_count_per_phase"], 1);
         assert_eq!(

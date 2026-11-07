@@ -39,13 +39,16 @@ pub fn audit_adapter_map(
     check_object_shape(
         root,
         "$",
-        &["adapter_contract", "adapter_id", "source_format", "mappings"],
+        &[
+            "adapter_contract",
+            "adapter_id",
+            "source_format",
+            "mappings",
+        ],
         &["description"],
         &mut errors,
     );
-    if root.contains_key("description")
-        && !root.get("description").is_some_and(Value::is_string)
-    {
+    if root.contains_key("description") && !root.get("description").is_some_and(Value::is_string) {
         errors.push(json!({
             "field":"description",
             "reason":"expected_string"
@@ -135,7 +138,9 @@ pub fn audit_adapter_map(
                     continue;
                 }
             };
-            if object.contains_key("presence") && !object.get("presence").is_some_and(Value::is_string) {
+            if object.contains_key("presence")
+                && !object.get("presence").is_some_and(Value::is_string)
+            {
                 errors.push(json!({
                     "field":format!("{path}.presence"),
                     "reason":"expected_string"
@@ -154,15 +159,14 @@ pub fn audit_adapter_map(
                 &format!("{path}.transform_id"),
                 &mut errors,
             );
-            let reason = optional_nonempty_string(
-                object,
-                "reason",
-                &format!("{path}.reason"),
-                &mut errors,
-            );
+            let reason =
+                optional_nonempty_string(object, "reason", &format!("{path}.reason"), &mut errors);
             match disposition {
                 Some("preserve") => {
-                    if target_path.as_deref().map_or(true, |value| !valid_pointer(value)) {
+                    if target_path
+                        .as_deref()
+                        .map_or(true, |value| !valid_pointer(value))
+                    {
                         errors.push(json!({
                             "field":format!("{path}.target_path"),
                             "reason":"preserve_requires_valid_target_path"
@@ -176,7 +180,10 @@ pub fn audit_adapter_map(
                     }
                 }
                 Some("transform") => {
-                    if target_path.as_deref().map_or(true, |value| !valid_pointer(value)) {
+                    if target_path
+                        .as_deref()
+                        .map_or(true, |value| !valid_pointer(value))
+                    {
                         errors.push(json!({
                             "field":format!("{path}.target_path"),
                             "reason":"transform_requires_valid_target_path"
@@ -306,8 +313,7 @@ pub fn audit_adapter_map(
         }
     }
 
-    let complete =
-        unclassified_paths.is_empty() && required_mapping_paths_not_observed.is_empty();
+    let complete = unclassified_paths.is_empty() && required_mapping_paths_not_observed.is_empty();
     json!({
         "audit_contract": AUDIT_REPORT_CONTRACT,
         "status": if complete { "complete_accounting" } else { "incomplete_accounting" },
@@ -343,7 +349,6 @@ pub fn audit_adapter_map(
     })
 }
 
-
 /// Apply a fully accounted adapter map using the small, versioned transform
 /// registry below. Any unrecognized transform, target collision, or unmapped
 /// source field blocks projection instead of silently producing a partial record.
@@ -360,10 +365,17 @@ pub fn apply_adapter_map(
             vec![json!({"field":"adapter_map","reason":"adapter_map_accounting_not_complete"})],
         );
     }
-    if audit.get("explicitly_unmapped_count").and_then(Value::as_u64).unwrap_or(0) > 0 {
+    if audit
+        .get("explicitly_unmapped_count")
+        .and_then(Value::as_u64)
+        .unwrap_or(0)
+        > 0
+    {
         return projection_blocked(
             audit,
-            vec![json!({"field":"mappings","reason":"explicitly_unmapped_source_fields_block_projection"})],
+            vec![
+                json!({"field":"mappings","reason":"explicitly_unmapped_source_fields_block_projection"}),
+            ],
         );
     }
     if audit
@@ -401,12 +413,21 @@ pub fn apply_adapter_map(
                 vec![json!({"field":format!("mappings[{index}]"),"reason":"expected_object"})],
             );
         };
-        let disposition = object.get("disposition").and_then(Value::as_str).unwrap_or("");
+        let disposition = object
+            .get("disposition")
+            .and_then(Value::as_str)
+            .unwrap_or("");
         if !matches!(disposition, "preserve" | "transform") {
             continue;
         }
-        let target = object.get("target_path").and_then(Value::as_str).unwrap_or("");
-        if target_paths.iter().any(|existing| target_paths_conflict(existing, target)) {
+        let target = object
+            .get("target_path")
+            .and_then(Value::as_str)
+            .unwrap_or("");
+        if target_paths
+            .iter()
+            .any(|existing| target_paths_conflict(existing, target))
+        {
             return projection_blocked(
                 audit,
                 vec![json!({
@@ -430,8 +451,14 @@ pub fn apply_adapter_map(
             errors.push(json!({"field":format!("mappings[{index}]"),"reason":"expected_object"}));
             continue;
         };
-        let source_path = object.get("source_path").and_then(Value::as_str).unwrap_or("");
-        let disposition = object.get("disposition").and_then(Value::as_str).unwrap_or("");
+        let source_path = object
+            .get("source_path")
+            .and_then(Value::as_str)
+            .unwrap_or("");
+        let disposition = object
+            .get("disposition")
+            .and_then(Value::as_str)
+            .unwrap_or("");
         match disposition {
             "drop" => {
                 if object.get("presence").and_then(Value::as_str) == Some("optional")
@@ -469,7 +496,10 @@ pub fn apply_adapter_map(
                 let mapped_value = if disposition == "preserve" {
                     Ok(value.clone())
                 } else {
-                    let transform_id = object.get("transform_id").and_then(Value::as_str).unwrap_or("");
+                    let transform_id = object
+                        .get("transform_id")
+                        .and_then(Value::as_str)
+                        .unwrap_or("");
                     run_transform(transform_id, value).map_err(|detail| {
                         let reason_code = detail
                             .get("reason")
@@ -485,7 +515,10 @@ pub fn apply_adapter_map(
                 };
                 match mapped_value {
                     Ok(value) => {
-                        let target_path = object.get("target_path").and_then(Value::as_str).unwrap_or("");
+                        let target_path = object
+                            .get("target_path")
+                            .and_then(Value::as_str)
+                            .unwrap_or("");
                         match write_target_pointer(&mut projection, target_path, value) {
                             Ok(()) => applied_count += 1,
                             Err(reason) => errors.push(json!({
@@ -547,27 +580,33 @@ fn projection_blocked(audit: Value, errors: Vec<Value>) -> Value {
 fn run_transform(transform_id: &str, value: &Value) -> Result<Value, Value> {
     match transform_id {
         "qms-decimal-normalization/0.1" => {
-            let text = value.as_str().ok_or_else(|| json!({
-                "reason":"decimal_transform_requires_string_value"
-            }))?;
-            normalize_decimal_literal(text)
-                .map(Value::String)
-                .map_err(|reason| json!({"reason":"decimal_transform_rejected_input","detail":reason}))
+            let text = value.as_str().ok_or_else(|| {
+                json!({
+                    "reason":"decimal_transform_requires_string_value"
+                })
+            })?;
+            normalize_decimal_literal(text).map(Value::String).map_err(
+                |reason| json!({"reason":"decimal_transform_rejected_input","detail":reason}),
+            )
         }
         "qms-unit-code-crosswalk/0.1" => {
-            let code = value.as_str().ok_or_else(|| json!({
-                "reason":"unit_crosswalk_requires_string_value"
-            }))?;
+            let code = value.as_str().ok_or_else(|| {
+                json!({
+                    "reason":"unit_crosswalk_requires_string_value"
+                })
+            })?;
             let normalized = match code {
                 "millimeter" | "millimetre" | "mm" => "mm",
                 "meter" | "metre" | "m" => "m",
                 "micrometer" | "micrometre" | "um" => "um",
                 "degree Celsius" | "degrees Celsius" | "degC" | "Cel" => "Cel",
-                _ => return Err(json!({
-                    "reason":"unit_code_not_in_crosswalk",
-                    "source_unit_code":code,
-                    "crosswalk_id":transform_id
-                })),
+                _ => {
+                    return Err(json!({
+                        "reason":"unit_code_not_in_crosswalk",
+                        "source_unit_code":code,
+                        "crosswalk_id":transform_id
+                    }))
+                }
             };
             Ok(Value::String(normalized.to_owned()))
         }
@@ -646,17 +685,20 @@ fn insert_nested_object(
     insert_nested_object(child_object, tail, value)
 }
 
-
 /// Execute a committed, versioned transform corpus and compare every output or
 /// rejection reason exactly. This qualifies only the registry behavior represented
 /// in the corpus; it does not establish that a source-system crosswalk is correct.
 pub fn verify_transform_vectors(document: &Value) -> Value {
     let mut failures = Vec::new();
     let Some(root) = document.as_object() else {
-        return transform_vector_report(0, 0, vec![json!({
-            "field":"$",
-            "reason":"expected_object"
-        })]);
+        return transform_vector_report(
+            0,
+            0,
+            vec![json!({
+                "field":"$",
+                "reason":"expected_object"
+            })],
+        );
     };
 
     check_object_shape(
@@ -723,7 +765,8 @@ pub fn verify_transform_vectors(document: &Value) -> Value {
         let expected = object.get("expected").and_then(Value::as_object);
 
         if !id.is_some_and(|value| !value.trim().is_empty()) {
-            failures.push(json!({"field":format!("{path}.id"),"reason":"expected_nonempty_string"}));
+            failures
+                .push(json!({"field":format!("{path}.id"),"reason":"expected_nonempty_string"}));
             continue;
         }
         let id = id.unwrap_or_default();
@@ -736,20 +779,27 @@ pub fn verify_transform_vectors(document: &Value) -> Value {
             continue;
         }
         if !transform_id.is_some_and(|value| !value.trim().is_empty()) {
-            failures.push(json!({"field":format!("{path}.transform_id"),"reason":"expected_nonempty_string"}));
+            failures.push(
+                json!({"field":format!("{path}.transform_id"),"reason":"expected_nonempty_string"}),
+            );
             continue;
         }
         let transform_id = transform_id.unwrap_or_default();
         let Some(input) = input else {
-            failures.push(json!({"field":format!("{path}.input"),"reason":"required_field_missing"}));
+            failures
+                .push(json!({"field":format!("{path}.input"),"reason":"required_field_missing"}));
             continue;
         };
         let Some(expected) = expected else {
             failures.push(json!({"field":format!("{path}.expected"),"reason":"expected_object"}));
             continue;
         };
-        if expected.keys().any(|key| !matches!(key.as_str(), "status" | "output" | "reason")) {
-            failures.push(json!({"field":format!("{path}.expected"),"reason":"unrecognized_field"}));
+        if expected
+            .keys()
+            .any(|key| !matches!(key.as_str(), "status" | "output" | "reason"))
+        {
+            failures
+                .push(json!({"field":format!("{path}.expected"),"reason":"unrecognized_field"}));
             continue;
         }
 
@@ -771,7 +821,10 @@ pub fn verify_transform_vectors(document: &Value) -> Value {
                 tested_count += 1;
                 let actual_reason = error.get("reason").and_then(Value::as_str);
                 let expected_reason = expected.get("reason").and_then(Value::as_str);
-                if actual_reason.is_none() || actual_reason != expected_reason || expected.contains_key("output") {
+                if actual_reason.is_none()
+                    || actual_reason != expected_reason
+                    || expected.contains_key("output")
+                {
                     failures.push(json!({
                         "id":id,
                         "transform_id":transform_id,
@@ -873,9 +926,7 @@ fn optional_nonempty_string(
 ) -> Option<String> {
     match object.get(key) {
         None => None,
-        Some(Value::String(value)) if !value.trim().is_empty() => {
-            Some(value.trim().to_owned())
-        }
+        Some(Value::String(value)) if !value.trim().is_empty() => Some(value.trim().to_owned()),
         Some(Value::String(_)) => {
             errors.push(json!({"field":path,"reason":"empty_string_not_allowed"}));
             None
@@ -1006,7 +1057,8 @@ mod tests {
         if let (Some(target), Some(object)) = (extras.get("target_path"), entry.as_object_mut()) {
             object.insert("target_path".into(), target.clone());
         }
-        if let (Some(transform), Some(object)) = (extras.get("transform_id"), entry.as_object_mut()) {
+        if let (Some(transform), Some(object)) = (extras.get("transform_id"), entry.as_object_mut())
+        {
             object.insert("transform_id".into(), transform.clone());
         }
         if let (Some(reason), Some(object)) = (extras.get("reason"), entry.as_object_mut()) {
@@ -1033,7 +1085,10 @@ mod tests {
     #[test]
     fn all_observed_source_fields_require_and_accept_explicit_dispositions() {
         let contract = contract(vec![
-            map("preserve", json!({"target_path":"/measurement/value_decimal"})),
+            map(
+                "preserve",
+                json!({"target_path":"/measurement/value_decimal"}),
+            ),
             json!({
                 "source_path":"/operator_note",
                 "disposition":"drop",
@@ -1055,7 +1110,10 @@ mod tests {
     #[test]
     fn unclassified_observed_field_is_a_hard_accounting_failure() {
         let report = audit(
-            contract(vec![map("preserve", json!({"target_path":"/measurement/value_decimal"}))]),
+            contract(vec![map(
+                "preserve",
+                json!({"target_path":"/measurement/value_decimal"}),
+            )]),
             json!({"temperature":"72.4","unit":"Cel"}),
         );
         assert_eq!(report["status"], "incomplete_accounting");
@@ -1068,7 +1126,10 @@ mod tests {
     fn explicit_unmapped_is_not_silent_but_remains_visible() {
         let report = audit(
             contract(vec![
-                map("preserve", json!({"target_path":"/measurement/value_decimal"})),
+                map(
+                    "preserve",
+                    json!({"target_path":"/measurement/value_decimal"}),
+                ),
                 json!({
                     "source_path":"/unit",
                     "disposition":"unmapped",
@@ -1085,13 +1146,18 @@ mod tests {
     #[test]
     fn transform_requires_a_named_rule_and_target() {
         let invalid = audit(
-            contract(vec![map("transform", json!({"target_path":"/measurement/value_decimal"}))]),
+            contract(vec![map(
+                "transform",
+                json!({"target_path":"/measurement/value_decimal"}),
+            )]),
             json!({"temperature":"72.4"}),
         );
         assert_eq!(invalid["status"], "invalid_contract");
-        assert!(invalid["errors"].as_array().unwrap().iter().any(|entry| {
-            entry["reason"] == "transform_requires_named_transform_id"
-        }));
+        assert!(invalid["errors"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|entry| { entry["reason"] == "transform_requires_named_transform_id" }));
     }
 
     #[test]
@@ -1104,9 +1170,11 @@ mod tests {
             json!({"temperature":"72.4"}),
         );
         assert_eq!(invalid["status"], "invalid_contract");
-        assert!(invalid["errors"].as_array().unwrap().iter().any(|entry| {
-            entry["reason"] == "duplicate_source_mapping"
-        }));
+        assert!(invalid["errors"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|entry| { entry["reason"] == "duplicate_source_mapping" }));
     }
 
     #[test]
@@ -1157,9 +1225,11 @@ mod tests {
             json!({"temperature":"72.4"}),
         );
         assert_eq!(invalid["status"], "invalid_contract");
-        assert!(invalid["errors"].as_array().unwrap().iter().any(|entry| {
-            entry["reason"] == "expected_nonempty_string"
-        }));
+        assert!(invalid["errors"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|entry| { entry["reason"] == "expected_nonempty_string" }));
     }
 
     #[test]
@@ -1175,31 +1245,45 @@ mod tests {
         );
         assert_eq!(report["status"], "complete_accounting");
         assert_eq!(report["transformed_count"], 1);
-        assert!(report["limitations"].as_array().unwrap().iter().any(|item| {
-            item.as_str().is_some_and(|text| text.contains("does not execute or prove"))
-        }));
+        assert!(report["limitations"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|item| {
+                item.as_str()
+                    .is_some_and(|text| text.contains("does not execute or prove"))
+            }));
     }
     #[test]
     fn qms_fixture_executes_named_decimal_and_unit_transforms() {
         let contract: Value = serde_json::from_str(include_str!(
             "../../../docs/standards/omsi/adapters/0.1/examples/qms-nested-map.json"
-        )).expect("QMS map fixture parses");
+        ))
+        .expect("QMS map fixture parses");
         let source: Value = serde_json::from_str(include_str!(
             "../../../docs/standards/omsi/adapters/0.1/examples/qms-nested-record.json"
-        )).expect("QMS record fixture parses");
-        let contract_bytes = include_str!(
-            "../../../docs/standards/omsi/adapters/0.1/examples/qms-nested-map.json"
-        ).as_bytes();
+        ))
+        .expect("QMS record fixture parses");
+        let contract_bytes =
+            include_str!("../../../docs/standards/omsi/adapters/0.1/examples/qms-nested-map.json")
+                .as_bytes();
         let source_bytes = include_str!(
             "../../../docs/standards/omsi/adapters/0.1/examples/qms-nested-record.json"
-        ).as_bytes();
+        )
+        .as_bytes();
 
         let report = apply_adapter_map(&contract, contract_bytes, &source, source_bytes);
         assert_eq!(report["status"], "projection_created");
         assert_eq!(report["authority"], "adapter_projection_only");
-        assert_eq!(report["projection"]["measurement"]["value_decimal"], "0.0072");
+        assert_eq!(
+            report["projection"]["measurement"]["value_decimal"],
+            "0.0072"
+        );
         assert_eq!(report["projection"]["measurement"]["unit_code"], "mm");
-        assert_eq!(report["projection"]["source_quality_claim"]["raw_status"], "REVIEW");
+        assert_eq!(
+            report["projection"]["source_quality_claim"]["raw_status"],
+            "REVIEW"
+        );
         assert_eq!(report["audit"]["silent_loss_count"], 0);
         assert_eq!(report["audit"]["transformed_count"], 2);
         assert_eq!(report["applied_mapping_count"], 8);
@@ -1209,14 +1293,19 @@ mod tests {
     fn mes_fixture_preserves_raw_status_and_surfaces_intentional_drop() {
         let contract: Value = serde_json::from_str(include_str!(
             "../../../docs/standards/omsi/adapters/0.1/examples/mes-flat-map.json"
-        )).expect("MES map fixture parses");
+        ))
+        .expect("MES map fixture parses");
         let source: Value = serde_json::from_str(include_str!(
             "../../../docs/standards/omsi/adapters/0.1/examples/mes-flat-record.json"
-        )).expect("MES record fixture parses");
+        ))
+        .expect("MES record fixture parses");
         let report = apply(contract, source);
 
         assert_eq!(report["status"], "projection_created");
-        assert_eq!(report["projection"]["source_quality_claim"]["raw_status"], "Accepted");
+        assert_eq!(
+            report["projection"]["source_quality_claim"]["raw_status"],
+            "Accepted"
+        );
         assert_eq!(report["explicitly_dropped_count"], 1);
         assert_eq!(report["audit"]["dropped_count"], 1);
         assert!(report["projection"].pointer("/operator_note").is_none());
@@ -1251,9 +1340,11 @@ mod tests {
         );
         assert_eq!(report["status"], "projection_blocked");
         assert_eq!(report["projection"], Value::Null);
-        assert!(report["errors"].as_array().unwrap().iter().any(|error| {
-            error["reason"] == "transform_id_not_registered"
-        }));
+        assert!(report["errors"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|error| { error["reason"] == "transform_id_not_registered" }));
     }
 
     #[test]
@@ -1269,9 +1360,11 @@ mod tests {
         );
         assert_eq!(report["status"], "projection_blocked");
         assert_eq!(report["projection"], Value::Null);
-        assert!(report["errors"].as_array().unwrap().iter().any(|error| {
-            error["reason"] == "unit_code_not_in_crosswalk"
-        }));
+        assert!(report["errors"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|error| { error["reason"] == "unit_code_not_in_crosswalk" }));
     }
 
     #[test]
@@ -1285,7 +1378,10 @@ mod tests {
         assert_eq!(report["vectors_expected"], 10);
         assert_eq!(report["vectors_tested"], 10);
         assert_eq!(report["failure_count"], 0);
-        assert_eq!(report["authority"], "registered_transform_vector_agreement_only");
+        assert_eq!(
+            report["authority"],
+            "registered_transform_vector_agreement_only"
+        );
     }
 
     #[test]
@@ -1348,14 +1444,19 @@ mod tests {
         );
         assert_eq!(report["status"], "projection_created");
         assert_eq!(report["projection"]["measurement"]["value_decimal"], "72.4");
-        assert!(report["projection"].pointer("/measurement/unit_code").is_none());
+        assert!(report["projection"]
+            .pointer("/measurement/unit_code")
+            .is_none());
         assert_eq!(report["skipped_optional_count"], 1);
         assert_eq!(report["audit"]["status"], "complete_accounting");
         assert_eq!(
             report["audit"]["mapping_paths_not_observed_in_record"][0],
             "/unit"
         );
-        assert_eq!(report["audit"]["required_mapping_paths_not_observed_in_record"], json!([]));
+        assert_eq!(
+            report["audit"]["required_mapping_paths_not_observed_in_record"],
+            json!([])
+        );
     }
 
     #[test]
@@ -1370,11 +1471,12 @@ mod tests {
             json!({"temperature":"72.4"}),
         );
         assert_eq!(report["status"], "invalid_contract");
-        assert!(report["errors"].as_array().unwrap().iter().any(|error| {
-            error["reason"] == "unknown_presence_requirement"
-        }));
+        assert!(report["errors"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|error| { error["reason"] == "unknown_presence_requirement" }));
     }
-
 
     #[test]
     fn absent_optional_drop_is_counted_as_skipped_not_dropped() {
@@ -1446,9 +1548,11 @@ mod tests {
         );
         assert_eq!(report["status"], "projection_blocked");
         assert_eq!(report["projection"], Value::Null);
-        assert!(report["errors"].as_array().unwrap().iter().any(|error| {
-            error["reason"] == "target_path_collision_or_prefix_overlap"
-        }));
+        assert!(report["errors"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|error| { error["reason"] == "target_path_collision_or_prefix_overlap" }));
     }
 
     #[test]
@@ -1620,10 +1724,9 @@ mod tests {
 
     #[test]
     fn independent_schema_engine_rejects_mutated_maps_and_reports() {
-        let map_schema: Value = serde_json::from_str(include_str!(
-            "../schema/adapter-map.schema.json"
-        ))
-        .expect("adapter map schema parses");
+        let map_schema: Value =
+            serde_json::from_str(include_str!("../schema/adapter-map.schema.json"))
+                .expect("adapter map schema parses");
         let map_validator = draft202012::new(&map_schema).expect("map schema compiles");
         let mut invalid_map: Value = serde_json::from_str(include_str!(
             "../../../docs/standards/omsi/adapters/0.1/examples/mes-flat-map.json"
@@ -1632,17 +1735,14 @@ mod tests {
         invalid_map["mappings"][0]["presence"] = json!("sometimes");
         assert!(!map_validator.is_valid(&invalid_map));
 
-        let audit_schema: Value = serde_json::from_str(include_str!(
-            "../schema/adapter-audit-report.schema.json"
-        ))
-        .expect("audit schema parses");
+        let audit_schema: Value =
+            serde_json::from_str(include_str!("../schema/adapter-audit-report.schema.json"))
+                .expect("audit schema parses");
         let audit_validator = draft202012::new(&audit_schema).expect("audit schema compiles");
-        let map_source = include_str!(
-            "../../../docs/standards/omsi/adapters/0.1/examples/mes-flat-map.json"
-        );
-        let record_source = include_str!(
-            "../../../docs/standards/omsi/adapters/0.1/examples/mes-flat-record.json"
-        );
+        let map_source =
+            include_str!("../../../docs/standards/omsi/adapters/0.1/examples/mes-flat-map.json");
+        let record_source =
+            include_str!("../../../docs/standards/omsi/adapters/0.1/examples/mes-flat-record.json");
         let map: Value = serde_json::from_str(map_source).expect("MES map fixture parses");
         let record: Value = serde_json::from_str(record_source).expect("MES record fixture parses");
         let mut audit = audit_adapter_map(
@@ -1664,8 +1764,12 @@ mod tests {
         .expect("projection schema parses");
         let projection_validator =
             draft202012::new(&projection_schema).expect("projection schema compiles");
-        let mut projection =
-            apply_adapter_map(&map, map_source.as_bytes(), &record, record_source.as_bytes());
+        let mut projection = apply_adapter_map(
+            &map,
+            map_source.as_bytes(),
+            &record,
+            record_source.as_bytes(),
+        );
         assert!(projection_validator.is_valid(&projection));
         projection
             .as_object_mut()
@@ -1686,10 +1790,12 @@ mod tests {
         .expect("interoperability target schema parses");
 
         assert!(draft202012::meta::is_valid(&schema));
-        let validator = draft202012::new(&schema)
-            .expect("interoperability target schema compiles");
+        let validator = draft202012::new(&schema).expect("interoperability target schema compiles");
         assert_eq!(matrix["targets"].as_array().unwrap().len(), 10);
-        assert!(validator.is_valid(&matrix), "matrix failed schema: {matrix:#}");
+        assert!(
+            validator.is_valid(&matrix),
+            "matrix failed schema: {matrix:#}"
+        );
 
         let mut false_conformance = matrix.clone();
         false_conformance["targets"][0]["conformance_status"] = json!("conformant");
@@ -1716,18 +1822,13 @@ mod tests {
             "replay envelope",
         );
 
-        let benchmark = super::super::benchmark::run(
-            &vector_document,
-            vector_document_source.as_bytes(),
-            1,
-        )
-        .expect("one iteration benchmark completes");
+        let benchmark =
+            super::super::benchmark::run(&vector_document, vector_document_source.as_bytes(), 1)
+                .expect("one iteration benchmark completes");
         assert_instance_matches_schema(
             include_str!("../schema/benchmark-report.schema.json"),
             &benchmark,
             "benchmark report",
         );
     }
-
-
 }

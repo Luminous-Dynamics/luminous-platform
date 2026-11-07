@@ -13,8 +13,8 @@ const ENVELOPE_LIMITATIONS: &[&str] = &[
 ];
 
 pub fn create_replay_envelope(source: &[u8]) -> Result<Value, String> {
-    let input: Value = serde_json::from_slice(source)
-        .map_err(|error| format!("invalid JSON input: {error}"))?;
+    let input: Value =
+        serde_json::from_slice(source).map_err(|error| format!("invalid JSON input: {error}"))?;
     let report = evaluate_input_value(&input);
 
     Ok(json!({
@@ -32,8 +32,8 @@ pub fn create_replay_envelope(source: &[u8]) -> Result<Value, String> {
 }
 
 pub fn verify_replay_envelope(envelope: &Value, source: &[u8]) -> Value {
-    let envelope_contract_ok = envelope.get("envelope_contract").and_then(Value::as_str)
-        == Some(ENVELOPE_CONTRACT);
+    let envelope_contract_ok =
+        envelope.get("envelope_contract").and_then(Value::as_str) == Some(ENVELOPE_CONTRACT);
     let envelope_shape_ok = envelope.as_object().is_some_and(|object| {
         object.len() == 4
             && object.contains_key("envelope_contract")
@@ -46,9 +46,11 @@ pub fn verify_replay_envelope(envelope: &Value, source: &[u8]) -> Value {
     let binding_contract_ok = binding.is_some_and(|object| {
         object.len() == 5
             && object.get("digest_algorithm").and_then(Value::as_str) == Some("sha256")
-            && object.get("digest").and_then(Value::as_str).is_some_and(is_sha256_hex)
-            && object.get("digest_scope").and_then(Value::as_str)
-                == Some("exact_input_bytes")
+            && object
+                .get("digest")
+                .and_then(Value::as_str)
+                .is_some_and(is_sha256_hex)
+            && object.get("digest_scope").and_then(Value::as_str) == Some("exact_input_bytes")
             && object.get("canonicalization").and_then(Value::as_str) == Some("none")
             && object.get("byte_length").and_then(Value::as_u64).is_some()
     });
@@ -171,8 +173,7 @@ mod tests {
     fn sample_input_bytes() -> Vec<u8> {
         let document: Value =
             serde_json::from_str(VECTORS_JSON).expect("committed vectors must parse");
-        serde_json::to_vec(&document["vectors"][0]["input"])
-            .expect("sample input must serialize")
+        serde_json::to_vec(&document["vectors"][0]["input"]).expect("sample input must serialize")
     }
 
     #[test]
@@ -190,7 +191,10 @@ mod tests {
         let result = verify_replay_envelope(&envelope, &source);
         assert_eq!(result["status"], "replay_consistent", "{result:#}");
         assert_eq!(result["authority"], "replay_consistency_only");
-        assert!(result["checks"].as_array().unwrap().iter()
+        assert!(result["checks"]
+            .as_array()
+            .unwrap()
+            .iter()
             .all(|entry| entry["result"] == "pass"));
     }
 
@@ -202,9 +206,15 @@ mod tests {
         changed.extend_from_slice(&source);
         let result = verify_replay_envelope(&envelope, &changed);
         assert_eq!(result["status"], "rejected");
-        assert!(result["checks"].as_array().unwrap().iter()
+        assert!(result["checks"]
+            .as_array()
+            .unwrap()
+            .iter()
             .any(|entry| entry["id"] == "input-sha256" && entry["result"] == "fail"));
-        assert!(result["checks"].as_array().unwrap().iter()
+        assert!(result["checks"]
+            .as_array()
+            .unwrap()
+            .iter()
             .any(|entry| entry["id"] == "semantic-report-replay" && entry["result"] == "pass"));
     }
 
@@ -212,11 +222,13 @@ mod tests {
     fn tampered_report_is_rejected_even_when_input_digest_matches() {
         let source = sample_input_bytes();
         let mut envelope = create_replay_envelope(&source).expect("valid source");
-        envelope["report"]["decision_trace"][0]["interpretation"] =
-            json!("forged explanation");
+        envelope["report"]["decision_trace"][0]["interpretation"] = json!("forged explanation");
         let result = verify_replay_envelope(&envelope, &source);
         assert_eq!(result["status"], "rejected");
-        assert!(result["checks"].as_array().unwrap().iter()
+        assert!(result["checks"]
+            .as_array()
+            .unwrap()
+            .iter()
             .any(|entry| entry["id"] == "semantic-report-replay" && entry["result"] == "fail"));
     }
 
@@ -227,7 +239,10 @@ mod tests {
         envelope["artifact_binding"]["digest"] = json!("0".repeat(64));
         let result = verify_replay_envelope(&envelope, &source);
         assert_eq!(result["status"], "rejected");
-        assert!(result["checks"].as_array().unwrap().iter()
+        assert!(result["checks"]
+            .as_array()
+            .unwrap()
+            .iter()
             .any(|entry| entry["id"] == "input-sha256" && entry["result"] == "fail"));
     }
 
@@ -239,9 +254,15 @@ mod tests {
         envelope["limitations"] = json!([]);
         let result = verify_replay_envelope(&envelope, &source);
         assert_eq!(result["status"], "rejected");
-        assert!(result["checks"].as_array().unwrap().iter()
+        assert!(result["checks"]
+            .as_array()
+            .unwrap()
+            .iter()
             .any(|entry| entry["id"] == "envelope-contract" && entry["result"] == "fail"));
-        assert!(result["checks"].as_array().unwrap().iter()
+        assert!(result["checks"]
+            .as_array()
+            .unwrap()
+            .iter()
             .any(|entry| entry["id"] == "envelope-limitations" && entry["result"] == "fail"));
     }
 
@@ -250,7 +271,10 @@ mod tests {
         assert!(create_replay_envelope(b"{not-json").is_err());
         let result = verify_replay_envelope(&json!({}), b"{not-json");
         assert_eq!(result["status"], "rejected");
-        assert!(result["checks"].as_array().unwrap().iter()
+        assert!(result["checks"]
+            .as_array()
+            .unwrap()
+            .iter()
             .any(|entry| entry["id"] == "input-json" && entry["result"] == "fail"));
     }
 

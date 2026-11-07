@@ -70,8 +70,14 @@ impl Report {
 
     fn to_value(&self) -> Value {
         let mut object = Map::new();
-        object.insert("report_contract".into(), json!("omsi-manufacturing-semantic-report/0.1"));
-        object.insert("profile".into(), json!("manufacturing-asset-operations/0.1-incubation"));
+        object.insert(
+            "report_contract".into(),
+            json!("omsi-manufacturing-semantic-report/0.1"),
+        );
+        object.insert(
+            "profile".into(),
+            json!("manufacturing-asset-operations/0.1-incubation"),
+        );
         object.insert("validator_version".into(), json!(env!("CARGO_PKG_VERSION")));
         object.insert("decision_authority".into(), json!("diagnostic_only"));
         object.insert("quality_release_authority".into(), json!("none"));
@@ -128,7 +134,10 @@ pub fn evaluate_input_value(input: &Value) -> Value {
 }
 
 fn decision_trace(input: &Value, report: &Value) -> Vec<Value> {
-    let outcome = report.get("outcome").and_then(Value::as_str).unwrap_or("reject");
+    let outcome = report
+        .get("outcome")
+        .and_then(Value::as_str)
+        .unwrap_or("reject");
     let rejected = outcome == "reject";
     let dispositions = report.get("dispositions").and_then(Value::as_array);
     let rejected_field = dispositions
@@ -136,7 +145,9 @@ fn decision_trace(input: &Value, report: &Value) -> Vec<Value> {
         .and_then(|item| item["field"].as_str());
     let has_disposition = |field: &str, kind: &str| {
         dispositions.is_some_and(|items| {
-            items.iter().any(|item| item["field"] == field && item["type"] == kind)
+            items
+                .iter()
+                .any(|item| item["field"] == field && item["type"] == kind)
         })
     };
     let field_in = |prefix: &str| rejected_field.is_some_and(|field| field.starts_with(prefix));
@@ -213,7 +224,8 @@ fn decision_trace(input: &Value, report: &Value) -> Vec<Value> {
         "interpretation": "A source-declared token is preserved but is not treated as independent proof of atomic consistency."
     }));
 
-    let measurement = report.get("measurement_evaluation")
+    let measurement = report
+        .get("measurement_evaluation")
         .and_then(Value::as_str)
         .unwrap_or("not_evaluated");
     trace.push(json!({
@@ -255,7 +267,10 @@ fn decision_trace(input: &Value, report: &Value) -> Vec<Value> {
         "interpretation": "A source status is never promoted to independently verified quality acceptance or release authority."
     }));
 
-    let revision_result = match report.get("source_revision_metadata").and_then(Value::as_str) {
+    let revision_result = match report
+        .get("source_revision_metadata")
+        .and_then(Value::as_str)
+    {
         Some("provided") if rejected => "revision_token_supplied_projection_rejected",
         Some("provided") => "revision_token_present",
         Some("not_provided") if rejected => "revision_token_absent_projection_rejected",
@@ -464,7 +479,11 @@ pub fn validate_vector_document(document: &Value) -> Value {
             }
         }
 
-        for field in ["measurement_evaluation", "projection_emitted", "source_revision_metadata"] {
+        for field in [
+            "measurement_evaluation",
+            "projection_emitted",
+            "source_revision_metadata",
+        ] {
             if let Some(expected_value) = expected_object.get(field) {
                 if report.get(field) != Some(expected_value) {
                     case_errors.push(json!({
@@ -1169,7 +1188,6 @@ impl Decimal {
     fn is_negative(self) -> bool {
         self.coefficient < 0
     }
-
 }
 
 impl Decimal {
@@ -1185,11 +1203,7 @@ impl Decimal {
             let split = digits.len() - scale;
             format!("{sign}{}.{}", &digits[..split], &digits[split..])
         } else {
-            format!(
-                "{sign}0.{}{}",
-                "0".repeat(scale - digits.len()),
-                digits
-            )
+            format!("{sign}0.{}{}", "0".repeat(scale - digits.len()), digits)
         }
     }
 }
@@ -1405,9 +1419,18 @@ mod decimal_boundary_tests {
 
     #[test]
     fn decimal_normalization_is_exact_and_canonical() {
-        assert_eq!(super::normalize_decimal_literal("72.4000"), Ok("72.4".to_owned()));
-        assert_eq!(super::normalize_decimal_literal("0.00010"), Ok("0.0001".to_owned()));
-        assert_eq!(super::normalize_decimal_literal("-0.000"), Ok("0".to_owned()));
+        assert_eq!(
+            super::normalize_decimal_literal("72.4000"),
+            Ok("72.4".to_owned())
+        );
+        assert_eq!(
+            super::normalize_decimal_literal("0.00010"),
+            Ok("0.0001".to_owned())
+        );
+        assert_eq!(
+            super::normalize_decimal_literal("-0.000"),
+            Ok("0".to_owned())
+        );
         assert_eq!(
             super::normalize_decimal_literal("999999999999999999.999999999999999999"),
             Ok("999999999999999999.999999999999999999".to_owned())
