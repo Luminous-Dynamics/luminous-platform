@@ -110,6 +110,11 @@ impl ProbePolicy for ScriptedProbePolicy {
 pub struct SourceObservation {
     pub observation_id: String,
     pub digest: String,
+    pub probe_id: String,
+    pub operation_digest: String,
+    pub tenant_id: String,
+    pub target_id: String,
+    pub purpose_id: String,
     pub source_id: String,
     pub control_domain: String,
     pub observed_at_tick: u64,
@@ -119,7 +124,14 @@ pub struct SourceObservation {
 pub struct ImpactObservation {
     pub impact_id: String,
     pub digest: String,
+    pub probe_id: String,
+    pub operation_digest: String,
+    pub tenant_id: String,
+    pub target_id: String,
+    pub purpose_id: String,
     pub observer_control_domain: String,
+    pub window_start_tick: u64,
+    pub window_end_tick: u64,
     pub measured_at_tick: u64,
     pub cpu_milliticks: u64,
     pub io_bytes: u64,
@@ -485,6 +497,11 @@ pub fn run_scripted_episode<P: ProbePolicy>(
 
     let observation_valid = non_empty(&observation.observation_id)
         && non_empty(&observation.digest)
+        && observation.probe_id == probe.probe_id
+        && observation.operation_digest == probe.operation_digest
+        && observation.tenant_id == watch.tenant_id
+        && observation.target_id == watch.target_id
+        && observation.purpose_id == watch.purpose_id
         && non_empty(&observation.control_domain)
         && observation.source_id == probe.source_id
         && observation.control_domain == probe.collector_control_domain
@@ -519,8 +536,17 @@ pub fn run_scripted_episode<P: ProbePolicy>(
     if !impact.complete
         || !non_empty(&impact.impact_id)
         || !non_empty(&impact.digest)
+        || impact.probe_id != probe.probe_id
+        || impact.operation_digest != probe.operation_digest
+        || impact.tenant_id != watch.tenant_id
+        || impact.target_id != watch.target_id
+        || impact.purpose_id != watch.purpose_id
         || !non_empty(&impact.observer_control_domain)
-        || impact.measured_at_tick > current_tick
+        || impact.window_start_tick < wake.event.delivered_at_tick
+        || impact.window_start_tick > impact.window_end_tick
+        || impact.window_end_tick > current_tick
+        || impact.measured_at_tick < impact.window_start_tick
+        || impact.measured_at_tick > impact.window_end_tick
     {
         result.status = EpisodeStatus::ImpactUnknown;
         result.terminal = TerminalDisposition::Escalate;
@@ -619,6 +645,11 @@ mod tests {
         SourceObservation {
             observation_id: "observation-1".into(),
             digest: "sha256:observation-a".into(),
+            probe_id: "probe-queue-depth".into(),
+            operation_digest: "sha256:operation-a".into(),
+            tenant_id: "tenant-a".into(),
+            target_id: "service-a".into(),
+            purpose_id: "incident-diagnosis".into(),
             source_id: "diagnostic-collector".into(),
             control_domain: "collector-domain".into(),
             observed_at_tick: 4,
@@ -629,7 +660,14 @@ mod tests {
         ImpactOutcome::Observed(ImpactObservation {
             impact_id: "impact-1".into(),
             digest: "sha256:impact-a".into(),
+            probe_id: "probe-queue-depth".into(),
+            operation_digest: "sha256:operation-a".into(),
+            tenant_id: "tenant-a".into(),
+            target_id: "service-a".into(),
+            purpose_id: "incident-diagnosis".into(),
             observer_control_domain: "independent-observer".into(),
+            window_start_tick: 4,
+            window_end_tick: 5,
             measured_at_tick: 5,
             cpu_milliticks: 12,
             io_bytes: 128,
@@ -762,7 +800,14 @@ mod tests {
         let same_domain = ImpactOutcome::Observed(ImpactObservation {
             impact_id: "impact-1".into(),
             digest: "sha256:impact-a".into(),
+            probe_id: "probe-queue-depth".into(),
+            operation_digest: "sha256:operation-a".into(),
+            tenant_id: "tenant-a".into(),
+            target_id: "service-a".into(),
+            purpose_id: "incident-diagnosis".into(),
             observer_control_domain: "collector-domain".into(),
+            window_start_tick: 4,
+            window_end_tick: 5,
             measured_at_tick: 5,
             cpu_milliticks: 12,
             io_bytes: 128,
