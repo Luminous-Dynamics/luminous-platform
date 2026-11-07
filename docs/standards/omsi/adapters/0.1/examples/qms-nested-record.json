@@ -1,0 +1,21 @@
+{
+  "record": {
+    "revision": "qms-rev-19",
+    "asset": {
+      "id": "PART-7",
+      "tenant": "tenant:synthetic-a"
+    },
+    "measurement": {
+      "value": "0.007200",
+      "unit": "millimeter"
+    },
+    "decision": {
+      "status": "REVIEW",
+      "rule": "QMS-AREA-04"
+    }
+  },
+  "attachments": [
+    "sha256:synthetic-evidence-1",
+    "sha256:synthetic-evidence-2"
+  ]
+}

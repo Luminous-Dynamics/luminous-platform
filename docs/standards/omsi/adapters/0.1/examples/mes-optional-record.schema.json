@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous-dynamics:omsi:synthetic-mes-optional-record:0.1",
+  "title": "Synthetic MES Optional-Field Record 0.1",
+  "description": "Closed source-field inventory fixture for adapter-schema coverage testing; not a real vendor schema.",
+  "type": "object",
+  "required": [
+    "temperature"
+  ],
+  "properties": {
+    "temperature": {
+      "type": "string",
+      "description": "Required decimal literal as exported by the synthetic source."
+    },
+    "unit": {
+      "type": "string",
+      "description": "Optional source unit label."
+    },
+    "operator_note": {
+      "type": "string",
+      "description": "Optional free-text source field intentionally excluded from the neutral projection."
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Optional container whose note property is required whenever the container exists.",
+      "required": [
+        "note"
+      ],
+      "properties": {
+        "note": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

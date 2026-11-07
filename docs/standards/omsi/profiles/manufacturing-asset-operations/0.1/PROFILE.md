@@ -94,3 +94,25 @@ This is proposal-level evidence only. Passing these vectors would not demonstrat
 5. A second implementation consumes the output and preserves source claims, conflicts, calibration limits and source revision gaps.
 6. Live source access, if ever proposed, is a separate read-only qualification with tenant isolation, stale/partial snapshot, pagination, revocation and zero-write tests.
 7. Any future quality release or equipment-control workflow has a separate, reviewed domain authority and safety case; it does not inherit that power from this interchange profile.
+
+
+## Executable semantic validator (incubation)
+
+A separate Rust implementation is proposed at [`tools/omsi-manufacturing-validator`](../../../../../../tools/omsi-manufacturing-validator/README.md). It checks the committed vector file against computed machine-readable outcomes and includes additional adversarial tests for decimal precision, timestamp normalization, tenant/reference scope, malformed fields, and assurance upgrades.
+
+From the repository root, run:
+
+```sh
+cargo fmt --manifest-path tools/omsi-manufacturing-validator/Cargo.toml --all -- --check
+cargo test --manifest-path tools/omsi-manufacturing-validator/Cargo.toml
+cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- validate-vectors docs/standards/omsi/profiles/manufacturing-asset-operations/0.1/CONFORMANCE-VECTORS.json
+```
+
+The validator does not authenticate the binding, source system, calibration issuer, or physical measurement. Its comparison is nominal-value-only and does not authorize product release or machine control. Its CI status must be read from the exact code head; authored tests are not a passing result.
+
+
+### Versioned semantic report
+
+The validator emits `omsi-manufacturing-semantic-report/0.1`, including a rule-bound `decision_trace`. Every entry names the rule, outcome state, input field references, and explanation. The report also declares `decision_authority=diagnostic_only`, `quality_release_authority=none`, `equipment_control_authority=none`, and `origin_authentication=not_performed`. These are operational boundaries, not decorative metadata.
+
+The [report schema](../../../../../../tools/omsi-manufacturing-validator/schema/semantic-report.schema.json) describes this output contract. Neither the report nor its trace is cryptographically signed or independently authenticated in this pilot. An integrator must treat the trace as the validator's reproducible explanation, not a proof of source truth or authorization.

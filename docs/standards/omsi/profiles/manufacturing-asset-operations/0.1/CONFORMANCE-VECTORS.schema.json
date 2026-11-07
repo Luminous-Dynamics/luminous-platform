@@ -388,7 +388,8 @@
         "outcome",
         "dispositions",
         "assertions",
-        "comparison_rule_id"
+        "comparison_rule_id",
+        "source_revision_metadata"
       ],
       "properties": {
         "outcome": {
@@ -416,10 +417,10 @@
         "projection_emitted": {
           "type": "boolean"
         },
-        "freshness_claim": {
+        "source_revision_metadata": {
           "enum": [
-            "not_available",
-            "source_revision_available"
+            "not_provided",
+            "provided"
           ]
         },
         "assertions": {

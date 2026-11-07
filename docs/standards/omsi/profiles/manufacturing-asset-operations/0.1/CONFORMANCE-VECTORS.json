@@ -110,7 +110,8 @@
           "snapshot consistency remains per_record_non_atomic",
           "comparison uses the nominal value only; uncertainty is retained but not applied by this rule"
         ],
-        "comparison_rule_id": "nominal-point-estimate-range/0.1"
+        "comparison_rule_id": "nominal-point-estimate-range/0.1",
+        "source_revision_metadata": "provided"
       }
     },
     {
@@ -214,7 +215,8 @@
           "no default unit is inferred from specification or machine type",
           "source Accepted claim is preserved but not upgraded"
         ],
-        "comparison_rule_id": "nominal-point-estimate-range/0.1"
+        "comparison_rule_id": "nominal-point-estimate-range/0.1",
+        "source_revision_metadata": "provided"
       }
     },
     {
@@ -319,7 +321,8 @@
           "source status Accepted is not converted into product release",
           "point-estimate comparison does not establish measurement validity or quality acceptance"
         ],
-        "comparison_rule_id": "nominal-point-estimate-range/0.1"
+        "comparison_rule_id": "nominal-point-estimate-range/0.1",
+        "source_revision_metadata": "provided"
       }
     },
     {
@@ -423,7 +426,8 @@
           "adapter does not fetch or resolve the asset across the tenant boundary",
           "source site ID is not used as proof of tenant authorization"
         ],
-        "comparison_rule_id": "nominal-point-estimate-range/0.1"
+        "comparison_rule_id": "nominal-point-estimate-range/0.1",
+        "source_revision_metadata": "provided"
       }
     },
     {
@@ -527,7 +531,8 @@
           "the original malformed value may be retained only in a diagnostic field permitted by policy",
           "export time is not substituted for observed time"
         ],
-        "comparison_rule_id": "nominal-point-estimate-range/0.1"
+        "comparison_rule_id": "nominal-point-estimate-range/0.1",
+        "source_revision_metadata": "provided"
       }
     },
     {
@@ -633,7 +638,8 @@
           "no automatic lot rejection, product release, shutdown, or actuation is authorized",
           "the named comparison rule does not apply the uncertainty interval or grant quality-release authority"
         ],
-        "comparison_rule_id": "nominal-point-estimate-range/0.1"
+        "comparison_rule_id": "nominal-point-estimate-range/0.1",
+        "source_revision_metadata": "provided"
       }
     },
     {
@@ -731,14 +737,14 @@
             "reason": "source_record_revision_not_provided"
           }
         ],
-        "freshness_claim": "not_available",
         "assertions": [
           "exported_at is retained as extraction/export time only",
           "adapter does not infer the source record's revision or freshness",
           "snapshot consistency remains per_record_non_atomic",
           "no source-history completeness claim is emitted"
         ],
-        "comparison_rule_id": "nominal-point-estimate-range/0.1"
+        "comparison_rule_id": "nominal-point-estimate-range/0.1",
+        "source_revision_metadata": "not_provided"
       }
     },
     {
@@ -843,7 +849,8 @@
           "no point-estimate comparison is reported against the Celsius bounds",
           "the source Accepted claim remains separate and unverified"
         ],
-        "comparison_rule_id": "nominal-point-estimate-range/0.1"
+        "comparison_rule_id": "nominal-point-estimate-range/0.1",
+        "source_revision_metadata": "provided"
       }
     }
   ]

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous-dynamics:omsi:manufacturing-transform-vectors:0.1",
+  "title": "OMSI Manufacturing Transform Vectors 0.1",
+  "type": "object",
+  "required": ["format", "version", "vectors"],
+  "properties": {
+    "format": { "const": "omsi-manufacturing-transform-vectors" },
+    "version": { "const": "0.1" },
+    "vectors": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100000,
+      "items": {
+        "type": "object",
+        "required": ["id", "transform_id", "input", "expected"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "transform_id": { "type": "string", "minLength": 1 },
+          "input": { "type": "string" },
+          "expected": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": ["status", "output"],
+                "properties": {
+                  "status": { "const": "transformed" },
+                  "output": { "type": "string" }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "required": ["status", "reason"],
+                "properties": {
+                  "status": { "const": "rejected" },
+                  "reason": { "type": "string", "minLength": 1 }
+                },
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous-dynamics:omsi:manufacturing-adapter-projection:0.1",
+  "title": "OMSI Manufacturing Adapter Projection Report 0.1",
+  "type": "object",
+  "required": [
+    "projection_contract",
+    "status",
+    "authority",
+    "projection",
+    "audit",
+    "limitations"
+  ],
+  "properties": {
+    "projection_contract": {
+      "const": "omsi-manufacturing-adapter-projection/0.1"
+    },
+    "status": {
+      "enum": [
+        "projection_created",
+        "projection_blocked"
+      ]
+    },
+    "authority": {
+      "const": "adapter_projection_only"
+    },
+    "adapter_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "source_format": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "applied_mapping_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "explicitly_dropped_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "projection": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "audit": {
+      "type": "object",
+      "required": [
+        "audit_contract",
+        "status",
+        "authority",
+        "binding"
+      ],
+      "properties": {
+        "audit_contract": {
+          "const": "omsi-manufacturing-adapter-audit/0.1"
+        },
+        "status": {
+          "enum": [
+            "complete_accounting",
+            "incomplete_accounting",
+            "invalid_contract"
+          ]
+        },
+        "authority": {
+          "const": "adapter_mapping_accounting_only"
+        },
+        "binding": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "skipped_optional_count": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "projection_created"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "adapter_id",
+          "source_format",
+          "applied_mapping_count",
+          "explicitly_dropped_count",
+          "skipped_optional_count"
+        ],
+        "properties": {
+          "projection": {
+            "type": "object"
+          },
+          "audit": {
+            "properties": {
+              "status": {
+                "const": "complete_accounting"
+              },
+              "silent_loss_count": {
+                "const": 0
+              }
+            },
+            "required": [
+              "silent_loss_count"
+            ]
+          },
+          "skipped_optional_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "not": {
+          "required": [
+            "errors"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "projection_blocked"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "errors"
+        ],
+        "properties": {
+          "projection": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

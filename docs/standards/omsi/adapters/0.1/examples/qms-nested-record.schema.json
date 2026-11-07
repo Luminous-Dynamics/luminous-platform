@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous-dynamics:omsi:synthetic-qms-nested-record:0.1",
+  "title": "Synthetic QMS Nested Record 0.1",
+  "description": "Closed source-field inventory for the synthetic QMS adapter/provenance fixture; not a vendor schema.",
+  "type": "object",
+  "required": ["record", "attachments"],
+  "properties": {
+    "record": {
+      "type": "object",
+      "required": ["revision", "asset", "measurement", "decision"],
+      "properties": {
+        "revision": {"type": "string"},
+        "asset": {
+          "type": "object",
+          "required": ["id", "tenant"],
+          "properties": {
+            "id": {"type": "string"},
+            "tenant": {"type": "string"}
+          },
+          "additionalProperties": false
+        },
+        "measurement": {
+          "type": "object",
+          "required": ["value", "unit"],
+          "properties": {
+            "value": {"type": "string"},
+            "unit": {"type": "string"}
+          },
+          "additionalProperties": false
+        },
+        "decision": {
+          "type": "object",
+          "required": ["status", "rule"],
+          "properties": {
+            "status": {"type": "string"},
+            "rule": {"type": "string"}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "attachments": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  },
+  "additionalProperties": false
+}
