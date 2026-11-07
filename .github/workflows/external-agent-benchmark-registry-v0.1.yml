@@ -53,53 +53,57 @@ jobs:
 
           Draft202012Validator.check_schema(schema)
           validator = Draft202012Validator(schema, format_checker=FormatChecker())
-          errors = sorted(validator.iter_errors(snapshot), key=lambda e: list(e.path))
-          if errors:
-              for error in errors:
-                  print(f"SCHEMA ERROR at {'/'.join(map(str, error.path))}: {error.message}")
-              raise SystemExit(1)
-
-          ids = [record["id"] for record in snapshot["records"]]
-          if len(ids) != len(set(ids)):
-              raise SystemExit("Duplicate benchmark record IDs")
-
-          # The registry deliberately preserves native metrics. Do not silently
-          # add a composite score or turn an unknown denominator into a count.
           forbidden = {"overall_sre_score", "composite_score", "weighted_sre_score"}
-          for record in snapshot["records"]:
-              for metric in record["metrics"]:
-                  if metric["metric_id"] in forbidden:
-                      raise SystemExit(f"Forbidden composite metric: {record['id']}/{metric['metric_id']}")
-                  numerator = metric.get("numerator")
-                  denominator = metric.get("denominator")
-                  if numerator is not None and denominator is not None and numerator > denominator:
-                      raise SystemExit(
-                          f"Invalid numerator/denominator: {record['id']}/{metric['metric_id']}"
-                      )
-                  if (numerator is None) != (denominator is None):
-                      # A numerator without its denominator, or vice versa,
-                      # cannot support a reproducible count-derived metric.
-                      raise SystemExit(
-                          f"Incomplete count pair: {record['id']}/{metric['metric_id']}"
-                      )
 
-          if snapshot["snapshot_status"] != "metadata_snapshot_partial":
-              raise SystemExit("This snapshot must remain partial until source-byte capture is complete")
+          def validate_snapshot(candidate):
+              errors = sorted(validator.iter_errors(candidate), key=lambda e: list(e.path))
+              if errors:
+                  return [f"schema at {'/'.join(map(str, e.path))}: {e.message}" for e in errors]
 
-          capture_states = {
-              record["source"]["capture"]["status"] for record in snapshot["records"]
-          }
-          if "metadata_only_no_content_hash" not in capture_states:
-              raise SystemExit("Expected explicit missing-source-hash status")
-          if "raw_git_blob_sha_only" not in capture_states:
-              raise SystemExit("Expected explicit git-blob-only provenance status")
+              failures = []
+              ids = [record["id"] for record in candidate["records"]]
+              if len(ids) != len(set(ids)):
+                  failures.append("duplicate benchmark record IDs")
 
-          # Negative controls: each malformed instance must be rejected.
+              for record in candidate["records"]:
+                  published = record["publication"]["published_at"]
+                  observed = record["publication"]["observed_at"]
+                  if published is not None and published > observed:
+                      failures.append(f"{record['id']}: publication date after observation date")
+
+                  for metric in record["metrics"]:
+                      if metric["metric_id"] in forbidden:
+                          failures.append(f"{record['id']}: forbidden composite metric")
+                      numerator = metric.get("numerator")
+                      denominator = metric.get("denominator")
+                      if metric["value_semantics"] == "derived_from_reported_counts":
+                          if numerator is None or denominator is None:
+                              failures.append(f"{record['id']}/{metric['metric_id']}: missing count pair")
+                          elif numerator > denominator:
+                              failures.append(f"{record['id']}/{metric['metric_id']}: numerator exceeds denominator")
+
+              if candidate["snapshot_status"] != "metadata_snapshot_partial":
+                  failures.append("snapshot promoted without complete source-byte capture")
+
+              capture_states = {
+                  record["source"]["capture"]["status"] for record in candidate["records"]
+              }
+              if "metadata_only_no_content_hash" not in capture_states:
+                  failures.append("missing explicit metadata-only source status")
+              if "raw_git_blob_sha_only" not in capture_states:
+                  failures.append("missing explicit Git-blob-only provenance status")
+              return failures
+
+          failures = validate_snapshot(snapshot)
+          if failures:
+              raise SystemExit("\n".join(failures))
+
+          # Negative controls: each malformed registry must fail schema or
+          # cross-field semantic validation (not merely fail JSON parsing).
           negatives = []
 
           missing_denominator = copy.deepcopy(snapshot)
-          metric = missing_denominator["records"][0]["metrics"][0]
-          metric["denominator"] = None
+          missing_denominator["records"][0]["metrics"][0]["denominator"] = None
           negatives.append(("missing denominator", missing_denominator))
 
           missing_source_identity = copy.deepcopy(snapshot)
@@ -119,7 +123,7 @@ jobs:
           negatives.append(("composite score property", composite_score))
 
           for label, candidate in negatives:
-              if not list(validator.iter_errors(candidate)):
+              if not validate_snapshot(candidate):
                   raise SystemExit(f"Negative control was accepted: {label}")
               print(f"rejected as expected: {label}")
 
