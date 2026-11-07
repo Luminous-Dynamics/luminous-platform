@@ -279,16 +279,31 @@
         },
         {
           "metric_id": "active-fault-repair-fraction",
-          "label": "Best reported repair fraction while faults are active",
+          "label": "Keep-agent repair fraction while faults are active (Kimi K2.5)",
           "value": 0.017,
           "unit": "fraction",
           "numerator": null,
           "denominator": null,
           "value_semantics": "reported_point_estimate",
-          "definition": "Fraction of faults repaired while still active, as reported in the main comparison.",
-          "scope": "Table 2 reported methods",
+          "definition": "Keep-agent's reported fraction of faults repaired while still active on the Kimi K2.5 configuration.",
+          "scope": "Keep-agent / Kimi K2.5 in the native table",
           "limitations": [
-            "Must be read with native denominator and per-method table."
+            "Must be read with native denominator and per-method table.",
+            "The preprint reports active-fault repair at most 0.024 across all methods; 0.017 is the Keep-agent Kimi K2.5 row, not the global maximum."
+          ]
+        },
+        {
+          "metric_id": "max-active-fault-repair",
+          "label": "Maximum repair fraction while faults remain active across reported methods",
+          "value": 0.024,
+          "unit": "fraction",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Highest reported active-fault repair fraction among evaluated methods.",
+          "scope": "All evaluated methods / backbones",
+          "limitations": [
+            "The paper states repair remains at most 0.024 while faults are active."
           ]
         }
       ],
@@ -326,7 +341,7 @@
         "primary_url": "https://radarhq.io/benchmark/mcp-vs-kubectl",
         "additional_urls": [],
         "source_kind": "benchmark_site",
-        "reference_id": null,
+        "reference_id": "radar-mcp-vs-kubectl-50-fault-study",
         "raw_git_blob_sha": null,
         "capture": {
           "status": "metadata_only_no_content_hash",
@@ -461,7 +476,7 @@
         "primary_url": "https://tracewayapp.com/benchmarks",
         "additional_urls": [],
         "source_kind": "benchmark_site",
-        "reference_id": "v1 / 2026-10-21–22 run set",
+        "reference_id": "traceway-ai-sre-bench-v1",
         "raw_git_blob_sha": null,
         "capture": {
           "status": "metadata_only_no_content_hash",
@@ -582,7 +597,7 @@
           "https://github.com/edgedelta/project-arena"
         ],
         "source_kind": "benchmark_site",
-        "reference_id": "project-arena master fc232a3fb38b2d49d5fbc8589071623e13f2c963",
+        "reference_id": "ai-sre-arena-v1-rubric-1.0.0",
         "raw_git_blob_sha": null,
         "capture": {
           "status": "metadata_only_no_content_hash",
@@ -701,7 +716,7 @@
           "https://github.com/itbench-hub/ITBench"
         ],
         "source_kind": "benchmark_site",
-        "reference_id": "59-task ITBench-AA implementation",
+        "reference_id": "itbench-aa-59-task-snapshot",
         "raw_git_blob_sha": null,
         "capture": {
           "status": "metadata_only_no_content_hash",
@@ -866,19 +881,30 @@
       "protocol": {
         "task_count": 95,
         "run_count": 3420,
-        "repeat_policy": "95 tasks × 9 model configurations × 4 harnesses = 3,420 cells; one selected execution per cell, no repeated-run stability estimate.",
-        "environment": "Task benchmark across multiple agent domains and harness implementations.",
-        "tool_surface": "Four evaluated harnesses with nine model configurations.",
+        "repeat_policy": "95 tasks × 9 model configurations × 4 native harnesses = 3,420 selected execution cells; one selected execution per cell, including recovery replacements; 855 matched model-task cells per harness. No repeat-run stability estimate.",
+        "environment": "Four native agent harnesses: Claude Code, Codex, DeepSeek Harness and OpenClaw.",
+        "tool_surface": "Native context, execution, governance, lifecycle, observability, tools and verification behavior retained.",
         "model_configurations": [
-          "Nine model configurations; exact list pinned in the native scorecard."
+          "DeepSeek-V4-Pro",
+          "Gemini 3.7 Flash",
+          "GLM-5.3",
+          "GPT-5.6 Sol",
+          "Grok-4.6",
+          "HY3",
+          "Kimi K3",
+          "Claude Opus 5",
+          "Qwen3.8-Max"
         ],
         "evaluator": "Deterministic checks followed by semantic judge (DeepSeek-V4-Flash); native Agent Score, Harness Macro and Clean metrics kept separate.",
         "judge": "DeepSeek-V4-Flash",
         "noise_or_controls": "Selected run per cell; published selected-run cost excludes judge calls and discarded runs.",
         "limitations": [
-          "One selected run per cell; stability/variance not estimated.",
-          "Verification dimension contains one task.",
-          "Semantic judge and outcome-conditioned criterion handling create dependencies; the paper cautions against treating aggregate as independent measures."
+          "One selected execution per cell; no repeated-run stability estimate.",
+          "Verification dimension contains one task; overall dimension coverage is uneven.",
+          "Final semantic evaluator DeepSeek-V4-Flash; scoring budgets vary across runs.",
+          "Unexercised Harness criteria are outcome-conditioned; Agent and Harness layers are not statistically independent.",
+          "Candidate causal links are review candidates, not established causal propagation.",
+          "Selected-run cost excludes judge calls and discarded runs."
         ]
       },
       "metrics": [
@@ -887,25 +913,81 @@
           "label": "Task-success runs failing at least one harness criterion",
           "value": 31.1,
           "unit": "percent",
-          "numerator": null,
-          "denominator": null,
-          "value_semantics": "reported_point_estimate",
-          "definition": "Share of task-success runs that did not satisfy all harness criteria.",
-          "scope": "Selected execution corpus",
+          "numerator": 1065,
+          "denominator": 3420,
+          "value_semantics": "derived_from_reported_counts",
+          "definition": "Share of selected runs that passed the Agent/task criteria but failed at least one Harness criterion.",
+          "scope": "All 3,420 selected executions",
           "limitations": [
-            "Denominator is task-success runs, not all 3,420 cells."
+            "This metric is specifically task success with a harness-criterion failure, not overall failure rate."
           ]
         },
         {
           "metric_id": "clean",
-          "label": "Clean results (agent and harness criteria all pass)",
+          "label": "Clean runs (all Agent and Harness criteria pass)",
           "value": 8.4,
           "unit": "percent",
-          "numerator": null,
+          "numerator": 286,
           "denominator": 3420,
+          "value_semantics": "derived_from_reported_counts",
+          "definition": "Selected runs that satisfy every criterion in both Agent and Harness layers.",
+          "scope": "All 3,420 selected executions",
+          "limitations": [
+            "One selected run per task × model × harness cell; not a repeatability estimate."
+          ]
+        },
+        {
+          "metric_id": "harness-macro-min",
+          "label": "Lowest harness macro across native harnesses",
+          "value": 59.8,
+          "unit": "percent",
+          "numerator": null,
+          "denominator": null,
           "value_semantics": "reported_point_estimate",
-          "definition": "Run passes all agent and harness criteria.",
-          "scope": "3,420 selected execution cells",
+          "definition": "Lower end of the range of four harness-level macro averages.",
+          "scope": "Codex across nine models",
+          "limitations": [
+            "Macro averages fraction of harness criteria; does not itself equal system task success."
+          ]
+        },
+        {
+          "metric_id": "harness-macro-max",
+          "label": "Highest harness macro across native harnesses",
+          "value": 72,
+          "unit": "percent",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Upper end of the range of four harness-level macro averages.",
+          "scope": "OpenClaw across nine models",
+          "limitations": [
+            "Macro averages fraction of harness criteria; does not itself equal system task success."
+          ]
+        },
+        {
+          "metric_id": "clean-claude-code",
+          "label": "Claude Code clean rate",
+          "value": 9.1,
+          "unit": "percent",
+          "numerator": null,
+          "denominator": 855,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Run passes every criterion in Agent and Harness layers.",
+          "scope": "855 selected executions on Claude Code",
+          "limitations": [
+            "One selected run per cell."
+          ]
+        },
+        {
+          "metric_id": "clean-openclaw",
+          "label": "OpenClaw clean rate",
+          "value": 11.7,
+          "unit": "percent",
+          "numerator": null,
+          "denominator": 855,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Run passes every criterion in Agent and Harness layers.",
+          "scope": "855 selected executions on OpenClaw",
           "limitations": [
             "One selected run per cell."
           ]
@@ -923,7 +1005,8 @@
         ],
         "notes": [
           "Motivates Luminous supplemental independent effect and verification controls.",
-          "Keep contract-not-established distinct from proven harness defect."
+          "Keep contract-not-established distinct from proven harness defect.",
+          "Native results include Agent Score, Agent Pass, Harness Macro, Clean and Overall; this registry intentionally preserves only independent native measures and does not treat the benchmark's equal-weight Overall as an assurance frontier."
         ]
       },
       "claim_ceiling": "Preprint benchmark result using selected executions and semantic judges. It does not estimate repeated-run stability."
@@ -1016,7 +1099,7 @@
       "publication": {
         "published_at": "2026-09-03",
         "observed_at": "2026-11-07",
-        "version": "arXiv:2609.04280v1"
+        "version": "arXiv:2609.04280v3"
       },
       "source": {
         "primary_url": "https://arxiv.org/abs/2609.04280",
@@ -1024,13 +1107,13 @@
           "https://mas-orchestra.salesforceresearch.ai/evoharness/"
         ],
         "source_kind": "paper",
-        "reference_id": "arXiv:2609.04280v1",
+        "reference_id": "arXiv:2609.04280v3",
         "raw_git_blob_sha": null,
         "capture": {
           "status": "metadata_only_no_content_hash",
           "captured_at": "2026-11-07",
           "content_sha256": null,
-          "note": "Preprint abstract and benchmark metadata inspected; paper/data bytes not archived here."
+          "note": "Current preprint version inspected: v3, submitted 26 Sep 2026; source paper bytes not archived in this registry."
         }
       },
       "protocol": {
@@ -1122,7 +1205,7 @@
           "https://www.infoq.com/news/2026/10/datadog-scout-sre-model/"
         ],
         "source_kind": "vendor_blog",
-        "reference_id": "Scout 1.0 launch report",
+        "reference_id": "datadog-scout-1.0-alerteval",
         "raw_git_blob_sha": null,
         "capture": {
           "status": "metadata_only_no_content_hash",
@@ -1199,6 +1282,109 @@
         ]
       },
       "claim_ceiling": "Datadog company-reported internal investigation benchmark and estimated inference-cost comparisons. Not an independently reproduced incident-resolution result."
+    },
+    {
+      "id": "nist-evaluation-probes-agentic-grounding",
+      "name": "NIST Building Evaluation Probes into Agentic AI",
+      "benchmark_family": "agent_evidence_grounding",
+      "construct": "Rubric-based adversarial verification of agent factual claims against trusted reference documents, with machine-readable claim/evidence audit trails.",
+      "unit_of_analysis": "agent factual claim × supporting reference document",
+      "owner": "NIST Information Technology Laboratory, AI Research, Measurement and Standards Division",
+      "evidence_status": "benchmark_maintainer_report",
+      "publication": {
+        "published_at": "2026-05-01",
+        "observed_at": "2026-11-07",
+        "version": "ongoing project / initial deep-research pipeline"
+      },
+      "source": {
+        "primary_url": "https://www.nist.gov/programs-projects/building-evaluation-probes-agentic-ai",
+        "additional_urls": [],
+        "source_kind": "technical_report",
+        "reference_id": "nist-evaluation-probes-project-2026",
+        "raw_git_blob_sha": null,
+        "capture": {
+          "status": "metadata_only_no_content_hash",
+          "captured_at": "2026-11-07",
+          "content_sha256": null,
+          "note": "NIST project description inspected; no benchmark score or source bytes are published in this registry snapshot."
+        }
+      },
+      "protocol": {
+        "task_count": null,
+        "run_count": null,
+        "repeat_policy": "Ongoing research project; no public fixed benchmark denominator or repeat protocol is specified on the project page.",
+        "environment": "Open-source deep-research pipeline testbed over a human-curated corpus of authoritative documents.",
+        "tool_surface": "Document retrieval, chunk relevance screening, cited synthesis and active or post-hoc evaluation probes.",
+        "model_configurations": [],
+        "evaluator": "Rubric-based language-model judge compared against trusted source documents.",
+        "judge": "Probe model; exact model/version not specified in current public project description.",
+        "noise_or_controls": "Independent probes for faithfulness, completeness and sufficiency; additional probes can be defined by rubric.",
+        "limitations": [
+          "Measures claim grounding against reference documents, not participant side effects or operational recovery.",
+          "Judge verdicts are not independent source observers.",
+          "Project status is ongoing; no public numeric leaderboard result."
+        ]
+      },
+      "metrics": [
+        {
+          "metric_id": "faithfulness",
+          "label": "Probe dimension: faithfulness",
+          "value": null,
+          "unit": "qualitative",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "qualitative_report",
+          "definition": "Whether a cited source actually supports the claim.",
+          "scope": "Factual claim × source",
+          "limitations": [
+            "No numeric public score in the project description."
+          ]
+        },
+        {
+          "metric_id": "completeness",
+          "label": "Probe dimension: completeness",
+          "value": null,
+          "unit": "qualitative",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "qualitative_report",
+          "definition": "Whether the claim reflects the source's full message rather than cherry-picking.",
+          "scope": "Factual claim × source",
+          "limitations": [
+            "No numeric public score in the project description."
+          ]
+        },
+        {
+          "metric_id": "sufficiency",
+          "label": "Probe dimension: sufficiency",
+          "value": null,
+          "unit": "qualitative",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "qualitative_report",
+          "definition": "Whether the cited evidence is sufficient for the claim's evidentiary burden.",
+          "scope": "Factual claim × source",
+          "limitations": [
+            "No numeric public score in the project description."
+          ]
+        }
+      ],
+      "comparability": {
+        "comparison_group": "agent-evidence-grounding-methodology",
+        "comparable_only_with": [
+          "Same trusted-document corpus, task, rubric, probe version and judge protocol."
+        ],
+        "not_comparable_with": [
+          "Operational repair",
+          "Participant-effect verification",
+          "SREGym diagnosis/mitigation E2E"
+        ],
+        "notes": [
+          "Use as a methodology reference for claim/evidence provenance, not a substitute for independent effect observation.",
+          "Keep grounding verdicts separate from service recovery, side-effect and authorization truths."
+        ]
+      },
+      "claim_ceiling": "An ongoing NIST methodology project for factual claim grounding. It publishes no numeric benchmark score and does not establish operational effects."
     }
   ]
 }
