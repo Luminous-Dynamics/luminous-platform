@@ -40,7 +40,8 @@ fn validate(raw: &str, schema_raw: &str, label: &str) -> Result<(), String> {
 }
 
 fn at<'a>(value: &'a Value, path: &[&str]) -> Option<&'a Value> {
-    path.iter().try_fold(value, |current, key| current.get(*key))
+    path.iter()
+        .try_fold(value, |current, key| current.get(*key))
 }
 
 fn string_at<'a>(value: &'a Value, path: &[&str]) -> Option<&'a str> {
@@ -61,7 +62,12 @@ fn time_at(
     };
     DateTime::parse_from_rfc3339(raw)
         .map(Some)
-        .map_err(|error| format!("{label}: invalid RFC3339 timestamp at {}: {error}", path.join(".")))
+        .map_err(|error| {
+            format!(
+                "{label}: invalid RFC3339 timestamp at {}: {error}",
+                path.join(".")
+            )
+        })
 }
 
 fn required_time(
@@ -97,8 +103,11 @@ fn audit_watch(raw: &str, label: &str) -> Result<(), String> {
 
     let starts = required_time(&watch, &["policy", "starts_at"], label)?;
     let expires = required_time(&watch, &["policy", "expires_at"], label)?;
-    let capability_expires =
-        required_time(&watch, &["authority_context", "capability_expires_at"], label)?;
+    let capability_expires = required_time(
+        &watch,
+        &["authority_context", "capability_expires_at"],
+        label,
+    )?;
     if starts >= expires {
         return Err(format!("{label}: watch start must precede watch expiry"));
     }
@@ -117,13 +126,11 @@ fn audit_result(raw: &str, label: &str) -> Result<(), String> {
     let authority = string_at(&result, &["admission", "authority_status"]);
     let budget = string_at(&result, &["admission", "budget_status"]);
     let status = string_at(&result, &["watch_state", "status"]);
-    let terminal_authority =
-        string_at(&result, &["watch_state", "terminal_authority_status"]);
+    let terminal_authority = string_at(&result, &["watch_state", "terminal_authority_status"]);
     let delivery = string_at(&result, &["event_delivery", "status"]);
     let disposition = string_at(&result, &["wake", "disposition"]);
     let reason = string_at(&result, &["wake", "reason"]);
-    let event_count =
-        number_at(&result, &["event_delivery", "event_count"]).unwrap_or(u64::MAX);
+    let event_count = number_at(&result, &["event_delivery", "event_count"]).unwrap_or(u64::MAX);
     let wake_count = number_at(&result, &["wake", "wake_count"]).unwrap_or(u64::MAX);
     let mutations = number_at(
         &result,
@@ -208,10 +215,7 @@ fn audit_result(raw: &str, label: &str) -> Result<(), String> {
         }
     }
 
-    if matches!(
-        terminal_authority,
-        Some("revoked" | "expired" | "missing")
-    ) {
+    if matches!(terminal_authority, Some("revoked" | "expired" | "missing")) {
         if !matches!(
             status,
             Some("authority_revoked" | "expired" | "indeterminate")
@@ -223,16 +227,8 @@ fn audit_result(raw: &str, label: &str) -> Result<(), String> {
                 "{label}: terminal authority loss did not stop the watch"
             ));
         }
-        let changed = required_time(
-            &result,
-            &["watch_state", "authority_changed_at"],
-            label,
-        )?;
-        let access = required_time(
-            &result,
-            &["watch_state", "last_data_access_at"],
-            label,
-        )?;
+        let changed = required_time(&result, &["watch_state", "authority_changed_at"], label)?;
+        let access = required_time(&result, &["watch_state", "last_data_access_at"], label)?;
         if access >= changed {
             return Err(format!(
                 "{label}: data access is not strictly before authority loss"
@@ -258,25 +254,25 @@ fn audit_result(raw: &str, label: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn audit_pair(
-    watch_raw: &str,
-    result_raw: &str,
-    label: &str,
-) -> Result<(), String> {
+fn audit_pair(watch_raw: &str, result_raw: &str, label: &str) -> Result<(), String> {
     audit_watch(watch_raw, &format!("{label} watch"))?;
     audit_result(result_raw, &format!("{label} result"))?;
     let watch = parse(watch_raw, label)?;
     let result = parse(result_raw, label)?;
 
     if string_at(&watch, &["watch_id"]) != string_at(&result, &["watch_id"]) {
-        return Err(format!("{label}: result watch ID does not bind the submitted watch"));
+        return Err(format!(
+            "{label}: result watch ID does not bind the submitted watch"
+        ));
     }
 
     if string_at(&result, &["admission", "outcome"]) == Some("admitted") {
         if number_at(&watch, &["authority_context", "authority_epoch"])
             != number_at(&result, &["admission", "authority_epoch"])
         {
-            return Err(format!("{label}: admission authority epoch differs from watch request"));
+            return Err(format!(
+                "{label}: admission authority epoch differs from watch request"
+            ));
         }
     }
 
@@ -296,7 +292,9 @@ fn audit_pair(
     let actual_wakeups = number_at(&result, &["wake", "wake_count"])
         .ok_or_else(|| format!("{label}: missing actual wake count"))?;
     if actual_wakeups > max_wakeups {
-        return Err(format!("{label}: actual wake count exceeds requested budget"));
+        return Err(format!(
+            "{label}: actual wake count exceeds requested budget"
+        ));
     }
 
     if string_at(&result, &["watch_state", "status"]) != Some("not_started") {
@@ -310,21 +308,23 @@ fn audit_pair(
         let started = required_time(&result, &["watch_state", "started_at"], label)?;
         let terminal = required_time(&result, &["watch_state", "terminal_at"], label)?;
         if started < request_start || started >= request_expiry {
-            return Err(format!("{label}: watch started outside its authorized time window"));
+            return Err(format!(
+                "{label}: watch started outside its authorized time window"
+            ));
         }
         if terminal < started || terminal > request_expiry {
-            return Err(format!("{label}: terminal state lies outside the authorized watch window"));
+            return Err(format!(
+                "{label}: terminal state lies outside the authorized watch window"
+            ));
         }
         if terminal > capability_expiry {
             return Err(format!("{label}: watch continued beyond capability expiry"));
         }
-        if let Some(access) = time_at(
-            &result,
-            &["watch_state", "last_data_access_at"],
-            label,
-        )? {
+        if let Some(access) = time_at(&result, &["watch_state", "last_data_access_at"], label)? {
             if access < started || access > terminal || access > capability_expiry {
-                return Err(format!("{label}: data access lies outside the authorized watch window"));
+                return Err(format!(
+                    "{label}: data access lies outside the authorized watch window"
+                ));
             }
         }
     }
@@ -344,12 +344,15 @@ fn audit_pair(
         )?;
         let wake = required_time(&result, &["wake", "last_wakeup_at"], label)?;
         if observed > expiry || ingested > expiry || wake > expiry {
-            return Err(format!("{label}: matched event or wake occurred after watch expiry"));
+            return Err(format!(
+                "{label}: matched event or wake occurred after watch expiry"
+            ));
         }
-        if observed < start
-            && string_at(&watch, &["condition", "persistence"]) == Some("ephemeral")
+        if observed < start && string_at(&watch, &["condition", "persistence"]) == Some("ephemeral")
         {
-            return Err(format!("{label}: ephemeral event predates the active watch"));
+            return Err(format!(
+                "{label}: ephemeral event predates the active watch"
+            ));
         }
     }
 
@@ -414,24 +417,59 @@ mod tests {
     fn watch_and_result_must_match_identity_epoch_source_and_time_window() {
         let mut result = parse(RESULT_MATCHED, "matched").unwrap();
         result["watch_id"] = Value::String("watch-substituted".into());
-        assert!(audit_pair(WATCH_POSITIVE, &serde_json::to_string(&result).unwrap(), "id").is_err());
+        assert!(
+            audit_pair(
+                WATCH_POSITIVE,
+                &serde_json::to_string(&result).unwrap(),
+                "id"
+            )
+            .is_err()
+        );
 
         result = parse(RESULT_MATCHED, "matched").unwrap();
         result["admission"]["authority_epoch"] = Value::from(8);
-        assert!(audit_pair(WATCH_POSITIVE, &serde_json::to_string(&result).unwrap(), "epoch").is_err());
+        assert!(
+            audit_pair(
+                WATCH_POSITIVE,
+                &serde_json::to_string(&result).unwrap(),
+                "epoch"
+            )
+            .is_err()
+        );
 
         result = parse(RESULT_MATCHED, "matched").unwrap();
         result["event_delivery"]["source_control_domain_ref"] =
             Value::String("source-domain-substituted".into());
-        assert!(audit_pair(WATCH_POSITIVE, &serde_json::to_string(&result).unwrap(), "source").is_err());
+        assert!(
+            audit_pair(
+                WATCH_POSITIVE,
+                &serde_json::to_string(&result).unwrap(),
+                "source"
+            )
+            .is_err()
+        );
 
         result = parse(RESULT_MATCHED, "matched").unwrap();
         result["wake"]["wake_count"] = Value::from(9);
-        assert!(audit_pair(WATCH_POSITIVE, &serde_json::to_string(&result).unwrap(), "wake-budget").is_err());
+        assert!(
+            audit_pair(
+                WATCH_POSITIVE,
+                &serde_json::to_string(&result).unwrap(),
+                "wake-budget"
+            )
+            .is_err()
+        );
 
         result = parse(RESULT_MATCHED, "matched").unwrap();
         result["watch_state"]["terminal_at"] = Value::String("2026-11-07T13:00:01Z".into());
-        assert!(audit_pair(WATCH_POSITIVE, &serde_json::to_string(&result).unwrap(), "expired").is_err());
+        assert!(
+            audit_pair(
+                WATCH_POSITIVE,
+                &serde_json::to_string(&result).unwrap(),
+                "expired"
+            )
+            .is_err()
+        );
     }
 
     #[test]
@@ -439,14 +477,28 @@ mod tests {
         assert!(audit_pair(WATCH_GAP, RESULT_GAP, "gap").is_ok());
         let mut result = parse(RESULT_GAP, "gap").unwrap();
         result["wake"]["disposition"] = Value::String("wake_agent".into());
-        assert!(audit_pair(WATCH_GAP, &serde_json::to_string(&result).unwrap(), "gap-wake").is_err());
+        assert!(
+            audit_pair(
+                WATCH_GAP,
+                &serde_json::to_string(&result).unwrap(),
+                "gap-wake"
+            )
+            .is_err()
+        );
     }
 
     #[test]
     fn watch_event_never_authorizes_mutation() {
         let mut result = parse(RESULT_MATCHED, "matched").unwrap();
         result["effect_boundary"]["consequential_mutation_attempts"] = Value::from(1);
-        assert!(audit_pair(WATCH_POSITIVE, &serde_json::to_string(&result).unwrap(), "mutation").is_err());
+        assert!(
+            audit_pair(
+                WATCH_POSITIVE,
+                &serde_json::to_string(&result).unwrap(),
+                "mutation"
+            )
+            .is_err()
+        );
     }
 
     #[test]
