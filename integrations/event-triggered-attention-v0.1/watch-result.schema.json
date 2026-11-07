@@ -1,0 +1,524 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/integrations/event-triggered-attention-v0.1/watch-result.schema.json",
+  "title": "Luminous Event-triggered Watch Result v0.1",
+  "description": "Cross-record result binding for watch admission, event delivery, wake disposition and zero-mutation claim ceiling.",
+  "type": "object",
+  "required": [
+    "schema",
+    "version",
+    "watch_id",
+    "watch_request_digest",
+    "admission",
+    "watch_state",
+    "event_delivery",
+    "wake",
+    "effect_boundary"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous-event-watch-result-v0.1"
+    },
+    "version": {
+      "const": 1
+    },
+    "watch_id": {
+      "type": "string",
+      "pattern": "^watch-[A-Za-z0-9._-]{1,96}$"
+    },
+    "watch_request_digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "admission": {
+      "type": "object",
+      "required": [
+        "outcome",
+        "evaluated_at",
+        "authority_status",
+        "authority_epoch",
+        "budget_status",
+        "budget_version_before"
+      ],
+      "properties": {
+        "outcome": {
+          "enum": [
+            "admitted",
+            "denied",
+            "indeterminate"
+          ]
+        },
+        "evaluated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "authority_status": {
+          "enum": [
+            "current",
+            "revoked",
+            "expired",
+            "missing",
+            "unknown"
+          ]
+        },
+        "authority_epoch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "budget_status": {
+          "enum": [
+            "committed",
+            "not_committed",
+            "unknown"
+          ]
+        },
+        "budget_version_before": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "budget_version_after": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "reservation_receipt_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "reservation_receipt_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "watch_state": {
+      "type": "object",
+      "required": [
+        "status",
+        "started_at",
+        "terminal_at",
+        "terminal_authority_status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "not_started",
+            "active",
+            "condition_met",
+            "expired",
+            "cancelled",
+            "source_unavailable",
+            "delivery_gap",
+            "authority_revoked",
+            "indeterminate"
+          ]
+        },
+        "started_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "terminal_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "terminal_authority_status": {
+          "enum": [
+            "current",
+            "revoked",
+            "expired",
+            "missing",
+            "unknown"
+          ]
+        },
+        "authority_changed_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "last_data_access_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "event_delivery": {
+      "type": "object",
+      "required": [
+        "status",
+        "event_count",
+        "cursor_before",
+        "cursor_after"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "none",
+            "matched",
+            "no_match",
+            "duplicate_only",
+            "replayed",
+            "delivery_gap",
+            "unknown"
+          ]
+        },
+        "event_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cursor_before": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 256
+        },
+        "cursor_after": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 256
+        },
+        "first_sequence": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "last_sequence": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "event_receipt_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "event_receipt_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "source_control_domain_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "first_event_observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "last_event_observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "last_event_ingested_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "wake": {
+      "type": "object",
+      "required": [
+        "disposition",
+        "reason",
+        "wake_count"
+      ],
+      "properties": {
+        "disposition": {
+          "enum": [
+            "no_wake",
+            "wait",
+            "wake_agent",
+            "notify_principal",
+            "request_human_approval",
+            "escalate",
+            "expire",
+            "cancel"
+          ]
+        },
+        "reason": {
+          "enum": [
+            "event_matched",
+            "no_relevant_change",
+            "deadline",
+            "delivery_integrity_failure",
+            "authority_revocation",
+            "authority_expiry",
+            "source_unavailable",
+            "operator_cancelled",
+            "unknown"
+          ]
+        },
+        "wake_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "last_wakeup_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "wake_receipt_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "wake_receipt_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "effect_boundary": {
+      "type": "object",
+      "required": [
+        "consequential_mutation_attempts"
+      ],
+      "properties": {
+        "consequential_mutation_attempts": {
+          "const": 0
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "admission": {
+            "properties": {
+              "outcome": {
+                "const": "admitted"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "admission": {
+            "required": [
+              "reservation_receipt_ref",
+              "reservation_receipt_digest"
+            ],
+            "properties": {
+              "authority_status": {
+                "const": "current"
+              },
+              "budget_status": {
+                "const": "committed"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "admission": {
+            "properties": {
+              "outcome": {
+                "enum": [
+                  "denied",
+                  "indeterminate"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "watch_state": {
+            "properties": {
+              "status": {
+                "const": "not_started"
+              }
+            }
+          },
+          "event_delivery": {
+            "properties": {
+              "status": {
+                "const": "none"
+              },
+              "event_count": {
+                "const": 0
+              }
+            }
+          },
+          "wake": {
+            "properties": {
+              "disposition": {
+                "const": "no_wake"
+              },
+              "wake_count": {
+                "const": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_delivery": {
+            "properties": {
+              "status": {
+                "const": "matched"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "watch_state": {
+            "properties": {
+              "status": {
+                "const": "condition_met"
+              }
+            }
+          },
+          "event_delivery": {
+            "required": [
+              "event_receipt_ref",
+              "event_receipt_digest",
+              "source_control_domain_ref",
+              "first_sequence",
+              "last_sequence",
+              "first_event_observed_at",
+              "last_event_observed_at",
+              "last_event_ingested_at"
+            ]
+          },
+          "wake": {
+            "required": [
+              "wake_receipt_ref",
+              "wake_receipt_digest",
+              "last_wakeup_at"
+            ],
+            "properties": {
+              "disposition": {
+                "enum": [
+                  "wake_agent",
+                  "notify_principal",
+                  "request_human_approval"
+                ]
+              },
+              "reason": {
+                "const": "event_matched"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "watch_state": {
+            "properties": {
+              "terminal_authority_status": {
+                "enum": [
+                  "revoked",
+                  "expired",
+                  "missing"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "watch_state": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "authority_revoked",
+                  "expired",
+                  "indeterminate"
+                ]
+              }
+            }
+          },
+          "wake": {
+            "properties": {
+              "disposition": {
+                "enum": [
+                  "cancel",
+                  "escalate",
+                  "expire",
+                  "no_wake"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_delivery": {
+            "properties": {
+              "status": {
+                "const": "delivery_gap"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "watch_state": {
+            "properties": {
+              "status": {
+                "const": "delivery_gap"
+              }
+            }
+          },
+          "wake": {
+            "properties": {
+              "disposition": {
+                "const": "escalate"
+              },
+              "reason": {
+                "const": "delivery_integrity_failure"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
