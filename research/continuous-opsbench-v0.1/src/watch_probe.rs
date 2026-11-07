@@ -764,7 +764,7 @@ mod tests {
 
     #[test]
     fn impact_bound_to_another_target_remains_unknown() {
-        let mismatched = ImpactOutcome::Observed(ImpactObservation {
+        let mismatched = ImpactOutcome::Observed(Box::new(ImpactObservation {
             impact_id: "impact-1".into(),
             digest: "sha256:impact-a".into(),
             probe_id: "probe-queue-depth".into(),
@@ -779,7 +779,7 @@ mod tests {
             cpu_milliticks: 12,
             io_bytes: 128,
             complete: true,
-        });
+        }));
         let result = run(
             &[event(10, "queue_pressure", true)],
             &authority(),
@@ -918,7 +918,7 @@ mod tests {
 
     #[test]
     fn same_control_domain_cannot_prove_independent_impact() {
-        let same_domain = ImpactOutcome::Observed(ImpactObservation {
+        let same_domain = ImpactOutcome::Observed(Box::new(ImpactObservation {
             impact_id: "impact-1".into(),
             digest: "sha256:impact-a".into(),
             probe_id: "probe-queue-depth".into(),
