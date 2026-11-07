@@ -165,6 +165,8 @@
             "sre_diagnosis_mitigation",
             "sre_diagnosis_only",
             "sre_operational_governance",
+            "agent_governance",
+            "agent_harness_reliability",
             "agent_harness_evolution",
             "enterprise_workflow",
             "agent_evidence_grounding"
