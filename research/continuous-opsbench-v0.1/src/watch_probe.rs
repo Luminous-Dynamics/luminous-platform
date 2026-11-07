@@ -738,7 +738,7 @@ mod tests {
             &[event(10, "queue_pressure", true)],
             &authority(),
             catalog_entry(true),
-            CollectionOutcome::Completed(stale),
+            CollectionOutcome::Completed(Box::new(stale)),
             impact(),
         );
         assert_eq!(result.status, EpisodeStatus::ObservationRejected);
@@ -755,7 +755,7 @@ mod tests {
             &[event(10, "queue_pressure", true)],
             &authority(),
             catalog_entry(true),
-            CollectionOutcome::Completed(mismatched),
+            CollectionOutcome::Completed(Box::new(mismatched)),
             impact(),
         );
         assert_eq!(result.status, EpisodeStatus::ObservationRejected);
@@ -784,7 +784,7 @@ mod tests {
             &[event(10, "queue_pressure", true)],
             &authority(),
             catalog_entry(true),
-            CollectionOutcome::Completed(observation()),
+            CollectionOutcome::Completed(Box::new(observation())),
             mismatched,
         );
         assert_eq!(result.status, EpisodeStatus::ImpactUnknown);
@@ -857,7 +857,7 @@ mod tests {
         let result = run(
             &[event(10, "queue_pressure", true)],
             &revoked, catalog_entry(true),
-            CollectionOutcome::Completed(observation()), impact(),
+            CollectionOutcome::Completed(Box::new(observation())), impact(),
         );
         assert_eq!(result.status, EpisodeStatus::AuthorityRevokedOrExpired);
         assert!(!result.probe_admitted);
@@ -873,7 +873,7 @@ mod tests {
                 event(11, "queue_pressure", true),
             ],
             &authority(), catalog_entry(true),
-            CollectionOutcome::Completed(observation()), impact(),
+            CollectionOutcome::Completed(Box::new(observation())), impact(),
         );
         assert_eq!(result.duplicate_events, 1);
         assert_eq!(result.wakeups, 1);
@@ -885,7 +885,7 @@ mod tests {
         let result = run(
             &[event(10, "irrelevant", false), event(12, "queue_pressure", true)],
             &authority(), catalog_entry(true),
-            CollectionOutcome::Completed(observation()), impact(),
+            CollectionOutcome::Completed(Box::new(observation())), impact(),
         );
         assert_eq!(result.status, EpisodeStatus::DeliveryGap);
         assert!(!result.probe_admitted);
@@ -896,7 +896,7 @@ mod tests {
         let result = run(
             &[event(10, "queue_pressure", true)],
             &authority(), catalog_entry(false),
-            CollectionOutcome::Completed(observation()), impact(),
+            CollectionOutcome::Completed(Box::new(observation())), impact(),
         );
         assert_eq!(result.status, EpisodeStatus::ProbeDenied);
         assert!(!result.probe_admitted);
@@ -908,7 +908,7 @@ mod tests {
         let result = run(
             &[event(10, "queue_pressure", true)],
             &authority(), catalog_entry(true),
-            CollectionOutcome::Completed(observation()), ImpactOutcome::Unknown,
+            CollectionOutcome::Completed(Box::new(observation())), ImpactOutcome::Unknown,
         );
         assert_eq!(result.status, EpisodeStatus::ImpactUnknown);
         assert_eq!(result.impact, ImpactDisposition::Unknown);
@@ -937,7 +937,7 @@ mod tests {
         let result = run(
             &[event(10, "queue_pressure", true)],
             &authority(), catalog_entry(true),
-            CollectionOutcome::Completed(observation()), same_domain,
+            CollectionOutcome::Completed(Box::new(observation())), same_domain,
         );
         assert_eq!(result.status, EpisodeStatus::ImpactIndependenceConflict);
         assert_eq!(result.decision_value, None);
