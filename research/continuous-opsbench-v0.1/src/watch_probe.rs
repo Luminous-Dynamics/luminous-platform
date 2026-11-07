@@ -807,7 +807,6 @@ mod tests {
         );
     }
 
-
     #[test]
     fn observation_from_before_the_wakeup_is_rejected_as_stale() {
         let mut stale = observation();
@@ -823,7 +822,6 @@ mod tests {
         assert_eq!(result.terminal, TerminalDisposition::Abstain);
         assert!(result.decision_value.is_none());
     }
-
 
     #[test]
     fn observation_bound_to_another_target_is_rejected() {
@@ -869,7 +867,6 @@ mod tests {
         assert_eq!(result.impact, ImpactDisposition::Unknown);
         assert!(result.decision_value.is_none());
     }
-
 
     #[test]
     fn future_event_is_not_delivered_early() {
@@ -966,7 +963,10 @@ mod tests {
     #[test]
     fn sequence_gap_escalates_without_probe() {
         let result = run(
-            &[event(10, "irrelevant", false), event(12, "queue_pressure", true)],
+            &[
+                event(10, "irrelevant", false),
+                event(12, "queue_pressure", true),
+            ],
             &authority(),
             catalog_entry(true),
             CollectionOutcome::Completed(Box::new(observation())),
