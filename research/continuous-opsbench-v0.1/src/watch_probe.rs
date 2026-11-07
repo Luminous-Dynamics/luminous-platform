@@ -834,6 +834,83 @@ mod tests {
         .unwrap()
     }
 
+
+    #[derive(Default)]
+    struct RecordingProbePolicy {
+        selected_probe_id: Option<String>,
+        offered_probe_ids: Vec<String>,
+    }
+
+    impl ProbePolicy for RecordingProbePolicy {
+        fn select_probe(
+            &mut self,
+            _wake: &WakeContext,
+            eligible_probe_ids: &[String],
+        ) -> Option<String> {
+            self.offered_probe_ids = eligible_probe_ids.to_vec();
+            self.selected_probe_id.clone()
+        }
+    }
+
+    #[test]
+    fn policy_receives_only_scope_eligible_read_only_probe_ids() {
+        let valid = catalog_entry(true);
+        let mut wrong_tenant = valid.clone();
+        wrong_tenant.probe_id = "probe-other-tenant".into();
+        wrong_tenant.tenant_id = "tenant-b".into();
+
+        let mut wrong_target = valid.clone();
+        wrong_target.probe_id = "probe-other-target".into();
+        wrong_target.target_id = "service-b".into();
+
+        let mut wrong_purpose = valid.clone();
+        wrong_purpose.probe_id = "probe-other-purpose".into();
+        wrong_purpose.purpose_id = "inventory-export".into();
+
+        let mut write_capable = valid.clone();
+        write_capable.probe_id = "probe-write".into();
+        write_capable.read_only = false;
+
+        let catalog = vec![wrong_tenant, wrong_target, wrong_purpose, write_capable, valid.clone()];
+        let mut policy = RecordingProbePolicy {
+            selected_probe_id: Some(valid.probe_id.clone()),
+            offered_probe_ids: Vec::new(),
+        };
+        let result = run_scripted_episode(
+            &watch(),
+            &authority(),
+            &catalog,
+            &[event(10, "queue_pressure", true)],
+            6,
+            &mut policy,
+            CollectionOutcome::Completed(Box::new(observation())),
+            impact(),
+            &truth(),
+        ).unwrap();
+
+        assert_eq!(policy.offered_probe_ids, vec![valid.probe_id]);
+        assert_eq!(result.status, EpisodeStatus::Completed);
+    }
+
+    #[test]
+    fn event_id_reused_for_a_different_sequence_escalates() {
+        let mut second = event(11, "queue_pressure", true);
+        second.event_id = event(10, "irrelevant", false).event_id;
+        let result = run(
+            &[
+                event(10, "irrelevant", false),
+                second,
+            ],
+            &authority(),
+            catalog_entry(true),
+            CollectionOutcome::Completed(Box::new(observation())),
+            impact(),
+        );
+        assert_eq!(result.status, EpisodeStatus::DuplicateEventIdentity);
+        assert!(!result.probe_admitted);
+        assert_eq!(result.wakeups, 0);
+    }
+
     #[test]
     fn valid_watch_probe_observation_impact_and_decision_path_completes() {
         let result = run(
