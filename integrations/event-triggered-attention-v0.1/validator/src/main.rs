@@ -1,5 +1,7 @@
 use chrono::{DateTime, FixedOffset};
 use serde_json::Value;
+use sha2::{Digest, Sha256};
+use std::fmt::Write as FmtWrite;
 
 const WATCH_SCHEMA: &str = include_str!("../../watch-request.schema.json");
 const RESULT_SCHEMA: &str = include_str!("../../watch-result.schema.json");
@@ -254,11 +256,26 @@ fn audit_result(raw: &str, label: &str) -> Result<(), String> {
     Ok(())
 }
 
+fn sha256_reference(bytes: &[u8]) -> String {
+    let digest = Sha256::digest(bytes);
+    let mut reference = String::from("sha256:");
+    for byte in digest {
+        write!(&mut reference, "{byte:02x}").expect("writing to String cannot fail");
+    }
+    reference
+}
+
 fn audit_pair(watch_raw: &str, result_raw: &str, label: &str) -> Result<(), String> {
     audit_watch(watch_raw, &format!("{label} watch"))?;
     audit_result(result_raw, &format!("{label} result"))?;
     let watch = parse(watch_raw, label)?;
     let result = parse(result_raw, label)?;
+    let expected_digest = sha256_reference(watch_raw.as_bytes());
+    if string_at(&result, &["watch_request_digest"]) != Some(expected_digest.as_str()) {
+        return Err(format!(
+            "{label}: result digest does not bind the exact submitted watch request bytes"
+        ));
+    }
 
     if string_at(&watch, &["watch_id"]) != string_at(&result, &["watch_id"]) {
         return Err(format!(
@@ -497,6 +514,18 @@ mod tests {
             )
             .is_err()
         );
+    }
+
+    #[test]
+    fn watch_request_digest_must_bind_exact_input_bytes() {
+        let mut result = parse(RESULT_MATCHED, "matched").unwrap();
+        result["watch_request_digest"] =
+            Value::String("sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".into());
+        assert!(audit_pair(
+            WATCH_POSITIVE,
+            &serde_json::to_string(&result).unwrap(),
+            "wrong-watch-digest"
+        ).is_err());
     }
 
     #[test]
