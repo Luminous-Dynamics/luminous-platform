@@ -78,6 +78,7 @@ pub struct AttentionMetrics {
     pub denied_probe_selections: usize,
     pub no_eligible_probe_wakeups: usize,
     pub probe_budget_exhaustions: usize,
+    pub wake_budget_exhaustions: usize,
     pub proposed_actions: usize,
     pub wakes: Vec<AttentionWakeRecord>,
     pub selections: Vec<ProbeSelectionRecord>,
@@ -98,7 +99,9 @@ pub struct PairedAttentionResult {
     /// The same immutable config reference (including noise vectors) was used
     /// to execute all three arms.
     pub same_frozen_plant_config: bool,
-    pub cognitive_invocation_reduction_ppm: Option<u32>,
+    /// Signed relative reduction; negative means event-triggered invoked the
+    /// policy more often than fixed polling.
+    pub cognitive_invocation_reduction_ppm: Option<i64>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -246,6 +249,11 @@ impl StabilityController for AttentionController<'_> {
             return Vec::new();
         }
 
+        if self.metrics.cognitive_invocations >= self.watch.max_wakeups as usize {
+            self.metrics.wake_budget_exhaustions += 1;
+            return Vec::new();
+        }
+
         self.metrics.cognitive_invocations += 1;
         self.metrics.wakes.push(AttentionWakeRecord {
             decision_tick: observation.tick,
@@ -336,11 +344,18 @@ pub fn run_paired_attention_experiment(
     if attention.fixed_poll_interval_ticks == 0
         || attention.failed_ppm_wake_threshold > 1_000_000
         || attention.api_capacity_setpoint == 0
-        || attention.probe_budget_per_arm == 0
     {
         return Err(AttentionError::InvalidAttentionConfig);
     }
 
+    // Validate watch and authority shape before either arm runs, even when a
+    // quiet scenario never wakes and therefore never requests a probe.
+    let _ = eligible_probe_ids_for_watch(
+        watch,
+        authority,
+        watch.starts_at_tick,
+        catalog,
+    )?;
     let no_action_baseline = run_stability_scenario(plant, &[])?;
 
     let mut fixed_controller = AttentionController {
@@ -375,16 +390,14 @@ pub fn run_paired_attention_experiment(
     let mut event_metrics = event_controller.metrics;
     finalize_metrics(&mut event_metrics, &event_run);
 
-    let fixed_count = fixed_metrics.cognitive_invocations as u128;
-    let event_count = event_metrics.cognitive_invocations as u128;
+    let fixed_count = fixed_metrics.cognitive_invocations as i128;
+    let event_count = event_metrics.cognitive_invocations as i128;
     let cognitive_invocation_reduction_ppm = if fixed_count > 0 {
         Some(
-            fixed_count
-                .saturating_sub(event_count)
+            (fixed_count - event_count)
                 .saturating_mul(1_000_000)
                 .checked_div(fixed_count)
-                .unwrap_or(0)
-                .min(1_000_000) as u32,
+                .unwrap_or(0),
         )
     } else {
         None
@@ -583,11 +596,24 @@ mod tests {
     }
 
     #[test]
-    fn probe_budget_is_non_compensatory_and_never_exceeded() {
+    fn zero_probe_budget_is_a_valid_no_probe_control() {
         let mut config = attention();
-        config.probe_budget_per_arm = 1;
-        let result = paired();
-        assert!(result.event_triggered.metrics.admitted_probe_selections <= config.probe_budget_per_arm);
-        assert!(result.fixed_poll.metrics.admitted_probe_selections <= config.probe_budget_per_arm);
+        config.probe_budget_per_arm = 0;
+        let mut fixed = ScriptedProbePolicy {
+            selected_probe_id: Some("probe-queue-depth".into()),
+        };
+        let mut event = ScriptedProbePolicy {
+            selected_probe_id: Some("probe-queue-depth".into()),
+        };
+        let result = run_paired_attention_experiment(
+            &plant(), &config, &watch(), &authority(), &catalog(),
+            &mut fixed, &mut event,
+        ).unwrap();
+        assert_eq!(result.event_triggered.metrics.admitted_probe_selections, 0);
+        assert_eq!(result.fixed_poll.metrics.admitted_probe_selections, 0);
+        assert_eq!(result.event_triggered.metrics.probe_budget_exhaustions, 1);
+        assert_eq!(result.fixed_poll.metrics.probe_budget_exhaustions, 1);
+        assert_eq!(result.event_triggered.run.actions.len(), 0);
+        assert_eq!(result.fixed_poll.run.actions.len(), 0);
     }
 }
