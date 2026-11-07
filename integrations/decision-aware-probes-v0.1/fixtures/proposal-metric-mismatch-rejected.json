@@ -11,7 +11,11 @@
     "target_ref": "urn:service:synthetic:payments-api",
     "target_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
     "topology_epoch": 7,
-    "topology_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+    "topology_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "intent_ref": "opaque:principal-intent-0001",
+    "intent_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+    "purpose_ref": "purpose:incident-diagnosis",
+    "purpose_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888"
   },
   "planner": {
     "planner_id": "symthaea",
@@ -52,7 +56,9 @@
       "readiness_state",
       "observed_at",
       "source_revision"
-    ]
+    ],
+    "requested_purpose_ref": "purpose:incident-diagnosis",
+    "result_sink_class": "principal_authorized_session"
   },
   "session_budget": {
     "budget_state_ref": "opaque:session-budget-0001",
