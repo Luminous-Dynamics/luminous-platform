@@ -16,6 +16,16 @@
       "state_version_after": 2,
       "receipt_ref": "opaque:budget-reservation-invalid",
       "receipt_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+    },
+    "authority_context": {
+      "status": "current",
+      "authority_epoch": 12,
+      "session_capability_ref": "opaque:xenia-session-capability-0001",
+      "session_capability_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "consent_request_ref": "opaque:xenia-consent-request-0001",
+      "capability_expires_at": "2026-11-07T08:30:00Z",
+      "revocation_snapshot_ref": "opaque:xenia-revocation-snapshot-0001",
+      "revocation_snapshot_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
     }
   },
   "collection": {
