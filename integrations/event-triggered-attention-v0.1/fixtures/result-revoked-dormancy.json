@@ -2,7 +2,7 @@
   "schema": "luminous-event-watch-result-v0.1",
   "version": 1,
   "watch_id": "watch-revoked",
-  "watch_request_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "watch_request_digest": "sha256:320ae317b83900469f666f6ee904ce8b7c5a909dad68911f83881ab7b96a8c35",
   "admission": {
     "outcome": "admitted",
     "evaluated_at": "2026-11-07T12:00:00Z",
