@@ -92,7 +92,7 @@ pub struct PairedAttentionResult {
     pub cognitive_invocation_reduction_ppm: Option<i64>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum AttentionError {
     InvalidAttentionConfig,
     Episode(EpisodeError),
@@ -373,12 +373,13 @@ pub fn run_paired_attention_experiment(
     let fixed_count = fixed_metrics.cognitive_invocations as i128;
     let event_count = event_metrics.cognitive_invocations as i128;
     let cognitive_invocation_reduction_ppm = if fixed_count > 0 {
-        Some(
+        i64::try_from(
             (fixed_count - event_count)
                 .saturating_mul(1_000_000)
                 .checked_div(fixed_count)
                 .unwrap_or(0),
         )
+        .ok()
     } else {
         None
     };
