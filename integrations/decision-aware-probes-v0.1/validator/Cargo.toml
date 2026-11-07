@@ -1,0 +1,11 @@
+[package]
+name = "decision-aware-probe-validator"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "AGPL-3.0-or-later"
+description = "Rust Draft 2020-12 and semantic fixture validator for the Luminous decision-aware probe contract"
+
+[dependencies]
+serde_json = "=1.0.154"
+jsonschema = { version = "=0.60.2", default-features = false }

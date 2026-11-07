@@ -1,0 +1,55 @@
+{
+  "schema": "luminous-decision-aware-probe-binding-v0.1",
+  "version": 1,
+  "proposal_id": "dap-synth-0001",
+  "proposal_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "admission": {
+    "outcome": "admitted",
+    "authority_decision_ref": "opaque:authority-decision-0001",
+    "authority_decision_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "policy_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "catalog_entry_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+    "evaluated_at": "2026-11-07T07:00:01Z",
+    "budget_reservation": {
+      "status": "committed",
+      "state_version_before": 4,
+      "state_version_after": 5,
+      "receipt_ref": "opaque:budget-reservation-0001",
+      "receipt_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "authority_context": {
+      "status": "current",
+      "authority_epoch": 12,
+      "session_capability_ref": "opaque:xenia-session-capability-0001",
+      "session_capability_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "consent_request_ref": "opaque:xenia-consent-request-0001",
+      "capability_expires_at": "2026-11-07T08:30:00Z",
+      "revocation_snapshot_ref": "opaque:xenia-revocation-snapshot-0001",
+      "revocation_snapshot_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  },
+  "collection": {
+    "status": "completed",
+    "observation_receipt_ref": "opaque:observation-0001",
+    "observation_receipt_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "source_control_domain_ref": "collector-domain-synthetic",
+    "observed_at": "2026-11-07T07:00:02Z",
+    "valid_time_start": "2026-11-07T07:00:02Z",
+    "valid_time_end": "2026-11-07T07:00:02Z"
+  },
+  "impact": {
+    "status": "observed",
+    "impact_receipt_ref": "opaque:impact-0001",
+    "impact_receipt_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "observer_control_domain_ref": "observer-domain-synthetic",
+    "observation_window_start": "2026-11-07T07:00:00Z",
+    "observation_window_end": "2026-11-07T07:00:03Z"
+  },
+  "decision_evaluation": {
+    "status": "evaluated",
+    "evaluation_receipt_ref": "opaque:decision-eval-0001",
+    "evaluation_receipt_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "metric": "decision_risk_reduction",
+    "evaluated_at": "2026-11-07T07:00:04Z"
+  }
+}

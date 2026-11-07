@@ -1,0 +1,589 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/integrations/decision-aware-probes-v0.1/decision-aware-probe-binding.schema.json",
+  "title": "Luminous Decision-Aware Probe Execution Binding v0.1",
+  "description": "Cross-record binding from a proposal to platform admission, source observation and separately measured probe-impact evidence. Canonical receipt payloads remain in their owning systems.",
+  "type": "object",
+  "required": [
+    "schema",
+    "version",
+    "proposal_id",
+    "proposal_digest",
+    "admission",
+    "collection",
+    "impact",
+    "decision_evaluation"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous-decision-aware-probe-binding-v0.1"
+    },
+    "version": {
+      "const": 1
+    },
+    "proposal_id": {
+      "type": "string",
+      "pattern": "^dap-[A-Za-z0-9._-]{1,96}$"
+    },
+    "proposal_digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "admission": {
+      "type": "object",
+      "required": [
+        "outcome",
+        "authority_decision_ref",
+        "authority_decision_digest",
+        "policy_digest",
+        "catalog_entry_digest",
+        "evaluated_at",
+        "budget_reservation",
+        "authority_context"
+      ],
+      "properties": {
+        "outcome": {
+          "enum": [
+            "admitted",
+            "denied",
+            "indeterminate"
+          ]
+        },
+        "authority_decision_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "authority_decision_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "catalog_entry_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "evaluated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "budget_reservation": {
+          "type": "object",
+          "required": [
+            "status",
+            "state_version_before",
+            "receipt_ref",
+            "receipt_digest"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "committed",
+                "not_committed",
+                "unknown"
+              ]
+            },
+            "state_version_before": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "state_version_after": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "receipt_ref": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "receipt_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            }
+          },
+          "additionalProperties": false
+        },
+        "authority_context": {
+          "type": "object",
+          "required": [
+            "status",
+            "authority_epoch"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "current",
+                "revoked",
+                "expired",
+                "missing",
+                "unknown"
+              ]
+            },
+            "authority_epoch": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "session_capability_ref": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "session_capability_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "consent_request_ref": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "capability_expires_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "revocation_snapshot_ref": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "revocation_snapshot_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            }
+          },
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "current",
+                      "revoked",
+                      "expired"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "session_capability_ref",
+                  "session_capability_digest",
+                  "consent_request_ref",
+                  "capability_expires_at",
+                  "revocation_snapshot_ref",
+                  "revocation_snapshot_digest"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "missing"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "revocation_snapshot_ref",
+                  "revocation_snapshot_digest"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "admitted"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "authority_context": {
+                "properties": {
+                  "status": {
+                    "const": "current"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "collection": {
+      "type": "object",
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "not_started",
+            "completed",
+            "failed",
+            "unknown"
+          ]
+        },
+        "observation_receipt_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "observation_receipt_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "source_control_domain_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_time_start": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_time_end": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "failure_receipt_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "reconciled_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "completed"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "observation_receipt_ref",
+              "observation_receipt_digest",
+              "source_control_domain_ref",
+              "observed_at",
+              "valid_time_start",
+              "valid_time_end"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "not_started",
+                  "failed",
+                  "unknown"
+                ]
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "observation_receipt_ref"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "impact": {
+      "type": "object",
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "observed",
+            "pending",
+            "unknown",
+            "not_measured"
+          ]
+        },
+        "impact_receipt_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "impact_receipt_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "observer_control_domain_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "observation_window_start": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "observation_window_end": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reconciled_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "observed"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "impact_receipt_ref",
+              "impact_receipt_digest",
+              "observer_control_domain_ref",
+              "observation_window_start",
+              "observation_window_end"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "pending",
+                  "unknown",
+                  "not_measured"
+                ]
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "impact_receipt_ref"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "decision_evaluation": {
+      "type": "object",
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "not_evaluated",
+            "evaluated",
+            "unknown"
+          ]
+        },
+        "evaluation_receipt_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "evaluation_receipt_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "metric": {
+          "enum": [
+            "decision_risk_reduction",
+            "realized_evsi",
+            "realized_regret"
+          ]
+        },
+        "evaluated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "evaluated"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "evaluation_receipt_ref",
+              "evaluation_receipt_digest",
+              "metric",
+              "evaluated_at"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "not_evaluated",
+                  "unknown"
+                ]
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "evaluation_receipt_ref"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "admission": {
+            "properties": {
+              "outcome": {
+                "const": "admitted"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "admission": {
+            "properties": {
+              "budget_reservation": {
+                "properties": {
+                  "status": {
+                    "const": "committed"
+                  }
+                }
+              }
+            }
+          },
+          "collection": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "completed",
+                  "failed",
+                  "unknown"
+                ]
+              }
+            }
+          },
+          "impact": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "observed",
+                  "pending",
+                  "unknown"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "admission": {
+            "properties": {
+              "outcome": {
+                "enum": [
+                  "denied",
+                  "indeterminate"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "admission": {
+            "properties": {
+              "budget_reservation": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "not_committed",
+                      "unknown"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "collection": {
+            "properties": {
+              "status": {
+                "const": "not_started"
+              }
+            }
+          },
+          "impact": {
+            "properties": {
+              "status": {
+                "const": "not_measured"
+              }
+            }
+          },
+          "decision_evaluation": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "not_evaluated",
+                  "unknown"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
