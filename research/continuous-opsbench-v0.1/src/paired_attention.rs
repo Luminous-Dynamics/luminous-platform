@@ -43,6 +43,14 @@ pub struct AttentionExperimentConfig {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AttentionWakeRecord {
+    pub decision_tick: u32,
+    pub observation_source_tick: u32,
+    pub condition_observed: bool,
+    pub mode: AttentionMode,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ProbeSelectionRecord {
     pub wake: WakeContext,
     pub decision_tick: u32,
@@ -71,6 +79,7 @@ pub struct AttentionMetrics {
     pub no_eligible_probe_wakeups: usize,
     pub probe_budget_exhaustions: usize,
     pub proposed_actions: usize,
+    pub wakes: Vec<AttentionWakeRecord>,
     pub selections: Vec<ProbeSelectionRecord>,
 }
 
@@ -238,6 +247,12 @@ impl StabilityController for AttentionController<'_> {
         }
 
         self.metrics.cognitive_invocations += 1;
+        self.metrics.wakes.push(AttentionWakeRecord {
+            decision_tick: observation.tick,
+            observation_source_tick: observation.source_tick,
+            condition_observed: condition_met,
+            mode: self.mode,
+        });
         match self.mode {
             AttentionMode::FixedPolling => self.metrics.scheduled_poll_wakeups += 1,
             AttentionMode::EventTriggered => self.metrics.relevant_event_wakeups += 1,
@@ -274,10 +289,10 @@ fn finalize_metrics(
         .map(|sample| sample.tick);
     metrics.first_fault_tick = first_fault_tick;
 
-    let first_true_wake = metrics.selections.iter().find(|selection| {
+    let first_true_wake = metrics.wakes.iter().find(|wake| {
         run.stability
             .samples
-            .get(selection.observation_source_tick as usize)
+            .get(wake.observation_source_tick as usize)
             .is_some_and(|sample| !sample.slo_healthy)
     });
 
@@ -292,12 +307,12 @@ fn finalize_metrics(
     }
 
     metrics.false_wakeups = metrics
-        .selections
+        .wakes
         .iter()
-        .filter(|selection| {
+        .filter(|wake| {
             run.stability
                 .samples
-                .get(selection.observation_source_tick as usize)
+                .get(wake.observation_source_tick as usize)
                 .is_none_or(|sample| sample.slo_healthy)
         })
         .count();
@@ -395,9 +410,7 @@ pub fn run_paired_attention_experiment(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::watch_probe::{
-        ImpactDisposition, ProbeCatalogEntry, ScriptedProbePolicy,
-    };
+    use crate::watch_probe::ScriptedProbePolicy;
 
     fn plant() -> StabilityConfig {
         StabilityConfig {
