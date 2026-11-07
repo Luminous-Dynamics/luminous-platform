@@ -328,6 +328,7 @@ pub fn run_scripted_episode<P: ProbePolicy>(
             0,
             0,
             0,
+            0,
         ));
     }
     if current_tick >= watch.expires_at_tick {
@@ -336,6 +337,7 @@ pub fn run_scripted_episode<P: ProbePolicy>(
             authority,
             EpisodeStatus::Expired,
             TerminalDisposition::Stop,
+            0,
             0,
             0,
             0,
