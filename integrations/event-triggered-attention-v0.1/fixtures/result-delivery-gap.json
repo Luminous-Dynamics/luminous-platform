@@ -1,0 +1,39 @@
+{
+  "schema": "luminous-event-watch-result-v0.1",
+  "version": 1,
+  "watch_id": "watch-gap",
+  "watch_request_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "admission": {
+    "outcome": "admitted",
+    "evaluated_at": "2026-11-07T12:00:00Z",
+    "authority_status": "current",
+    "authority_epoch": 7,
+    "budget_status": "committed",
+    "budget_version_before": 10,
+    "budget_version_after": 11,
+    "reservation_receipt_ref": "opaque:watch-budget-receipt-001",
+    "reservation_receipt_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "watch_state": {
+    "status": "delivery_gap",
+    "started_at": "2026-11-07T12:00:01Z",
+    "terminal_at": "2026-11-07T12:08:00Z",
+    "terminal_authority_status": "current",
+    "authority_changed_at": null,
+    "last_data_access_at": "2026-11-07T12:07:59Z"
+  },
+  "event_delivery": {
+    "status": "delivery_gap",
+    "event_count": 0,
+    "cursor_before": "cursor:100",
+    "cursor_after": "cursor:102"
+  },
+  "wake": {
+    "disposition": "escalate",
+    "reason": "delivery_integrity_failure",
+    "wake_count": 0
+  },
+  "effect_boundary": {
+    "consequential_mutation_attempts": 0
+  }
+}
