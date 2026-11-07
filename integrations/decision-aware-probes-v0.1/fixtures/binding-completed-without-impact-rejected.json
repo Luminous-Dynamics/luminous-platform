@@ -1,0 +1,39 @@
+{
+  "schema": "luminous-decision-aware-probe-binding-v0.1",
+  "version": 1,
+  "proposal_id": "dap-synth-invalid-binding",
+  "proposal_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "admission": {
+    "outcome": "admitted",
+    "authority_decision_ref": "opaque:authority-decision-invalid",
+    "authority_decision_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "policy_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "catalog_entry_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "evaluated_at": "2026-11-07T08:00:00Z",
+    "budget_reservation": {
+      "status": "committed",
+      "state_version_before": 1,
+      "state_version_after": 2,
+      "receipt_ref": "opaque:budget-reservation-invalid",
+      "receipt_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+    }
+  },
+  "collection": {
+    "status": "completed",
+    "observation_receipt_ref": "opaque:obs-invalid",
+    "observation_receipt_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+    "source_control_domain_ref": "collector-domain",
+    "observed_at": "2026-11-07T08:00:01Z",
+    "valid_time_start": "2026-11-07T08:00:01Z",
+    "valid_time_end": "2026-11-07T08:00:01Z"
+  },
+  "impact": {
+    "status": "observed",
+    "observer_control_domain_ref": "observer-domain",
+    "observation_window_start": "2026-11-07T08:00:00Z",
+    "observation_window_end": "2026-11-07T08:00:02Z"
+  },
+  "decision_evaluation": {
+    "status": "unknown"
+  }
+}
