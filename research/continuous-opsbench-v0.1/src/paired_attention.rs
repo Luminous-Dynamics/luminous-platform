@@ -131,9 +131,9 @@ impl AttentionController<'_> {
 
     fn should_wake(&self, observation: &PlantObservation, condition_met: bool) -> bool {
         match self.mode {
-            AttentionMode::FixedPolling => {
-                observation.tick.is_multiple_of(self.config.fixed_poll_interval_ticks)
-            }
+            AttentionMode::FixedPolling => observation
+                .tick
+                .is_multiple_of(self.config.fixed_poll_interval_ticks),
             AttentionMode::EventTriggered => condition_met && !self.previous_condition,
         }
     }
