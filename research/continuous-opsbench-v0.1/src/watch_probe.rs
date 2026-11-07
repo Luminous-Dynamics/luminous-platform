@@ -526,7 +526,6 @@ pub fn run_scripted_episode<P: ProbePolicy>(
             && entry.tenant_id == watch.tenant_id
             && entry.target_id == watch.target_id
             && entry.purpose_id == watch.purpose_id
-            && entry.source_id == watch.source_id
             && entry.maximum_duration_ticks > 0
             && entry.maximum_duration_ticks <= watch.max_probe_duration_ticks
     }) {
@@ -592,7 +591,6 @@ pub fn run_scripted_episode<P: ProbePolicy>(
         && probe.tenant_id == watch.tenant_id
         && probe.target_id == watch.target_id
         && probe.purpose_id == watch.purpose_id
-        && probe.source_id == watch.source_id
         && authority.current_for(watch, current_tick);
 
     if !eligible {
