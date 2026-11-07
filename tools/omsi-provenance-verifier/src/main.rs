@@ -96,7 +96,8 @@ fn read_bounded(path: &str, maximum_bytes: usize) -> Result<Vec<u8>, String> {
             .map_err(|error| format!("failed to read stdin: {error}"))?;
         bytes
     } else {
-        let file = fs::File::open(path).map_err(|error| format!("failed to open {path}: {error}"))?;
+        let file =
+            fs::File::open(path).map_err(|error| format!("failed to open {path}: {error}"))?;
         let metadata = file
             .metadata()
             .map_err(|error| format!("failed to inspect {path}: {error}"))?;
@@ -126,7 +127,10 @@ pub fn verify_bundle(manifest_bytes: &[u8], artifact_bytes: [&[u8]; 8]) -> Value
     let manifest_parse = parse_json(manifest_bytes);
     let manifest_json_ok = manifest_parse.is_ok();
     let manifest = manifest_parse.ok();
-    let artifacts: Vec<Option<Value>> = artifact_bytes.iter().map(|bytes| parse_json(bytes).ok()).collect();
+    let artifacts: Vec<Option<Value>> = artifact_bytes
+        .iter()
+        .map(|bytes| parse_json(bytes).ok())
+        .collect();
 
     let contract_ok = manifest.as_ref().is_some_and(|value| {
         value.get("manifest_contract").and_then(Value::as_str) == Some(MANIFEST_CONTRACT)
@@ -136,7 +140,9 @@ pub fn verify_bundle(manifest_bytes: &[u8], artifact_bytes: [&[u8]; 8]) -> Value
     });
 
     let manifest_shape_ok = manifest.as_ref().is_some_and(|value| {
-        let Some(object) = value.as_object() else { return false; };
+        let Some(object) = value.as_object() else {
+            return false;
+        };
         let expected: BTreeSet<&str> = [
             "manifest_contract",
             "provenance_model",
@@ -158,18 +164,33 @@ pub fn verify_bundle(manifest_bytes: &[u8], artifact_bytes: [&[u8]; 8]) -> Value
         let actual: BTreeSet<&str> = object.keys().map(String::as_str).collect();
         let digest_profile = value.get("digest_profile");
         actual == expected
-            && digest_profile.and_then(|item| item.get("algorithm")).and_then(Value::as_str) == Some("sha256")
-            && digest_profile.and_then(|item| item.get("scope")).and_then(Value::as_str) == Some("exact_input_bytes")
-            && digest_profile.and_then(|item| item.get("canonicalization")).and_then(Value::as_str) == Some("none")
+            && digest_profile
+                .and_then(|item| item.get("algorithm"))
+                .and_then(Value::as_str)
+                == Some("sha256")
+            && digest_profile
+                .and_then(|item| item.get("scope"))
+                .and_then(Value::as_str)
+                == Some("exact_input_bytes")
+            && digest_profile
+                .and_then(|item| item.get("canonicalization"))
+                .and_then(Value::as_str)
+                == Some("none")
     });
 
     let artifact_matches: Vec<bool> = ARTIFACTS
         .iter()
         .enumerate()
         .map(|(index, (artifact_id, role))| {
-            let Some(manifest) = manifest.as_ref() else { return false; };
-            let Some(items) = manifest.get("artifacts").and_then(Value::as_array) else { return false; };
-            if items.len() != ARTIFACTS.len() { return false; }
+            let Some(manifest) = manifest.as_ref() else {
+                return false;
+            };
+            let Some(items) = manifest.get("artifacts").and_then(Value::as_array) else {
+                return false;
+            };
+            if items.len() != ARTIFACTS.len() {
+                return false;
+            }
             let item = &items[index];
             let exact_shape = item.as_object().is_some_and(|object| {
                 object.len() == 4
@@ -181,57 +202,104 @@ pub fn verify_bundle(manifest_bytes: &[u8], artifact_bytes: [&[u8]; 8]) -> Value
             exact_shape
                 && item.get("artifact_id").and_then(Value::as_str) == Some(*artifact_id)
                 && item.get("role").and_then(Value::as_str) == Some(*role)
-                && item.get("sha256").and_then(Value::as_str) == Some(sha256_hex(artifact_bytes[index]).as_str())
-                && item.get("byte_length").and_then(Value::as_u64) == Some(artifact_bytes[index].len() as u64)
+                && item.get("sha256").and_then(Value::as_str)
+                    == Some(sha256_hex(artifact_bytes[index]).as_str())
+                && item.get("byte_length").and_then(Value::as_u64)
+                    == Some(artifact_bytes[index].len() as u64)
                 && artifacts[index].is_some()
         })
         .collect();
 
     let schema_coverage_ok = match (
         manifest.as_ref(),
-        artifacts.get(0).and_then(Option::as_ref),
+        artifacts.first().and_then(Option::as_ref),
         artifacts.get(1).and_then(Option::as_ref),
         artifacts.get(2).and_then(Option::as_ref),
         artifacts.get(3).and_then(Option::as_ref),
     ) {
-        (Some(manifest), Some(source_record), Some(_source_schema), Some(_adapter_map), Some(coverage)) => {
+        (
+            Some(manifest),
+            Some(source_record),
+            Some(_source_schema),
+            Some(_adapter_map),
+            Some(coverage),
+        ) => {
             let coverage_digest = sha256_hex(artifact_bytes[3]);
             let source_digest = sha256_hex(artifact_bytes[1]);
             let record_digest = sha256_hex(artifact_bytes[0]);
             let map_digest = sha256_hex(artifact_bytes[2]);
             let section = manifest.get("schema_coverage");
             let schema_count = coverage.get("schema_field_count").and_then(Value::as_u64);
-            let covered_count = coverage.get("covered_schema_field_count").and_then(Value::as_u64);
-            let no_coverage_gaps = ["schema_paths_not_mapped", "mapping_paths_outside_schema", "presence_mismatches", "duplicate_source_mappings", "required_schema_paths_not_observed_in_record", "schema_errors", "record_structure_errors"]
-                .iter()
-                .all(|field| coverage.get(*field).and_then(Value::as_array).is_some_and(Vec::is_empty));
-            let observed_audit_clean = coverage.get("observed_field_accounting_status").and_then(Value::as_str)
+            let covered_count = coverage
+                .get("covered_schema_field_count")
+                .and_then(Value::as_u64);
+            let no_coverage_gaps = [
+                "schema_paths_not_mapped",
+                "mapping_paths_outside_schema",
+                "presence_mismatches",
+                "duplicate_source_mappings",
+                "required_schema_paths_not_observed_in_record",
+                "schema_errors",
+                "record_structure_errors",
+            ]
+            .iter()
+            .all(|field| {
+                coverage
+                    .get(*field)
+                    .and_then(Value::as_array)
+                    .is_some_and(Vec::is_empty)
+            });
+            let observed_audit_clean = coverage
+                .get("observed_field_accounting_status")
+                .and_then(Value::as_str)
                 == Some("complete_accounting")
-                && coverage.get("observed_silent_loss_count").and_then(Value::as_u64) == Some(0);
-            let status_and_contract = coverage.get("coverage_contract").and_then(Value::as_str) == Some(COVERAGE_CONTRACT)
-                && coverage.get("status").and_then(Value::as_str) == Some("schema_coverage_complete")
-                && coverage.get("authority").and_then(Value::as_str) == Some("schema_field_path_coverage_only");
-            let hashes_match = coverage.get("source_schema_sha256").and_then(Value::as_str) == Some(source_digest.as_str())
-                && coverage.get("source_record_sha256").and_then(Value::as_str) == Some(record_digest.as_str())
-                && coverage.get("adapter_map_sha256").and_then(Value::as_str) == Some(map_digest.as_str());
+                && coverage
+                    .get("observed_silent_loss_count")
+                    .and_then(Value::as_u64)
+                    == Some(0);
+            let status_and_contract = coverage.get("coverage_contract").and_then(Value::as_str)
+                == Some(COVERAGE_CONTRACT)
+                && coverage.get("status").and_then(Value::as_str)
+                    == Some("schema_coverage_complete")
+                && coverage.get("authority").and_then(Value::as_str)
+                    == Some("schema_field_path_coverage_only");
+            let hashes_match = coverage.get("source_schema_sha256").and_then(Value::as_str)
+                == Some(source_digest.as_str())
+                && coverage.get("source_record_sha256").and_then(Value::as_str)
+                    == Some(record_digest.as_str())
+                && coverage.get("adapter_map_sha256").and_then(Value::as_str)
+                    == Some(map_digest.as_str());
             let manifest_section_matches = section.is_some_and(|section| {
                 section.get("contract").and_then(Value::as_str) == Some(COVERAGE_CONTRACT)
-                    && section.get("status").and_then(Value::as_str) == Some("schema_coverage_complete")
-                    && section.get("source_schema_sha256").and_then(Value::as_str) == Some(source_digest.as_str())
-                    && section.get("coverage_report_sha256").and_then(Value::as_str) == Some(coverage_digest.as_str())
+                    && section.get("status").and_then(Value::as_str)
+                        == Some("schema_coverage_complete")
+                    && section.get("source_schema_sha256").and_then(Value::as_str)
+                        == Some(source_digest.as_str())
+                    && section
+                        .get("coverage_report_sha256")
+                        .and_then(Value::as_str)
+                        == Some(coverage_digest.as_str())
                     && section.get("schema_field_count").and_then(Value::as_u64) == schema_count
-                    && section.get("covered_schema_field_count").and_then(Value::as_u64) == covered_count
+                    && section
+                        .get("covered_schema_field_count")
+                        .and_then(Value::as_u64)
+                        == covered_count
                     && schema_count.is_some_and(|count| count > 0)
                     && schema_count == covered_count
             });
             let source_record_shape_ok = source_record.is_object();
-            status_and_contract && hashes_match && no_coverage_gaps && observed_audit_clean && manifest_section_matches && source_record_shape_ok
+            status_and_contract
+                && hashes_match
+                && no_coverage_gaps
+                && observed_audit_clean
+                && manifest_section_matches
+                && source_record_shape_ok
         }
         _ => false,
     };
 
     let independent_schema_coverage_ok = match (
-        artifacts.get(0).and_then(Option::as_ref),
+        artifacts.first().and_then(Option::as_ref),
         artifacts.get(1).and_then(Option::as_ref),
         artifacts.get(2).and_then(Option::as_ref),
         artifacts.get(3).and_then(Option::as_ref),
@@ -242,27 +310,32 @@ pub fn verify_bundle(manifest_bytes: &[u8], artifact_bytes: [&[u8]; 8]) -> Value
         _ => false,
     };
 
-    let transform_declarations_ok = match (manifest.as_ref(), artifacts.get(2).and_then(Option::as_ref)) {
-        (Some(manifest), Some(adapter_map)) => {
-            let mut found = BTreeSet::new();
-            let mappings = adapter_map.get("mappings").and_then(Value::as_array);
-            let mut valid = mappings.is_some();
-            if let Some(mappings) = mappings {
-                for mapping in mappings {
-                    if mapping.get("disposition").and_then(Value::as_str) == Some("transform") {
-                        if let Some(id) = mapping.get("transform_id").and_then(Value::as_str).filter(|id| !id.trim().is_empty()) {
-                            found.insert(id.to_owned());
-                        } else {
-                            valid = false;
+    let transform_declarations_ok =
+        match (manifest.as_ref(), artifacts.get(2).and_then(Option::as_ref)) {
+            (Some(manifest), Some(adapter_map)) => {
+                let mut found = BTreeSet::new();
+                let mappings = adapter_map.get("mappings").and_then(Value::as_array);
+                let mut valid = mappings.is_some();
+                if let Some(mappings) = mappings {
+                    for mapping in mappings {
+                        if mapping.get("disposition").and_then(Value::as_str) == Some("transform") {
+                            if let Some(id) = mapping
+                                .get("transform_id")
+                                .and_then(Value::as_str)
+                                .filter(|id| !id.trim().is_empty())
+                            {
+                                found.insert(id.to_owned());
+                            } else {
+                                valid = false;
+                            }
                         }
                     }
                 }
+                let expected: Vec<Value> = found.into_iter().map(Value::String).collect();
+                valid && manifest.get("declared_transform_ids") == Some(&Value::Array(expected))
             }
-            let expected: Vec<Value> = found.into_iter().map(Value::String).collect();
-            valid && manifest.get("declared_transform_ids") == Some(&Value::Array(expected))
-        }
-        _ => false,
-    };
+            _ => false,
+        };
 
     let projection_input_link_ok = match (
         artifacts.get(4).and_then(Option::as_ref),
@@ -275,15 +348,24 @@ pub fn verify_bundle(manifest_bytes: &[u8], artifact_bytes: [&[u8]; 8]) -> Value
         _ => false,
     };
 
-    let semantic_metadata_ok = match (manifest.as_ref(), artifacts.get(6).and_then(Option::as_ref)) {
+    let semantic_metadata_ok = match (manifest.as_ref(), artifacts.get(6).and_then(Option::as_ref))
+    {
         (Some(manifest), Some(report)) => {
             manifest.get("profile") == report.get("profile")
                 && manifest.get("comparison_rule_id") == report.get("comparison_rule_id")
                 && manifest.get("validator_version") == report.get("validator_version")
-                && report.get("decision_authority").and_then(Value::as_str) == Some("diagnostic_only")
-                && report.get("quality_release_authority").and_then(Value::as_str) == Some("none")
-                && report.get("equipment_control_authority").and_then(Value::as_str) == Some("none")
-                && report.get("origin_authentication").and_then(Value::as_str) == Some("not_performed")
+                && report.get("decision_authority").and_then(Value::as_str)
+                    == Some("diagnostic_only")
+                && report
+                    .get("quality_release_authority")
+                    .and_then(Value::as_str)
+                    == Some("none")
+                && report
+                    .get("equipment_control_authority")
+                    .and_then(Value::as_str)
+                    == Some("none")
+                && report.get("origin_authentication").and_then(Value::as_str)
+                    == Some("not_performed")
         }
         _ => false,
     };
@@ -312,15 +394,34 @@ pub fn verify_bundle(manifest_bytes: &[u8], artifact_bytes: [&[u8]; 8]) -> Value
             });
             exact_envelope_shape
                 && exact_binding_shape
-                && envelope.get("envelope_contract").and_then(Value::as_str) == Some("omsi-manufacturing-replay-envelope/0.1")
-                && binding.and_then(|item| item.get("digest_algorithm")).and_then(Value::as_str) == Some("sha256")
-                && binding.and_then(|item| item.get("digest_scope")).and_then(Value::as_str) == Some("exact_input_bytes")
-                && binding.and_then(|item| item.get("canonicalization")).and_then(Value::as_str) == Some("none")
-                && binding.and_then(|item| item.get("digest")).and_then(Value::as_str) == Some(sha256_hex(artifact_bytes[5]).as_str())
-                && binding.and_then(|item| item.get("byte_length")).and_then(Value::as_u64) == Some(artifact_bytes[5].len() as u64)
+                && envelope.get("envelope_contract").and_then(Value::as_str)
+                    == Some("omsi-manufacturing-replay-envelope/0.1")
+                && binding
+                    .and_then(|item| item.get("digest_algorithm"))
+                    .and_then(Value::as_str)
+                    == Some("sha256")
+                && binding
+                    .and_then(|item| item.get("digest_scope"))
+                    .and_then(Value::as_str)
+                    == Some("exact_input_bytes")
+                && binding
+                    .and_then(|item| item.get("canonicalization"))
+                    .and_then(Value::as_str)
+                    == Some("none")
+                && binding
+                    .and_then(|item| item.get("digest"))
+                    .and_then(Value::as_str)
+                    == Some(sha256_hex(artifact_bytes[5]).as_str())
+                && binding
+                    .and_then(|item| item.get("byte_length"))
+                    .and_then(Value::as_u64)
+                    == Some(artifact_bytes[5].len() as u64)
                 && envelope.get("report") == Some(report_value)
                 && input_value.is_object()
-                && envelope.get("limitations").and_then(Value::as_array).is_some_and(|items| items.len() >= 5)
+                && envelope
+                    .get("limitations")
+                    .and_then(Value::as_array)
+                    .is_some_and(|items| items.len() >= 5)
         }
         _ => false,
     };
@@ -328,7 +429,10 @@ pub fn verify_bundle(manifest_bytes: &[u8], artifact_bytes: [&[u8]; 8]) -> Value
     let graph_ok = manifest.as_ref().is_some_and(|manifest| {
         manifest.get("activities") == Some(&expected_activities())
             && manifest.get("edges") == Some(&expected_edges())
-            && manifest.get("limitations").and_then(Value::as_array).is_some_and(|items| items.len() >= 7)
+            && manifest
+                .get("limitations")
+                .and_then(Value::as_array)
+                .is_some_and(|items| items.len() >= 7)
     });
 
     let mut checks = Vec::new();
@@ -416,7 +520,6 @@ pub fn verify_bundle(manifest_bytes: &[u8], artifact_bytes: [&[u8]; 8]) -> Value
     })
 }
 
-
 /// Independently derives the source schema's field inventory and checks
 /// that the coverage report's summary agrees with the actual schema/map/record.
 /// This deliberately supports a closed-object subset rather than all JSON Schema.
@@ -468,30 +571,41 @@ fn independently_audit_schema_coverage(
             return false;
         }
         let disposition = match mapping.get("disposition").and_then(Value::as_str) {
-            Some("preserve") => {
-                mapping.get("target_path").and_then(Value::as_str)
-                    .is_some_and(is_json_pointer)
-            }
+            Some("preserve") => mapping
+                .get("target_path")
+                .and_then(Value::as_str)
+                .is_some_and(is_json_pointer),
             Some("transform") => {
-                mapping.get("target_path").and_then(Value::as_str)
+                mapping
+                    .get("target_path")
+                    .and_then(Value::as_str)
                     .is_some_and(is_json_pointer)
-                    && mapping.get("transform_id").and_then(Value::as_str)
+                    && mapping
+                        .get("transform_id")
+                        .and_then(Value::as_str)
                         .is_some_and(|value| !value.trim().is_empty())
             }
-            Some("drop" | "unmapped") => {
-                mapping.get("reason").and_then(Value::as_str)
-                    .is_some_and(|value| !value.trim().is_empty())
-            }
+            Some("drop" | "unmapped") => mapping
+                .get("reason")
+                .and_then(Value::as_str)
+                .is_some_and(|value| !value.trim().is_empty()),
             _ => false,
         };
         if !disposition {
             return false;
         }
-        declarations.entry(path.to_owned()).or_default().push(presence.to_owned());
+        declarations
+            .entry(path.to_owned())
+            .or_default()
+            .push(presence.to_owned());
     }
 
     for (path, schema_required) in &fields {
-        let expected = if *schema_required { "required" } else { "optional" };
+        let expected = if *schema_required {
+            "required"
+        } else {
+            "optional"
+        };
         match declarations.get(path) {
             Some(values) if values.len() == 1 && values[0] == expected => {}
             _ => return false,
@@ -502,17 +616,21 @@ fn independently_audit_schema_coverage(
     }
 
     let schema_count = coverage.get("schema_field_count").and_then(Value::as_u64);
-    let covered_count = coverage.get("covered_schema_field_count").and_then(Value::as_u64);
+    let covered_count = coverage
+        .get("covered_schema_field_count")
+        .and_then(Value::as_u64);
     let expected_unobserved: Vec<Value> = fields
         .iter()
         .filter(|(path, _)| source_record.pointer(path).is_none())
-        .map(|(path, required)| json!({
-            "source_path": path,
-            "schema_presence": if *required { "required" } else { "optional" }
-        }))
+        .map(|(path, required)| {
+            json!({
+                "source_path": path,
+                "schema_presence": if *required { "required" } else { "optional" }
+            })
+        })
         .collect();
-    let unobserved_fields_match =
-        coverage.get("schema_paths_not_observed_in_record") == Some(&Value::Array(expected_unobserved));
+    let unobserved_fields_match = coverage.get("schema_paths_not_observed_in_record")
+        == Some(&Value::Array(expected_unobserved));
     let clean_lists = [
         "schema_paths_not_mapped",
         "mapping_paths_outside_schema",
@@ -523,17 +641,27 @@ fn independently_audit_schema_coverage(
         "record_structure_errors",
     ]
     .iter()
-    .all(|key| coverage.get(*key).and_then(Value::as_array).is_some_and(Vec::is_empty));
+    .all(|key| {
+        coverage
+            .get(*key)
+            .and_then(Value::as_array)
+            .is_some_and(Vec::is_empty)
+    });
 
-    coverage.get("coverage_contract").and_then(Value::as_str)
-        == Some(COVERAGE_CONTRACT)
+    coverage.get("coverage_contract").and_then(Value::as_str) == Some(COVERAGE_CONTRACT)
         && coverage.get("status").and_then(Value::as_str) == Some("schema_coverage_complete")
-        && coverage.get("authority").and_then(Value::as_str) == Some("schema_field_path_coverage_only")
+        && coverage.get("authority").and_then(Value::as_str)
+            == Some("schema_field_path_coverage_only")
         && schema_count == Some(fields.len() as u64)
         && covered_count == Some(fields.len() as u64)
-        && coverage.get("observed_field_accounting_status").and_then(Value::as_str)
+        && coverage
+            .get("observed_field_accounting_status")
+            .and_then(Value::as_str)
             == Some("complete_accounting")
-        && coverage.get("observed_silent_loss_count").and_then(Value::as_u64) == Some(0)
+        && coverage
+            .get("observed_silent_loss_count")
+            .and_then(Value::as_u64)
+            == Some(0)
         && unobserved_fields_match
         && clean_lists
 }
@@ -607,8 +735,7 @@ fn derive_schema_fields(
             for (name, child_schema) in properties {
                 let escaped = name.replace('~', "~0").replace('/', "~1");
                 let child_path = format!("{path}/{escaped}");
-                let child_required =
-                    ancestors_required && required_names.contains(name.as_str());
+                let child_required = ancestors_required && required_names.contains(name.as_str());
                 if !derive_schema_fields(child_schema, &child_path, child_required, fields) {
                     return false;
                 }
@@ -672,21 +799,27 @@ fn record_matches_closed_schema(schema: &Value, record: &Value) -> bool {
             let Some(required) = declared_required_names(object, properties) else {
                 return false;
             };
-            if required.iter().any(|name| !record_object.contains_key(*name))
-                || record_object.keys().any(|name| !properties.contains_key(name))
+            if required
+                .iter()
+                .any(|name| !record_object.contains_key(*name))
+                || record_object
+                    .keys()
+                    .any(|name| !properties.contains_key(name))
             {
                 return false;
             }
-            properties.iter().all(|(name, child_schema)| match record_object.get(name) {
-                Some(value) => record_matches_closed_schema(child_schema, value),
-                None => true,
-            })
+            properties
+                .iter()
+                .all(|(name, child_schema)| match record_object.get(name) {
+                    Some(value) => record_matches_closed_schema(child_schema, value),
+                    None => true,
+                })
         }
         "array" => record.is_array() && object.contains_key("items"),
         "string" => record.is_string(),
-        "integer" => record.as_number().is_some_and(|number| {
-            number.as_i64().is_some() || number.as_u64().is_some()
-        }),
+        "integer" => record
+            .as_number()
+            .is_some_and(|number| number.as_i64().is_some() || number.as_u64().is_some()),
         "number" => record.is_number(),
         "boolean" => record.is_boolean(),
         "null" => record.is_null(),
@@ -771,7 +904,6 @@ fn sha256_hex(bytes: &[u8]) -> String {
     encoded
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::{sha256_hex, verify_bundle, ARTIFACTS, COVERAGE_CONTRACT, LIMITATIONS};
@@ -833,7 +965,8 @@ mod tests {
                 "does not prove measurement truth",
                 "does not authorize release"
             ]
-        })).unwrap();
+        }))
+        .unwrap();
 
         let artifact_bytes = [
             source_record,
@@ -903,9 +1036,16 @@ mod tests {
             ],
         );
         assert_eq!(result["status"], "artifact_bindings_verified", "{result:#}");
-        assert_eq!(result["authority"], "artifact_binding_and_graph_consistency_only");
+        assert_eq!(
+            result["authority"],
+            "artifact_binding_and_graph_consistency_only"
+        );
         assert_eq!(result["checks"].as_array().unwrap().len(), 18);
-        assert!(result["checks"].as_array().unwrap().iter().all(|check| check["result"] == "pass"));
+        assert!(result["checks"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|check| check["result"] == "pass"));
     }
 
     #[test]
@@ -942,12 +1082,18 @@ mod tests {
         );
 
         assert_eq!(result["status"], "rejected", "{result:#}");
-        assert!(result["checks"].as_array().unwrap().iter().any(|check| {
-            check["id"] == "schema-coverage-bindings" && check["result"] == "pass"
-        }), "the forged report should remain byte-bound and internally self-consistent");
-        assert!(result["checks"].as_array().unwrap().iter().any(|check| {
-            check["id"] == "independent-source-schema-coverage" && check["result"] == "fail"
-        }), "independent recomputation must detect the forged field count");
+        assert!(
+            result["checks"].as_array().unwrap().iter().any(|check| {
+                check["id"] == "schema-coverage-bindings" && check["result"] == "pass"
+            }),
+            "the forged report should remain byte-bound and internally self-consistent"
+        );
+        assert!(
+            result["checks"].as_array().unwrap().iter().any(|check| {
+                check["id"] == "independent-source-schema-coverage" && check["result"] == "fail"
+            }),
+            "independent recomputation must detect the forged field count"
+        );
     }
 
     #[test]
@@ -1014,12 +1160,18 @@ mod tests {
         );
 
         assert_eq!(result["status"], "rejected", "{result:#}");
-        assert!(result["checks"].as_array().unwrap().iter().any(|check| {
-            check["id"] == "schema-coverage-bindings" && check["result"] == "pass"
-        }), "byte bindings should pass when hashes are recalculated");
-        assert!(result["checks"].as_array().unwrap().iter().any(|check| {
-            check["id"] == "independent-source-schema-coverage" && check["result"] == "fail"
-        }), "independent recomputation must restore the absent optional path");
+        assert!(
+            result["checks"].as_array().unwrap().iter().any(|check| {
+                check["id"] == "schema-coverage-bindings" && check["result"] == "pass"
+            }),
+            "byte bindings should pass when hashes are recalculated"
+        );
+        assert!(
+            result["checks"].as_array().unwrap().iter().any(|check| {
+                check["id"] == "independent-source-schema-coverage" && check["result"] == "fail"
+            }),
+            "independent recomputation must restore the absent optional path"
+        );
     }
 
     #[test]
@@ -1041,7 +1193,10 @@ mod tests {
                     changed[7].as_slice(),
                 ],
             );
-            assert_eq!(result["status"], "rejected", "artifact {index} unexpectedly verified: {result:#}");
+            assert_eq!(
+                result["status"], "rejected",
+                "artifact {index} unexpectedly verified: {result:#}"
+            );
         }
     }
 
@@ -1065,7 +1220,10 @@ mod tests {
             ],
         );
         assert_eq!(result["status"], "rejected");
-        assert!(result["checks"].as_array().unwrap().iter()
+        assert!(result["checks"]
+            .as_array()
+            .unwrap()
+            .iter()
             .any(|check| check["id"] == "provenance-graph" && check["result"] == "fail"));
     }
 
