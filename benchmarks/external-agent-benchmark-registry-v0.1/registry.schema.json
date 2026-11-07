@@ -68,7 +68,9 @@
         "value_semantics",
         "definition",
         "scope",
-        "limitations"
+        "limitations",
+        "numerator",
+        "denominator"
       ],
       "properties": {
         "metric_id": {
