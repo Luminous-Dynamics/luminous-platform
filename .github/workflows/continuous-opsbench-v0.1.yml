@@ -31,7 +31,7 @@ jobs:
       - name: Install pinned Rust toolchain
         run: |
           set -euo pipefail
-          rustup toolchain install 1.96.0 --profile minimal --component clippy
+          rustup toolchain install 1.96.0 --profile minimal --component clippy --component rustfmt
           rustup override set 1.96.0
       - name: Validate benchmark schemas are valid JSON
         run: |
