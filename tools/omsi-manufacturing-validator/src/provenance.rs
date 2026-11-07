@@ -32,12 +32,9 @@ pub struct ProvenanceArtifacts<'a> {
     pub replay_envelope_bytes: &'a [u8],
 }
 
-
 /// Recomputes schema coverage, projection, semantic evaluation, and exact-byte
 /// replay checks before emitting an unsigned local-consistency manifest.
-pub fn create_provenance_manifest(
-    artifacts: ProvenanceArtifacts<'_>,
-) -> Result<Value, String> {
+pub fn create_provenance_manifest(artifacts: ProvenanceArtifacts<'_>) -> Result<Value, String> {
     let ProvenanceArtifacts {
         source_record_bytes,
         source_schema_bytes,
@@ -336,7 +333,7 @@ fn sha256_hex(bytes: &[u8]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{create_provenance_manifest, ProvenanceArtifacts};
+    use super::ProvenanceArtifacts;
     use crate::adapter::apply_adapter_map;
     use crate::replay::create_replay_envelope;
     use crate::schema_coverage::audit_adapter_schema_coverage;
@@ -368,11 +365,11 @@ mod tests {
         }
     }
 
-    fn artifact_refs_with(
-        artifacts: &Bundle,
+    fn artifact_refs_with<'a>(
+        artifacts: &'a Bundle,
         index: usize,
-        replacement: &[u8],
-    ) -> ProvenanceArtifacts<'_> {
+        replacement: &'a [u8],
+    ) -> ProvenanceArtifacts<'a> {
         let mut values = [
             artifacts[0].as_slice(),
             artifacts[1].as_slice(),
@@ -452,7 +449,7 @@ mod tests {
     fn manifest_rechecks_schema_coverage_and_matches_the_independent_schema() {
         let artifacts = fixture_chain();
         let manifest = super::create_provenance_manifest(artifact_refs(&artifacts))
-        .expect("consistent evidence chain emits a manifest");
+            .expect("consistent evidence chain emits a manifest");
         let schema: Value = serde_json::from_str(SCHEMA).expect("manifest schema parses");
         assert!(
             draft202012::meta::is_valid(&schema),
@@ -513,7 +510,7 @@ mod tests {
     fn manifest_verifier_reconstructs_and_schema_validates_report() {
         let artifacts = fixture_chain();
         let manifest = super::create_provenance_manifest(artifact_refs(&artifacts))
-        .expect("consistent chain creates a manifest");
+            .expect("consistent chain creates a manifest");
         let manifest_bytes = serde_json::to_vec_pretty(&manifest).expect("manifest serializes");
         let verification = verify_bundle(&manifest_bytes, &artifacts);
         assert_eq!(
@@ -546,7 +543,7 @@ mod tests {
     fn manifest_verifier_rejects_tampered_manifest_digest() {
         let artifacts = fixture_chain();
         let manifest = super::create_provenance_manifest(artifact_refs(&artifacts))
-        .expect("consistent chain creates a manifest");
+            .expect("consistent chain creates a manifest");
         let mut manifest = manifest;
         manifest["artifacts"][0]["sha256"] = json!("0".repeat(64));
         let manifest_bytes =
@@ -564,7 +561,7 @@ mod tests {
     fn manifest_verifier_rejects_mutation_at_each_artifact_boundary() {
         let artifacts = fixture_chain();
         let manifest = super::create_provenance_manifest(artifact_refs(&artifacts))
-        .expect("original evidence chain is consistent");
+            .expect("original evidence chain is consistent");
         let manifest_bytes = serde_json::to_vec_pretty(&manifest).expect("manifest serializes");
 
         let mut source_value: Value = serde_json::from_slice(&artifacts[0]).expect("source parses");
@@ -649,7 +646,8 @@ mod tests {
         projection["projection"]["source_quality_claim"]["raw_status"] = json!("ACCEPTED");
         let projection_bytes =
             serde_json::to_vec_pretty(&projection).expect("projection serializes");
-        let result = super::create_provenance_manifest(artifact_refs_with(&artifacts, 4, &projection_bytes));
+        let result =
+            super::create_provenance_manifest(artifact_refs_with(&artifacts, 4, &projection_bytes));
         assert!(result
             .unwrap_err()
             .contains("differs from a fresh adapter re-execution"));
@@ -661,7 +659,8 @@ mod tests {
         let mut coverage: Value = serde_json::from_slice(&artifacts[3]).expect("coverage parses");
         coverage["status"] = json!("schema_coverage_incomplete");
         let coverage_bytes = serde_json::to_vec_pretty(&coverage).expect("coverage serializes");
-        let result = super::create_provenance_manifest(artifact_refs_with(&artifacts, 3, &coverage_bytes));
+        let result =
+            super::create_provenance_manifest(artifact_refs_with(&artifacts, 3, &coverage_bytes));
         assert!(result.unwrap_err().contains("differs from a fresh audit"));
     }
 
@@ -671,7 +670,8 @@ mod tests {
         let mut envelope: Value = serde_json::from_slice(&artifacts[7]).expect("envelope parses");
         envelope["artifact_binding"]["digest"] = json!("0".repeat(64));
         let envelope_bytes = serde_json::to_vec_pretty(&envelope).expect("envelope serializes");
-        let result = super::create_provenance_manifest(artifact_refs_with(&artifacts, 7, &envelope_bytes));
+        let result =
+            super::create_provenance_manifest(artifact_refs_with(&artifacts, 7, &envelope_bytes));
         assert!(result
             .unwrap_err()
             .contains("replay envelope does not verify"));
@@ -686,7 +686,8 @@ mod tests {
             .unwrap()
             .remove("additionalProperties");
         let schema_bytes = serde_json::to_vec(&schema).unwrap();
-        let result = super::create_provenance_manifest(artifact_refs_with(&artifacts, 1, &schema_bytes));
+        let result =
+            super::create_provenance_manifest(artifact_refs_with(&artifacts, 1, &schema_bytes));
         assert!(result
             .unwrap_err()
             .contains("schema coverage is not complete"));
