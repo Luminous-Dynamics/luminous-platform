@@ -1,0 +1,50 @@
+{
+  "schema": "luminous-event-watch-result-v0.1",
+  "version": 1,
+  "watch_id": "watch-ops-001",
+  "watch_request_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "admission": {
+    "outcome": "admitted",
+    "evaluated_at": "2026-11-07T12:00:00Z",
+    "authority_status": "current",
+    "authority_epoch": 7,
+    "budget_status": "committed",
+    "budget_version_before": 10,
+    "budget_version_after": 11,
+    "reservation_receipt_ref": "opaque:watch-budget-receipt-001",
+    "reservation_receipt_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "watch_state": {
+    "status": "condition_met",
+    "started_at": "2026-11-07T12:00:01Z",
+    "terminal_at": "2026-11-07T12:08:00Z",
+    "terminal_authority_status": "current",
+    "authority_changed_at": null,
+    "last_data_access_at": "2026-11-07T12:07:59Z"
+  },
+  "event_delivery": {
+    "status": "matched",
+    "event_count": 1,
+    "cursor_before": "cursor:100",
+    "cursor_after": "cursor:101",
+    "first_sequence": 101,
+    "last_sequence": 101,
+    "event_receipt_ref": "opaque:event-observation-101",
+    "event_receipt_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "source_control_domain_ref": "source-domain:service-observer-a",
+    "first_event_observed_at": "2026-11-07T12:07:55Z",
+    "last_event_observed_at": "2026-11-07T12:07:55Z",
+    "last_event_ingested_at": "2026-11-07T12:07:56Z"
+  },
+  "wake": {
+    "disposition": "wake_agent",
+    "reason": "event_matched",
+    "wake_count": 1,
+    "last_wakeup_at": "2026-11-07T12:08:00Z",
+    "wake_receipt_ref": "opaque:wake-receipt-001",
+    "wake_receipt_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  },
+  "effect_boundary": {
+    "consequential_mutation_attempts": 0
+  }
+}
