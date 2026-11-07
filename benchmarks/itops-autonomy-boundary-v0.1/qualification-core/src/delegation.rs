@@ -1261,8 +1261,14 @@ pub enum DelegationBudgetLedgerError {
 struct DelegationBudgetAccount {
     snapshot: DelegationBudgetSnapshot,
     batch_ids: BTreeSet<String>,
-    reservations_by_key:
-        BTreeMap<String, (String, Vec<DelegationBudgetAllocation>, DelegationBudgetReservationReceipt)>,
+    reservations_by_key: BTreeMap<
+        String,
+        (
+            String,
+            Vec<DelegationBudgetAllocation>,
+            DelegationBudgetReservationReceipt,
+        ),
+    >,
 }
 
 /// Deterministic compare-and-swap budget ledger used by the synthetic ITOPS
@@ -1414,7 +1420,11 @@ mod tests {
     }
 
     fn ledger_budget(dispatches: u64, tool_calls: u64, resource_units: u64) -> DelegationBudget {
-        DelegationBudget { dispatches, tool_calls, resource_units }
+        DelegationBudget {
+            dispatches,
+            tool_calls,
+            resource_units,
+        }
     }
 
     fn allocation(
@@ -1621,7 +1631,6 @@ mod tests {
         }
     }
 
-
     #[test]
     fn budget_ledger_atomically_reserves_complete_sibling_fanout() {
         let mut ledger = DelegationBudgetLedger::default();
@@ -1753,13 +1762,7 @@ mod tests {
             allocation("child-a", 1, 2, 10),
         ];
         assert_eq!(
-            ledger.reserve_fanout(
-                "root-grant",
-                0,
-                "batch-a",
-                "idem-a",
-                &duplicate_children
-            ),
+            ledger.reserve_fanout("root-grant", 0, "batch-a", "idem-a", &duplicate_children),
             Err(DelegationBudgetLedgerError::DuplicateChildAllocation)
         );
 
@@ -1778,10 +1781,7 @@ mod tests {
     fn aggregate_budget_overflow_fails_closed_without_mutation() {
         let mut ledger = DelegationBudgetLedger::default();
         ledger
-            .register_parent(
-                "root-grant",
-                ledger_budget(u64::MAX, u64::MAX, u64::MAX),
-            )
+            .register_parent("root-grant", ledger_budget(u64::MAX, u64::MAX, u64::MAX))
             .unwrap();
         let allocations = vec![
             allocation("child-a", 1, u64::MAX, 10),
