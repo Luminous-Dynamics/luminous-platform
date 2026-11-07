@@ -470,11 +470,16 @@ pub fn apply_adapter_map(
                     Ok(value.clone())
                 } else {
                     let transform_id = object.get("transform_id").and_then(Value::as_str).unwrap_or("");
-                    run_transform(transform_id, value).map_err(|reason| {
+                    run_transform(transform_id, value).map_err(|detail| {
+                        let reason_code = detail
+                            .get("reason")
+                            .and_then(Value::as_str)
+                            .unwrap_or("transform_rejected");
                         json!({
                             "field":source_path,
                             "transform_id":transform_id,
-                            "reason":reason
+                            "reason":reason_code,
+                            "detail":detail
                         })
                     })
                 };
