@@ -381,6 +381,12 @@ The v0.1 profile is ready for review when:
 - read-only adapters precede any consequential-operation integration;
 - no claim is promoted beyond the actual evidence stage.
 
+## 11.1 Frozen synthetic conformance vector design
+
+A machine-readable, design-only PNT vector pack is maintained at [pnt-conformance-vectors-0.1.json](./pnt-conformance-vectors-0.1.json). It contains 16 synthetic positive and negative cases for source/calibration/time validity, common-mode dependencies, oracle independence, epistemic abstention, open-set RF boundaries, degraded capture, communication partitions, recovery, authority and probe-impact evidence.
+
+**Status:** `FROZEN_DESIGN_NOT_EXECUTED`. These are expected outcomes and invariant assertions, not test results. Issue #307 owns integration into the existing OMSI validator tooling after the shared validator path is available. The vector pack does not define sector thresholds or prove receiver, service, field or safety qualification.
+
 ## 12. Non-goals
 
 - No global PNT health score or universal alert limit.
