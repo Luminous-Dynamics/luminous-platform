@@ -351,6 +351,33 @@ The profile maintains a version-pinned reference registry per industry track. Ca
 - IETF RFC 9943 / SCITT for signed-statement transparency and independently verifiable receipts: https://www.rfc-editor.org/rfc/rfc9943
 - W3C Verifiable Credentials Data Model 2.0 for issuer/holder/verifier credential exchange where suitable: https://www.w3.org/TR/vc-data-model-2.0/
 - OpenTelemetry semantic conventions for telemetry naming, resource identity and event correlation, not as a substitute for measurement or evidence semantics: https://opentelemetry.io/docs/specs/otel/semantic-conventions/
+### 9.1 Telecom timing baseline — current references checked 2026-11-07
+
+Treat telecom PTP as a concrete, profile-specific benchmark family rather than a universal PNT threshold:
+
+- **ITU-T G.8275 (01/2026)** — common aspects of PTP profiles for phase/time synchronization. Its optional Annex G defines synchronization-service availability performance metrics (SyncaaS), including node-side per-second available/unavailable service accounting and an NMS aggregation path. Applicability and optional-feature support must be recorded per implementation; do not assume every deployed clock exposes the dataset. https://www.itu.int/epublications/publication/itu-t-g-8275-2026-01-common-aspects-of-ptp-profiles-for-phase-time-synchronization
+- **ITU-T G.8275.1/Y.1369.1 (02/2026), Amendment 1 (08/2026)** — current full-timing-support telecom PTP profile; the ITU recommendation database lists the base edition and Amendment 1 as in force (Amendment 1 prepublished at the time checked). Pin both exact editions in each interoperability manifest. https://www.itu.int/rec/T-REC-G.8275.1/en
+- **ITU-T G.8275.2 (02/2026)** — partial-timing-support profile; keep it as a separate deployment profile, not a drop-in equivalent to G.8275.1. https://www.itu.int/rec/T-REC-G.8275.2/en
+- **ITU-T G.8273.2 (06/2023)** — timing characteristics of telecom boundary clocks and time synchronous clocks under full timing support; relevant to equipment requirements and holdover behaviour, subject to the applicable device class. https://www.itu.int/epublications/publication/itu-t-g-8273-2-y-1368-2-2023-06-timing-characteristics-of-telecom-boundary-clocks-and-telecom-time-synchronous-clocks-for-use-with-full-timing-support-from-the-network
+- **linuxptp** — open implementation/configuration comparator for G.8275.1 and G.8275.2; compare observed state and counters with native `ptp4l`/`pmc` outputs, not by assuming protocol implementation equals service assurance. https://www.linuxptp.org/documentation/configs/
+- **External timing measurement** — use an independently calibrated phase/time reference or timing analyzer for reference validation where hardware is available. Device-reported PTP counters alone cannot establish physical output time error; record reference accuracy, calibration, measurement point, cabling/delay correction and time alignment.
+
+Telecom timing benchmark observations should preserve at least: PTP profile/domain/version, clock identity and role, parent/grandmaster identity and quality, traceability/time-properties flags, port state, `synchronizationUncertain` where supported, parent/alternate-BTCA changes, path-trace/dependency data where supported, message counters, offset/path-delay performance records, SyncaaS availability counters where implemented, local reference state, holdover state and independently measured output time error where available.
+
+Keep these dimensions separate:
+- synchronization service availability (available/unavailable seconds and measurement validity/completeness);
+- phase/time error and its distribution against a qualified reference;
+- frequency stability / holdover performance under the relevant equipment profile;
+- PTP topology, source traceability and common-mode dependencies;
+- receiver/native source status and GNSS-derived time evidence;
+- communications reachability and management-plane visibility.
+
+Do not treat a PTP clock class, grandmaster identity, `timeTraceable` flag, source switch or service-availability counter as proof of physical time accuracy. A PTP monitoring implementation should report unavailable or incomplete measurement intervals explicitly, never as zero error or zero outage.
+
+Useful interoperability and test references:
+- EANTC 2026 PTP performance-monitoring interop report: a cascaded T-GM / seven-T-BC test setup compared PTP performance-monitoring metrics with Calnex and Keysight timing analyzers; treat as a test-method comparator, not a universal accuracy guarantee. https://wiki.eantc.de/wiki/publicreports/view/Main/EANTC%20Transport%20%26%20Cloud%20Networks%20Interop%20Test%20Report%202026/Time%20Synchronization/PTP%20Performance%20Monitoring
+- Calnex PTP/time-error measurement guidance: independent reference measurements and controlled negative-condition testing. Vendor technical guidance, not a normative standard. https://www.calnexsol.cn/docman/techlib/timing-and-sync-lab/191-mifid-ii-time-compliance
+
 - applicable GNSS receiver, telecom timing, maritime, transport and sector-specific requirements selected and reviewed by the relevant profile authority.
 
 The profile must not use a draft concept note, standard mapping or schema as evidence of regulatory compliance or certification.
