@@ -71,7 +71,7 @@ Reuse the platform failure-semantics contract in [#283](https://github.com/Lumin
 ### 3.1 Existing work to reuse
 
 - Symthaea EMSR programme: [#10775](https://github.com/Luminous-Dynamics/symthaea/issues/10775)
-- Dataset/split/run receipt contract: [#10814](https://github.com/Luminous-Dynamics/symthaea/issues/10814), draft [PR #10821](https://github.com/Luminous-Dynamics/symthaea/pull/10821)
+- Dataset/split/run receipt contract: [#10814](https://github.com/Luminous-Dynamics/symthaea/issues/10814), draft [PR #10875](https://github.com/Luminous-Dynamics/symthaea/pull/10875)
 - SOMA positioning adapter: [#10824](https://github.com/Luminous-Dynamics/symthaea/issues/10824)
 - Platform edge sensor node profile: [#300](https://github.com/Luminous-Dynamics/luminous-platform/issues/300)
 - First deployable platform product slice: [#301](https://github.com/Luminous-Dynamics/luminous-platform/issues/301)
@@ -242,6 +242,8 @@ The Symthaea EMSR benchmark charter maintains the complete paper-level reproduct
 - IEEE Access (2026): >90% average in-domain accuracy but <=66% average cross-dataset performance across the reported study conditions. https://doi.org/10.1109/ACCESS.2026.3693081
 - NAVITEC (2026): CNN versus MAML cross-testing over TEXBAT/OAKBAT/FGI-SpoofRepo; MAML with post-correlation Doppler features is the reported strongest cross-testing method. https://doi.org/10.1109/NAVITEC202669090.2026.11692526
 - ION GNSS+ (2026): 96.4% detection and 2.26% false alarms on a mixed TEXBAT split, versus 58.6% detection in the reported harder cross-scenario evaluation. https://doi.org/10.33012/2026.20700
+- ION GNSS+ (2026) DANN: improved cross-scene simulation reports 95.90% detection at 1.38% false alarms; cross-scene simulation only. https://doi.org/10.33012/2026.20876
+- ION GNSS+ (2026) lightweight multi-domain feature fusion: reports 94.59% satellite-wise TPR at 1% FPR and 0.173 ms/sample on its scenario-diverse evaluation; exact feature/hardware/split reproduction required. https://doi.org/10.33012/2026.20831
 - Explainable multimodal classifier (May 2026): 99.33% on simulated test data; not a field-performance comparator. https://doi.org/10.1007/s10207-026-01267-5
 - RAIM-driven semi-supervised maritime method (July 2026): candidate maritime comparator, not a certified integrity method. https://doi.org/10.1016/j.asr.2026.07.097
 
@@ -279,7 +281,7 @@ Implementation ownership and benchmarks are tracked in [OMSI-EDGE-SENSOR-001 #30
 
 ## 8.2 Open-set RF awareness and edge AI boundary
 
-General receive-side RF signal-family awareness is an adjacent capability, not a replacement for PNT integrity monitoring. Symthaea tracks it separately in EMSR-RF-OPENSET-001 #10893, with RF-RPL (2026) as a scarce-label/open-set comparator. A model output may be known-class, unknown, ambiguous or indeterminate; unknown must not be converted into a malicious-emitter or cause label. The open-set RF benchmark does not establish the validity of a GNSS position/time solution.
+General receive-side RF signal-family awareness is an adjacent capability, not a replacement for PNT integrity monitoring. Symthaea tracks it separately in EMSR-RF-OPENSET-001 #10893, with RF-RPL (2026) as a scarce-label/open-set comparator and IriSig-Spoof (2026 preprint) as a candidate temporal/open-set satellite-RF benchmark. IriSig-Spoof reports 5.17 million Iridium messages from 66 satellites over 32 days, 97.75% best cross-day accuracy and 0.9715 open-set AUROC; these are preprint-reported results, not independent Luminous reproduction. Source-level rights review remains mandatory and no payload is imported. A model output must distinguish known-class, unknown, indeterminate and degraded acquisition; unknown must not be converted into a malicious-emitter, identity, location or cause label. The open-set RF benchmark does not establish the validity of a GNSS position/time solution.
 
 The platform must distinguish:
 - ESP32-class auxiliary edge nodes (#300);
