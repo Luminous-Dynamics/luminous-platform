@@ -458,12 +458,7 @@
           "planner": {
             "properties": {
               "method": {
-                "enum": [
-                  "point_eig",
-                  "expected_eig",
-                  "worst_case_eig",
-                  "cvar_eig"
-                ]
+                "const": "point_eig"
               }
             }
           }
@@ -476,11 +471,12 @@
               "predicted_quantity": {
                 "properties": {
                   "metric": {
+                    "const": "point_eig"
+                  },
+                  "unit": {
                     "enum": [
-                      "point_eig",
-                      "expected_eig",
-                      "worst_case_eig",
-                      "cvar_eig"
+                      "nats",
+                      "bits"
                     ]
                   }
                 }
@@ -496,12 +492,47 @@
           "planner": {
             "properties": {
               "method": {
-                "enum": [
-                  "expected_evsi",
-                  "worst_case_evsi",
-                  "cvar_evsi",
-                  "minimax_regret"
-                ]
+                "const": "expected_eig"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "planner"
+        ],
+        "properties": {
+          "planner": {
+            "required": [
+              "scenario_count"
+            ],
+            "properties": {
+              "predicted_quantity": {
+                "properties": {
+                  "metric": {
+                    "const": "expected_eig"
+                  },
+                  "unit": {
+                    "enum": [
+                      "nats",
+                      "bits"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "planner": {
+            "properties": {
+              "method": {
+                "const": "worst_case_eig"
               }
             }
           }
@@ -511,18 +542,196 @@
         "properties": {
           "planner": {
             "required": [
-              "utility_model_digest"
+              "scenario_count"
             ],
             "properties": {
               "predicted_quantity": {
                 "properties": {
                   "metric": {
+                    "const": "worst_case_eig"
+                  },
+                  "unit": {
                     "enum": [
-                      "expected_evsi",
-                      "worst_case_evsi",
-                      "cvar_evsi",
-                      "minimax_regret"
+                      "nats",
+                      "bits"
                     ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "planner": {
+            "properties": {
+              "method": {
+                "const": "cvar_eig"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "planner": {
+            "required": [
+              "scenario_count"
+            ],
+            "properties": {
+              "predicted_quantity": {
+                "properties": {
+                  "metric": {
+                    "const": "cvar_eig"
+                  },
+                  "unit": {
+                    "enum": [
+                      "nats",
+                      "bits"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "planner": {
+            "properties": {
+              "method": {
+                "const": "expected_evsi"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "planner": {
+            "required": [
+              "utility_model_digest",
+              "scenario_count"
+            ],
+            "properties": {
+              "predicted_quantity": {
+                "properties": {
+                  "metric": {
+                    "const": "expected_evsi"
+                  },
+                  "unit": {
+                    "const": "utility"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "planner": {
+            "properties": {
+              "method": {
+                "const": "worst_case_evsi"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "planner": {
+            "required": [
+              "utility_model_digest",
+              "scenario_count"
+            ],
+            "properties": {
+              "predicted_quantity": {
+                "properties": {
+                  "metric": {
+                    "const": "worst_case_evsi"
+                  },
+                  "unit": {
+                    "const": "utility"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "planner": {
+            "properties": {
+              "method": {
+                "const": "cvar_evsi"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "planner": {
+            "required": [
+              "utility_model_digest",
+              "scenario_count"
+            ],
+            "properties": {
+              "predicted_quantity": {
+                "properties": {
+                  "metric": {
+                    "const": "cvar_evsi"
+                  },
+                  "unit": {
+                    "const": "utility"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "planner": {
+            "properties": {
+              "method": {
+                "const": "minimax_regret"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "planner": {
+            "required": [
+              "utility_model_digest",
+              "scenario_count"
+            ],
+            "properties": {
+              "predicted_quantity": {
+                "properties": {
+                  "metric": {
+                    "const": "minimax_regret"
+                  },
+                  "unit": {
+                    "const": "regret"
                   }
                 }
               }
