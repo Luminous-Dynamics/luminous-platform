@@ -28,7 +28,7 @@ At the time of this draft (7 November 2026), Symthaea PR #10105 provides a robus
 ## Flow
 
 1. Symthaea emits a proposal referencing one entry in a pinned Platform probe-catalog snapshot.
-2. Platform independently checks principal/session/tenant/target scope, current policy, catalog entry, exact operation/schema digests, read-only capability, freshness requirements and cumulative session budget.
+2. Platform independently checks the principal's immutable intent and permitted purpose, principal/session/tenant/target scope, current policy, catalog entry, exact operation/schema digests, read-only capability, result sink, freshness requirements and cumulative session budget.
 3. If admitted, the Platform/collector executes the catalogued observation. The planner receives no collector credentials or write-capable handle.
 4. The collector emits its source observation using the existing canonical evidence/event path.
 5. A separately controlled observer emits a probe-impact receipt through the #257 contract. Missing impact evidence is pending/unknown, never numeric zero.
@@ -42,6 +42,8 @@ At the time of this draft (7 November 2026), Symthaea PR #10105 provides a robus
 - fixtures/proposal-positive.json: valid synthetic robust-EIG proposal.
 - fixtures/proposal-write-capability-rejected.json: intentionally invalid: write-capable probe.
 - fixtures/proposal-metric-mismatch-rejected.json: intentionally invalid: planner method and predicted metric disagree.
+- fixtures/proposal-purpose-mismatch-rejected.json: structurally valid but semantically invalid: the requested purpose differs from the principal-authorized episode purpose.
+- fixtures/proposal-external-sink-rejected.json: intentionally invalid: result sink leaves the principal-authorized session.
 - fixtures/binding-completed.json: synthetic admitted/completed example with separate observation and impact receipts.
 - fixtures/binding-unknown-impact.json: admitted probe whose collection/impact outcome remains unknown. It must not receive zero-impact or successful evaluation credit.
 - fixtures/binding-denied.json: denied request with no collection and no impact measurement.
