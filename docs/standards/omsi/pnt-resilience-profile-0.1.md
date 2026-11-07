@@ -188,6 +188,45 @@ The interoperable lifecycle should preserve distinct events:
 
 A model cannot move directly from assessment to physical action. Missing authority or evidence is fail-closed for mutation, while local observation and declared safe-baseline service may continue.
 
+### 5.1 Decision-aware evidence acquisition
+
+A cognitive system should propose the **next observation most likely to change a safe service decision**, not simply the observation with the largest entropy reduction.
+
+Compose the existing decision-aware investigation and bounded read-only probe contracts:
+- Symthaea #10109 supplies hypotheses, uncertainty and decision-aware EVSI/minimax-regret proposals.
+- Luminous Platform #299 maps those proposals to the existing probe catalogue, checks eligibility and cumulative budgets, and records read-only acquisition and probe-impact evidence.
+- Mycelix #435/#5904 supply time-domain and common-cause semantics.
+- The selected sector profile supplies the decision-loss/utility scope and acceptable impact envelope; the model must not invent them.
+
+For a PNT use case, candidate observations may include receiver-reported integrity/status, calibration-currentness, clock-correlation validity, independent timing-source state, source-dependency evidence, or a bounded read-only service/asset health observation. This profile does not grant the model unrestricted access to raw receiver streams or customer/production infrastructure.
+
+The handoff must preserve:
+- exact hypothesis/scenario, service profile and decision-loss digests;
+- predicted decision value and its uncertainty, separate from source reliability;
+- probe ID, exact read-only operation/schema, authorized target/scope and collector;
+- per-call and cumulative query/byte/concurrency/time budgets;
+- source identity, failure-domain and freshness references;
+- acquisition privacy cost and expected operational externality;
+- independent observation receipt and separate probe-impact receipt;
+- predicted versus realized decision-risk reduction;
+- explicit stop, abstain and human-escalation conditions.
+
+A positive EVSI estimate is not permission to probe. A probe returning no data is not proof that acquisition stopped; missing impact evidence is unknown, not zero. Only catalogued read-only probes are eligible in v0.1; write-capable, mixed, unknown or unbounded operations are rejected. A probe result cannot authorize remediation.
+
+#### Decision-aware acquisition benchmark
+
+Compare, on the same frozen scenarios and resource budgets:
+1. random eligible probe;
+2. cheapest-first;
+3. entropy-per-cost / point-EIG;
+4. Platform #185 risk-adjusted EVSI reference;
+5. Symthaea expected EVSI;
+6. Symthaea lower-tail/worst-case EVSI or minimax regret;
+7. decision-aware selection with independently measured probe-impact penalty;
+8. no-probe and fixed-runbook controls.
+
+Report predicted EVSI calibration, realized decision-risk reduction, worst-case/lower-tail regret, useful-observation yield, duplicate/correlated evidence over-credit, probe latency/cost/privacy, probe-induced service degradation, budget overruns, timeout reconciliation, and correct stop/abstain/escalate decisions separately. No composite score may trade a probe-safety or authority failure against decision value.
+
 ## 6. Separate industry tracks
 
 These are distinct application profiles, not one leaderboard.
