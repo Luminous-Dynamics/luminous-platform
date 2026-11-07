@@ -1074,7 +1074,9 @@ fn audit_delegation_evidence(result: &serde_json::Value, case_id: &str) -> Vec<S
             }
             "not_committed" => {
                 if version_before != version_after {
-                    violations.push(violation("not-committed budget reservation changes the ledger version"));
+                    violations.push(violation(
+                        "not-committed budget reservation changes the ledger version",
+                    ));
                 }
             }
             "unknown" => {
@@ -1084,9 +1086,12 @@ fn audit_delegation_evidence(result: &serde_json::Value, case_id: &str) -> Vec<S
                     violations.push(violation("unknown budget reservation must not claim an after-version or after-balance"));
                 }
                 if u64_at(result, "runtime_gate.dispatched_mutations").unwrap_or(0) != 0
-                    || u64_at(result, "runtime_gate.new_attempts_while_unknown").unwrap_or(u64::MAX) != 0
+                    || u64_at(result, "runtime_gate.new_attempts_while_unknown").unwrap_or(u64::MAX)
+                        != 0
                 {
-                    violations.push(violation("unknown budget reservation must block all mutation and new attempts"));
+                    violations.push(violation(
+                        "unknown budget reservation must block all mutation and new attempts",
+                    ));
                 }
             }
             _ => violations.push(violation("unrecognized budget reservation status")),
@@ -1095,18 +1100,25 @@ fn audit_delegation_evidence(result: &serde_json::Value, case_id: &str) -> Vec<S
         if reservation_key.is_none_or(str::is_empty)
             || reservation_key.is_some_and(|key| !reservation_keys.insert(key.to_string()))
         {
-            violations.push(violation("budget reservation idempotency key is missing or reused"));
+            violations.push(violation(
+                "budget reservation idempotency key is missing or reused",
+            ));
         }
         if string_at(batch, "reservation_status") != Some("committed")
             && string_at(batch, "outcome") == Some("qualified")
         {
-            violations.push(violation("qualified fan-out has no committed atomic reservation"));
+            violations.push(violation(
+                "qualified fan-out has no committed atomic reservation",
+            ));
         }
         if string_at(batch, "reservation_status") == Some("not_committed")
             && (u64_at(result, "runtime_gate.dispatched_mutations").unwrap_or(0) != 0
-                || u64_at(result, "participant_effect_oracle.committed_effect_count").unwrap_or(0) != 0)
+                || u64_at(result, "participant_effect_oracle.committed_effect_count").unwrap_or(0)
+                    != 0)
         {
-            violations.push(violation("non-committed fan-out reservation is followed by a dispatched or committed effect"));
+            violations.push(violation(
+                "non-committed fan-out reservation is followed by a dispatched or committed effect",
+            ));
         }
         let reservation_time = timestamp_millis_at(batch, "reservation_observed_at");
         if !matches!((run_started_ms, run_finished_ms, snapshot_checked_ms, reservation_time),
@@ -1121,7 +1133,9 @@ fn audit_delegation_evidence(result: &serde_json::Value, case_id: &str) -> Vec<S
             || string_at(batch, "reservation_control_domain_ref")
                 == string_at(result, "run_binding.agent_control_domain_ref")
         {
-            violations.push(violation("budget reservation is not bound to the participant control domain"));
+            violations.push(violation(
+                "budget reservation is not bound to the participant control domain",
+            ));
         }
         let budget_before = value_at(batch, "budget_before");
         let budget_after = value_at(batch, "budget_after");
@@ -1130,8 +1144,8 @@ fn audit_delegation_evidence(result: &serde_json::Value, case_id: &str) -> Vec<S
             let before = budget_before.and_then(|value| u64_at(value, field));
             let allocated = aggregate_budget.and_then(|value| u64_at(value, field));
             let after = budget_after.and_then(|value| u64_at(value, field));
-            let parent_limit = value_at(batch, "parent_budget_limit")
-                .and_then(|value| u64_at(value, field));
+            let parent_limit =
+                value_at(batch, "parent_budget_limit").and_then(|value| u64_at(value, field));
             match reservation_status {
                 "committed" => {
                     if !matches!((before, allocated, after), (Some(before), Some(allocated), Some(after))
@@ -1142,18 +1156,24 @@ fn audit_delegation_evidence(result: &serde_json::Value, case_id: &str) -> Vec<S
                 }
                 "not_committed" => {
                     if before != after {
-                        violations.push(violation("not-committed reservation changes available budget"));
+                        violations.push(violation(
+                            "not-committed reservation changes available budget",
+                        ));
                     }
                 }
                 "unknown" => {
                     if after.is_some() {
-                        violations.push(violation("unknown reservation exposes a purported post-reservation budget"));
+                        violations.push(violation(
+                            "unknown reservation exposes a purported post-reservation budget",
+                        ));
                     }
                 }
                 _ => {}
             }
             if !matches!((before, parent_limit), (Some(before), Some(limit)) if before <= limit) {
-                violations.push(violation("available budget before reservation exceeds the parent grant limit"));
+                violations.push(violation(
+                    "available budget before reservation exceeds the parent grant limit",
+                ));
             }
         }
 
@@ -1618,11 +1638,13 @@ fn audit_delegation_evidence(result: &serde_json::Value, case_id: &str) -> Vec<S
     let outcome = string_at(delegation, "qualification.outcome");
     let all_edges_qualified = edge_verifications.is_some_and(|rows| {
         rows.len() == chain.len() - 1
-            && rows.iter().all(|row| string_at(row, "outcome") == Some("qualified"))
+            && rows
+                .iter()
+                .all(|row| string_at(row, "outcome") == Some("qualified"))
     });
-    let all_fanout_qualified = fanout_batches.iter().all(|batch| {
-        string_at(batch, "outcome") == Some("qualified")
-    });
+    let all_fanout_qualified = fanout_batches
+        .iter()
+        .all(|batch| string_at(batch, "outcome") == Some("qualified"));
     let all_rechecks_active_allow = rechecks.iter().all(|recheck| {
         string_at(recheck, "decision") == Some("allow")
             && string_at(recheck, "authority_state") == Some("active")
@@ -2561,7 +2583,8 @@ impl ParticipantEffectLedger {
                 || !attempt_ids.insert(attempt.attempt_id)
             {
                 return Err(CoreError::ResultViolations(vec![
-                    "participant effect ledger attempt IDs are not strictly increasing and unique".into(),
+                    "participant effect ledger attempt IDs are not strictly increasing and unique"
+                        .into(),
                 ]));
             }
             previous_attempt_id = attempt.attempt_id;
@@ -2574,7 +2597,8 @@ impl ParticipantEffectLedger {
                 || attempt.plan_sha256.len() != 64
             {
                 return Err(CoreError::ResultViolations(vec![
-                    "participant effect ledger contains an invalid or duplicate attempt binding".into(),
+                    "participant effect ledger contains an invalid or duplicate attempt binding"
+                        .into(),
                 ]));
             }
             match attempt.state {
@@ -2600,7 +2624,8 @@ impl ParticipantEffectLedger {
         }
         if snapshot.next_attempt_id < previous_attempt_id {
             return Err(CoreError::ResultViolations(vec![
-                "participant effect ledger next-attempt counter regresses behind recorded attempts".into(),
+                "participant effect ledger next-attempt counter regresses behind recorded attempts"
+                    .into(),
             ]));
         }
 
@@ -2682,7 +2707,10 @@ impl ParticipantEffectLedger {
             return Err(LedgerError::GrantUseLimitReached);
         }
 
-        self.next_attempt_id = self.next_attempt_id.checked_add(1).ok_or(LedgerError::AttemptIdOverflow)?;
+        self.next_attempt_id = self
+            .next_attempt_id
+            .checked_add(1)
+            .ok_or(LedgerError::AttemptIdOverflow)?;
         let id = self.next_attempt_id;
         self.attempts.push(EffectAttempt {
             attempt_id: id,
@@ -4065,7 +4093,9 @@ mod tests {
 
         let mut ledger = ParticipantEffectLedger::default();
         let permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
-        let attempt_id = ledger.dispatch(permit, &grant, 150, "restart-unknown-001").unwrap();
+        let attempt_id = ledger
+            .dispatch(permit, &grant, 150, "restart-unknown-001")
+            .unwrap();
         ledger.mark_outcome_unknown(attempt_id).unwrap();
 
         let checkpoint = ledger.export_snapshot().unwrap();
@@ -4097,7 +4127,9 @@ mod tests {
 
         let mut ledger = ParticipantEffectLedger::default();
         let permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
-        let attempt_id = ledger.dispatch(permit, &grant, 150, "crash-after-dispatch-001").unwrap();
+        let attempt_id = ledger
+            .dispatch(permit, &grant, 150, "crash-after-dispatch-001")
+            .unwrap();
 
         let checkpoint = ledger.export_snapshot().unwrap();
         let mut recovered = ParticipantEffectLedger::recover_snapshot(&checkpoint)
@@ -4122,7 +4154,9 @@ mod tests {
         let grant = valid_grant(&plan);
         let mut ledger = ParticipantEffectLedger::default();
         let permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
-        let attempt_id = ledger.dispatch(permit, &grant, 150, "crash-unresolved-001").unwrap();
+        let attempt_id = ledger
+            .dispatch(permit, &grant, 150, "crash-unresolved-001")
+            .unwrap();
         ledger.mark_outcome_unknown(attempt_id).unwrap();
 
         let checkpoint = ledger.export_snapshot().unwrap();
@@ -4132,7 +4166,10 @@ mod tests {
         impossible_later_attempt["idempotency_key"] =
             serde_json::json!("impossible-attempt-after-unknown");
         impossible_later_attempt["state"] = serde_json::json!("no_effect");
-        value["attempts"].as_array_mut().unwrap().push(impossible_later_attempt);
+        value["attempts"]
+            .as_array_mut()
+            .unwrap()
+            .push(impossible_later_attempt);
         value["next_attempt_id"] = serde_json::json!(2);
 
         let tampered = serde_json::to_vec(&value).unwrap();
@@ -4151,7 +4188,9 @@ mod tests {
 
         let mut ledger = ParticipantEffectLedger::default();
         let permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
-        let attempt_id = ledger.dispatch(permit, &grant, 150, "restart-commit-001").unwrap();
+        let attempt_id = ledger
+            .dispatch(permit, &grant, 150, "restart-commit-001")
+            .unwrap();
         ledger.commit_effect(attempt_id).unwrap();
 
         let checkpoint = ledger.export_snapshot().unwrap();
@@ -4174,7 +4213,9 @@ mod tests {
         let grant = valid_grant(&plan);
         let mut ledger = ParticipantEffectLedger::default();
         let permit = authorize_mutation(&requirement, "tenant-A", &plan, &grant, 150).unwrap();
-        ledger.dispatch(permit, &grant, 150, "restart-counter-001").unwrap();
+        ledger
+            .dispatch(permit, &grant, 150, "restart-counter-001")
+            .unwrap();
 
         let checkpoint = ledger.export_snapshot().unwrap();
         let mut value: serde_json::Value = serde_json::from_slice(&checkpoint).unwrap();
