@@ -40,7 +40,11 @@
         "target_ref",
         "target_digest",
         "topology_epoch",
-        "topology_digest"
+        "topology_digest",
+        "intent_ref",
+        "intent_digest",
+        "purpose_ref",
+        "purpose_digest"
       ],
       "properties": {
         "episode_ref": {
@@ -76,6 +80,24 @@
           "minimum": 0
         },
         "topology_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "intent_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "intent_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "purpose_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "purpose_digest": {
           "type": "string",
           "pattern": "^sha256:[a-f0-9]{64}$"
         }
@@ -213,7 +235,9 @@
         "target_digest",
         "data_scope_commitment",
         "privacy_class",
-        "expected_observation_fields"
+        "expected_observation_fields",
+        "requested_purpose_ref",
+        "result_sink_class"
       ],
       "properties": {
         "catalog_snapshot_digest": {
@@ -274,6 +298,14 @@
             "minLength": 1,
             "maxLength": 128
           }
+        },
+        "requested_purpose_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "result_sink_class": {
+          "const": "principal_authorized_session"
         }
       },
       "additionalProperties": false
