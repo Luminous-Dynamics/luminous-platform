@@ -293,7 +293,12 @@ mod tests {
             Err(PredicateError::InvalidFieldPath)
         );
         assert_eq!(
-            evaluate_predicate(&payload(), "service.health.state", "regex", Some(&Value::Null)),
+            evaluate_predicate(
+                &payload(),
+                "service.health.state",
+                "regex",
+                Some(&Value::Null)
+            ),
             Err(PredicateError::UnsupportedOperator("regex".into()))
         );
     }
