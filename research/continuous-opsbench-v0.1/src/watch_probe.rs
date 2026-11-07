@@ -549,7 +549,11 @@ pub fn run_scripted_episode<P: ProbePolicy>(
         .collect();
 
     let selected_probe_id = match policy.select_probe(&wake, &eligible_probe_ids) {
-        Some(probe_id) if eligible_probe_ids.iter().any(|eligible| eligible == &probe_id) => {
+        Some(probe_id)
+            if eligible_probe_ids
+                .iter()
+                .any(|eligible| eligible == &probe_id) =>
+        {
             probe_id
         }
         Some(probe_id) => {
