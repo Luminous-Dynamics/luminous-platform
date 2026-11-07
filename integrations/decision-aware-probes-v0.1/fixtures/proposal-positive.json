@@ -86,5 +86,37 @@
     "abstain_on_missing_required_provenance": true,
     "escalate_when_impact_unknown": true,
     "max_additional_probe_calls": 1
+  },
+  "context": {
+    "sol_atlas": {
+      "asset_context_ref": "opaque:sol-atlas-asset-context-001",
+      "asset_context_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "spatial_projection_ref": "opaque:sol-atlas-spatial-projection-001",
+      "spatial_projection_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "topology_epoch": 7,
+      "topology_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "source_revision_ref": "opaque:sol-atlas-source-revision-001",
+      "valid_time_start": "2026-11-07T07:00:00Z",
+      "valid_time_end": "2026-11-07T07:05:00Z"
+    },
+    "mycelix": {
+      "dependency_graph_ref": "opaque:mycelix-dependency-graph-001",
+      "dependency_graph_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+      "assurance_profile_ref": "opaque:mycelix-assurance-profile-001",
+      "assurance_profile_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+      "assessment_ref": "opaque:mycelix-assurance-assessment-001",
+      "assessment_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+    },
+    "symtropy": {
+      "simulation_ref": "opaque:symtropy-probe-impact-simulation-001",
+      "simulation_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+      "model_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+      "parameter_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+      "initial_state_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+      "scenario_set_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "output_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "valid_until": "2026-11-07T07:10:00Z",
+      "claim_ceiling": "simulation_only"
+    }
   }
 }
