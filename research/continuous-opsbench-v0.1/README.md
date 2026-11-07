@@ -89,11 +89,11 @@ The additive `src/watch_probe.rs` module provides a small scripted reference epi
 - source-sequenced events with duplicate and gap handling;
 - a policy that proposes only an existing catalog entry ID;
 - exact-scope, read-only probe admission;
-- a source-owned observation and a separate impact observation;
-- explicit unknown for a collector timeout with continuing work or a missing impact record;
+- a collector-owned observation (which may come from a different source than the watch event) and a separate impact observation;
+- observation freshness constrained to after the triggering wake; explicit unknown for a collector timeout with continuing work or a missing impact record;
 - evaluator-only pre/post decision loss, scored after evidence acquisition.
 
-The module includes nine deterministic unit tests for a valid positive episode, revocation during dormancy, duplicate delivery, sequence gaps, write-capable probe rejection, unknown impact, independence-domain collision, timeout with continuing work, quiet expiry/no-match behavior, and wrong-tenant events.
+The module includes eleven deterministic unit tests for a valid positive episode, revocation during dormancy, duplicate delivery, sequence gaps, write-capable probe rejection, unknown impact, independence-domain collision, timeout with continuing work, quiet expiry/no-match behavior, and wrong-tenant events.
 
 **Claim ceiling:** this is a one-probe, in-process scripted conformance reference. It does not consume the production CloudEvents/inbox/outbox path, verify cryptographic source authenticity, enforce live Xenia revocation, execute a real collector, establish process isolation between policy and evaluator, provide multi-probe stopping optimization, or establish production event-delivery guarantees. It does not replace Platform #309; it is the first small code seam for it. The evaluator's hidden truth is supplied to the harness and is not passed as a policy method argument, but a future process-separated runner is required to enforce a true information-flow boundary.
 
