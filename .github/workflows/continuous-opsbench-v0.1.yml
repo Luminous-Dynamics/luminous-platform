@@ -31,7 +31,7 @@ jobs:
       - name: Install pinned Rust toolchain
         run: |
           set -euo pipefail
-          rustup toolchain install 1.96.0 --profile minimal --component clippy
+          rustup toolchain install 1.96.0 --profile minimal --component clippy --component rustfmt
           rustup override set 1.96.0
       - name: Validate benchmark schemas are valid JSON
         run: |
@@ -42,6 +42,8 @@ jobs:
               json.loads(path.read_text(encoding="utf-8"))
               print(f"valid JSON: {path}")
           PY
+      - name: Check Rust formatting
+        run: rustfmt --edition 2021 --check research/continuous-opsbench-v0.1/src/watch_probe.rs
       - name: Run dependency-locked tests
         run: cargo test --manifest-path research/continuous-opsbench-v0.1/Cargo.toml --locked
       - name: Run Clippy with warnings denied

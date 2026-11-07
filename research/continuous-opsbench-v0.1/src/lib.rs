@@ -6,6 +6,7 @@
 
 pub mod stability;
 pub mod temporal;
+pub mod watch_probe;
 
 use std::collections::{BTreeMap, BTreeSet};
 

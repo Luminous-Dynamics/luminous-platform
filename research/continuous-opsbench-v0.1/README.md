@@ -79,3 +79,29 @@ The reference plant now includes three deterministic policies:
 - `PersistentHysteresisCapacityController`: queue-aware debounce; overload must persist for N delivered observations before scale-up, while both failure and queue signals must remain healthy for M observations before scale-down. An intermediate observation breaks the streak.
 
 All policies consume the same `PlantObservation` stream and share the same action budget, causal actuation delay, and deterministic arbitration. The paired noise fixture makes bang-bang repeatedly reverse its setpoint, while two-threshold hysteresis scales once and holds. The persistence-filtered controller additionally refuses to act on alternating single-sample spikes. Tests assert that all these differences are evaluated against the same plant truth and SLO contract; these are synthetic policy comparisons, not production autoscaling results.
+
+
+## Deterministic watch-to-probe episode v0.1
+
+The additive `src/watch_probe.rs` module provides a small scripted reference episode that composes:
+- a bounded watch bound to tenant, target, purpose, source and expiry;
+- an authority snapshot rechecked at event delivery and probe admission;
+- source-sequenced events with duplicate, event-ID collision, gap, future-delivery, watch-start and identity handling;
+- a policy that proposes only an existing catalog entry ID;
+- exact-scope, read-only probe admission;
+- a collector-owned observation (which may come from a different source than the watch event) and a separate impact observation;
+- observation/impact receipts bound to exact probe, operation, tenant, target, purpose and time window, with observation freshness constrained to after the triggering wake; explicit unknown for a collector timeout with continuing work or a missing impact record;
+- evaluator-only pre/post decision loss, scored after evidence acquisition.
+
+The module includes eighteen deterministic unit tests for a valid positive episode, revocation during dormancy, duplicate delivery, sequence gaps, write-capable probe rejection, unknown impact, independence-domain collision, timeout with continuing work, quiet expiry/no-match behavior, and wrong-tenant events.
+
+**Claim ceiling:** this is a one-probe, in-process scripted conformance reference. It does not consume the production CloudEvents/inbox/outbox path, verify cryptographic source authenticity, enforce live Xenia revocation, execute a real collector, establish process isolation between policy and evaluator, provide multi-probe stopping optimization, or establish production event-delivery guarantees. It does not replace Platform #309; it is the first small code seam for it. The evaluator's hidden truth is supplied to the harness and is not passed as a policy method argument, but a future process-separated runner is required to enforce a true information-flow boundary.
+
+Run the complete crate locally:
+
+```sh
+cargo test --locked
+cargo clippy --all-targets --locked -- -D warnings
+```
+
+No local or CI result is claimed by this change. Exact-head qualification is required before the code is treated as a qualified implementation slice.
