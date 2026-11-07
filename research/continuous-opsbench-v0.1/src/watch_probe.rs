@@ -550,7 +550,11 @@ pub fn run_scripted_episode<P: ProbePolicy>(
         .collect();
 
     let selected_probe_id = match policy.select_probe(&wake, &eligible_probe_ids) {
-        Some(probe_id) if eligible_probe_ids.iter().any(|eligible| eligible == &probe_id) => {
+        Some(probe_id)
+            if eligible_probe_ids
+                .iter()
+                .any(|eligible| eligible == &probe_id) =>
+        {
             probe_id
         }
         _ => {
@@ -834,7 +838,6 @@ mod tests {
         .unwrap()
     }
 
-
     #[derive(Default)]
     struct RecordingProbePolicy {
         selected_probe_id: Option<String>,
@@ -871,7 +874,13 @@ mod tests {
         write_capable.probe_id = "probe-write".into();
         write_capable.read_only = false;
 
-        let catalog = vec![wrong_tenant, wrong_target, wrong_purpose, write_capable, valid.clone()];
+        let catalog = vec![
+            wrong_tenant,
+            wrong_target,
+            wrong_purpose,
+            write_capable,
+            valid.clone(),
+        ];
         let mut policy = RecordingProbePolicy {
             selected_probe_id: Some(valid.probe_id.clone()),
             offered_probe_ids: Vec::new(),
@@ -886,7 +895,8 @@ mod tests {
             CollectionOutcome::Completed(Box::new(observation())),
             impact(),
             &truth(),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(policy.offered_probe_ids, vec![valid.probe_id]);
         assert_eq!(result.status, EpisodeStatus::Completed);
@@ -897,10 +907,7 @@ mod tests {
         let mut second = event(11, "queue_pressure", true);
         second.event_id = event(10, "irrelevant", false).event_id;
         let result = run(
-            &[
-                event(10, "irrelevant", false),
-                second,
-            ],
+            &[event(10, "irrelevant", false), second],
             &authority(),
             catalog_entry(true),
             CollectionOutcome::Completed(Box::new(observation())),
