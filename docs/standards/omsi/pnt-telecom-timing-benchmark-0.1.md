@@ -153,6 +153,7 @@ No composite score may allow a provenance, integrity, false-continuity or premat
 ## 10. Current industry comparison
 
 - Receiver-native products (e.g. Septentrio AIM+ and NovAtel GRIT) own receiver-level RF/PNT observations and mitigation. Consume their output; do not claim to replace their hardware/firmware.
+- **CISA PNT Integrity Library** is an adjacent GNSS-integrity algorithm comparator, not a PTP timing analyzer. Its current development README describes multi-antenna/AoA and range-position checks, AGC/acquisition, navigation-data checks, static-position/position-jump, position-velocity consistency, clock-jump and C/N0 consistency checks, with weighted assurance blending. Compare its outputs only on compatible receiver data and preserve the fact that its aggregate assurance level is not a substitute for independent physical truth. https://github.com/cisagov/PNT-Integrity/blob/develop/pnt_integrity/pnt_integrity/README.md
 - Telecom clock/NMS vendors expose clock state and monitoring data. Preserve native semantics and interoperate rather than duplicating their servo or network-management plane.
 - Timing analyzers (e.g. Calnex and Keysight) provide independent measurement baselines. Their physical measurements are not replaceable by PTP self-reported counters or AI confidence.
 - linuxptp is a transparent open implementation baseline for compatible protocol behavior, not a physical reference clock.
