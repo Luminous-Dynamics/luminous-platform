@@ -1,3 +1,5 @@
+mod predicate;
+
 use chrono::{DateTime, FixedOffset};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -375,6 +377,19 @@ fn audit_pair(watch_raw: &str, result_raw: &str, label: &str) -> Result<(), Stri
 }
 
 fn run_all() -> Result<(), String> {
+    let sample_payload = serde_json::json!({"service": {"health": {"state": "healthy"}}});
+    if predicate::evaluate_predicate(
+        &sample_payload,
+        "service.health.state",
+        "equals",
+        Some(&Value::String("healthy".into())),
+    )
+    .map_err(|error| format!("reference predicate evaluator: {error:?}"))?
+        != predicate::PredicateOutcome::Match
+    {
+        return Err("reference predicate evaluator failed its positive control".into());
+    }
+
     audit_watch(WATCH_POSITIVE, "watch-positive")?;
     validate(WATCH_PURPOSE, WATCH_SCHEMA, "watch-purpose-mismatch")?;
     if audit_watch(WATCH_PURPOSE, "watch-purpose-mismatch").is_ok() {
