@@ -172,6 +172,37 @@ Reference material:
 
 The integration decision must be recorded per exact device, version, deployment mode and recovery method. Tool availability alone does not qualify a device lifecycle.
 
+## 5.1 Competitive boundary and differentiation
+
+The product must not claim that local edge execution, offline operation, fleet updates or rollback are unique Luminous capabilities.
+
+| Existing category / product | Existing capability to respect | Luminous response |
+|---|---|---|
+| NixOS deployment tools (Bento, Colmena, comin, deploy-rs, Morph, etc.) | Reproducible host realization and deployment across NixOS fleets | Choose the simplest compatible tool for each target; differentiate in lifecycle evidence, cross-vendor operations and verified recovery, not a new deploy engine |
+| Mender | Embedded Linux OTA, A/B rootfs updates, rollback after failed boot and standalone deployment without a server | Compose where board/partition integration is suitable; add source/board/firmware evidence and independent application/site postcondition verification |
+| RAUC | Signed bundle/update flows and bootloader-integrated slot handling for embedded Linux | Reuse where target integration fits; avoid duplicating update signing and slot/rollback logic |
+| AWS IoT Greengrass v2 | Local software components, messaging, local data processing, fleet management, and operation with intermittent connectivity | Treat as a capable cloud-connected alternative; differentiate through sovereign/local-first deployment composition and vendor-neutral evidence/authority/recovery contracts |
+| Monitoring/inventory products | Mature metrics, alerts, device inventory and topology views | Ingest their data with loss-aware adapters; do not replace them without a matched migration case |
+
+Reference facts as of 7 November 2026:
+- AWS says Greengrass v1 support ended 1 June 2026 and recommends v2 migration; Greengrass v2 is its current runtime: https://aws.amazon.com/greengrass/ and https://docs.aws.amazon.com/greengrass/.
+- AWS Greengrass v2 supports local processing and device messaging with intermittent or absent cloud connectivity: https://docs.aws.amazon.com/greengrass/latest/developerguide/what-is-iot-greengrass.html.
+- Mender describes dual A/B root filesystem updates and rollback if the updated image fails to boot: https://mender.io/engineers/how-mender-works.
+- Mender supports standalone deployments without a Mender Server, including local/USB-delivered artifacts: https://docs.mender.io/artifact-creation/standalone-deployment.
+- NixOS deployment tooling remains a plural ecosystem; the official wiki lists Bento, Colmena, comin, deploy-rs and others, and labels NixOps unmaintained: https://wiki.nixos.org/wiki/Applications.
+
+### What Luminous should own
+
+The defensible differentiator is **evidence-qualified cross-tool lifecycle assurance**:
+1. Preserve exactly which device, board revision, firmware, configuration, sensor calibration and source observations justify a diagnosis.
+2. Distinguish measured, reported, inferred, simulated, stale and unknown state across providers.
+3. Keep AI diagnosis separate from operator authority and effect execution.
+4. Verify application/service postconditions independently after an update, repair or recovery; a successful boot or updater status alone does not prove the service is healthy.
+5. Preserve local continuity and auditable receipts during network/platform outages, then reconcile without silently rewriting source chronology.
+6. Quantify operator effort and verified recovery cost against the existing toolchain.
+
+Do not claim “offline-first” or “rollback” superiority without a matched comparison against Greengrass v2, Mender/RAUC and the chosen NixOS deployment tool on the same hardware and failure scenarios.
+
 ## 6. First demonstrator and scope
 
 Use one isolated lab site with:
