@@ -277,6 +277,29 @@ The edge measurement envelope binds exact board/revision, sensor part/revision, 
 
 Implementation ownership and benchmarks are tracked in [OMSI-EDGE-SENSOR-001 #300](https://github.com/Luminous-Dynamics/luminous-platform/issues/300). The first deployable platform slice is tracked in [LP-PRODUCT-001 #301](https://github.com/Luminous-Dynamics/luminous-platform/issues/301).
 
+## 8.2 Open-set RF awareness and edge AI boundary
+
+General receive-side RF signal-family awareness is an adjacent capability, not a replacement for PNT integrity monitoring. Symthaea tracks it separately in EMSR-RF-OPENSET-001 #10893, with RF-RPL (2026) as a scarce-label/open-set comparator. A model output may be known-class, unknown, ambiguous or indeterminate; unknown must not be converted into a malicious-emitter or cause label. The open-set RF benchmark does not establish the validity of a GNSS position/time solution.
+
+The platform must distinguish:
+- ESP32-class auxiliary edge nodes (#300);
+- a separately qualified RF acquisition front end and sample-clock/calibration chain;
+- AI applied to recorded RF features/windows (#10893);
+- ESP (extrasensory perception) as a separate, unestablished scientific hypothesis (#10843).
+
+No AIA/ESP output may be used as PNT evidence, safety input or operational authority. ESP32 edge nodes are not assumed to provide GNSS raw-IF/IQ capture.
+
+## 8.3 PNT platform-level comparators
+
+PNT comparison must include platform/service offerings, not only receiver hardware:
+
+- **SESAR real-time GNSS monitoring/interference solutions** provide area/route monitoring, receiver/sentinel feeds, GNSS performance indicators, A-RAIM protection-level estimates and API/SWIM integration. This is a direct service-monitoring/API comparator: https://sesarju.paddlecms.net/sesar-solutions/real-time-gnss-monitoring-and-interference
+- **CISA PNT Integrity Library** is a modular GNSS PNT manipulation-detection framework designed for integration into receiver and timing-server OEM products: https://github.com/cisagov/PNT-Integrity
+- **PNTMAP** provides event/API/webhook intelligence and explicitly distinguishes ADS-B-derived integrity anomaly monitoring from direct RF sensing and live validation: https://pntmap.co.uk/api-access
+- **Receiver-native outputs** from compatible GNSS/PNT equipment remain the strongest hardware-specific operational baseline where accessible.
+
+Luminous must not claim superiority by offering a dashboard or API alone. Its proposed differentiation is cross-vendor source provenance, clock/calibration currentness, common-mode and oracle-independence analysis, service-dependency impact, domain-specific degraded operation and independently evidenced recovery. Head-to-head superiority remains unproven until matched data, equipment, baselines and sector thresholds are evaluated.
+
 ## 9. Standards and external references
 
 The profile maintains a version-pinned reference registry per industry track. Candidate reference families include:
