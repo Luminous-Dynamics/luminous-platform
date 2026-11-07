@@ -1,0 +1,147 @@
+name: opsbench external benchmark evidence registry v0.1
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/external-sre-benchmark-crosswalk-v0.1/**"
+      - ".github/workflows/opsbench-benchmark-evidence-v0.1.yml"
+  push:
+    branches: [main]
+    paths:
+      - "benchmarks/external-sre-benchmark-crosswalk-v0.1/**"
+      - ".github/workflows/opsbench-benchmark-evidence-v0.1.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark-evidence:
+    name: External benchmark provenance and metric semantics
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Validate benchmark registry schema and snapshot
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/benchmark-evidence-venv
+          /tmp/benchmark-evidence-venv/bin/python -m pip install --disable-pip-version-check "jsonschema==4.23.0"
+          /tmp/benchmark-evidence-venv/bin/python - <<'PY'
+          import copy
+          import json
+          from datetime import date
+          from pathlib import Path
+          from jsonschema import Draft202012Validator, ValidationError
+
+          root = Path("benchmarks/external-sre-benchmark-crosswalk-v0.1")
+          schema = json.loads((root / "benchmark-registry.schema.json").read_text(encoding="utf-8"))
+          snapshot = json.loads((root / "snapshot-2026-11-05.json").read_text(encoding="utf-8"))
+          Draft202012Validator.check_schema(schema)
+          validator = Draft202012Validator(schema)
+          validator.validate(snapshot)
+
+          forbidden_keys = {
+              "weighted_sre_score", "overall_sre_score",
+              "cross_benchmark_conversion", "translated_sre_score"
+          }
+
+          def check_semantics(doc):
+              snap_date = date.fromisoformat(doc["snapshot_date"])
+              ids = set()
+              for entry in doc["entries"]:
+                  if entry["benchmark_id"] in ids:
+                      raise ValueError("duplicate benchmark_id")
+                  ids.add(entry["benchmark_id"])
+                  observed = date.fromisoformat(entry["observed_on"])
+                  if observed > snap_date:
+                      raise ValueError("entry observation date is after registry snapshot")
+                  metrics = {}
+                  for metric in entry["metrics"]:
+                      if metric["metric_id"] in metrics:
+                          raise ValueError("duplicate metric_id within benchmark")
+                      metrics[metric["metric_id"]] = metric
+                      if not metric["denominator_definition"].strip():
+                          raise ValueError("empty denominator definition")
+                  for source in entry["sources"]:
+                      if not source["url"].startswith("https://"):
+                          raise ValueError("non-HTTPS source")
+                      retrieved = date.fromisoformat(source["retrieved_on"])
+                      if retrieved > snap_date:
+                          raise ValueError("source retrieval date is after registry snapshot")
+                      if source.get("published_on") is not None:
+                          published = date.fromisoformat(source["published_on"])
+                          if published > snap_date:
+                              raise ValueError("source publication date is after registry snapshot")
+                      if source["capture_status"] == "url_only" and source["content_sha256"] is not None:
+                          raise ValueError("url_only source cannot claim a captured content digest")
+                      if source["capture_status"] == "captured_and_hashed" and source["content_sha256"] is None:
+                          raise ValueError("captured source requires a content digest")
+                  for result in entry["results"]:
+                      metric = metrics.get(result["metric_id"])
+                      if metric is None:
+                          raise ValueError("result references unknown metric_id")
+                      if result["unit"] != metric["unit"]:
+                          raise ValueError("result unit differs from metric unit")
+                      numerator = result["numerator"]
+                      denominator = result["denominator"]
+                      if (numerator is None) != (denominator is None):
+                          raise ValueError("numerator and denominator must be supplied together")
+                      if denominator is not None:
+                          if denominator <= 0 or numerator < 0 or numerator > denominator:
+                              raise ValueError("invalid numerator/denominator")
+                      if result["value_operator"] == "exact" and result["value"] < 0:
+                          raise ValueError("negative exact benchmark result")
+                      if result["value_operator"] == "less_than" and result["value"] <= 0:
+                          raise ValueError("less_than bound must be positive")
+              def walk(value):
+                  if isinstance(value, dict):
+                      for key, child in value.items():
+                          if key in forbidden_keys:
+                              raise ValueError(f"forbidden composite/translated score field: {key}")
+                          walk(child)
+                  elif isinstance(value, list):
+                      for child in value:
+                          walk(child)
+              walk(doc)
+
+          check_semantics(snapshot)
+
+          negative_controls = []
+          bad = copy.deepcopy(snapshot)
+          bad["composite_score"] = 85.0
+          negative_controls.append(("composite score field", bad))
+          bad = copy.deepcopy(snapshot)
+          bad["comparison_policy"]["cross_benchmark_score_translation"] = True
+          negative_controls.append(("cross-benchmark score translation", bad))
+          bad = copy.deepcopy(snapshot)
+          bad["entries"][0]["sources"] = []
+          negative_controls.append(("missing primary source", bad))
+          bad = copy.deepcopy(snapshot)
+          bad["entries"][0]["metrics"][0].pop("denominator_definition")
+          negative_controls.append(("missing denominator semantics", bad))
+          bad = copy.deepcopy(snapshot)
+          bad["entries"][0]["observed_on"] = "2026-11-06"
+          negative_controls.append(("future observation date", bad))
+          bad = copy.deepcopy(snapshot)
+          entry_with_results = next(entry for entry in bad["entries"] if entry["results"])
+          entry_with_results["results"][0]["metric_id"] = "unknown_metric"
+          negative_controls.append(("unknown metric reference", bad))
+          bad = copy.deepcopy(snapshot)
+          bad["entries"][0]["sources"][0]["capture_status"] = "captured_and_hashed"
+          negative_controls.append(("captured source with absent digest", bad))
+
+          for label, candidate in negative_controls:
+              try:
+                  validator.validate(candidate)
+                  check_semantics(candidate)
+              except (ValidationError, ValueError):
+                  continue
+              raise SystemExit(f"unsafe negative control accepted: {label}")
+
+          print(f"benchmark registry schema: valid; entries: {len(snapshot['entries'])}")
+          print(f"result observations: {sum(len(e['results']) for e in snapshot['entries'])}")
+          print(f"negative controls rejected: {len(negative_controls)}/{len(negative_controls)}")
+          PY

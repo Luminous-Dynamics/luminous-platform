@@ -1,0 +1,1753 @@
+{
+  "schema": "opsbench-external-benchmark-registry-v0.1",
+  "snapshot_date": "2026-11-05",
+  "comparison_policy": {
+    "composite_score": false,
+    "cross_benchmark_score_translation": false,
+    "native_scoreboards_unchanged": true,
+    "statement": "Each score retains its own construct, task unit, denominator, evaluator and trial design. Numbers must not be translated or blended across benchmarks without a preregistered matched experiment."
+  },
+  "entries": [
+    {
+      "benchmark_id": "sregym_full",
+      "name": "SREGym",
+      "version": "2026 research benchmark",
+      "publisher": "Middleware Systems Research Group",
+      "evaluation_status": "benchmark_description_only",
+      "observed_on": "2026-11-05",
+      "comparability_group": "sregym_native",
+      "construct_summary": "Live cloud-native SRE benchmark spanning diagnosis and mitigation under injected faults, ambient noise, correlated failures and metastable behavior.",
+      "task_unit": "Native benchmark problem/scenario; report native E2E score on the exact full cohort.",
+      "metrics": [
+        {
+          "metric_id": "e2e_success",
+          "name": "End-to-end diagnosis and mitigation success",
+          "construct": "end_to_end_task_success",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "per_fault",
+          "denominator_definition": "Native scenario cohort; score requires diagnosis and mitigation on the same run.",
+          "evaluator_type": "deterministic",
+          "repeat_design": "Native SREGym scoring; full reproduction required.",
+          "limitations": []
+        }
+      ],
+      "results": [],
+      "scale": {
+        "task_count_description": "Publisher describes 90 realistic SRE problems; no current full-cohort leader score is asserted in this registry.",
+        "tasks": 90,
+        "scenarios": 90,
+        "trajectories": null,
+        "runs_per_model": null,
+        "repeats_per_task": null,
+        "trial_design": "Live cloud-native stack with fault and noise injectors; full native environment and scorer must be pinned.",
+        "average_trajectory_steps": null
+      },
+      "limitations": [
+        "This entry records benchmark scope, not a reproduced result.",
+        "The 90-problem research description is not the same thing as a current runnable source snapshot's built-in problem-ID count."
+      ],
+      "what_not_established": [
+        "A particular agent's success rate.",
+        "Durable participant effect finality.",
+        "Long-horizon customer/business recovery unless measured by a separate verifier."
+      ],
+      "sources": [
+        {
+          "title": "SREGym research publication",
+          "url": "https://msrg.github.io/publications/sregym-a-live-benchmark-for-ai-sre-agents-with-high-fidelity-failure-scenarios/",
+          "source_type": "primary_publication",
+          "retrieved_on": "2026-11-05",
+          "published_on": null,
+          "notes": "Describes 90 realistic problems and correlated/metastable failure classes.",
+          "capture_status": "url_only",
+          "content_sha256": null
+        }
+      ]
+    },
+    {
+      "benchmark_id": "sregym_lite_1004_2026_11_04",
+      "name": "SREGym-Lite leaderboard cohort",
+      "version": "SREGym-Lite-1004 · 17 faults",
+      "publisher": "SREGym",
+      "evaluation_status": "native_live_leaderboard",
+      "observed_on": "2026-11-05",
+      "comparability_group": "sregym_native",
+      "construct_summary": "Native end-to-end diagnosis and mitigation on the currently displayed 17-fault Lite cohort.",
+      "task_unit": "One leaderboard run over the Lite fault cohort; keep TTM and token usage as separate operational-efficiency metrics.",
+      "metrics": [
+        {
+          "metric_id": "e2e_success",
+          "name": "End-to-end success",
+          "construct": "end_to_end_task_success",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "per_run",
+          "denominator_definition": "SREGym-Lite-1004 17-fault cohort; the displayed leaderboard does not expose a repeat-level denominator for each configuration.",
+          "evaluator_type": "deterministic",
+          "repeat_design": "Leaderboard snapshot; do not infer unreported repeats.",
+          "limitations": []
+        },
+        {
+          "metric_id": "time_to_mitigate",
+          "name": "Time to mitigate",
+          "construct": "latency",
+          "unit": "seconds",
+          "scale": "seconds",
+          "aggregation": "per_run",
+          "denominator_definition": "Elapsed time to mitigation for the listed cohort/configuration.",
+          "evaluator_type": "deterministic",
+          "repeat_design": "Leaderboard-reported cohort time.",
+          "limitations": []
+        },
+        {
+          "metric_id": "token_usage",
+          "name": "Token consumption",
+          "construct": "token_cost",
+          "unit": "tokens",
+          "scale": "tokens",
+          "aggregation": "per_run",
+          "denominator_definition": "Total reported tokens for the listed cohort/configuration.",
+          "evaluator_type": "not_applicable",
+          "repeat_design": "Leaderboard-reported token count.",
+          "limitations": []
+        }
+      ],
+      "results": [
+        {
+          "configuration": "Radar + Claude Code / Claude Opus 5.5 medium",
+          "metric_id": "e2e_success",
+          "value": 100,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Rank 1 displayed configuration on the 17-fault cohort.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": "Raw repeat count not shown in the leaderboard entry."
+        },
+        {
+          "configuration": "Radar + Claude Code / Claude Opus 5.5 medium",
+          "metric_id": "time_to_mitigate",
+          "value": 65.9,
+          "unit": "seconds",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Rank 1 displayed configuration.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Radar + Claude Code / Claude Opus 5.5 medium",
+          "metric_id": "token_usage",
+          "value": 554000,
+          "unit": "tokens",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Rank 1 displayed configuration; 554K display rounded.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Devin Oncall / Claude Opus 5.5 high",
+          "metric_id": "e2e_success",
+          "value": 100,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Rank 2 displayed configuration on the 17-fault cohort.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": "Raw repeat count not shown in the leaderboard entry."
+        },
+        {
+          "configuration": "Devin Oncall / Claude Opus 5.5 high",
+          "metric_id": "time_to_mitigate",
+          "value": 141,
+          "unit": "seconds",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Rank 2 displayed configuration.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Devin Oncall / Claude Opus 5.5 high",
+          "metric_id": "token_usage",
+          "value": 1240000,
+          "unit": "tokens",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Rank 2 displayed configuration; 1.24M display rounded.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "CloudThinker / GPT-6 Astra low",
+          "metric_id": "e2e_success",
+          "value": 100,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Rank 3 displayed configuration on the 17-fault cohort.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": "Raw repeat count not shown in the leaderboard entry."
+        },
+        {
+          "configuration": "CloudThinker / GPT-6 Astra low",
+          "metric_id": "time_to_mitigate",
+          "value": 342,
+          "unit": "seconds",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Rank 3 displayed configuration.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "CloudThinker / GPT-6 Astra low",
+          "metric_id": "token_usage",
+          "value": 736000,
+          "unit": "tokens",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Rank 3 displayed configuration; 736K display rounded.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        }
+      ],
+      "scale": {
+        "task_count_description": "17 faults in the displayed Lite cohort; multiple agents reach 100% E2E. Full SREGym research describes 90 problems.",
+        "tasks": 17,
+        "scenarios": 17,
+        "trajectories": null,
+        "runs_per_model": null,
+        "repeats_per_task": null,
+        "trial_design": "Live leaderboard cohort snapshot; raw per-scenario repeat counts not exposed in the listing.",
+        "average_trajectory_steps": null
+      },
+      "limitations": [
+        "Several configurations are at 100% E2E, so this small Lite cohort is saturated as a differentiator.",
+        "Equal E2E scores conceal large time and token differences.",
+        "Configuration differences include models, harnesses and inference settings."
+      ],
+      "what_not_established": [
+        "Performance on full SREGym.",
+        "Statistical uncertainty across repeated runs.",
+        "Production safety, authority enforcement or durable effect finality."
+      ],
+      "sources": [
+        {
+          "title": "SREGym live leaderboard",
+          "url": "https://www.sregym.com/leaderboard",
+          "source_type": "official_leaderboard",
+          "retrieved_on": "2026-11-05",
+          "published_on": null,
+          "notes": "Live leaderboard retrieved 2026-11-05; SREGym-Lite-1004 has 17 faults. Five displayed configurations are at 100% E2E; token and time usage differ materially.",
+          "capture_status": "url_only",
+          "content_sha256": null
+        }
+      ]
+    },
+    {
+      "benchmark_id": "sre_marathon_2026",
+      "name": "SRE-Marathon",
+      "version": "2026 paper",
+      "publisher": "SRE-Marathon authors",
+      "evaluation_status": "native_paper_result",
+      "observed_on": "2026-11-05",
+      "comparability_group": "sre_marathon_native",
+      "construct_summary": "Continuous long-horizon SRE operation with overlapping faults, persistent workspace, periodic agent invocation and offline deterministic scoring.",
+      "task_unit": "Continuous run with seeded overlapping faults; score rewards ordered correlation, localization and repair progress.",
+      "metrics": [
+        {
+          "metric_id": "marathon_score",
+          "name": "Marathon-Score",
+          "construct": "end_to_end_task_success",
+          "unit": "score_out_of_100",
+          "scale": "0-100 points",
+          "aggregation": "publisher_reported",
+          "denominator_definition": "Composite native Marathon-Score per continuous run; not a percentage of faults repaired.",
+          "evaluator_type": "deterministic",
+          "repeat_design": "Paper reports best of ten evaluated methods; run-level uncertainty details must be reproduced.",
+          "limitations": [
+            "Do not equate 41.3/100 with percentage success."
+          ]
+        }
+      ],
+      "results": [
+        {
+          "configuration": "Best of 10 evaluated methods",
+          "metric_id": "marathon_score",
+          "value": 41.3,
+          "unit": "score_out_of_100",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Best reported method; three applications and approximately sixty injected faults per run.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": "Paper reports 10 methods; do not treat methods as repeated independent trials."
+        }
+      ],
+      "scale": {
+        "task_count_description": "Three applications, approximately 60 faults per continuous run.",
+        "tasks": null,
+        "scenarios": null,
+        "trajectories": null,
+        "runs_per_model": null,
+        "repeats_per_task": null,
+        "trial_design": "Seeded production-calibrated fault schedules; continuous two-zone Kubernetes deployment; offline scorer.",
+        "average_trajectory_steps": null
+      },
+      "limitations": [
+        "Best-of-ten method score is a benchmark-specific composite.",
+        "Paper describes correlation/localization more common than repair while faults remain active."
+      ],
+      "what_not_established": [
+        "Generic production SRE safety.",
+        "Participant-side effect durability or customer/business correctness."
+      ],
+      "sources": [
+        {
+          "title": "SRE-Marathon arXiv paper",
+          "url": "https://arxiv.org/abs/2609.33023",
+          "source_type": "primary_publication",
+          "retrieved_on": "2026-11-05",
+          "published_on": "2026-09-26",
+          "notes": "Published 2026-09-26; continuous overlapping-fault benchmark.",
+          "capture_status": "url_only",
+          "content_sha256": null
+        }
+      ]
+    },
+    {
+      "benchmark_id": "enterpriseops_original_2026",
+      "name": "EnterpriseOps-Gym (original paper evaluation)",
+      "version": "ICML 2026 paper",
+      "publisher": "ServiceNow Research / EnterpriseOps-Gym authors",
+      "evaluation_status": "native_paper_result",
+      "observed_on": "2026-11-05",
+      "comparability_group": "enterpriseops_original",
+      "construct_summary": "Stateful enterprise workflows across eight domains with persistent database state, strict tool/access protocols and final-state verification.",
+      "task_unit": "Expert-curated enterprise task with underlying state changes verified.",
+      "metrics": [
+        {
+          "metric_id": "strict_task_success",
+          "name": "Strict enterprise task completion",
+          "construct": "end_to_end_task_success",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "per_task",
+          "denominator_definition": "Share of 1,150 tasks completed to the paper's strict outcome verification.",
+          "evaluator_type": "deterministic",
+          "repeat_design": "Paper-reported evaluation; do not substitute the independent AA implementation.",
+          "limitations": []
+        }
+      ],
+      "results": [
+        {
+          "configuration": "Claude Sonnet 4.5 (paper's best-performing model)",
+          "metric_id": "strict_task_success",
+          "value": 34.1,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Paper reports 34.1% success on the original benchmark.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        }
+      ],
+      "scale": {
+        "task_count_description": "1,150 expert-curated tasks across eight interconnected domains, 164 database tables and 512 tools.",
+        "tasks": 1150,
+        "scenarios": null,
+        "trajectories": null,
+        "runs_per_model": null,
+        "repeats_per_task": null,
+        "trial_design": "Stateful containerized sandbox; strict outcome-based final-state verification.",
+        "average_trajectory_steps": null
+      },
+      "limitations": [
+        "Original paper score is tied to its own harness and scorer.",
+        "Do not compare directly with EnterpriseOps-Gym-AA."
+      ],
+      "what_not_established": [
+        "SRE-only continuous operations.",
+        "Cross-benchmark generalization or production autonomy."
+      ],
+      "sources": [
+        {
+          "title": "EnterpriseOps-Gym ICML/PMLR paper",
+          "url": "https://proceedings.mlr.press/v306/malay26a.html",
+          "source_type": "primary_publication",
+          "retrieved_on": "2026-11-05",
+          "published_on": null,
+          "notes": "Paper reports 1,150 tasks, eight domains, 164 tables, 512 tools and 34.1% best success.",
+          "capture_status": "url_only",
+          "content_sha256": null
+        }
+      ]
+    },
+    {
+      "benchmark_id": "enterpriseops_aa_2026_11_04",
+      "name": "EnterpriseOps-Gym-AA",
+      "version": "Artificial Analysis implementation · Nov 2026 snapshot",
+      "publisher": "Artificial Analysis",
+      "evaluation_status": "independent_implementation",
+      "observed_on": "2026-11-05",
+      "comparability_group": "enterpriseops_aa",
+      "construct_summary": "Independent implementation of ServiceNow's EnterpriseOps-Gym; stateful multi-step enterprise task execution across eight domains with strict final database state verification.",
+      "task_unit": "Enterprise task; independent AA implementation and leaderboard.",
+      "metrics": [
+        {
+          "metric_id": "strict_task_success",
+          "name": "Strict final-state task success",
+          "construct": "end_to_end_task_success",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "per_task",
+          "denominator_definition": "Percent of tasks passing every required final-state verifier in the AA implementation.",
+          "evaluator_type": "deterministic",
+          "repeat_design": "Leaderboard snapshot; benchmark owner implementation differs from original paper evaluation.",
+          "limitations": []
+        }
+      ],
+      "results": [
+        {
+          "configuration": "Claude Fable 5 (Max)",
+          "metric_id": "strict_task_success",
+          "value": 51.1,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Top listed score as of 2026-11-04; leaderboard attributes result date 2026-06-09.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        }
+      ],
+      "scale": {
+        "task_count_description": "1,150 tasks, eight domains; independent implementation of EnterpriseOps-Gym.",
+        "tasks": 1150,
+        "scenarios": null,
+        "trajectories": null,
+        "runs_per_model": null,
+        "repeats_per_task": null,
+        "trial_design": "Artificial Analysis implementation; final-state database verification. This result is not the original EnterpriseOps-Gym paper run.",
+        "average_trajectory_steps": null
+      },
+      "limitations": [
+        "Separate scorer/harness from original paper; maintain a separate leaderboard identity.",
+        "Snapshot leader may change; pin the exact model and result date."
+      ],
+      "what_not_established": [
+        "Same-harness superiority over original paper results.",
+        "Continuous SRE performance."
+      ],
+      "sources": [
+        {
+          "title": "Artificial Analysis EnterpriseOps-Gym-AA",
+          "url": "https://artificialanalysis.ai/evaluations/enterprise-ops-gym-aa",
+          "source_type": "official_leaderboard",
+          "retrieved_on": "2026-11-05",
+          "published_on": null,
+          "notes": "Primary benchmark publisher/independent evaluator; cross-check dated Nov 3 leaderboard snapshot.",
+          "capture_status": "url_only",
+          "content_sha256": null
+        },
+        {
+          "title": "BenchLeader Nov 3 snapshot",
+          "url": "https://www.benchleader.com/benchmarks/aa_enterprise_ops_gym",
+          "source_type": "official_leaderboard",
+          "retrieved_on": "2026-11-05",
+          "published_on": "2026-11-03",
+          "notes": "Secondary aggregation; context only, not sole evidence.",
+          "capture_status": "url_only",
+          "content_sha256": null
+        }
+      ]
+    },
+    {
+      "benchmark_id": "itbench_aa_2026_11_04",
+      "name": "ITBench-AA",
+      "version": "Artificial Analysis independent implementation",
+      "publisher": "Artificial Analysis",
+      "evaluation_status": "independent_implementation",
+      "observed_on": "2026-11-05",
+      "comparability_group": "itbench_aa",
+      "construct_summary": "Kubernetes incident root-cause entity attribution from offline snapshots of alerts, events, traces, metrics and topology; diagnosis only.",
+      "task_unit": "Offline incident snapshot; produce complete list of contributing root-cause entities.",
+      "metrics": [
+        {
+          "metric_id": "ap_full_recall",
+          "name": "Average precision at full recall",
+          "construct": "root_cause_entity_attribution",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "macro_average",
+          "denominator_definition": "Per task repeat receives zero if any ground-truth entity is missed; otherwise precision is TP/(TP+FP), averaged across 59 tasks and three repeats.",
+          "evaluator_type": "deterministic",
+          "repeat_design": "59 tasks × 3 repeats; same Stirrup harness across evaluated models.",
+          "limitations": [
+            "Not an incident mitigation or service recovery metric."
+          ]
+        }
+      ],
+      "results": [
+        {
+          "configuration": "GPT-5.6 Sol (Max)",
+          "metric_id": "ap_full_recall",
+          "value": 56.2,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Current displayed leader in the 2026-11-04 snapshot.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": "59 Kubernetes tasks, three repeats per task."
+        }
+      ],
+      "scale": {
+        "task_count_description": "59 tasks: 40 public IBM tasks and 19 private tasks; three repeats per task.",
+        "tasks": 59,
+        "scenarios": 59,
+        "trajectories": null,
+        "runs_per_model": null,
+        "repeats_per_task": 3,
+        "trial_design": "Independent Artificial Analysis evaluation using Stirrup in a sandboxed code-execution environment.",
+        "average_trajectory_steps": null
+      },
+      "limitations": [
+        "Headline score is diagnostic entity attribution, not repair.",
+        "At full recall, any missed root cause makes a task repeat score zero."
+      ],
+      "what_not_established": [
+        "Successful mutation, effect finality, mitigation or sustained service recovery."
+      ],
+      "sources": [
+        {
+          "title": "Artificial Analysis ITBench-AA",
+          "url": "https://artificialanalysis.ai/evaluations/itbench-aa",
+          "source_type": "official_leaderboard",
+          "retrieved_on": "2026-11-05",
+          "published_on": null,
+          "notes": "Primary metric definition, 59 task split, three repeats and current displayed 56.2% leader.",
+          "capture_status": "url_only",
+          "content_sha256": null
+        }
+      ]
+    },
+    {
+      "benchmark_id": "ai_sre_arena_2026_10",
+      "name": "AI SRE Arena",
+      "version": "v1 · October 2026",
+      "publisher": "Edge Delta Research",
+      "evaluation_status": "vendor_published_evaluation",
+      "observed_on": "2026-11-05",
+      "comparability_group": "ai_sre_arena",
+      "construct_summary": "Vendor-published comparison of detection, root-cause identification, supported fixes and unsafe advice on injected Kubernetes incidents.",
+      "task_unit": "Injected incident investigation, with answer-key and rubric judging.",
+      "metrics": [
+        {
+          "metric_id": "detection_rate",
+          "name": "Incident detection on native monitoring",
+          "construct": "detection",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "per_fault",
+          "denominator_definition": "Detected faults divided by the 21 injected faults.",
+          "evaluator_type": "ai_judge",
+          "repeat_design": "Native product runs use each platform's default monitors.",
+          "limitations": []
+        },
+        {
+          "metric_id": "root_cause_rate_matched",
+          "name": "Root cause on the 12 matched native incidents",
+          "construct": "diagnosis_localization",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "per_fault",
+          "denominator_definition": "Correct root-cause judgments among the 12 incidents investigated by both native products.",
+          "evaluator_type": "ai_judge",
+          "repeat_design": "Matched subset of 12 incidents; report's abstract summary.",
+          "limitations": []
+        },
+        {
+          "metric_id": "root_cause_rate_all_investigated",
+          "name": "Root cause across all native investigations",
+          "construct": "diagnosis_localization",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "per_fault",
+          "denominator_definition": "Correct root-cause judgments divided by investigations completed by that configuration.",
+          "evaluator_type": "ai_judge",
+          "repeat_design": "Native all-investigated denominator differs by product; controls externally started.",
+          "limitations": []
+        },
+        {
+          "metric_id": "blast_radius_rate",
+          "name": "Blast-radius identification",
+          "construct": "diagnosis_localization",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "per_fault",
+          "denominator_definition": "Correct blast-radius judgments divided by the investigated incidents for that configuration.",
+          "evaluator_type": "ai_judge",
+          "repeat_design": "All investigated incidents; native and control setups.",
+          "limitations": []
+        },
+        {
+          "metric_id": "supported_fix_rate_matched",
+          "name": "Supported fix on 12 matched native incidents",
+          "construct": "mitigation",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "per_fault",
+          "denominator_definition": "Supported fixes among the 12 matched native incidents.",
+          "evaluator_type": "ai_judge",
+          "repeat_design": "Matched native subset.",
+          "limitations": []
+        },
+        {
+          "metric_id": "supported_fix_rate_all_investigated",
+          "name": "Supported fix across all investigated incidents",
+          "construct": "mitigation",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "per_fault",
+          "denominator_definition": "Supported fixes divided by investigations for the configuration.",
+          "evaluator_type": "ai_judge",
+          "repeat_design": "All investigated incidents; denominators differ.",
+          "limitations": []
+        },
+        {
+          "metric_id": "ready_to_implement_rate",
+          "name": "Ready-to-implement recommendations",
+          "construct": "mitigation",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "per_fault",
+          "denominator_definition": "Recommendations judged ready to implement divided by applicable final reports; Edge Delta excludes two no-proposal reports in the native denominator.",
+          "evaluator_type": "ai_judge",
+          "repeat_design": "Readiness denominator differs from investigation count.",
+          "limitations": []
+        },
+        {
+          "metric_id": "unsafe_advice_count",
+          "name": "Incorrect or unsafe final advice",
+          "construct": "unsafe_advice",
+          "unit": "count",
+          "scale": "count",
+          "aggregation": "per_run",
+          "denominator_definition": "Number of final recommendations judged incorrect or unsafe in the reported run set.",
+          "evaluator_type": "ai_judge",
+          "repeat_design": "One fixed answer key/rubric; final reports only, earlier advice scored separately.",
+          "limitations": []
+        }
+      ],
+      "results": [
+        {
+          "configuration": "Edge Delta native monitoring",
+          "metric_id": "detection_rate",
+          "value": 85.71428571428571,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 18,
+          "denominator": 21,
+          "result_context": "Detected 18 of 21 faults.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Grafana native monitoring",
+          "metric_id": "detection_rate",
+          "value": 57.14285714285714,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 12,
+          "denominator": 21,
+          "result_context": "Detected 12 of 21 faults.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Edge Delta native monitoring",
+          "metric_id": "root_cause_rate_matched",
+          "value": 91.66666666666666,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 11,
+          "denominator": 12,
+          "result_context": "Correct on the 12 incidents both native products investigated.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Grafana native monitoring",
+          "metric_id": "root_cause_rate_matched",
+          "value": 75,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 9,
+          "denominator": 12,
+          "result_context": "Correct on the 12 incidents both native products investigated.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Edge Delta native monitoring",
+          "metric_id": "root_cause_rate_all_investigated",
+          "value": 83.33333333333334,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 15,
+          "denominator": 18,
+          "result_context": "Correct root cause on all 18 native investigations.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Grafana native monitoring",
+          "metric_id": "root_cause_rate_all_investigated",
+          "value": 75,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 9,
+          "denominator": 12,
+          "result_context": "Correct root cause on all 12 native investigations.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Claude Fable 5.1 + Edge Delta CLI (read-only control)",
+          "metric_id": "root_cause_rate_all_investigated",
+          "value": 85.71428571428571,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 18,
+          "denominator": 21,
+          "result_context": "Correct root cause on 18 of 21 externally started investigations.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Claude Fable 5.1 + Grafana CLI (read-only control)",
+          "metric_id": "root_cause_rate_all_investigated",
+          "value": 90.47619047619048,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 19,
+          "denominator": 21,
+          "result_context": "Correct root cause on 19 of 21 externally started investigations.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Edge Delta native monitoring",
+          "metric_id": "blast_radius_rate",
+          "value": 66.66666666666666,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 12,
+          "denominator": 18,
+          "result_context": "Correct blast radius on 12 of 18 native investigations.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Grafana native monitoring",
+          "metric_id": "blast_radius_rate",
+          "value": 66.66666666666666,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 8,
+          "denominator": 12,
+          "result_context": "Correct blast radius on 8 of 12 native investigations.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Claude Fable 5.1 + Edge Delta CLI (read-only control)",
+          "metric_id": "blast_radius_rate",
+          "value": 85.71428571428571,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 18,
+          "denominator": 21,
+          "result_context": "Correct blast radius on 18 of 21 control investigations.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Claude Fable 5.1 + Grafana CLI (read-only control)",
+          "metric_id": "blast_radius_rate",
+          "value": 85.71428571428571,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 18,
+          "denominator": 21,
+          "result_context": "Correct blast radius on 18 of 21 control investigations.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Edge Delta native monitoring",
+          "metric_id": "supported_fix_rate_matched",
+          "value": 58.333333333333336,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 7,
+          "denominator": 12,
+          "result_context": "Supported fix on the 12 matched incidents.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Grafana native monitoring",
+          "metric_id": "supported_fix_rate_matched",
+          "value": 41.66666666666667,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 5,
+          "denominator": 12,
+          "result_context": "Supported fix on the 12 matched incidents.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Edge Delta native monitoring",
+          "metric_id": "supported_fix_rate_all_investigated",
+          "value": 44.44444444444444,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 8,
+          "denominator": 18,
+          "result_context": "Supported fix on 8 of 18 native investigations.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Grafana native monitoring",
+          "metric_id": "supported_fix_rate_all_investigated",
+          "value": 41.66666666666667,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 5,
+          "denominator": 12,
+          "result_context": "Supported fix on 5 of 12 native investigations.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Claude Fable 5.1 + Edge Delta CLI (read-only control)",
+          "metric_id": "supported_fix_rate_all_investigated",
+          "value": 76.19047619047619,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 16,
+          "denominator": 21,
+          "result_context": "Supported fix on 16 of 21 control investigations.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Claude Fable 5.1 + Grafana CLI (read-only control)",
+          "metric_id": "supported_fix_rate_all_investigated",
+          "value": 71.42857142857143,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 15,
+          "denominator": 21,
+          "result_context": "Supported fix on 15 of 21 control investigations.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Edge Delta native monitoring",
+          "metric_id": "ready_to_implement_rate",
+          "value": 56.25,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 9,
+          "denominator": 16,
+          "result_context": "Nine of 16 applicable reports passed readiness; two native reports had no mitigation proposal.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Grafana native monitoring",
+          "metric_id": "ready_to_implement_rate",
+          "value": 41.66666666666667,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 5,
+          "denominator": 12,
+          "result_context": "Ready on 5 of 12 native investigations.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Claude Fable 5.1 + Edge Delta CLI (read-only control)",
+          "metric_id": "ready_to_implement_rate",
+          "value": 76.19047619047619,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 16,
+          "denominator": 21,
+          "result_context": "Ready on 16 of 21 control investigations.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Claude Fable 5.1 + Grafana CLI (read-only control)",
+          "metric_id": "ready_to_implement_rate",
+          "value": 71.42857142857143,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 15,
+          "denominator": 21,
+          "result_context": "Ready on 15 of 21 control investigations.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Edge Delta native monitoring",
+          "metric_id": "unsafe_advice_count",
+          "value": 0,
+          "unit": "count",
+          "value_operator": "exact",
+          "numerator": 0,
+          "denominator": 18,
+          "result_context": "No incorrect or unsafe final advice in 18 reports.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Grafana native monitoring",
+          "metric_id": "unsafe_advice_count",
+          "value": 2,
+          "unit": "count",
+          "value_operator": "exact",
+          "numerator": 2,
+          "denominator": 12,
+          "result_context": "Two incorrect or unsafe final recommendations in 12 reports.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Claude Fable 5.1 + Edge Delta CLI (read-only control)",
+          "metric_id": "unsafe_advice_count",
+          "value": 5,
+          "unit": "count",
+          "value_operator": "exact",
+          "numerator": 5,
+          "denominator": 21,
+          "result_context": "Five incorrect or unsafe final recommendations in 21 control runs.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Claude Fable 5.1 + Grafana CLI (read-only control)",
+          "metric_id": "unsafe_advice_count",
+          "value": 6,
+          "unit": "count",
+          "value_operator": "exact",
+          "numerator": 6,
+          "denominator": 21,
+          "result_context": "Six incorrect or unsafe final recommendations in 21 control runs.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        }
+      ],
+      "scale": {
+        "task_count_description": "21 injected Kubernetes faults; two native and two control configurations; 72 judged investigations.",
+        "tasks": null,
+        "scenarios": 21,
+        "trajectories": null,
+        "runs_per_model": null,
+        "repeats_per_task": null,
+        "trial_design": "72 judged investigations: Edge Delta native 18, Grafana native 12, Claude Fable 5.1 through Edge Delta CLI 21, and Claude Fable 5.1 through Grafana CLI 21. The report separately presents matched 12-incident comparisons and all-investigated denominators. GPT-6 Astra is the AI judge; final reports only are scored, earlier advice separately.",
+        "average_trajectory_steps": null
+      },
+      "limitations": [
+        "Vendor-published evaluation; independent reproduction is required.",
+        "The report presents both matched-subset and all-investigated results; denominators must not be mixed.",
+        "The fixed OpenTelemetry demo shop and 21 injected faults are a small controlled environment.",
+        "The judge is GPT-6 Astra; the rubric and answer keys are open, but this is not a blind independent human-only oracle."
+      ],
+      "what_not_established": [
+        "Broad statistical generalization to other services/vendors.",
+        "Production-safe actuation under independent participant authority.",
+        "Customer outcomes outside the seeded demo system."
+      ],
+      "sources": [
+        {
+          "title": "AI SRE Arena v1 report",
+          "url": "https://edgedelta.com/arena",
+          "source_type": "official_benchmark_report",
+          "retrieved_on": "2026-11-05",
+          "published_on": null,
+          "notes": "October 2026 publisher report. It reports detection 18/21 vs 12/21; matched-subset root cause 11/12 vs 9/12; the detailed all-investigated table reports 15/18 vs 9/12. Keep matched and all-investigated denominators as separate metrics.",
+          "capture_status": "url_only",
+          "content_sha256": null
+        }
+      ]
+    },
+    {
+      "benchmark_id": "traceway_ai_sre_bench_2026_10",
+      "name": "Traceway AI SRE Bench",
+      "version": "October 21-22 2026 public snapshot",
+      "publisher": "Traceway",
+      "evaluation_status": "vendor_published_evaluation",
+      "observed_on": "2026-11-05",
+      "comparability_group": "traceway_ai_sre_bench",
+      "construct_summary": "Correct incident diagnosis, evidence grounding, safe write actions and hidden-test code repair using real Traceway tools and seeded production-like scenarios.",
+      "task_unit": "One run per case/setup; deterministic graders.",
+      "metrics": [
+        {
+          "metric_id": "overall_pass",
+          "name": "Overall deterministic pass",
+          "construct": "end_to_end_task_success",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "per_run",
+          "denominator_definition": "Passed graded runs divided by 172 runs per model; pass requires correct answer, grounded evidence, safe writes and hidden tests when code repair applies.",
+          "evaluator_type": "deterministic",
+          "repeat_design": "One run per case/setup; 172 runs/model.",
+          "limitations": []
+        },
+        {
+          "metric_id": "right_answer_evidence",
+          "name": "Right answer and grounded evidence",
+          "construct": "evidence_grounding",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "per_run",
+          "denominator_definition": "Runs with correct answer and grounded evidence divided by 172 runs per model.",
+          "evaluator_type": "deterministic",
+          "repeat_design": "One run per case/setup.",
+          "limitations": []
+        },
+        {
+          "metric_id": "control_pass",
+          "name": "Control/trap abstention correctness",
+          "construct": "end_to_end_task_success",
+          "unit": "percent",
+          "scale": "0-100%",
+          "aggregation": "per_run",
+          "denominator_definition": "Passed control/trap runs divided by 18 runs per model.",
+          "evaluator_type": "deterministic",
+          "repeat_design": "Six control cases; 18 runs/model.",
+          "limitations": []
+        },
+        {
+          "metric_id": "agent_spend",
+          "name": "Agent spend",
+          "construct": "token_cost",
+          "unit": "usd",
+          "scale": "USD",
+          "aggregation": "per_run",
+          "denominator_definition": "Publisher-reported agent spend for the 172-run cohort; excludes fully loaded engineering/support costs.",
+          "evaluator_type": "not_applicable",
+          "repeat_design": "Publisher-reported agent spend.",
+          "limitations": []
+        }
+      ],
+      "results": [
+        {
+          "configuration": "Claude Opus 5.5",
+          "metric_id": "overall_pass",
+          "value": 90.69767441860465,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 156,
+          "denominator": 172,
+          "result_context": "156 of 172 graded runs passed.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": "One run per case/setup; campaign ran 2026-10-21 and 2026-10-22."
+        },
+        {
+          "configuration": "Claude Opus 5.5",
+          "metric_id": "right_answer_evidence",
+          "value": 93.6046511627907,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 161,
+          "denominator": 172,
+          "result_context": "161 of 172 runs had a right answer and grounded evidence.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Claude Opus 5.5",
+          "metric_id": "control_pass",
+          "value": 100,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 18,
+          "denominator": 18,
+          "result_context": "18 of 18 control/trap runs passed.",
+          "experiment_date": "2026-10-22",
+          "uncertainty_or_repeat_note": "Six control/trap cases; 18 runs/model."
+        },
+        {
+          "configuration": "Claude Opus 5.5",
+          "metric_id": "agent_spend",
+          "value": 51.81,
+          "unit": "usd",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Publisher-reported total agent spend for the 172-run cohort: $51.81.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "DeepSeek V4.1 Flash",
+          "metric_id": "overall_pass",
+          "value": 83.72093023255815,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 144,
+          "denominator": 172,
+          "result_context": "144 of 172 graded runs passed.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": "One run per case/setup; campaign ran 2026-10-21 and 2026-10-22."
+        },
+        {
+          "configuration": "DeepSeek V4.1 Flash",
+          "metric_id": "right_answer_evidence",
+          "value": 86.62790697674419,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 149,
+          "denominator": 172,
+          "result_context": "149 of 172 runs had a right answer and grounded evidence.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "DeepSeek V4.1 Flash",
+          "metric_id": "control_pass",
+          "value": 61.111111111111114,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 11,
+          "denominator": 18,
+          "result_context": "11 of 18 control/trap runs passed.",
+          "experiment_date": "2026-10-22",
+          "uncertainty_or_repeat_note": "Six control/trap cases; 18 runs/model."
+        },
+        {
+          "configuration": "DeepSeek V4.1 Flash",
+          "metric_id": "agent_spend",
+          "value": 2.17,
+          "unit": "usd",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Publisher-reported total agent spend for the 172-run cohort: $2.17.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "MiniMax M3.1 Flash",
+          "metric_id": "overall_pass",
+          "value": 74.4186046511628,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 128,
+          "denominator": 172,
+          "result_context": "128 of 172 graded runs passed.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": "One run per case/setup; campaign ran 2026-10-21 and 2026-10-22."
+        },
+        {
+          "configuration": "MiniMax M3.1 Flash",
+          "metric_id": "right_answer_evidence",
+          "value": 77.32558139534885,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 133,
+          "denominator": 172,
+          "result_context": "133 of 172 runs had a right answer and grounded evidence.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "MiniMax M3.1 Flash",
+          "metric_id": "control_pass",
+          "value": 55.55555555555556,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 10,
+          "denominator": 18,
+          "result_context": "10 of 18 control/trap runs passed.",
+          "experiment_date": "2026-10-22",
+          "uncertainty_or_repeat_note": "Six control/trap cases; 18 runs/model."
+        },
+        {
+          "configuration": "MiniMax M3.1 Flash",
+          "metric_id": "agent_spend",
+          "value": 3.38,
+          "unit": "usd",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Publisher-reported total agent spend for the 172-run cohort: $3.38.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Claude Haiku 5.5",
+          "metric_id": "overall_pass",
+          "value": 68.02325581395348,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 117,
+          "denominator": 172,
+          "result_context": "117 of 172 graded runs passed.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": "One run per case/setup; campaign ran 2026-10-21 and 2026-10-22."
+        },
+        {
+          "configuration": "Claude Haiku 5.5",
+          "metric_id": "right_answer_evidence",
+          "value": 73.25581395348837,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 126,
+          "denominator": 172,
+          "result_context": "126 of 172 runs had a right answer and grounded evidence.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Claude Haiku 5.5",
+          "metric_id": "control_pass",
+          "value": 50,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 9,
+          "denominator": 18,
+          "result_context": "9 of 18 control/trap runs passed.",
+          "experiment_date": "2026-10-22",
+          "uncertainty_or_repeat_note": "Six control/trap cases; 18 runs/model."
+        },
+        {
+          "configuration": "Claude Haiku 5.5",
+          "metric_id": "agent_spend",
+          "value": 1.9,
+          "unit": "usd",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Publisher-reported total agent spend for the 172-run cohort: $1.90.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Qwen3.8 27B",
+          "metric_id": "overall_pass",
+          "value": 66.86046511627907,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 115,
+          "denominator": 172,
+          "result_context": "115 of 172 graded runs passed.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": "One run per case/setup; campaign ran 2026-10-21 and 2026-10-22."
+        },
+        {
+          "configuration": "Qwen3.8 27B",
+          "metric_id": "right_answer_evidence",
+          "value": 72.67441860465115,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 125,
+          "denominator": 172,
+          "result_context": "125 of 172 runs had a right answer and grounded evidence.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "Qwen3.8 27B",
+          "metric_id": "control_pass",
+          "value": 61.111111111111114,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 11,
+          "denominator": 18,
+          "result_context": "11 of 18 control/trap runs passed.",
+          "experiment_date": "2026-10-22",
+          "uncertainty_or_repeat_note": "Six control/trap cases; 18 runs/model."
+        },
+        {
+          "configuration": "Qwen3.8 27B",
+          "metric_id": "agent_spend",
+          "value": 9.9,
+          "unit": "usd",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Publisher-reported total agent spend for the 172-run cohort: $9.90.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "GPT-6 Luna",
+          "metric_id": "overall_pass",
+          "value": 62.7906976744186,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 108,
+          "denominator": 172,
+          "result_context": "108 of 172 graded runs passed.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": "One run per case/setup; campaign ran 2026-10-21 and 2026-10-22."
+        },
+        {
+          "configuration": "GPT-6 Luna",
+          "metric_id": "right_answer_evidence",
+          "value": 66.86046511627907,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 115,
+          "denominator": 172,
+          "result_context": "115 of 172 runs had a right answer and grounded evidence.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "GPT-6 Luna",
+          "metric_id": "control_pass",
+          "value": 44.44444444444444,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 8,
+          "denominator": 18,
+          "result_context": "8 of 18 control/trap runs passed.",
+          "experiment_date": "2026-10-22",
+          "uncertainty_or_repeat_note": "Six control/trap cases; 18 runs/model."
+        },
+        {
+          "configuration": "GPT-6 Luna",
+          "metric_id": "agent_spend",
+          "value": 1.41,
+          "unit": "usd",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Publisher-reported total agent spend for the 172-run cohort: $1.41.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "GLM-5.3",
+          "metric_id": "overall_pass",
+          "value": 63.372093023255815,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 109,
+          "denominator": 172,
+          "result_context": "109 of 172 graded runs passed.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": "One run per case/setup; campaign ran 2026-10-21 and 2026-10-22."
+        },
+        {
+          "configuration": "GLM-5.3",
+          "metric_id": "right_answer_evidence",
+          "value": 74.4186046511628,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 128,
+          "denominator": 172,
+          "result_context": "128 of 172 runs had a right answer and grounded evidence.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": ""
+        },
+        {
+          "configuration": "GLM-5.3",
+          "metric_id": "control_pass",
+          "value": 44.44444444444444,
+          "unit": "percent",
+          "value_operator": "exact",
+          "numerator": 8,
+          "denominator": 18,
+          "result_context": "8 of 18 control/trap runs passed.",
+          "experiment_date": "2026-10-22",
+          "uncertainty_or_repeat_note": "Six control/trap cases; 18 runs/model."
+        },
+        {
+          "configuration": "GLM-5.3",
+          "metric_id": "agent_spend",
+          "value": 13.28,
+          "unit": "usd",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Publisher-reported total agent spend for the 172-run cohort: $13.28.",
+          "experiment_date": "2026-10-21",
+          "uncertainty_or_repeat_note": ""
+        }
+      ],
+      "scale": {
+        "task_count_description": "62 cases, five setups, seven models, 1,204 graded runs; 172 runs/model.",
+        "tasks": 62,
+        "scenarios": 62,
+        "trajectories": null,
+        "runs_per_model": 172,
+        "repeats_per_task": 1,
+        "trial_design": "1,204 graded runs across 62 cases, five setups and seven models; each model completed 172 runs. Campaign executed 2026-10-21 and 2026-10-22. One run per case/setup. The control/trap subset contains 18 runs/model.",
+        "average_trajectory_steps": null
+      },
+      "limitations": [
+        "One run per case/setup; case-level estimates have high variance.",
+        "The control subset is small (18 runs/model across six controls).",
+        "Spend is agent spend, not fully loaded operating cost.",
+        "Skill and harness effects differ by model and task family."
+      ],
+      "what_not_established": [
+        "Reliable population-level model ranking from repeated trials.",
+        "SRE task performance outside the published Traceway environment.",
+        "Production service safety or durable participant finality."
+      ],
+      "sources": [
+        {
+          "title": "Traceway AI SRE Bench results and methodology",
+          "url": "https://tracewayapp.com/benchmarks",
+          "source_type": "official_benchmark_report",
+          "retrieved_on": "2026-11-05",
+          "published_on": "2026-10-21",
+          "notes": "Live benchmark page retrieved 2026-11-05. Seven models, 172 runs/model, one run per case/setup; control subset 18 runs/model. Opus passes 156/172 and 18/18 controls; DeepSeek 144/172 and 11/18; GPT-6 Luna 108/172 and 8/18.",
+          "capture_status": "url_only",
+          "content_sha256": null
+        }
+      ]
+    },
+    {
+      "benchmark_id": "hintbench_2026",
+      "name": "HINTBench",
+      "version": "Findings EMNLP 2026",
+      "publisher": "ACL Anthology / HINTBench authors",
+      "evaluation_status": "research_dataset",
+      "observed_on": "2026-11-05",
+      "comparability_group": "hintbench",
+      "construct_summary": "Intrinsic agent-risk auditing under benign conditions across risk detection, risk-step localization and intrinsic failure-type identification.",
+      "task_unit": "Long-horizon agent trajectory annotated for intrinsic risk.",
+      "metrics": [
+        {
+          "metric_id": "risk_step_localization_strict_f1",
+          "name": "Fine-grained risk-step localization",
+          "construct": "risk_step_localization",
+          "unit": "strict_f1",
+          "scale": "Strict-F1 0-100",
+          "aggregation": "publisher_reported",
+          "denominator_definition": "Publisher reports best model remains below 37 Strict-F1 on fine-grained risk-step localization; exact value not asserted here.",
+          "evaluator_type": "mixed",
+          "repeat_design": "Benchmark contains 596 trajectories with average 24 steps; paper includes synthetic and reconstructed trajectories.",
+          "limitations": [
+            "Do not transplant the score directly to infrastructure-only OpsBench."
+          ]
+        }
+      ],
+      "results": [
+        {
+          "configuration": "Best model in paper",
+          "metric_id": "risk_step_localization_strict_f1",
+          "value": 37,
+          "unit": "strict_f1",
+          "value_operator": "less_than",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Best reported model is below 37 Strict-F1 on fine-grained risk-step localization.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        }
+      ],
+      "scale": {
+        "task_count_description": "596 trajectories: 400 synthetic risky, 136 synthetic safe, 30 reconstructed real risky, 30 reconstructed real safe; mean 24 steps.",
+        "tasks": null,
+        "scenarios": null,
+        "trajectories": 596,
+        "runs_per_model": null,
+        "repeats_per_task": null,
+        "trial_design": "Trajectory-level detection, risk-step localization and failure-type identification.",
+        "average_trajectory_steps": 24
+      },
+      "limitations": [
+        "Broad agent-safety trajectory corpus, not specifically SRE.",
+        "Best score is described as below 37; exact value not asserted in this snapshot."
+      ],
+      "what_not_established": [
+        "Infrastructure repair or service recovery.",
+        "Causal attribution to a committed operational change."
+      ],
+      "sources": [
+        {
+          "title": "HINTBench Findings EMNLP 2026",
+          "url": "https://aclanthology.org/2026.findings-emnlp.1639/",
+          "source_type": "primary_publication",
+          "retrieved_on": "2026-11-05",
+          "published_on": null,
+          "notes": "596 trajectories and average 24-step horizon.",
+          "capture_status": "url_only",
+          "content_sha256": null
+        }
+      ]
+    },
+    {
+      "benchmark_id": "agentrx_2026",
+      "name": "AgentRx",
+      "version": "Findings EMNLP 2026",
+      "publisher": "Association for Computational Linguistics",
+      "evaluation_status": "research_dataset",
+      "observed_on": "2026-11-05",
+      "comparability_group": "agentrx",
+      "construct_summary": "Auditable diagnosis of critical failure steps and failure categories in long-horizon agent execution trajectories.",
+      "task_unit": "Manually annotated failed agent trajectory with critical failure step and taxonomy category.",
+      "metrics": [
+        {
+          "metric_id": "step_localization_relative_improvement",
+          "name": "Average improvement in critical failure-step localization",
+          "construct": "failure_attribution",
+          "unit": "relative_percent_improvement",
+          "scale": "Relative improvement percent",
+          "aggregation": "publisher_reported",
+          "denominator_definition": "75% average improvement in step localization over prior work as reported in the paper abstract.",
+          "evaluator_type": "mixed",
+          "repeat_design": "170 trajectories across 11 task settings.",
+          "limitations": [
+            "Relative improvement, not 75% absolute accuracy."
+          ]
+        }
+      ],
+      "results": [
+        {
+          "configuration": "AgentRx framework",
+          "metric_id": "step_localization_relative_improvement",
+          "value": 75,
+          "unit": "relative_percent_improvement",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Paper reports 75% average improvement in step localization over prior work.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": ""
+        }
+      ],
+      "scale": {
+        "task_count_description": "170 annotated trajectories across 11 settings, including structured API workflows, incident management and web/file tasks.",
+        "tasks": null,
+        "scenarios": null,
+        "trajectories": 170,
+        "runs_per_model": null,
+        "repeats_per_task": null,
+        "trial_design": "Manual annotations plus automated auditable constraint-violation log and LLM-based judge for localization/category.",
+        "average_trajectory_steps": null
+      },
+      "limitations": [
+        "The paper's reported 75% is relative improvement, not absolute localization accuracy.",
+        "LLM judge contributes to localization/category in the described framework."
+      ],
+      "what_not_established": [
+        "Correct operational mitigation or service recovery.",
+        "Causal proof that a particular committed intervention caused the failure."
+      ],
+      "sources": [
+        {
+          "title": "AgentRx Findings EMNLP 2026",
+          "url": "https://aclanthology.org/2026.findings-emnlp.598/",
+          "source_type": "primary_publication",
+          "retrieved_on": "2026-11-05",
+          "published_on": null,
+          "notes": "Paper reports 170 trajectories, 11 settings and +75% average step-localization improvement.",
+          "capture_status": "url_only",
+          "content_sha256": null
+        }
+      ]
+    },
+    {
+      "benchmark_id": "evoharnessbench_2026",
+      "name": "EvoHarnessBench",
+      "version": "2026 research benchmark",
+      "publisher": "EvoHarnessBench authors",
+      "evaluation_status": "research_dataset",
+      "observed_on": "2026-11-05",
+      "comparability_group": "evoharnessbench",
+      "construct_summary": "Capability retention and adaptation when agent harnesses, tool catalogues, skills and specialist-agent compositions evolve.",
+      "task_unit": "Task executed within a harness stream under changing capability configuration.",
+      "metrics": [
+        {
+          "metric_id": "harness_harness_streams",
+          "name": "Harness streams",
+          "construct": "harness_retention",
+          "unit": "count",
+          "scale": "integer count",
+          "aggregation": "not_applicable",
+          "denominator_definition": "Publisher-reported benchmark scale descriptor; not a pass-rate denominator.",
+          "evaluator_type": "not_applicable",
+          "repeat_design": "17 streams with a combined 802 tasks, 520 tools, 42 skills and 62 agents.",
+          "limitations": [
+            "Scale descriptor only; no scalar leader score is asserted."
+          ]
+        },
+        {
+          "metric_id": "harness_tasks",
+          "name": "Tasks",
+          "construct": "harness_retention",
+          "unit": "count",
+          "scale": "integer count",
+          "aggregation": "not_applicable",
+          "denominator_definition": "Publisher-reported benchmark scale descriptor; not a pass-rate denominator.",
+          "evaluator_type": "not_applicable",
+          "repeat_design": "17 streams with a combined 802 tasks, 520 tools, 42 skills and 62 agents.",
+          "limitations": [
+            "Scale descriptor only; no scalar leader score is asserted."
+          ]
+        },
+        {
+          "metric_id": "harness_tools",
+          "name": "Tools",
+          "construct": "harness_retention",
+          "unit": "count",
+          "scale": "integer count",
+          "aggregation": "not_applicable",
+          "denominator_definition": "Publisher-reported benchmark scale descriptor; not a pass-rate denominator.",
+          "evaluator_type": "not_applicable",
+          "repeat_design": "17 streams with a combined 802 tasks, 520 tools, 42 skills and 62 agents.",
+          "limitations": [
+            "Scale descriptor only; no scalar leader score is asserted."
+          ]
+        },
+        {
+          "metric_id": "harness_skills",
+          "name": "Skills",
+          "construct": "harness_retention",
+          "unit": "count",
+          "scale": "integer count",
+          "aggregation": "not_applicable",
+          "denominator_definition": "Publisher-reported benchmark scale descriptor; not a pass-rate denominator.",
+          "evaluator_type": "not_applicable",
+          "repeat_design": "17 streams with a combined 802 tasks, 520 tools, 42 skills and 62 agents.",
+          "limitations": [
+            "Scale descriptor only; no scalar leader score is asserted."
+          ]
+        },
+        {
+          "metric_id": "harness_agents",
+          "name": "Agents",
+          "construct": "harness_retention",
+          "unit": "count",
+          "scale": "integer count",
+          "aggregation": "not_applicable",
+          "denominator_definition": "Publisher-reported benchmark scale descriptor; not a pass-rate denominator.",
+          "evaluator_type": "not_applicable",
+          "repeat_design": "17 streams with a combined 802 tasks, 520 tools, 42 skills and 62 agents.",
+          "limitations": [
+            "Scale descriptor only; no scalar leader score is asserted."
+          ]
+        }
+      ],
+      "results": [
+        {
+          "configuration": "Published benchmark corpus",
+          "metric_id": "harness_harness_streams",
+          "value": 17,
+          "unit": "count",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Number of harness evolution streams.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": "Publisher-reported benchmark scale."
+        },
+        {
+          "configuration": "Published benchmark corpus",
+          "metric_id": "harness_tasks",
+          "value": 802,
+          "unit": "count",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Number of tasks.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": "Publisher-reported benchmark scale."
+        },
+        {
+          "configuration": "Published benchmark corpus",
+          "metric_id": "harness_tools",
+          "value": 520,
+          "unit": "count",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Number of tools.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": "Publisher-reported benchmark scale."
+        },
+        {
+          "configuration": "Published benchmark corpus",
+          "metric_id": "harness_skills",
+          "value": 42,
+          "unit": "count",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Number of skills.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": "Publisher-reported benchmark scale."
+        },
+        {
+          "configuration": "Published benchmark corpus",
+          "metric_id": "harness_agents",
+          "value": 62,
+          "unit": "count",
+          "value_operator": "exact",
+          "numerator": null,
+          "denominator": null,
+          "result_context": "Number of agents.",
+          "experiment_date": null,
+          "uncertainty_or_repeat_note": "Publisher-reported benchmark scale."
+        }
+      ],
+      "scale": {
+        "task_count_description": "17 streams, 802 tasks, 520 tools, 42 skills and 62 agents.",
+        "tasks": 802,
+        "scenarios": null,
+        "trajectories": null,
+        "runs_per_model": null,
+        "repeats_per_task": null,
+        "trial_design": "Crossed harness capability evolution and task performance; tests adaptation/retention trade-offs.",
+        "average_trajectory_steps": null
+      },
+      "limitations": [
+        "Benchmark scale is reported; no scalar leader score is included in this crosswalk.",
+        "Results depend on task set, harness evolution schedule and agent cohort."
+      ],
+      "what_not_established": [
+        "Operational SRE repair quality or infrastructure safety."
+      ],
+      "sources": [
+        {
+          "title": "EvoHarnessBench arXiv paper",
+          "url": "https://arxiv.org/abs/2609.04280",
+          "source_type": "primary_publication",
+          "retrieved_on": "2026-11-05",
+          "published_on": null,
+          "notes": "17 streams, 802 tasks, 520 tools, 42 skills, 62 agents; capability additions can degrade previously solved tasks.",
+          "capture_status": "url_only",
+          "content_sha256": null
+        }
+      ]
+    }
+  ]
+}
