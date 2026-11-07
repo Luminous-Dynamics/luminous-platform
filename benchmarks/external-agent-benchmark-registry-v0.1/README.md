@@ -1,73 +1,118 @@
-# External agent benchmark registry v0.1
+# External agent benchmark evidence registry v0.1
 
 **Snapshot date:** 2026-11-07  
-**Snapshot status:** metadata snapshot, source-byte capture incomplete  
-**Format:** JSON Schema Draft 2020-12
+**Status:** metadata snapshot; exact source revisions are pinned where available, but most raw source bytes are not archived  
+**Records:** 13  
+**Schema:** JSON Schema Draft 2020-12, strict objects
 
-## Purpose
+This is a provenance registry, not a composite leaderboard. Unlike constructs are never normalized into a single SRE or agent score.
 
-This is a dated evidence registry, not a composite leaderboard. It keeps benchmark constructs, denominators, units, evaluators, run protocols, source identity and claim ceilings explicit so that unlike results are not accidentally compared.
+## What it covers
 
-The registry currently contains twelve records spanning:
+The 13 records span:
 
-- SRE diagnosis and mitigation (including SREGym full and Lite separately);
-- SRE diagnosis-only and tool-surface studies;
-- enterprise workflow execution;
-- harness reliability and harness evolution;
-- governance-layer enforcement;
-- model investigation quality/cost.
+- SREGym full and Lite cohorts (kept separate);
+- SRE-Marathon continuous diagnosis/repair;
+- Radar's matched tool-surface study;
+- Traceway AI SRE Bench;
+- AI SRE Arena;
+- ITBench-AA;
+- EnterpriseOps-Gym;
+- TraceTrial-Bench harness reliability;
+- AgentGovBench governance;
+- EvoHarnessBench harness evolution;
+- Datadog Scout / AlertEval;
+- NIST's evaluation-probe methodology.
 
-The records are intentionally not ranked together.
+Every record identifies the measured construct, unit, source, publication and observation dates, run protocol, evaluator, metrics, comparability group and claim ceiling. A vendor/owner result remains labelled as such until independently reproduced.
 
-## Files
+## Paradigm shifts for Luminous
 
-- `registry.schema.json`: strict Draft 2020-12 schema. All objects reject unrecognized properties.
-- `registry.snapshot-2026-11-07.json`: source-qualified 12-record snapshot.
+### 1. From answer correctness to independently verified outcomes
 
-## Critical comparison rules
+Preserve three different truth planes:
 
-1. Never compare raw percentages across different task units, cohorts, action permissions, scorers, judges or repeat protocols.
-2. Preserve native scores and denominators. Keep diagnosis, recommendation, mitigation execution, participant effect and sustained recovery separate.
-3. Label vendor- and benchmark-owner-published claims. They are not independent Luminous replications.
-4. A benchmark's native score must remain intact. Luminous supplemental controls are separate metric families.
-5. Use fault/task-level pairing and cluster-aware intervals for confirmatory comparisons. Repeated attempts within one fault are not independent fault samples.
-6. Missing source bytes or content hashes remain explicitly missing. A URL, Git commit or blob identifier is not a SHA-256 content digest.
-7. No composite or weighted "overall SRE score" is allowed. Safety, authority, positive-control acceptance, evidence completeness and verified effects are non-compensatory.
+1. **Proposal:** what the agent claimed, planned or attempted.
+2. **Enforcement:** what the runtime authorized or denied, under which principal, policy epoch, target, purpose, scope and exact operation digest.
+3. **Effect:** what the participant actually committed, independently read back from its effect ledger and observed.
 
-## Snapshot completeness
+A blocked prohibited attempt can be an enforcement success but remains an agent-alignment failure. A gateway receipt does not prove that no side effect occurred. A missing effect record is indeterminate, never a pass.
 
-This snapshot is marked `metadata_snapshot_partial`. The following capture states are distinguished:
+### 2. From poll-and-think to event-qualified attention
 
-- `metadata_only_no_content_hash`: source inspected, but exact source bytes were not retained and hashed here.
-- `raw_git_blob_sha_only`: a Git blob SHA is recorded, but this is not a SHA-256 content hash.
-- `content_sha256_verified`: reserved for future snapshots where the exact captured bytes have a verified SHA-256 digest.
+Platform PR #321 separates low-cost monitor checks from policy invocations and eligible read-only probe proposals. It deliberately does not infer mutation permission from a probe selection.
 
-Do not promote this snapshot to `source_bytes_hashed_complete` until every primary source and every necessary raw dataset/scorer artifact has been captured, hashed and linked. A vendor blog does not substitute for raw task outcomes.
+The next event study (#323) must handle durable and ephemeral events, concurrent incidents, duplicate delivery, source collisions, cursor gaps, deadlines and revocation while dormant. A rising-edge boolean is an initial microbenchmark, not a durable event system. Coalescing is acceptable only when all incident identities, scopes and purposes remain reconstructable.
 
-## Important category distinctions
+### 3. From fixed harnesses to continuously requalified systems
 
-- **SREGym-0508:** 90-fault full cohort, three attempts/fault; the 95.2% E2E is diagnosis and mitigation both correct on the same attempt.
-- **SREGym-Lite-1004:** 17-fault Lite cohort; a smoke/regression set, not the full-suite frontier.
-- **SRE-Marathon:** 41.3 is native Marathon-Score, not a repair percentage. Report active-fault repair fraction separately.
-- **AI SRE Arena:** the published supported-fix measure is a recommendation score; the study did not execute the repair or verify recovery.
-- **Traceway AI SRE Bench:** deterministic grading includes answer, evidence, safe writes and hidden tests; one run per case/setup does not estimate run-to-run stability.
-- **ITBench-AA:** AP@FR is a diagnosis precision metric with a hard zero on false negatives; it is not a resolution rate.
-- **AgentGovBench:** governance-layer scenario score; it is not SRE diagnosis or model harmful-refusal performance.
-- **EvoHarnessBench:** retention/adaptation under staged harness evolution; not an SRE score.
-- **Datadog Scout / AlertEval:** expert-explanation agreement and estimated inference cost; not incident-resolution percentage.
+Tools, schemas, skills, specialist agents, identity adapters, policy and observers all change. Each change creates a new harness epoch. Qualification must be bound to exact artifact digests, and an impact assessment must identify which previous claims remain valid and which require re-testing.
 
-## Reproduction and updating
+A capability addition must not silently inherit old safety or permission qualification. See Symthaea #11030.
 
-To update this registry:
+### 4. From one leaderboard number to a non-compensatory assurance frontier
 
-1. Inspect the benchmark's primary paper, maintainer page, official scorer and raw dataset source where available.
-2. Pin the repository commit, release or leaderboard snapshot separately from the publication date.
-3. Record exact task, run and repeat counts; judge identity; tool surface; permissions; environment and retry policy.
-4. Preserve reported metrics in their native units. Only derive count ratios when numerator/denominator and aggregation semantics are explicitly known.
-5. Add limitations and a claim ceiling for every metric.
-6. Validate the snapshot against the JSON Schema and run negative controls.
-7. Review any license separately for paper, code, scenario text, task data, fixtures, dependency and result artifacts before copying or redistributing them.
+Keep diagnosis, recommendation quality, actual repair, sustained recovery, unauthorized attempts, committed effects, cross-tenant disclosure, positive-control acceptance, evidence completeness, event recall, harness retention, latency and cost separate.
 
-## Claim ceiling
+No weighted average may compensate for an unauthorized committed effect, a cross-tenant disclosure, a missing effect receipt or a lost safety qualification.
 
-The registry improves provenance and prevents category errors. It does not certify third-party benchmark correctness, independently reproduce any external score, or establish Luminous superiority. Only a separate matched experiment can establish a comparative claim.
+### 5. From token cost to cost per verified outcome
+
+Measure full-system cost: inference, tools, event transport, telemetry, probes, retries, rollbacks, human escalation and recovery. Publish both native task cost and cost per independently verified restored service outcome. A vendor's estimated inference price is not an audited total operational cost.
+
+## Research targets (targets, not achieved results)
+
+| Programme | Initial target and comparison discipline |
+|---|---|
+| SREGym full | Reproduce the native 90-fault × 3-attempt cohort and same-run diagnosis+mitigation scorer. Aim for ≥97% E2E on a preregistered repeated fault-level evaluation, with cluster-aware intervals, cost and latency. The 95.2% Radar result is a maintainer-verified participant report, not our replication. |
+| SRE-Marathon | Exceed 41.3 native Marathon-Score and target ≥0.20 active-fault repair fraction. Also publish full resolution counts, user-impact degradation, risk and resource use. |
+| Traceway AI SRE Bench | Preserve its 62 cases, five setups and deterministic grader. Beat the verified-pass-per-dollar frontier while retaining safe-write and hidden-test checks; do not optimize answer-only accuracy. |
+| ITBench-AA | Target AP@FR >60% on the exact 59-task set and three-repeat protocol; show per-task zero-false-negative coverage and precision separately. |
+| AgentGovBench | Reproduce all 48 native scenarios and target 48/48. Separately require zero unauthorized committed effects, zero cross-tenant disclosure/effects and 100% valid positive-control acceptance. |
+| TraceTrial-Bench | Preserve the 95 × 9 × 4 task/model/harness design where permitted. Aim for ≥20% Clean versus its reported 8.4% corpus rate, while retaining Agent Score and Harness Macro separately. |
+| EvoHarnessBench | Target ≥95% prior-task retention, 100% retention of safety/authority controls, zero silent qualification inheritance and separately measured new-task adaptation. |
+| EnterpriseOps-Gym | Target >50% on a permitted full native split; publish infeasible-task refusal, side effects and SQL-verified final state separately. Never call a small ITSM subset the full score. |
+| Paired attention | 100% valid in-deadline critical-event detection in the frozen corpus; zero duplicate credit, silent sequence-gap acceptance or identity-collision acceptance; ≥50% fewer policy invocations on declared quiet/duplicate workloads without reduced critical-event recall. |
+| Evidence integrity | 100% exact source/effect lineage reconstruction on scored trials, zero missing-as-success conversions and replay from exact policy, source, harness and runner digests. |
+
+These are staged research thresholds, not results. Native benchmarks must be reproduced with their original scorers; all Luminous-only metrics remain supplemental. A performance claim requires matched task sets, model/harness controls, paired fault-level results and uncertainty—not just a higher point estimate.
+
+## Current source and evidence limitations
+
+The snapshot is marked `metadata_snapshot_partial`. Source identity, repository commit, Git blob SHA and content SHA-256 are separate fields:
+
+- SREGym's 95.2% row is pinned to the official `SREGym-website` repository commit and the exact `lib/leaderboard-data.ts` Git blob. The Git blob ID is SHA-1; it is not called a SHA-256 of a captured web page.
+- AgentGovBench, TraceTrial-Bench and AI SRE Arena repository commits are recorded separately from page-byte hashes.
+- Most paper and website sources are metadata-only. Their exact PDF/page/data bytes are not yet archived.
+- NIST Evaluation Probes is an ongoing method project; the current project page provides no numeric leaderboard score.
+- The AgentGovBench repository root license is MIT. Scenario assets, datasets, dependencies and copied results still need individual license checks before redistribution.
+
+Do not promote this snapshot to source-byte-complete until the primary source files, raw leaderboard data, scorers, exact revisions and applicable licenses have been captured and hashed.
+
+## Files and validation
+
+- `registry.schema.json`: strict Draft 2020-12 schema.
+- `registry.snapshot-2026-11-07.json`: 13-record source-pinned metadata snapshot.
+- `validate_registry.py`: validation-only cross-field checks and negative controls.
+- `requirements.txt`: pinned JSON Schema validator for CI.
+
+Run locally:
+
+```sh
+python3 -m pip install -r requirements.txt
+python3 validate_registry.py
+```
+
+The Python file is validation glue only. The benchmark/runtime code remains Rust.
+
+## Related work
+
+- Platform [#268](https://github.com/Luminous-Dynamics/luminous-platform/issues/268): source-pinned benchmark evidence registry.
+- Platform [#274](https://github.com/Luminous-Dynamics/luminous-platform/issues/274): non-compensatory capability and assurance frontier.
+- Platform [#318](https://github.com/Luminous-Dynamics/luminous-platform/issues/318): matched model/tool-surface ablation.
+- Platform [#321](https://github.com/Luminous-Dynamics/luminous-platform/pull/321): paired fixed-poll / event-triggered attention experiment.
+- Platform [#322](https://github.com/Luminous-Dynamics/luminous-platform/issues/322): AgentGovBench governance adapter.
+- Platform [#323](https://github.com/Luminous-Dynamics/luminous-platform/issues/323): durable, ephemeral and concurrent event semantics.
+- Symthaea [#11030](https://github.com/Luminous-Dynamics/symthaea/issues/11030): harness evolution, retention and safe adaptation.
+
+**Claim ceiling:** this registry improves provenance and prevents category errors. It does not independently reproduce the published scores or establish that Luminous is better than an external system.
