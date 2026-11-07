@@ -674,6 +674,23 @@ mod tests {
         assert_eq!(result.decision_value.unwrap().realized_loss_reduction_ppm, 300_000);
     }
 
+
+    #[test]
+    fn observation_from_before_the_wakeup_is_rejected_as_stale() {
+        let mut stale = observation();
+        stale.observed_at_tick = 3;
+        let result = run(
+            &[event(10, "queue_pressure", true)],
+            &authority(),
+            catalog_entry(true),
+            CollectionOutcome::Completed(stale),
+            impact(),
+        );
+        assert_eq!(result.status, EpisodeStatus::ObservationRejected);
+        assert_eq!(result.terminal, TerminalDisposition::Abstain);
+        assert!(result.decision_value.is_none());
+    }
+
     #[test]
     fn revoked_during_dormancy_prevents_probe_admission() {
         let mut revoked = authority();
