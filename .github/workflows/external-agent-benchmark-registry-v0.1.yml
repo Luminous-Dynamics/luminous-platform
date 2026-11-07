@@ -1,0 +1,130 @@
+name: external agent benchmark registry v0.1
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/external-agent-benchmark-registry-v0.1/**"
+      - ".github/workflows/external-agent-benchmark-registry-v0.1.yml"
+  push:
+    branches: [main]
+    paths:
+      - "benchmarks/external-agent-benchmark-registry-v0.1/**"
+      - ".github/workflows/external-agent-benchmark-registry-v0.1.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: external-agent-benchmark-registry-v0.1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-registry:
+    name: Validate source-qualified benchmark registry
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Install pinned JSON Schema validator
+        run: |
+          python -m pip install --disable-pip-version-check "jsonschema==4.23.0"
+      - name: Validate schema and snapshot, including negative controls
+        run: |
+          python - <<'PY'
+          import copy
+          import json
+          from pathlib import Path
+
+          from jsonschema import Draft202012Validator, FormatChecker
+
+          root = Path("benchmarks/external-agent-benchmark-registry-v0.1")
+          schema = json.loads((root / "registry.schema.json").read_text(encoding="utf-8"))
+          snapshot = json.loads(
+              (root / "registry.snapshot-2026-11-07.json").read_text(encoding="utf-8")
+          )
+
+          Draft202012Validator.check_schema(schema)
+          validator = Draft202012Validator(schema, format_checker=FormatChecker())
+          errors = sorted(validator.iter_errors(snapshot), key=lambda e: list(e.path))
+          if errors:
+              for error in errors:
+                  print(f"SCHEMA ERROR at {'/'.join(map(str, error.path))}: {error.message}")
+              raise SystemExit(1)
+
+          ids = [record["id"] for record in snapshot["records"]]
+          if len(ids) != len(set(ids)):
+              raise SystemExit("Duplicate benchmark record IDs")
+
+          # The registry deliberately preserves native metrics. Do not silently
+          # add a composite score or turn an unknown denominator into a count.
+          forbidden = {"overall_sre_score", "composite_score", "weighted_sre_score"}
+          for record in snapshot["records"]:
+              for metric in record["metrics"]:
+                  if metric["metric_id"] in forbidden:
+                      raise SystemExit(f"Forbidden composite metric: {record['id']}/{metric['metric_id']}")
+                  numerator = metric.get("numerator")
+                  denominator = metric.get("denominator")
+                  if numerator is not None and denominator is not None and numerator > denominator:
+                      raise SystemExit(
+                          f"Invalid numerator/denominator: {record['id']}/{metric['metric_id']}"
+                      )
+                  if (numerator is None) != (denominator is None):
+                      # A numerator without its denominator, or vice versa,
+                      # cannot support a reproducible count-derived metric.
+                      raise SystemExit(
+                          f"Incomplete count pair: {record['id']}/{metric['metric_id']}"
+                      )
+
+          if snapshot["snapshot_status"] != "metadata_snapshot_partial":
+              raise SystemExit("This snapshot must remain partial until source-byte capture is complete")
+
+          capture_states = {
+              record["source"]["capture"]["status"] for record in snapshot["records"]
+          }
+          if "metadata_only_no_content_hash" not in capture_states:
+              raise SystemExit("Expected explicit missing-source-hash status")
+          if "raw_git_blob_sha_only" not in capture_states:
+              raise SystemExit("Expected explicit git-blob-only provenance status")
+
+          # Negative controls: each malformed instance must be rejected.
+          negatives = []
+
+          missing_denominator = copy.deepcopy(snapshot)
+          metric = missing_denominator["records"][0]["metrics"][0]
+          metric["denominator"] = None
+          negatives.append(("missing denominator", missing_denominator))
+
+          missing_source_identity = copy.deepcopy(snapshot)
+          del missing_source_identity["records"][0]["source"]["primary_url"]
+          negatives.append(("missing source identity", missing_source_identity))
+
+          unknown_metric_semantics = copy.deepcopy(snapshot)
+          unknown_metric_semantics["records"][0]["metrics"][0]["value_semantics"] = "mystery"
+          negatives.append(("unknown metric semantics", unknown_metric_semantics))
+
+          invalid_date_order = copy.deepcopy(snapshot)
+          invalid_date_order["records"][0]["publication"]["published_at"] = "2026-11-08"
+          negatives.append(("publication after observation", invalid_date_order))
+
+          composite_score = copy.deepcopy(snapshot)
+          composite_score["records"][0]["metrics"][0]["overall_sre_score"] = 99
+          negatives.append(("composite score property", composite_score))
+
+          for label, candidate in negatives:
+              if not list(validator.iter_errors(candidate)):
+                  raise SystemExit(f"Negative control was accepted: {label}")
+              print(f"rejected as expected: {label}")
+
+          print(
+              f"validated {len(snapshot['records'])} registry records; "
+              f"{len(negatives)} negative controls rejected"
+          )
+          PY
