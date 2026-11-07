@@ -551,27 +551,23 @@ pub fn run_scripted_episode<P: ProbePolicy>(
         authority_epoch: authority.epoch,
     };
     // Reuse the same capability-minimal catalog filter as the paired runner.
-    let eligible_probe_ids = match eligible_probe_ids_for_watch(
-        watch,
-        authority,
-        current_tick,
-        catalog,
-    ) {
-        Ok(ids) => ids,
-        Err(EpisodeError::InvalidProbeCatalog) => {
-            return Ok(empty_result(
-                watch,
-                authority,
-                EpisodeStatus::ProbeCatalogInvalid,
-                TerminalDisposition::Abstain,
-                delivered_events,
-                duplicate_events,
-                rejected_scope_events,
-                wakeups,
-            ));
-        }
-        Err(error) => return Err(error),
-    };
+    let eligible_probe_ids =
+        match eligible_probe_ids_for_watch(watch, authority, current_tick, catalog) {
+            Ok(ids) => ids,
+            Err(EpisodeError::InvalidProbeCatalog) => {
+                return Ok(empty_result(
+                    watch,
+                    authority,
+                    EpisodeStatus::ProbeCatalogInvalid,
+                    TerminalDisposition::Abstain,
+                    delivered_events,
+                    duplicate_events,
+                    rejected_scope_events,
+                    wakeups,
+                ));
+            }
+            Err(error) => return Err(error),
+        };
 
     let selected_probe_id = match policy.select_probe(&wake, &eligible_probe_ids) {
         Some(probe_id)
