@@ -43,7 +43,7 @@ impl AuthoritySnapshot {
             && self.purpose_id == watch.purpose_id
             && at_tick >= self.valid_from_tick
             && at_tick < self.expires_at_tick
-            && !self.revoked_at_tick.is_some_and(|revoked| at_tick >= revoked)
+            && self.revoked_at_tick.is_none_or(|revoked| at_tick < revoked)
     }
 }
 
@@ -141,7 +141,7 @@ pub struct ImpactObservation {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CollectionOutcome {
     NotStarted,
-    Completed(SourceObservation),
+    Completed(Box<SourceObservation>),
     Failed,
     /// The client timed out, but the collector may still consume resources.
     TimedOutStillRunning,
@@ -149,7 +149,7 @@ pub enum CollectionOutcome {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ImpactOutcome {
-    Observed(ImpactObservation),
+    Observed(Box<ImpactObservation>),
     Unknown,
     NotMeasured,
 }
@@ -509,7 +509,7 @@ pub fn run_scripted_episode<P: ProbePolicy>(
             result.terminal = TerminalDisposition::Escalate;
             return Ok(result);
         }
-        CollectionOutcome::Completed(observation) => observation,
+        CollectionOutcome::Completed(observation) => *observation,
     };
 
     let observation_valid = non_empty(&observation.observation_id)
@@ -547,7 +547,7 @@ pub fn run_scripted_episode<P: ProbePolicy>(
             result.impact = ImpactDisposition::NotMeasured;
             return Ok(result);
         }
-        ImpactOutcome::Observed(impact) => impact,
+        ImpactOutcome::Observed(impact) => *impact,
     };
 
     if !impact.complete
@@ -674,7 +674,7 @@ mod tests {
     }
 
     fn impact() -> ImpactOutcome {
-        ImpactOutcome::Observed(ImpactObservation {
+        ImpactOutcome::Observed(Box::new(ImpactObservation {
             impact_id: "impact-1".into(),
             digest: "sha256:impact-a".into(),
             probe_id: "probe-queue-depth".into(),
@@ -689,7 +689,7 @@ mod tests {
             cpu_milliticks: 12,
             io_bytes: 128,
             complete: true,
-        })
+        }))
     }
 
     fn truth() -> EvaluatorTruth {
@@ -720,7 +720,7 @@ mod tests {
         let result = run(
             &[event(10, "queue_pressure", true)],
             &authority(), catalog_entry(true),
-            CollectionOutcome::Completed(observation()), impact(),
+            CollectionOutcome::Completed(Box::new(observation())), impact(),
         );
         assert_eq!(result.status, EpisodeStatus::Completed);
         assert_eq!(result.terminal, TerminalDisposition::Stop);
