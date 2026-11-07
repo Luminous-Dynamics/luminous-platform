@@ -67,7 +67,12 @@ pub fn audit_adapter_schema_coverage(
         .map(|field| (field.path.clone(), field.required))
         .collect();
     let mut record_structure_errors = Vec::new();
-    validate_record_structure(source_schema, source_record, "", &mut record_structure_errors);
+    validate_record_structure(
+        source_schema,
+        source_record,
+        "",
+        &mut record_structure_errors,
+    );
     let mut mapping_paths: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let mut presence_mismatches = Vec::new();
 
@@ -90,7 +95,11 @@ pub fn audit_adapter_schema_coverage(
                 .push(declared_presence.to_owned());
 
             if let Some(schema_required) = fields_by_path.get(path) {
-                let expected = if *schema_required { "required" } else { "optional" };
+                let expected = if *schema_required {
+                    "required"
+                } else {
+                    "optional"
+                };
                 if declared_presence != expected {
                     presence_mismatches.push(json!({
                         "mapping_index": index,
@@ -176,10 +185,14 @@ pub fn audit_adapter_schema_coverage(
     let covered_schema_field_count = fields_by_path
         .iter()
         .filter(|(path, schema_required)| {
-            let expected_presence = if **schema_required { "required" } else { "optional" };
-            mapping_paths.get(*path).is_some_and(|declared| {
-                declared.len() == 1 && declared[0] == expected_presence
-            })
+            let expected_presence = if **schema_required {
+                "required"
+            } else {
+                "optional"
+            };
+            mapping_paths
+                .get(*path)
+                .is_some_and(|declared| declared.len() == 1 && declared[0] == expected_presence)
         })
         .count();
     let status = if schema_coverage_complete {
@@ -276,7 +289,10 @@ fn walk_schema(
         "unevaluatedItems",
     ] {
         if object.contains_key(unsupported) {
-            return Err(schema_error(path, "unsupported_schema_composition_or_dynamic_fields"));
+            return Err(schema_error(
+                path,
+                "unsupported_schema_composition_or_dynamic_fields",
+            ));
         }
     }
 
@@ -287,13 +303,19 @@ fn walk_schema(
     match type_name {
         "object" => {
             if object.get("additionalProperties") != Some(&Value::Bool(false)) {
-                return Err(schema_error(path, "object_must_set_additionalProperties_false"));
+                return Err(schema_error(
+                    path,
+                    "object_must_set_additionalProperties_false",
+                ));
             }
             let Some(properties) = object.get("properties").and_then(Value::as_object) else {
                 return Err(schema_error(path, "object_must_declare_properties"));
             };
             if properties.is_empty() {
-                return Err(schema_error(path, "empty_object_has_no_auditable_leaf_inventory"));
+                return Err(schema_error(
+                    path,
+                    "empty_object_has_no_auditable_leaf_inventory",
+                ));
             }
             let required_names: BTreeSet<&str> = match object.get("required") {
                 None => BTreeSet::new(),
@@ -304,7 +326,10 @@ fn walk_schema(
                             return Err(schema_error(path, "required_must_contain_only_strings"));
                         };
                         if !properties.contains_key(name) {
-                            return Err(schema_error(path, "required_name_not_declared_in_properties"));
+                            return Err(schema_error(
+                                path,
+                                "required_name_not_declared_in_properties",
+                            ));
                         }
                         if !names.insert(name) {
                             return Err(schema_error(path, "duplicate_required_name"));
@@ -351,12 +376,7 @@ fn walk_schema(
     }
 }
 
-fn validate_record_structure(
-    schema: &Value,
-    record: &Value,
-    path: &str,
-    errors: &mut Vec<Value>,
-) {
+fn validate_record_structure(schema: &Value, record: &Value, path: &str, errors: &mut Vec<Value>) {
     let Some(type_name) = schema.get("type").and_then(Value::as_str) else {
         errors.push(json!({
             "source_path": if path.is_empty() { "/" } else { path },
@@ -512,12 +532,10 @@ mod tests {
     use jsonschema::draft202012;
     use serde_json::{json, Value};
 
-    const MAP: &str = include_str!(
-        "../../../docs/standards/omsi/adapters/0.1/examples/mes-optional-map.json"
-    );
-    const RECORD: &str = include_str!(
-        "../../../docs/standards/omsi/adapters/0.1/examples/mes-optional-record.json"
-    );
+    const MAP: &str =
+        include_str!("../../../docs/standards/omsi/adapters/0.1/examples/mes-optional-map.json");
+    const RECORD: &str =
+        include_str!("../../../docs/standards/omsi/adapters/0.1/examples/mes-optional-record.json");
     const SCHEMA: &str = include_str!(
         "../../../docs/standards/omsi/adapters/0.1/examples/mes-optional-record.schema.json"
     );
@@ -535,14 +553,22 @@ mod tests {
         let (_, schema, record) = fixture();
         assert!(draft202012::meta::is_valid(&schema));
         let validator = draft202012::new(&schema).expect("source schema compiles");
-        assert!(validator.is_valid(&record), "sample should conform to schema: {record:#}");
+        assert!(
+            validator.is_valid(&record),
+            "sample should conform to schema: {record:#}"
+        );
     }
 
     #[test]
     fn optional_absent_fields_are_covered_from_schema_not_only_sample_data() {
         let (map, schema, record) = fixture();
         let report = audit_adapter_schema_coverage(
-            &map, MAP.as_bytes(), &schema, SCHEMA.as_bytes(), &record, RECORD.as_bytes(),
+            &map,
+            MAP.as_bytes(),
+            &schema,
+            SCHEMA.as_bytes(),
+            &record,
+            RECORD.as_bytes(),
         );
         assert_eq!(report["status"], "schema_coverage_complete", "{report:#}");
         assert_eq!(report["schema_field_count"], 4);
@@ -552,13 +578,25 @@ mod tests {
         ))
         .expect("coverage report schema parses");
         assert!(draft202012::meta::is_valid(&report_schema));
-        let report_validator = draft202012::new(&report_schema)
-            .expect("coverage report schema compiles");
-        assert!(report_validator.is_valid(&report), "report failed schema: {report:#}");
+        let report_validator =
+            draft202012::new(&report_schema).expect("coverage report schema compiles");
+        assert!(
+            report_validator.is_valid(&report),
+            "report failed schema: {report:#}"
+        );
         assert_eq!(report["schema_paths_not_mapped"], json!([]));
         assert_eq!(report["presence_mismatches"], json!([]));
-        assert_eq!(report["schema_paths_not_observed_in_record"].as_array().unwrap().len(), 3);
-        assert_eq!(report["required_schema_paths_not_observed_in_record"], json!([]));
+        assert_eq!(
+            report["schema_paths_not_observed_in_record"]
+                .as_array()
+                .unwrap()
+                .len(),
+            3
+        );
+        assert_eq!(
+            report["required_schema_paths_not_observed_in_record"],
+            json!([])
+        );
     }
 
     #[test]
@@ -566,10 +604,18 @@ mod tests {
         let (mut map, schema, record) = fixture();
         map["mappings"].as_array_mut().unwrap().pop();
         let report = audit_adapter_schema_coverage(
-            &map, &serde_json::to_vec(&map).unwrap(), &schema, SCHEMA.as_bytes(), &record, RECORD.as_bytes(),
+            &map,
+            &serde_json::to_vec(&map).unwrap(),
+            &schema,
+            SCHEMA.as_bytes(),
+            &record,
+            RECORD.as_bytes(),
         );
         assert_eq!(report["status"], "schema_coverage_incomplete");
-        assert_eq!(report["schema_paths_not_mapped"].as_array().unwrap().len(), 1);
+        assert_eq!(
+            report["schema_paths_not_mapped"].as_array().unwrap().len(),
+            1
+        );
     }
 
     #[test]
@@ -583,11 +629,25 @@ mod tests {
         }));
         let map_bytes = serde_json::to_vec(&map).unwrap();
         let report = audit_adapter_schema_coverage(
-            &map, &map_bytes, &schema, SCHEMA.as_bytes(), &record, RECORD.as_bytes(),
+            &map,
+            &map_bytes,
+            &schema,
+            SCHEMA.as_bytes(),
+            &record,
+            RECORD.as_bytes(),
         );
         assert_eq!(report["status"], "schema_coverage_incomplete", "{report:#}");
-        assert_eq!(report["mapping_paths_outside_schema"].as_array().unwrap().len(), 1);
-        assert_eq!(report["mapping_paths_outside_schema"][0]["source_path"], "/legacy_note");
+        assert_eq!(
+            report["mapping_paths_outside_schema"]
+                .as_array()
+                .unwrap()
+                .len(),
+            1
+        );
+        assert_eq!(
+            report["mapping_paths_outside_schema"][0]["source_path"],
+            "/legacy_note"
+        );
     }
 
     #[test]
@@ -596,7 +656,12 @@ mod tests {
         map["mappings"][1]["presence"] = json!("required");
         let map_bytes = serde_json::to_vec(&map).unwrap();
         let report = audit_adapter_schema_coverage(
-            &map, &map_bytes, &schema, SCHEMA.as_bytes(), &record, RECORD.as_bytes(),
+            &map,
+            &map_bytes,
+            &schema,
+            SCHEMA.as_bytes(),
+            &record,
+            RECORD.as_bytes(),
         );
         assert_eq!(report["status"], "schema_coverage_incomplete");
         assert_eq!(report["presence_mismatches"].as_array().unwrap().len(), 1);
@@ -605,26 +670,45 @@ mod tests {
     #[test]
     fn open_objects_and_schema_composition_fail_closed() {
         let (map, mut schema, record) = fixture();
-        schema.as_object_mut().unwrap().remove("additionalProperties");
+        schema
+            .as_object_mut()
+            .unwrap()
+            .remove("additionalProperties");
         let map_bytes = MAP.as_bytes();
         let report = audit_adapter_schema_coverage(
-            &map, map_bytes, &schema, &serde_json::to_vec(&schema).unwrap(), &record, RECORD.as_bytes(),
+            &map,
+            map_bytes,
+            &schema,
+            &serde_json::to_vec(&schema).unwrap(),
+            &record,
+            RECORD.as_bytes(),
         );
         assert_eq!(report["status"], "unsupported_source_schema");
-        assert_eq!(report["schema_errors"][0]["reason"], "object_must_set_additionalProperties_false");
+        assert_eq!(
+            report["schema_errors"][0]["reason"],
+            "object_must_set_additionalProperties_false"
+        );
         let report_schema: Value = serde_json::from_str(include_str!(
             "../schema/adapter-schema-coverage-report.schema.json"
         ))
         .expect("coverage report schema parses");
-        let report_validator = draft202012::new(&report_schema)
-            .expect("coverage report schema compiles");
-        assert!(report_validator.is_valid(&report), "unsupported-schema report invalid: {report:#}");
+        let report_validator =
+            draft202012::new(&report_schema).expect("coverage report schema compiles");
+        assert!(
+            report_validator.is_valid(&report),
+            "unsupported-schema report invalid: {report:#}"
+        );
 
         let (_, mut schema, _) = fixture();
         schema["$ref"] = json!("#/$defs/fields");
         let schema_bytes = serde_json::to_vec(&schema).unwrap();
         let report = audit_adapter_schema_coverage(
-            &map, map_bytes, &schema, &schema_bytes, &record, RECORD.as_bytes(),
+            &map,
+            map_bytes,
+            &schema,
+            &schema_bytes,
+            &record,
+            RECORD.as_bytes(),
         );
         assert_eq!(report["status"], "unsupported_source_schema");
     }
@@ -677,13 +761,27 @@ mod tests {
         let schema_bytes = serde_json::to_vec(&schema).unwrap();
         let record_bytes = serde_json::to_vec(&record).unwrap();
         let report = audit_adapter_schema_coverage(
-            &map, &map_bytes, &schema, &schema_bytes, &record, &record_bytes,
+            &map,
+            &map_bytes,
+            &schema,
+            &schema_bytes,
+            &record,
+            &record_bytes,
         );
         assert_eq!(report["status"], "schema_coverage_complete", "{report:#}");
         assert_eq!(report["schema_field_count"], 4);
         assert_eq!(report["covered_schema_field_count"], 4);
-        assert_eq!(report["schema_paths_not_observed_in_record"].as_array().unwrap().len(), 2);
-        assert_eq!(report["required_schema_paths_not_observed_in_record"], json!([]));
+        assert_eq!(
+            report["schema_paths_not_observed_in_record"]
+                .as_array()
+                .unwrap()
+                .len(),
+            2
+        );
+        assert_eq!(
+            report["required_schema_paths_not_observed_in_record"],
+            json!([])
+        );
     }
 
     #[test]
@@ -697,15 +795,27 @@ mod tests {
         let schema_bytes = serde_json::to_vec(&schema).unwrap();
         let record_bytes = serde_json::to_vec(&record).unwrap();
         let report = audit_adapter_schema_coverage(
-            &map, &map_bytes, &schema, &schema_bytes, &record, &record_bytes,
+            &map,
+            &map_bytes,
+            &schema,
+            &schema_bytes,
+            &record,
+            &record_bytes,
         );
         assert_eq!(report["status"], "schema_coverage_incomplete", "{report:#}");
-        assert!(report["record_structure_errors"].as_array().unwrap().iter().any(|error| {
-            error["source_path"] == "/metadata/note"
-                && error["reason"] == "required_property_not_observed"
-        }));
+        assert!(report["record_structure_errors"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|error| {
+                error["source_path"] == "/metadata/note"
+                    && error["reason"] == "required_property_not_observed"
+            }));
         assert!(report["required_schema_paths_not_observed_in_record"]
-            .as_array().unwrap().iter().any(|path| path == "/metadata/note"));
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|path| path == "/metadata/note"));
     }
 
     #[test]
@@ -732,7 +842,12 @@ mod tests {
         let schema_bytes = serde_json::to_vec(&schema).unwrap();
         let record_bytes = serde_json::to_vec(&record).unwrap();
         let report = audit_adapter_schema_coverage(
-            &map, &map_bytes, &schema, &schema_bytes, &record, &record_bytes,
+            &map,
+            &map_bytes,
+            &schema,
+            &schema_bytes,
+            &record,
+            &record_bytes,
         );
         assert_eq!(report["status"], "schema_coverage_complete", "{report:#}");
         assert_eq!(report["schema_field_count"], 2);

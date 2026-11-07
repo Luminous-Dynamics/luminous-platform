@@ -97,17 +97,13 @@ fn export_time_never_substitutes_for_missing_source_revision() {
 
     assert_eq!(before["source_revision_metadata"], "not_provided");
     assert_eq!(after["source_revision_metadata"], "not_provided");
-    assert!(has_disposition(
-        &after,
-        "loss",
-        "source.record_revision"
-    ));
+    assert!(has_disposition(&after, "loss", "source.record_revision"));
     assert_eq!(
         after["decision_trace"]
             .as_array()
-            .and_then(|trace| trace.iter().find(|entry| {
-                entry["rule_id"] == "omsi.manufacturing.revision-provenance/0.1"
-            }))
+            .and_then(|trace| trace
+                .iter()
+                .find(|entry| { entry["rule_id"] == "omsi.manufacturing.revision-provenance/0.1" }))
             .map(|entry| entry["result"].clone()),
         Some(json!("revision_token_not_provided"))
     );
@@ -187,7 +183,11 @@ fn asserting_calibration_authenticity_from_this_validator_is_rejected() {
 
     let report = report_for(&input);
     assert_eq!(report["outcome"], "reject");
-    assert!(has_disposition(&report, "reject", "calibration.authenticity_verified_by_adapter"));
+    assert!(has_disposition(
+        &report,
+        "reject",
+        "calibration.authenticity_verified_by_adapter"
+    ));
     assert_eq!(report["quality_release_authority"], "none");
 }
 
@@ -294,10 +294,13 @@ fn deterministic_generated_assurance_sweep_covers_100000_cases() {
                 let pointer = scoped_references[generation % scoped_references.len()];
                 scope_case
                     .pointer_mut(pointer)
-                    .unwrap_or_else(|| panic!("missing scoped reference at {pointer}"))["tenant_ref"] =
-                    json!(format!("tenant:generated-negative-{generation}"));
+                    .unwrap_or_else(|| panic!("missing scoped reference at {pointer}"))
+                    ["tenant_ref"] = json!(format!("tenant:generated-negative-{generation}"));
                 let report = report_for(&scope_case);
-                assert_eq!(report["outcome"], "reject", "generated scope case {index}: {report}");
+                assert_eq!(
+                    report["outcome"], "reject",
+                    "generated scope case {index}: {report}"
+                );
                 assert_eq!(report["quality_release_authority"], "none");
                 assert_eq!(report["equipment_control_authority"], "none");
                 continue;

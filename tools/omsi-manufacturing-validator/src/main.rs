@@ -1,11 +1,11 @@
 mod adapter;
 mod benchmark;
-mod replay;
 mod provenance;
+mod replay;
 mod schema_coverage;
 
-use omsi_manufacturing_validator::{evaluate_input_value, validate_vector_document};
 use adapter::{apply_adapter_map, audit_adapter_map, verify_transform_vectors};
+use omsi_manufacturing_validator::{evaluate_input_value, validate_vector_document};
 use replay::{create_replay_envelope, verify_replay_envelope};
 use serde_json::Value;
 use std::env;
@@ -273,8 +273,8 @@ fn read_bytes_bounded(path: &str, maximum_bytes: usize) -> Result<Vec<u8>, Strin
             .map_err(|error| format!("failed to read stdin: {error}"))?;
         source
     } else {
-        let file = fs::File::open(path)
-            .map_err(|error| format!("failed to open {path}: {error}"))?;
+        let file =
+            fs::File::open(path).map_err(|error| format!("failed to open {path}: {error}"))?;
         let metadata = file
             .metadata()
             .map_err(|error| format!("failed to inspect {path}: {error}"))?;
@@ -352,6 +352,9 @@ mod tests {
         let result = read_bytes_bounded(path_text, 4);
         fs::remove_file(&path).expect("temporary fixture can be removed");
 
-        assert_eq!(result.expect("input at limit should be accepted"), b"1234".to_vec());
+        assert_eq!(
+            result.expect("input at limit should be accepted"),
+            b"1234".to_vec()
+        );
     }
 }

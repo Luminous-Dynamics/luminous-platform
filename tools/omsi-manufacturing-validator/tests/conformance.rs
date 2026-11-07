@@ -301,7 +301,6 @@ fn mutated_expected_result_fails_instead_of_self_certifying() {
         .any(|failure| failure["vector_id"] == "MFG-OBS-001"));
 }
 
-
 #[test]
 fn tenant_scope_is_enforced_for_measurement_instrument_references() {
     let mut input = base_input();
@@ -383,7 +382,6 @@ fn snapshot_export_does_not_upgrade_record_revision_or_atomicity() {
     }));
 }
 
-
 #[test]
 fn a_snapshot_token_is_reported_as_a_source_claim_not_verified_atomicity() {
     let mut input = base_input();
@@ -437,11 +435,13 @@ fn lowercase_timezone_designator_is_not_silently_normalized() {
     );
 }
 
-
 #[test]
 fn reports_an_auditable_rule_bound_decision_trace() {
     let report = evaluate(&base_input());
-    assert_eq!(report["report_contract"], "omsi-manufacturing-semantic-report/0.1");
+    assert_eq!(
+        report["report_contract"],
+        "omsi-manufacturing-semantic-report/0.1"
+    );
     assert_eq!(report["decision_authority"], "diagnostic_only");
     assert_eq!(report["quality_release_authority"], "none");
     assert_eq!(report["equipment_control_authority"], "none");
@@ -467,7 +467,9 @@ fn reports_an_auditable_rule_bound_decision_trace() {
 
     assert!(trace.iter().all(|check| {
         check["result"].is_string()
-            && check["inputs"].as_array().is_some_and(|items| !items.is_empty())
+            && check["inputs"]
+                .as_array()
+                .is_some_and(|items| !items.is_empty())
             && check["interpretation"].is_string()
     }));
     assert_eq!(
@@ -613,14 +615,11 @@ fn tenant_scope_rejection_is_visible_in_the_decision_trace() {
     assert_eq!(check["result"], "rejected");
 }
 
-
-const REPORT_SCHEMA_JSON: &str =
-    include_str!("../schema/semantic-report.schema.json");
+const REPORT_SCHEMA_JSON: &str = include_str!("../schema/semantic-report.schema.json");
 
 #[test]
 fn semantic_report_contract_is_versioned_and_explicitly_non_authoritative() {
-    let schema: Value =
-        serde_json::from_str(REPORT_SCHEMA_JSON).expect("report schema must parse");
+    let schema: Value = serde_json::from_str(REPORT_SCHEMA_JSON).expect("report schema must parse");
     assert_eq!(
         schema["$id"],
         "urn:luminous-dynamics:omsi:manufacturing-semantic-report:0.1"
@@ -629,17 +628,31 @@ fn semantic_report_contract_is_versioned_and_explicitly_non_authoritative() {
         schema["properties"]["report_contract"]["const"],
         "omsi-manufacturing-semantic-report/0.1"
     );
-    assert_eq!(schema["properties"]["decision_authority"]["const"], "diagnostic_only");
-    assert_eq!(schema["properties"]["quality_release_authority"]["const"], "none");
-    assert_eq!(schema["properties"]["equipment_control_authority"]["const"], "none");
-    assert_eq!(schema["properties"]["origin_authentication"]["const"], "not_performed");
-    assert!(schema["required"].as_array().unwrap().contains(&json!("decision_trace")));
+    assert_eq!(
+        schema["properties"]["decision_authority"]["const"],
+        "diagnostic_only"
+    );
+    assert_eq!(
+        schema["properties"]["quality_release_authority"]["const"],
+        "none"
+    );
+    assert_eq!(
+        schema["properties"]["equipment_control_authority"]["const"],
+        "none"
+    );
+    assert_eq!(
+        schema["properties"]["origin_authentication"]["const"],
+        "not_performed"
+    );
+    assert!(schema["required"]
+        .as_array()
+        .unwrap()
+        .contains(&json!("decision_trace")));
 }
 
 #[test]
 fn every_vector_report_has_required_trace_fields_and_bounded_authority() {
-    let schema: Value =
-        serde_json::from_str(REPORT_SCHEMA_JSON).expect("report schema must parse");
+    let schema: Value = serde_json::from_str(REPORT_SCHEMA_JSON).expect("report schema must parse");
     let required: Vec<&str> = schema["required"]
         .as_array()
         .unwrap()
@@ -680,7 +693,6 @@ fn every_vector_report_has_required_trace_fields_and_bounded_authority() {
         assert_eq!(report["origin_authentication"], "not_performed");
     }
 }
-
 
 #[test]
 fn weakening_evidence_never_improves_the_report_outcome() {
@@ -731,7 +743,6 @@ fn weakening_evidence_never_improves_the_report_outcome() {
     }
 }
 
-
 #[test]
 fn raw_revision_metadata_is_not_lost_when_another_check_rejects_the_projection() {
     for id in ["MFG-OBS-004", "MFG-OBS-005"] {
@@ -739,8 +750,7 @@ fn raw_revision_metadata_is_not_lost_when_another_check_rejects_the_projection()
         let report = evaluate(&input);
         assert_eq!(report["outcome"], "reject");
         assert_eq!(
-            report["source_revision_metadata"],
-            "provided",
+            report["source_revision_metadata"], "provided",
             "revision token presence is separate from projection eligibility for {id}"
         );
     }

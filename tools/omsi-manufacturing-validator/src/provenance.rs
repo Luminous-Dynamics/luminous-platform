@@ -55,7 +55,9 @@ pub fn create_provenance_manifest(
             "source schema coverage is not complete; refusing to create provenance manifest".into(),
         );
     }
-    if regenerated_coverage.get("coverage_contract").and_then(Value::as_str)
+    if regenerated_coverage
+        .get("coverage_contract")
+        .and_then(Value::as_str)
         != Some(COVERAGE_CONTRACT)
     {
         return Err("unsupported source schema coverage contract".into());
@@ -89,7 +91,9 @@ pub fn create_provenance_manifest(
     }
     let replay_check = verify_replay_envelope(&replay_envelope, semantic_input_bytes);
     if replay_check.get("status").and_then(Value::as_str) != Some("replay_consistent") {
-        return Err("replay envelope does not verify against the exact semantic-input bytes".into());
+        return Err(
+            "replay envelope does not verify against the exact semantic-input bytes".into(),
+        );
     }
 
     let mapping_list = adapter_map
@@ -97,7 +101,9 @@ pub fn create_provenance_manifest(
         .and_then(Value::as_array)
         .ok_or_else(|| "adapter map is missing its mappings array".to_owned())?;
     if mapping_list.len() > MAX_TRANSFORMS {
-        return Err(format!("adapter map exceeds the {MAX_TRANSFORMS}-mapping limit"));
+        return Err(format!(
+            "adapter map exceeds the {MAX_TRANSFORMS}-mapping limit"
+        ));
     }
     let mut transform_ids = BTreeSet::new();
     for (index, mapping) in mapping_list.iter().enumerate() {
@@ -337,12 +343,10 @@ mod tests {
     use omsi_manufacturing_validator::evaluate_input_value;
     use serde_json::{json, Value};
 
-    const MAP: &str = include_str!(
-        "../../../docs/standards/omsi/adapters/0.1/examples/qms-nested-map.json"
-    );
-    const SOURCE: &str = include_str!(
-        "../../../docs/standards/omsi/adapters/0.1/examples/qms-nested-record.json"
-    );
+    const MAP: &str =
+        include_str!("../../../docs/standards/omsi/adapters/0.1/examples/qms-nested-map.json");
+    const SOURCE: &str =
+        include_str!("../../../docs/standards/omsi/adapters/0.1/examples/qms-nested-record.json");
     const SOURCE_SCHEMA: &str = include_str!(
         "../../../docs/standards/omsi/adapters/0.1/examples/qms-nested-record.schema.json"
     );
@@ -377,7 +381,10 @@ mod tests {
             &source,
             SOURCE.as_bytes(),
         );
-        assert_eq!(coverage["status"], "schema_coverage_complete", "{coverage:#}");
+        assert_eq!(
+            coverage["status"], "schema_coverage_complete",
+            "{coverage:#}"
+        );
         let coverage_bytes =
             serde_json::to_vec_pretty(&coverage).expect("coverage report serializes");
 
@@ -413,29 +420,47 @@ mod tests {
     fn manifest_rechecks_schema_coverage_and_matches_the_independent_schema() {
         let artifacts = fixture_chain();
         let manifest = super::create_provenance_manifest(
-            &artifacts[0], &artifacts[1], &artifacts[2], &artifacts[3],
-            &artifacts[4], &artifacts[5], &artifacts[6], &artifacts[7],
+            &artifacts[0],
+            &artifacts[1],
+            &artifacts[2],
+            &artifacts[3],
+            &artifacts[4],
+            &artifacts[5],
+            &artifacts[6],
+            &artifacts[7],
         )
         .expect("consistent evidence chain emits a manifest");
         let schema: Value = serde_json::from_str(SCHEMA).expect("manifest schema parses");
-        assert!(draft202012::meta::is_valid(&schema), "schema meta-validation failed");
+        assert!(
+            draft202012::meta::is_valid(&schema),
+            "schema meta-validation failed"
+        );
         let validator = draft202012::new(&schema).expect("manifest schema compiles");
-        assert!(validator.is_valid(&manifest), "manifest does not match schema: {manifest:#}");
-        assert_eq!(manifest["provenance_model"], "w3c-prov-dm-aligned-subset/0.2");
-        let source_schema: Value = serde_json::from_str(SOURCE_SCHEMA)
-            .expect("QMS source schema fixture parses");
+        assert!(
+            validator.is_valid(&manifest),
+            "manifest does not match schema: {manifest:#}"
+        );
+        assert_eq!(
+            manifest["provenance_model"],
+            "w3c-prov-dm-aligned-subset/0.2"
+        );
+        let source_schema: Value =
+            serde_json::from_str(SOURCE_SCHEMA).expect("QMS source schema fixture parses");
         assert!(draft202012::meta::is_valid(&source_schema));
-        let source_schema_validator = draft202012::new(&source_schema)
-            .expect("QMS source schema compiles");
-        let source_record: Value = serde_json::from_str(SOURCE)
-            .expect("QMS source record fixture parses");
+        let source_schema_validator =
+            draft202012::new(&source_schema).expect("QMS source schema compiles");
+        let source_record: Value =
+            serde_json::from_str(SOURCE).expect("QMS source record fixture parses");
         assert!(
             source_schema_validator.is_valid(&source_record),
             "QMS source record fails schema: {source_record:#}"
         );
         assert_eq!(manifest["status"], "local_chain_consistent");
         assert_eq!(manifest["authority"], "local_consistency_only");
-        assert_eq!(manifest["schema_coverage"]["status"], "schema_coverage_complete");
+        assert_eq!(
+            manifest["schema_coverage"]["status"],
+            "schema_coverage_complete"
+        );
         assert_eq!(manifest["schema_coverage"]["schema_field_count"], 8);
         assert_eq!(manifest["schema_coverage"]["covered_schema_field_count"], 8);
         assert_eq!(
@@ -454,7 +479,10 @@ mod tests {
         assert_eq!(manifest["artifacts"].as_array().unwrap().len(), 8);
         assert_eq!(manifest["activities"].as_array().unwrap().len(), 5);
         assert_eq!(manifest["edges"].as_array().unwrap().len(), 14);
-        assert_eq!(manifest["declared_transform_ids"].as_array().unwrap().len(), 2);
+        assert_eq!(
+            manifest["declared_transform_ids"].as_array().unwrap().len(),
+            2
+        );
         assert!(manifest.get("signature").is_none());
     }
 
@@ -462,49 +490,83 @@ mod tests {
     fn manifest_verifier_reconstructs_and_schema_validates_report() {
         let artifacts = fixture_chain();
         let manifest = super::create_provenance_manifest(
-            &artifacts[0], &artifacts[1], &artifacts[2], &artifacts[3],
-            &artifacts[4], &artifacts[5], &artifacts[6], &artifacts[7],
+            &artifacts[0],
+            &artifacts[1],
+            &artifacts[2],
+            &artifacts[3],
+            &artifacts[4],
+            &artifacts[5],
+            &artifacts[6],
+            &artifacts[7],
         )
         .expect("consistent chain creates a manifest");
         let manifest_bytes = serde_json::to_vec_pretty(&manifest).expect("manifest serializes");
         let verification = verify_bundle(&manifest_bytes, &artifacts);
-        assert_eq!(verification["status"], "manifest_verified", "{verification:#}");
+        assert_eq!(
+            verification["status"], "manifest_verified",
+            "{verification:#}"
+        );
         assert_eq!(verification["authority"], "local_consistency_only");
-        assert!(verification["checks"].as_array().unwrap().iter()
+        assert!(verification["checks"]
+            .as_array()
+            .unwrap()
+            .iter()
             .all(|check| check["result"] == "pass"));
 
         let schema: Value = serde_json::from_str(include_str!(
             "../schema/provenance-verification-report.schema.json"
         ))
         .expect("verification schema parses");
-        assert!(draft202012::meta::is_valid(&schema), "verification schema meta-validation failed");
+        assert!(
+            draft202012::meta::is_valid(&schema),
+            "verification schema meta-validation failed"
+        );
         let validator = draft202012::new(&schema).expect("verification schema compiles");
-        assert!(validator.is_valid(&verification), "verification report does not match schema: {verification:#}");
+        assert!(
+            validator.is_valid(&verification),
+            "verification report does not match schema: {verification:#}"
+        );
     }
 
     #[test]
     fn manifest_verifier_rejects_tampered_manifest_digest() {
         let artifacts = fixture_chain();
         let manifest = super::create_provenance_manifest(
-            &artifacts[0], &artifacts[1], &artifacts[2], &artifacts[3],
-            &artifacts[4], &artifacts[5], &artifacts[6], &artifacts[7],
+            &artifacts[0],
+            &artifacts[1],
+            &artifacts[2],
+            &artifacts[3],
+            &artifacts[4],
+            &artifacts[5],
+            &artifacts[6],
+            &artifacts[7],
         )
         .expect("consistent chain creates a manifest");
         let mut manifest = manifest;
         manifest["artifacts"][0]["sha256"] = json!("0".repeat(64));
-        let manifest_bytes = serde_json::to_vec_pretty(&manifest).expect("mutated manifest serializes");
+        let manifest_bytes =
+            serde_json::to_vec_pretty(&manifest).expect("mutated manifest serializes");
         let verification = verify_bundle(&manifest_bytes, &artifacts);
         assert_eq!(verification["status"], "rejected");
-        assert!(verification["checks"].as_array().unwrap()
-            .iter().any(|check| check["id"] == "manifest-equality" && check["result"] == "fail"));
+        assert!(verification["checks"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|check| check["id"] == "manifest-equality" && check["result"] == "fail"));
     }
 
     #[test]
     fn manifest_verifier_rejects_mutation_at_each_artifact_boundary() {
         let artifacts = fixture_chain();
         let manifest = super::create_provenance_manifest(
-            &artifacts[0], &artifacts[1], &artifacts[2], &artifacts[3],
-            &artifacts[4], &artifacts[5], &artifacts[6], &artifacts[7],
+            &artifacts[0],
+            &artifacts[1],
+            &artifacts[2],
+            &artifacts[3],
+            &artifacts[4],
+            &artifacts[5],
+            &artifacts[6],
+            &artifacts[7],
         )
         .expect("original evidence chain is consistent");
         let manifest_bytes = serde_json::to_vec_pretty(&manifest).expect("manifest serializes");
@@ -515,26 +577,61 @@ mod tests {
         schema_value["description"] = json!("mutated source schema");
         let mut map_value: Value = serde_json::from_slice(&artifacts[2]).expect("map parses");
         map_value["mappings"][3]["transform_id"] = json!("unregistered-transform/9.0");
-        let mut coverage_value: Value = serde_json::from_slice(&artifacts[3]).expect("coverage parses");
+        let mut coverage_value: Value =
+            serde_json::from_slice(&artifacts[3]).expect("coverage parses");
         coverage_value["covered_schema_field_count"] = json!(7);
-        let mut projection_value: Value = serde_json::from_slice(&artifacts[4]).expect("projection parses");
+        let mut projection_value: Value =
+            serde_json::from_slice(&artifacts[4]).expect("projection parses");
         projection_value["projection"]["measurement"]["value_decimal"] = json!("0.009");
         let mut input_value: Value = serde_json::from_slice(&artifacts[5]).expect("input parses");
         input_value["measurement"]["value_decimal"] = json!("0.009");
         let mut report_value: Value = serde_json::from_slice(&artifacts[6]).expect("report parses");
         report_value["decision_trace"][0]["interpretation"] = json!("mutated interpretation");
-        let mut envelope_value: Value = serde_json::from_slice(&artifacts[7]).expect("envelope parses");
+        let mut envelope_value: Value =
+            serde_json::from_slice(&artifacts[7]).expect("envelope parses");
         envelope_value["artifact_binding"]["digest"] = json!("0".repeat(64));
 
         let mutations = [
-            ("source record", 0usize, serde_json::to_vec(&source_value).unwrap()),
-            ("source schema", 1usize, serde_json::to_vec(&schema_value).unwrap()),
-            ("adapter map", 2usize, serde_json::to_vec(&map_value).unwrap()),
-            ("schema coverage report", 3usize, serde_json::to_vec(&coverage_value).unwrap()),
-            ("projection report", 4usize, serde_json::to_vec(&projection_value).unwrap()),
-            ("semantic input", 5usize, serde_json::to_vec(&input_value).unwrap()),
-            ("semantic report", 6usize, serde_json::to_vec(&report_value).unwrap()),
-            ("replay envelope", 7usize, serde_json::to_vec(&envelope_value).unwrap()),
+            (
+                "source record",
+                0usize,
+                serde_json::to_vec(&source_value).unwrap(),
+            ),
+            (
+                "source schema",
+                1usize,
+                serde_json::to_vec(&schema_value).unwrap(),
+            ),
+            (
+                "adapter map",
+                2usize,
+                serde_json::to_vec(&map_value).unwrap(),
+            ),
+            (
+                "schema coverage report",
+                3usize,
+                serde_json::to_vec(&coverage_value).unwrap(),
+            ),
+            (
+                "projection report",
+                4usize,
+                serde_json::to_vec(&projection_value).unwrap(),
+            ),
+            (
+                "semantic input",
+                5usize,
+                serde_json::to_vec(&input_value).unwrap(),
+            ),
+            (
+                "semantic report",
+                6usize,
+                serde_json::to_vec(&report_value).unwrap(),
+            ),
+            (
+                "replay envelope",
+                7usize,
+                serde_json::to_vec(&envelope_value).unwrap(),
+            ),
         ];
 
         for (label, index, changed_bytes) in mutations {
@@ -542,8 +639,7 @@ mod tests {
             case[index] = changed_bytes;
             let verification = verify_bundle(&manifest_bytes, &case);
             assert_eq!(
-                verification["status"],
-                "rejected",
+                verification["status"], "rejected",
                 "{label} mutation unexpectedly verified: {verification:#}"
             );
         }
@@ -552,14 +648,24 @@ mod tests {
     #[test]
     fn manifest_rejects_projection_report_drift() {
         let artifacts = fixture_chain();
-        let mut projection: Value = serde_json::from_slice(&artifacts[4]).expect("projection parses");
+        let mut projection: Value =
+            serde_json::from_slice(&artifacts[4]).expect("projection parses");
         projection["projection"]["source_quality_claim"]["raw_status"] = json!("ACCEPTED");
-        let projection_bytes = serde_json::to_vec_pretty(&projection).expect("projection serializes");
+        let projection_bytes =
+            serde_json::to_vec_pretty(&projection).expect("projection serializes");
         let result = super::create_provenance_manifest(
-            &artifacts[0], &artifacts[1], &artifacts[2], &artifacts[3],
-            &projection_bytes, &artifacts[5], &artifacts[6], &artifacts[7],
+            &artifacts[0],
+            &artifacts[1],
+            &artifacts[2],
+            &artifacts[3],
+            &projection_bytes,
+            &artifacts[5],
+            &artifacts[6],
+            &artifacts[7],
         );
-        assert!(result.unwrap_err().contains("differs from a fresh adapter re-execution"));
+        assert!(result
+            .unwrap_err()
+            .contains("differs from a fresh adapter re-execution"));
     }
 
     #[test]
@@ -569,8 +675,14 @@ mod tests {
         coverage["status"] = json!("schema_coverage_incomplete");
         let coverage_bytes = serde_json::to_vec_pretty(&coverage).expect("coverage serializes");
         let result = super::create_provenance_manifest(
-            &artifacts[0], &artifacts[1], &artifacts[2], &coverage_bytes,
-            &artifacts[4], &artifacts[5], &artifacts[6], &artifacts[7],
+            &artifacts[0],
+            &artifacts[1],
+            &artifacts[2],
+            &coverage_bytes,
+            &artifacts[4],
+            &artifacts[5],
+            &artifacts[6],
+            &artifacts[7],
         );
         assert!(result.unwrap_err().contains("differs from a fresh audit"));
     }
@@ -582,22 +694,41 @@ mod tests {
         envelope["artifact_binding"]["digest"] = json!("0".repeat(64));
         let envelope_bytes = serde_json::to_vec_pretty(&envelope).expect("envelope serializes");
         let result = super::create_provenance_manifest(
-            &artifacts[0], &artifacts[1], &artifacts[2], &artifacts[3],
-            &artifacts[4], &artifacts[5], &artifacts[6], &envelope_bytes,
+            &artifacts[0],
+            &artifacts[1],
+            &artifacts[2],
+            &artifacts[3],
+            &artifacts[4],
+            &artifacts[5],
+            &artifacts[6],
+            &envelope_bytes,
         );
-        assert!(result.unwrap_err().contains("replay envelope does not verify"));
+        assert!(result
+            .unwrap_err()
+            .contains("replay envelope does not verify"));
     }
 
     #[test]
     fn unsupported_source_schema_blocks_manifest_creation() {
         let artifacts = fixture_chain();
         let mut schema: Value = serde_json::from_slice(&artifacts[1]).expect("schema parses");
-        schema.as_object_mut().unwrap().remove("additionalProperties");
+        schema
+            .as_object_mut()
+            .unwrap()
+            .remove("additionalProperties");
         let schema_bytes = serde_json::to_vec(&schema).unwrap();
         let result = super::create_provenance_manifest(
-            &artifacts[0], &schema_bytes, &artifacts[2], &artifacts[3],
-            &artifacts[4], &artifacts[5], &artifacts[6], &artifacts[7],
+            &artifacts[0],
+            &schema_bytes,
+            &artifacts[2],
+            &artifacts[3],
+            &artifacts[4],
+            &artifacts[5],
+            &artifacts[6],
+            &artifacts[7],
         );
-        assert!(result.unwrap_err().contains("schema coverage is not complete"));
+        assert!(result
+            .unwrap_err()
+            .contains("schema coverage is not complete"));
     }
 }
