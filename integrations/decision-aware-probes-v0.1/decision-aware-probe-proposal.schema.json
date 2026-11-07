@@ -439,6 +439,163 @@
         }
       },
       "additionalProperties": false
+    },
+    "context": {
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "sol_atlas": {
+          "type": "object",
+          "required": [
+            "asset_context_ref",
+            "asset_context_digest",
+            "spatial_projection_ref",
+            "spatial_projection_digest",
+            "topology_epoch",
+            "topology_digest",
+            "source_revision_ref",
+            "valid_time_start",
+            "valid_time_end"
+          ],
+          "properties": {
+            "asset_context_ref": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "asset_context_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "spatial_projection_ref": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "spatial_projection_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "topology_epoch": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "topology_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "source_revision_ref": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "valid_time_start": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "valid_time_end": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "additionalProperties": false
+        },
+        "mycelix": {
+          "type": "object",
+          "required": [
+            "dependency_graph_ref",
+            "dependency_graph_digest",
+            "assurance_profile_ref",
+            "assurance_profile_digest",
+            "assessment_ref",
+            "assessment_digest"
+          ],
+          "properties": {
+            "dependency_graph_ref": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "dependency_graph_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "assurance_profile_ref": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "assurance_profile_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "assessment_ref": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "assessment_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            }
+          },
+          "additionalProperties": false
+        },
+        "symtropy": {
+          "type": "object",
+          "required": [
+            "simulation_ref",
+            "simulation_digest",
+            "model_digest",
+            "parameter_digest",
+            "initial_state_digest",
+            "scenario_set_digest",
+            "output_digest",
+            "valid_until",
+            "claim_ceiling"
+          ],
+          "properties": {
+            "simulation_ref": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "simulation_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "model_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "parameter_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "initial_state_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "scenario_set_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "output_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "valid_until": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "claim_ceiling": {
+              "const": "simulation_only"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false,
