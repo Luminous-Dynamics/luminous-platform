@@ -213,8 +213,7 @@
         "target_digest",
         "data_scope_commitment",
         "privacy_class",
-        "expected_observation_fields",
-        "resource_ceiling"
+        "expected_observation_fields"
       ],
       "properties": {
         "catalog_snapshot_digest": {
@@ -275,46 +274,6 @@
             "minLength": 1,
             "maxLength": 128
           }
-        },
-        "resource_ceiling": {
-          "type": "object",
-          "required": [
-            "max_duration_ms",
-            "max_cpu_millicores",
-            "max_memory_bytes",
-            "max_io_bytes",
-            "max_network_bytes",
-            "max_result_rows"
-          ],
-          "properties": {
-            "max_duration_ms": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 300000
-            },
-            "max_cpu_millicores": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 64000
-            },
-            "max_memory_bytes": {
-              "type": "integer",
-              "minimum": 1
-            },
-            "max_io_bytes": {
-              "type": "integer",
-              "minimum": 0
-            },
-            "max_network_bytes": {
-              "type": "integer",
-              "minimum": 0
-            },
-            "max_result_rows": {
-              "type": "integer",
-              "minimum": 0
-            }
-          },
-          "additionalProperties": false
         }
       },
       "additionalProperties": false
