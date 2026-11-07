@@ -2,7 +2,7 @@
   "schema": "luminous-event-watch-result-v0.1",
   "version": 1,
   "watch_id": "watch-gap",
-  "watch_request_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "watch_request_digest": "sha256:0c26f05ada2b93dbad1188d7b70a1c1180225188428d7e2ddd4715f23d6bf67f",
   "admission": {
     "outcome": "admitted",
     "evaluated_at": "2026-11-07T12:00:00Z",
