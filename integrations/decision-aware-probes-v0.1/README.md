@@ -48,6 +48,7 @@ At the time of this draft (7 November 2026), Symthaea PR #10105 provides a robus
 - fixtures/binding-unknown-impact.json: admitted probe whose collection/impact outcome remains unknown. It must not receive zero-impact or successful evaluation credit.
 - fixtures/binding-denied.json: denied request with no collection and no impact measurement.
 - fixtures/binding-completed-without-impact-rejected.json: intentionally invalid: completion is claimed without a canonical probe-impact receipt.
+- fixtures/binding-admitted-revoked-authority-rejected.json: intentionally invalid: the admission is marked admitted while its Xenia capability state is revoked.
 
 ## Security and semantic rules
 
@@ -63,17 +64,27 @@ At the time of this draft (7 November 2026), Symthaea PR #10105 provides a robus
 - A Sol Atlas projection is context, not a source observation or grant.
 - A probe result cannot authorize a mutation. The #168 effect gate and actual participant boundary remain separate.
 
+### Xenia authority integration
+
+Xenia is the canonical identity, consent, session-capability and revocation owner. The adapter composes with [xenia-peer #449](https://github.com/Luminous-Dynamics/xenia-peer/issues/449)'s proposed immutable `SessionCapability` and [#214 Authority Convergence](https://github.com/Luminous-Dynamics/xenia-peer/issues/214).
+
+The proposal's `principal_ref`, `session_ref`, `intent_ref`, `purpose_ref` and their digests are references/commitments, **not authority**. Platform must resolve them against the authenticated Xenia session. It must never authorize from a caller-supplied operator/principal identifier or a planner-authored capability object.
+
+An admitted execution binding records the canonical capability reference/digest, consent request reference, authority epoch, expiry and source-bound revocation snapshot reference/digest. The admitted state requires `authority_context.status = current`. Revoked, expired, missing or unknown authority cannot admit a probe. A denied operation remains a valid outcome and has no collection.
+
+Xenia #214/#449 are open pre-alpha work. This adapter is a consumer contract; it does not imply that the Xenia path is production-qualified or independently audited.
+
 ## Required semantic checks beyond JSON Schema
 
 The schema intentionally cannot establish the following cross-record predicates. The adapter/evaluator must check them:
 
 1. Proposal digest equals the canonical digest of the submitted proposal under the repository's pinned serialization rules.
-2. Proposal episode, tenant, principal, session, target and topology bindings match the active episode and current server-side context.
+2. Proposal episode, tenant, principal, session, target, topology, original intent and purpose bindings match the active authenticated Xenia context; requested purpose equals the authorized episode purpose.
 3. Planner method equals predicted_quantity.metric; EVSI/minimax methods require the actual upstream method/API and utility-model digest.
 4. Probe catalog snapshot/entry, target, operation, input schema, output contract and read-only capability match the pinned server-side catalog.
 5. Requested resource ceiling is no greater than catalog, policy and current session limits.
 6. Budget-state version is current at atomic reservation; concurrent agents cannot overspend one shared envelope.
-7. Admission policy decision is source-authenticated, current, scoped to the exact proposal and bound to the exact catalog entry.
+7. Admission policy decision is source-authenticated, current, scoped to the exact proposal and bound to the exact catalog entry. The session capability and revocation snapshot must be resolved from Xenia, not supplied by the planner.
 8. Collection only follows an admitted decision and committed reservation.
 9. A completed collection has exactly one canonical observation receipt with source lineage, valid-time/observed-time and exact probe binding.
 10. An observed impact receipt is separately sourced for the exact probe/run/target/time window. Its control-domain relationships are evaluated by Mycelix; no scalar independence is inferred.
