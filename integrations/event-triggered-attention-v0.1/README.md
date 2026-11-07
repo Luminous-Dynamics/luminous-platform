@@ -37,3 +37,7 @@ Compare no-watch, fixed polling, adaptive polling, condition wait, durable subsc
 ## Claim ceiling
 
 This is a schema/validator/fixture tranche only. It does not establish delivery reliability, real-time guarantees, zero-loss subscriptions, production revocation propagation, or performance superiority.
+
+## Exact request/result binding
+
+Each `watch_request_digest` is SHA-256 over the exact UTF-8 bytes of the submitted watch-request payload, including its terminating newline where present. The paired Rust auditor recomputes the digest and rejects a well-formed but unrelated value. A runtime must hash the exact request bytes it received and persist/replay those bytes; it must not parse and reserialize them before digest verification. This is a byte commitment, not proof that Xenia references or source assertions are authentic; those still require resolution through the canonical owner systems.
