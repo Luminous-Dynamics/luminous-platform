@@ -22,9 +22,6 @@ pub enum AttentionMode {
     EventTriggered,
 }
 
-impl AttentionMode {
-}
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AttentionExperimentConfig {
     pub fixed_poll_interval_ticks: u32,
@@ -123,6 +120,7 @@ struct AttentionController<'a> {
     policy: &'a mut dyn ProbePolicy,
     metrics: AttentionMetrics,
     previous_condition: bool,
+    next_event_sequence: u64,
 }
 
 impl AttentionController<'_> {
@@ -167,7 +165,8 @@ impl AttentionController<'_> {
             return None;
         }
 
-        let sequence = self.metrics.selections.len() as u64 + 1;
+        self.next_event_sequence = self.next_event_sequence.saturating_add(1);
+        let sequence = self.next_event_sequence;
         let event = EventEnvelope {
             event_id: format!(
                 "attention-{}-{}",
@@ -178,7 +177,7 @@ impl AttentionController<'_> {
                 sequence
             ),
             source_id: self.watch.source_id.clone(),
-            sequence: self.next_event_sequence,
+            sequence,
             event_type: self.watch.event_type.clone(),
             tenant_id: self.watch.tenant_id.clone(),
             target_id: self.watch.target_id.clone(),
@@ -346,6 +345,7 @@ pub fn run_paired_attention_experiment(
         policy: fixed_policy,
         metrics: AttentionMetrics::default(),
         previous_condition: false,
+        next_event_sequence: watch.first_sequence.saturating_sub(1),
     };
     let fixed_run = run_stability_closed_loop(plant, &mut fixed_controller)?;
     let mut fixed_metrics = fixed_controller.metrics;
@@ -595,7 +595,7 @@ mod tests {
         .unwrap();
         assert_eq!(result.event_triggered.metrics.denied_probe_selections, 1);
         assert_eq!(result.event_triggered.metrics.admitted_probe_selections, 0);
-        assert_eq!(result.event_triggered.run.actions.len(), 0);
+        assert!(result.event_triggered.run.actions.is_empty());
     }
 
     #[test]
