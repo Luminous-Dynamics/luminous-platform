@@ -15,6 +15,16 @@
       "state_version_before": 20,
       "receipt_ref": "opaque:budget-denial-0003",
       "receipt_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888"
+    },
+    "authority_context": {
+      "status": "revoked",
+      "authority_epoch": 12,
+      "session_capability_ref": "opaque:xenia-session-capability-revoked-0003",
+      "session_capability_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "consent_request_ref": "opaque:xenia-consent-request-0003",
+      "capability_expires_at": "2026-11-07T08:10:00Z",
+      "revocation_snapshot_ref": "opaque:xenia-revocation-snapshot-0003",
+      "revocation_snapshot_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
     }
   },
   "collection": {
