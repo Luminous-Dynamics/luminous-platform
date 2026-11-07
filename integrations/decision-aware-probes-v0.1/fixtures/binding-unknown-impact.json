@@ -1,0 +1,32 @@
+{
+  "schema": "luminous-decision-aware-probe-binding-v0.1",
+  "version": 1,
+  "proposal_id": "dap-synth-0002",
+  "proposal_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "admission": {
+    "outcome": "admitted",
+    "authority_decision_ref": "opaque:authority-decision-0002",
+    "authority_decision_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "policy_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "catalog_entry_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "evaluated_at": "2026-11-07T07:10:01Z",
+    "budget_reservation": {
+      "status": "committed",
+      "state_version_before": 10,
+      "state_version_after": 11,
+      "receipt_ref": "opaque:budget-reservation-0002",
+      "receipt_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+    }
+  },
+  "collection": {
+    "status": "unknown",
+    "reconciled_at": "2026-11-07T07:10:30Z"
+  },
+  "impact": {
+    "status": "unknown",
+    "reconciled_at": "2026-11-07T07:10:30Z"
+  },
+  "decision_evaluation": {
+    "status": "unknown"
+  }
+}
