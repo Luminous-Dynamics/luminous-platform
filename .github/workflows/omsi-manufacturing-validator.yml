@@ -189,14 +189,14 @@ jobs:
           jq -e '
             .status == "complete_accounting" and
             .silent_loss_count == 0 and
-            (.mapping_paths_not_observed_in_record | length) == 2 and
+            (.mapping_paths_not_observed_in_record | length) == 3 and
             (.required_mapping_paths_not_observed_in_record | length) == 0
           ' "$audit_file" > /dev/null
           cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
             apply-adapter-map "$base/mes-optional-map.json" "$base/mes-optional-record.json" > "$projection_file"
           jq -e '
             .status == "projection_created" and
-            .skipped_optional_count == 2 and
+            .skipped_optional_count == 3 and
             .explicitly_dropped_count == 0 and
             .projection.measurement.value_decimal == "72.4" and
             (.projection.measurement | has("unit_code") | not)
