@@ -318,12 +318,12 @@ fn audit_pair(watch_raw: &str, result_raw: &str, label: &str) -> Result<(), Stri
         if terminal > capability_expiry {
             return Err(format!("{label}: watch continued beyond capability expiry"));
         }
-        if let Some(access) = time_at(&result, &["watch_state", "last_data_access_at"], label)? {
-            if access < started || access > terminal || access > capability_expiry {
-                return Err(format!(
-                    "{label}: data access lies outside the authorized watch window"
-                ));
-            }
+        if let Some(access) = time_at(&result, &["watch_state", "last_data_access_at"], label)?
+            && (access < started || access > terminal || access > capability_expiry)
+        {
+            return Err(format!(
+                "{label}: data access lies outside the authorized watch window"
+            ));
         }
     }
 
