@@ -331,9 +331,7 @@ pub fn run_paired_attention_experiment(
     fixed_policy: &mut dyn ProbePolicy,
     event_policy: &mut dyn ProbePolicy,
 ) -> Result<PairedAttentionResult, AttentionError> {
-    if attention.fixed_poll_interval_ticks == 0
-        || attention.failed_ppm_wake_threshold > 1_000_000
-    {
+    if attention.fixed_poll_interval_ticks == 0 || attention.failed_ppm_wake_threshold > 1_000_000 {
         return Err(AttentionError::InvalidAttentionConfig);
     }
 
@@ -506,7 +504,6 @@ mod tests {
         .unwrap()
     }
 
-
     #[test]
     fn event_triggered_watch_activating_during_existing_fault_still_wakes() {
         let mut watch = watch();
@@ -525,9 +522,13 @@ mod tests {
             &catalog(),
             &mut fixed,
             &mut event,
-        ).unwrap();
+        )
+        .unwrap();
 
-        assert_eq!(result.event_triggered.metrics.first_verified_wake_tick, Some(12));
+        assert_eq!(
+            result.event_triggered.metrics.first_verified_wake_tick,
+            Some(12)
+        );
         assert_eq!(result.event_triggered.metrics.missed_fault_episodes, 0);
         assert_eq!(result.event_triggered.metrics.admitted_probe_selections, 1);
     }
