@@ -6,6 +6,8 @@
 //! production event bus, authenticate publishers, execute a collector, or grant
 //! mutation authority.
 
+use std::collections::{BTreeMap, BTreeSet};
+
 pub const MAX_RISK_PPM: u32 = 1_000_000;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -84,7 +86,9 @@ pub struct WakeContext {
 /// A policy proposes only a catalog identifier. It cannot supply an operation,
 /// target, tenant, purpose, credential, or permission.
 pub trait ProbePolicy {
-    fn select_probe(&mut self, wake: &WakeContext, catalog: &[ProbeCatalogEntry])
+    /// Receives only identifiers that have already passed watch-scope and
+    /// read-only eligibility checks. It never sees the raw probe catalog.
+    fn select_probe(&mut self, wake: &WakeContext, eligible_probe_ids: &[String])
         -> Option<String>;
 }
 
@@ -97,7 +101,7 @@ impl ProbePolicy for ScriptedProbePolicy {
     fn select_probe(
         &mut self,
         _wake: &WakeContext,
-        _catalog: &[ProbeCatalogEntry],
+        _eligible_probe_ids: &[String],
     ) -> Option<String> {
         self.selected_probe_id.clone()
     }
@@ -164,7 +168,9 @@ pub enum EpisodeStatus {
     Quiet,
     Expired,
     DeliveryGap,
+    DuplicateEventIdentity,
     AuthorityRevokedOrExpired,
+    ProbeCatalogInvalid,
     NoProbeSelected,
     ProbeDenied,
     ProbeNotStarted,
@@ -224,6 +230,7 @@ pub enum EpisodeError {
     InvalidWatch,
     InvalidAuthority,
     InvalidEventIdentity,
+    InvalidProbeCatalog,
     EventTimeRegression,
     InvalidEventTime,
     InvalidEvaluatorLoss,
@@ -360,13 +367,11 @@ pub fn run_scripted_episode<P: ProbePolicy>(
     let mut duplicate_events = 0usize;
     let mut rejected_scope_events = 0usize;
     let mut last_sequence: Option<u64> = None;
+    let mut seen_event_ids: BTreeMap<&str, u64> = BTreeMap::new();
     let mut previous_delivery_tick = None;
     let mut matching_event = None;
 
     for event in events {
-        if !non_empty(&event.event_id) || event.sequence == 0 {
-            return Err(EpisodeError::InvalidEventIdentity);
-        }
         if previous_delivery_tick.is_some_and(|previous| event.delivered_at_tick < previous) {
             return Err(EpisodeError::EventTimeRegression);
         }
@@ -377,6 +382,9 @@ pub fn run_scripted_episode<P: ProbePolicy>(
         if event.delivered_at_tick > current_tick {
             break;
         }
+        if !non_empty(&event.event_id) || event.sequence == 0 {
+            return Err(EpisodeError::InvalidEventIdentity);
+        }
         if event.observed_at_tick > event.delivered_at_tick {
             return Err(EpisodeError::InvalidEventTime);
         }
@@ -384,6 +392,23 @@ pub fn run_scripted_episode<P: ProbePolicy>(
             rejected_scope_events += 1;
             continue;
         }
+        if let Some(previous_sequence) = seen_event_ids.get(event.event_id.as_str()) {
+            if *previous_sequence == event.sequence {
+                duplicate_events += 1;
+                continue;
+            }
+            return Ok(empty_result(
+                watch,
+                authority,
+                EpisodeStatus::DuplicateEventIdentity,
+                TerminalDisposition::Escalate,
+                delivered_events,
+                duplicate_events,
+                rejected_scope_events,
+                0,
+            ));
+        }
+        seen_event_ids.insert(event.event_id.as_str(), event.sequence);
         if event.sequence < watch.first_sequence {
             duplicate_events += 1;
             continue;
@@ -488,8 +513,46 @@ pub fn run_scripted_episode<P: ProbePolicy>(
         event,
         authority_epoch: authority.epoch,
     };
-    let selected_probe_id = match policy.select_probe(&wake, catalog) {
-        Some(probe_id) if non_empty(&probe_id) => probe_id,
+    // Construct a capability-minimal view before policy selection. The
+    // policy never sees other tenants' probes, write-capable entries, or
+    // out-of-purpose/out-of-target catalog metadata.
+    let mut eligible_probes: Vec<&ProbeCatalogEntry> = Vec::new();
+    let mut seen_probe_ids = BTreeSet::new();
+    for entry in catalog.iter().filter(|entry| {
+        entry.read_only
+            && non_empty(&entry.probe_id)
+            && non_empty(&entry.operation_digest)
+            && non_empty(&entry.collector_control_domain)
+            && entry.tenant_id == watch.tenant_id
+            && entry.target_id == watch.target_id
+            && entry.purpose_id == watch.purpose_id
+            && entry.source_id == watch.source_id
+            && entry.maximum_duration_ticks > 0
+            && entry.maximum_duration_ticks <= watch.max_probe_duration_ticks
+    }) {
+        if !seen_probe_ids.insert(entry.probe_id.as_str()) {
+            return Ok(empty_result(
+                watch,
+                authority,
+                EpisodeStatus::ProbeCatalogInvalid,
+                TerminalDisposition::Abstain,
+                delivered_events,
+                duplicate_events,
+                rejected_scope_events,
+                wakeups,
+            ));
+        }
+        eligible_probes.push(entry);
+    }
+    let eligible_probe_ids: Vec<String> = eligible_probes
+        .iter()
+        .map(|entry| entry.probe_id.clone())
+        .collect();
+
+    let selected_probe_id = match policy.select_probe(&wake, &eligible_probe_ids) {
+        Some(probe_id) if eligible_probe_ids.iter().any(|eligible| eligible == &probe_id) => {
+            probe_id
+        }
         _ => {
             return Ok(empty_result(
                 watch,
@@ -504,37 +567,18 @@ pub fn run_scripted_episode<P: ProbePolicy>(
         }
     };
 
-    let probe = match catalog
+    let probe = eligible_probes
         .iter()
+        .copied()
         .find(|entry| entry.probe_id == selected_probe_id)
-    {
-        Some(probe) => probe,
-        None => {
-            let mut result = empty_result(
-                watch,
-                authority,
-                EpisodeStatus::ProbeDenied,
-                TerminalDisposition::Abstain,
-                delivered_events,
-                duplicate_events,
-                rejected_scope_events,
-                wakeups,
-            );
-            result.selected_probe_id = Some(selected_probe_id);
-            return Ok(result);
-        }
-    };
+        .ok_or(EpisodeError::InvalidProbeCatalog)?;
 
+    // Re-check current authority at the actual admission boundary.
     let eligible = probe.read_only
-        && non_empty(&probe.probe_id)
-        && non_empty(&probe.operation_digest)
-        && non_empty(&probe.collector_control_domain)
         && probe.tenant_id == watch.tenant_id
         && probe.target_id == watch.target_id
         && probe.purpose_id == watch.purpose_id
-        && non_empty(&probe.source_id)
-        && probe.maximum_duration_ticks > 0
-        && probe.maximum_duration_ticks <= watch.max_probe_duration_ticks
+        && probe.source_id == watch.source_id
         && authority.current_for(watch, current_tick);
 
     if !eligible {
