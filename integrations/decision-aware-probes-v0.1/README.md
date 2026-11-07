@@ -15,6 +15,7 @@ It composes existing work rather than creating another planner, source registry,
 - Symthaea #10105: current robust expected/worst/CVaR information-gain planner.
 - Symthaea #10109: proposed decision-aware EVSI/minimax-regret extension (issue, not yet an implemented API).
 - Mycelix: source dependencies, provenance and common-cause semantics.
+- AuthorizationBench (arXiv:2610.27548): authorization alignment independently of direct harm; an apparently harmless or broker-blocked action can still be out of the principal's grant.
 
 ## Important upstream maturity distinction
 
