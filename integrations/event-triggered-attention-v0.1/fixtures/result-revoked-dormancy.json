@@ -1,0 +1,39 @@
+{
+  "schema": "luminous-event-watch-result-v0.1",
+  "version": 1,
+  "watch_id": "watch-revoked",
+  "watch_request_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "admission": {
+    "outcome": "admitted",
+    "evaluated_at": "2026-11-07T12:00:00Z",
+    "authority_status": "current",
+    "authority_epoch": 7,
+    "budget_status": "committed",
+    "budget_version_before": 10,
+    "budget_version_after": 11,
+    "reservation_receipt_ref": "opaque:watch-budget-receipt-001",
+    "reservation_receipt_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "watch_state": {
+    "status": "authority_revoked",
+    "started_at": "2026-11-07T12:00:01Z",
+    "terminal_at": "2026-11-07T12:20:00Z",
+    "terminal_authority_status": "revoked",
+    "authority_changed_at": "2026-11-07T12:19:00Z",
+    "last_data_access_at": "2026-11-07T12:18:59Z"
+  },
+  "event_delivery": {
+    "status": "none",
+    "event_count": 0,
+    "cursor_before": "cursor:100",
+    "cursor_after": "cursor:100"
+  },
+  "wake": {
+    "disposition": "cancel",
+    "reason": "authority_revocation",
+    "wake_count": 0
+  },
+  "effect_boundary": {
+    "consequential_mutation_attempts": 0
+  }
+}
