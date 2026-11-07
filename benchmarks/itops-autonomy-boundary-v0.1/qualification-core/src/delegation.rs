@@ -1214,7 +1214,7 @@ impl DelegationBudget {
 }
 
 /// One child's immutable allocation in a complete fan-out reservation.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DelegationBudgetAllocation {
     pub child_grant_ref: String,
     pub budget: DelegationBudget,
