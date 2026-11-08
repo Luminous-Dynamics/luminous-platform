@@ -382,6 +382,18 @@ fn validate_restart(restart: &SourceRestart) -> Result<(), ScheduleError> {
     Ok(())
 }
 
+fn validate_watermark(watermark: &SourceWatermark) -> Result<(), ScheduleError> {
+    if !non_empty(&watermark.source_id)
+        || !non_empty(&watermark.source_epoch)
+        || watermark.next_sequence == 0
+        || watermark.next_sequence == u64::MAX
+        || !valid_sha256(&watermark.watermark_digest)
+    {
+        return Err(ScheduleError::InvalidEvent);
+    }
+    Ok(())
+}
+
 fn initial_checkpoint(watch: &EventWatch) -> EventCheckpoint {
     EventCheckpoint {
         source_id: watch.source_id.clone(),
@@ -844,6 +856,106 @@ fn apply_restart(
         detection_latency_ticks: None,
         deadline_met: true,
     });
+    None
+}
+
+fn process_watermark(
+    watch: &EventWatch,
+    watermark: &SourceWatermark,
+    processing_tick: u64,
+    checkpoint: &mut EventCheckpoint,
+    metrics: &mut EventScheduleMetrics,
+    records: &mut Vec<EventRecordResult>,
+) -> Option<ScheduleStatus> {
+    metrics.source_records += 1;
+    metrics.watermarks_checked += 1;
+
+    let event_id = format!(
+        "watermark:{}:{}",
+        watermark.source_epoch,
+        watermark.next_sequence
+    );
+    if watermark.source_id != watch.source_id {
+        metrics.scope_rejections += 1;
+        records.push(EventRecordResult {
+            event_id,
+            incident_id: String::new(),
+            sequence: watermark.next_sequence,
+            delivered_tick: watermark.observed_tick,
+            processed_tick: Some(processing_tick),
+            disposition: RecordDisposition::ScopeRejected,
+            detection_latency_ticks: None,
+            deadline_met: false,
+        });
+        return Some(ScheduleStatus::SourceIdentityMismatch);
+    }
+    if !watermark.available {
+        metrics.source_unavailable += 1;
+        records.push(EventRecordResult {
+            event_id,
+            incident_id: String::new(),
+            sequence: watermark.next_sequence,
+            delivered_tick: watermark.observed_tick,
+            processed_tick: Some(processing_tick),
+            disposition: RecordDisposition::SourceUnavailable,
+            detection_latency_ticks: None,
+            deadline_met: false,
+        });
+        return Some(ScheduleStatus::SourceUnavailable);
+    }
+    if watermark.source_epoch != checkpoint.source_epoch {
+        records.push(EventRecordResult {
+            event_id,
+            incident_id: String::new(),
+            sequence: watermark.next_sequence,
+            delivered_tick: watermark.observed_tick,
+            processed_tick: Some(processing_tick),
+            disposition: RecordDisposition::SourceEpochMismatch,
+            detection_latency_ticks: None,
+            deadline_met: false,
+        });
+        return Some(ScheduleStatus::SourceEpochMismatch);
+    }
+    if watermark.next_sequence > checkpoint.next_sequence {
+        metrics.sequence_gaps += 1;
+        records.push(EventRecordResult {
+            event_id,
+            incident_id: String::new(),
+            sequence: watermark.next_sequence,
+            delivered_tick: watermark.observed_tick,
+            processed_tick: Some(processing_tick),
+            disposition: RecordDisposition::DeliveryGap,
+            detection_latency_ticks: None,
+            deadline_met: false,
+        });
+        return Some(ScheduleStatus::DeliveryGap);
+    }
+    if watermark.next_sequence < checkpoint.next_sequence {
+        metrics.out_of_order_records += 1;
+        records.push(EventRecordResult {
+            event_id,
+            incident_id: String::new(),
+            sequence: watermark.next_sequence,
+            delivered_tick: watermark.observed_tick,
+            processed_tick: Some(processing_tick),
+            disposition: RecordDisposition::OutOfOrder,
+            detection_latency_ticks: None,
+            deadline_met: false,
+        });
+        return Some(ScheduleStatus::OutOfOrder);
+    }
+
+    records.push(EventRecordResult {
+        event_id,
+        incident_id: String::new(),
+        sequence: watermark.next_sequence,
+        delivered_tick: watermark.observed_tick,
+        processed_tick: Some(processing_tick),
+        disposition: RecordDisposition::WatermarkConfirmed,
+        detection_latency_ticks: None,
+        deadline_met: true,
+    });
+    checkpoint.last_stream_tick = watermark.observed_tick;
     None
 }
 
