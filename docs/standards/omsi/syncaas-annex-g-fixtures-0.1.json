@@ -1,0 +1,1636 @@
+{
+  "contract": "omsi.syncaas.annex-g-fixture-pack",
+  "version": "0.1.0-draft",
+  "state": "SYNTHETIC_INPUT_FIXTURES_EXECUTABLE",
+  "standard": {
+    "recommendation": "ITU-T G.8275",
+    "edition": "01/2026",
+    "annex": "G",
+    "optional": true,
+    "dataset_name": "ptpServiceAvailabilityPerformanceMetricsDS",
+    "record_name": "ptpServiceAvailabilityPerformanceMetricsDataRecord"
+  },
+  "default_window_seconds": 10,
+  "semantics": [
+    "N1S means the selected criterion satisfies its declared nominal threshold during the entire one-second interval.",
+    "D1S means the selected criterion does not satisfy the N1S condition.",
+    "The 10 consecutive N1S/D1S window is applied in measurement time; maintenance windows pause evaluation and do not count as measured seconds.",
+    "A transition is attributed to the onset of the qualifying run, even though it is confirmed after the tenth consecutive second.",
+    "The sliding window crosses PM collection period boundaries; counters are reconstructed by the original sample period after the run is resolved.",
+    "UNOBSERVED is an explicit local extension for missing criterion data. It is not silently treated as D1S or N1S.",
+    "AS and UAS are evaluated separately for each PTP profile and exact criterion; FTS and PTS are never pooled."
+  ],
+  "cases": [
+    {
+      "id": "SVC-SUPPORTED-NOMINAL-001",
+      "dataset": {
+        "supported": true,
+        "enable": true
+      },
+      "profile": {
+        "itu_t_profile": "G.8275.1",
+        "edition": "02/2026"
+      },
+      "criterion": {
+        "criterion_id": "clock-class-nominal-service/0.1",
+        "threshold_ref": "operator-profile:telecom-time/0.1#nominal-clockclass",
+        "classification_source_ref": "node-classified-N1S-D1S:synthetic-evaluator"
+      },
+      "window_seconds": 10,
+      "pm_periods": [
+        {
+          "id": "p1",
+          "wall_seconds": 10,
+          "maintenance_paused_seconds": 0
+        }
+      ],
+      "samples": [
+        {
+          "sequence": 0,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 1,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 2,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 3,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 4,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 5,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 6,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 7,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 8,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 9,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        }
+      ],
+      "records": [
+        {
+          "period_id": "p1",
+          "index": 1,
+          "measurementValid": true,
+          "periodComplete": true,
+          "PMTime": "2026-11-08T00:01:00Z",
+          "AS": 10,
+          "UAS": 0
+        }
+      ],
+      "expected": {
+        "status": "QUALIFIED",
+        "final_state": "AVAILABLE",
+        "reason_codes": [
+          "reported_as_uas_match_reconstructed_annex_g_counts"
+        ],
+        "AS_by_period": {
+          "p1": 10
+        },
+        "UAS_by_period": {
+          "p1": 0
+        }
+      }
+    },
+    {
+      "id": "SVC-TRANSIENT-DEGRADATION-001",
+      "dataset": {
+        "supported": true,
+        "enable": true
+      },
+      "profile": {
+        "itu_t_profile": "G.8275.1",
+        "edition": "02/2026"
+      },
+      "criterion": {
+        "criterion_id": "clock-class-nominal-service/0.1",
+        "threshold_ref": "operator-profile:telecom-time/0.1#nominal-clockclass",
+        "classification_source_ref": "node-classified-N1S-D1S:synthetic-evaluator"
+      },
+      "window_seconds": 10,
+      "pm_periods": [
+        {
+          "id": "p1",
+          "wall_seconds": 20,
+          "maintenance_paused_seconds": 0
+        }
+      ],
+      "samples": [
+        {
+          "sequence": 0,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 1,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 2,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 3,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 4,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 5,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 6,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 7,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 8,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 9,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 10,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 11,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 12,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 13,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 14,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 15,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 16,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 17,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 18,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 19,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        }
+      ],
+      "records": [
+        {
+          "period_id": "p1",
+          "index": 1,
+          "measurementValid": true,
+          "periodComplete": true,
+          "PMTime": "2026-11-08T00:01:00Z",
+          "AS": 20,
+          "UAS": 0
+        }
+      ],
+      "expected": {
+        "status": "QUALIFIED",
+        "final_state": "AVAILABLE",
+        "reason_codes": [
+          "reported_as_uas_match_reconstructed_annex_g_counts"
+        ],
+        "AS_by_period": {
+          "p1": 20
+        },
+        "UAS_by_period": {
+          "p1": 0
+        }
+      }
+    },
+    {
+      "id": "SVC-OUTAGE-RECOVERY-001",
+      "dataset": {
+        "supported": true,
+        "enable": true
+      },
+      "profile": {
+        "itu_t_profile": "G.8275.1",
+        "edition": "02/2026"
+      },
+      "criterion": {
+        "criterion_id": "clock-class-nominal-service/0.1",
+        "threshold_ref": "operator-profile:telecom-time/0.1#nominal-clockclass",
+        "classification_source_ref": "node-classified-N1S-D1S:synthetic-evaluator"
+      },
+      "window_seconds": 10,
+      "pm_periods": [
+        {
+          "id": "p1",
+          "wall_seconds": 30,
+          "maintenance_paused_seconds": 0
+        }
+      ],
+      "samples": [
+        {
+          "sequence": 0,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 1,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 2,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 3,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 4,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 5,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 6,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 7,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 8,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 9,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 10,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 11,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 12,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 13,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 14,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 15,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 16,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 17,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 18,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 19,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 20,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 21,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 22,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 23,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 24,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 25,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 26,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 27,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 28,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 29,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        }
+      ],
+      "records": [
+        {
+          "period_id": "p1",
+          "index": 1,
+          "measurementValid": true,
+          "periodComplete": true,
+          "PMTime": "2026-11-08T00:01:00Z",
+          "AS": 20,
+          "UAS": 10
+        }
+      ],
+      "expected": {
+        "status": "QUALIFIED",
+        "final_state": "AVAILABLE",
+        "reason_codes": [
+          "reported_as_uas_match_reconstructed_annex_g_counts"
+        ],
+        "AS_by_period": {
+          "p1": 20
+        },
+        "UAS_by_period": {
+          "p1": 10
+        }
+      }
+    },
+    {
+      "id": "SVC-MAINTENANCE-PAUSE-001",
+      "dataset": {
+        "supported": true,
+        "enable": true
+      },
+      "profile": {
+        "itu_t_profile": "G.8275.1",
+        "edition": "02/2026"
+      },
+      "criterion": {
+        "criterion_id": "clock-class-nominal-service/0.1",
+        "threshold_ref": "operator-profile:telecom-time/0.1#nominal-clockclass",
+        "classification_source_ref": "node-classified-N1S-D1S:synthetic-evaluator"
+      },
+      "window_seconds": 10,
+      "pm_periods": [
+        {
+          "id": "p1",
+          "wall_seconds": 30,
+          "maintenance_paused_seconds": 10
+        }
+      ],
+      "samples": [
+        {
+          "sequence": 0,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 1,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 2,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 3,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 4,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 5,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 6,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 7,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 8,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 9,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 10,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 11,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 12,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 13,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 14,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 15,
+          "period_id": "p1",
+          "criterion_state": "UNOBSERVED",
+          "maintenance_window": true
+        },
+        {
+          "sequence": 16,
+          "period_id": "p1",
+          "criterion_state": "UNOBSERVED",
+          "maintenance_window": true
+        },
+        {
+          "sequence": 17,
+          "period_id": "p1",
+          "criterion_state": "UNOBSERVED",
+          "maintenance_window": true
+        },
+        {
+          "sequence": 18,
+          "period_id": "p1",
+          "criterion_state": "UNOBSERVED",
+          "maintenance_window": true
+        },
+        {
+          "sequence": 19,
+          "period_id": "p1",
+          "criterion_state": "UNOBSERVED",
+          "maintenance_window": true
+        },
+        {
+          "sequence": 20,
+          "period_id": "p1",
+          "criterion_state": "UNOBSERVED",
+          "maintenance_window": true
+        },
+        {
+          "sequence": 21,
+          "period_id": "p1",
+          "criterion_state": "UNOBSERVED",
+          "maintenance_window": true
+        },
+        {
+          "sequence": 22,
+          "period_id": "p1",
+          "criterion_state": "UNOBSERVED",
+          "maintenance_window": true
+        },
+        {
+          "sequence": 23,
+          "period_id": "p1",
+          "criterion_state": "UNOBSERVED",
+          "maintenance_window": true
+        },
+        {
+          "sequence": 24,
+          "period_id": "p1",
+          "criterion_state": "UNOBSERVED",
+          "maintenance_window": true
+        },
+        {
+          "sequence": 25,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 26,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 27,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 28,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 29,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        }
+      ],
+      "records": [
+        {
+          "period_id": "p1",
+          "index": 1,
+          "measurementValid": true,
+          "periodComplete": true,
+          "PMTime": "2026-11-08T00:01:00Z",
+          "AS": 10,
+          "UAS": 10
+        }
+      ],
+      "expected": {
+        "status": "QUALIFIED",
+        "final_state": "UNAVAILABLE",
+        "reason_codes": [
+          "reported_as_uas_match_reconstructed_annex_g_counts"
+        ],
+        "AS_by_period": {
+          "p1": 10
+        },
+        "UAS_by_period": {
+          "p1": 10
+        }
+      }
+    },
+    {
+      "id": "SVC-CROSS-PERIOD-001",
+      "dataset": {
+        "supported": true,
+        "enable": true
+      },
+      "profile": {
+        "itu_t_profile": "G.8275.1",
+        "edition": "02/2026"
+      },
+      "criterion": {
+        "criterion_id": "clock-class-nominal-service/0.1",
+        "threshold_ref": "operator-profile:telecom-time/0.1#nominal-clockclass",
+        "classification_source_ref": "node-classified-N1S-D1S:synthetic-evaluator"
+      },
+      "window_seconds": 10,
+      "pm_periods": [
+        {
+          "id": "p1",
+          "wall_seconds": 18,
+          "maintenance_paused_seconds": 0
+        },
+        {
+          "id": "p2",
+          "wall_seconds": 12,
+          "maintenance_paused_seconds": 0
+        }
+      ],
+      "samples": [
+        {
+          "sequence": 0,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 1,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 2,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 3,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 4,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 5,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 6,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 7,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 8,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 9,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 10,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 11,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 12,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 13,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 14,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 15,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 16,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 17,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 18,
+          "period_id": "p2",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 19,
+          "period_id": "p2",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 20,
+          "period_id": "p2",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 21,
+          "period_id": "p2",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 22,
+          "period_id": "p2",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 23,
+          "period_id": "p2",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 24,
+          "period_id": "p2",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 25,
+          "period_id": "p2",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 26,
+          "period_id": "p2",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 27,
+          "period_id": "p2",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 28,
+          "period_id": "p2",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 29,
+          "period_id": "p2",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        }
+      ],
+      "records": [
+        {
+          "period_id": "p1",
+          "index": 1,
+          "measurementValid": true,
+          "periodComplete": true,
+          "PMTime": "2026-11-08T00:01:00Z",
+          "AS": 10,
+          "UAS": 8
+        },
+        {
+          "period_id": "p2",
+          "index": 2,
+          "measurementValid": true,
+          "periodComplete": true,
+          "PMTime": "2026-11-08T00:02:00Z",
+          "AS": 10,
+          "UAS": 2
+        }
+      ],
+      "expected": {
+        "status": "QUALIFIED",
+        "final_state": "AVAILABLE",
+        "reason_codes": [
+          "reported_as_uas_match_reconstructed_annex_g_counts"
+        ],
+        "AS_by_period": {
+          "p1": 10,
+          "p2": 10
+        },
+        "UAS_by_period": {
+          "p1": 8,
+          "p2": 2
+        }
+      }
+    },
+    {
+      "id": "SVC-MISSING-OBSERVATION-001",
+      "dataset": {
+        "supported": true,
+        "enable": true
+      },
+      "profile": {
+        "itu_t_profile": "G.8275.1",
+        "edition": "02/2026"
+      },
+      "criterion": {
+        "criterion_id": "clock-class-nominal-service/0.1",
+        "threshold_ref": "operator-profile:telecom-time/0.1#nominal-clockclass",
+        "classification_source_ref": "node-classified-N1S-D1S:synthetic-evaluator"
+      },
+      "window_seconds": 10,
+      "pm_periods": [
+        {
+          "id": "p1",
+          "wall_seconds": 21,
+          "maintenance_paused_seconds": 0
+        }
+      ],
+      "samples": [
+        {
+          "sequence": 0,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 1,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 2,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 3,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 4,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 5,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 6,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 7,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 8,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 9,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 10,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 11,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 12,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 13,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 14,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 15,
+          "period_id": "p1",
+          "criterion_state": "UNOBSERVED",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 16,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 17,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 18,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 19,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 20,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        }
+      ],
+      "records": [
+        {
+          "period_id": "p1",
+          "index": 1,
+          "measurementValid": false,
+          "periodComplete": true,
+          "PMTime": "2026-11-08T00:01:00Z",
+          "AS": 20,
+          "UAS": 0
+        }
+      ],
+      "expected": {
+        "status": "INDETERMINATE",
+        "final_state": "AVAILABLE",
+        "reason_codes": [
+          "measurement_valid_false",
+          "unobserved_or_unclassified_seconds_present"
+        ],
+        "AS_by_period": {
+          "p1": 20
+        },
+        "UAS_by_period": {
+          "p1": 0
+        }
+      }
+    },
+    {
+      "id": "SVC-DISABLED-001",
+      "dataset": {
+        "supported": true,
+        "enable": false
+      },
+      "profile": {
+        "itu_t_profile": "G.8275.1",
+        "edition": "02/2026"
+      },
+      "criterion": {
+        "criterion_id": "clock-class-nominal-service/0.1",
+        "threshold_ref": "operator-profile:telecom-time/0.1#nominal-clockclass",
+        "classification_source_ref": "node-classified-N1S-D1S:synthetic-evaluator"
+      },
+      "window_seconds": 10,
+      "pm_periods": [],
+      "samples": [],
+      "records": [],
+      "expected": {
+        "status": "DISABLED",
+        "final_state": "UNKNOWN",
+        "reason_codes": [
+          "annex_g_dataset_disabled"
+        ],
+        "AS_by_period": {},
+        "UAS_by_period": {}
+      }
+    },
+    {
+      "id": "SVC-UNSUPPORTED-001",
+      "dataset": {
+        "supported": false,
+        "enable": false
+      },
+      "profile": {
+        "itu_t_profile": "G.8275.1",
+        "edition": "02/2026"
+      },
+      "criterion": {
+        "criterion_id": "clock-class-nominal-service/0.1",
+        "threshold_ref": "operator-profile:telecom-time/0.1#nominal-clockclass",
+        "classification_source_ref": "node-classified-N1S-D1S:synthetic-evaluator"
+      },
+      "window_seconds": 10,
+      "pm_periods": [],
+      "samples": [],
+      "records": [],
+      "expected": {
+        "status": "NOT_SUPPORTED",
+        "final_state": "UNKNOWN",
+        "reason_codes": [
+          "annex_g_dataset_not_supported"
+        ],
+        "AS_by_period": {},
+        "UAS_by_period": {}
+      }
+    },
+    {
+      "id": "SVC-RECORD-MISMATCH-001",
+      "dataset": {
+        "supported": true,
+        "enable": true
+      },
+      "profile": {
+        "itu_t_profile": "G.8275.1",
+        "edition": "02/2026"
+      },
+      "criterion": {
+        "criterion_id": "clock-class-nominal-service/0.1",
+        "threshold_ref": "operator-profile:telecom-time/0.1#nominal-clockclass",
+        "classification_source_ref": "node-classified-N1S-D1S:synthetic-evaluator"
+      },
+      "window_seconds": 10,
+      "pm_periods": [
+        {
+          "id": "p1",
+          "wall_seconds": 10,
+          "maintenance_paused_seconds": 0
+        }
+      ],
+      "samples": [
+        {
+          "sequence": 0,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 1,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 2,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 3,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 4,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 5,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 6,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 7,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 8,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 9,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        }
+      ],
+      "records": [
+        {
+          "period_id": "p1",
+          "index": 1,
+          "measurementValid": true,
+          "periodComplete": true,
+          "PMTime": "2026-11-08T00:01:00Z",
+          "AS": 9,
+          "UAS": 1
+        }
+      ],
+      "expected": {
+        "status": "COUNTER_MISMATCH",
+        "final_state": "AVAILABLE",
+        "reason_codes": [
+          "reported_counters_do_not_match_annex_g_reconstruction"
+        ],
+        "AS_by_period": {
+          "p1": 10
+        },
+        "UAS_by_period": {
+          "p1": 0
+        }
+      }
+    },
+    {
+      "id": "SVC-PERIOD-INCOMPLETE-001",
+      "dataset": {
+        "supported": true,
+        "enable": true
+      },
+      "profile": {
+        "itu_t_profile": "G.8275.1",
+        "edition": "02/2026"
+      },
+      "criterion": {
+        "criterion_id": "clock-class-nominal-service/0.1",
+        "threshold_ref": "operator-profile:telecom-time/0.1#nominal-clockclass",
+        "classification_source_ref": "node-classified-N1S-D1S:synthetic-evaluator"
+      },
+      "window_seconds": 10,
+      "pm_periods": [
+        {
+          "id": "p1",
+          "wall_seconds": 10,
+          "maintenance_paused_seconds": 0
+        }
+      ],
+      "samples": [
+        {
+          "sequence": 0,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 1,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 2,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 3,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 4,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 5,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 6,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 7,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 8,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 9,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        }
+      ],
+      "records": [
+        {
+          "period_id": "p1",
+          "index": 1,
+          "measurementValid": true,
+          "periodComplete": false,
+          "PMTime": "2026-11-08T00:01:00Z",
+          "AS": 10,
+          "UAS": 0
+        }
+      ],
+      "expected": {
+        "status": "INDETERMINATE",
+        "final_state": "AVAILABLE",
+        "reason_codes": [
+          "period_complete_false"
+        ],
+        "AS_by_period": {
+          "p1": 10
+        },
+        "UAS_by_period": {
+          "p1": 0
+        }
+      }
+    },
+    {
+      "id": "SVC-PTS-SEPARATE-001",
+      "dataset": {
+        "supported": true,
+        "enable": true
+      },
+      "profile": {
+        "itu_t_profile": "G.8275.2",
+        "edition": "02/2026"
+      },
+      "criterion": {
+        "criterion_id": "clock-class-nominal-service/0.1",
+        "threshold_ref": "operator-profile:telecom-time/0.1#nominal-clockclass",
+        "classification_source_ref": "node-classified-N1S-D1S:synthetic-evaluator"
+      },
+      "window_seconds": 10,
+      "pm_periods": [
+        {
+          "id": "p1",
+          "wall_seconds": 20,
+          "maintenance_paused_seconds": 0
+        }
+      ],
+      "samples": [
+        {
+          "sequence": 0,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 1,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 2,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 3,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 4,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 5,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 6,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 7,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 8,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 9,
+          "period_id": "p1",
+          "criterion_state": "D1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 10,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 11,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 12,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 13,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 14,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 15,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 16,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 17,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 18,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        },
+        {
+          "sequence": 19,
+          "period_id": "p1",
+          "criterion_state": "N1S",
+          "maintenance_window": false
+        }
+      ],
+      "records": [
+        {
+          "period_id": "p1",
+          "index": 1,
+          "measurementValid": true,
+          "periodComplete": true,
+          "PMTime": "2026-11-08T00:01:00Z",
+          "AS": 10,
+          "UAS": 10
+        }
+      ],
+      "expected": {
+        "status": "QUALIFIED",
+        "final_state": "AVAILABLE",
+        "reason_codes": [
+          "reported_as_uas_match_reconstructed_annex_g_counts"
+        ],
+        "AS_by_period": {
+          "p1": 10
+        },
+        "UAS_by_period": {
+          "p1": 10
+        }
+      }
+    }
+  ]
+}
