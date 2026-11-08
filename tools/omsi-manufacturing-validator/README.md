@@ -91,4 +91,4 @@ See [the OMSI benchmark scorecard](../../docs/standards/omsi/benchmark-scorecard
 
 The `validate-pmtime-fixtures` command evaluates the synthetic PMTime source/record-time integrity profile and binds its dependency assessments to the Mycelix time-qualified dependency-hypergraph report contract. It is separate from the SyncaaS Annex G availability-state evaluator.
 
-See [PMTime reference-integrity profile 0.1](../../docs/standards/omsi/pmtime-reference-integrity-0.1.md) and the frozen [17-case challenge pack](../../docs/standards/omsi/pmtime-integrity-fixtures-0.1.json). The result does not measure physical time accuracy or prove physical independence.
+See [PMTime reference-integrity profile 0.1](../../docs/standards/omsi/pmtime-reference-integrity-0.1.md) and the frozen [18-case challenge pack](../../docs/standards/omsi/pmtime-integrity-fixtures-0.1.json). The result does not measure physical time accuracy or prove physical independence.
