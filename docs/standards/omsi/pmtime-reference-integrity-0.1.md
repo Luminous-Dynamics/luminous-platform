@@ -73,7 +73,7 @@ The report and verifier artifact SHA-256 values are preserved as receipt referen
 
 ## Frozen challenge suite
 
-The current public suite has 17 synthetic cases:
+The current public suite has 18 synthetic cases:
 
 1. Fully qualified reference and complete dependency inventory.
 2. Shared clock.
@@ -92,6 +92,7 @@ The current public suite has 17 synthetic cases:
 15. Delayed management-plane ingestion without changing event-time period attribution.
 16. Period gap.
 17. Timestamp-source switch with a bound new configuration receipt.
+18. Missing dependency assessments for an earlier record even when the latest record has complete lineage.
 
 The fixture pack is public synthetic conformance, not blind evaluation. Blind generalization belongs to the evaluator-sealed protocol in [#340](https://github.com/Luminous-Dynamics/luminous-platform/issues/340).
 
