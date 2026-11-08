@@ -69,6 +69,7 @@ pub enum IndependenceReason {
     ObserverProfileFromFuture,
     CollectorProfileDigestInvalid,
     ObserverProfileDigestInvalid,
+    SameSubjectIdentity,
     GraphRevisionMismatch,
     MalformedGraph,
     DependencyCycle,
@@ -303,6 +304,14 @@ pub fn audit_observer_independence(
     let mut report =
         IndependenceReport::new(&collector.subject_id, &observer.subject_id);
 
+    if non_empty(&collector.subject_id) && collector.subject_id == observer.subject_id {
+        report.add_reason(IndependenceReason::SameSubjectIdentity);
+        report.shared_dependencies = vec![format!("subject-identity:{}", collector.subject_id)];
+        report.shared_failure_domain_classes = vec!["subject-identity".into()];
+        report.status = IndependenceStatus::SharedDeclaredDependency;
+        return report;
+    }
+
     if let Err(reason) = validate_graph(graph) {
         report.add_reason(reason);
         report.status = IndependenceStatus::Invalid;
@@ -506,6 +515,72 @@ mod tests {
 
         assert_eq!(report.status, IndependenceStatus::NoDeclaredOverlap);
         assert!(report.shared_dependencies.is_empty());
+    }
+
+    #[test]
+    fn same_subject_identity_is_a_shared_failure_domain() {
+        let graph = graph(vec![
+            node("collector", "process", &["collector-host"]),
+            node("collector-host", "host", &[]),
+        ]);
+        let same = profile("same-agent", &["collector"], 2, 30);
+        let mut observer = same.clone();
+        observer.roots = ["collector".to_owned()].into_iter().collect();
+
+        let report = audit_observer_independence(&same, &observer, &graph, 5, policy());
+        assert_eq!(report.status, IndependenceStatus::SharedDeclaredDependency);
+        assert!(report
+            .reasons
+            .contains(&IndependenceReason::SameSubjectIdentity));
+    }
+
+    #[test]
+    fn future_dated_and_over_age_profiles_are_indeterminate() {
+        let graph = graph(vec![
+            node("collector", "process", &["collector-host"]),
+            node("collector-host", "host", &[]),
+            node("observer", "process", &["observer-host"]),
+            node("observer-host", "host", &[]),
+        ]);
+        let mut collector = profile("collector", &["collector"], 8, 30);
+        let observer = profile("observer", &["observer"], 2, 30);
+        let future =
+            audit_observer_independence(&collector, &observer, &graph, 5, policy());
+        assert_eq!(future.status, IndependenceStatus::Indeterminate);
+        assert!(future
+            .reasons
+            .contains(&IndependenceReason::CollectorProfileFromFuture));
+
+        collector.observed_at_tick = 1;
+        let stale =
+            audit_observer_independence(&collector, &observer, &graph, 20, policy());
+        assert_eq!(stale.status, IndependenceStatus::Indeterminate);
+        assert!(stale
+            .reasons
+            .contains(&IndependenceReason::CollectorProfileStale));
+    }
+
+    #[test]
+    fn malformed_profile_digest_is_indeterminate_not_accepted() {
+        let graph = graph(vec![
+            node("collector", "process", &["collector-host"]),
+            node("collector-host", "host", &[]),
+            node("observer", "process", &["observer-host"]),
+            node("observer-host", "host", &[]),
+        ]);
+        let mut collector = profile("collector", &["collector"], 2, 30);
+        collector.profile_digest = "sha256:truncated".into();
+        let report = audit_observer_independence(
+            &collector,
+            &profile("observer", &["observer"], 2, 30),
+            &graph,
+            5,
+            policy(),
+        );
+        assert_eq!(report.status, IndependenceStatus::Indeterminate);
+        assert!(report
+            .reasons
+            .contains(&IndependenceReason::CollectorProfileDigestInvalid));
     }
 
     #[test]
