@@ -52,10 +52,12 @@ pub enum WakeDisposition {
 pub struct WakeDecisionReceipt {
     pub decision_id: String,
     pub watch_id: String,
+    pub source_id: String,
     pub source_epoch: String,
     pub event_id: String,
     pub incident_id: String,
     pub event_sequence: u64,
+    pub payload_digest: String,
     pub wake_tick: u64,
     pub authority_epoch: u64,
     pub disposition: WakeDisposition,
@@ -66,10 +68,12 @@ pub struct ProbeRequestReceipt {
     pub request_id: String,
     pub wake_decision_id: String,
     pub watch_id: String,
+    pub source_id: String,
     pub source_epoch: String,
     pub event_id: String,
     pub incident_id: String,
     pub event_sequence: u64,
+    pub payload_digest: String,
     pub wake_tick: u64,
     pub requested_at_tick: u64,
     pub admitted_at_tick: u64,
@@ -248,6 +252,15 @@ impl EpisodeAuditReport {
 
 fn non_empty(value: &str) -> bool {
     !value.trim().is_empty()
+}
+
+fn valid_sha256(value: &str) -> bool {
+    value.strip_prefix("sha256:").is_some_and(|hex| {
+        hex.len() == 64
+            && hex
+                .bytes()
+                .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
+    })
 }
 
 fn authority_current_at(authority: &AuthoritySnapshot, watch: &WatchSpec, tick: u64) -> bool {
@@ -623,10 +636,12 @@ pub fn source_qualified_decisions_to_receipts(
             receipts.push(WakeDecisionReceipt {
                 decision_id,
                 watch_id: wake.watch_id.clone(),
+                source_id: decision.event.source_id.clone(),
                 source_epoch: decision.event.source_epoch.clone(),
                 event_id: decision.event.event_id.clone(),
                 incident_id: decision.event.incident_id.clone(),
                 event_sequence: decision.event.sequence,
+                payload_digest: decision.event.payload_digest.clone(),
                 wake_tick: wake.wake_tick,
                 authority_epoch: wake.authority_epoch,
                 disposition,
@@ -765,6 +780,12 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
                 continue;
             }
             let decision = matching[0];
+            if decision.source_id != watch.source_id
+                || !valid_sha256(&decision.payload_digest)
+            {
+                report.fail(AuditFailure::WakeRecordMalformed);
+                continue;
+            }
             if !non_empty(&decision.decision_id)
                 || !wake_decision_ids.insert(decision.decision_id.clone())
                 || !wake_decision_keys.insert(key)
@@ -786,6 +807,8 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
                     } else {
                         let request = linked[0];
                         if request.wake_decision_id != decision.decision_id
+                            || request.source_id != decision.source_id
+                            || request.payload_digest != decision.payload_digest
                             || request.event_id != event.event_id
                             || request.incident_id != event.incident_id
                             || request.event_sequence != event.sequence
@@ -1257,6 +1280,8 @@ mod tests {
             event_sequence: 10,
             wake_tick: 6,
             authority_epoch: 7,
+            source_id: "event-feed-a".into(),
+            payload_digest: format!("sha256:{:064x}", 10),
             disposition: WakeDisposition::ProbeRequested {
                 request_id: "request-1".into(),
             },
@@ -1268,10 +1293,12 @@ mod tests {
             request_id: "request-1".into(),
             wake_decision_id: "wake-decision-1".into(),
             watch_id: "watch-a".into(),
+            source_id: "event-feed-a".into(),
             source_epoch: "epoch-1".into(),
             event_id: "event-10".into(),
             incident_id: "incident-a".into(),
             event_sequence: 10,
+            payload_digest: format!("sha256:{:064x}", 10),
             wake_tick: 6,
             requested_at_tick: 6,
             admitted_at_tick: 7,
