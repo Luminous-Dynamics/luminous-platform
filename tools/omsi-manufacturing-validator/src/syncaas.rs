@@ -87,7 +87,6 @@ impl Counters {
 
 #[derive(Clone, Debug)]
 struct Sample {
-    sequence: usize,
     period_id: String,
     criterion: CriterionState,
     maintenance: bool,
@@ -248,7 +247,6 @@ fn parse_samples(case: &Value, periods: &[Period], period_positions: &BTreeMap<S
             // cannot silently become a service-failure classification.
         }
         samples.push(Sample {
-            sequence,
             period_id: period_id.to_owned(),
             criterion,
             maintenance,
@@ -385,7 +383,7 @@ fn run_based_reference(samples: &[Sample], periods: &[Period], window: usize) ->
     let mut run_target: Option<ServiceState> = None;
     let mut run_periods: Vec<String> = Vec::new();
 
-    let mut flush_run = |target: Option<ServiceState>,
+    let flush_run = |target: Option<ServiceState>,
                          run_periods: &mut Vec<String>,
                          state: &mut Option<ServiceState>,
                          counters: &mut BTreeMap<String, Counters>| {
@@ -712,6 +710,9 @@ pub fn validate_fixture_pack(document: &Value, source_bytes: &[u8]) -> Value {
         && text(standard, "recommendation") == Some("ITU-T G.8275")
         && text(standard, "edition") == Some("01/2026")
         && text(standard, "annex") == Some("G")
+        && boolean(standard, "optional") == Some(true)
+        && text(standard, "dataset_name") == Some("ptpServiceAvailabilityPerformanceMetricsDS")
+        && text(standard, "record_name") == Some("ptpServiceAvailabilityPerformanceMetricsDataRecord")
         && document.get("default_window_seconds").and_then(Value::as_u64) == Some(WINDOW_SECONDS as u64)
         && cases.is_some_and(|items| items.len() == EXPECTED_CASE_IDS.len())
         && cases.is_some_and(|items| items.len() <= MAX_CASES);
