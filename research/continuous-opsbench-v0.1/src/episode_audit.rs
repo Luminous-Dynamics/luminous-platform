@@ -390,7 +390,6 @@ fn impact_binding_matches(
         && impact.window_end_tick <= impact.measured_at_tick
         && impact.measured_at_tick <= receipt.received_at_tick
         && receipt.received_at_tick <= audited_at_tick
-    )
 }
 
 fn request_matches_catalog(
