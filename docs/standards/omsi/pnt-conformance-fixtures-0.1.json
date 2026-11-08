@@ -1,0 +1,819 @@
+{
+  "schema": "omsi.pnt-conformance-fixture-pack",
+  "version": "0.1.0-draft",
+  "state": "SYNTHETIC_INPUT_FIXTURES_EXECUTABLE",
+  "profile_id": "omsi.pnt-resilience",
+  "profile_version": "0.1.0-draft",
+  "owner_issue": 307,
+  "source_vector_pack": "docs/standards/omsi/pnt-conformance-vectors-0.1.json",
+  "fixtures": [
+    {
+      "id": "PNT-POS-001",
+      "input": {
+        "profile": {
+          "id": "omsi.pnt-resilience",
+          "version": "0.1.0-draft",
+          "intended_use": "telecom_phase_time_monitoring"
+        },
+        "assessment": {
+          "assessment_id": "pos-001",
+          "as_of": "2026-11-07T12:00:00Z",
+          "dependency_snapshot_id": "dep-snap-001"
+        },
+        "sources": [
+          {
+            "id": "rx-gnss-a",
+            "evidence_class": "measured",
+            "observed_at": "2026-11-07T12:00:00Z",
+            "clock_domain_id": "clock:ptp-gm-a",
+            "clock_time_scale": "PTP_TIMESCALE",
+            "clock_correlation_id": "corr:ptp-utc-01",
+            "integrity_status": "valid",
+            "calibration_status": "current",
+            "calibration_valid_until": "2026-12-01T00:00:00Z",
+            "configuration_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "acquisition_status": "qualified"
+          },
+          {
+            "id": "ptp-grandmaster-a",
+            "evidence_class": "measured",
+            "observed_at": "2026-11-07T12:00:00Z",
+            "clock_domain_id": "clock:ptp-a",
+            "clock_time_scale": "PTP_TIMESCALE",
+            "clock_correlation_id": "corr:ptp-a",
+            "integrity_status": "valid",
+            "calibration_status": "current",
+            "calibration_valid_until": "2026-12-01T00:00:00Z",
+            "configuration_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "acquisition_status": "qualified"
+          }
+        ],
+        "dependency_inventory": {
+          "snapshot_id": "dep-snap-001",
+          "as_of": "2026-11-07T12:00:00Z",
+          "inventory_complete": true,
+          "nodes": [
+            {
+              "source_id": "rx-gnss-a",
+              "failure_domain_id": "fd:antenna-a",
+              "domain_type": "antenna_installation"
+            },
+            {
+              "source_id": "ptp-grandmaster-a",
+              "failure_domain_id": "fd:ptp-a",
+              "domain_type": "clock"
+            }
+          ],
+          "edges": []
+        },
+        "service_assessment": {
+          "declared_mode": "NORMAL",
+          "communications_state": "available",
+          "local_evidence_state": "qualified"
+        }
+      },
+      "expected": {
+        "disposition": "QUALIFIED_FOR_DECLARED_PROFILE",
+        "reason_codes": [
+          "required_evidence_current_and_profile_bound"
+        ]
+      },
+      "purpose": "Positive control: current profile-bound evidence is available; the result makes no claim of physical independence or certification."
+    },
+    {
+      "id": "PNT-FRESH-INVALID-001",
+      "input": {
+        "profile": {
+          "id": "omsi.pnt-resilience",
+          "version": "0.1.0-draft",
+          "intended_use": "telecom_phase_time_monitoring"
+        },
+        "assessment": {
+          "assessment_id": "fresh-invalid-001",
+          "as_of": "2026-11-07T12:00:00Z",
+          "dependency_snapshot_id": "dep-snap-001"
+        },
+        "sources": [
+          {
+            "id": "rx-a",
+            "evidence_class": "measured",
+            "observed_at": "2026-11-07T12:00:00Z",
+            "clock_domain_id": "clock:ptp-gm-a",
+            "clock_time_scale": "PTP_TIMESCALE",
+            "clock_correlation_id": "corr:ptp-utc-01",
+            "integrity_status": "invalid",
+            "calibration_status": "current",
+            "calibration_valid_until": "2026-12-01T00:00:00Z",
+            "configuration_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "acquisition_status": "qualified"
+          }
+        ],
+        "service_assessment": {
+          "declared_mode": "NORMAL",
+          "communications_state": "available",
+          "local_evidence_state": "invalid"
+        }
+      },
+      "expected": {
+        "disposition": "REJECT_RELIANCE",
+        "reason_codes": [
+          "integrity_explicitly_invalid"
+        ]
+      },
+      "purpose": "A fresh receiver observation carries an explicit invalid integrity status."
+    },
+    {
+      "id": "PNT-CAL-STALE-001",
+      "input": {
+        "profile": {
+          "id": "omsi.pnt-resilience",
+          "version": "0.1.0-draft",
+          "intended_use": "telecom_phase_time_monitoring"
+        },
+        "assessment": {
+          "assessment_id": "cal-stale-001",
+          "as_of": "2026-11-07T12:00:00Z",
+          "dependency_snapshot_id": "dep-snap-001"
+        },
+        "sources": [
+          {
+            "id": "rx-a",
+            "evidence_class": "measured",
+            "observed_at": "2026-11-07T12:00:00Z",
+            "clock_domain_id": "clock:ptp-gm-a",
+            "clock_time_scale": "PTP_TIMESCALE",
+            "clock_correlation_id": "corr:ptp-utc-01",
+            "integrity_status": "valid",
+            "calibration_status": "expired",
+            "calibration_valid_until": "2026-11-01T00:00:00Z",
+            "configuration_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "acquisition_status": "qualified"
+          }
+        ]
+      },
+      "expected": {
+        "disposition": "REJECT_RELIANCE",
+        "reason_codes": [
+          "calibration_expired"
+        ]
+      },
+      "purpose": "Source identity and a recent observation cannot upgrade expired calibration."
+    },
+    {
+      "id": "PNT-TIME-DOMAIN-001",
+      "input": {
+        "profile": {
+          "id": "omsi.pnt-resilience",
+          "version": "0.1.0-draft",
+          "intended_use": "telecom_phase_time_monitoring"
+        },
+        "assessment": {
+          "assessment_id": "time-domain-001",
+          "as_of": "2026-11-07T12:00:00Z",
+          "dependency_snapshot_id": "dep-snap-001"
+        },
+        "sources": [
+          {
+            "id": "rx-a",
+            "evidence_class": "measured",
+            "observed_at": "2026-11-07T12:00:00Z",
+            "clock_domain_id": "clock:gps-a",
+            "clock_time_scale": "GPS_TIME",
+            "clock_correlation_id": null,
+            "integrity_status": "valid",
+            "calibration_status": "current",
+            "calibration_valid_until": "2026-12-01T00:00:00Z",
+            "configuration_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "acquisition_status": "qualified"
+          },
+          {
+            "id": "ptp-a",
+            "evidence_class": "measured",
+            "observed_at": "2026-11-07T12:00:00Z",
+            "clock_domain_id": "clock:mono-b",
+            "clock_time_scale": "MONOTONIC",
+            "clock_correlation_id": null,
+            "integrity_status": "valid",
+            "calibration_status": "current",
+            "calibration_valid_until": "2026-12-01T00:00:00Z",
+            "configuration_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "acquisition_status": "qualified"
+          }
+        ]
+      },
+      "expected": {
+        "disposition": "INDETERMINATE",
+        "reason_codes": [
+          "clock_domains_not_correlated"
+        ]
+      },
+      "purpose": "GPS time and a local monotonic clock lack a declared correlation."
+    },
+    {
+      "id": "PNT-COMMON-CLOCK-001",
+      "input": {
+        "profile": {
+          "id": "omsi.pnt-resilience",
+          "version": "0.1.0-draft",
+          "intended_use": "telecom_phase_time_monitoring"
+        },
+        "assessment": {
+          "assessment_id": "common-clock-001",
+          "as_of": "2026-11-07T12:00:00Z",
+          "dependency_snapshot_id": "dep-snap-001"
+        },
+        "sources": [
+          {
+            "id": "rx-1",
+            "evidence_class": "measured",
+            "observed_at": "2026-11-07T12:00:00Z",
+            "clock_domain_id": "clock:shared-a",
+            "clock_time_scale": "PTP_TIMESCALE",
+            "clock_correlation_id": "corr:ptp-utc-01",
+            "integrity_status": "valid",
+            "calibration_status": "current",
+            "calibration_valid_until": "2026-12-01T00:00:00Z",
+            "configuration_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "acquisition_status": "qualified"
+          },
+          {
+            "id": "rx-2",
+            "evidence_class": "measured",
+            "observed_at": "2026-11-07T12:00:00Z",
+            "clock_domain_id": "clock:shared-a",
+            "clock_time_scale": "PTP_TIMESCALE",
+            "clock_correlation_id": "corr:ptp-utc-01",
+            "integrity_status": "valid",
+            "calibration_status": "current",
+            "calibration_valid_until": "2026-12-01T00:00:00Z",
+            "configuration_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "acquisition_status": "qualified"
+          },
+          {
+            "id": "rx-3",
+            "evidence_class": "measured",
+            "observed_at": "2026-11-07T12:00:00Z",
+            "clock_domain_id": "clock:shared-a",
+            "clock_time_scale": "PTP_TIMESCALE",
+            "clock_correlation_id": "corr:ptp-utc-01",
+            "integrity_status": "valid",
+            "calibration_status": "current",
+            "calibration_valid_until": "2026-12-01T00:00:00Z",
+            "configuration_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "acquisition_status": "qualified"
+          },
+          {
+            "id": "rx-4",
+            "evidence_class": "measured",
+            "observed_at": "2026-11-07T12:00:00Z",
+            "clock_domain_id": "clock:shared-a",
+            "clock_time_scale": "PTP_TIMESCALE",
+            "clock_correlation_id": "corr:ptp-utc-01",
+            "integrity_status": "valid",
+            "calibration_status": "current",
+            "calibration_valid_until": "2026-12-01T00:00:00Z",
+            "configuration_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "acquisition_status": "qualified"
+          },
+          {
+            "id": "rx-5",
+            "evidence_class": "measured",
+            "observed_at": "2026-11-07T12:00:00Z",
+            "clock_domain_id": "clock:shared-a",
+            "clock_time_scale": "PTP_TIMESCALE",
+            "clock_correlation_id": "corr:ptp-utc-01",
+            "integrity_status": "valid",
+            "calibration_status": "current",
+            "calibration_valid_until": "2026-12-01T00:00:00Z",
+            "configuration_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "acquisition_status": "qualified"
+          },
+          {
+            "id": "rx-6",
+            "evidence_class": "measured",
+            "observed_at": "2026-11-07T12:00:00Z",
+            "clock_domain_id": "clock:shared-a",
+            "clock_time_scale": "PTP_TIMESCALE",
+            "clock_correlation_id": "corr:ptp-utc-01",
+            "integrity_status": "valid",
+            "calibration_status": "current",
+            "calibration_valid_until": "2026-12-01T00:00:00Z",
+            "configuration_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "acquisition_status": "qualified"
+          }
+        ],
+        "dependency_inventory": {
+          "snapshot_id": "dep-snap-001",
+          "as_of": "2026-11-07T12:00:00Z",
+          "inventory_complete": true,
+          "nodes": [
+            {
+              "source_id": "rx-1",
+              "failure_domain_id": "fd:clock-shared",
+              "domain_type": "clock"
+            },
+            {
+              "source_id": "rx-2",
+              "failure_domain_id": "fd:clock-shared",
+              "domain_type": "clock"
+            },
+            {
+              "source_id": "rx-3",
+              "failure_domain_id": "fd:clock-shared",
+              "domain_type": "clock"
+            },
+            {
+              "source_id": "rx-4",
+              "failure_domain_id": "fd:clock-shared",
+              "domain_type": "clock"
+            },
+            {
+              "source_id": "rx-5",
+              "failure_domain_id": "fd:clock-shared",
+              "domain_type": "clock"
+            },
+            {
+              "source_id": "rx-6",
+              "failure_domain_id": "fd:clock-shared",
+              "domain_type": "clock"
+            }
+          ],
+          "edges": [
+            {
+              "source_id": "rx-1",
+              "depends_on": "fd:clock-shared",
+              "relation": "shares_clock"
+            }
+          ]
+        },
+        "service_assessment": {
+          "declared_mode": "NORMAL",
+          "communications_state": "available",
+          "local_evidence_state": "degraded"
+        }
+      },
+      "expected": {
+        "disposition": "DEGRADED",
+        "reason_codes": [
+          "shared_clock_failure_domain"
+        ]
+      },
+      "purpose": "Six devices share a single declared clock failure domain."
+    },
+    {
+      "id": "PNT-DEPENDENCY-UNKNOWN-001",
+      "input": {
+        "profile": {
+          "id": "omsi.pnt-resilience",
+          "version": "0.1.0-draft",
+          "intended_use": "telecom_phase_time_monitoring"
+        },
+        "assessment": {
+          "assessment_id": "dependency-unknown-001",
+          "as_of": "2026-11-07T12:00:00Z",
+          "dependency_snapshot_id": "dep-snap-001"
+        },
+        "sources": [
+          {
+            "id": "rx-a",
+            "evidence_class": "measured",
+            "observed_at": "2026-11-07T12:00:00Z",
+            "clock_domain_id": "clock:ptp-gm-a",
+            "clock_time_scale": "PTP_TIMESCALE",
+            "clock_correlation_id": "corr:ptp-utc-01",
+            "integrity_status": "valid",
+            "calibration_status": "current",
+            "calibration_valid_until": "2026-12-01T00:00:00Z",
+            "configuration_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "acquisition_status": "qualified"
+          },
+          {
+            "id": "rx-b",
+            "evidence_class": "measured",
+            "observed_at": "2026-11-07T12:00:00Z",
+            "clock_domain_id": "clock:ptp-gm-a",
+            "clock_time_scale": "PTP_TIMESCALE",
+            "clock_correlation_id": "corr:ptp-utc-01",
+            "integrity_status": "valid",
+            "calibration_status": "current",
+            "calibration_valid_until": "2026-12-01T00:00:00Z",
+            "configuration_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "acquisition_status": "qualified"
+          }
+        ],
+        "dependency_inventory": {
+          "snapshot_id": "dep-snap-001",
+          "as_of": "2026-11-07T12:00:00Z",
+          "inventory_complete": false,
+          "nodes": [
+            {
+              "source_id": "rx-a",
+              "failure_domain_id": "fd:unknown-a",
+              "domain_type": "other"
+            }
+          ],
+          "edges": []
+        }
+      },
+      "expected": {
+        "disposition": "INDETERMINATE",
+        "reason_codes": [
+          "dependency_inventory_incomplete"
+        ]
+      },
+      "purpose": "Missing dependency inventory remains unknown and cannot be treated as independence."
+    },
+    {
+      "id": "PNT-SNAPSHOT-MISMATCH-001",
+      "input": {
+        "profile": {
+          "id": "omsi.pnt-resilience",
+          "version": "0.1.0-draft",
+          "intended_use": "telecom_phase_time_monitoring"
+        },
+        "assessment": {
+          "assessment_id": "snapshot-mismatch-001",
+          "as_of": "2026-11-07T12:00:00Z",
+          "dependency_snapshot_id": "dep-snap-001"
+        },
+        "sources": [
+          {
+            "id": "rx-a",
+            "evidence_class": "measured",
+            "observed_at": "2026-11-07T12:00:00Z",
+            "clock_domain_id": "clock:ptp-gm-a",
+            "clock_time_scale": "PTP_TIMESCALE",
+            "clock_correlation_id": "corr:ptp-utc-01",
+            "integrity_status": "valid",
+            "calibration_status": "current",
+            "calibration_valid_until": "2026-12-01T00:00:00Z",
+            "configuration_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "acquisition_status": "qualified"
+          },
+          {
+            "id": "rx-b",
+            "evidence_class": "measured",
+            "observed_at": "2026-11-07T12:00:00Z",
+            "clock_domain_id": "clock:ptp-gm-a",
+            "clock_time_scale": "PTP_TIMESCALE",
+            "clock_correlation_id": "corr:ptp-utc-01",
+            "integrity_status": "valid",
+            "calibration_status": "current",
+            "calibration_valid_until": "2026-12-01T00:00:00Z",
+            "configuration_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "acquisition_status": "qualified"
+          }
+        ],
+        "dependency_inventory": {
+          "snapshot_id": "dep-snap-002",
+          "as_of": "2026-11-07T11:59:00Z",
+          "inventory_complete": true,
+          "nodes": [],
+          "edges": []
+        }
+      },
+      "expected": {
+        "disposition": "INDETERMINATE",
+        "reason_codes": [
+          "dependency_snapshot_mismatch"
+        ]
+      },
+      "purpose": "The assessment and dependency inventory refer to different immutable snapshots."
+    },
+    {
+      "id": "PNT-ORACLE-SHARED-001",
+      "input": {
+        "profile": {
+          "id": "omsi.pnt-resilience",
+          "version": "0.1.0-draft",
+          "intended_use": "telecom_phase_time_monitoring"
+        },
+        "assessment": {
+          "assessment_id": "oracle-shared-001",
+          "as_of": "2026-11-07T12:00:00Z",
+          "dependency_snapshot_id": "dep-snap-001"
+        },
+        "sources": [
+          {
+            "id": "rx-a",
+            "evidence_class": "measured",
+            "observed_at": "2026-11-07T12:00:00Z",
+            "clock_domain_id": "clock:ptp-gm-a",
+            "clock_time_scale": "PTP_TIMESCALE",
+            "clock_correlation_id": "corr:ptp-utc-01",
+            "integrity_status": "valid",
+            "calibration_status": "current",
+            "calibration_valid_until": "2026-12-01T00:00:00Z",
+            "configuration_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "acquisition_status": "qualified"
+          }
+        ],
+        "oracle_evidence": {
+          "claim_type": "receiver_integrity",
+          "detector_input_source_ids": [
+            "rx-a"
+          ],
+          "label_source_ids": [
+            "rx-a"
+          ],
+          "independence_claimed": true
+        }
+      },
+      "expected": {
+        "disposition": "REJECT_RELIANCE",
+        "reason_codes": [
+          "oracle_shares_detector_input"
+        ]
+      },
+      "purpose": "The claimed oracle reuses the detector input source."
+    },
+    {
+      "id": "PNT-ANOMALY-CAUSE-001",
+      "input": {
+        "profile": {
+          "id": "omsi.pnt-resilience",
+          "version": "0.1.0-draft",
+          "intended_use": "telecom_phase_time_monitoring"
+        },
+        "assessment": {
+          "assessment_id": "anomaly-cause-001",
+          "as_of": "2026-11-07T12:00:00Z",
+          "dependency_snapshot_id": "dep-snap-001"
+        },
+        "anomaly_observation": {
+          "symptom_code": "receiver_signal_quality_anomaly",
+          "cause_hypotheses": [
+            "multipath",
+            "antenna_fault",
+            "timing_fault",
+            "interference"
+          ],
+          "cause_adjudicated": false
+        }
+      },
+      "expected": {
+        "disposition": "INDETERMINATE",
+        "reason_codes": [
+          "cause_not_adjudicated"
+        ]
+      },
+      "purpose": "A symptom is observed but competing causes are not independently adjudicated."
+    },
+    {
+      "id": "PNT-RF-UNKNOWN-001",
+      "input": {
+        "profile": {
+          "id": "omsi.pnt-resilience",
+          "version": "0.1.0-draft",
+          "intended_use": "telecom_phase_time_monitoring"
+        },
+        "assessment": {
+          "assessment_id": "rf-unknown-001",
+          "as_of": "2026-11-07T12:00:00Z",
+          "dependency_snapshot_id": "dep-snap-001"
+        },
+        "rf_assessment": {
+          "classification_state": "unknown",
+          "confidence": 0.99,
+          "acquisition_state": "qualified",
+          "pnt_integrity_effect": "none_established"
+        }
+      },
+      "expected": {
+        "disposition": "INDETERMINATE",
+        "reason_codes": [
+          "unknown_rf_not_pnt_integrity"
+        ]
+      },
+      "purpose": "Unknown RF signal-family classification makes no PNT-integrity or actor-attribution claim."
+    },
+    {
+      "id": "PNT-CAPTURE-DEGRADED-001",
+      "input": {
+        "profile": {
+          "id": "omsi.pnt-resilience",
+          "version": "0.1.0-draft",
+          "intended_use": "telecom_phase_time_monitoring"
+        },
+        "assessment": {
+          "assessment_id": "capture-degraded-001",
+          "as_of": "2026-11-07T12:00:00Z",
+          "dependency_snapshot_id": "dep-snap-001"
+        },
+        "rf_assessment": {
+          "classification_state": "known_class",
+          "confidence": 0.999,
+          "acquisition_state": "degraded",
+          "pnt_integrity_effect": "unknown"
+        },
+        "sources": [
+          {
+            "id": "rf-capture-a",
+            "evidence_class": "measured",
+            "observed_at": "2026-11-07T12:00:00Z",
+            "clock_domain_id": "clock:ptp-gm-a",
+            "clock_time_scale": "PTP_TIMESCALE",
+            "clock_correlation_id": "corr:ptp-utc-01",
+            "integrity_status": "valid",
+            "calibration_status": "current",
+            "calibration_valid_until": "2026-12-01T00:00:00Z",
+            "configuration_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "acquisition_status": "degraded"
+          }
+        ]
+      },
+      "expected": {
+        "disposition": "REJECT_RELIANCE",
+        "reason_codes": [
+          "acquisition_chain_degraded"
+        ]
+      },
+      "purpose": "High model confidence cannot repair an unqualified acquisition chain."
+    },
+    {
+      "id": "PNT-COMMS-PARTITION-001",
+      "input": {
+        "profile": {
+          "id": "omsi.pnt-resilience",
+          "version": "0.1.0-draft",
+          "intended_use": "telecom_phase_time_monitoring"
+        },
+        "assessment": {
+          "assessment_id": "comms-partition-001",
+          "as_of": "2026-11-07T12:00:00Z",
+          "dependency_snapshot_id": "dep-snap-001"
+        },
+        "sources": [
+          {
+            "id": "rx-local-a",
+            "evidence_class": "measured",
+            "observed_at": "2026-11-07T12:00:00Z",
+            "clock_domain_id": "clock:ptp-gm-a",
+            "clock_time_scale": "PTP_TIMESCALE",
+            "clock_correlation_id": "corr:ptp-utc-01",
+            "integrity_status": "valid",
+            "calibration_status": "current",
+            "calibration_valid_until": "2026-12-01T00:00:00Z",
+            "configuration_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "acquisition_status": "qualified"
+          }
+        ],
+        "service_assessment": {
+          "declared_mode": "NORMAL",
+          "communications_state": "partitioned",
+          "local_evidence_state": "qualified"
+        }
+      },
+      "expected": {
+        "disposition": "DEGRADED",
+        "reason_codes": [
+          "remote_context_unavailable"
+        ]
+      },
+      "purpose": "Local evidence may remain useful while loss of remote context requires a degraded service mode."
+    },
+    {
+      "id": "PNT-RECOVERY-AUTO-001",
+      "input": {
+        "profile": {
+          "id": "omsi.pnt-resilience",
+          "version": "0.1.0-draft",
+          "intended_use": "telecom_phase_time_monitoring"
+        },
+        "assessment": {
+          "assessment_id": "recovery-auto-001",
+          "as_of": "2026-11-07T12:00:00Z",
+          "dependency_snapshot_id": "dep-snap-001"
+        },
+        "service_assessment": {
+          "declared_mode": "NORMAL",
+          "communications_state": "available",
+          "local_evidence_state": "qualified"
+        },
+        "recovery_evidence": {
+          "event_cleared": true,
+          "requalification_required": true,
+          "requalification_satisfied": false,
+          "fresh_observations": false,
+          "calibration_current": false,
+          "configuration_matches": false,
+          "dependency_snapshot_current": false
+        }
+      },
+      "expected": {
+        "disposition": "REJECT_RELIANCE",
+        "reason_codes": [
+          "requalification_missing"
+        ]
+      },
+      "purpose": "Anomaly disappearance is not sufficient to restore normal service."
+    },
+    {
+      "id": "PNT-RECOVERY-QUAL-001",
+      "input": {
+        "profile": {
+          "id": "omsi.pnt-resilience",
+          "version": "0.1.0-draft",
+          "intended_use": "telecom_phase_time_monitoring"
+        },
+        "assessment": {
+          "assessment_id": "recovery-qual-001",
+          "as_of": "2026-11-07T12:00:00Z",
+          "dependency_snapshot_id": "dep-snap-001"
+        },
+        "sources": [
+          {
+            "id": "rx-a",
+            "evidence_class": "measured",
+            "observed_at": "2026-11-07T12:00:00Z",
+            "clock_domain_id": "clock:ptp-gm-a",
+            "clock_time_scale": "PTP_TIMESCALE",
+            "clock_correlation_id": "corr:ptp-utc-01",
+            "integrity_status": "valid",
+            "calibration_status": "current",
+            "calibration_valid_until": "2026-12-01T00:00:00Z",
+            "configuration_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "acquisition_status": "qualified"
+          }
+        ],
+        "service_assessment": {
+          "declared_mode": "RECOVERING",
+          "communications_state": "available",
+          "local_evidence_state": "qualified"
+        },
+        "recovery_evidence": {
+          "event_cleared": true,
+          "requalification_required": true,
+          "requalification_satisfied": true,
+          "fresh_observations": true,
+          "calibration_current": true,
+          "configuration_matches": true,
+          "dependency_snapshot_current": true
+        }
+      },
+      "expected": {
+        "disposition": "QUALIFIED_FOR_DECLARED_PROFILE",
+        "reason_codes": [
+          "requalification_conditions_satisfied"
+        ]
+      },
+      "purpose": "Recovery is a new qualification event with current, matching evidence."
+    },
+    {
+      "id": "PNT-AUTH-MISSING-001",
+      "input": {
+        "profile": {
+          "id": "omsi.pnt-resilience",
+          "version": "0.1.0-draft",
+          "intended_use": "telecom_phase_time_monitoring"
+        },
+        "assessment": {
+          "assessment_id": "auth-missing-001",
+          "as_of": "2026-11-07T12:00:00Z",
+          "dependency_snapshot_id": "dep-snap-001"
+        },
+        "operation_request": {
+          "requested": true,
+          "target_id": "site:synthetic-01",
+          "action_id": "switch-to-protected-mode",
+          "authority_reference": null
+        }
+      },
+      "expected": {
+        "disposition": "NOT_AUTHORIZED",
+        "reason_codes": [
+          "authority_reference_missing"
+        ]
+      },
+      "purpose": "A recommendation cannot substitute for an exact-scope participant authority reference."
+    },
+    {
+      "id": "PNT-PROBE-IMPACT-UNKNOWN-001",
+      "input": {
+        "profile": {
+          "id": "omsi.pnt-resilience",
+          "version": "0.1.0-draft",
+          "intended_use": "telecom_phase_time_monitoring"
+        },
+        "assessment": {
+          "assessment_id": "probe-impact-unknown-001",
+          "as_of": "2026-11-07T12:00:00Z",
+          "dependency_snapshot_id": "dep-snap-001"
+        },
+        "probe_assessment": {
+          "predicted_evsi": 0.42,
+          "impact_receipt_present": false,
+          "execution_state": "timed_out",
+          "acquisition_stop_confirmed": false
+        }
+      },
+      "expected": {
+        "disposition": "INDETERMINATE",
+        "reason_codes": [
+          "probe_impact_unknown_after_timeout"
+        ]
+      },
+      "purpose": "Positive predicted EVSI does not establish permission or prove probe execution stopped."
+    }
+  ]
+}

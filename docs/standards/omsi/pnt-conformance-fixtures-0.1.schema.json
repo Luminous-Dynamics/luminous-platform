@@ -1,0 +1,606 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:omsi:pnt-conformance-fixtures:0.1",
+  "title": "OMSI PNT synthetic conformance fixture pack",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "state",
+    "profile_id",
+    "profile_version",
+    "owner_issue",
+    "source_vector_pack",
+    "fixtures"
+  ],
+  "properties": {
+    "schema": {
+      "const": "omsi.pnt-conformance-fixture-pack"
+    },
+    "version": {
+      "const": "0.1.0-draft"
+    },
+    "state": {
+      "const": "SYNTHETIC_INPUT_FIXTURES_EXECUTABLE"
+    },
+    "profile_id": {
+      "const": "omsi.pnt-resilience"
+    },
+    "profile_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "owner_issue": {
+      "const": 307
+    },
+    "source_vector_pack": {
+      "type": "string",
+      "minLength": 1
+    },
+    "fixtures": {
+      "type": "array",
+      "minItems": 16,
+      "maxItems": 16,
+      "items": {
+        "$ref": "#/$defs/fixture"
+      }
+    }
+  },
+  "$defs": {
+    "fixture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "input",
+        "expected"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^PNT-[A-Z0-9-]+$"
+        },
+        "input": {
+          "$ref": "#/$defs/input"
+        },
+        "expected": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "disposition",
+            "reason_codes"
+          ],
+          "properties": {
+            "disposition": {
+              "enum": [
+                "QUALIFIED_FOR_DECLARED_PROFILE",
+                "DEGRADED",
+                "INDETERMINATE",
+                "REJECT_RELIANCE",
+                "NOT_AUTHORIZED",
+                "NOT_COMPARABLE"
+              ]
+            },
+            "reason_codes": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]+$"
+              }
+            }
+          }
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profile",
+        "assessment"
+      ],
+      "properties": {
+        "profile": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version",
+            "intended_use"
+          ],
+          "properties": {
+            "id": {
+              "const": "omsi.pnt-resilience"
+            },
+            "version": {
+              "type": "string"
+            },
+            "intended_use": {
+              "enum": [
+                "telecom_phase_time_monitoring",
+                "telecom_frequency_synchronization",
+                "maritime_pnt_monitoring",
+                "industrial_site_timing_monitoring"
+              ]
+            }
+          }
+        },
+        "assessment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "assessment_id",
+            "as_of",
+            "dependency_snapshot_id"
+          ],
+          "properties": {
+            "assessment_id": {
+              "type": "string"
+            },
+            "as_of": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "dependency_snapshot_id": {
+              "type": "string"
+            }
+          }
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/source"
+          }
+        },
+        "dependency_inventory": {
+          "$ref": "#/$defs/dependencies"
+        },
+        "oracle_evidence": {
+          "$ref": "#/$defs/oracle"
+        },
+        "rf_assessment": {
+          "$ref": "#/$defs/rf"
+        },
+        "service_assessment": {
+          "$ref": "#/$defs/service"
+        },
+        "recovery_evidence": {
+          "$ref": "#/$defs/recovery"
+        },
+        "operation_request": {
+          "$ref": "#/$defs/operation"
+        },
+        "probe_assessment": {
+          "$ref": "#/$defs/probe"
+        },
+        "anomaly_observation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "symptom_code"
+          ],
+          "properties": {
+            "symptom_code": {
+              "type": "string"
+            },
+            "cause_hypotheses": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "cause_adjudicated": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "evidence_class",
+        "observed_at",
+        "clock_domain_id",
+        "clock_time_scale",
+        "integrity_status",
+        "calibration_status",
+        "configuration_digest"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "evidence_class": {
+          "enum": [
+            "measured",
+            "reported",
+            "derived",
+            "predicted",
+            "simulated",
+            "inferred",
+            "unknown"
+          ]
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "clock_domain_id": {
+          "type": "string"
+        },
+        "clock_time_scale": {
+          "enum": [
+            "UTC",
+            "TAI",
+            "GPS_TIME",
+            "PTP_TIMESCALE",
+            "MONOTONIC",
+            "UNKNOWN"
+          ]
+        },
+        "clock_correlation_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "integrity_status": {
+          "enum": [
+            "valid",
+            "invalid",
+            "uncertain",
+            "not_assessed",
+            "unknown"
+          ]
+        },
+        "calibration_status": {
+          "enum": [
+            "current",
+            "expired",
+            "revoked",
+            "missing",
+            "not_applicable",
+            "unknown"
+          ]
+        },
+        "calibration_valid_until": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "configuration_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "acquisition_status": {
+          "enum": [
+            "qualified",
+            "degraded",
+            "unknown"
+          ]
+        },
+        "rf_classification": {
+          "enum": [
+            "known_class",
+            "unknown",
+            "indeterminate",
+            "degraded_acquisition"
+          ]
+        }
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "snapshot_id",
+        "as_of",
+        "inventory_complete",
+        "nodes",
+        "edges"
+      ],
+      "properties": {
+        "snapshot_id": {
+          "type": "string"
+        },
+        "as_of": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "inventory_complete": {
+          "type": "boolean"
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source_id",
+              "failure_domain_id",
+              "domain_type"
+            ],
+            "properties": {
+              "source_id": {
+                "type": "string"
+              },
+              "failure_domain_id": {
+                "type": "string"
+              },
+              "domain_type": {
+                "enum": [
+                  "clock",
+                  "oscillator",
+                  "gnss_reference",
+                  "correction_provider",
+                  "power",
+                  "network",
+                  "antenna_installation",
+                  "firmware_lineage",
+                  "collector",
+                  "pipeline",
+                  "other"
+                ]
+              }
+            }
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source_id",
+              "depends_on",
+              "relation"
+            ],
+            "properties": {
+              "source_id": {
+                "type": "string"
+              },
+              "depends_on": {
+                "type": "string"
+              },
+              "relation": {
+                "enum": [
+                  "shares_clock",
+                  "shares_oscillator",
+                  "shares_power",
+                  "shares_network",
+                  "shares_correction",
+                  "shares_antenna_site",
+                  "shares_firmware_lineage",
+                  "shares_collector",
+                  "shares_pipeline",
+                  "unknown"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "oracle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_type",
+        "detector_input_source_ids",
+        "label_source_ids",
+        "independence_claimed"
+      ],
+      "properties": {
+        "claim_type": {
+          "enum": [
+            "physical_event",
+            "receiver_integrity",
+            "service_consequence"
+          ]
+        },
+        "detector_input_source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "label_source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "independence_claimed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "rf": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "classification_state",
+        "confidence",
+        "acquisition_state",
+        "pnt_integrity_effect"
+      ],
+      "properties": {
+        "classification_state": {
+          "enum": [
+            "known_class",
+            "unknown",
+            "indeterminate",
+            "degraded_acquisition"
+          ]
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "acquisition_state": {
+          "enum": [
+            "qualified",
+            "degraded",
+            "unknown"
+          ]
+        },
+        "pnt_integrity_effect": {
+          "enum": [
+            "none_established",
+            "separately_assessed_invalid",
+            "separately_assessed_valid",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "declared_mode",
+        "communications_state",
+        "local_evidence_state"
+      ],
+      "properties": {
+        "declared_mode": {
+          "enum": [
+            "NORMAL",
+            "DEGRADED",
+            "INTEGRITY_UNCERTAIN",
+            "UNAVAILABLE",
+            "RECOVERING",
+            "INDETERMINATE"
+          ]
+        },
+        "communications_state": {
+          "enum": [
+            "available",
+            "partitioned",
+            "unavailable",
+            "unknown"
+          ]
+        },
+        "local_evidence_state": {
+          "enum": [
+            "qualified",
+            "degraded",
+            "invalid",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "recovery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_cleared",
+        "requalification_required",
+        "requalification_satisfied",
+        "fresh_observations",
+        "calibration_current",
+        "configuration_matches",
+        "dependency_snapshot_current"
+      ],
+      "properties": {
+        "event_cleared": {
+          "type": "boolean"
+        },
+        "requalification_required": {
+          "type": "boolean"
+        },
+        "requalification_satisfied": {
+          "type": "boolean"
+        },
+        "fresh_observations": {
+          "type": "boolean"
+        },
+        "calibration_current": {
+          "type": "boolean"
+        },
+        "configuration_matches": {
+          "type": "boolean"
+        },
+        "dependency_snapshot_current": {
+          "type": "boolean"
+        }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requested",
+        "target_id",
+        "action_id",
+        "authority_reference"
+      ],
+      "properties": {
+        "requested": {
+          "type": "boolean"
+        },
+        "target_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "action_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "authority_reference": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "predicted_evsi",
+        "impact_receipt_present",
+        "execution_state",
+        "acquisition_stop_confirmed"
+      ],
+      "properties": {
+        "predicted_evsi": {
+          "type": "number"
+        },
+        "impact_receipt_present": {
+          "type": "boolean"
+        },
+        "execution_state": {
+          "enum": [
+            "not_started",
+            "completed",
+            "timed_out",
+            "unknown"
+          ]
+        },
+        "acquisition_stop_confirmed": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}
