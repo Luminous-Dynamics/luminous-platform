@@ -7,9 +7,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::event_schedule::{
-    EventScheduleResult, RecordDisposition, ScheduleStatus,
-};
+use crate::event_schedule::{EventScheduleResult, RecordDisposition, ScheduleStatus};
 use crate::watch_probe::{
     AuthoritySnapshot, ImpactObservation, ProbeCatalogEntry, SourceObservation,
     TerminalDisposition, WatchSpec, MAX_RISK_PPM,
@@ -229,23 +227,18 @@ fn non_empty(value: &str) -> bool {
     !value.trim().is_empty()
 }
 
-fn authority_current_at(
-    authority: &AuthoritySnapshot,
-    watch: &WatchSpec,
-    tick: u64,
-) -> bool {
+fn authority_current_at(authority: &AuthoritySnapshot, watch: &WatchSpec, tick: u64) -> bool {
     authority.tenant_id == watch.tenant_id
         && authority.target_id == watch.target_id
         && authority.purpose_id == watch.purpose_id
         && tick >= authority.valid_from_tick
         && tick < authority.expires_at_tick
-        && authority.revoked_at_tick.is_none_or(|revoked| tick < revoked)
+        && authority
+            .revoked_at_tick
+            .is_none_or(|revoked| tick < revoked)
 }
 
-fn watch_and_authority_valid(
-    watch: &WatchSpec,
-    authority: &AuthoritySnapshot,
-) -> bool {
+fn watch_and_authority_valid(watch: &WatchSpec, authority: &AuthoritySnapshot) -> bool {
     non_empty(&watch.watch_id)
         && non_empty(&watch.tenant_id)
         && non_empty(&watch.target_id)
@@ -427,8 +420,7 @@ fn audit_decision(
         report.fail(AuditFailure::DuplicateDecisionId);
         return;
     }
-    let reduction =
-        decision.loss_before_ppm as i64 - decision.loss_after_ppm as i64;
+    let reduction = decision.loss_before_ppm as i64 - decision.loss_after_ppm as i64;
     let expected_terminal = if reduction > 0 {
         TerminalDisposition::Stop
     } else {
@@ -498,7 +490,10 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
 
     let mut catalog_by_id: BTreeMap<&str, &ProbeCatalogEntry> = BTreeMap::new();
     for entry in input.catalog {
-        if catalog_by_id.insert(entry.probe_id.as_str(), entry).is_some() {
+        if catalog_by_id
+            .insert(entry.probe_id.as_str(), entry)
+            .is_some()
+        {
             report.fail(AuditFailure::ProbeNotCataloguedReadOnly);
         }
     }
@@ -524,9 +519,7 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
             report.fail(AuditFailure::WakeRecordMalformed);
             continue;
         }
-        for (event_id, incident_id) in
-            wake.event_ids.iter().zip(wake.incident_ids.iter())
-        {
+        for (event_id, incident_id) in wake.event_ids.iter().zip(wake.incident_ids.iter()) {
             let candidates: Vec<_> = schedule
                 .records
                 .iter()
@@ -627,17 +620,16 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
 
     // Supplied wake decisions must not be orphaned or silently duplicated.
     for decision in input.wake_decisions {
-        let exists = schedule.wakes.iter().any(|wake| {
-            wake.source_epoch == decision.source_epoch
-                && wake.wake_tick == decision.wake_tick
-                && wake
-                    .event_ids
-                    .iter()
-                    .zip(wake.incident_ids.iter())
-                    .any(|(event, incident)| {
-                        event == &decision.event_id && incident == &decision.incident_id
-                    })
-        });
+        let exists =
+            schedule.wakes.iter().any(|wake| {
+                wake.source_epoch == decision.source_epoch
+                    && wake.wake_tick == decision.wake_tick
+                    && wake.event_ids.iter().zip(wake.incident_ids.iter()).any(
+                        |(event, incident)| {
+                            event == &decision.event_id && incident == &decision.incident_id
+                        },
+                    )
+            });
         if !exists || !wake_decision_ids.contains(&decision.decision_id) {
             report.fail(AuditFailure::OrphanWakeDecision);
         }
@@ -810,13 +802,11 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
                     }
                     None
                 } else if let Some(observation) = observation {
-                    if receipt.impact.observer_control_domain == observation.observation.control_domain
-                        || receipt.impact.observer_control_domain
-                            == entry.collector_control_domain
+                    if receipt.impact.observer_control_domain
+                        == observation.observation.control_domain
+                        || receipt.impact.observer_control_domain == entry.collector_control_domain
                     {
-                        report.indeterminate(
-                            IndeterminateReason::ImpactIndependenceUnestablished,
-                        );
+                        report.indeterminate(IndeterminateReason::ImpactIndependenceUnestablished);
                         None
                     } else {
                         report.impacts_verified += 1;
@@ -1109,8 +1099,14 @@ mod tests {
     #[test]
     fn exact_event_probe_observation_impact_and_decision_chain_qualifies() {
         let report = run(
-            &watch(), &authority(), &catalog(), &schedule(),
-            &wake_decision(), &request(), &evidence(), 12,
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &evidence(),
+            12,
         );
         assert_eq!(report.status, AuditStatus::Qualified);
         assert_eq!(report.wake_events, 1);
@@ -1127,8 +1123,14 @@ mod tests {
         rows[0].impact = ReceiptState::Missing;
         rows[0].decision = None;
         let report = run(
-            &watch(), &authority(), &catalog(), &schedule(),
-            &wake_decision(), &request(), &rows, 12,
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &rows,
+            12,
         );
         assert_eq!(report.status, AuditStatus::Indeterminate);
         assert_eq!(report.missing_impacts, 1);
@@ -1144,8 +1146,14 @@ mod tests {
         rows[0].impact = ReceiptState::Unknown;
         rows[0].decision = None;
         let report = run(
-            &watch(), &authority(), &catalog(), &schedule(),
-            &wake_decision(), &request(), &rows, 12,
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &rows,
+            12,
         );
         assert_eq!(report.status, AuditStatus::Indeterminate);
         assert_eq!(report.unknown_observations, 1);
@@ -1156,8 +1164,14 @@ mod tests {
     #[test]
     fn measured_zero_impact_is_distinct_from_missing_impact() {
         let report = run(
-            &watch(), &authority(), &catalog(), &schedule(),
-            &wake_decision(), &request(), &evidence(), 12,
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &evidence(),
+            12,
         );
         assert_eq!(report.status, AuditStatus::Qualified);
         assert_eq!(report.impacts_verified, 1);
@@ -1170,11 +1184,19 @@ mod tests {
         let mut entries = catalog();
         entries[0].read_only = false;
         let report = run(
-            &watch(), &authority(), &entries, &schedule(),
-            &wake_decision(), &request(), &evidence(), 12,
+            &watch(),
+            &authority(),
+            &entries,
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &evidence(),
+            12,
         );
         assert_eq!(report.status, AuditStatus::Failed);
-        assert!(report.failures.contains(&AuditFailure::ProbeNotCataloguedReadOnly));
+        assert!(report
+            .failures
+            .contains(&AuditFailure::ProbeNotCataloguedReadOnly));
     }
 
     #[test]
@@ -1182,11 +1204,19 @@ mod tests {
         let mut requests = request();
         requests[0].event_id = "other-event".into();
         let report = run(
-            &watch(), &authority(), &catalog(), &schedule(),
-            &wake_decision(), &requests, &evidence(), 12,
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &requests,
+            &evidence(),
+            12,
         );
         assert_eq!(report.status, AuditStatus::Failed);
-        assert!(report.failures.contains(&AuditFailure::RequestNotAuthorizedByWake));
+        assert!(report
+            .failures
+            .contains(&AuditFailure::RequestNotAuthorizedByWake));
     }
 
     #[test]
@@ -1197,11 +1227,19 @@ mod tests {
             ..observation_receipt()
         });
         let report = run(
-            &watch(), &authority(), &catalog(), &schedule(),
-            &wake_decision(), &request(), &rows, 12,
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &rows,
+            12,
         );
         assert_eq!(report.status, AuditStatus::Failed);
-        assert!(report.failures.contains(&AuditFailure::EvidenceBindingMismatch));
+        assert!(report
+            .failures
+            .contains(&AuditFailure::EvidenceBindingMismatch));
     }
 
     #[test]
@@ -1212,12 +1250,20 @@ mod tests {
         rows[0].observation = ReceiptState::Present(stale);
         rows[0].decision = None;
         let report = run(
-            &watch(), &authority(), &catalog(), &schedule(),
-            &wake_decision(), &request(), &rows, 12,
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &rows,
+            12,
         );
         assert_eq!(report.status, AuditStatus::Indeterminate);
         assert_eq!(report.observations_verified, 0);
-        assert!(report.indeterminate_reasons.contains(&IndeterminateReason::StaleObservation));
+        assert!(report
+            .indeterminate_reasons
+            .contains(&IndeterminateReason::StaleObservation));
     }
 
     #[test]
@@ -1228,8 +1274,14 @@ mod tests {
         rows[0].impact = ReceiptState::Present(same_domain);
         rows[0].decision = None;
         let report = run(
-            &watch(), &authority(), &catalog(), &schedule(),
-            &wake_decision(), &request(), &rows, 12,
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &rows,
+            12,
         );
         assert_eq!(report.status, AuditStatus::Indeterminate);
         assert_eq!(report.impacts_verified, 0);
@@ -1246,11 +1298,19 @@ mod tests {
         rows[0].impact = ReceiptState::Present(early);
         rows[0].decision = None;
         let report = run(
-            &watch(), &authority(), &catalog(), &schedule(),
-            &wake_decision(), &request(), &rows, 12,
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &rows,
+            12,
         );
         assert_eq!(report.status, AuditStatus::Failed);
-        assert!(report.failures.contains(&AuditFailure::EvidenceBindingMismatch));
+        assert!(report
+            .failures
+            .contains(&AuditFailure::EvidenceBindingMismatch));
     }
 
     #[test]
@@ -1258,34 +1318,62 @@ mod tests {
         let mut revoked = authority();
         revoked.revoked_at_tick = Some(7);
         let report = run(
-            &watch(), &revoked, &catalog(), &schedule(),
-            &wake_decision(), &request(), &evidence(), 12,
+            &watch(),
+            &revoked,
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &evidence(),
+            12,
         );
         assert_eq!(report.status, AuditStatus::Failed);
-        assert!(report.failures.contains(&AuditFailure::RequestOutsideWatchOrAuthority));
+        assert!(report
+            .failures
+            .contains(&AuditFailure::RequestOutsideWatchOrAuthority));
     }
 
     #[test]
     fn decision_arithmetic_is_recomputed_and_not_agent_accepted() {
         let mut rows = evidence();
-        rows[0].decision.as_mut().unwrap().claimed_loss_reduction_ppm = 1;
+        rows[0]
+            .decision
+            .as_mut()
+            .unwrap()
+            .claimed_loss_reduction_ppm = 1;
         let report = run(
-            &watch(), &authority(), &catalog(), &schedule(),
-            &wake_decision(), &request(), &rows, 12,
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &rows,
+            12,
         );
         assert_eq!(report.status, AuditStatus::Failed);
         assert_eq!(report.decisions_verified, 0);
-        assert!(report.failures.contains(&AuditFailure::DecisionValueMismatch));
+        assert!(report
+            .failures
+            .contains(&AuditFailure::DecisionValueMismatch));
     }
 
     #[test]
     fn every_wake_requires_an_explicit_no_probe_or_probe_decision() {
         let report = run(
-            &watch(), &authority(), &catalog(), &schedule(),
-            &[], &[], &[], 12,
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &[],
+            &[],
+            &[],
+            12,
         );
         assert_eq!(report.status, AuditStatus::Failed);
-        assert!(report.failures.contains(&AuditFailure::MissingWakeDecision));
+        assert!(report
+            .failures
+            .contains(&AuditFailure::MissingWakeDecision));
     }
 
     #[test]
@@ -1293,8 +1381,14 @@ mod tests {
         let mut decisions = wake_decision();
         decisions[0].disposition = WakeDisposition::StopWithoutProbe;
         let report = run(
-            &watch(), &authority(), &catalog(), &schedule(),
-            &decisions, &[], &[], 12,
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &decisions,
+            &[],
+            &[],
+            12,
         );
         assert_eq!(report.status, AuditStatus::Qualified);
         assert_eq!(report.wake_decisions, 1);
@@ -1309,8 +1403,14 @@ mod tests {
         quiet.records.clear();
         quiet.wakes.clear();
         let report = run(
-            &watch(), &authority(), &catalog(), &quiet,
-            &[], &[], &[], 12,
+            &watch(),
+            &authority(),
+            &catalog(),
+            &quiet,
+            &[],
+            &[],
+            &[],
+            12,
         );
         assert_eq!(report.status, AuditStatus::Qualified);
         assert_eq!(report.wake_events, 0);
@@ -1329,11 +1429,19 @@ mod tests {
         };
         rows.push(second);
         let report = run(
-            &watch(), &authority(), &catalog(), &schedule(),
-            &wake_decision(), &request(), &rows, 12,
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &rows,
+            12,
         );
         assert_eq!(report.status, AuditStatus::Failed);
-        assert!(report.failures.contains(&AuditFailure::DuplicateEvidenceRecord));
+        assert!(report
+            .failures
+            .contains(&AuditFailure::DuplicateEvidenceRecord));
     }
 
     #[test]
@@ -1341,11 +1449,19 @@ mod tests {
         let mut rows = evidence();
         rows[0].impact = ReceiptState::Unknown;
         let report = run(
-            &watch(), &authority(), &catalog(), &schedule(),
-            &wake_decision(), &request(), &rows, 12,
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &rows,
+            12,
         );
         assert_eq!(report.status, AuditStatus::Failed);
-        assert!(report.failures.contains(&AuditFailure::DecisionWithoutCompleteEvidence));
+        assert!(report
+            .failures
+            .contains(&AuditFailure::DecisionWithoutCompleteEvidence));
     }
 
     #[test]
@@ -1353,10 +1469,18 @@ mod tests {
         let mut changed = schedule();
         changed.metrics.consequential_mutation_attempts = 1;
         let report = run(
-            &watch(), &authority(), &catalog(), &changed,
-            &wake_decision(), &request(), &evidence(), 12,
+            &watch(),
+            &authority(),
+            &catalog(),
+            &changed,
+            &wake_decision(),
+            &request(),
+            &evidence(),
+            12,
         );
         assert_eq!(report.status, AuditStatus::Failed);
-        assert!(report.failures.contains(&AuditFailure::ScheduleMutationAttempt));
+        assert!(report
+            .failures
+            .contains(&AuditFailure::ScheduleMutationAttempt));
     }
 }
