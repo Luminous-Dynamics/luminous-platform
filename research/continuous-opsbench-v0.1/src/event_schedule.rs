@@ -1196,6 +1196,21 @@ fn process_watermark(
         });
         return Some(ScheduleStatus::SourceEpochMismatch);
     }
+    if watermark.next_sequence < checkpoint.next_sequence {
+        metrics.out_of_order_records += 1;
+        records.push(EventRecordResult {
+            event_id,
+            incident_id: String::new(),
+            sequence: watermark.next_sequence,
+            delivered_tick: watermark.observed_tick,
+            processed_tick: Some(processing_tick),
+            disposition: RecordDisposition::OutOfOrder,
+            detection_latency_ticks: None,
+            deadline_met: false,
+        });
+        return Some(ScheduleStatus::OutOfOrder);
+    }
+
     if watermark.next_sequence > checkpoint.next_sequence
         || !checkpoint.buffered_events.is_empty()
         || checkpoint.gap_started_at_tick.is_some()
@@ -1234,20 +1249,6 @@ fn process_watermark(
             false,
         );
         return None;
-    }
-    if watermark.next_sequence < checkpoint.next_sequence {
-        metrics.out_of_order_records += 1;
-        records.push(EventRecordResult {
-            event_id,
-            incident_id: String::new(),
-            sequence: watermark.next_sequence,
-            delivered_tick: watermark.observed_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::OutOfOrder,
-            detection_latency_ticks: None,
-            deadline_met: false,
-        });
-        return Some(ScheduleStatus::OutOfOrder);
     }
 
     records.push(EventRecordResult {
