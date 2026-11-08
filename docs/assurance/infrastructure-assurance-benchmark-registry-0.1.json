@@ -175,6 +175,31 @@
         "Keep transformation and schema-coverage conformance separate from metrology qualification.",
         "Add real vendor adapters only with licensed source schemas and field datasets."
       ]
+    },
+    {
+      "track_id": "PTP-PMTIME-REF-INTEGRITY-001",
+      "name": "PTP PMTime record timestamp source and dependency integrity",
+      "owner": "Luminous-Dynamics/luminous-platform",
+      "owner_issue": "https://github.com/Luminous-Dynamics/luminous-platform/issues/335",
+      "implementation": "https://github.com/Luminous-Dynamics/luminous-platform/pull/344",
+      "parent_profile": "https://github.com/Luminous-Dynamics/luminous-platform/pull/329",
+      "maturity": "synthetic_contract_implementation_pending_exact_head_ci",
+      "current_evidence": "20 public synthetic PMTime cases are authored. The profile requires record-level dependency assessments and exact event-time/source-pair/snapshot bindings. Exact-head workflow has not yet established compilation or test success.",
+      "fixture_state": "20 public synthetic cases, including invalid/missing source-signature statuses, per-record missing-lineage negative control, event-time vs receive-time, source/configuration change receipt, calibration/timebase/uncertainty context, common clock/oscillator/GNSS/network dependencies.",
+      "claim_ceiling": "Synthetic PMTime record-integrity and structural composition of declared Mycelix dependency-verification outputs only. No source-signature authentication, absolute physical time accuracy, proof of physical independence, live PTP qualification, telecom SLA, or G.8275 Amendment 1 conformance.",
+      "score_families": [
+        "measurement_qualification",
+        "evidence_integrity",
+        "dependency_assurance",
+        "service_outcomes",
+        "recovery"
+      ],
+      "next_work": [
+        "Complete exact-head format, compile, test, Clippy and 20-case workflow gates.",
+        "Integrate independently authenticated Mycelix report/custody receipts rather than accepting structural report fields alone.",
+        "Run hardware-in-the-loop PMTime comparison against a separately traceable analyzer and quantify time error/uncertainty.",
+        "Hold out clock sources, PTP instances, firmware, source adapters, network paths and sites for field generalization."
+      ]
     }
   ],
   "external_comparators": [
