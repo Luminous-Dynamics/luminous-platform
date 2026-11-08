@@ -2249,6 +2249,41 @@ mod tests {
     }
 
     #[test]
+    fn invalid_or_mismatched_gap_policy_is_rejected() {
+        let timeline = vec![TimelineRecord::Event(event(
+            "event-2",
+            "incident-2",
+            2,
+            2,
+            3,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        ))];
+        let result = evaluate_event_schedule_with_gap_policy(
+            &watch(),
+            &authority(),
+            AttentionStrategy::EventTriggered,
+            &timeline,
+            6,
+            None,
+            SequenceGapPolicy::buffered(0, 8),
+        );
+        assert_eq!(result, Err(ScheduleError::InvalidGapPolicy));
+
+        let oversized = evaluate_event_schedule_with_gap_policy(
+            &watch(),
+            &authority(),
+            AttentionStrategy::EventTriggered,
+            &timeline,
+            6,
+            None,
+            SequenceGapPolicy::buffered(5, 65),
+        );
+        assert_eq!(oversized, Err(ScheduleError::InvalidGapPolicy));
+    }
+
+    #[test]
     fn source_epoch_restart_cannot_discard_an_unresolved_gap() {
         let later = event(
             "event-2",
@@ -2674,5 +2709,29 @@ pub fn run_from_checkpoint(
         timeline,
         horizon_tick,
         Some(checkpoint),
+    )
+}
+
+
+/// Resume a persisted sequence-gap checkpoint under the same explicit bounded
+/// gap policy. A pending checkpoint cannot be resumed through the strict
+/// compatibility wrapper because strict mode has no buffer/deadline semantics.
+pub fn run_from_checkpoint_with_gap_policy(
+    watch: &EventWatch,
+    authority: &AuthorityWindow,
+    strategy: AttentionStrategy,
+    timeline: &[TimelineRecord],
+    horizon_tick: u64,
+    checkpoint: EventCheckpoint,
+    gap_policy: SequenceGapPolicy,
+) -> Result<EventScheduleResult, ScheduleError> {
+    evaluate_event_schedule_with_gap_policy(
+        watch,
+        authority,
+        strategy,
+        timeline,
+        horizon_tick,
+        Some(checkpoint),
+        gap_policy,
     )
 }
