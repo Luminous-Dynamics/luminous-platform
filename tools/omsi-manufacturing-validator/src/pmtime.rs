@@ -315,41 +315,25 @@ fn evaluate_case(
             shared = true;
         }
 
-        let Some(calibration) = record.get("calibration") else {
+        if let Some(calibration) = record.get("calibration") {
+            if string(calibration, "status") != Some("current") {
+                unknown.push(format!("record_{index}_calibration_not_current"));
+            }
+            let valid_from = number(calibration, "valid_from_tai_ns");
+            let valid_until = number(calibration, "valid_until_tai_ns");
+            if valid_from.is_none_or(|value| value > period_start)
+                || valid_until.is_none_or(|value| value < period_end)
+            {
+                unknown.push(format!("record_{index}_calibration_does_not_cover_period"));
+            }
+            if !string(calibration, "certificate_sha256").is_some_and(is_sha256)
+                || string(calibration, "traceability_ref")
+                    .is_none_or(|value| value.trim().is_empty())
+            {
+                unknown.push(format!("record_{index}_calibration_traceability_missing"));
+            }
+        } else {
             unknown.push(format!("record_{index}_calibration_evidence_missing"));
-            // Continue sequence validation even when calibration evidence is absent.
-            let mut pair = vec![source_id, ptp_id];
-            pair.sort();
-            expected_queries.push((timestamp, pair));
-            previous = Some((
-                record_index,
-                timestamp,
-                period_end,
-                source_id,
-                source_type,
-                clock_domain_id,
-                ptp_id,
-                config_revision,
-                adapter_version,
-                time_scale,
-            ));
-            continue;
-        };
-        if string(calibration, "status") != Some("current") {
-            unknown.push(format!("record_{index}_calibration_not_current"));
-        }
-        let valid_from = number(calibration, "valid_from_tai_ns");
-        let valid_until = number(calibration, "valid_until_tai_ns");
-        if valid_from.is_none_or(|value| value > period_start)
-            || valid_until.is_none_or(|value| value < period_end)
-        {
-            unknown.push(format!("record_{index}_calibration_does_not_cover_period"));
-        }
-        if !string(calibration, "certificate_sha256").is_some_and(is_sha256)
-            || string(calibration, "traceability_ref")
-                .is_none_or(|value| value.trim().is_empty())
-        {
-            unknown.push(format!("record_{index}_calibration_traceability_missing"));
         }
 
         let mut pair = vec![source_id, ptp_id];
@@ -504,14 +488,6 @@ fn evaluate_case(
             invalid.push(format!("dependency_domain_{domain}_unsupported"));
         }
 
-        let required_for_case = case
-            .get("required_dependency_domains")
-            .and_then(Value::as_array)
-            .map(|items| items.iter().any(|value| value.as_str() == Some(domain)))
-            .unwrap_or_else(|| default_required_domains.iter().any(|value| value == domain));
-        if !required_for_case && !supported {
-            invalid.push(format!("dependency_domain_{domain}_unsupported"));
-        }
         seen_by_event
             .entry(event_time)
             .or_default()
