@@ -45,7 +45,13 @@
             "valid_from_tai_ns": 900,
             "valid_until_tai_ns": 2100,
             "traceability_ref": "traceability-chain-01"
-          }
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-01",
+          "record_received_tai_ns": 1600,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
         }
       ],
       "dependency_assessments": [
@@ -255,7 +261,13 @@
             "valid_from_tai_ns": 900,
             "valid_until_tai_ns": 2100,
             "traceability_ref": "traceability-chain-01"
-          }
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-01",
+          "record_received_tai_ns": 1600,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
         }
       ],
       "dependency_assessments": [
@@ -467,7 +479,13 @@
             "valid_from_tai_ns": 900,
             "valid_until_tai_ns": 2100,
             "traceability_ref": "traceability-chain-01"
-          }
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-01",
+          "record_received_tai_ns": 1600,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
         }
       ],
       "dependency_assessments": [
@@ -679,7 +697,13 @@
             "valid_from_tai_ns": 900,
             "valid_until_tai_ns": 2100,
             "traceability_ref": "traceability-chain-01"
-          }
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-01",
+          "record_received_tai_ns": 1600,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
         }
       ],
       "dependency_assessments": [
@@ -891,7 +915,13 @@
             "valid_from_tai_ns": 900,
             "valid_until_tai_ns": 2100,
             "traceability_ref": "traceability-chain-01"
-          }
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-01",
+          "record_received_tai_ns": 1600,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
         }
       ],
       "dependency_assessments": [
@@ -1041,7 +1071,13 @@
             "valid_from_tai_ns": 900,
             "valid_until_tai_ns": 2100,
             "traceability_ref": "traceability-chain-01"
-          }
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-01",
+          "record_received_tai_ns": 1600,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
         }
       ],
       "dependency_assessments": [
@@ -1251,7 +1287,13 @@
             "valid_from_tai_ns": 900,
             "valid_until_tai_ns": 2100,
             "traceability_ref": "traceability-chain-01"
-          }
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-01",
+          "record_received_tai_ns": 1600,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
         },
         {
           "record_index": 2,
@@ -1272,7 +1314,13 @@
             "valid_from_tai_ns": 900,
             "valid_until_tai_ns": 3100,
             "traceability_ref": "traceability-chain-01"
-          }
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-02",
+          "record_received_tai_ns": 2600,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
         }
       ],
       "dependency_assessments": [
@@ -1482,7 +1530,13 @@
             "valid_from_tai_ns": 900,
             "valid_until_tai_ns": 3100,
             "traceability_ref": "traceability-chain-01"
-          }
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-01",
+          "record_received_tai_ns": 1600,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
         },
         {
           "record_index": 2,
@@ -1503,7 +1557,13 @@
             "valid_from_tai_ns": 900,
             "valid_until_tai_ns": 3100,
             "traceability_ref": "traceability-chain-01"
-          }
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-01",
+          "record_received_tai_ns": 1500,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
         }
       ],
       "dependency_assessments": [
@@ -1713,7 +1773,13 @@
             "valid_from_tai_ns": 900,
             "valid_until_tai_ns": 3100,
             "traceability_ref": "traceability-chain-01"
-          }
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-01",
+          "record_received_tai_ns": 1600,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
         },
         {
           "record_index": 2,
@@ -1734,7 +1800,13 @@
             "valid_from_tai_ns": 900,
             "valid_until_tai_ns": 3100,
             "traceability_ref": "traceability-chain-01"
-          }
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-01",
+          "record_received_tai_ns": 2300,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
         }
       ],
       "dependency_assessments": [
@@ -1944,7 +2016,13 @@
             "valid_from_tai_ns": 900,
             "valid_until_tai_ns": 2100,
             "traceability_ref": "traceability-chain-01"
-          }
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-01",
+          "record_received_tai_ns": 1600,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
         }
       ],
       "dependency_assessments": [
@@ -2154,7 +2232,13 @@
             "valid_from_tai_ns": 900,
             "valid_until_tai_ns": 2100,
             "traceability_ref": "traceability-chain-01"
-          }
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-01",
+          "record_received_tai_ns": 1600,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
         }
       ],
       "dependency_assessments": [
@@ -2364,7 +2448,13 @@
             "valid_from_tai_ns": 900,
             "valid_until_tai_ns": 2100,
             "traceability_ref": "traceability-chain-01"
-          }
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-01",
+          "record_received_tai_ns": 1600,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
         }
       ],
       "dependency_assessments": [
@@ -2574,7 +2664,13 @@
             "valid_from_tai_ns": 900,
             "valid_until_tai_ns": 2100,
             "traceability_ref": "traceability-chain-01"
-          }
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-01",
+          "record_received_tai_ns": 1600,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
         }
       ],
       "dependency_assessments": []
@@ -2603,7 +2699,13 @@
             "valid_from_tai_ns": 900,
             "valid_until_tai_ns": 2100,
             "traceability_ref": "traceability-chain-01"
-          }
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-01",
+          "record_received_tai_ns": 1600,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
         }
       ],
       "dependency_assessments": [
@@ -2882,7 +2984,13 @@
             "valid_from_tai_ns": 900,
             "valid_until_tai_ns": 2100,
             "traceability_ref": "traceability-chain-01"
-          }
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-01",
+          "record_received_tai_ns": 9000001500,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
         }
       ],
       "dependency_assessments": [
@@ -3092,7 +3200,13 @@
             "valid_from_tai_ns": 900,
             "valid_until_tai_ns": 2100,
             "traceability_ref": "traceability-chain-01"
-          }
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-01",
+          "record_received_tai_ns": 1600,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
         },
         {
           "record_index": 2,
@@ -3113,7 +3227,13 @@
             "valid_from_tai_ns": 900,
             "valid_until_tai_ns": 3200,
             "traceability_ref": "traceability-chain-01"
-          }
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-01",
+          "record_received_tai_ns": 2600,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
         }
       ],
       "dependency_assessments": [
@@ -3323,7 +3443,13 @@
             "valid_from_tai_ns": 900,
             "valid_until_tai_ns": 2100,
             "traceability_ref": "traceability-chain-01"
-          }
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-01",
+          "record_received_tai_ns": 1600,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
         },
         {
           "record_index": 2,
@@ -3344,7 +3470,13 @@
             "valid_from_tai_ns": 900,
             "valid_until_tai_ns": 3100,
             "traceability_ref": "traceability-chain-01"
-          }
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-02",
+          "record_received_tai_ns": 2600,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
         }
       ],
       "dependency_assessments": [
