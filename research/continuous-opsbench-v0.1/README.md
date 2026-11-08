@@ -165,3 +165,16 @@ Missing/unknown observation, impact or decision evidence produces an explicit in
 The module includes deterministic positive, no-probe, quiet, missingness, staleness, cross-request substitution, independence-conflict, authority-revocation, write-capability and arithmetic-mutation controls.
 
 **Claim ceiling:** this is a structural offline cross-record auditor over supplied records. It does not authenticate source publishers, verify signatures or raw-byte digests, prove process/organizational independence, execute the production CloudEvents path or real collectors, measure physical probe interference, integrate live Xenia admission, or establish SREGym/SRE-Marathon superiority. A passing audit qualifies only the supplied record graph and frozen synthetic contract.
+
+
+## Source-qualified scheduled attention bridge v0.1
+
+The additive \`src/scheduled_attention.rs\` runner composes the existing event-schedule evaluator with the existing deterministic no-action stability plant. It evaluates the schedule from one frozen timeline and reconstructs the exact same source events for the policy input; callers cannot supply one timeline to the scheduler and substitute another to the policy bridge.
+
+Each policy wake includes source ID, source epoch, event ID, incident ID, sequence, payload digest, event/valid/delivery/processing/deadline clocks, and the watch/authority identity. A coalesced batch is one policy invocation, but every contained event requires exactly one explicit disposition. A selected read-only probe is checked against the eligible catalog IDs and recorded only as a proposal.
+
+The runner deliberately stops before Xenia admission, remote collector execution, impact measurement or consequential mutation. It does not manufacture probe request receipts, source observations, impact receipts or zero-cost measurements. These must be produced by their respective real boundaries before #336 can qualify the complete receipt chain.
+
+Tests cover exact source-identity preservation, one invocation with per-event decisions for a coalesced batch, catalog-bound read-only proposals, rejection of an ineligible proposal, rejection of missing policy dispositions, sequence-gap fail-closed behavior, quiet/no-event behavior and equality with an independent no-action plant replay.
+
+**Claim ceiling:** this is still a deterministic in-process bridge over synthetic event schedules and the existing synthetic plant. It does not authenticate event publishers, prove policy process isolation, integrate live Xenia, execute collectors, measure probe externality, or establish real-world SRE repair performance. Probe proposals are not admitted operations and this runner makes no SREGym/SRE-Marathon claim.

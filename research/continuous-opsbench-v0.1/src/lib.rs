@@ -10,6 +10,7 @@ pub mod watch_probe;
 pub mod paired_attention;
 pub mod event_schedule;
 pub mod episode_audit;
+pub mod scheduled_attention;
 
 use std::collections::{BTreeMap, BTreeSet};
 
