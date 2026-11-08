@@ -3,7 +3,11 @@ use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
 pub const FIXTURE_CONTRACT: &str = "omsi.syncaas.annex-g-fixture-pack";
-pub const REPORT_CONTRACT: &str = "omsi-syncaas-annex-g-report/0.1";
+pub const REPORT_CONTRACT: &str = "omsi-syncaas-annex-g-report/0.2";
+const PROFILE_BASE_EDITION: &str = "02/2026";
+const PROFILE_AMENDMENT_STATUS: &str = "BASE_EDITION_ONLY_NOT_AMENDMENT_1_CONFORMANCE";
+const DEFAULT_CLOCKCLASS_THRESHOLD: u8 = 6;
+const MAX_CLOCK_CLASS: u64 = 255;
 const WINDOW_SECONDS: usize = 10;
 const MAX_CASES: usize = 100;
 const MAX_SAMPLES_PER_CASE: usize = 100_000;
@@ -23,7 +27,7 @@ const EXPECTED_CASE_IDS: [&str; 11] = [
     "SVC-PTS-SEPARATE-001",
 ];
 
-const CLAIM_CEILING: &str = "Synthetic Annex G state-machine and record-consistency conformance for supplied N1S/D1S classifications. This does not assess whether the source criterion or Cth threshold is correct, measure physical time error, qualify a PTP implementation, establish telecom service quality, or certify equipment or a network.";
+const CLAIM_CEILING: &str = "Synthetic base-edition (02/2026) G.8275.1 Annex M and G.8275.2 Annex G clockClass-to-N1S/D1S classification plus the common G.8275 Annex G AS/UAS state machine and record consistency. The August 2026 amendments are not integrated or claimed. This does not measure physical time error, qualify a PTP implementation, establish operational service quality, or certify equipment or a network.";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum ServiceState {
@@ -48,15 +52,6 @@ enum CriterionState {
 }
 
 impl CriterionState {
-    fn parse(value: &str) -> Option<Self> {
-        match value {
-            "N1S" => Some(Self::Nominal),
-            "D1S" => Some(Self::Degraded),
-            "UNOBSERVED" => Some(Self::Unobserved),
-            _ => None,
-        }
-    }
-
     fn target(self) -> Option<ServiceState> {
         match self {
             Self::Nominal => Some(ServiceState::Available),
@@ -88,7 +83,7 @@ impl Counters {
 #[derive(Clone, Debug)]
 struct Sample {
     period_id: String,
-    criterion: CriterionState,
+    clock_class_values: Vec<u64>,
     maintenance: bool,
 }
 
@@ -247,20 +242,27 @@ fn parse_samples(
         }
         last_period_position = period_position;
 
-        let criterion_text = text(value, "criterion_state").ok_or("criterion_state_missing")?;
-        let criterion =
-            CriterionState::parse(criterion_text).ok_or("criterion_state_unsupported")?;
-        let maintenance = boolean(value, "maintenance_window").ok_or("maintenance_flag_missing")?;
-        if maintenance && criterion != CriterionState::Unobserved {
-            return Err("maintenance_sample_must_not_claim_n1s_or_d1s");
+        let values = value
+            .get("clock_class_values")
+            .and_then(Value::as_array)
+            .ok_or("clock_class_values_missing_or_not_array")?;
+        let mut clock_class_values = Vec::with_capacity(values.len());
+        for item in values {
+            let clock_class = item
+                .as_u64()
+                .ok_or("clock_class_value_not_unsigned_integer")?;
+            if clock_class > MAX_CLOCK_CLASS {
+                return Err("clock_class_value_out_of_uinteger8_range");
+            }
+            clock_class_values.push(clock_class);
         }
-        if !maintenance && criterion == CriterionState::Unobserved {
-            // Unobserved is deliberately distinct from D1S: no measurement
-            // cannot silently become a service-failure classification.
+        let maintenance = boolean(value, "maintenance_window").ok_or("maintenance_flag_missing")?;
+        if maintenance && !clock_class_values.is_empty() {
+            return Err("maintenance_sample_must_not_claim_clockclass_observation");
         }
         samples.push(Sample {
             period_id: period_id.to_owned(),
-            criterion,
+            clock_class_values,
             maintenance,
         });
     }
@@ -325,6 +327,44 @@ fn flush_pending(
     }
 }
 
+/// Primary per-second classifier. N1S requires every observed clockClass value
+/// within the one-second interval to be <= Cth; the IEEE 1588 hierarchy is
+/// inverse numeric order (smaller is better). Empty observations are a local
+/// UNKNOWN extension, never silently D1S.
+fn classify_clockclass_primary(sample: &Sample, threshold: u8) -> CriterionState {
+    if sample.maintenance || sample.clock_class_values.is_empty() {
+        return CriterionState::Unobserved;
+    }
+    if sample
+        .clock_class_values
+        .iter()
+        .all(|value| *value <= u64::from(threshold))
+    {
+        CriterionState::Nominal
+    } else {
+        CriterionState::Degraded
+    }
+}
+
+/// Separate reference formulation: inspect the worst (maximum numeric)
+/// clockClass observed within the one-second interval.
+fn classify_clockclass_reference(sample: &Sample, threshold: u8) -> CriterionState {
+    if sample.maintenance || sample.clock_class_values.is_empty() {
+        return CriterionState::Unobserved;
+    }
+    let worst_clock_class = sample
+        .clock_class_values
+        .iter()
+        .copied()
+        .max()
+        .unwrap_or(MAX_CLOCK_CLASS + 1);
+    if worst_clock_class <= u64::from(threshold) {
+        CriterionState::Nominal
+    } else {
+        CriterionState::Degraded
+    }
+}
+
 /// Streaming implementation. Up to N-1 candidate seconds are held until the
 /// transition is confirmed or broken. This permits a 10-second decision to
 /// cross a PM-period boundary without prematurely finalizing prior-period AS/UAS.
@@ -332,6 +372,7 @@ fn streaming_reconstruction(
     samples: &[Sample],
     periods: &[Period],
     window: usize,
+    threshold: u8,
 ) -> Reconstruction {
     let mut counters = empty_counters(periods);
     let mut state = None;
@@ -343,7 +384,7 @@ fn streaming_reconstruction(
             continue;
         }
 
-        let Some(target) = sample.criterion.target() else {
+        let Some(target) = classify_clockclass_primary(sample, threshold).target() else {
             flush_pending(&mut pending_periods, state, &mut counters);
             pending_target = None;
             if let Some(period) = counters.get_mut(&sample.period_id) {
@@ -393,7 +434,12 @@ fn streaming_reconstruction(
 /// Reference implementation based on maximal runs, independent of the
 /// streaming/pending-buffer implementation above. Maintenance samples are
 /// removed from the evaluation sequence; unobserved samples split a run.
-fn run_based_reference(samples: &[Sample], periods: &[Period], window: usize) -> Reconstruction {
+fn run_based_reference(
+    samples: &[Sample],
+    periods: &[Period],
+    window: usize,
+    threshold: u8,
+) -> Reconstruction {
     let mut counters = empty_counters(periods);
     let mut state = None;
     let mut run_target: Option<ServiceState> = None;
@@ -428,7 +474,7 @@ fn run_based_reference(samples: &[Sample], periods: &[Period], window: usize) ->
         if sample.maintenance {
             continue;
         }
-        let target = sample.criterion.target();
+        let target = classify_clockclass_reference(sample, threshold).target();
         if target.is_none() {
             flush_run(run_target, &mut run_periods, &mut state, &mut counters);
             run_target = None;
@@ -566,7 +612,12 @@ fn evaluate_case(case: &Value) -> CaseResult {
 
     let profile = case.get("profile").unwrap_or(&Value::Null);
     let itu_profile = text(profile, "itu_t_profile");
-    if !matches!(itu_profile, Some("G.8275.1" | "G.8275.2")) {
+    let expected_profile_annex = match itu_profile {
+        Some("G.8275.1") => Some("M"),
+        Some("G.8275.2") => Some("G"),
+        _ => None,
+    };
+    let Some(expected_profile_annex) = expected_profile_annex else {
         return simple_case(
             "NOT_COMPARABLE",
             "UNKNOWN",
@@ -574,12 +625,30 @@ fn evaluate_case(case: &Value) -> CaseResult {
             empty.clone(),
             empty,
         );
-    }
-    if text(profile, "edition").is_none() {
+    };
+    if text(profile, "edition") != Some(PROFILE_BASE_EDITION) {
         return simple_case(
             "NOT_COMPARABLE",
             "UNKNOWN",
-            "itu_t_profile_edition_missing",
+            "profile_edition_not_supported_by_this_baseline",
+            empty.clone(),
+            empty,
+        );
+    }
+    if text(profile, "profile_annex") != Some(expected_profile_annex) {
+        return simple_case(
+            "NOT_COMPARABLE",
+            "UNKNOWN",
+            "profile_specific_syncaas_annex_mismatch",
+            empty.clone(),
+            empty,
+        );
+    }
+    if text(profile, "amendment_2026_08") != Some("NOT_APPLIED") {
+        return simple_case(
+            "NOT_COMPARABLE",
+            "UNKNOWN",
+            "profile_amendment_not_integrated",
             empty.clone(),
             empty,
         );
@@ -594,12 +663,10 @@ fn evaluate_case(case: &Value) -> CaseResult {
         );
     }
     let criterion = case.get("criterion").unwrap_or(&Value::Null);
-    if text(criterion, "criterion_id")
-        .filter(|value| !value.trim().is_empty())
-        .is_none()
-        || text(criterion, "threshold_ref")
-            .filter(|value| !value.trim().is_empty())
-            .is_none()
+    if text(criterion, "source_dataset_member")
+        != Some("parentDS.grandmasterClockQuality.clockClass")
+        || text(criterion, "threshold_dataset_member")
+            != Some("defaultDS.clockclassAvailabilityThreshold")
         || text(criterion, "classification_source_ref")
             .filter(|value| !value.trim().is_empty())
             .is_none()
@@ -607,11 +674,25 @@ fn evaluate_case(case: &Value) -> CaseResult {
         return simple_case(
             "INVALID_INPUT",
             "UNKNOWN",
-            "criterion_threshold_or_classifier_provenance_missing",
+            "clockclass_source_threshold_member_or_provenance_invalid",
             empty.clone(),
             empty,
         );
     }
+    let threshold_value = criterion
+        .get("clockclass_availability_threshold")
+        .and_then(Value::as_u64)
+        .unwrap_or(u64::from(DEFAULT_CLOCKCLASS_THRESHOLD));
+    if threshold_value > MAX_CLOCK_CLASS {
+        return simple_case(
+            "INVALID_INPUT",
+            "UNKNOWN",
+            "clockclass_availability_threshold_out_of_range",
+            empty.clone(),
+            empty,
+        );
+    }
+    let threshold = threshold_value as u8;
 
     let (periods, period_positions) = match parse_periods(case) {
         Ok(parsed) => parsed,
@@ -632,8 +713,8 @@ fn evaluate_case(case: &Value) -> CaseResult {
         }
     };
 
-    let primary = streaming_reconstruction(&samples, &periods, WINDOW_SECONDS);
-    let reference = run_based_reference(&samples, &periods, WINDOW_SECONDS);
+    let primary = streaming_reconstruction(&samples, &periods, WINDOW_SECONDS, threshold);
+    let reference = run_based_reference(&samples, &periods, WINDOW_SECONDS, threshold);
     if primary != reference {
         return simple_case(
             "REFERENCE_DISAGREEMENT",
@@ -837,11 +918,12 @@ pub fn validate_fixture_pack(document: &Value, source_bytes: &[u8]) -> Value {
 
     let standard = document.get("standard").unwrap_or(&Value::Null);
     let metadata_valid = text(document, "contract") == Some(FIXTURE_CONTRACT)
-        && text(document, "version") == Some("0.1.0-draft")
-        && text(document, "state") == Some("SYNTHETIC_INPUT_FIXTURES_EXECUTABLE")
+        && text(document, "version") == Some("0.2.0-draft")
+        && text(document, "state") == Some("SYNTHETIC_BASE_EDITION_FIXTURES_EXECUTABLE")
         && text(standard, "recommendation") == Some("ITU-T G.8275")
         && text(standard, "edition") == Some("01/2026")
         && text(standard, "annex") == Some("G")
+        && text(standard, "amendment_2026_08") == Some("NOT_APPLIED")
         && boolean(standard, "optional") == Some(true)
         && text(standard, "dataset_name") == Some("ptpServiceAvailabilityPerformanceMetricsDS")
         && text(standard, "record_name")
@@ -869,11 +951,22 @@ pub fn validate_fixture_pack(document: &Value, source_bytes: &[u8]) -> Value {
     json!({
         "report_contract": REPORT_CONTRACT,
         "status": if passed { "passed" } else { "failed" },
-        "authority": "synthetic_annex_g_state_machine_and_record_consistency_only",
+        "authority": "synthetic_base_edition_clockclass_and_annex_g_state_machine_only",
         "input_sha256": sha256_hex(source_bytes),
         "recommendation": "ITU-T G.8275",
         "edition": "01/2026",
         "annex": "G",
+        "profile_baseline": "02/2026",
+        "profile_amendment_status": PROFILE_AMENDMENT_STATUS,
+        "profile_specific_annexes": {
+            "G.8275.1": "M",
+            "G.8275.2": "G"
+        },
+        "criterion_source_dataset_member": "parentDS.grandmasterClockQuality.clockClass",
+        "criterion_threshold_dataset_member": "defaultDS.clockclassAvailabilityThreshold",
+        "default_clockclass_availability_threshold": DEFAULT_CLOCKCLASS_THRESHOLD,
+        "clockclass_ordering": "lower_numeric_value_is_better",
+        "frequency_layer_criterion_status": "FURTHER_STUDY_NOT_SCORED",
         "window_seconds": WINDOW_SECONDS,
         "case_count_expected": EXPECTED_CASE_IDS.len(),
         "case_count_discovered": cases.map_or(0, Vec::len),
@@ -893,7 +986,10 @@ pub fn validate_fixture_pack(document: &Value, source_bytes: &[u8]) -> Value {
             "not_independent_reference_instrument_qualification",
             "not_operational_service_availability_claim",
             "not_premature_recovery_or_authority_proof",
-            "not_RF_or_GNSS_integrity_assessment"
+            "not_RF_or_GNSS_integrity_assessment",
+            "not_G8275_2026_AMENDMENT_1_CONFORMANCE",
+            "not_profile_specific_frequency_layer_availability",
+            "not_announce_rate_below_one_message_per_second_assessment"
         ]
     })
 }
@@ -909,6 +1005,74 @@ mod tests {
     const FIXTURE_SCHEMA: &str =
         include_str!("../../../docs/standards/omsi/syncaas-annex-g-fixtures-0.1.schema.json");
     const REPORT_SCHEMA: &str = include_str!("../schema/syncaas-annex-g-report.schema.json");
+
+    #[test]
+    fn clockclass_threshold_is_inclusive_and_lower_values_are_better() {
+        let nominal = super::Sample {
+            period_id: "p1".to_owned(),
+            clock_class_values: vec![5, 6],
+            maintenance: false,
+        };
+        let degraded = super::Sample {
+            period_id: "p1".to_owned(),
+            clock_class_values: vec![6, 7],
+            maintenance: false,
+        };
+        assert_eq!(
+            super::classify_clockclass_primary(&nominal, 6),
+            super::CriterionState::Nominal
+        );
+        assert_eq!(
+            super::classify_clockclass_reference(&nominal, 6),
+            super::CriterionState::Nominal
+        );
+        assert_eq!(
+            super::classify_clockclass_primary(&degraded, 6),
+            super::CriterionState::Degraded
+        );
+        assert_eq!(
+            super::classify_clockclass_reference(&degraded, 6),
+            super::CriterionState::Degraded
+        );
+    }
+
+    #[test]
+    fn configurable_clockclass_threshold_is_applied_without_reversing_order() {
+        let sample = super::Sample {
+            period_id: "p1".to_owned(),
+            clock_class_values: vec![7],
+            maintenance: false,
+        };
+        assert_eq!(
+            super::classify_clockclass_primary(&sample, 7),
+            super::CriterionState::Nominal
+        );
+        assert_eq!(
+            super::classify_clockclass_reference(&sample, 7),
+            super::CriterionState::Nominal
+        );
+        assert_eq!(
+            super::classify_clockclass_primary(&sample, 6),
+            super::CriterionState::Degraded
+        );
+    }
+
+    #[test]
+    fn missing_clockclass_observation_is_not_silently_a_d1s() {
+        let sample = super::Sample {
+            period_id: "p1".to_owned(),
+            clock_class_values: Vec::new(),
+            maintenance: false,
+        };
+        assert_eq!(
+            super::classify_clockclass_primary(&sample, 6),
+            super::CriterionState::Unobserved
+        );
+        assert_eq!(
+            super::classify_clockclass_reference(&sample, 6),
+            super::CriterionState::Unobserved
+        );
+    }
 
     #[test]
     fn frozen_annex_g_fixture_pack_executes_all_eleven_cases() {
