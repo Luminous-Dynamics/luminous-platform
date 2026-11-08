@@ -148,6 +148,7 @@ pub enum AuditFailure {
     DuplicateDecisionId,
     DecisionBindingMismatch,
     DecisionValueMismatch,
+    UnpairedScheduleWake,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -161,6 +162,7 @@ pub enum IndeterminateReason {
     IncompleteImpact,
     ImpactIndependenceUnestablished,
     MissingDecision,
+    ReceiptAfterDeadline,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -310,6 +312,9 @@ fn validate_observation(
     maximum_age: u64,
 ) -> Result<(), IndeterminateReason> {
     let observation = &receipt.observation;
+    if receipt.received_at_tick > request.deadline_tick {
+        return Err(IndeterminateReason::ReceiptAfterDeadline);
+    }
     if receipt.received_at_tick > audited_at_tick
         || observation.observed_at_tick > receipt.received_at_tick
     {
@@ -382,6 +387,7 @@ fn impact_binding_matches(
         && impact.window_start_tick <= impact.window_end_tick
         && impact.window_end_tick <= impact.measured_at_tick
         && impact.measured_at_tick <= receipt.received_at_tick
+        && receipt.received_at_tick <= request.deadline_tick
         && receipt.received_at_tick <= audited_at_tick
 }
 
@@ -413,6 +419,7 @@ fn audit_decision(
     observation: &ObservationReceipt,
     impact: &ImpactReceipt,
     decision: &DecisionReceipt,
+    audited_at_tick: u64,
     report: &mut EpisodeAuditReport,
     decision_ids: &mut BTreeSet<String>,
 ) {
@@ -433,6 +440,7 @@ fn audit_decision(
         || decision.decided_at_tick < observation.received_at_tick
         || decision.decided_at_tick < impact.received_at_tick
         || decision.decided_at_tick > request.deadline_tick
+        || decision.decided_at_tick > audited_at_tick
         || decision.loss_before_ppm > MAX_RISK_PPM
         || decision.loss_after_ppm > MAX_RISK_PPM
         || decision.claimed_loss_reduction_ppm != reduction
@@ -618,6 +626,26 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
         }
     }
 
+    // Every scheduled Woke/Coalesced record must also be represented by exactly
+    // one wake batch. This catches a schedule-side wake omitted downstream.
+    for record in schedule.records.iter().filter(|record| {
+        matches!(record.disposition, RecordDisposition::Woke | RecordDisposition::Coalesced)
+    }) {
+        let matching = schedule.wakes.iter().filter(|wake| {
+            wake.wake_tick == record.processed_tick.unwrap_or(u64::MAX)
+                && record.sequence >= wake.sequence_start
+                && record.sequence <= wake.sequence_end
+                && wake.event_ids.iter().zip(wake.incident_ids.iter()).any(
+                    |(event_id, incident_id)| {
+                        event_id == &record.event_id && incident_id == &record.incident_id
+                    },
+                )
+        }).count();
+        if matching != 1 {
+            report.fail(AuditFailure::UnpairedScheduleWake);
+        }
+    }
+
     // Supplied wake decisions must not be orphaned or silently duplicated.
     for decision in input.wake_decisions {
         let exists =
@@ -788,7 +816,10 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
 
         let impact = match &row.impact {
             ReceiptState::Present(receipt) => {
-                if !impact_receipt_ids.insert(receipt.receipt_id.clone()) {
+                if receipt.received_at_tick > request.deadline_tick {
+                    report.indeterminate(IndeterminateReason::ReceiptAfterDeadline);
+                    None
+                } else if !impact_receipt_ids.insert(receipt.receipt_id.clone()) {
                     report.fail(AuditFailure::DuplicateReceiptId);
                 }
                 if receipt.request_id != request.request_id
@@ -838,6 +869,7 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
                     observation,
                     impact,
                     decision,
+                    input.audited_at_tick,
                     &mut report,
                     &mut decision_ids,
                 );
