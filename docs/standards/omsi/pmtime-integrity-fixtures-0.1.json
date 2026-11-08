@@ -3783,9 +3783,9 @@
             "pm-ref-01",
             "ptp-clock-01"
           ],
-          "event_time_tai_ns": 2500,
+          "event_time_tai_ns": 1500,
           "snapshot_id": "snapshot-pmtime-01",
-          "evidence_frontier_tai_ns": 2600,
+          "evidence_frontier_tai_ns": 3500,
           "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
           "dependency_report_artifact_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
           "verification_report_artifact_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
@@ -3796,7 +3796,187 @@
             "authority": "declared_dependency_assessment_only",
             "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
             "snapshot_id": "snapshot-pmtime-01",
-            "evidence_frontier": 2600,
+            "evidence_frontier": 3500,
+            "event_time": 1500,
+            "domain": "clock",
+            "source_ids": [
+              "pm-ref-01",
+              "ptp-clock-01"
+            ],
+            "source_ancestors": {},
+            "common_dependency_ids": [],
+            "reason_codes": [],
+            "claim_ceiling": "Declared common-dependency assessment over a supplied inventory snapshot only"
+          },
+          "reference_verification": {
+            "verifier_contract": "emsr-dependency-hypergraph-reference-verifier/0.1",
+            "status": "verified",
+            "authority": "independent_reference_algorithm_agreement_only",
+            "checks": [
+              {
+                "id": "input-byte-binding",
+                "result": "pass"
+              },
+              {
+                "id": "query-snapshot-binding",
+                "result": "pass"
+              },
+              {
+                "id": "independent-closure",
+                "result": "pass"
+              },
+              {
+                "id": "derived-disposition",
+                "result": "pass"
+              },
+              {
+                "id": "authority-and-claim-ceiling",
+                "result": "pass"
+              }
+            ],
+            "limitations": []
+          }
+        },
+        {
+          "domain": "oscillator",
+          "source_ids": [
+            "pm-ref-01",
+            "ptp-clock-01"
+          ],
+          "event_time_tai_ns": 1500,
+          "snapshot_id": "snapshot-pmtime-01",
+          "evidence_frontier_tai_ns": 3500,
+          "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "dependency_report_artifact_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+          "verification_report_artifact_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "disposition": "NO_DECLARED_COMMON_DOMAIN",
+          "dependency_report": {
+            "report_contract": "emsr-dependency-hypergraph-report/0.1",
+            "disposition": "NO_DECLARED_COMMON_DOMAIN",
+            "authority": "declared_dependency_assessment_only",
+            "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "snapshot_id": "snapshot-pmtime-01",
+            "evidence_frontier": 3500,
+            "event_time": 1500,
+            "domain": "oscillator",
+            "source_ids": [
+              "pm-ref-01",
+              "ptp-clock-01"
+            ],
+            "source_ancestors": {},
+            "common_dependency_ids": [],
+            "reason_codes": [],
+            "claim_ceiling": "Declared common-dependency assessment over a supplied inventory snapshot only"
+          },
+          "reference_verification": {
+            "verifier_contract": "emsr-dependency-hypergraph-reference-verifier/0.1",
+            "status": "verified",
+            "authority": "independent_reference_algorithm_agreement_only",
+            "checks": [
+              {
+                "id": "input-byte-binding",
+                "result": "pass"
+              },
+              {
+                "id": "query-snapshot-binding",
+                "result": "pass"
+              },
+              {
+                "id": "independent-closure",
+                "result": "pass"
+              },
+              {
+                "id": "derived-disposition",
+                "result": "pass"
+              },
+              {
+                "id": "authority-and-claim-ceiling",
+                "result": "pass"
+              }
+            ],
+            "limitations": []
+          }
+        },
+        {
+          "domain": "gnss_reference",
+          "source_ids": [
+            "pm-ref-01",
+            "ptp-clock-01"
+          ],
+          "event_time_tai_ns": 1500,
+          "snapshot_id": "snapshot-pmtime-01",
+          "evidence_frontier_tai_ns": 3500,
+          "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "dependency_report_artifact_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+          "verification_report_artifact_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "disposition": "NO_DECLARED_COMMON_DOMAIN",
+          "dependency_report": {
+            "report_contract": "emsr-dependency-hypergraph-report/0.1",
+            "disposition": "NO_DECLARED_COMMON_DOMAIN",
+            "authority": "declared_dependency_assessment_only",
+            "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "snapshot_id": "snapshot-pmtime-01",
+            "evidence_frontier": 3500,
+            "event_time": 1500,
+            "domain": "gnss_reference",
+            "source_ids": [
+              "pm-ref-01",
+              "ptp-clock-01"
+            ],
+            "source_ancestors": {},
+            "common_dependency_ids": [],
+            "reason_codes": [],
+            "claim_ceiling": "Declared common-dependency assessment over a supplied inventory snapshot only"
+          },
+          "reference_verification": {
+            "verifier_contract": "emsr-dependency-hypergraph-reference-verifier/0.1",
+            "status": "verified",
+            "authority": "independent_reference_algorithm_agreement_only",
+            "checks": [
+              {
+                "id": "input-byte-binding",
+                "result": "pass"
+              },
+              {
+                "id": "query-snapshot-binding",
+                "result": "pass"
+              },
+              {
+                "id": "independent-closure",
+                "result": "pass"
+              },
+              {
+                "id": "derived-disposition",
+                "result": "pass"
+              },
+              {
+                "id": "authority-and-claim-ceiling",
+                "result": "pass"
+              }
+            ],
+            "limitations": []
+          }
+        },
+        {
+          "domain": "clock",
+          "source_ids": [
+            "pm-ref-01",
+            "ptp-clock-01"
+          ],
+          "event_time_tai_ns": 2500,
+          "snapshot_id": "snapshot-pmtime-01",
+          "evidence_frontier_tai_ns": 3500,
+          "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "dependency_report_artifact_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+          "verification_report_artifact_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "disposition": "NO_DECLARED_COMMON_DOMAIN",
+          "dependency_report": {
+            "report_contract": "emsr-dependency-hypergraph-report/0.1",
+            "disposition": "NO_DECLARED_COMMON_DOMAIN",
+            "authority": "declared_dependency_assessment_only",
+            "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "snapshot_id": "snapshot-pmtime-01",
+            "evidence_frontier": 3500,
             "event_time": 2500,
             "domain": "clock",
             "source_ids": [
@@ -3845,7 +4025,7 @@
           ],
           "event_time_tai_ns": 2500,
           "snapshot_id": "snapshot-pmtime-01",
-          "evidence_frontier_tai_ns": 2600,
+          "evidence_frontier_tai_ns": 3500,
           "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
           "dependency_report_artifact_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
           "verification_report_artifact_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
@@ -3856,7 +4036,7 @@
             "authority": "declared_dependency_assessment_only",
             "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
             "snapshot_id": "snapshot-pmtime-01",
-            "evidence_frontier": 2600,
+            "evidence_frontier": 3500,
             "event_time": 2500,
             "domain": "oscillator",
             "source_ids": [
@@ -3905,7 +4085,7 @@
           ],
           "event_time_tai_ns": 2500,
           "snapshot_id": "snapshot-pmtime-01",
-          "evidence_frontier_tai_ns": 2600,
+          "evidence_frontier_tai_ns": 3500,
           "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
           "dependency_report_artifact_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
           "verification_report_artifact_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
@@ -3916,7 +4096,7 @@
             "authority": "declared_dependency_assessment_only",
             "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
             "snapshot_id": "snapshot-pmtime-01",
-            "evidence_frontier": 2600,
+            "evidence_frontier": 3500,
             "event_time": 2500,
             "domain": "gnss_reference",
             "source_ids": [
