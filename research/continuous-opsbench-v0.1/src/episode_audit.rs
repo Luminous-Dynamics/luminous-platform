@@ -1074,6 +1074,7 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
             }
         };
 
+        let mut impact_independence_indeterminate = false;
         let impact = match &row.impact {
             ReceiptState::Present(receipt) => {
                 if receipt.received_at_tick > request.deadline_tick {
@@ -1099,13 +1100,85 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
                             || receipt.impact.observer_control_domain
                                 == entry.collector_control_domain
                         {
+                            impact_independence_indeterminate = true;
                             report.indeterminate(
                                 IndeterminateReason::ImpactIndependenceUnestablished,
                             );
                             None
                         } else {
-                            report.impacts_verified += 1;
-                            Some(receipt)
+                            let Some(registry) = input.failure_domain_registry else {
+                                impact_independence_indeterminate = true;
+                                report.indeterminate(
+                                    IndeterminateReason::ImpactIndependenceUnestablished,
+                                );
+                                continue;
+                            };
+                            let Some(collector_profile) = registry
+                                .collector_profiles
+                                .get(&entry.collector_control_domain)
+                            else {
+                                impact_independence_indeterminate = true;
+                                report.indeterminate(
+                                    IndeterminateReason::MissingCollectorFailureDomainProfile,
+                                );
+                                continue;
+                            };
+                            if collector_profile.subject_id != entry.collector_control_domain {
+                                report.fail(AuditFailure::FailureDomainProfileBindingMismatch);
+                                continue;
+                            }
+                            let observer_profile = match &receipt.observer_failure_domain_profile {
+                                ReceiptState::Present(profile) => {
+                                    if profile.subject_id != receipt.impact.observer_control_domain {
+                                        report.fail(AuditFailure::FailureDomainProfileBindingMismatch);
+                                        continue;
+                                    }
+                                    profile
+                                }
+                                ReceiptState::Missing => {
+                                    impact_independence_indeterminate = true;
+                                    report.indeterminate(
+                                        IndeterminateReason::MissingObserverFailureDomainProfile,
+                                    );
+                                    continue;
+                                }
+                                ReceiptState::Unknown => {
+                                    impact_independence_indeterminate = true;
+                                    report.indeterminate(
+                                        IndeterminateReason::UnknownObserverFailureDomainProfile,
+                                    );
+                                    continue;
+                                }
+                            };
+                            let independence = audit_observer_independence(
+                                collector_profile,
+                                observer_profile,
+                                &registry.graph,
+                                input.audited_at_tick,
+                                registry.policy,
+                            );
+                            match independence.status {
+                                IndependenceStatus::NoDeclaredOverlap => {
+                                    report.impacts_verified += 1;
+                                    Some(receipt)
+                                }
+                                IndependenceStatus::SharedDeclaredDependency => {
+                                    impact_independence_indeterminate = true;
+                                    report.indeterminate(IndeterminateReason::CommonCauseOverlap);
+                                    None
+                                }
+                                IndependenceStatus::Indeterminate => {
+                                    impact_independence_indeterminate = true;
+                                    report.indeterminate(
+                                        IndeterminateReason::ImpactIndependenceUnestablished,
+                                    );
+                                    None
+                                }
+                                IndependenceStatus::Invalid => {
+                                    report.fail(AuditFailure::FailureDomainEvidenceInvalid);
+                                    None
+                                }
+                            }
                         }
                     } else {
                         // An impact receipt cannot close the chain if its paired
@@ -1146,7 +1219,9 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
                 report.indeterminate(IndeterminateReason::MissingDecision);
             }
             (None, _, Some(_)) | (_, None, Some(_)) => {
-                report.fail(AuditFailure::DecisionWithoutCompleteEvidence);
+                if !impact_independence_indeterminate {
+                    report.fail(AuditFailure::DecisionWithoutCompleteEvidence);
+                }
             }
             _ => {}
         }
