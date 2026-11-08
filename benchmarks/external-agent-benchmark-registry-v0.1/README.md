@@ -1,6 +1,6 @@
 # External agent benchmark evidence registry v0.1
 
-**Snapshot date:** 2026-11-07  
+**Snapshot date:** 2026-11-08  
 **Status:** metadata snapshot; exact source revisions are pinned where available, but most raw source bytes are not archived  
 **Records:** 14  
 **Schema:** JSON Schema Draft 2020-12, strict objects
@@ -9,7 +9,7 @@ This is a provenance registry, not a composite leaderboard. Unlike constructs ar
 
 ## What it covers
 
-The 13 records span:
+The 14 records span:
 
 - SREGym full and Lite cohorts (kept separate);
 - SRE-Marathon continuous diagnosis/repair;
@@ -23,6 +23,7 @@ The 13 records span:
 - EvoHarnessBench harness evolution;
 - Datadog Scout / AlertEval;
 - NIST's evaluation-probe methodology.
+- PagerDuty PD Labs' 17-scenario SRE Agent investigation benchmark.
 
 Every record identifies the measured construct, unit, source, publication and observation dates, run protocol, evaluator, metrics, comparability group and claim ceiling. A vendor/owner result remains labelled as such until independently reproduced.
 
@@ -60,12 +61,15 @@ No weighted average may compensate for an unauthorized committed effect, a cross
 
 Measure full-system cost: inference, tools, event transport, telemetry, probes, retries, rollbacks, human escalation and recovery. Publish both native task cost and cost per independently verified restored service outcome. A vendor's estimated inference price is not an audited total operational cost.
 
+PagerDuty's benchmark is a useful methodology comparator: its 17-scenario sweep uses four fault-injection mechanisms, a three-provider LLM judging panel, evidence grounding and misdirection scores. However, it is a single trial per agent/scenario, failures are excluded from its quality denominator, the benchmark substrate is private, and it does not execute repair or verify sustained recovery. Luminous should preserve those distinctions rather than copy its aggregate score.
+
 ## Research targets (targets, not achieved results)
 
 | Programme | Initial target and comparison discipline |
 |---|---|
 | SREGym full | Reproduce the native 90-fault × 3-attempt cohort and same-run diagnosis+mitigation scorer. Aim for ≥97% E2E on a preregistered repeated fault-level evaluation, with cluster-aware intervals, cost and latency. The 95.2% Radar result is a maintainer-verified participant report, not our replication. |
 | SRE-Marathon | Exceed 41.3 native Marathon-Score and target ≥0.20 active-fault repair fraction. Also publish full resolution counts, user-impact degradation, risk and resource use. |
+| PagerDuty 17-scenario | Reproduce the public protocol where possible; add repeated trials, count failed investigations in task-level outcomes, publish judge-human agreement and independent participant-effect/recovery metrics. Treat the private harness as an external methodology reference until its task artefacts are available. |
 | Traceway AI SRE Bench | Preserve its 62 cases, five setups and deterministic grader. Beat the verified-pass-per-dollar frontier while retaining safe-write and hidden-test checks; do not optimize answer-only accuracy. |
 | ITBench-AA | Target AP@FR >60% on the exact 59-task set and three-repeat protocol; show per-task zero-false-negative coverage and precision separately. |
 | AgentGovBench | Reproduce all 48 native scenarios and target 48/48. Separately require zero unauthorized committed effects, zero cross-tenant disclosure/effects and 100% valid positive-control acceptance. |
@@ -85,6 +89,7 @@ The snapshot is marked `metadata_snapshot_partial`. Source identity, repository 
 - AgentGovBench, TraceTrial-Bench and AI SRE Arena repository commits are recorded separately from page-byte hashes.
 - Most paper and website sources are metadata-only. Their exact PDF/page/data bytes are not yet archived.
 - NIST Evaluation Probes is an ongoing method project; the current project page provides no numeric leaderboard score.
+- PagerDuty's 17-scenario substrate is private; its method report is public, but scenario/task bytes and the detailed result table are not archived here.
 - The AgentGovBench repository root license is MIT. Scenario assets, datasets, dependencies and copied results still need individual license checks before redistribution.
 
 Do not promote this snapshot to source-byte-complete until the primary source files, raw leaderboard data, scorers, exact revisions and applicable licenses have been captured and hashed.
@@ -92,7 +97,7 @@ Do not promote this snapshot to source-byte-complete until the primary source fi
 ## Files and validation
 
 - `registry.schema.json`: strict Draft 2020-12 schema.
-- `registry.snapshot-2026-11-07.json`: 13-record source-pinned metadata snapshot.
+- `registry.snapshot-2026-11-08.json`: latest 14-record source-pinned metadata snapshot. The 7 November file remains an immutable prior snapshot.
 - `validate_registry.py`: validation-only cross-field checks and negative controls.
 - `requirements.txt`: pinned JSON Schema validator for CI.
 
