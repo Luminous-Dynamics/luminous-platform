@@ -214,7 +214,7 @@ fn evaluate_case(
     }
 
     let max_uncertainty = number(case, "max_uncertainty_ns").unwrap_or(default_max_uncertainty);
-    let mut previous: Option<(u64, u64, u64, &str, &str, &str, &str)> = None;
+    let mut previous: Option<(u64, u64, u64, &str, &str, &str, &str, &str, &str, &str)> = None;
     let mut expected_sources: Option<Vec<&str>> = None;
     let mut latest_event_time = 0u64;
 
@@ -225,6 +225,7 @@ fn evaluate_case(
             "period_start_tai_ns",
             "period_end_tai_ns",
             "timestamp_uncertainty_ns",
+            "record_received_tai_ns",
         ];
         if required_numeric
             .iter()
@@ -239,19 +240,26 @@ fn evaluate_case(
         let period_start = number(record, "period_start_tai_ns").unwrap_or(0);
         let period_end = number(record, "period_end_tai_ns").unwrap_or(0);
         let uncertainty = number(record, "timestamp_uncertainty_ns").unwrap_or(u64::MAX);
+        let record_received = number(record, "record_received_tai_ns").unwrap_or(0);
 
         let (
             Some(source_id),
+            Some(source_type),
+            Some(clock_domain_id),
             Some(ptp_id),
             Some(time_scale),
             Some(method),
             Some(config_revision),
+            Some(adapter_version),
         ) = (
             string(record, "timestamp_source_id"),
+            string(record, "timestamp_source_type"),
+            string(record, "clock_domain_id"),
             string(record, "ptp_clock_instance_id"),
             string(record, "time_scale"),
             string(record, "timestamp_method"),
             string(record, "configuration_revision"),
+            string(record, "adapter_mapping_version"),
         )
         else {
             invalid.push(format!("record_{index}_identity_or_time_basis_missing"));
@@ -260,13 +268,24 @@ fn evaluate_case(
 
         if source_id.trim().is_empty()
             || ptp_id.trim().is_empty()
+            || source_type.trim().is_empty()
+            || clock_domain_id.trim().is_empty()
             || method.trim().is_empty()
             || config_revision.trim().is_empty()
+            || adapter_version.trim().is_empty()
         {
             invalid.push(format!("record_{index}_identity_or_method_empty"));
         }
         if period_start >= period_end || timestamp < period_start || timestamp >= period_end {
             invalid.push(format!("record_{index}_pmtime_outside_valid_period"));
+        }
+        if record_received < timestamp {
+            invalid.push(format!("record_{index}_received_before_event_time"));
+        }
+        if !string(record, "record_content_sha256").is_some_and(is_sha256)
+            || !string(record, "timestamp_uncertainty_budget_sha256").is_some_and(is_sha256)
+        {
+            unknown.push(format!("record_{index}_source_or_uncertainty_artifact_missing"));
         }
         if time_scale != "TAI" {
             unknown.push(format!("record_{index}_unsupported_or_unmapped_time_scale"));
@@ -310,8 +329,11 @@ fn evaluate_case(
             prior_time,
             prior_period_end,
             prior_source,
+            prior_source_type,
+            prior_clock_domain,
             prior_ptp,
             prior_config,
+            prior_adapter_version,
             prior_scale,
         )) = previous
         {
@@ -329,8 +351,13 @@ fn evaluate_case(
                 unknown.push(format!("record_{index}_period_gap_detected"));
             }
 
-            let source_changed = source_id != prior_source || ptp_id != prior_ptp;
-            let config_changed = config_revision != prior_config || time_scale != prior_scale;
+            let source_changed = source_id != prior_source
+                || source_type != prior_source_type
+                || clock_domain_id != prior_clock_domain
+                || ptp_id != prior_ptp;
+            let config_changed = config_revision != prior_config
+                || adapter_version != prior_adapter_version
+                || time_scale != prior_scale;
             if (source_changed || config_changed)
                 && !string(record, "configuration_change_receipt_sha256").is_some_and(is_sha256)
             {
@@ -342,8 +369,11 @@ fn evaluate_case(
             timestamp,
             period_end,
             source_id,
+            source_type,
+            clock_domain_id,
             ptp_id,
             config_revision,
+            adapter_version,
             time_scale,
         ));
         latest_event_time = timestamp;
