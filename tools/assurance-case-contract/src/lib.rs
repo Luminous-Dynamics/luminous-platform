@@ -623,6 +623,76 @@ fn evaluate_claim(
             argument_outcome = combine(argument_outcome, outcome);
             reasons.append(&mut why);
         }
+
+        for edge in input.edges.iter().filter(|edge| {
+            edge.kind == EdgeKind::Assumes && edge.to == *argument_id
+        }) {
+            let assumption_node = by_id.get(edge.from.as_str()).expect("edge endpoint validated");
+            let assumption = assumption_node.assumption.as_ref().expect("assumption data validated");
+            match assumption.status {
+                AssumptionStatus::Open => {
+                    unresolved_assumptions.insert(assumption_node.id.clone());
+                    argument_outcome = combine(argument_outcome, ClaimOutcome::Indeterminate);
+                    reasons.push(format!("assumption_{}_open", assumption_node.id));
+                }
+                AssumptionStatus::Refuted => {
+                    unresolved_assumptions.insert(assumption_node.id.clone());
+                    argument_outcome = combine(
+                        argument_outcome,
+                        if assumption.critical {
+                            ClaimOutcome::Defeated
+                        } else {
+                            ClaimOutcome::Indeterminate
+                        },
+                    );
+                    reasons.push(format!("assumption_{}_refuted", assumption_node.id));
+                }
+                AssumptionStatus::Supported | AssumptionStatus::Bounded => {
+                    if assumption.evidence_ids.is_empty() {
+                        argument_outcome = combine(argument_outcome, ClaimOutcome::Indeterminate);
+                        unresolved_assumptions.insert(assumption_node.id.clone());
+                        reasons.push(format!("assumption_{}_has_no_support_evidence", assumption_node.id));
+                    }
+                    for evidence_id in &assumption.evidence_ids {
+                        if !has_edge(&input.edges, EdgeKind::Supports, evidence_id, &assumption_node.id) {
+                            argument_outcome = combine(argument_outcome, ClaimOutcome::Indeterminate);
+                            unresolved_assumptions.insert(assumption_node.id.clone());
+                            reasons.push(format!("assumption_{}_evidence_unbound", assumption_node.id));
+                            continue;
+                        }
+                        let evidence_node = by_id.get(evidence_id.as_str()).expect("structure validated");
+                        let evidence = evidence_node.evidence.as_ref().expect("evidence data validated");
+                        let (outcome, mut why) = evaluate_evidence(
+                            evidence,
+                            &input.decision_scope,
+                            input.as_of,
+                            DependencyRequirement::None,
+                        );
+                        argument_outcome = combine(argument_outcome, outcome);
+                        reasons.append(&mut why);
+                    }
+                }
+            }
+        }
+
+        for edge in input.edges.iter().filter(|edge| {
+            edge.kind == EdgeKind::Defeats && edge.to == *argument_id
+        }) {
+            let defeater_node = by_id.get(edge.from.as_str()).expect("edge endpoint validated");
+            let defeater = defeater_node.defeater.as_ref().expect("defeater data validated");
+            if defeater.applicable && !rebuttal_closes(&defeater_node.id, input, by_id) {
+                open_defeaters.insert(defeater_node.id.clone());
+                argument_outcome = combine(
+                    argument_outcome,
+                    if defeater.critical {
+                        ClaimOutcome::Defeated
+                    } else {
+                        ClaimOutcome::Indeterminate
+                    },
+                );
+                reasons.push(format!("defeater_{}_open", defeater_node.id));
+            }
+        }
         outcomes.push(argument_outcome);
     }
 
