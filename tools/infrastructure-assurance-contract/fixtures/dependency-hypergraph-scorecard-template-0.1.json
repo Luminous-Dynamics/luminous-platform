@@ -64,5 +64,22 @@
   "limitations": [
     "This file is a schema-validation template, not an evaluation result.",
     "A completed scorecard requires exact manifests, implementation and evaluator digests, a sealed truth commitment, independent report verification and measured metric denominators."
-  ]
+  ],
+  "decision_context": {
+    "decision_id": "TEMPLATE-NOT-A-RESULT",
+    "intended_decision": "Declared dependency assessment for a specific source set and time",
+    "authority_scope": "diagnostic_only_no_operational_authority",
+    "policy_sha256": null,
+    "permitted_dispositions": [
+      "QUALIFIED",
+      "DEGRADED",
+      "INDETERMINATE",
+      "REJECT_RELIANCE",
+      "NOT_AUTHORIZED",
+      "NOT_COMPARABLE"
+    ],
+    "abstention_behavior": "request_more_evidence",
+    "decision_deadline": null,
+    "loss_model_commitment_sha256": null
+  }
 }
