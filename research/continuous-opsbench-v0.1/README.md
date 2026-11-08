@@ -121,3 +121,29 @@ The module includes eight paired-run tests covering invocation reduction, detect
 **Metric boundary:** `monitor_checks` are deterministic monitor callbacks, not LLM calls. `cognitive_invocations` count scheduled policy invocations. `probe_selection_calls` and `admitted_probe_selections` count selection proposals, not actual remote collector executions. The module does not yet consume independent source/impact receipts for every paired wake; that is the next #320 integration increment. A synthetic plant pass is not a live SRE benchmark result.
 
 **Claim ceiling:** the experiment is an offline paired controller comparison on a deterministic synthetic service model. It does not prove production event-delivery guarantees, model superiority, live Xenia authority enforcement, actual probe resource externality, independent observer authenticity or performance on SREGym/SRE-Marathon.
+
+## Durable/ephemeral event schedule evaluator v0.1
+
+The additive `src/event_schedule.rs` module reuses #306's watch/event contract semantics and provides an offline, deterministic evaluator over a frozen source schedule. It is not a second broker, subscription service, durable inbox, timer or production scheduler.
+
+Strategies:
+- **Fixed polling:** detects a condition only if its declared current-state validity window overlaps a poll tick.
+- **Event-triggered:** processes the delivered source event record even after an ephemeral condition has cleared, provided the source record is still retained and its response deadline has not passed.
+- **Coalesced event-triggered:** reduces policy wake groups only when epoch and coalescing key match within the configured window. Every event ID and incident ID remains in the wake receipt; the wake budget counts actual coalesced groups, not raw event count.
+
+The timeline includes separate event time, valid interval, delivery time, record-retention deadline and response deadline. Source cursor semantics include:
+- same event ID + epoch + sequence + payload digest: duplicate suppression;
+- same event ID rebound to another sequence/epoch/digest: identity collision;
+- sequence jump: explicit delivery gap;
+- lower new sequence: out-of-order record;
+- source epoch changes only after an explicit restart record with a declared proof digest;
+- source cursor watermark: detects a final missing event even when no later event sequence arrives;
+- unavailable source watermark: explicit source-unavailable result, never quiet success.
+
+A watermark whose `next_sequence` equals the consumer's next expected sequence confirms continuity through that point. A greater watermark proves a gap. The deterministic harness verifies digest shape and binding fields only; canonical event owner code must authenticate the source and verify the watermark/restart proof before treating them as evidence.
+
+Authority is rechecked at each processed record. Watch scope, event source identity, event sequence, event deadlines, event retention and wake/resource budgets are independent checks. Watch events can request a cognitive wake; they never authorize plant mutation or a consequential action.
+
+The module includes 25 deterministic unit tests across multi-incident events, event coalescing, persistent/ephemeral state, fixed-poll misses, event deadlines and latency, duplicate replay after checkpoint, event-ID collisions, sequence gaps/out-of-order events, authenticated-restart shape, source epoch substitution, final cursor watermark gaps, source unavailability, authority revocation, indeterminate conditions, no-match quiet controls, positive controls and zero consequential mutation.
+
+**Claim ceiling:** this is an offline schedule/conformance evaluator. It does not subscribe to the production CloudEvents path, authenticate event producers, cryptographically validate owner-held restart/watermark evidence, establish real inbox durability, prove delivery SLAs, integrate live Xenia revocation, execute diagnostic collectors or prove production real-time behavior. Source and event records are synthetic inputs; no SREGym/SRE-Marathon result is claimed.
