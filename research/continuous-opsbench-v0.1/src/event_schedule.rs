@@ -308,9 +308,12 @@ fn non_empty(value: &str) -> bool {
 }
 
 fn valid_sha256(value: &str) -> bool {
-    value
-        .strip_prefix("sha256:")
-        .is_some_and(|hex| hex.len() == 64 && hex.bytes().all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase()))
+    value.strip_prefix("sha256:").is_some_and(|hex| {
+        hex.len() == 64
+            && hex
+                .bytes()
+                .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
+    })
 }
 
 fn validate_watch(watch: &EventWatch) -> Result<(), ScheduleError> {
@@ -412,24 +415,23 @@ fn validate_checkpoint(
         || checkpoint.next_sequence == 0
         || checkpoint.next_sequence == u64::MAX
         || checkpoint.last_stream_tick < watch.starts_at_tick
-        || checkpoint.seen_event_ids.iter().any(|(event_id, (epoch, sequence, digest))| {
-            !non_empty(event_id)
-                || !non_empty(epoch)
-                || *sequence == 0
-                || *sequence == u64::MAX
-                || !valid_sha256(digest)
-        })
+        || checkpoint
+            .seen_event_ids
+            .iter()
+            .any(|(event_id, (epoch, sequence, digest))| {
+                !non_empty(event_id)
+                    || !non_empty(epoch)
+                    || *sequence == 0
+                    || *sequence == u64::MAX
+                    || !valid_sha256(digest)
+            })
     {
         return Err(ScheduleError::InvalidCheckpoint);
     }
     Ok(())
 }
 
-fn poll_tick_at_or_after(
-    start: u64,
-    interval: u64,
-    target: u64,
-) -> Option<u64> {
+fn poll_tick_at_or_after(start: u64, interval: u64, target: u64) -> Option<u64> {
     if target <= start {
         return Some(start);
     }
@@ -777,13 +779,11 @@ fn process_event(
         }
         ConditionOutcome::Match => {
             let latency = processing_tick.saturating_sub(event.event_tick);
-            metrics.max_detection_latency_ticks =
-                metrics.max_detection_latency_ticks.max(latency);
+            metrics.max_detection_latency_ticks = metrics.max_detection_latency_ticks.max(latency);
             metrics.max_event_backlog_ticks = metrics
                 .max_event_backlog_ticks
                 .max(processing_tick.saturating_sub(event.delivered_tick));
-            let joins_existing =
-                joins_pending_group(strategy, event, processing_tick, pending);
+            let joins_existing = joins_pending_group(strategy, event, processing_tick, pending);
             if !joins_existing && wakes.len() + pending.len() >= watch.max_wakeups {
                 metrics.budget_exhaustions += 1;
                 records.push(EventRecordResult {
@@ -798,14 +798,7 @@ fn process_event(
                 });
                 return Some(ScheduleStatus::BudgetExhausted);
             }
-            let coalesced = apply_wake(
-                strategy,
-                event,
-                processing_tick,
-                pending,
-                wakes,
-                metrics,
-            );
+            let coalesced = apply_wake(strategy, event, processing_tick, pending, wakes, metrics);
             metrics.relevant_events_detected += 1;
             metrics.event_wake_notifications += 1;
             records.push(EventRecordResult {
@@ -1146,14 +1139,7 @@ pub fn evaluate_event_schedule(
     }
 
     Ok(make_result(
-        watch,
-        strategy,
-        authority,
-        status,
-        metrics,
-        records,
-        wakes,
-        checkpoint,
+        watch, strategy, authority, status, metrics, records, wakes, checkpoint,
     ))
 }
 
@@ -1223,21 +1209,9 @@ mod tests {
         }
     }
 
-    fn run(
-        strategy: AttentionStrategy,
-        timeline: &[TimelineRecord],
-    ) -> EventScheduleResult {
-        evaluate_event_schedule(
-            &watch(),
-            &authority(),
-            strategy,
-            timeline,
-            39,
-            None,
-        )
-        .unwrap()
+    fn run(strategy: AttentionStrategy, timeline: &[TimelineRecord]) -> EventScheduleResult {
+        evaluate_event_schedule(&watch(), &authority(), strategy, timeline, 39, None).unwrap()
     }
-
 
 
     fn watermark(next_sequence: u64, observed_tick: u64, available: bool) -> SourceWatermark {
@@ -1255,7 +1229,13 @@ mod tests {
     fn final_lost_event_is_detected_by_source_watermark() {
         let timeline = vec![
             TimelineRecord::Event(event(
-                "event-1", "incident-1", 1, 2, 2, 30, 12,
+                "event-1",
+                "incident-1",
+                1,
+                2,
+                2,
+                30,
+                12,
                 Persistence::PersistentCondition,
             )),
             TimelineRecord::Watermark(watermark(3, 8, true)),
@@ -1357,7 +1337,10 @@ mod tests {
         assert_eq!(result.metrics.missed_deadlines, 1);
         assert_eq!(result.metrics.missed_ephemeral_events, 1);
         assert_eq!(result.metrics.wakeups, 0);
-        assert_eq!(result.records[0].disposition, RecordDisposition::MissedDeadline);
+        assert_eq!(
+            result.records[0].disposition,
+            RecordDisposition::MissedDeadline
+        );
     }
 
     #[test]
@@ -1399,7 +1382,13 @@ mod tests {
             },
             &[
                 TimelineRecord::Event(event(
-                    "event-1", "incident-1", 1, 3, 3, 30, 12,
+                    "event-1",
+                    "incident-1",
+                    1,
+                    3,
+                    3,
+                    30,
+                    12,
                     Persistence::PersistentCondition,
                 )),
                 TimelineRecord::Event(second),
@@ -1417,11 +1406,23 @@ mod tests {
         w.max_wakeups = 1;
         let timeline = vec![
             TimelineRecord::Event(event(
-                "event-1", "incident-1", 1, 3, 3, 30, 12,
+                "event-1",
+                "incident-1",
+                1,
+                3,
+                3,
+                30,
+                12,
                 Persistence::PersistentCondition,
             )),
             TimelineRecord::Event(event(
-                "event-2", "incident-2", 2, 4, 4, 30, 13,
+                "event-2",
+                "incident-2",
+                2,
+                4,
+                4,
+                30,
+                13,
                 Persistence::PersistentCondition,
             )),
         ];
@@ -1448,11 +1449,23 @@ mod tests {
         w.max_wakeups = 1;
         let timeline = vec![
             TimelineRecord::Event(event(
-                "event-1", "incident-1", 1, 3, 3, 30, 12,
+                "event-1",
+                "incident-1",
+                1,
+                3,
+                3,
+                30,
+                12,
                 Persistence::PersistentCondition,
             )),
             TimelineRecord::Event(event(
-                "event-2", "incident-2", 2, 10, 10, 30, 20,
+                "event-2",
+                "incident-2",
+                2,
+                10,
+                10,
+                30,
+                20,
                 Persistence::PersistentCondition,
             )),
         ];
@@ -1475,11 +1488,23 @@ mod tests {
     fn event_triggered_wakes_twice_for_distinct_incidents_while_state_stays_high() {
         let timeline = vec![
             TimelineRecord::Event(event(
-                "event-1", "incident-1", 1, 5, 5, 30, 15,
+                "event-1",
+                "incident-1",
+                1,
+                5,
+                5,
+                30,
+                15,
                 Persistence::PersistentCondition,
             )),
             TimelineRecord::Event(event(
-                "event-2", "incident-2", 2, 7, 7, 30, 17,
+                "event-2",
+                "incident-2",
+                2,
+                7,
+                7,
+                30,
+                17,
                 Persistence::PersistentCondition,
             )),
         ];
@@ -1537,7 +1562,13 @@ mod tests {
     #[test]
     fn exact_duplicate_delivery_is_suppressed_after_checkpoint_replay() {
         let first = event(
-            "event-1", "incident-1", 1, 3, 3, 30, 10,
+            "event-1",
+            "incident-1",
+            1,
+            3,
+            3,
+            30,
+            10,
             Persistence::PersistentCondition,
         );
         let initial = run(
@@ -1560,20 +1591,29 @@ mod tests {
     #[test]
     fn event_id_reuse_with_different_sequence_is_an_identity_collision() {
         let first = event(
-            "event-reused", "incident-1", 1, 3, 3, 30, 10,
+            "event-reused",
+            "incident-1",
+            1,
+            3,
+            3,
+            30,
+            10,
             Persistence::PersistentCondition,
         );
         let mut second = event(
-            "event-reused", "incident-2", 2, 4, 4, 30, 11,
+            "event-reused",
+            "incident-2",
+            2,
+            4,
+            4,
+            30,
+            11,
             Persistence::PersistentCondition,
         );
         second.payload_digest = format!("sha256:{:064x}", 999);
         let result = run(
             AttentionStrategy::EventTriggered,
-            &[
-                TimelineRecord::Event(first),
-                TimelineRecord::Event(second),
-            ],
+            &[TimelineRecord::Event(first), TimelineRecord::Event(second)],
         );
         assert_eq!(result.status, ScheduleStatus::IdentityCollision);
         assert_eq!(result.metrics.identity_collisions, 1);
@@ -1602,11 +1642,23 @@ mod tests {
     fn out_of_order_sequence_is_not_counted_as_a_duplicate() {
         let timeline = vec![
             TimelineRecord::Event(event(
-                "event-1", "incident-1", 1, 2, 2, 30, 10,
+                "event-1",
+                "incident-1",
+                1,
+                2,
+                2,
+                30,
+                10,
                 Persistence::PersistentCondition,
             )),
             TimelineRecord::Event(event(
-                "event-older", "incident-old", 1, 3, 3, 30, 10,
+                "event-older",
+                "incident-old",
+                1,
+                3,
+                3,
+                30,
+                10,
                 Persistence::PersistentCondition,
             )),
         ];
@@ -1620,7 +1672,13 @@ mod tests {
     fn explicit_source_restart_resets_sequence_only_after_verified_record() {
         let timeline = vec![
             TimelineRecord::Event(event(
-                "event-1", "incident-1", 1, 2, 2, 30, 10,
+                "event-1",
+                "incident-1",
+                1,
+                2,
+                2,
+                30,
+                10,
                 Persistence::PersistentCondition,
             )),
             TimelineRecord::Restart(SourceRestart {
@@ -1634,7 +1692,13 @@ mod tests {
             TimelineRecord::Event(SourceEvent {
                 source_epoch: "epoch-2".into(),
                 ..event(
-                    "event-2", "incident-2", 1, 6, 6, 30, 12,
+                    "event-2",
+                    "incident-2",
+                    1,
+                    6,
+                    6,
+                    30,
+                    12,
                     Persistence::PersistentCondition,
                 )
             }),
@@ -1650,7 +1714,13 @@ mod tests {
         let timeline = vec![TimelineRecord::Event(SourceEvent {
             source_epoch: "epoch-2".into(),
             ..event(
-                "event-1", "incident-1", 1, 2, 2, 30, 10,
+                "event-1",
+                "incident-1",
+                1,
+                2,
+                2,
+                30,
+                10,
                 Persistence::PersistentCondition,
             )
         })];
@@ -1693,15 +1763,33 @@ mod tests {
     fn coalescing_reduces_wakeups_but_preserves_every_event_and_incident_id() {
         let timeline = vec![
             TimelineRecord::Event(event(
-                "event-1", "incident-1", 1, 3, 3, 30, 12,
+                "event-1",
+                "incident-1",
+                1,
+                3,
+                3,
+                30,
+                12,
                 Persistence::PersistentCondition,
             )),
             TimelineRecord::Event(event(
-                "event-2", "incident-2", 2, 4, 4, 30, 13,
+                "event-2",
+                "incident-2",
+                2,
+                4,
+                4,
+                30,
+                13,
                 Persistence::PersistentCondition,
             )),
             TimelineRecord::Event(event(
-                "event-3", "incident-3", 3, 15, 15, 30, 22,
+                "event-3",
+                "incident-3",
+                3,
+                15,
+                15,
+                30,
+                22,
                 Persistence::PersistentCondition,
             )),
         ];
@@ -1754,7 +1842,13 @@ mod tests {
     #[test]
     fn missing_or_indeterminate_condition_escalates_without_false_wake() {
         let mut uncertain = event(
-            "event-unknown", "incident-1", 1, 3, 3, 30, 10,
+            "event-unknown",
+            "incident-1",
+            1,
+            3,
+            3,
+            30,
+            10,
             Persistence::PersistentCondition,
         );
         uncertain.condition = ConditionOutcome::Indeterminate;
@@ -1770,7 +1864,13 @@ mod tests {
     #[test]
     fn no_match_event_is_quiet_not_a_successful_wake() {
         let mut irrelevant = event(
-            "event-quiet", "incident-quiet", 1, 3, 3, 30, 10,
+            "event-quiet",
+            "incident-quiet",
+            1,
+            3,
+            3,
+            30,
+            10,
             Persistence::PersistentCondition,
         );
         irrelevant.condition = ConditionOutcome::NoMatch;
@@ -1786,7 +1886,13 @@ mod tests {
     #[test]
     fn event_wake_never_creates_a_consequential_mutation_attempt() {
         let timeline = vec![TimelineRecord::Event(event(
-            "event-1", "incident-1", 1, 3, 3, 30, 10,
+            "event-1",
+            "incident-1",
+            1,
+            3,
+            3,
+            30,
+            10,
             Persistence::PersistentCondition,
         ))];
         let result = run(AttentionStrategy::EventTriggered, &timeline);
