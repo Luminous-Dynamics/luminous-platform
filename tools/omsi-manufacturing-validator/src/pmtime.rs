@@ -20,6 +20,9 @@ const EXPECTED_CASE_IDS: [&str; 14] = [
     "PMT-012-unsupported-time-scale",
     "PMT-013-shared-clock-instance",
     "PMT-014-shared-network-delivery",
+    "PMT-015-delayed-ingest-preserves-event-time",
+    "PMT-016-period-gap-unknown",
+    "PMT-017-source-switch-bound-to-new-config",
 ];
 
 const REQUIRED_VERIFIER_CHECKS: [&str; 5] = [
@@ -314,6 +317,8 @@ fn evaluate_case(
         {
             if record_index <= prior_index {
                 invalid.push(format!("record_{index}_index_not_strictly_increasing"));
+            } else if record_index != prior_index.saturating_add(1) {
+                unknown.push(format!("record_{index}_record_index_gap"));
             }
             if timestamp <= prior_time {
                 invalid.push(format!("record_{index}_pmtime_not_strictly_increasing"));
@@ -359,7 +364,6 @@ fn evaluate_case(
     if required_domains.is_empty() {
         invalid.push("required_dependency_domain_list_empty".to_owned());
     }
-    let required_set: BTreeSet<&str> = required_domains.iter().map(String::as_str).collect();
     let mut seen_domains = BTreeSet::new();
     let mut snapshot_binding: Option<(String, u64)> = None;
 
@@ -560,9 +564,9 @@ mod tests {
 
         let report = validate_fixture_pack(&document, FIXTURES.as_bytes());
         assert_eq!(report["status"], "passed", "{report:#}");
-        assert_eq!(report["case_count_expected"], 14);
-        assert_eq!(report["case_count_discovered"], 14);
-        assert_eq!(report["passed_count"], 14);
+        assert_eq!(report["case_count_expected"], 17);
+        assert_eq!(report["case_count_discovered"], 17);
+        assert_eq!(report["passed_count"], 17);
         assert_eq!(report["failure_count"], 0);
 
         let report_schema: Value = serde_json::from_str(REPORT_SCHEMA).expect("report schema JSON");
