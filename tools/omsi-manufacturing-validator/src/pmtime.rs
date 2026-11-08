@@ -301,6 +301,18 @@ fn evaluate_case(
         {
             unknown.push(format!("record_{index}_source_or_uncertainty_artifact_missing"));
         }
+        match string(record, "signature_status") {
+            Some("valid") => {}
+            Some("invalid") => {
+                invalid.push(format!("record_{index}_source_signature_invalid"));
+            }
+            Some("missing" | "unknown") | None => {
+                unknown.push(format!("record_{index}_source_signature_not_qualified"));
+            }
+            Some(_) => {
+                unknown.push(format!("record_{index}_source_signature_status_unsupported"));
+            }
+        }
         if time_scale != "TAI" {
             unknown.push(format!("record_{index}_unsupported_or_unmapped_time_scale"));
             if !string(record, "time_scale_mapping_sha256").is_some_and(is_sha256) {
