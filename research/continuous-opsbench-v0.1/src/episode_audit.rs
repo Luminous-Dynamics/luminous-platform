@@ -1106,77 +1106,99 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
                             );
                             None
                         } else {
-                            let Some(registry) = input.failure_domain_registry else {
-                                impact_independence_indeterminate = true;
-                                report.indeterminate(
-                                    IndeterminateReason::ImpactIndependenceUnestablished,
-                                );
-                                continue;
-                            };
-                            let Some(collector_profile) = registry
-                                .collector_profiles
-                                .get(&entry.collector_control_domain)
-                            else {
-                                impact_independence_indeterminate = true;
-                                report.indeterminate(
-                                    IndeterminateReason::MissingCollectorFailureDomainProfile,
-                                );
-                                continue;
-                            };
-                            if collector_profile.subject_id != entry.collector_control_domain {
-                                report.fail(AuditFailure::FailureDomainProfileBindingMismatch);
-                                continue;
-                            }
-                            let observer_profile = match &receipt.observer_failure_domain_profile {
-                                ReceiptState::Present(profile) => {
-                                    if profile.subject_id != receipt.impact.observer_control_domain {
-                                        report.fail(AuditFailure::FailureDomainProfileBindingMismatch);
-                                        continue;
-                                    }
-                                    profile
-                                }
-                                ReceiptState::Missing => {
-                                    impact_independence_indeterminate = true;
-                                    report.indeterminate(
-                                        IndeterminateReason::MissingObserverFailureDomainProfile,
-                                    );
-                                    continue;
-                                }
-                                ReceiptState::Unknown => {
-                                    impact_independence_indeterminate = true;
-                                    report.indeterminate(
-                                        IndeterminateReason::UnknownObserverFailureDomainProfile,
-                                    );
-                                    continue;
-                                }
-                            };
-                            let independence = audit_observer_independence(
-                                collector_profile,
-                                observer_profile,
-                                &registry.graph,
-                                input.audited_at_tick,
-                                registry.policy,
-                            );
-                            match independence.status {
-                                IndependenceStatus::NoDeclaredOverlap => {
-                                    report.impacts_verified += 1;
-                                    Some(receipt)
-                                }
-                                IndependenceStatus::SharedDeclaredDependency => {
-                                    impact_independence_indeterminate = true;
-                                    report.indeterminate(IndeterminateReason::CommonCauseOverlap);
-                                    None
-                                }
-                                IndependenceStatus::Indeterminate => {
+                            match input.failure_domain_registry {
+                                None => {
                                     impact_independence_indeterminate = true;
                                     report.indeterminate(
                                         IndeterminateReason::ImpactIndependenceUnestablished,
                                     );
                                     None
                                 }
-                                IndependenceStatus::Invalid => {
-                                    report.fail(AuditFailure::FailureDomainEvidenceInvalid);
-                                    None
+                                Some(registry) => {
+                                    match registry
+                                        .collector_profiles
+                                        .get(&entry.collector_control_domain)
+                                    {
+                                        None => {
+                                            impact_independence_indeterminate = true;
+                                            report.indeterminate(
+                                                IndeterminateReason::MissingCollectorFailureDomainProfile,
+                                            );
+                                            None
+                                        }
+                                        Some(collector_profile) => {
+                                            if collector_profile.subject_id
+                                                != entry.collector_control_domain
+                                            {
+                                                report.fail(
+                                                    AuditFailure::FailureDomainProfileBindingMismatch,
+                                                );
+                                                None
+                                            } else {
+                                                match &receipt.observer_failure_domain_profile {
+                                                    ReceiptState::Missing => {
+                                                        impact_independence_indeterminate = true;
+                                                        report.indeterminate(
+                                                            IndeterminateReason::MissingObserverFailureDomainProfile,
+                                                        );
+                                                        None
+                                                    }
+                                                    ReceiptState::Unknown => {
+                                                        impact_independence_indeterminate = true;
+                                                        report.indeterminate(
+                                                            IndeterminateReason::UnknownObserverFailureDomainProfile,
+                                                        );
+                                                        None
+                                                    }
+                                                    ReceiptState::Present(observer_profile) => {
+                                                        if observer_profile.subject_id
+                                                            != receipt.impact.observer_control_domain
+                                                        {
+                                                            report.fail(
+                                                                AuditFailure::FailureDomainProfileBindingMismatch,
+                                                            );
+                                                            None
+                                                        } else {
+                                                            let independence =
+                                                                audit_observer_independence(
+                                                                    collector_profile,
+                                                                    observer_profile,
+                                                                    &registry.graph,
+                                                                    input.audited_at_tick,
+                                                                    registry.policy,
+                                                                );
+                                                            match independence.status {
+                                                                IndependenceStatus::NoDeclaredOverlap => {
+                                                                    report.impacts_verified += 1;
+                                                                    Some(receipt)
+                                                                }
+                                                                IndependenceStatus::SharedDeclaredDependency => {
+                                                                    impact_independence_indeterminate = true;
+                                                                    report.indeterminate(
+                                                                        IndeterminateReason::CommonCauseOverlap,
+                                                                    );
+                                                                    None
+                                                                }
+                                                                IndependenceStatus::Indeterminate => {
+                                                                    impact_independence_indeterminate = true;
+                                                                    report.indeterminate(
+                                                                        IndeterminateReason::ImpactIndependenceUnestablished,
+                                                                    );
+                                                                    None
+                                                                }
+                                                                IndependenceStatus::Invalid => {
+                                                                    report.fail(
+                                                                        AuditFailure::FailureDomainEvidenceInvalid,
+                                                                    );
+                                                                    None
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
