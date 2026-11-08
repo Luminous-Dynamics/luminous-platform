@@ -379,6 +379,13 @@ fn validate_checkpoint(
         || checkpoint.next_sequence == 0
         || checkpoint.next_sequence == u64::MAX
         || checkpoint.last_delivery_tick < watch.starts_at_tick
+        || checkpoint.seen_event_ids.iter().any(|(event_id, (epoch, sequence, digest))| {
+            !non_empty(event_id)
+                || !non_empty(epoch)
+                || *sequence == 0
+                || *sequence == u64::MAX
+                || !valid_sha256(digest)
+        })
     {
         return Err(ScheduleError::InvalidCheckpoint);
     }
@@ -1327,7 +1334,7 @@ mod tests {
             "event-reused", "incident-2", 2, 4, 4, 30, 11,
             Persistence::PersistentCondition,
         );
-        second.payload_digest = "sha256:other".into();
+        second.payload_digest = format!("sha256:{:064x}", 999);
         let result = run(
             AttentionStrategy::EventTriggered,
             &[
@@ -1389,7 +1396,7 @@ mod tests {
                 new_epoch: "epoch-2".into(),
                 sequence_start: 1,
                 at_tick: 5,
-                restart_proof_digest: "sha256:restart-proof".into(),
+                restart_proof_digest: format!("sha256:{:064x}", 12345),
             }),
             TimelineRecord::Event(SourceEvent {
                 source_epoch: "epoch-2".into(),
