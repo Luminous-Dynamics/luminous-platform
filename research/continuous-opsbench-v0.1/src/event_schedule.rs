@@ -1137,13 +1137,7 @@ mod tests {
     fn unannounced_source_restart_is_rejected() {
         let mut restart = event(10, "evt-unannounced", "incident-b", 6);
         restart.source_epoch = 2;
-        let result = evaluate(
-            &[
-                event(10, "evt-epoch-1", "incident-a", 5),
-                restart,
-            ],
-            6,
-        );
+        let result = evaluate(&[event(10, "evt-epoch-1", "incident-a", 5), restart], 6);
         assert_eq!(result.status, EventRunStatus::InvalidSourceEpoch);
         assert_eq!(result.metrics.invalid_source_epochs, 1);
     }
