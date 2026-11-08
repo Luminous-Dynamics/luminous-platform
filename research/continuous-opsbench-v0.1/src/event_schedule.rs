@@ -2188,14 +2188,17 @@ mod tests {
             15,
             Persistence::PersistentCondition,
         );
-        let resumed = run_with_gap(
+        let resume_timeline = [TimelineRecord::Event(missing)];
+        let resumed = run_from_checkpoint_with_gap_policy(
+            &watch(),
+            &authority(),
             AttentionStrategy::EventTriggered,
-            &[TimelineRecord::Event(missing)],
+            &resume_timeline,
             7,
-            Some(first.checkpoint),
-            5,
-            8,
-        );
+            first.checkpoint,
+            SequenceGapPolicy::buffered(5, 8),
+        )
+        .unwrap();
         assert_eq!(resumed.status, ScheduleStatus::Completed);
         assert_eq!(resumed.metrics.gap_repairs, 1);
         assert_eq!(resumed.checkpoint.next_sequence, 3);
