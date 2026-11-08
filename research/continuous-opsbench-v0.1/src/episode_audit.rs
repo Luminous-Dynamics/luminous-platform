@@ -9,7 +9,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::event_schedule::{EventScheduleResult, RecordDisposition, ScheduleStatus};
 use crate::scheduled_attention::{
-    ScheduledWakeDecision, SourceQualifiedDisposition,
+    ProbeSelectionProposal, ScheduledWakeDecision, SourceQualifiedDisposition,
 };
 use crate::watch_probe::{
     AuthoritySnapshot, ImpactObservation, ProbeCatalogEntry, SourceObservation,
@@ -27,7 +27,20 @@ pub enum AuditStatus {
 pub enum WakeDisposition {
     ProbeRequested { request_id: String },
     /// The policy selected an eligible probe, but no admission request exists.
-    ProbeProposedNotAdmitted { probe_id: String },
+    /// Carries the exact catalog contract snapshot visible at proposal time.
+    ProbeProposedNotAdmitted {
+        probe_id: String,
+        operation_digest: String,
+        tenant_id: String,
+        target_id: String,
+        purpose_id: String,
+        source_id: String,
+        collector_control_domain: String,
+        read_only: bool,
+        maximum_duration_ticks: u64,
+        proposed_at_tick: u64,
+        observation_source_tick: u64,
+    },
     StopWithoutProbe,
     AskPrincipal,
     Abstain,
@@ -145,6 +158,8 @@ pub enum AuditFailure {
     RequestBindingMismatch,
     RequestOutsideWatchOrAuthority,
     ProbeNotCataloguedReadOnly,
+    ProbeProposalNotMatched,
+    DuplicateProbeProposal,
     DuplicateReceiptId,
     DuplicateEvidenceRecord,
     EvidenceBindingMismatch,
@@ -481,10 +496,16 @@ fn audit_decision(
 /// receipt vocabulary. Probe selection is deliberately represented as a
 /// proposal, never as an admitted request. The deterministic IDs are local
 /// structural join keys, not cryptographic attestations.
+///
+/// Each selected probe must have one proposal snapshot from the catalog-bound
+/// scheduled-attention runner. A decision without a matching snapshot, a
+/// snapshot for a non-probe decision, or a duplicate proposal fails closed.
 pub fn source_qualified_decisions_to_receipts(
     scheduled: &[ScheduledWakeDecision],
+    probe_proposals: &[ProbeSelectionProposal],
 ) -> Result<Vec<WakeDecisionReceipt>, AuditFailure> {
     let mut receipts = Vec::new();
+    let mut consumed_proposals = BTreeSet::new();
 
     for (wake_index, scheduled_wake) in scheduled.iter().enumerate() {
         let wake = &scheduled_wake.wake;
@@ -517,19 +538,79 @@ pub fn source_qualified_decisions_to_receipts(
                 return Err(AuditFailure::OrphanWakeDecision);
             }
 
+            let matching_proposals: Vec<(usize, &ProbeSelectionProposal)> = probe_proposals
+                .iter()
+                .enumerate()
+                .filter(|(_, proposal)| proposal.event == decision.event)
+                .collect();
+
             let disposition = match &decision.disposition {
                 SourceQualifiedDisposition::SelectReadOnlyProbe { probe_id } => {
                     if !non_empty(probe_id) {
                         return Err(AuditFailure::ProbeNotCataloguedReadOnly);
                     }
+                    if matching_proposals.is_empty() {
+                        return Err(AuditFailure::ProbeProposalNotMatched);
+                    }
+                    if matching_proposals.len() != 1 {
+                        return Err(AuditFailure::DuplicateProbeProposal);
+                    }
+                    let (proposal_index, proposal) = matching_proposals[0];
+                    if proposal.probe_id != *probe_id
+                        || proposal.proposed_at_tick != wake.wake_tick
+                        || proposal.observation_source_tick > proposal.proposed_at_tick
+                        || !non_empty(&proposal.operation_digest)
+                        || !non_empty(&proposal.tenant_id)
+                        || !non_empty(&proposal.target_id)
+                        || !non_empty(&proposal.purpose_id)
+                        || !non_empty(&proposal.source_id)
+                        || !non_empty(&proposal.collector_control_domain)
+                        || !proposal.read_only
+                        || proposal.maximum_duration_ticks == 0
+                    {
+                        return Err(AuditFailure::ProbeProposalNotMatched);
+                    }
+                    if !consumed_proposals.insert(proposal_index) {
+                        return Err(AuditFailure::DuplicateProbeProposal);
+                    }
                     WakeDisposition::ProbeProposedNotAdmitted {
-                        probe_id: probe_id.clone(),
+                        probe_id: proposal.probe_id.clone(),
+                        operation_digest: proposal.operation_digest.clone(),
+                        tenant_id: proposal.tenant_id.clone(),
+                        target_id: proposal.target_id.clone(),
+                        purpose_id: proposal.purpose_id.clone(),
+                        source_id: proposal.source_id.clone(),
+                        collector_control_domain: proposal.collector_control_domain.clone(),
+                        read_only: proposal.read_only,
+                        maximum_duration_ticks: proposal.maximum_duration_ticks,
+                        proposed_at_tick: proposal.proposed_at_tick,
+                        observation_source_tick: proposal.observation_source_tick,
                     }
                 }
-                SourceQualifiedDisposition::StopWithoutProbe => WakeDisposition::StopWithoutProbe,
-                SourceQualifiedDisposition::AskPrincipal => WakeDisposition::AskPrincipal,
-                SourceQualifiedDisposition::Abstain => WakeDisposition::Abstain,
-                SourceQualifiedDisposition::Escalate => WakeDisposition::Escalate,
+                SourceQualifiedDisposition::StopWithoutProbe => {
+                    if !matching_proposals.is_empty() {
+                        return Err(AuditFailure::ProbeProposalNotMatched);
+                    }
+                    WakeDisposition::StopWithoutProbe
+                }
+                SourceQualifiedDisposition::AskPrincipal => {
+                    if !matching_proposals.is_empty() {
+                        return Err(AuditFailure::ProbeProposalNotMatched);
+                    }
+                    WakeDisposition::AskPrincipal
+                }
+                SourceQualifiedDisposition::Abstain => {
+                    if !matching_proposals.is_empty() {
+                        return Err(AuditFailure::ProbeProposalNotMatched);
+                    }
+                    WakeDisposition::Abstain
+                }
+                SourceQualifiedDisposition::Escalate => {
+                    if !matching_proposals.is_empty() {
+                        return Err(AuditFailure::ProbeProposalNotMatched);
+                    }
+                    WakeDisposition::Escalate
+                }
             };
 
             let decision_id = format!(
@@ -553,6 +634,10 @@ pub fn source_qualified_decisions_to_receipts(
         if seen != expected {
             return Err(AuditFailure::MissingWakeDecision);
         }
+    }
+
+    if consumed_proposals.len() != probe_proposals.len() {
+        return Err(AuditFailure::ProbeProposalNotMatched);
     }
 
     Ok(receipts)
@@ -709,13 +794,39 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
                         }
                     }
                 }
-                WakeDisposition::ProbeProposedNotAdmitted { probe_id } => {
+                WakeDisposition::ProbeProposedNotAdmitted {
+                    probe_id,
+                    operation_digest,
+                    tenant_id,
+                    target_id,
+                    purpose_id,
+                    source_id,
+                    collector_control_domain,
+                    read_only,
+                    maximum_duration_ticks,
+                    proposed_at_tick,
+                    observation_source_tick,
+                } => {
                     let entry = catalog_by_id.get(probe_id.as_str()).copied();
                     if entry.is_none_or(|entry| {
-                        !entry.read_only
+                        entry.operation_digest != *operation_digest
+                            || entry.tenant_id != *tenant_id
+                            || entry.target_id != *target_id
+                            || entry.purpose_id != *purpose_id
+                            || entry.source_id != *source_id
+                            || entry.collector_control_domain != *collector_control_domain
+                            || entry.read_only != *read_only
+                            || entry.maximum_duration_ticks != *maximum_duration_ticks
+                            || !entry.read_only
                             || entry.tenant_id != watch.tenant_id
                             || entry.target_id != watch.target_id
                             || entry.purpose_id != watch.purpose_id
+                            || !non_empty(operation_digest)
+                            || !non_empty(source_id)
+                            || !non_empty(collector_control_domain)
+                            || *maximum_duration_ticks == 0
+                            || *proposed_at_tick != wake.wake_tick
+                            || *observation_source_tick > *proposed_at_tick
                     }) {
                         report.fail(AuditFailure::ProbeNotCataloguedReadOnly);
                     }
