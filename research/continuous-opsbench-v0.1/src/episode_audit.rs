@@ -537,6 +537,7 @@ pub fn source_qualified_decisions_to_receipts(
                 || !non_empty(&event.identity.source_id)
                 || !non_empty(&event.identity.event_id)
                 || !non_empty(&event.identity.incident_id)
+                || !valid_sha256(&event.identity.payload_digest)
                 || event.identity.sequence < wake.sequence_start
                 || event.identity.sequence > wake.sequence_end
                 || !expected.insert(event.identity.clone())
@@ -1489,8 +1490,13 @@ mod tests {
         let receipts = source_qualified_decisions_to_receipts(&scheduled, &proposals).unwrap();
 
         assert_eq!(receipts.len(), 1);
+        assert_eq!(receipts[0].source_id, "event-feed-a");
         assert_eq!(receipts[0].source_epoch, "epoch-1");
         assert_eq!(receipts[0].event_id, "event-10");
+        assert_eq!(
+            receipts[0].payload_digest,
+            format!("sha256:{:064x}", 10)
+        );
         assert_eq!(receipts[0].incident_id, "incident-a");
         assert_eq!(receipts[0].event_sequence, 10);
         assert_eq!(receipts[0].wake_tick, 6);
@@ -1567,6 +1573,16 @@ mod tests {
         assert_eq!(
             source_qualified_decisions_to_receipts(&scheduled, &proposals),
             Err(AuditFailure::ProbeProposalNotMatched)
+        );
+    }
+
+    #[test]
+    fn source_qualified_audit_bridge_rejects_malformed_payload_digest() {
+        let mut scheduled = scheduled_policy_decision();
+        scheduled[0].decisions[0].event.payload_digest = "sha256:truncated".into();
+        assert_eq!(
+            source_qualified_decisions_to_receipts(&scheduled, &probe_proposals()),
+            Err(AuditFailure::WakeRecordMalformed)
         );
     }
 
