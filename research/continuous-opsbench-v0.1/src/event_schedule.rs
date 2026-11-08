@@ -828,10 +828,11 @@ fn process_event(
     event: &SourceEvent,
     processing_tick: u64,
 ) -> Option<ScheduleStatus> {
+    let gap_policy = state.gap_policy;
     let EventProcessingState {
         watch,
         strategy: _,
-        gap_policy,
+        gap_policy: _,
         checkpoint,
         metrics,
         records,
@@ -2066,7 +2067,7 @@ mod tests {
             "incident-1",
             1,
             3,
-            4,
+            7,
             30,
             12,
             Persistence::PersistentCondition,
@@ -2244,6 +2245,76 @@ mod tests {
         assert_eq!(result.metrics.buffered_events, 1);
         assert_eq!(result.metrics.duplicates_suppressed, 1);
         assert_eq!(result.checkpoint.buffered_events.len(), 1);
+    }
+
+    #[test]
+    fn source_epoch_restart_cannot_discard_an_unresolved_gap() {
+        let later = event(
+            "event-2",
+            "incident-2",
+            2,
+            2,
+            3,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let restart = SourceRestart {
+            source_id: "event-feed-a".into(),
+            previous_epoch: "epoch-1".into(),
+            new_epoch: "epoch-2".into(),
+            sequence_start: 1,
+            at_tick: 4,
+            restart_proof_digest: format!("sha256:{:064x}", 12345),
+        };
+        let result = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[
+                TimelineRecord::Event(later),
+                TimelineRecord::Restart(restart),
+            ],
+            6,
+            None,
+            5,
+            8,
+        );
+        assert_eq!(result.status, ScheduleStatus::DeliveryGap);
+        assert_eq!(result.checkpoint.source_epoch, "epoch-1");
+        assert_eq!(result.checkpoint.buffered_events.len(), 1);
+    }
+
+    #[test]
+    fn checkpoint_rejects_buffered_event_with_wrong_cursor_or_epoch() {
+        let later = event(
+            "event-2",
+            "incident-2",
+            2,
+            2,
+            3,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let pending = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(later)],
+            5,
+            None,
+            5,
+            8,
+        );
+        let mut corrupted = pending.checkpoint;
+        corrupted.buffered_events.get_mut(&2).unwrap().source_epoch = "wrong-epoch".into();
+        let resumed = evaluate_event_schedule_with_gap_policy(
+            &watch(),
+            &authority(),
+            AttentionStrategy::EventTriggered,
+            &[],
+            6,
+            Some(corrupted),
+            SequenceGapPolicy::buffered(5, 8),
+        );
+        assert_eq!(resumed, Err(ScheduleError::InvalidCheckpoint));
     }
 
     #[test]
