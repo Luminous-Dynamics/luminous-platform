@@ -55,7 +55,8 @@ impl Outcome {
 /// facets. It does not infer physical truth or run a PNT estimator.
 fn evaluate_input(input: &Value) -> Outcome {
     let profile = input.get("profile").unwrap_or(&Value::Null);
-    if text(profile, "id") != Some(PROFILE_ID) || text(profile, "version") != Some(PROFILE_VERSION) {
+    if text(profile, "id") != Some(PROFILE_ID) || text(profile, "version") != Some(PROFILE_VERSION)
+    {
         return Outcome::new("NOT_COMPARABLE", "profile_identity_or_version_mismatch");
     }
 
@@ -92,13 +93,17 @@ fn evaluate_input(input: &Value) -> Outcome {
             let calibration = text(source, "calibration_status");
             let valid_until = text(source, "calibration_valid_until");
             let expired_by_time = match (assessment_time, valid_until) {
-                (Some(now), Some(until)) if is_canonical_utc(now) && is_canonical_utc(until) => until <= now,
+                (Some(now), Some(until)) if is_canonical_utc(now) && is_canonical_utc(until) => {
+                    until <= now
+                }
                 _ => false,
             };
             if matches!(calibration, Some("expired" | "revoked")) || expired_by_time {
                 return Outcome::new("REJECT_RELIANCE", "calibration_expired");
             }
-            if calibration == Some("unknown") || (calibration == Some("current") && valid_until.is_none()) {
+            if calibration == Some("unknown")
+                || (calibration == Some("current") && valid_until.is_none())
+            {
                 return Outcome::new("INDETERMINATE", "calibration_validity_unknown");
             }
         }
@@ -106,8 +111,12 @@ fn evaluate_input(input: &Value) -> Outcome {
 
     if let Some(oracle) = input.get("oracle_evidence") {
         if bool_value(oracle, "independence_claimed") == Some(true) {
-            let detector: BTreeSet<&str> = string_array(oracle, "detector_input_source_ids").into_iter().collect();
-            let labels: BTreeSet<&str> = string_array(oracle, "label_source_ids").into_iter().collect();
+            let detector: BTreeSet<&str> = string_array(oracle, "detector_input_source_ids")
+                .into_iter()
+                .collect();
+            let labels: BTreeSet<&str> = string_array(oracle, "label_source_ids")
+                .into_iter()
+                .collect();
             if detector.is_empty() || labels.is_empty() {
                 return Outcome::new("INDETERMINATE", "oracle_independence_unproven");
             }
@@ -119,7 +128,9 @@ fn evaluate_input(input: &Value) -> Outcome {
 
     if let Some(request) = input.get("operation_request") {
         if bool_value(request, "requested") == Some(true)
-            && text(request, "authority_reference").filter(|value| !value.trim().is_empty()).is_none()
+            && text(request, "authority_reference")
+                .filter(|value| !value.trim().is_empty())
+                .is_none()
         {
             return Outcome::new("NOT_AUTHORIZED", "authority_reference_missing");
         }
@@ -161,14 +172,20 @@ fn evaluate_input(input: &Value) -> Outcome {
             if !all_conditions {
                 return Outcome::new("REJECT_RELIANCE", "requalification_missing");
             }
-            return Outcome::new("QUALIFIED_FOR_DECLARED_PROFILE", "requalification_conditions_satisfied");
+            return Outcome::new(
+                "QUALIFIED_FOR_DECLARED_PROFILE",
+                "requalification_conditions_satisfied",
+            );
         }
     }
 
     if let Some(inventory) = input.get("dependency_inventory") {
         let expected_snapshot = text(assessment, "dependency_snapshot_id");
         let actual_snapshot = text(inventory, "snapshot_id");
-        if expected_snapshot.is_none() || actual_snapshot.is_none() || expected_snapshot != actual_snapshot {
+        if expected_snapshot.is_none()
+            || actual_snapshot.is_none()
+            || expected_snapshot != actual_snapshot
+        {
             return Outcome::new("INDETERMINATE", "dependency_snapshot_mismatch");
         }
 
@@ -199,7 +216,10 @@ fn evaluate_input(input: &Value) -> Outcome {
         }
     }
 
-    Outcome::new("QUALIFIED_FOR_DECLARED_PROFILE", "required_evidence_current_and_profile_bound")
+    Outcome::new(
+        "QUALIFIED_FOR_DECLARED_PROFILE",
+        "required_evidence_current_and_profile_bound",
+    )
 }
 
 /// Separate reference implementation: evaluates predicates in a different
@@ -213,16 +233,28 @@ fn reference_evaluate(input: &Value) -> Outcome {
     }
 
     if let Some(request) = input.get("operation_request") {
-        let asked = request.get("requested").and_then(Value::as_bool).unwrap_or(false);
-        let grant = request.get("authority_reference").and_then(Value::as_str).unwrap_or("");
+        let asked = request
+            .get("requested")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+        let grant = request
+            .get("authority_reference")
+            .and_then(Value::as_str)
+            .unwrap_or("");
         if asked && grant.trim().is_empty() {
             return Outcome::new("NOT_AUTHORIZED", "authority_reference_missing");
         }
     }
 
     if let Some(probe) = input.get("probe_assessment") {
-        let observed = probe.get("impact_receipt_present").and_then(Value::as_bool).unwrap_or(false);
-        let stopped = probe.get("acquisition_stop_confirmed").and_then(Value::as_bool).unwrap_or(false);
+        let observed = probe
+            .get("impact_receipt_present")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+        let stopped = probe
+            .get("acquisition_stop_confirmed")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
         let timed_out = probe.get("execution_state").and_then(Value::as_str) == Some("timed_out");
         if !(observed && stopped && !timed_out) {
             return Outcome::new("INDETERMINATE", "probe_impact_unknown_after_timeout");
@@ -244,14 +276,21 @@ fn reference_evaluate(input: &Value) -> Outcome {
             if detector.is_empty() || label_sources.is_empty() {
                 return Outcome::new("INDETERMINATE", "oracle_independence_unproven");
             }
-            if detector.iter().any(|left| label_sources.iter().any(|right| left == right)) {
+            if detector
+                .iter()
+                .any(|left| label_sources.iter().any(|right| left == right))
+            {
                 return Outcome::new("REJECT_RELIANCE", "oracle_shares_detector_input");
             }
         }
     }
 
     if let Some(recovery) = input.get("recovery_evidence") {
-        if recovery.get("requalification_required").and_then(Value::as_bool) == Some(true) {
+        if recovery
+            .get("requalification_required")
+            .and_then(Value::as_bool)
+            == Some(true)
+        {
             let required = [
                 "event_cleared",
                 "requalification_satisfied",
@@ -260,21 +299,38 @@ fn reference_evaluate(input: &Value) -> Outcome {
                 "configuration_matches",
                 "dependency_snapshot_current",
             ];
-            if required.iter().any(|key| recovery.get(*key).and_then(Value::as_bool) != Some(true)) {
+            if required
+                .iter()
+                .any(|key| recovery.get(*key).and_then(Value::as_bool) != Some(true))
+            {
                 return Outcome::new("REJECT_RELIANCE", "requalification_missing");
             }
-            return Outcome::new("QUALIFIED_FOR_DECLARED_PROFILE", "requalification_conditions_satisfied");
+            return Outcome::new(
+                "QUALIFIED_FOR_DECLARED_PROFILE",
+                "requalification_conditions_satisfied",
+            );
         }
     }
 
-    if input.pointer("/anomaly_observation/cause_adjudicated").and_then(Value::as_bool) == Some(false) {
+    if input
+        .pointer("/anomaly_observation/cause_adjudicated")
+        .and_then(Value::as_bool)
+        == Some(false)
+    {
         return Outcome::new("INDETERMINATE", "cause_not_adjudicated");
     }
-    if input.pointer("/rf_assessment/classification_state").and_then(Value::as_str) == Some("unknown") {
+    if input
+        .pointer("/rf_assessment/classification_state")
+        .and_then(Value::as_str)
+        == Some("unknown")
+    {
         return Outcome::new("INDETERMINATE", "unknown_rf_not_pnt_integrity");
     }
 
-    let as_of = input.pointer("/assessment/as_of").and_then(Value::as_str).unwrap_or("");
+    let as_of = input
+        .pointer("/assessment/as_of")
+        .and_then(Value::as_str)
+        .unwrap_or("");
     if let Some(sources) = input.get("sources").and_then(Value::as_array) {
         for source in sources {
             let status = source.get("integrity_status").and_then(Value::as_str);
@@ -292,22 +348,29 @@ fn reference_evaluate(input: &Value) -> Outcome {
                 return Outcome::new("INDETERMINATE", "acquisition_qualification_unknown");
             }
             let calibration = source.get("calibration_status").and_then(Value::as_str);
-            let until = source.get("calibration_valid_until").and_then(Value::as_str);
+            let until = source
+                .get("calibration_valid_until")
+                .and_then(Value::as_str);
             let past_validity = match (calibration, until) {
-                (Some(_), Some(until)) if is_canonical_utc(as_of) && is_canonical_utc(until) => until <= as_of,
+                (Some(_), Some(until)) if is_canonical_utc(as_of) && is_canonical_utc(until) => {
+                    until <= as_of
+                }
                 _ => false,
             };
             if matches!(calibration, Some("expired" | "revoked")) || past_validity {
                 return Outcome::new("REJECT_RELIANCE", "calibration_expired");
             }
-            if calibration == Some("unknown") || (calibration == Some("current") && until.is_none()) {
+            if calibration == Some("unknown") || (calibration == Some("current") && until.is_none())
+            {
                 return Outcome::new("INDETERMINATE", "calibration_validity_unknown");
             }
         }
     }
 
     if let Some(inventory) = input.get("dependency_inventory") {
-        let expected = input.pointer("/assessment/dependency_snapshot_id").and_then(Value::as_str);
+        let expected = input
+            .pointer("/assessment/dependency_snapshot_id")
+            .and_then(Value::as_str);
         let actual = inventory.get("snapshot_id").and_then(Value::as_str);
         if expected.is_none() || expected != actual {
             return Outcome::new("INDETERMINATE", "dependency_snapshot_mismatch");
@@ -325,17 +388,27 @@ fn reference_evaluate(input: &Value) -> Outcome {
         return Outcome::new("DEGRADED", "shared_clock_failure_domain");
     }
 
-    if input.pointer("/service_assessment/communications_state").and_then(Value::as_str) == Some("partitioned") {
+    if input
+        .pointer("/service_assessment/communications_state")
+        .and_then(Value::as_str)
+        == Some("partitioned")
+    {
         return Outcome::new("DEGRADED", "remote_context_unavailable");
     }
-    match input.pointer("/service_assessment/local_evidence_state").and_then(Value::as_str) {
+    match input
+        .pointer("/service_assessment/local_evidence_state")
+        .and_then(Value::as_str)
+    {
         Some("invalid") => return Outcome::new("REJECT_RELIANCE", "local_evidence_invalid"),
         Some("degraded") => return Outcome::new("DEGRADED", "local_evidence_degraded"),
         Some("unknown") => return Outcome::new("INDETERMINATE", "local_evidence_unknown"),
         _ => {}
     }
 
-    Outcome::new("QUALIFIED_FOR_DECLARED_PROFILE", "required_evidence_current_and_profile_bound")
+    Outcome::new(
+        "QUALIFIED_FOR_DECLARED_PROFILE",
+        "required_evidence_current_and_profile_bound",
+    )
 }
 
 fn source_clock_domains_unqualified(input: &Value) -> bool {
@@ -349,8 +422,14 @@ fn source_clock_domains_unqualified(input: &Value) -> bool {
             let domain_changed = left.get("clock_domain_id") != right.get("clock_domain_id");
             let scale_changed = left.get("clock_time_scale") != right.get("clock_time_scale");
             if domain_changed || scale_changed {
-                let left_correlation = left.get("clock_correlation_id").and_then(Value::as_str).unwrap_or("");
-                let right_correlation = right.get("clock_correlation_id").and_then(Value::as_str).unwrap_or("");
+                let left_correlation = left
+                    .get("clock_correlation_id")
+                    .and_then(Value::as_str)
+                    .unwrap_or("");
+                let right_correlation = right
+                    .get("clock_correlation_id")
+                    .and_then(Value::as_str)
+                    .unwrap_or("");
                 if left_correlation.trim().is_empty() || right_correlation.trim().is_empty() {
                     return true;
                 }
@@ -402,8 +481,13 @@ fn shared_clock_failure_domain(sources: Option<&Vec<Value>>, inventory: &Value) 
     if let Some(nodes) = inventory.get("nodes").and_then(Value::as_array) {
         for node in nodes {
             if text(node, "domain_type") == Some("clock") {
-                if let (Some(source), Some(domain)) = (text(node, "source_id"), text(node, "failure_domain_id")) {
-                    failure_domains.entry(domain.to_owned()).or_default().insert(source.to_owned());
+                if let (Some(source), Some(domain)) =
+                    (text(node, "source_id"), text(node, "failure_domain_id"))
+                {
+                    failure_domains
+                        .entry(domain.to_owned())
+                        .or_default()
+                        .insert(source.to_owned());
                 }
             }
         }
@@ -427,7 +511,10 @@ fn reference_detects_shared_clock(input: &Value) -> bool {
         return true;
     }
 
-    let Some(nodes) = input.pointer("/dependency_inventory/nodes").and_then(Value::as_array) else {
+    let Some(nodes) = input
+        .pointer("/dependency_inventory/nodes")
+        .and_then(Value::as_array)
+    else {
         return false;
     };
     let mut by_domain: BTreeMap<&str, BTreeSet<&str>> = BTreeMap::new();
@@ -543,7 +630,10 @@ pub fn validate_fixture_pack(document: &Value, source_bytes: &[u8]) -> Value {
     }
 
     let discovered_set: BTreeSet<String> = discovered.iter().cloned().collect();
-    let expected_set: BTreeSet<String> = EXPECTED_FIXTURE_IDS.iter().map(|id| (*id).to_owned()).collect();
+    let expected_set: BTreeSet<String> = EXPECTED_FIXTURE_IDS
+        .iter()
+        .map(|id| (*id).to_owned())
+        .collect();
     let discovery_complete = discovered.len() == EXPECTED_FIXTURE_IDS.len()
         && discovered_set == expected_set
         && duplicate_ids.is_empty();
@@ -617,8 +707,10 @@ mod tests {
     use jsonschema::draft202012;
     use serde_json::{json, Value};
 
-    const FIXTURES: &str = include_str!("../../../docs/standards/omsi/pnt-conformance-fixtures-0.1.json");
-    const FIXTURE_SCHEMA: &str = include_str!("../../../docs/standards/omsi/pnt-conformance-fixtures-0.1.schema.json");
+    const FIXTURES: &str =
+        include_str!("../../../docs/standards/omsi/pnt-conformance-fixtures-0.1.json");
+    const FIXTURE_SCHEMA: &str =
+        include_str!("../../../docs/standards/omsi/pnt-conformance-fixtures-0.1.schema.json");
     const REPORT_SCHEMA: &str = include_str!("../schema/pnt-conformance-report.schema.json");
 
     fn pack() -> Value {
@@ -628,10 +720,17 @@ mod tests {
     #[test]
     fn pnt_fixture_pack_matches_schema_and_executes_all_sixteen_cases() {
         let document = pack();
-        let schema: Value = serde_json::from_str(FIXTURE_SCHEMA).expect("PNT fixture schema parses");
-        assert!(draft202012::meta::is_valid(&schema), "PNT fixture schema is not valid Draft 2020-12");
+        let schema: Value =
+            serde_json::from_str(FIXTURE_SCHEMA).expect("PNT fixture schema parses");
+        assert!(
+            draft202012::meta::is_valid(&schema),
+            "PNT fixture schema is not valid Draft 2020-12"
+        );
         let validator = draft202012::new(&schema).expect("PNT fixture schema compiles");
-        assert!(validator.is_valid(&document), "PNT fixture pack does not match schema");
+        assert!(
+            validator.is_valid(&document),
+            "PNT fixture pack does not match schema"
+        );
 
         let report = validate_fixture_pack(&document, FIXTURES.as_bytes());
         assert_eq!(report["status"], "passed", "{report:#}");
@@ -642,10 +741,18 @@ mod tests {
         assert_eq!(report["reference_disagreement_count"], 0);
         assert_eq!(report["false_accept_count"], 0);
         assert_eq!(report["verification"]["status"], "passed");
-        let report_schema: Value = serde_json::from_str(REPORT_SCHEMA).expect("PNT report schema parses");
-        assert!(draft202012::meta::is_valid(&report_schema), "PNT report schema is not valid Draft 2020-12");
-        let report_validator = draft202012::new(&report_schema).expect("PNT report schema compiles");
-        assert!(report_validator.is_valid(&report), "PNT report does not match schema: {report:#}");
+        let report_schema: Value =
+            serde_json::from_str(REPORT_SCHEMA).expect("PNT report schema parses");
+        assert!(
+            draft202012::meta::is_valid(&report_schema),
+            "PNT report schema is not valid Draft 2020-12"
+        );
+        let report_validator =
+            draft202012::new(&report_schema).expect("PNT report schema compiles");
+        assert!(
+            report_validator.is_valid(&report),
+            "PNT report does not match schema: {report:#}"
+        );
     }
 
     #[test]
@@ -708,14 +815,17 @@ mod tests {
             "assessment": input["assessment"],
             "oracle_evidence": input["oracle_evidence"]
         });
-        let report = validate_fixture_pack(&json!({
-            "schema":"omsi.pnt-conformance-fixture-pack",
-            "version":"0.1.0-draft",
-            "profile_id":"omsi.pnt-resilience",
-            "profile_version":"0.1.0-draft",
-            "owner_issue":307,
-            "fixtures":[]
-        }), b"empty");
+        let report = validate_fixture_pack(
+            &json!({
+                "schema":"omsi.pnt-conformance-fixture-pack",
+                "version":"0.1.0-draft",
+                "profile_id":"omsi.pnt-resilience",
+                "profile_version":"0.1.0-draft",
+                "owner_issue":307,
+                "fixtures":[]
+            }),
+            b"empty",
+        );
         assert_eq!(report["status"], "failed");
         let _ = document;
     }

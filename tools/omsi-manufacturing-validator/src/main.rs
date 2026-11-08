@@ -1,7 +1,7 @@
 mod adapter;
 mod benchmark;
-mod provenance;
 mod pnt;
+mod provenance;
 mod replay;
 mod schema_coverage;
 
