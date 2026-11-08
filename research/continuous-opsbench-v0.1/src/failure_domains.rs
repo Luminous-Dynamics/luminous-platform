@@ -212,43 +212,79 @@ fn profile_closure(
     Ok(closure)
 }
 
+#[derive(Clone, Copy)]
+enum ProfileRole {
+    Collector,
+    Observer,
+}
+
+impl ProfileRole {
+    fn reason(
+        self,
+        collector: IndependenceReason,
+        observer: IndependenceReason,
+    ) -> IndependenceReason {
+        match self {
+            Self::Collector => collector,
+            Self::Observer => observer,
+        }
+    }
+}
+
 fn validate_profile(
     profile: &ControlDomainProfile,
     graph: &FailureDomainGraph,
     audited_at_tick: u64,
     policy: IndependencePolicy,
-    missing_reason: IndependenceReason,
-    unknown_reason: IndependenceReason,
-    stale_reason: IndependenceReason,
-    expired_reason: IndependenceReason,
-    future_reason: IndependenceReason,
-    digest_reason: IndependenceReason,
+    role: ProfileRole,
 ) -> Result<(), IndependenceReason> {
     if !non_empty(&profile.subject_id) {
         return Err(IndependenceReason::MalformedGraph);
     }
     match profile.state {
         InventoryState::Complete => {}
-        InventoryState::Missing => return Err(missing_reason),
-        InventoryState::Unknown => return Err(unknown_reason),
+        InventoryState::Missing => {
+            return Err(role.reason(
+                IndependenceReason::CollectorProfileMissing,
+                IndependenceReason::ObserverProfileMissing,
+            ));
+        }
+        InventoryState::Unknown => {
+            return Err(role.reason(
+                IndependenceReason::CollectorProfileUnknown,
+                IndependenceReason::ObserverProfileUnknown,
+            ));
+        }
     }
     if !valid_sha256(&profile.profile_digest) {
-        return Err(digest_reason);
+        return Err(role.reason(
+            IndependenceReason::CollectorProfileDigestInvalid,
+            IndependenceReason::ObserverProfileDigestInvalid,
+        ));
     }
     if profile.graph_revision != graph.revision {
         return Err(IndependenceReason::GraphRevisionMismatch);
     }
     if profile.observed_at_tick > audited_at_tick {
-        return Err(future_reason);
+        return Err(role.reason(
+            IndependenceReason::CollectorProfileFromFuture,
+            IndependenceReason::ObserverProfileFromFuture,
+        ));
     }
     if profile.valid_until_tick <= audited_at_tick {
-        return Err(expired_reason);
+        return Err(role.reason(
+            IndependenceReason::CollectorProfileExpired,
+            IndependenceReason::ObserverProfileExpired,
+        ));
     }
     if profile.valid_until_tick <= profile.observed_at_tick
         || audited_at_tick.saturating_sub(profile.observed_at_tick)
             > policy.maximum_inventory_age_ticks
     {
-        return Err(stale_reason);
+        return Err(role.reason(
+            IndependenceReason::CollectorProfileStale,
+            IndependenceReason::ObserverProfileStale,
+        ));
     }
     Ok(())
 }
@@ -278,24 +314,14 @@ pub fn audit_observer_independence(
         graph,
         audited_at_tick,
         policy,
-        IndependenceReason::CollectorProfileMissing,
-        IndependenceReason::CollectorProfileUnknown,
-        IndependenceReason::CollectorProfileStale,
-        IndependenceReason::CollectorProfileExpired,
-        IndependenceReason::CollectorProfileFromFuture,
-        IndependenceReason::CollectorProfileDigestInvalid,
+        ProfileRole::Collector,
     );
     let observer_valid = validate_profile(
         observer,
         graph,
         audited_at_tick,
         policy,
-        IndependenceReason::ObserverProfileMissing,
-        IndependenceReason::ObserverProfileUnknown,
-        IndependenceReason::ObserverProfileStale,
-        IndependenceReason::ObserverProfileExpired,
-        IndependenceReason::ObserverProfileFromFuture,
-        IndependenceReason::ObserverProfileDigestInvalid,
+        ProfileRole::Observer,
     );
 
     if let Err(reason) = collector_valid {
