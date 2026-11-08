@@ -83,9 +83,16 @@ jobs:
           cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
             validate-syncaas docs/standards/omsi/syncaas-annex-g-fixtures-0.1.json > "$report_file"
           jq -e '
-            .report_contract == "omsi-syncaas-annex-g-report/0.1" and
+            .report_contract == "omsi-syncaas-annex-g-report/0.2" and
             .status == "passed" and
-            .authority == "synthetic_annex_g_state_machine_and_record_consistency_only" and
+            .authority == "synthetic_base_edition_clockclass_and_annex_g_state_machine_only" and
+            .profile_baseline == "02/2026" and
+            .profile_amendment_status == "BASE_EDITION_ONLY_NOT_AMENDMENT_1_CONFORMANCE" and
+            .criterion_source_dataset_member == "parentDS.grandmasterClockQuality.clockClass" and
+            .criterion_threshold_dataset_member == "defaultDS.clockclassAvailabilityThreshold" and
+            .default_clockclass_availability_threshold == 6 and
+            .clockclass_ordering == "lower_numeric_value_is_better" and
+            .frequency_layer_criterion_status == "FURTHER_STUDY_NOT_SCORED" and
             .recommendation == "ITU-T G.8275" and
             .edition == "01/2026" and
             .annex == "G" and

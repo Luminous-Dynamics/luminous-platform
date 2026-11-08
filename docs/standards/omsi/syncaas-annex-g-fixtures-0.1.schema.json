@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:luminous:omsi:syncaas-annex-g-fixtures:0.1",
-  "title": "OMSI ITU-T G.8275 Annex G SyncaaS fixture pack",
+  "$id": "urn:luminous:omsi:syncaas-annex-g-fixtures:0.2",
+  "title": "OMSI ITU-T G.8275 base-edition SyncaaS fixture pack 0.2",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -18,10 +18,10 @@
       "const": "omsi.syncaas.annex-g-fixture-pack"
     },
     "version": {
-      "const": "0.1.0-draft"
+      "const": "0.2.0-draft"
     },
     "state": {
-      "const": "SYNTHETIC_INPUT_FIXTURES_EXECUTABLE"
+      "const": "SYNTHETIC_BASE_EDITION_FIXTURES_EXECUTABLE"
     },
     "standard": {
       "type": "object",
@@ -32,7 +32,9 @@
         "annex",
         "optional",
         "dataset_name",
-        "record_name"
+        "record_name",
+        "amendment_2026_08",
+        "notes"
       ],
       "properties": {
         "recommendation": {
@@ -52,6 +54,16 @@
         },
         "record_name": {
           "const": "ptpServiceAvailabilityPerformanceMetricsDataRecord"
+        },
+        "amendment_2026_08": {
+          "const": "NOT_APPLIED"
+        },
+        "notes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -106,7 +118,9 @@
             "additionalProperties": false,
             "required": [
               "itu_t_profile",
-              "edition"
+              "edition",
+              "profile_annex",
+              "amendment_2026_08"
             ],
             "properties": {
               "itu_t_profile": {
@@ -118,6 +132,15 @@
               "edition": {
                 "type": "string",
                 "minLength": 1
+              },
+              "profile_annex": {
+                "enum": [
+                  "M",
+                  "G"
+                ]
+              },
+              "amendment_2026_08": {
+                "const": "NOT_APPLIED"
               }
             }
           },
@@ -125,18 +148,22 @@
             "type": "object",
             "additionalProperties": false,
             "required": [
-              "criterion_id",
-              "threshold_ref",
+              "source_dataset_member",
+              "threshold_dataset_member",
+              "clockclass_availability_threshold",
               "classification_source_ref"
             ],
             "properties": {
-              "criterion_id": {
-                "type": "string",
-                "minLength": 1
+              "source_dataset_member": {
+                "const": "parentDS.grandmasterClockQuality.clockClass"
               },
-              "threshold_ref": {
-                "type": "string",
-                "minLength": 1
+              "threshold_dataset_member": {
+                "const": "defaultDS.clockclassAvailabilityThreshold"
+              },
+              "clockclass_availability_threshold": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
               },
               "classification_source_ref": {
                 "type": "string",
@@ -178,7 +205,7 @@
               "required": [
                 "sequence",
                 "period_id",
-                "criterion_state",
+                "clock_class_values",
                 "maintenance_window"
               ],
               "properties": {
@@ -189,15 +216,16 @@
                 "period_id": {
                   "type": "string"
                 },
-                "criterion_state": {
-                  "enum": [
-                    "N1S",
-                    "D1S",
-                    "UNOBSERVED"
-                  ]
-                },
                 "maintenance_window": {
                   "type": "boolean"
+                },
+                "clock_class_values": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 255
+                  }
                 }
               }
             }

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:luminous:omsi:syncaas-annex-g-report:0.1",
-  "title": "OMSI ITU-T G.8275 Annex G conformance report",
+  "$id": "urn:luminous:omsi:syncaas-annex-g-report:0.2",
+  "title": "OMSI ITU-T G.8275 base-edition SyncaaS conformance report",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -24,11 +24,19 @@
     "profile_groups",
     "per_case",
     "claim_ceiling",
-    "non_claims"
+    "non_claims",
+    "profile_baseline",
+    "profile_amendment_status",
+    "profile_specific_annexes",
+    "criterion_source_dataset_member",
+    "criterion_threshold_dataset_member",
+    "default_clockclass_availability_threshold",
+    "clockclass_ordering",
+    "frequency_layer_criterion_status"
   ],
   "properties": {
     "report_contract": {
-      "const": "omsi-syncaas-annex-g-report/0.1"
+      "const": "omsi-syncaas-annex-g-report/0.2"
     },
     "status": {
       "enum": [
@@ -37,7 +45,7 @@
       ]
     },
     "authority": {
-      "const": "synthetic_annex_g_state_machine_and_record_consistency_only"
+      "const": "synthetic_base_edition_clockclass_and_annex_g_state_machine_only"
     },
     "input_sha256": {
       "type": "string",
@@ -138,6 +146,33 @@
       "items": {
         "type": "string"
       }
+    },
+    "profile_baseline": {
+      "const": "02/2026"
+    },
+    "profile_amendment_status": {
+      "const": "BASE_EDITION_ONLY_NOT_AMENDMENT_1_CONFORMANCE"
+    },
+    "profile_specific_annexes": {
+      "const": {
+        "G.8275.1": "M",
+        "G.8275.2": "G"
+      }
+    },
+    "criterion_source_dataset_member": {
+      "const": "parentDS.grandmasterClockQuality.clockClass"
+    },
+    "criterion_threshold_dataset_member": {
+      "const": "defaultDS.clockclassAvailabilityThreshold"
+    },
+    "default_clockclass_availability_threshold": {
+      "const": 6
+    },
+    "clockclass_ordering": {
+      "const": "lower_numeric_value_is_better"
+    },
+    "frequency_layer_criterion_status": {
+      "const": "FURTHER_STUDY_NOT_SCORED"
     }
   }
 }
