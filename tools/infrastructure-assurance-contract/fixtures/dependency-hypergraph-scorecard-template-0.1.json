@@ -1,0 +1,68 @@
+{
+  "schema": "luminous.infrastructure-assurance-scorecard/0.1",
+  "run": {
+    "run_id": "TEMPLATE-NOT-A-RESULT",
+    "status": "not_run",
+    "protocol_id": "infrastructure-assurance-benchmark/0.1"
+  },
+  "track": {
+    "track_id": "DEP-HYPERGRAPH-001",
+    "profile_id": "emsr-dependency-hypergraph/0.1",
+    "decision_scope": "Declared common-dependency assessment for one exact source set, event time, domain and inventory snapshot.",
+    "domain": "dependency_assurance"
+  },
+  "claim_ceiling": "Template only. No benchmark was run and no performance or assurance result is asserted.",
+  "dataset": {
+    "dataset_id": "not_run",
+    "split_id": "not_run",
+    "split_role": "challenge",
+    "split_manifest_sha256": null,
+    "source_manifest_sha256": null,
+    "rights_status": "synthetic",
+    "grouping_keys": [],
+    "leakage_exclusions": []
+  },
+  "system_under_test": {
+    "name": "not_run",
+    "implementation_digest": null,
+    "configuration_digest": null,
+    "model_digest": null
+  },
+  "evaluator": {
+    "evaluator_id": "not_run",
+    "build_digest": null,
+    "reference_verifier_digest": null,
+    "independence_class": "not_assessed",
+    "truth_visibility": "not_released",
+    "truth_commitment_sha256": null,
+    "policy_digest": null
+  },
+  "environment": {
+    "os": "not_run",
+    "architecture": "not_run",
+    "runtime": "not_run",
+    "hardware": "not_run"
+  },
+  "evidence": {
+    "input_bundle_sha256": null,
+    "output_bundle_sha256": null,
+    "verification_report_sha256": null,
+    "raw_artifacts": []
+  },
+  "results": {
+    "hard_gates": [
+      {
+        "gate_id": "TEMPLATE-NOT-RUN",
+        "outcome": "not_run",
+        "sample_count": 0,
+        "failure_count": 0,
+        "description": "Template placeholder only; zero counts are not measured outcomes."
+      }
+    ],
+    "metric_families": {}
+  },
+  "limitations": [
+    "This file is a schema-validation template, not an evaluation result.",
+    "A completed scorecard requires exact manifests, implementation and evaluator digests, a sealed truth commitment, independent report verification and measured metric denominators."
+  ]
+}
