@@ -85,3 +85,10 @@ The report schema is [benchmark-report.schema.json](schema/benchmark-report.sche
 The eight current vectors are a microbenchmark smoke workload, **not** enough to establish a production service-level objective. Compare numbers only with a matching corpus digest and named hardware/toolchain. Before claiming a production SLO, expand to at least 1,000 behaviorally distinct cases, pin a reference host, capture multiple release-mode runs, and measure peak memory separately.
 
 See [the OMSI benchmark scorecard](../../docs/standards/omsi/benchmark-scorecard-0.1.md) for proposed correctness, tamper-resistance, latency, throughput, memory, interoperability, privacy and multi-agent acceptance targets. These are targets, not measured results.
+
+
+## PMTime reference integrity
+
+The `validate-pmtime-fixtures` command evaluates the synthetic PMTime source/record-time integrity profile and binds its dependency assessments to the Mycelix time-qualified dependency-hypergraph report contract. It is separate from the SyncaaS Annex G availability-state evaluator.
+
+See [PMTime reference-integrity profile 0.1](../../docs/standards/omsi/pmtime-reference-integrity-0.1.md) and the frozen [17-case challenge pack](../../docs/standards/omsi/pmtime-integrity-fixtures-0.1.json). The result does not measure physical time accuracy or prove physical independence.
