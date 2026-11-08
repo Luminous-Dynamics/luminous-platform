@@ -560,6 +560,21 @@ fn process_event(
 ) -> Option<ScheduleStatus> {
     metrics.source_records += 1;
 
+    if event.source_id != watch.source_id {
+        metrics.scope_rejections += 1;
+        records.push(EventRecordResult {
+            event_id: event.event_id.clone(),
+            incident_id: event.incident_id.clone(),
+            sequence: event.sequence,
+            delivered_tick: event.delivered_tick,
+            processed_tick: Some(processing_tick),
+            disposition: RecordDisposition::ScopeRejected,
+            detection_latency_ticks: None,
+            deadline_met: false,
+        });
+        return Some(ScheduleStatus::SourceIdentityMismatch);
+    }
+
     let previous = checkpoint.seen_event_ids.get(&event.event_id);
     if let Some((epoch, sequence, digest)) = previous {
         if epoch == &event.source_epoch
@@ -648,8 +663,7 @@ fn process_event(
     );
     metrics.unique_events += 1;
 
-    let scope_matches = event.source_id == watch.source_id
-        && event.tenant_id == watch.tenant_id
+    let scope_matches = event.tenant_id == watch.tenant_id
         && event.target_id == watch.target_id
         && event.purpose_id == watch.purpose_id
         && event.event_type == watch.event_type;
