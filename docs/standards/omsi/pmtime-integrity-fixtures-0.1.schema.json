@@ -162,7 +162,13 @@
         "configuration_change_receipt_sha256",
         "timestamp_uncertainty_ns",
         "signature_status",
-        "calibration"
+        "calibration",
+        "timestamp_source_type",
+        "clock_domain_id",
+        "record_received_tai_ns",
+        "adapter_mapping_version",
+        "record_content_sha256",
+        "timestamp_uncertainty_budget_sha256"
       ],
       "properties": {
         "record_index": {
@@ -223,6 +229,44 @@
         },
         "calibration": {
           "$ref": "#/$defs/calibration"
+        },
+        "timestamp_source_type": {
+          "enum": [
+            "external_reference_clock",
+            "gnss_reference",
+            "ptp_clock",
+            "local_oscillator",
+            "remote_timing_service",
+            "unknown"
+          ]
+        },
+        "clock_domain_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "record_received_tai_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "adapter_mapping_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "record_content_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "timestamp_uncertainty_budget_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "time_scale_mapping_sha256": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       }
     },
