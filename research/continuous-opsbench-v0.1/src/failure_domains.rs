@@ -304,14 +304,6 @@ pub fn audit_observer_independence(
     let mut report =
         IndependenceReport::new(&collector.subject_id, &observer.subject_id);
 
-    if non_empty(&collector.subject_id) && collector.subject_id == observer.subject_id {
-        report.add_reason(IndependenceReason::SameSubjectIdentity);
-        report.shared_dependencies = vec![format!("subject-identity:{}", collector.subject_id)];
-        report.shared_failure_domain_classes = vec!["subject-identity".into()];
-        report.status = IndependenceStatus::SharedDeclaredDependency;
-        return report;
-    }
-
     if let Err(reason) = validate_graph(graph) {
         report.add_reason(reason);
         report.status = IndependenceStatus::Invalid;
@@ -349,6 +341,14 @@ pub fn audit_observer_independence(
         } else {
             IndependenceStatus::Indeterminate
         };
+        return report;
+    }
+
+    if collector.subject_id == observer.subject_id {
+        report.add_reason(IndependenceReason::SameSubjectIdentity);
+        report.shared_dependencies = vec![format!("subject-identity:{}", collector.subject_id)];
+        report.shared_failure_domain_classes = vec!["subject-identity".into()];
+        report.status = IndependenceStatus::SharedDeclaredDependency;
         return report;
     }
 
