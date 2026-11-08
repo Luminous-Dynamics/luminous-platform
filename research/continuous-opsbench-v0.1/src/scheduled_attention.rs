@@ -9,9 +9,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::event_schedule::{
-    evaluate_event_schedule, AttentionStrategy, ConditionOutcome, EventScheduleResult,
-    EventWatch, Persistence, RecordDisposition, ScheduleError, ScheduleStatus, SourceEvent,
-    TimelineRecord,
+    evaluate_event_schedule, AttentionStrategy, ConditionOutcome, EventScheduleResult, EventWatch,
+    Persistence, RecordDisposition, ScheduleError, ScheduleStatus, SourceEvent, TimelineRecord,
 };
 use crate::stability::{
     run_stability_scenario, PlantObservation, StabilityConfig, StabilityError, StabilityRun,
@@ -187,7 +186,9 @@ fn authority_current_at(authority: &AuthoritySnapshot, watch: &WatchSpec, tick: 
         && authority.purpose_id == watch.purpose_id
         && tick >= authority.valid_from_tick
         && tick < authority.expires_at_tick
-        && authority.revoked_at_tick.is_none_or(|revoked| tick < revoked)
+        && authority
+            .revoked_at_tick
+            .is_none_or(|revoked| tick < revoked)
 }
 
 fn watch_contracts_match(input: &ScheduledAttentionInput<'_>) -> bool {
@@ -332,8 +333,11 @@ fn verify_policy_decisions(
     decisions: &[SourceQualifiedEventDecision],
     eligible_probe_ids: &[String],
 ) -> Result<(), ScheduledAttentionError> {
-    let expected: BTreeSet<SourceQualifiedEventIdentity> =
-        wake.events.iter().map(|event| event.identity.clone()).collect();
+    let expected: BTreeSet<SourceQualifiedEventIdentity> = wake
+        .events
+        .iter()
+        .map(|event| event.identity.clone())
+        .collect();
     if expected.len() != wake.events.len() {
         return Err(ScheduledAttentionError::MalformedWake);
     }
@@ -345,10 +349,12 @@ fn verify_policy_decisions(
         if !seen.insert(decision.event.clone()) {
             return Err(ScheduledAttentionError::DuplicatePolicyDisposition);
         }
-        if let SourceQualifiedDisposition::SelectReadOnlyProbe { probe_id } =
-            &decision.disposition
+        if let SourceQualifiedDisposition::SelectReadOnlyProbe { probe_id } = &decision.disposition
         {
-            if !eligible_probe_ids.iter().any(|eligible| eligible == probe_id) {
+            if !eligible_probe_ids
+                .iter()
+                .any(|eligible| eligible == probe_id)
+            {
                 return Err(ScheduledAttentionError::IneligibleProbeProposal);
             }
         }
@@ -396,10 +402,13 @@ pub fn run_scheduled_attention(
     {
         return Err(ScheduledAttentionError::MalformedWake);
     }
-    if schedule.status != ScheduleStatus::Completed
-        && schedule.status != ScheduleStatus::Quiet
-    {
-        return Err(ScheduledAttentionError::ScheduleNotComplete(schedule.status));
+    if !matches!(
+        schedule.status,
+        ScheduleStatus::Completed | ScheduleStatus::Quiet
+    ) {
+        return Err(ScheduledAttentionError::ScheduleNotComplete(
+            schedule.status,
+        ));
     }
 
     let plant = run_stability_scenario(input.plant, &[])?;
@@ -459,12 +468,8 @@ pub fn run_scheduled_attention(
                 record.sequence,
                 record.delivered_tick,
             )?;
-            let event = scheduled_event(
-                source_event,
-                wake.wake_tick,
-                input.watch,
-                input.authority,
-            )?;
+            let event =
+                scheduled_event(source_event, wake.wake_tick, input.watch, input.authority)?;
             if !identities.insert(event.identity.clone()) {
                 return Err(ScheduledAttentionError::MalformedWake);
             }
@@ -552,9 +557,7 @@ pub fn run_scheduled_attention(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::event_schedule::{
-        AuthorityWindow, EventCheckpoint, SourceEvent, TimelineRecord,
-    };
+    use crate::event_schedule::{AuthorityWindow, EventCheckpoint, SourceEvent, TimelineRecord};
 
     struct ScriptedPolicy {
         disposition: SourceQualifiedDisposition,
@@ -791,9 +794,18 @@ mod tests {
         assert_eq!(policy.calls, 1);
         assert_eq!(result.metrics.policy_invocations, 1);
         assert_eq!(result.metrics.wake_events, 1);
-        assert_eq!(result.decisions[0].wake.events[0].identity.source_epoch, "epoch-1");
-        assert_eq!(result.decisions[0].wake.events[0].identity.event_id, "evt-10");
-        assert_eq!(result.decisions[0].wake.events[0].identity.incident_id, "incident-a");
+        assert_eq!(
+            result.decisions[0].wake.events[0].identity.source_epoch,
+            "epoch-1"
+        );
+        assert_eq!(
+            result.decisions[0].wake.events[0].identity.event_id,
+            "evt-10"
+        );
+        assert_eq!(
+            result.decisions[0].wake.events[0].identity.incident_id,
+            "incident-a"
+        );
         assert_eq!(result.decisions[0].wake.events[0].identity.sequence, 10);
         assert_eq!(
             result.decisions[0].wake.events[0].identity.payload_digest,
@@ -839,7 +851,11 @@ mod tests {
         assert_eq!(result.metrics.abstentions, 2);
         assert_eq!(policy.calls, 1);
         assert_eq!(
-            policy.seen.iter().map(|event| event.incident_id.as_str()).collect::<Vec<_>>(),
+            policy
+                .seen
+                .iter()
+                .map(|event| event.incident_id.as_str())
+                .collect::<Vec<_>>(),
             vec!["incident-a", "incident-b"]
         );
     }
@@ -869,11 +885,9 @@ mod tests {
             &timeline,
             AttentionStrategy::EventTriggered,
         );
-        let mut policy = ScriptedPolicy::new(
-            SourceQualifiedDisposition::SelectReadOnlyProbe {
-                probe_id: "probe-queue".into(),
-            },
-        );
+        let mut policy = ScriptedPolicy::new(SourceQualifiedDisposition::SelectReadOnlyProbe {
+            probe_id: "probe-queue".into(),
+        });
 
         let result = run_scheduled_attention(&input, &mut policy).unwrap();
 
@@ -909,11 +923,9 @@ mod tests {
             &timeline,
             AttentionStrategy::EventTriggered,
         );
-        let mut policy = ScriptedPolicy::new(
-            SourceQualifiedDisposition::SelectReadOnlyProbe {
-                probe_id: "write-everything".into(),
-            },
-        );
+        let mut policy = ScriptedPolicy::new(SourceQualifiedDisposition::SelectReadOnlyProbe {
+            probe_id: "write-everything".into(),
+        });
 
         assert_eq!(
             run_scheduled_attention(&input, &mut policy),
