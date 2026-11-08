@@ -23,6 +23,7 @@ const EXPECTED_CASE_IDS: [&str; 14] = [
     "PMT-015-delayed-ingest-preserves-event-time",
     "PMT-016-period-gap-unknown",
     "PMT-017-source-switch-bound-to-new-config",
+    "PMT-018-each-record-needs-its-own-dependency-assessments",
 ];
 
 const REQUIRED_VERIFIER_CHECKS: [&str; 5] = [
