@@ -83,6 +83,8 @@ pub struct EventRecord {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct IncidentWake {
+    /// Exact first source-qualified event that caused this incident wake.
+    pub event: EventEnvelope,
     pub incident_id: String,
     pub first_event_id: String,
     /// Includes every unique qualifying event coalesced into this wake.
@@ -478,6 +480,7 @@ pub fn evaluate_event_schedule(
         }
 
         let wake = IncidentWake {
+            event: envelope.clone(),
             incident_id: scheduled.incident_id.clone(),
             first_event_id: envelope.event_id.clone(),
             event_ids: vec![envelope.event_id.clone()],
