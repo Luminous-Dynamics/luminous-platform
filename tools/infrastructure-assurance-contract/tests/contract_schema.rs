@@ -75,3 +75,54 @@ fn registry_track_ids_are_unique_and_have_explicit_claim_ceilings() {
     assert!(registry["external_comparators"].is_array());
     assert!(registry["standards_snapshot"].is_array());
 }
+
+#[test]
+fn completed_scorecard_requires_a_measured_family_and_executed_gates() {
+    let digest = "a".repeat(64);
+    let mut scorecard: Value = serde_json::from_str(SCORECARD_TEMPLATE).expect("template");
+    scorecard["run"]["status"] = json!("complete");
+    scorecard["dataset"]["split_manifest_sha256"] = json!(digest);
+    scorecard["dataset"]["source_manifest_sha256"] = json!(digest);
+    scorecard["system_under_test"]["implementation_digest"] = json!(digest);
+    scorecard["system_under_test"]["configuration_digest"] = json!(digest);
+    scorecard["evaluator"]["build_digest"] = json!(digest);
+    scorecard["evaluator"]["reference_verifier_digest"] = json!(digest);
+    scorecard["evaluator"]["truth_commitment_sha256"] = json!(digest);
+    scorecard["evaluator"]["policy_digest"] = json!(digest);
+    scorecard["evidence"]["input_bundle_sha256"] = json!(digest);
+    scorecard["evidence"]["output_bundle_sha256"] = json!(digest);
+    scorecard["evidence"]["verification_report_sha256"] = json!(digest);
+    scorecard["results"]["hard_gates"][0]["outcome"] = json!("pass");
+    scorecard["results"]["hard_gates"][0]["sample_count"] = json!(10);
+    scorecard["results"]["metric_families"] = json!({
+        "dependency_assurance": [{
+            "metric_id": "false_independent_rate",
+            "value": 0.0,
+            "unit": "fraction",
+            "aggregation": "rate",
+            "sample_count": 10,
+            "population_id": "frozen-negative-controls-v0.1",
+            "numerator": 0,
+            "denominator": 10,
+            "uncertainty": { "method": "exact-binomial" }
+        }]
+    });
+    assert!(schema_validator().is_valid(&scorecard));
+
+    scorecard["results"]["metric_families"]["dependency_assurance"] = json!([]);
+    assert!(!schema_validator().is_valid(&scorecard));
+
+    scorecard["results"]["metric_families"]["dependency_assurance"] = json!([{
+        "metric_id": "false_independent_rate",
+        "value": 0.0,
+        "unit": "fraction",
+        "aggregation": "rate",
+        "sample_count": 10,
+        "population_id": "frozen-negative-controls-v0.1",
+        "numerator": 0,
+        "denominator": 10,
+        "uncertainty": { "method": "exact-binomial" }
+    }]);
+    scorecard["results"]["hard_gates"][0]["outcome"] = json!("not_run");
+    assert!(!schema_validator().is_valid(&scorecard));
+}
