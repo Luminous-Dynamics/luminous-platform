@@ -9,9 +9,9 @@ fn frozen_pmtime_pack_executes_all_fourteen_cases() {
     let document: Value = serde_json::from_str(FIXTURES).expect("fixture JSON");
     let report = validate_fixture_pack(&document, FIXTURES.as_bytes());
     assert_eq!(report["status"], "passed", "{report:#}");
-    assert_eq!(report["case_count_expected"], 14);
-    assert_eq!(report["case_count_discovered"], 14);
-    assert_eq!(report["passed_count"], 14);
+    assert_eq!(report["case_count_expected"], 17);
+    assert_eq!(report["case_count_discovered"], 17);
+    assert_eq!(report["passed_count"], 17);
     assert_eq!(report["failure_count"], 0);
 }
 
