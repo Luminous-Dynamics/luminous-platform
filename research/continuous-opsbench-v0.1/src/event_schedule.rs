@@ -1453,7 +1453,6 @@ pub fn evaluate_event_schedule_with_gap_policy(
                 watch,
                 restart,
                 processing_tick,
-                gap_policy,
                 &mut checkpoint,
                 &mut metrics,
                 &mut records,
@@ -1604,6 +1603,26 @@ mod tests {
 
     fn run(strategy: AttentionStrategy, timeline: &[TimelineRecord]) -> EventScheduleResult {
         evaluate_event_schedule(&watch(), &authority(), strategy, timeline, 39, None).unwrap()
+    }
+
+    fn run_with_gap(
+        strategy: AttentionStrategy,
+        timeline: &[TimelineRecord],
+        horizon_tick: u64,
+        checkpoint: Option<EventCheckpoint>,
+        timeout_ticks: u64,
+        max_buffered_events: usize,
+    ) -> EventScheduleResult {
+        evaluate_event_schedule_with_gap_policy(
+            &watch(),
+            &authority(),
+            strategy,
+            timeline,
+            horizon_tick,
+            checkpoint,
+            SequenceGapPolicy::buffered(timeout_ticks, max_buffered_events),
+        )
+        .unwrap()
     }
 
     fn watermark(next_sequence: u64, observed_tick: u64, available: bool) -> SourceWatermark {
@@ -2028,6 +2047,278 @@ mod tests {
         assert_eq!(result.status, ScheduleStatus::DeliveryGap);
         assert_eq!(result.metrics.sequence_gaps, 1);
         assert_eq!(result.metrics.wakeups, 0);
+    }
+
+    #[test]
+    fn buffered_gap_repairs_before_deadline_and_releases_in_sequence_order() {
+        let later = event(
+            "event-2",
+            "incident-2",
+            2,
+            2,
+            3,
+            30,
+            12,
+            Persistence::PersistentCondition,
+        );
+        let missing = event(
+            "event-1",
+            "incident-1",
+            1,
+            3,
+            4,
+            30,
+            12,
+            Persistence::PersistentCondition,
+        );
+        let result = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[
+                TimelineRecord::Event(later),
+                TimelineRecord::Event(missing),
+            ],
+            10,
+            None,
+            5,
+            8,
+        );
+
+        assert_eq!(result.status, ScheduleStatus::Completed);
+        assert_eq!(result.metrics.buffered_events, 1);
+        assert_eq!(result.metrics.gap_repairs, 1);
+        assert_eq!(result.metrics.gap_timeouts, 0);
+        assert_eq!(result.checkpoint.next_sequence, 3);
+        assert!(result.checkpoint.buffered_events.is_empty());
+        assert_eq!(result.checkpoint.gap_deadline_tick, None);
+        assert_eq!(result.wakes.len(), 2);
+        assert_eq!(result.wakes[0].event_ids, vec!["event-1"]);
+        assert_eq!(result.wakes[1].event_ids, vec!["event-2"]);
+    }
+
+    #[test]
+    fn buffered_gap_checkpoint_survives_runner_restart_and_repairs() {
+        let later = event(
+            "event-2",
+            "incident-2",
+            2,
+            2,
+            3,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let first = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(later)],
+            5,
+            None,
+            5,
+            8,
+        );
+        assert_eq!(first.status, ScheduleStatus::DeliveryGapPending);
+        assert_eq!(first.checkpoint.gap_started_at_tick, Some(3));
+        assert_eq!(first.checkpoint.gap_deadline_tick, Some(8));
+        assert_eq!(first.checkpoint.buffered_events.len(), 1);
+
+        let missing = event(
+            "event-1",
+            "incident-1",
+            1,
+            5,
+            6,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let resumed = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(missing)],
+            7,
+            Some(first.checkpoint),
+            5,
+            8,
+        );
+        assert_eq!(resumed.status, ScheduleStatus::Completed);
+        assert_eq!(resumed.metrics.gap_repairs, 1);
+        assert_eq!(resumed.checkpoint.next_sequence, 3);
+        assert!(resumed.checkpoint.buffered_events.is_empty());
+        assert_eq!(resumed.wakes.len(), 2);
+    }
+
+    #[test]
+    fn event_arriving_exactly_at_gap_deadline_cannot_repair_gap() {
+        let later = event(
+            "event-2",
+            "incident-2",
+            2,
+            2,
+            3,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let first = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(later)],
+            5,
+            None,
+            5,
+            8,
+        );
+        let missing = event(
+            "event-1",
+            "incident-1",
+            1,
+            7,
+            8,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let late = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(missing)],
+            8,
+            Some(first.checkpoint),
+            5,
+            8,
+        );
+        assert_eq!(late.status, ScheduleStatus::DeliveryGap);
+        assert_eq!(late.metrics.gap_timeouts, 1);
+        assert_eq!(late.metrics.wakeups, 0);
+        assert_eq!(late.checkpoint.next_sequence, 1);
+        assert_eq!(late.checkpoint.buffered_events.len(), 1);
+    }
+
+    #[test]
+    fn final_watermark_without_later_event_reports_pending_then_timeout() {
+        let pending = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Watermark(watermark(3, 4, true))],
+            7,
+            None,
+            5,
+            8,
+        );
+        assert_eq!(pending.status, ScheduleStatus::DeliveryGapPending);
+        assert_eq!(pending.checkpoint.gap_started_at_tick, Some(4));
+        assert_eq!(pending.checkpoint.gap_deadline_tick, Some(9));
+
+        let timed_out = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[],
+            9,
+            Some(pending.checkpoint),
+            5,
+            8,
+        );
+        assert_eq!(timed_out.status, ScheduleStatus::DeliveryGap);
+        assert_eq!(timed_out.metrics.gap_timeouts, 1);
+        assert_ne!(timed_out.status, ScheduleStatus::Quiet);
+    }
+
+    #[test]
+    fn duplicate_buffered_delivery_is_suppressed_without_extra_buffer_slot() {
+        let first = event(
+            "event-2",
+            "incident-2",
+            2,
+            2,
+            3,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let result = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[
+                TimelineRecord::Event(first.clone()),
+                TimelineRecord::Event(first),
+            ],
+            6,
+            None,
+            5,
+            8,
+        );
+        assert_eq!(result.status, ScheduleStatus::DeliveryGapPending);
+        assert_eq!(result.metrics.buffered_events, 1);
+        assert_eq!(result.metrics.duplicates_suppressed, 1);
+        assert_eq!(result.checkpoint.buffered_events.len(), 1);
+    }
+
+    #[test]
+    fn different_identity_reusing_buffered_sequence_is_rejected() {
+        let first = event(
+            "event-2",
+            "incident-2",
+            2,
+            2,
+            3,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let collision = event(
+            "event-2b",
+            "incident-2b",
+            2,
+            3,
+            4,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let result = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[
+                TimelineRecord::Event(first),
+                TimelineRecord::Event(collision),
+            ],
+            6,
+            None,
+            5,
+            8,
+        );
+        assert_eq!(result.status, ScheduleStatus::IdentityCollision);
+        assert_eq!(result.metrics.identity_collisions, 1);
+        assert_eq!(result.checkpoint.buffered_events.len(), 1);
+    }
+
+    #[test]
+    fn buffered_event_budget_is_bounded() {
+        let timeline = vec![
+            TimelineRecord::Event(event(
+                "event-2",
+                "incident-2",
+                2,
+                2,
+                3,
+                30,
+                15,
+                Persistence::PersistentCondition,
+            )),
+            TimelineRecord::Event(event(
+                "event-3",
+                "incident-3",
+                3,
+                3,
+                4,
+                30,
+                15,
+                Persistence::PersistentCondition,
+            )),
+        ];
+        let result = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &timeline,
+            6,
+            None,
+            5,
+            1,
+        );
+        assert_eq!(result.status, ScheduleStatus::BudgetExhausted);
+        assert_eq!(result.metrics.gap_buffer_overflows, 1);
+        assert_eq!(result.checkpoint.buffered_events.len(), 1);
     }
 
     #[test]
