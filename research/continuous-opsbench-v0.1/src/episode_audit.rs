@@ -808,7 +808,9 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
                         let request = linked[0];
                         if request.wake_decision_id != decision.decision_id
                             || request.source_id != decision.source_id
+                            || request.source_id != watch.source_id
                             || request.payload_digest != decision.payload_digest
+                            || !valid_sha256(&request.payload_digest)
                             || request.event_id != event.event_id
                             || request.incident_id != event.incident_id
                             || request.event_sequence != event.sequence
@@ -1607,6 +1609,41 @@ mod tests {
         assert_eq!(report.impacts_verified, 1);
         assert_eq!(report.decisions_verified, 1);
         assert_eq!(report.decisions[0].realized_loss_reduction_ppm, 300_000);
+    }
+
+    #[test]
+    fn admission_request_cannot_substitute_source_or_payload_digest() {
+        let mut requests = request();
+        requests[0].payload_digest = format!("sha256:{:064x}", 11);
+        let report = run(
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &requests,
+            &evidence(),
+            12,
+        );
+        assert_eq!(report.status, AuditStatus::Failed);
+        assert!(report
+            .failures
+            .contains(&AuditFailure::RequestNotAuthorizedByWake));
+
+        let mut decisions = wake_decision();
+        decisions[0].source_id = "substituted-source".into();
+        let report = run(
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &decisions,
+            &request(),
+            &evidence(),
+            12,
+        );
+        assert_eq!(report.status, AuditStatus::Failed);
+        assert!(report.failures.contains(&AuditFailure::WakeRecordMalformed));
     }
 
     #[test]
