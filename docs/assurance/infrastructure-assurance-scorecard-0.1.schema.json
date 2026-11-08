@@ -229,6 +229,10 @@
             "properties": {
               "failure_count": {
                 "const": 0
+              },
+              "sample_count": {
+                "type": "integer",
+                "minimum": 1
               }
             }
           }
