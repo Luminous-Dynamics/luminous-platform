@@ -9,6 +9,7 @@ pub mod temporal;
 pub mod watch_probe;
 pub mod paired_attention;
 pub mod event_schedule;
+pub mod event_attention;
 
 use std::collections::{BTreeMap, BTreeSet};
 
