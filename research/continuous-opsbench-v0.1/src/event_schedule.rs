@@ -308,69 +308,78 @@ fn disposition(
     index
 }
 
+struct EventProcessingContext<'a> {
+    watch: &'a WatchSpec,
+    authority: &'a AuthoritySnapshot,
+    metrics: &'a mut EventScheduleMetrics,
+    dispositions: &'a mut [EventDispositionRecord],
+    wake_candidates: &'a mut BTreeMap<(u64, u64), WakeCandidate>,
+}
+
 fn process_ordered_event(
     buffered: BufferedEvent,
     effective_processing_tick: u64,
-    watch: &WatchSpec,
-    authority: &AuthoritySnapshot,
-    metrics: &mut EventScheduleMetrics,
-    dispositions: &mut [EventDispositionRecord],
-    wake_candidates: &mut BTreeMap<(u64, u64), WakeCandidate>,
     source_epoch: u64,
+    context: &mut EventProcessingContext<'_>,
 ) -> Result<(), EventRunStatus> {
     let event = buffered.event;
-    metrics.in_order_records += 1;
+    context.metrics.in_order_records += 1;
 
-    if !authority_current_at(authority, watch, event.delivered_at_tick)
-        || !authority_current_at(authority, watch, effective_processing_tick)
+    if !authority_current_at(context.authority, context.watch, event.delivered_at_tick)
+        || !authority_current_at(
+            context.authority,
+            context.watch,
+            effective_processing_tick,
+        )
     {
         return Err(EventRunStatus::AuthorityRevokedOrExpired);
     }
 
-    if event.event_time_tick < watch.starts_at_tick
-        || event.delivered_at_tick < watch.starts_at_tick
-        || effective_processing_tick < watch.starts_at_tick
+    if event.event_time_tick < context.watch.starts_at_tick
+        || event.delivered_at_tick < context.watch.starts_at_tick
+        || effective_processing_tick < context.watch.starts_at_tick
     {
-        dispositions[buffered.record_index].disposition = EventDisposition::Stale;
-        metrics.stale_records += 1;
+        context.dispositions[buffered.record_index].disposition = EventDisposition::Stale;
+        context.metrics.stale_records += 1;
         return Ok(());
     }
-    if effective_processing_tick >= watch.expires_at_tick {
+    if effective_processing_tick >= context.watch.expires_at_tick {
         return Err(EventRunStatus::Expired);
     }
 
-    let in_scope = event.tenant_id == watch.tenant_id
-        && event.target_id == watch.target_id
-        && event.purpose_id == watch.purpose_id;
+    let in_scope = event.tenant_id == context.watch.tenant_id
+        && event.target_id == context.watch.target_id
+        && event.purpose_id == context.watch.purpose_id;
     if !in_scope {
-        dispositions[buffered.record_index].disposition = EventDisposition::OutOfScope;
-        dispositions[buffered.record_index].evaluated_at_tick = effective_processing_tick;
-        metrics.out_of_scope_records += 1;
+        context.dispositions[buffered.record_index].disposition = EventDisposition::OutOfScope;
+        context.dispositions[buffered.record_index].evaluated_at_tick = effective_processing_tick;
+        context.metrics.out_of_scope_records += 1;
         return Ok(());
     }
 
-    if event.event_type != watch.event_type || !event.condition_met {
-        dispositions[buffered.record_index].disposition = EventDisposition::Irrelevant;
-        dispositions[buffered.record_index].evaluated_at_tick = effective_processing_tick;
-        metrics.irrelevant_records += 1;
+    if event.event_type != context.watch.event_type || !event.condition_met {
+        context.dispositions[buffered.record_index].disposition = EventDisposition::Irrelevant;
+        context.dispositions[buffered.record_index].evaluated_at_tick = effective_processing_tick;
+        context.metrics.irrelevant_records += 1;
         return Ok(());
     }
 
     if effective_processing_tick > event.valid_until_tick {
-        dispositions[buffered.record_index].disposition = EventDisposition::Stale;
-        dispositions[buffered.record_index].evaluated_at_tick = effective_processing_tick;
-        metrics.stale_records += 1;
+        context.dispositions[buffered.record_index].disposition = EventDisposition::Stale;
+        context.dispositions[buffered.record_index].evaluated_at_tick = effective_processing_tick;
+        context.metrics.stale_records += 1;
         return Ok(());
     }
     if effective_processing_tick > event.response_deadline_tick {
-        dispositions[buffered.record_index].disposition = EventDisposition::DeadlineMissed;
-        dispositions[buffered.record_index].evaluated_at_tick = effective_processing_tick;
-        metrics.deadline_missed_records += 1;
+        context.dispositions[buffered.record_index].disposition = EventDisposition::DeadlineMissed;
+        context.dispositions[buffered.record_index].evaluated_at_tick = effective_processing_tick;
+        context.metrics.deadline_missed_records += 1;
         return Ok(());
     }
 
-    metrics.valid_relevant_events += 1;
-    let candidate = wake_candidates
+    context.metrics.valid_relevant_events += 1;
+    let candidate = context
+        .wake_candidates
         .entry((effective_processing_tick, source_epoch))
         .or_default();
     candidate.members.push(WakeMember {
@@ -384,7 +393,7 @@ fn process_ordered_event(
         record_index: buffered.record_index,
     });
     if buffered.was_out_of_order {
-        metrics.sequence_gaps_repaired += 1;
+        context.metrics.sequence_gaps_repaired += 1;
     }
     Ok(())
 }
@@ -648,16 +657,17 @@ pub fn evaluate_event_schedule(
 
         while let Some(buffered) = pending.remove(&expected_sequence) {
             let process_tick = event.processing_at_tick.max(buffered.event.processing_at_tick);
-            if let Err(status) = process_ordered_event(
-                buffered,
-                process_tick,
-                watch,
-                authority,
-                &mut metrics,
-                &mut records,
-                &mut wake_candidates,
-                epoch,
-            ) {
+            let process_result = {
+                let mut context = EventProcessingContext {
+                    watch,
+                    authority,
+                    metrics: &mut metrics,
+                    dispositions: &mut records,
+                    wake_candidates: &mut wake_candidates,
+                };
+                process_ordered_event(buffered, process_tick, epoch, &mut context)
+            };
+            if let Err(status) = process_result {
                 return Ok(result(
                     status,
                     epoch,
