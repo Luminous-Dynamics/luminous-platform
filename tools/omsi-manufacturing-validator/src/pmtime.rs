@@ -215,8 +215,7 @@ fn evaluate_case(
 
     let max_uncertainty = number(case, "max_uncertainty_ns").unwrap_or(default_max_uncertainty);
     let mut previous: Option<(u64, u64, u64, &str, &str, &str, &str, &str, &str, &str)> = None;
-    let mut expected_sources: Option<Vec<&str>> = None;
-    let mut latest_event_time = 0u64;
+    let mut expected_queries: Vec<(u64, Vec<&str>)> = Vec::with_capacity(records.len());
 
     for (index, record) in records.iter().enumerate() {
         let required_numeric = [
@@ -276,6 +275,20 @@ fn evaluate_case(
         {
             invalid.push(format!("record_{index}_identity_or_method_empty"));
         }
+
+        let source_type_supported = matches!(
+            source_type,
+            "external_reference_clock"
+                | "gnss_reference"
+                | "ptp_clock"
+                | "local_oscillator"
+                | "remote_timing_service"
+                | "unknown"
+        );
+        if !source_type_supported || source_type == "unknown" {
+            unknown.push(format!("record_{index}_timestamp_source_type_not_qualified"));
+        }
+
         if period_start >= period_end || timestamp < period_start || timestamp >= period_end {
             invalid.push(format!("record_{index}_pmtime_outside_valid_period"));
         }
@@ -289,6 +302,9 @@ fn evaluate_case(
         }
         if time_scale != "TAI" {
             unknown.push(format!("record_{index}_unsupported_or_unmapped_time_scale"));
+            if !string(record, "time_scale_mapping_sha256").is_some_and(is_sha256) {
+                unknown.push(format!("record_{index}_time_scale_mapping_evidence_missing"));
+            }
         }
         if uncertainty > max_uncertainty {
             unknown.push(format!(
@@ -301,6 +317,22 @@ fn evaluate_case(
 
         let Some(calibration) = record.get("calibration") else {
             unknown.push(format!("record_{index}_calibration_evidence_missing"));
+            // Continue sequence validation even when calibration evidence is absent.
+            let mut pair = vec![source_id, ptp_id];
+            pair.sort();
+            expected_queries.push((timestamp, pair));
+            previous = Some((
+                record_index,
+                timestamp,
+                period_end,
+                source_id,
+                source_type,
+                clock_domain_id,
+                ptp_id,
+                config_revision,
+                adapter_version,
+                time_scale,
+            ));
             continue;
         };
         if string(calibration, "status") != Some("current") {
@@ -322,7 +354,7 @@ fn evaluate_case(
 
         let mut pair = vec![source_id, ptp_id];
         pair.sort();
-        expected_sources = Some(pair);
+        expected_queries.push((timestamp, pair));
 
         if let Some((
             prior_index,
@@ -376,7 +408,6 @@ fn evaluate_case(
             adapter_version,
             time_scale,
         ));
-        latest_event_time = timestamp;
     }
 
     let required_domains = case
@@ -394,46 +425,65 @@ fn evaluate_case(
     if required_domains.is_empty() {
         invalid.push("required_dependency_domain_list_empty".to_owned());
     }
-    let mut seen_domains = BTreeSet::new();
-    let mut snapshot_binding: Option<(String, u64)> = None;
+    let mut seen_queries = BTreeSet::new();
+    let mut seen_by_event: BTreeMap<u64, BTreeSet<String>> = BTreeMap::new();
+    let mut snapshot_by_event: BTreeMap<u64, (String, u64)> = BTreeMap::new();
 
     let assessments = case.get("dependency_assessments").and_then(Value::as_array);
     if assessments.is_none() {
         unknown.push("dependency_assessments_missing".to_owned());
     }
+
     for assessment in assessments.into_iter().flatten() {
         let Some(domain) = string(assessment, "domain") else {
             unknown.push("dependency_assessment_domain_missing".to_owned());
             continue;
         };
-        if !seen_domains.insert(domain) {
-            invalid.push(format!("dependency_domain_{domain}_duplicated"));
-            continue;
-        }
-        let Some(sources) = expected_sources.as_deref() else {
-            unknown.push("record_source_pair_unavailable_for_dependency_binding".to_owned());
+        let Some(event_time) = number(assessment, "event_time_tai_ns") else {
+            unknown.push("dependency_assessment_event_time_missing".to_owned());
             continue;
         };
-        match check_dependency_assessment(assessment, domain, sources, latest_event_time) {
+        let Some((_, sources)) = expected_queries
+            .iter()
+            .find(|(expected_time, _)| *expected_time == event_time)
+        else {
+            unknown.push(format!("dependency_{domain}_event_time_has_no_record"));
+            continue;
+        };
+
+        if !seen_queries.insert((event_time, domain.to_owned())) {
+            invalid.push(format!(
+                "dependency_domain_{domain}_duplicated_for_event_{event_time}"
+            ));
+            continue;
+        }
+
+        match check_dependency_assessment(assessment, domain, sources, event_time) {
             Ok(disposition) => {
                 if disposition == "SHARED_DEPENDENCY" {
                     shared = true;
                 } else if disposition == "UNKNOWN_DEPENDENCY" {
-                    unknown.push(format!("dependency_{domain}_unknown"));
+                    unknown.push(format!("dependency_{domain}_unknown_at_event_{event_time}"));
                 }
             }
-            Err(reason) => unknown.push(format!("dependency_{domain}_{reason}")),
+            Err(reason) => unknown.push(format!(
+                "dependency_{domain}_{reason}_at_event_{event_time}"
+            )),
         }
 
         let snapshot_id = string(assessment, "snapshot_id").unwrap_or_default().to_owned();
         let frontier = number(assessment, "evidence_frontier_tai_ns").unwrap_or(0);
-        match &snapshot_binding {
+        match snapshot_by_event.get(&event_time) {
             Some((known_snapshot, known_frontier))
                 if known_snapshot != &snapshot_id || *known_frontier != frontier =>
             {
-                unknown.push("dependency_snapshot_or_frontier_mismatch_across_domains".to_owned());
+                unknown.push(format!(
+                    "dependency_snapshot_or_frontier_mismatch_across_domains_at_event_{event_time}"
+                ));
             }
-            None => snapshot_binding = Some((snapshot_id, frontier)),
+            None => {
+                snapshot_by_event.insert(event_time, (snapshot_id, frontier));
+            }
             _ => {}
         }
 
@@ -453,11 +503,29 @@ fn evaluate_case(
         if !supported {
             invalid.push(format!("dependency_domain_{domain}_unsupported"));
         }
+
+        let required_for_case = case
+            .get("required_dependency_domains")
+            .and_then(Value::as_array)
+            .map(|items| items.iter().any(|value| value.as_str() == Some(domain)))
+            .unwrap_or_else(|| default_required_domains.iter().any(|value| value == domain));
+        if !required_for_case && !supported {
+            invalid.push(format!("dependency_domain_{domain}_unsupported"));
+        }
+        seen_by_event
+            .entry(event_time)
+            .or_default()
+            .insert(domain.to_owned());
     }
 
-    for domain in &required_domains {
-        if !seen_domains.contains(domain.as_str()) {
-            unknown.push(format!("required_dependency_domain_{domain}_missing"));
+    for (event_time, _) in &expected_queries {
+        let seen = seen_by_event.get(event_time);
+        for domain in &required_domains {
+            if !seen.is_some_and(|domains| domains.contains(domain)) {
+                unknown.push(format!(
+                    "required_dependency_domain_{domain}_missing_at_event_{event_time}"
+                ));
+            }
         }
     }
 
