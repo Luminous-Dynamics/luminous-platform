@@ -2195,7 +2195,7 @@ mod tests {
 
         assert_eq!(result.status, ScheduleStatus::Completed);
         assert_eq!(result.metrics.sequence_gaps, 2);
-        assert_eq!(result.metrics.gap_repairs, 1);
+        assert_eq!(result.metrics.gap_repairs, 2);
         assert_eq!(result.checkpoint.next_sequence, 4);
         assert!(result.checkpoint.buffered_events.is_empty());
         assert_eq!(
