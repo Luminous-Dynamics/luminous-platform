@@ -94,6 +94,8 @@ The current public suite has 18 synthetic cases:
 17. Timestamp-source switch with a bound new configuration receipt.
 18. Missing dependency assessments for an earlier record even when the latest record has complete lineage.
 19. Invalid source signature status.
+20. Missing or unknown source signature status.
+19. Invalid source signature status.
 20. Missing/unknown source signature status.
 18. Missing dependency assessments for an earlier record even when the latest record has complete lineage.
 
