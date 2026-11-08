@@ -314,7 +314,7 @@ fn process_ordered_event(
     authority: &AuthoritySnapshot,
     metrics: &mut EventScheduleMetrics,
     dispositions: &mut [EventDispositionRecord],
-    wake_candidates: &mut BTreeMap<u64, WakeCandidate>,
+    wake_candidates: &mut BTreeMap<(u64, u64), WakeCandidate>,
     source_epoch: u64,
 ) -> Result<(), EventRunStatus> {
     let event = buffered.event;
@@ -326,7 +326,8 @@ fn process_ordered_event(
         return Err(EventRunStatus::AuthorityRevokedOrExpired);
     }
 
-    if event.delivered_at_tick < watch.starts_at_tick
+    if event.event_time_tick < watch.starts_at_tick
+        || event.delivered_at_tick < watch.starts_at_tick
         || effective_processing_tick < watch.starts_at_tick
     {
         dispositions[buffered.record_index].disposition = EventDisposition::Stale;
@@ -368,7 +369,9 @@ fn process_ordered_event(
     }
 
     metrics.valid_relevant_events += 1;
-    let candidate = wake_candidates.entry(effective_processing_tick).or_default();
+    let candidate = wake_candidates
+        .entry((effective_processing_tick, source_epoch))
+        .or_default();
     candidate.source_epoch = source_epoch;
     candidate.members.push(WakeMember {
         event_id: event.event_id,
@@ -714,7 +717,7 @@ pub fn evaluate_event_schedule(
     let mut normal_wakes = 0u32;
     let mut wake_batches = Vec::new();
 
-    for (tick, candidate) in wake_candidates {
+    for ((tick, candidate_epoch), candidate) in wake_candidates {
         let has_critical = candidate
             .members
             .iter()
@@ -778,7 +781,7 @@ pub fn evaluate_event_schedule(
         wake_batches.push(EventWakeBatch {
             wake_index: wake_batches.len() as u32 + 1,
             processing_tick: tick,
-            source_epoch: candidate.source_epoch,
+            source_epoch: candidate_epoch,
             first_sequence: first_sequence.min(last_sequence),
             last_sequence,
             event_ids: event_ids.into_iter().collect(),
@@ -933,6 +936,30 @@ mod tests {
         assert_eq!(result.metrics.source_epoch_transitions, 1);
         assert_eq!(result.metrics.duplicate_deliveries, 1);
         assert_eq!(result.wake_batches.len(), 2);
+    }
+
+
+    #[test]
+    fn source_epoch_boundary_is_not_coalesced_with_prior_epoch() {
+        let old = event(10, "evt-old", "incident-old", 5);
+        let mut restart = event(10, "evt-new", "incident-new", 5);
+        restart.source_epoch = 2;
+        restart.source_restart = true;
+        let result = evaluate(&[old, restart], 5);
+        assert_eq!(result.wake_batches.len(), 2);
+        assert_eq!(result.wake_batches[0].source_epoch, 1);
+        assert_eq!(result.wake_batches[1].source_epoch, 2);
+    }
+
+    #[test]
+    fn event_that_occurred_before_watch_start_is_not_retroactively_matched() {
+        let mut pre_watch = event(10, "evt-pre-watch", "incident-old", 5);
+        pre_watch.event_time_tick = 0;
+        pre_watch.delivered_at_tick = 3;
+        let result = evaluate(&[pre_watch], 5);
+        assert_eq!(result.status, EventRunStatus::Quiet);
+        assert_eq!(result.metrics.stale_records, 1);
+        assert!(result.wake_batches.is_empty());
     }
 
     #[test]
