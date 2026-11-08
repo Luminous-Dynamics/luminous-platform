@@ -988,16 +988,16 @@ pub fn evaluate_event_schedule(
 
     let mut checkpoint = checkpoint.unwrap_or_else(|| initial_checkpoint(watch));
     validate_checkpoint(watch, &checkpoint)?;
-    let mut last_timeline_tick = checkpoint.last_delivery_tick;
+    let mut last_timeline_tick = checkpoint.last_stream_tick;
     for record in timeline {
         if record.tick() < last_timeline_tick {
             return Err(ScheduleError::EventTimeRegression);
         }
         last_timeline_tick = record.tick();
-        if let TimelineRecord::Event(event) = record {
-            validate_event(event)?;
-        } else if let TimelineRecord::Restart(restart) = record {
-            validate_restart(restart)?;
+        match record {
+            TimelineRecord::Event(event) => validate_event(event)?,
+            TimelineRecord::Restart(restart) => validate_restart(restart)?,
+            TimelineRecord::Watermark(watermark) => validate_watermark(watermark)?,
         }
     }
 
