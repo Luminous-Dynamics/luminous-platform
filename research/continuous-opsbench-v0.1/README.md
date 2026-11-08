@@ -121,3 +121,25 @@ The module includes eight paired-run tests covering invocation reduction, detect
 **Metric boundary:** `monitor_checks` are deterministic monitor callbacks, not LLM calls. `cognitive_invocations` count scheduled policy invocations. `probe_selection_calls` and `admitted_probe_selections` count selection proposals, not actual remote collector executions. The module does not yet consume independent source/impact receipts for every paired wake; that is the next #320 integration increment. A synthetic plant pass is not a live SRE benchmark result.
 
 **Claim ceiling:** the experiment is an offline paired controller comparison on a deterministic synthetic service model. It does not prove production event-delivery guarantees, model superiority, live Xenia authority enforcement, actual probe resource externality, independent observer authenticity or performance on SREGym/SRE-Marathon.
+
+## Durable, ephemeral and concurrent event schedule v0.1
+
+The additive `src/event_schedule.rs` module evaluates a frozen, source-qualified schedule using the existing `WatchSpec` and `AuthoritySnapshot` contracts. It is an offline inbox/event-schedule evaluator; it does not create or run another broker, subscription service, timer, inbox, outbox or acknowledgement path.
+
+It models:
+- source ID, source epoch, event ID, payload digest and monotonically ordered source sequence;
+- incident ID, tenant, target, purpose and event type;
+- event time, valid-until time, delivery time, processing time and response deadline;
+- persistent versus ephemeral condition records;
+- explicit source epoch restart markers;
+- duplicate suppression, event-ID/sequence identity collision, out-of-order buffering and gap timeout;
+- exact watch scope and authority checks at delivery and processing;
+- per-event wake records with safe same-tick coalescing that preserves every distinct incident ID;
+- reserved critical wake capacity so normal-priority wake batches cannot consume all wake slots;
+- explicit stale, late, out-of-scope, duplicate, buffered, woken and budget-suppressed dispositions.
+
+The module includes 21 deterministic tests: quiet schedule, durable wake, same-tick multi-incident coalescing, distinct wake batches across ticks, ephemeral wake independent of a persistent level sample, duplicate delivery, event-ID and sequence collisions, out-of-order repair, late gap repair rejection, unresolved gap escalation, in-deadline delayed delivery with latency, missed deadline, stale ephemeral record, revocation while dormant, valid/invalid source restart, old-epoch replay deduplication, critical-budget reservation, wrong-tenant sequence consumption and future-record invisibility.
+
+**Important limitation:** this module evaluates a supplied frozen schedule. It does not authenticate source publishers, validate the truth of the payload digest, execute #306's live CloudEvents/inbox/outbox path, implement durable cursor persistence across process restarts, or execute a collector. It does not observe plant health directly; event payload condition and incident identity are source-provided inputs, while evaluator-only plant truth remains outside the event policy. A source restart is accepted only as an explicit next-epoch marker with no unresolved cursor gap.
+
+**Claim ceiling:** this is a deterministic event schedule semantics evaluator, not a production event delivery guarantee or benchmark result. It should be paired with #321's fixed-poll/event-threshold micro-experiment and the #306 watch contract; it does not yet perform model reasoning or actual probe/impact acquisition.
