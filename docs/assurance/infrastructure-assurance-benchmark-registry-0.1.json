@@ -212,10 +212,28 @@
           "metric": "open_set_macro_f1",
           "value": 48.45,
           "unit": "percent"
+        },
+        {
+          "protocol": "WiSig ManyTx (50/15/15 base-known/unknown/novel transmitter split)",
+          "metric": "open_set_macro_f1",
+          "value": 84.16,
+          "unit": "percent"
+        },
+        {
+          "protocol": "WiSig ManyTx (50/15/15 base-known/unknown/novel transmitter split)",
+          "metric": "unknown_f1",
+          "value": 66.85,
+          "unit": "percent"
+        },
+        {
+          "protocol": "WiSig ManyTx (50/15/15 base-known/unknown/novel transmitter split)",
+          "metric": "10_shot_novel_accuracy",
+          "value": 61.44,
+          "unit": "percent"
         }
       ],
       "comparison_rule": "Keep dataset/protocol rows separate. These are paper-reported results, not independently reproduced and not directly comparable to Luminous runs until acquisition, split, label and evaluator protocols are matched.",
-      "limitation": "Curated protocol results do not establish broad industrial emitter generalization or physical RF acquisition qualification."
+      "limitation": "Curated protocol results do not establish broad industrial emitter generalization or physical RF acquisition qualification. The reported WiSig ManyTx open-set macro-F1 (84.16%) is only 0.11 percentage points above the paper's max-similarity-threshold baseline (84.05%); the paper notes incomplete paired per-seed records and makes no formal paired significance claim for its main tables, so do not represent this small margin as a statistically established win."
     }
   ],
   "standards_snapshot": [
