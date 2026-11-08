@@ -2,7 +2,7 @@
 
 **Snapshot date:** 2026-11-07  
 **Status:** metadata snapshot; exact source revisions are pinned where available, but most raw source bytes are not archived  
-**Records:** 13  
+**Records:** 14  
 **Schema:** JSON Schema Draft 2020-12, strict objects
 
 This is a provenance registry, not a composite leaderboard. Unlike constructs are never normalized into a single SRE or agent score.
