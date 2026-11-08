@@ -11,8 +11,8 @@
       "owner_issue": "https://github.com/Luminous-Dynamics/mycelix/issues/5923",
       "implementation": "https://github.com/Luminous-Dynamics/mycelix/pull/5929",
       "maturity": "synthetic_executable",
-      "current_evidence": "The original isolated Rust reference workflow passed at an earlier head. An 11-case public synthetic challenge pack, Rust integration test and separate Go standard-library verifier have since been added to Mycelix PR #5929; updated Rust/Go exact-head workflows are pending. Broad Mycelix CI is skipped for isolated tooling changes.",
-      "fixture_state": "11 frozen public synthetic cases are versioned in Mycelix PR #5929. Both a Rust evaluator and a separate Go implementation now target the same expected outcomes. The pack is public conformance, not blind hidden-truth evaluation; the Go verifier shares repository/project ownership.",
+      "current_evidence": "The earlier isolated Rust reference workflow passed at an earlier head. The 12-case public pack is now supplemented by eight metamorphic Rust tests and a separate Go standard-library verifier. The latest exact-head Rust/Go workflows are pending; broad Mycelix CI is skipped for the isolated-tools change.",
+      "fixture_state": "12 frozen public cases plus eight metamorphic properties: ordering invariance, domain noninterference, half-open time boundaries, incomplete-inventory monotonicity, preservation of known common ancestors under uncertainty, and shared-edge insertion/staleness behavior. The public cases are not blind hidden-truth evaluation.",
       "claim_ceiling": "Declared common-dependency assessment over an exact inventory snapshot and evidence frontier; not proof of physical or statistical independence.",
       "score_families": [
         "dependency_assurance",
@@ -20,8 +20,9 @@
         "operational_efficiency"
       ],
       "next_work": [
+        "Complete exact-head Rust and Go compilation/test/Clippy workflows.",
         "Add sealed evaluator-owned hidden-truth scenarios with withheld common-cause edges and outcome schedules.",
-        "Separate test-case custody and verification responsibility from implementation ownership; obtain an external reviewer or lab for the high-assurance boundary.",
+        "Separate test-case custody and verification responsibility from implementation ownership; obtain external review for the high-assurance boundary.",
         "Measure 10, 100, 1000 and 10000 source scales, and report node/edge density with p50/p95/p99 runtime and peak memory."
       ]
     },
