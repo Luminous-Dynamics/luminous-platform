@@ -629,18 +629,25 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
     // Every scheduled Woke/Coalesced record must also be represented by exactly
     // one wake batch. This catches a schedule-side wake omitted downstream.
     for record in schedule.records.iter().filter(|record| {
-        matches!(record.disposition, RecordDisposition::Woke | RecordDisposition::Coalesced)
+        matches!(
+            record.disposition,
+            RecordDisposition::Woke | RecordDisposition::Coalesced
+        )
     }) {
-        let matching = schedule.wakes.iter().filter(|wake| {
-            wake.wake_tick == record.processed_tick.unwrap_or(u64::MAX)
-                && record.sequence >= wake.sequence_start
-                && record.sequence <= wake.sequence_end
-                && wake.event_ids.iter().zip(wake.incident_ids.iter()).any(
-                    |(event_id, incident_id)| {
-                        event_id == &record.event_id && incident_id == &record.incident_id
-                    },
-                )
-        }).count();
+        let matching = schedule
+            .wakes
+            .iter()
+            .filter(|wake| {
+                wake.wake_tick == record.processed_tick.unwrap_or(u64::MAX)
+                    && record.sequence >= wake.sequence_start
+                    && record.sequence <= wake.sequence_end
+                    && wake.event_ids.iter().zip(wake.incident_ids.iter()).any(
+                        |(event_id, incident_id)| {
+                            event_id == &record.event_id && incident_id == &record.incident_id
+                        },
+                    )
+            })
+            .count();
         if matching != 1 {
             report.fail(AuditFailure::UnpairedScheduleWake);
         }
