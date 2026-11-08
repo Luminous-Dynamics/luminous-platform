@@ -87,7 +87,7 @@ Do not merge a metric across tracks simply because both happen to be percentages
 
 Start with dependency hypergraph because its semantics are reused by PNT, PTP, RF, edge and recovery.
 
-The owning Mycelix track should version its own challenge inputs. The Platform registry references them; it must not copy or fork domain-owned fixtures. The initial challenge families are:
+The owning Mycelix track now versions its public synthetic challenge pack in [Mycelix PR #5929](https://github.com/Luminous-Dynamics/mycelix/pull/5929) (`tools/emsr-dependency-hypergraph/fixtures/dependency-hypergraph-challenges-0.1.json`). The Platform registry references it; it does not copy or fork domain-owned fixtures. The current pack has 11 public conformance cases, including the inverse control that shared power does not imply shared clock. It is not a blind hidden-truth benchmark. The next phase must add evaluator-sealed scenarios whose dependency truth is not visible to the system under test. The challenge families are:
 
 - Six nominal receivers with one shared grandmaster/oscillator.
 - Different direct providers with a shared transitive correction or identity ancestor.
