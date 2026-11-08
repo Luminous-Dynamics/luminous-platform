@@ -185,7 +185,6 @@ struct WakeMember {
 
 #[derive(Clone, Default)]
 struct WakeCandidate {
-    source_epoch: u64,
     members: Vec<WakeMember>,
 }
 
@@ -372,7 +371,6 @@ fn process_ordered_event(
     let candidate = wake_candidates
         .entry((effective_processing_tick, source_epoch))
         .or_default();
-    candidate.source_epoch = source_epoch;
     candidate.members.push(WakeMember {
         event_id: event.event_id,
         incident_id: event.incident_id,
@@ -546,6 +544,12 @@ pub fn evaluate_event_schedule(
                 && pending.is_empty();
             if !valid_restart {
                 metrics.invalid_source_epochs += 1;
+                if !pending.is_empty() {
+                    metrics.sequence_gaps_escalated += 1;
+                    for buffered in pending.values() {
+                        records[buffered.record_index].disposition = EventDisposition::DeliveryGap;
+                    }
+                }
                 return Ok(result(
                     if !pending.is_empty() {
                         EventRunStatus::DeliveryGap
