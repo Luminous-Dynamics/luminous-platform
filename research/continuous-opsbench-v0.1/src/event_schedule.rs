@@ -1042,6 +1042,13 @@ fn process_event(
         return Some(gap_timeout(checkpoint, processing_tick, metrics, records));
     }
 
+    let had_gap = state.checkpoint.gap_started_at_tick.is_some()
+        || !state.checkpoint.buffered_events.is_empty()
+        || state
+            .checkpoint
+            .observed_watermark_next_sequence
+            .is_some_and(|sequence| sequence > state.checkpoint.next_sequence);
+
     if let Some(status) = process_event_in_order(state, event, processing_tick) {
         return Some(status);
     }
@@ -1074,19 +1081,28 @@ fn process_event(
             {
                 return Some(status);
             }
+        }
+
+        let watermark_gap = state
+            .checkpoint
+            .observed_watermark_next_sequence
+            .is_some_and(|sequence| sequence > state.checkpoint.next_sequence);
+        let unresolved_gap = !state.checkpoint.buffered_events.is_empty() || watermark_gap;
+
+        if had_gap {
             state.metrics.gap_repairs += 1;
         }
 
-        if state.checkpoint.buffered_events.is_empty() {
-            state.checkpoint.gap_started_at_tick = None;
-            state.checkpoint.gap_deadline_tick = None;
-        } else {
+        if unresolved_gap {
             let Some(deadline) = processing_tick.checked_add(gap_policy.timeout_ticks) else {
                 return Some(ScheduleStatus::InvalidSchedule);
             };
             state.checkpoint.gap_started_at_tick = Some(processing_tick);
             state.checkpoint.gap_deadline_tick = Some(deadline);
             state.metrics.sequence_gaps += 1;
+        } else {
+            state.checkpoint.gap_started_at_tick = None;
+            state.checkpoint.gap_deadline_tick = None;
         }
     }
 
@@ -2311,6 +2327,135 @@ mod tests {
         assert_eq!(timed_out.status, ScheduleStatus::DeliveryGap);
         assert_eq!(timed_out.metrics.gap_timeouts, 1);
         assert_ne!(timed_out.status, ScheduleStatus::Quiet);
+    }
+
+    #[test]
+    fn watermark_only_gap_requires_source_cursor_to_be_reached_before_clearing() {
+        let pending = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Watermark(watermark(2, 4, true))],
+            5,
+            None,
+            5,
+            8,
+        );
+        assert_eq!(pending.status, ScheduleStatus::DeliveryGapPending);
+        assert_eq!(
+            pending.checkpoint.observed_watermark_next_sequence,
+            Some(2)
+        );
+
+        let missing = event(
+            "event-1",
+            "incident-1",
+            1,
+            5,
+            6,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let repaired = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(missing)],
+            7,
+            Some(pending.checkpoint),
+            5,
+            8,
+        );
+        assert_eq!(repaired.status, ScheduleStatus::Completed);
+        assert_eq!(repaired.checkpoint.next_sequence, 2);
+        assert_eq!(repaired.metrics.gap_repairs, 1);
+        assert_eq!(repaired.checkpoint.gap_deadline_tick, None);
+        assert_eq!(
+            repaired.checkpoint.observed_watermark_next_sequence,
+            Some(2)
+        );
+    }
+
+    #[test]
+    fn watermark_gap_with_two_missing_sequences_gets_two_deadlines() {
+        let pending = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Watermark(watermark(3, 4, true))],
+            5,
+            None,
+            5,
+            8,
+        );
+        let event_one = event(
+            "event-1",
+            "incident-1",
+            1,
+            5,
+            6,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let first_repair = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(event_one)],
+            7,
+            Some(pending.checkpoint),
+            5,
+            8,
+        );
+        assert_eq!(first_repair.status, ScheduleStatus::DeliveryGapPending);
+        assert_eq!(first_repair.checkpoint.next_sequence, 2);
+        assert_eq!(first_repair.checkpoint.gap_started_at_tick, Some(6));
+        assert_eq!(first_repair.checkpoint.gap_deadline_tick, Some(11));
+        assert_eq!(first_repair.metrics.gap_repairs, 1);
+
+        let event_two = event(
+            "event-2",
+            "incident-2",
+            2,
+            6,
+            8,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let second_repair = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(event_two)],
+            10,
+            Some(first_repair.checkpoint),
+            5,
+            8,
+        );
+        assert_eq!(second_repair.status, ScheduleStatus::Completed);
+        assert_eq!(second_repair.checkpoint.next_sequence, 3);
+        assert_eq!(second_repair.metrics.gap_repairs, 1);
+        assert_eq!(second_repair.checkpoint.gap_deadline_tick, None);
+    }
+
+    #[test]
+    fn regressing_source_watermark_is_rejected_after_a_higher_watermark() {
+        let first = watermark(3, 4, true);
+        let pending = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Watermark(first)],
+            5,
+            None,
+            5,
+            8,
+        );
+        let regressing = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Watermark(watermark(2, 6, true))],
+            7,
+            Some(pending.checkpoint),
+            5,
+            8,
+        );
+        assert_eq!(regressing.status, ScheduleStatus::OutOfOrder);
+        assert_eq!(regressing.metrics.out_of_order_records, 1);
+        assert_eq!(
+            regressing.checkpoint.observed_watermark_next_sequence,
+            Some(3)
+        );
     }
 
     #[test]
