@@ -286,6 +286,12 @@ fn non_empty(value: &str) -> bool {
     !value.trim().is_empty()
 }
 
+fn valid_sha256(value: &str) -> bool {
+    value
+        .strip_prefix("sha256:")
+        .is_some_and(|hex| hex.len() == 64 && hex.bytes().all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase()))
+}
+
 fn validate_watch(watch: &EventWatch) -> Result<(), ScheduleError> {
     if !non_empty(&watch.watch_id)
         || !non_empty(&watch.source_id)
@@ -296,6 +302,7 @@ fn validate_watch(watch: &EventWatch) -> Result<(), ScheduleError> {
         || !non_empty(&watch.event_type)
         || watch.starts_at_tick >= watch.expires_at_tick
         || watch.first_sequence == 0
+        || watch.first_sequence == u64::MAX
         || watch.max_event_checks == 0
     {
         return Err(ScheduleError::InvalidWatch);
@@ -321,7 +328,8 @@ fn validate_event(event: &SourceEvent) -> Result<(), ScheduleError> {
         || !non_empty(&event.event_id)
         || !non_empty(&event.incident_id)
         || event.sequence == 0
-        || !non_empty(&event.payload_digest)
+        || event.sequence == u64::MAX
+        || !valid_sha256(&event.payload_digest)
         || !non_empty(&event.tenant_id)
         || !non_empty(&event.target_id)
         || !non_empty(&event.purpose_id)
@@ -344,7 +352,8 @@ fn validate_restart(restart: &SourceRestart) -> Result<(), ScheduleError> {
         || !non_empty(&restart.new_epoch)
         || restart.previous_epoch == restart.new_epoch
         || restart.sequence_start == 0
-        || !non_empty(&restart.restart_proof_digest)
+        || restart.sequence_start == u64::MAX
+        || !valid_sha256(&restart.restart_proof_digest)
     {
         return Err(ScheduleError::InvalidRestart);
     }
@@ -368,6 +377,7 @@ fn validate_checkpoint(
     if checkpoint.source_id != watch.source_id
         || !non_empty(&checkpoint.source_epoch)
         || checkpoint.next_sequence == 0
+        || checkpoint.next_sequence == u64::MAX
         || checkpoint.last_delivery_tick < watch.starts_at_tick
     {
         return Err(ScheduleError::InvalidCheckpoint);
@@ -766,6 +776,7 @@ fn process_event(
 fn apply_restart(
     watch: &EventWatch,
     restart: &SourceRestart,
+    processing_tick: u64,
     checkpoint: &mut EventCheckpoint,
     metrics: &mut EventScheduleMetrics,
     records: &mut Vec<EventRecordResult>,
@@ -783,7 +794,7 @@ fn apply_restart(
             incident_id: String::new(),
             sequence: restart.sequence_start,
             delivered_tick: restart.at_tick,
-            processed_tick: Some(restart.at_tick),
+            processed_tick: Some(processing_tick),
             disposition: RecordDisposition::RestartRejected,
             detection_latency_ticks: None,
             deadline_met: false,
@@ -799,7 +810,7 @@ fn apply_restart(
         incident_id: String::new(),
         sequence: restart.sequence_start,
         delivered_tick: restart.at_tick,
-        processed_tick: Some(restart.at_tick),
+        processed_tick: Some(processing_tick),
         disposition: RecordDisposition::RestartAccepted,
         detection_latency_ticks: None,
         deadline_met: true,
@@ -836,7 +847,7 @@ pub fn evaluate_event_schedule(
 
     let mut checkpoint = checkpoint.unwrap_or_else(|| initial_checkpoint(watch));
     validate_checkpoint(watch, &checkpoint)?;
-    let mut last_timeline_tick = watch.starts_at_tick;
+    let mut last_timeline_tick = checkpoint.last_delivery_tick;
     for record in timeline {
         if record.tick() < last_timeline_tick {
             return Err(ScheduleError::EventTimeRegression);
@@ -945,9 +956,14 @@ pub fn evaluate_event_schedule(
                 &mut pending,
                 &mut wakes,
             ),
-            TimelineRecord::Restart(restart) => {
-                apply_restart(watch, restart, &mut checkpoint, &mut metrics, &mut records)
-            }
+            TimelineRecord::Restart(restart) => apply_restart(
+                watch,
+                restart,
+                processing_tick,
+                &mut checkpoint,
+                &mut metrics,
+                &mut records,
+            ),
         };
         if let Some(failure) = result {
             status = failure;
@@ -1243,14 +1259,14 @@ mod tests {
             "incident-short",
             1,
             3,
-            4,
+            6,
             5,
             9,
             Persistence::EphemeralTransition,
         ))];
         let result = run(AttentionStrategy::EventTriggered, &timeline);
         assert_eq!(result.metrics.relevant_events_detected, 1);
-        assert_eq!(result.records[0].processed_tick, Some(4));
+        assert_eq!(result.records[0].processed_tick, Some(6));
         assert_eq!(result.records[0].disposition, RecordDisposition::Woke);
     }
 
