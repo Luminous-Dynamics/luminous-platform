@@ -1119,6 +1119,14 @@ pub fn evaluate_event_schedule(
                 &mut metrics,
                 &mut records,
             ),
+            TimelineRecord::Watermark(watermark) => process_watermark(
+                watch,
+                watermark,
+                processing_tick,
+                &mut checkpoint,
+                &mut metrics,
+                &mut records,
+            ),
         };
         if let Some(failure) = result {
             status = failure;
