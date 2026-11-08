@@ -64,6 +64,7 @@ pub enum EventRunStatus {
     Completed,
     Expired,
     AuthorityRevokedOrExpired,
+    DeliveryGapPending,
     DeliveryGap,
     IdentityCollision,
     InvalidSourceEpoch,
@@ -122,6 +123,7 @@ pub struct EventScheduleMetrics {
     pub out_of_order_records_buffered: usize,
     pub sequence_gaps_repaired: usize,
     pub sequence_gaps_escalated: usize,
+    pub pending_sequence_records: usize,
     pub rejected_source_records: usize,
     pub out_of_scope_records: usize,
     pub irrelevant_records: usize,
@@ -693,7 +695,8 @@ pub fn evaluate_event_schedule(
         }
     }
 
-    if !pending.is_empty() {
+    let gap_pending = !pending.is_empty();
+    if gap_pending {
         let gap_start = gap_started_at.unwrap_or(current_tick);
         if current_tick >= gap_start.saturating_add(config.gap_timeout_ticks) {
             metrics.sequence_gaps_escalated += 1;
@@ -710,6 +713,7 @@ pub fn evaluate_event_schedule(
                 records,
             ));
         }
+        metrics.pending_sequence_records = pending.len();
         for buffered in pending.values() {
             records[buffered.record_index].disposition = EventDisposition::BufferedForSequence;
         }
@@ -796,7 +800,9 @@ pub fn evaluate_event_schedule(
     }
 
     metrics.wake_batches = wake_batches.len();
-    let status = if metrics.wake_budget_suppressed_events > 0 {
+    let status = if gap_pending {
+        EventRunStatus::DeliveryGapPending
+    } else if metrics.wake_budget_suppressed_events > 0 {
         EventRunStatus::WakeBudgetExhausted
     } else if wake_batches.is_empty() {
         EventRunStatus::Quiet
@@ -1051,6 +1057,17 @@ mod tests {
         assert_eq!(result.wake_batches.len(), 1);
         assert_eq!(result.wake_batches[0].incident_ids, vec!["incident-a", "incident-b"]);
         assert_eq!(result.wake_batches[0].processing_tick, 6);
+    }
+
+
+    #[test]
+    fn unresolved_gap_before_timeout_is_not_reported_as_quiet() {
+        let later = event(11, "evt-11", "incident-b", 5);
+        let result = evaluate(&[later], 7);
+        assert_eq!(result.status, EventRunStatus::DeliveryGapPending);
+        assert_eq!(result.metrics.pending_sequence_records, 1);
+        assert_eq!(result.metrics.sequence_gaps_escalated, 0);
+        assert!(result.wake_batches.is_empty());
     }
 
     #[test]
