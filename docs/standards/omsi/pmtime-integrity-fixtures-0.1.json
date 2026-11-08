@@ -38,7 +38,7 @@
           "configuration_revision": "cfg-1",
           "configuration_change_receipt_sha256": null,
           "timestamp_uncertainty_ns": 50,
-          "signature_status": null,
+          "signature_status": "valid",
           "calibration": {
             "status": "current",
             "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -254,7 +254,7 @@
           "configuration_revision": "cfg-1",
           "configuration_change_receipt_sha256": null,
           "timestamp_uncertainty_ns": 50,
-          "signature_status": null,
+          "signature_status": "valid",
           "calibration": {
             "status": "current",
             "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -472,7 +472,7 @@
           "configuration_revision": "cfg-1",
           "configuration_change_receipt_sha256": null,
           "timestamp_uncertainty_ns": 50,
-          "signature_status": null,
+          "signature_status": "valid",
           "calibration": {
             "status": "current",
             "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -690,7 +690,7 @@
           "configuration_revision": "cfg-1",
           "configuration_change_receipt_sha256": null,
           "timestamp_uncertainty_ns": 50,
-          "signature_status": null,
+          "signature_status": "valid",
           "calibration": {
             "status": "current",
             "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -908,7 +908,7 @@
           "configuration_revision": "cfg-1",
           "configuration_change_receipt_sha256": null,
           "timestamp_uncertainty_ns": 50,
-          "signature_status": null,
+          "signature_status": "valid",
           "calibration": {
             "status": "current",
             "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -1064,7 +1064,7 @@
           "configuration_revision": "cfg-1",
           "configuration_change_receipt_sha256": null,
           "timestamp_uncertainty_ns": 50,
-          "signature_status": null,
+          "signature_status": "valid",
           "calibration": {
             "status": "expired",
             "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -1280,7 +1280,7 @@
           "configuration_revision": "cfg-1",
           "configuration_change_receipt_sha256": null,
           "timestamp_uncertainty_ns": 50,
-          "signature_status": null,
+          "signature_status": "valid",
           "calibration": {
             "status": "current",
             "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -1307,7 +1307,7 @@
           "configuration_revision": "cfg-2",
           "configuration_change_receipt_sha256": null,
           "timestamp_uncertainty_ns": 50,
-          "signature_status": null,
+          "signature_status": "valid",
           "calibration": {
             "status": "current",
             "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -1703,7 +1703,7 @@
           "configuration_revision": "cfg-1",
           "configuration_change_receipt_sha256": null,
           "timestamp_uncertainty_ns": 50,
-          "signature_status": null,
+          "signature_status": "valid",
           "calibration": {
             "status": "current",
             "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -1730,7 +1730,7 @@
           "configuration_revision": "cfg-1",
           "configuration_change_receipt_sha256": null,
           "timestamp_uncertainty_ns": 50,
-          "signature_status": null,
+          "signature_status": "valid",
           "calibration": {
             "status": "current",
             "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -2126,7 +2126,7 @@
           "configuration_revision": "cfg-1",
           "configuration_change_receipt_sha256": null,
           "timestamp_uncertainty_ns": 50,
-          "signature_status": null,
+          "signature_status": "valid",
           "calibration": {
             "status": "current",
             "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -2153,7 +2153,7 @@
           "configuration_revision": "cfg-1",
           "configuration_change_receipt_sha256": null,
           "timestamp_uncertainty_ns": 50,
-          "signature_status": null,
+          "signature_status": "valid",
           "calibration": {
             "status": "current",
             "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -2549,7 +2549,7 @@
           "configuration_revision": "cfg-1",
           "configuration_change_receipt_sha256": null,
           "timestamp_uncertainty_ns": 50,
-          "signature_status": null,
+          "signature_status": "valid",
           "calibration": {
             "status": "current",
             "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -2981,7 +2981,7 @@
           "configuration_revision": "cfg-1",
           "configuration_change_receipt_sha256": null,
           "timestamp_uncertainty_ns": 50,
-          "signature_status": null,
+          "signature_status": "valid",
           "calibration": {
             "status": "current",
             "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -3197,7 +3197,7 @@
           "configuration_revision": "cfg-1",
           "configuration_change_receipt_sha256": null,
           "timestamp_uncertainty_ns": 50,
-          "signature_status": null,
+          "signature_status": "valid",
           "calibration": {
             "status": "current",
             "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -3232,7 +3232,7 @@
           "configuration_revision": "cfg-1",
           "configuration_change_receipt_sha256": null,
           "timestamp_uncertainty_ns": 50,
-          "signature_status": null,
+          "signature_status": "valid",
           "calibration": {
             "status": "current",
             "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -3517,7 +3517,7 @@
           "configuration_revision": "cfg-1",
           "configuration_change_receipt_sha256": null,
           "timestamp_uncertainty_ns": 50,
-          "signature_status": null,
+          "signature_status": "valid",
           "calibration": {
             "status": "current",
             "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -3733,7 +3733,7 @@
           "configuration_revision": "cfg-1",
           "configuration_change_receipt_sha256": null,
           "timestamp_uncertainty_ns": 50,
-          "signature_status": null,
+          "signature_status": "valid",
           "calibration": {
             "status": "current",
             "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -3760,7 +3760,7 @@
           "configuration_revision": "cfg-1",
           "configuration_change_receipt_sha256": null,
           "timestamp_uncertainty_ns": 50,
-          "signature_status": null,
+          "signature_status": "valid",
           "calibration": {
             "status": "current",
             "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -3976,7 +3976,7 @@
           "configuration_revision": "cfg-1",
           "configuration_change_receipt_sha256": null,
           "timestamp_uncertainty_ns": 50,
-          "signature_status": null,
+          "signature_status": "valid",
           "calibration": {
             "status": "current",
             "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -4003,7 +4003,7 @@
           "configuration_revision": "cfg-2",
           "configuration_change_receipt_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
           "timestamp_uncertainty_ns": 50,
-          "signature_status": null,
+          "signature_status": "valid",
           "calibration": {
             "status": "current",
             "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -4399,7 +4399,7 @@
           "configuration_revision": "cfg-1",
           "configuration_change_receipt_sha256": null,
           "timestamp_uncertainty_ns": 50,
-          "signature_status": null,
+          "signature_status": "valid",
           "calibration": {
             "status": "current",
             "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -4426,7 +4426,7 @@
           "configuration_revision": "cfg-1",
           "configuration_change_receipt_sha256": null,
           "timestamp_uncertainty_ns": 50,
-          "signature_status": null,
+          "signature_status": "valid",
           "calibration": {
             "status": "current",
             "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -4593,6 +4593,438 @@
             "common_dependency_ids": [],
             "reason_codes": [],
             "claim_ceiling": "Declared common-dependency assessment over a supplied inventory snapshot only"
+          },
+          "reference_verification": {
+            "verifier_contract": "emsr-dependency-hypergraph-reference-verifier/0.1",
+            "status": "verified",
+            "authority": "independent_reference_algorithm_agreement_only",
+            "checks": [
+              {
+                "id": "input-byte-binding",
+                "result": "pass"
+              },
+              {
+                "id": "query-snapshot-binding",
+                "result": "pass"
+              },
+              {
+                "id": "independent-closure",
+                "result": "pass"
+              },
+              {
+                "id": "derived-disposition",
+                "result": "pass"
+              },
+              {
+                "id": "authority-and-claim-ceiling",
+                "result": "pass"
+              }
+            ],
+            "limitations": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "PMT-019-invalid-source-signature",
+      "description": "An invalid source signature prevents reliance even when record timing and dependency evidence are otherwise complete.",
+      "expected": "TIMESTAMP_INVALID",
+      "records": [
+        {
+          "record_index": 1,
+          "pmtime_tai_ns": 1500,
+          "period_start_tai_ns": 1000,
+          "period_end_tai_ns": 2000,
+          "timestamp_source_id": "pm-ref-01",
+          "ptp_clock_instance_id": "ptp-clock-01",
+          "time_scale": "TAI",
+          "timestamp_method": "hardware_capture",
+          "configuration_revision": "cfg-1",
+          "configuration_change_receipt_sha256": null,
+          "timestamp_uncertainty_ns": 50,
+          "signature_status": "invalid",
+          "calibration": {
+            "status": "current",
+            "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valid_from_tai_ns": 900,
+            "valid_until_tai_ns": 2100,
+            "traceability_ref": "traceability-chain-01"
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-01",
+          "record_received_tai_ns": 1600,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
+        }
+      ],
+      "dependency_assessments": [
+        {
+          "domain": "clock",
+          "source_ids": [
+            "pm-ref-01",
+            "ptp-clock-01"
+          ],
+          "event_time_tai_ns": 1500,
+          "snapshot_id": "snapshot-pmtime-01",
+          "evidence_frontier_tai_ns": 1600,
+          "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "dependency_report_artifact_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+          "verification_report_artifact_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "disposition": "NO_DECLARED_COMMON_DOMAIN",
+          "dependency_report": {
+            "report_contract": "emsr-dependency-hypergraph-report/0.1",
+            "disposition": "NO_DECLARED_COMMON_DOMAIN",
+            "authority": "declared_dependency_assessment_only",
+            "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "snapshot_id": "snapshot-pmtime-01",
+            "evidence_frontier": 1600,
+            "event_time": 1500,
+            "domain": "clock",
+            "source_ids": [
+              "pm-ref-01",
+              "ptp-clock-01"
+            ],
+            "source_ancestors": {},
+            "common_dependency_ids": [],
+            "reason_codes": [],
+            "claim_ceiling": "Declared common-dependency assessment only"
+          },
+          "reference_verification": {
+            "verifier_contract": "emsr-dependency-hypergraph-reference-verifier/0.1",
+            "status": "verified",
+            "authority": "independent_reference_algorithm_agreement_only",
+            "checks": [
+              {
+                "id": "input-byte-binding",
+                "result": "pass"
+              },
+              {
+                "id": "query-snapshot-binding",
+                "result": "pass"
+              },
+              {
+                "id": "independent-closure",
+                "result": "pass"
+              },
+              {
+                "id": "derived-disposition",
+                "result": "pass"
+              },
+              {
+                "id": "authority-and-claim-ceiling",
+                "result": "pass"
+              }
+            ],
+            "limitations": []
+          }
+        },
+        {
+          "domain": "oscillator",
+          "source_ids": [
+            "pm-ref-01",
+            "ptp-clock-01"
+          ],
+          "event_time_tai_ns": 1500,
+          "snapshot_id": "snapshot-pmtime-01",
+          "evidence_frontier_tai_ns": 1600,
+          "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "dependency_report_artifact_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+          "verification_report_artifact_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "disposition": "NO_DECLARED_COMMON_DOMAIN",
+          "dependency_report": {
+            "report_contract": "emsr-dependency-hypergraph-report/0.1",
+            "disposition": "NO_DECLARED_COMMON_DOMAIN",
+            "authority": "declared_dependency_assessment_only",
+            "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "snapshot_id": "snapshot-pmtime-01",
+            "evidence_frontier": 1600,
+            "event_time": 1500,
+            "domain": "oscillator",
+            "source_ids": [
+              "pm-ref-01",
+              "ptp-clock-01"
+            ],
+            "source_ancestors": {},
+            "common_dependency_ids": [],
+            "reason_codes": [],
+            "claim_ceiling": "Declared common-dependency assessment only"
+          },
+          "reference_verification": {
+            "verifier_contract": "emsr-dependency-hypergraph-reference-verifier/0.1",
+            "status": "verified",
+            "authority": "independent_reference_algorithm_agreement_only",
+            "checks": [
+              {
+                "id": "input-byte-binding",
+                "result": "pass"
+              },
+              {
+                "id": "query-snapshot-binding",
+                "result": "pass"
+              },
+              {
+                "id": "independent-closure",
+                "result": "pass"
+              },
+              {
+                "id": "derived-disposition",
+                "result": "pass"
+              },
+              {
+                "id": "authority-and-claim-ceiling",
+                "result": "pass"
+              }
+            ],
+            "limitations": []
+          }
+        },
+        {
+          "domain": "gnss_reference",
+          "source_ids": [
+            "pm-ref-01",
+            "ptp-clock-01"
+          ],
+          "event_time_tai_ns": 1500,
+          "snapshot_id": "snapshot-pmtime-01",
+          "evidence_frontier_tai_ns": 1600,
+          "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "dependency_report_artifact_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+          "verification_report_artifact_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "disposition": "NO_DECLARED_COMMON_DOMAIN",
+          "dependency_report": {
+            "report_contract": "emsr-dependency-hypergraph-report/0.1",
+            "disposition": "NO_DECLARED_COMMON_DOMAIN",
+            "authority": "declared_dependency_assessment_only",
+            "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "snapshot_id": "snapshot-pmtime-01",
+            "evidence_frontier": 1600,
+            "event_time": 1500,
+            "domain": "gnss_reference",
+            "source_ids": [
+              "pm-ref-01",
+              "ptp-clock-01"
+            ],
+            "source_ancestors": {},
+            "common_dependency_ids": [],
+            "reason_codes": [],
+            "claim_ceiling": "Declared common-dependency assessment only"
+          },
+          "reference_verification": {
+            "verifier_contract": "emsr-dependency-hypergraph-reference-verifier/0.1",
+            "status": "verified",
+            "authority": "independent_reference_algorithm_agreement_only",
+            "checks": [
+              {
+                "id": "input-byte-binding",
+                "result": "pass"
+              },
+              {
+                "id": "query-snapshot-binding",
+                "result": "pass"
+              },
+              {
+                "id": "independent-closure",
+                "result": "pass"
+              },
+              {
+                "id": "derived-disposition",
+                "result": "pass"
+              },
+              {
+                "id": "authority-and-claim-ceiling",
+                "result": "pass"
+              }
+            ],
+            "limitations": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "PMT-020-missing-source-signature",
+      "description": "Missing source signature evidence is indeterminate, not a clean qualification.",
+      "expected": "TIMESTAMP_INDETERMINATE",
+      "records": [
+        {
+          "record_index": 1,
+          "pmtime_tai_ns": 1500,
+          "period_start_tai_ns": 1000,
+          "period_end_tai_ns": 2000,
+          "timestamp_source_id": "pm-ref-01",
+          "ptp_clock_instance_id": "ptp-clock-01",
+          "time_scale": "TAI",
+          "timestamp_method": "hardware_capture",
+          "configuration_revision": "cfg-1",
+          "configuration_change_receipt_sha256": null,
+          "timestamp_uncertainty_ns": 50,
+          "signature_status": "missing",
+          "calibration": {
+            "status": "current",
+            "certificate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valid_from_tai_ns": 900,
+            "valid_until_tai_ns": 2100,
+            "traceability_ref": "traceability-chain-01"
+          },
+          "timestamp_source_type": "external_reference_clock",
+          "clock_domain_id": "clock-domain-pm-ref-01",
+          "record_received_tai_ns": 1600,
+          "adapter_mapping_version": "omsi.pmtime.adapter/0.1",
+          "record_content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "timestamp_uncertainty_budget_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
+        }
+      ],
+      "dependency_assessments": [
+        {
+          "domain": "clock",
+          "source_ids": [
+            "pm-ref-01",
+            "ptp-clock-01"
+          ],
+          "event_time_tai_ns": 1500,
+          "snapshot_id": "snapshot-pmtime-01",
+          "evidence_frontier_tai_ns": 1600,
+          "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "dependency_report_artifact_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+          "verification_report_artifact_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "disposition": "NO_DECLARED_COMMON_DOMAIN",
+          "dependency_report": {
+            "report_contract": "emsr-dependency-hypergraph-report/0.1",
+            "disposition": "NO_DECLARED_COMMON_DOMAIN",
+            "authority": "declared_dependency_assessment_only",
+            "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "snapshot_id": "snapshot-pmtime-01",
+            "evidence_frontier": 1600,
+            "event_time": 1500,
+            "domain": "clock",
+            "source_ids": [
+              "pm-ref-01",
+              "ptp-clock-01"
+            ],
+            "source_ancestors": {},
+            "common_dependency_ids": [],
+            "reason_codes": [],
+            "claim_ceiling": "Declared common-dependency assessment only"
+          },
+          "reference_verification": {
+            "verifier_contract": "emsr-dependency-hypergraph-reference-verifier/0.1",
+            "status": "verified",
+            "authority": "independent_reference_algorithm_agreement_only",
+            "checks": [
+              {
+                "id": "input-byte-binding",
+                "result": "pass"
+              },
+              {
+                "id": "query-snapshot-binding",
+                "result": "pass"
+              },
+              {
+                "id": "independent-closure",
+                "result": "pass"
+              },
+              {
+                "id": "derived-disposition",
+                "result": "pass"
+              },
+              {
+                "id": "authority-and-claim-ceiling",
+                "result": "pass"
+              }
+            ],
+            "limitations": []
+          }
+        },
+        {
+          "domain": "oscillator",
+          "source_ids": [
+            "pm-ref-01",
+            "ptp-clock-01"
+          ],
+          "event_time_tai_ns": 1500,
+          "snapshot_id": "snapshot-pmtime-01",
+          "evidence_frontier_tai_ns": 1600,
+          "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "dependency_report_artifact_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+          "verification_report_artifact_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "disposition": "NO_DECLARED_COMMON_DOMAIN",
+          "dependency_report": {
+            "report_contract": "emsr-dependency-hypergraph-report/0.1",
+            "disposition": "NO_DECLARED_COMMON_DOMAIN",
+            "authority": "declared_dependency_assessment_only",
+            "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "snapshot_id": "snapshot-pmtime-01",
+            "evidence_frontier": 1600,
+            "event_time": 1500,
+            "domain": "oscillator",
+            "source_ids": [
+              "pm-ref-01",
+              "ptp-clock-01"
+            ],
+            "source_ancestors": {},
+            "common_dependency_ids": [],
+            "reason_codes": [],
+            "claim_ceiling": "Declared common-dependency assessment only"
+          },
+          "reference_verification": {
+            "verifier_contract": "emsr-dependency-hypergraph-reference-verifier/0.1",
+            "status": "verified",
+            "authority": "independent_reference_algorithm_agreement_only",
+            "checks": [
+              {
+                "id": "input-byte-binding",
+                "result": "pass"
+              },
+              {
+                "id": "query-snapshot-binding",
+                "result": "pass"
+              },
+              {
+                "id": "independent-closure",
+                "result": "pass"
+              },
+              {
+                "id": "derived-disposition",
+                "result": "pass"
+              },
+              {
+                "id": "authority-and-claim-ceiling",
+                "result": "pass"
+              }
+            ],
+            "limitations": []
+          }
+        },
+        {
+          "domain": "gnss_reference",
+          "source_ids": [
+            "pm-ref-01",
+            "ptp-clock-01"
+          ],
+          "event_time_tai_ns": 1500,
+          "snapshot_id": "snapshot-pmtime-01",
+          "evidence_frontier_tai_ns": 1600,
+          "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "dependency_report_artifact_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+          "verification_report_artifact_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "disposition": "NO_DECLARED_COMMON_DOMAIN",
+          "dependency_report": {
+            "report_contract": "emsr-dependency-hypergraph-report/0.1",
+            "disposition": "NO_DECLARED_COMMON_DOMAIN",
+            "authority": "declared_dependency_assessment_only",
+            "input_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "snapshot_id": "snapshot-pmtime-01",
+            "evidence_frontier": 1600,
+            "event_time": 1500,
+            "domain": "gnss_reference",
+            "source_ids": [
+              "pm-ref-01",
+              "ptp-clock-01"
+            ],
+            "source_ancestors": {},
+            "common_dependency_ids": [],
+            "reason_codes": [],
+            "claim_ceiling": "Declared common-dependency assessment only"
           },
           "reference_verification": {
             "verifier_contract": "emsr-dependency-hypergraph-reference-verifier/0.1",
