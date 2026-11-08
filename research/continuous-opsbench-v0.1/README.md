@@ -147,3 +147,21 @@ Authority is rechecked at each processed record. Watch scope, event source ident
 The module includes 25 deterministic unit tests across multi-incident events, event coalescing, persistent/ephemeral state, fixed-poll misses, event deadlines and latency, duplicate replay after checkpoint, event-ID collisions, sequence gaps/out-of-order events, authenticated-restart shape, source epoch substitution, final cursor watermark gaps, source unavailability, authority revocation, indeterminate conditions, no-match quiet controls, positive controls and zero consequential mutation.
 
 **Claim ceiling:** this is an offline schedule/conformance evaluator. It does not subscribe to the production CloudEvents path, authenticate event producers, cryptographically validate owner-held restart/watermark evidence, establish real inbox durability, prove delivery SLAs, integrate live Xenia revocation, execute diagnostic collectors or prove production real-time behavior. Source and event records are synthetic inputs; no SREGym/SRE-Marathon result is claimed.
+
+## Independent watch-to-probe receipt auditor v0.1
+
+The additive `src/episode_audit.rs` module independently checks the structural join across the existing event-schedule and watch/probe contracts. It requires an explicit decision for every event in a wake batch (probe requested, stop without probe, ask, abstain or escalate), then checks the probe request against the exact event, watch, authority epoch and read-only catalog entry.
+
+For a requested probe, it checks:
+- request -> wake-decision -> exact event schedule record and wake batch;
+- source observation -> request, event, operation, tenant, target, purpose, collector source and control domain;
+- impact receipt -> the same request/event/operation/scope and a measurement window after admission;
+- observer control-domain separation from the collector;
+- freshness, deadline and authority currentness;
+- decision receipt -> exact observation and impact receipt IDs, recomputed loss reduction and terminal disposition.
+
+Missing/unknown observation, impact or decision evidence produces an explicit indeterminate result; it is never converted to zero. A measured zero resource impact is a distinct, present observation. A write-capable or out-of-scope probe, substituted receipt, orphan request, mismatched event/wake, duplicate receipt identity or consequential mutation attempt is a hard audit failure.
+
+The module includes deterministic positive, no-probe, quiet, missingness, staleness, cross-request substitution, independence-conflict, authority-revocation, write-capability and arithmetic-mutation controls.
+
+**Claim ceiling:** this is a structural offline cross-record auditor over supplied records. It does not authenticate source publishers, verify signatures or raw-byte digests, prove process/organizational independence, execute the production CloudEvents path or real collectors, measure physical probe interference, integrate live Xenia admission, or establish SREGym/SRE-Marathon superiority. A passing audit qualifies only the supplied record graph and frozen synthetic contract.
