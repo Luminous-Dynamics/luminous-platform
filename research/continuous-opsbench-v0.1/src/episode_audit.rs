@@ -1042,6 +1042,11 @@ mod tests {
         AttentionStrategy, EventCheckpoint, EventRecordResult, EventScheduleMetrics,
         ScheduleStatus, WakeRecord,
     };
+    use crate::scheduled_attention::{
+        ScheduledWakeDecision, SourceQualifiedDisposition, SourceQualifiedEvent,
+        SourceQualifiedEventDecision, SourceQualifiedEventIdentity, SourceQualifiedWakeBatch,
+    };
+    use crate::stability::PlantObservation;
     use std::collections::BTreeMap;
 
     fn watch() -> WatchSpec {
@@ -1213,6 +1218,56 @@ mod tests {
         }
     }
 
+    fn scheduled_policy_decision() -> Vec<ScheduledWakeDecision> {
+        let identity = SourceQualifiedEventIdentity {
+            source_id: "event-feed-a".into(),
+            source_epoch: "epoch-1".into(),
+            event_id: "event-10".into(),
+            incident_id: "incident-a".into(),
+            sequence: 10,
+            payload_digest: format!("sha256:{:064x}", 10),
+        };
+        vec![ScheduledWakeDecision {
+            wake: SourceQualifiedWakeBatch {
+                watch_id: "watch-a".into(),
+                authority_epoch: 7,
+                source_epoch: "epoch-1".into(),
+                wake_tick: 6,
+                sequence_start: 10,
+                sequence_end: 10,
+                events: vec![SourceQualifiedEvent {
+                    identity: identity.clone(),
+                    tenant_id: "tenant-a".into(),
+                    target_id: "service-a".into(),
+                    purpose_id: "incident-diagnosis".into(),
+                    event_type: "service-degraded".into(),
+                    condition: crate::event_schedule::ConditionOutcome::Match,
+                    persistence: crate::event_schedule::Persistence::PersistentCondition,
+                    event_tick: 5,
+                    valid_from_tick: 5,
+                    valid_until_tick: 24,
+                    delivered_tick: 5,
+                    processing_tick: 6,
+                    record_retain_until_tick: 30,
+                    response_deadline_tick: 15,
+                }],
+            },
+            observation: PlantObservation {
+                tick: 6,
+                source_tick: 5,
+                observed_queue_depth: 12,
+                observed_latency_ms: 35,
+                observed_failed_ppm: 100_000,
+            },
+            decisions: vec![SourceQualifiedEventDecision {
+                event: identity,
+                disposition: SourceQualifiedDisposition::SelectReadOnlyProbe {
+                    probe_id: "probe-queue".into(),
+                },
+            }],
+        }]
+    }
+
     fn decision() -> DecisionReceipt {
         DecisionReceipt {
             decision_id: "decision-1".into(),
@@ -1258,6 +1313,65 @@ mod tests {
             evidence,
             audited_at_tick,
         })
+    }
+
+    #[test]
+    fn source_qualified_probe_proposal_maps_to_non_admission_and_indeterminate_audit() {
+        let scheduled = scheduled_policy_decision();
+        let receipts = source_qualified_decisions_to_receipts(&scheduled).unwrap();
+
+        assert_eq!(receipts.len(), 1);
+        assert_eq!(receipts[0].source_epoch, "epoch-1");
+        assert_eq!(receipts[0].event_id, "event-10");
+        assert_eq!(receipts[0].incident_id, "incident-a");
+        assert_eq!(receipts[0].event_sequence, 10);
+        assert_eq!(receipts[0].wake_tick, 6);
+        assert_eq!(receipts[0].authority_epoch, 7);
+        assert_eq!(
+            receipts[0].disposition,
+            WakeDisposition::ProbeProposedNotAdmitted {
+                probe_id: "probe-queue".into()
+            }
+        );
+
+        let report = run(
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &receipts,
+            &[],
+            &[],
+            12,
+        );
+        assert_eq!(report.status, AuditStatus::Indeterminate);
+        assert_eq!(report.wake_events, 1);
+        assert_eq!(report.wake_decisions, 1);
+        assert_eq!(report.probe_requests, 0);
+        assert!(report.failures.is_empty());
+        assert!(report
+            .indeterminate_reasons
+            .contains(&IndeterminateReason::ProbeProposalNotAdmitted));
+    }
+
+    #[test]
+    fn source_qualified_audit_bridge_rejects_missing_per_event_disposition() {
+        let mut scheduled = scheduled_policy_decision();
+        scheduled[0].decisions.clear();
+        assert_eq!(
+            source_qualified_decisions_to_receipts(&scheduled),
+            Err(AuditFailure::MissingWakeDecision)
+        );
+    }
+
+    #[test]
+    fn source_qualified_audit_bridge_rejects_event_epoch_substitution() {
+        let mut scheduled = scheduled_policy_decision();
+        scheduled[0].decisions[0].event.source_epoch = "substituted-epoch".into();
+        assert_eq!(
+            source_qualified_decisions_to_receipts(&scheduled),
+            Err(AuditFailure::OrphanWakeDecision)
+        );
     }
 
     #[test]
