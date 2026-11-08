@@ -2311,6 +2311,51 @@ mod tests {
     }
 
     #[test]
+    fn event_arriving_after_gap_deadline_cannot_repair_gap() {
+        let later = event(
+            "event-2",
+            "incident-2",
+            2,
+            2,
+            3,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let first = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(later)],
+            5,
+            None,
+            5,
+            8,
+        );
+        let missing = event(
+            "event-1",
+            "incident-1",
+            1,
+            8,
+            9,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let late = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(missing)],
+            9,
+            Some(first.checkpoint),
+            5,
+            8,
+        );
+        assert_eq!(late.status, ScheduleStatus::DeliveryGap);
+        assert_eq!(late.metrics.gap_timeouts, 1);
+        assert_eq!(late.metrics.wakeups, 0);
+        assert_eq!(late.checkpoint.next_sequence, 1);
+        assert_eq!(late.checkpoint.buffered_events.len(), 1);
+    }
+
+    #[test]
     fn final_watermark_without_later_event_reports_pending_then_timeout() {
         let pending = run_with_gap(
             AttentionStrategy::EventTriggered,
