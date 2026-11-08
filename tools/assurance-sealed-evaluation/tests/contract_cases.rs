@@ -17,20 +17,20 @@ fn public_mechanics_pack_has_exact_nonempty_discovery() {
     assert_eq!(pack.schema, "luminous.sealed-evaluation-contract-cases/0.1");
     assert_eq!(pack.status, "PUBLIC_SYNTHETIC_VERIFIER_MECHANICS_ONLY");
     assert!(!pack.claim_ceiling.trim().is_empty());
-    let expected = [
-        "SEAL-001-valid-reveal",
-        "SEAL-002-private-byte-mutation",
-        "SEAL-003-salt-mutation",
-        "SEAL-004-policy-substitution",
-        "SEAL-005-suite-substitution",
-        "SEAL-006-commit-after-start",
-        "SEAL-007-reveal-before-lock",
-        "SEAL-008-missing-monitor-receipt",
-        "SEAL-009-incomplete-monitor-coverage",
-        "SEAL-010-sequence-gap",
-        "SEAL-011-blocked-private-access-attempt",
-        "SEAL-012-successful-grader-access",
-        "SEAL-013-public-manifest-private-field",
+    let expected = vec![
+        "SEAL-001-valid-reveal".to_owned(),
+        "SEAL-002-private-byte-mutation".to_owned(),
+        "SEAL-003-salt-mutation".to_owned(),
+        "SEAL-004-policy-substitution".to_owned(),
+        "SEAL-005-suite-substitution".to_owned(),
+        "SEAL-006-commit-after-start".to_owned(),
+        "SEAL-007-reveal-before-lock".to_owned(),
+        "SEAL-008-missing-monitor-receipt".to_owned(),
+        "SEAL-009-incomplete-monitor-coverage".to_owned(),
+        "SEAL-010-sequence-gap".to_owned(),
+        "SEAL-011-blocked-private-access-attempt".to_owned(),
+        "SEAL-012-successful-grader-access".to_owned(),
+        "SEAL-013-public-manifest-private-field".to_owned(),
     ];
     assert_eq!(pack.case_ids, expected);
     let unique: BTreeSet<&str> = pack.case_ids.iter().map(String::as_str).collect();
