@@ -49,7 +49,7 @@
       }
     },
     "case_count_expected": {
-      "const": 14
+      "const": 17
     },
     "case_count_discovered": {
       "type": "integer",
