@@ -951,8 +951,8 @@ fn process_event(
     }
 
     if event.sequence > checkpoint.next_sequence {
-        metrics.sequence_gaps += 1;
         if !gap_policy.is_buffered() {
+            metrics.sequence_gaps += 1;
             push_record(
                 records,
                 &event.event_id,
@@ -987,6 +987,7 @@ fn process_event(
             };
             checkpoint.gap_started_at_tick = Some(processing_tick);
             checkpoint.gap_deadline_tick = Some(deadline);
+            metrics.sequence_gaps += 1;
         }
         checkpoint.last_stream_tick = checkpoint.last_stream_tick.max(event.delivered_tick);
         checkpoint
@@ -1075,6 +1076,7 @@ fn process_event(
             };
             state.checkpoint.gap_started_at_tick = Some(processing_tick);
             state.checkpoint.gap_deadline_tick = Some(deadline);
+            state.metrics.sequence_gaps += 1;
         }
     }
 
@@ -2095,6 +2097,60 @@ mod tests {
         assert_eq!(result.wakes.len(), 2);
         assert_eq!(result.wakes[0].event_ids, vec!["event-1"]);
         assert_eq!(result.wakes[1].event_ids, vec!["event-2"]);
+    }
+
+    #[test]
+    fn repairing_one_cursor_starts_a_fresh_deadline_for_the_next_gap() {
+        let timeline = vec![
+            TimelineRecord::Event(event(
+                "event-3",
+                "incident-3",
+                3,
+                2,
+                3,
+                30,
+                15,
+                Persistence::PersistentCondition,
+            )),
+            TimelineRecord::Event(event(
+                "event-1",
+                "incident-1",
+                1,
+                3,
+                4,
+                30,
+                15,
+                Persistence::PersistentCondition,
+            )),
+            TimelineRecord::Event(event(
+                "event-2",
+                "incident-2",
+                2,
+                5,
+                8,
+                30,
+                15,
+                Persistence::PersistentCondition,
+            )),
+        ];
+        let result = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &timeline,
+            10,
+            None,
+            5,
+            8,
+        );
+
+        assert_eq!(result.status, ScheduleStatus::Completed);
+        assert_eq!(result.metrics.sequence_gaps, 2);
+        assert_eq!(result.metrics.gap_repairs, 1);
+        assert_eq!(result.checkpoint.next_sequence, 4);
+        assert!(result.checkpoint.buffered_events.is_empty());
+        assert_eq!(
+            result.wakes.iter().map(|wake| wake.event_ids[0].as_str()).collect::<Vec<_>>(),
+            vec!["event-1", "event-2", "event-3"]
+        );
     }
 
     #[test]
