@@ -636,9 +636,7 @@ fn process_event(
             metrics.relevant_events += 1;
             metrics.missed_deadlines += 1;
         }
-        if event.persistence == Persistence::EphemeralTransition
-            && matches!(strategy, AttentionStrategy::FixedPolling { .. })
-        {
+        if event.persistence == Persistence::EphemeralTransition {
             metrics.missed_ephemeral_events += 1;
         }
         records.push(EventRecordResult {
@@ -1060,6 +1058,161 @@ mod tests {
             None,
         )
         .unwrap()
+    }
+
+
+    #[test]
+    fn delayed_delivery_before_deadline_keeps_original_event_time() {
+        let result = run(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(event(
+                "event-delayed",
+                "incident-delayed",
+                1,
+                2,
+                5,
+                8,
+                7,
+                Persistence::PersistentCondition,
+            ))],
+        );
+        assert_eq!(result.records[0].processed_tick, Some(5));
+        assert_eq!(result.records[0].detection_latency_ticks, Some(3));
+        assert!(result.records[0].deadline_met);
+        assert_eq!(result.metrics.missed_deadlines, 0);
+    }
+
+    #[test]
+    fn late_ephemeral_delivery_misses_deadline_and_is_not_a_wake() {
+        let result = run(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(event(
+                "event-too-late",
+                "incident-too-late",
+                1,
+                2,
+                8,
+                5,
+                7,
+                Persistence::EphemeralTransition,
+            ))],
+        );
+        assert_eq!(result.status, ScheduleStatus::Quiet);
+        assert_eq!(result.metrics.missed_deadlines, 1);
+        assert_eq!(result.metrics.missed_ephemeral_events, 1);
+        assert_eq!(result.metrics.wakeups, 0);
+        assert_eq!(result.records[0].disposition, RecordDisposition::MissedDeadline);
+    }
+
+    #[test]
+    fn fixed_polling_detects_persistent_condition_at_next_poll() {
+        let result = run(
+            AttentionStrategy::FixedPolling { interval_ticks: 10 },
+            &[TimelineRecord::Event(event(
+                "event-persistent",
+                "incident-persistent",
+                1,
+                3,
+                3,
+                25,
+                12,
+                Persistence::PersistentCondition,
+            ))],
+        );
+        assert_eq!(result.metrics.wakeups, 1);
+        assert_eq!(result.records[0].processed_tick, Some(10));
+        assert_eq!(result.records[0].detection_latency_ticks, Some(7));
+    }
+
+    #[test]
+    fn coalescing_never_merges_different_incident_keys() {
+        let mut second = event(
+            "event-2",
+            "incident-2",
+            2,
+            4,
+            4,
+            30,
+            13,
+            Persistence::PersistentCondition,
+        );
+        second.coalesce_key = "other-service".into();
+        let result = run(
+            AttentionStrategy::CoalescedEventTriggered {
+                coalesce_window_ticks: 4,
+            },
+            &[
+                TimelineRecord::Event(event(
+                    "event-1", "incident-1", 1, 3, 3, 30, 12,
+                    Persistence::PersistentCondition,
+                )),
+                TimelineRecord::Event(second),
+            ],
+        );
+        assert_eq!(result.metrics.coalesced_events, 0);
+        assert_eq!(result.wakes.len(), 2);
+        assert_eq!(result.wakes[0].incident_ids, vec!["incident-1"]);
+        assert_eq!(result.wakes[1].incident_ids, vec!["incident-2"]);
+    }
+
+    #[test]
+    fn wake_budget_counts_coalesced_wake_groups_not_raw_event_count() {
+        let mut w = watch();
+        w.max_wakeups = 1;
+        let timeline = vec![
+            TimelineRecord::Event(event(
+                "event-1", "incident-1", 1, 3, 3, 30, 12,
+                Persistence::PersistentCondition,
+            )),
+            TimelineRecord::Event(event(
+                "event-2", "incident-2", 2, 4, 4, 30, 13,
+                Persistence::PersistentCondition,
+            )),
+        ];
+        let result = evaluate_event_schedule(
+            &w,
+            &authority(),
+            AttentionStrategy::CoalescedEventTriggered {
+                coalesce_window_ticks: 2,
+            },
+            &timeline,
+            39,
+            None,
+        )
+        .unwrap();
+        assert_eq!(result.status, ScheduleStatus::Completed);
+        assert_eq!(result.metrics.relevant_events_detected, 2);
+        assert_eq!(result.metrics.wakeups, 1);
+        assert_eq!(result.metrics.cognitive_invocations, 1);
+    }
+
+    #[test]
+    fn wake_budget_exhaustion_does_not_drop_incident_as_quiet() {
+        let mut w = watch();
+        w.max_wakeups = 1;
+        let timeline = vec![
+            TimelineRecord::Event(event(
+                "event-1", "incident-1", 1, 3, 3, 30, 12,
+                Persistence::PersistentCondition,
+            )),
+            TimelineRecord::Event(event(
+                "event-2", "incident-2", 2, 10, 10, 30, 20,
+                Persistence::PersistentCondition,
+            )),
+        ];
+        let result = evaluate_event_schedule(
+            &w,
+            &authority(),
+            AttentionStrategy::EventTriggered,
+            &timeline,
+            39,
+            None,
+        )
+        .unwrap();
+        assert_eq!(result.status, ScheduleStatus::BudgetExhausted);
+        assert_eq!(result.metrics.relevant_events, 2);
+        assert_eq!(result.metrics.relevant_events_detected, 1);
+        assert_eq!(result.metrics.budget_exhaustions, 1);
     }
 
     #[test]
