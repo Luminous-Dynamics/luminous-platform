@@ -420,7 +420,7 @@ pub fn evaluate_event_schedule(
     let mut pending: BTreeMap<u64, BufferedEvent> = BTreeMap::new();
     let mut gap_started_at: Option<u64> = None;
     let mut records = Vec::new();
-    let mut wake_candidates: BTreeMap<u64, WakeCandidate> = BTreeMap::new();
+    let mut wake_candidates: BTreeMap<(u64, u64), WakeCandidate> = BTreeMap::new();
 
     if current_tick < watch.starts_at_tick {
         return Ok(result(
