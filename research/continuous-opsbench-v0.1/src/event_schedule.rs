@@ -596,7 +596,29 @@ struct EventProcessingState<'a> {
     wakes: &'a mut Vec<WakeRecord>,
 }
 
-fn process_event(
+fn push_record(
+    records: &mut Vec<EventRecordResult>,
+    event_id: &str,
+    incident_id: &str,
+    sequence: u64,
+    delivered_tick: u64,
+    processing_tick: u64,
+    disposition: RecordDisposition,
+    deadline_met: bool,
+) {
+    records.push(EventRecordResult {
+        event_id: event_id.to_owned(),
+        incident_id: incident_id.to_owned(),
+        sequence,
+        delivered_tick,
+        processed_tick: Some(processing_tick),
+        disposition,
+        detection_latency_ticks: None,
+        deadline_met,
+    });
+}
+
+fn process_event_in_order(
     state: &mut EventProcessingState<'_>,
     event: &SourceEvent,
     processing_tick: u64,
@@ -610,102 +632,11 @@ fn process_event(
         records,
         pending,
         wakes,
+        ..
     } = state;
-    metrics.source_records += 1;
-
-    if event.source_id != watch.source_id {
-        metrics.scope_rejections += 1;
-        records.push(EventRecordResult {
-            event_id: event.event_id.clone(),
-            incident_id: event.incident_id.clone(),
-            sequence: event.sequence,
-            delivered_tick: event.delivered_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::ScopeRejected,
-            detection_latency_ticks: None,
-            deadline_met: false,
-        });
-        return Some(ScheduleStatus::SourceIdentityMismatch);
-    }
-
-    let previous = checkpoint.seen_event_ids.get(&event.event_id);
-    if let Some((epoch, sequence, digest)) = previous {
-        if epoch == &event.source_epoch
-            && *sequence == event.sequence
-            && digest == &event.payload_digest
-        {
-            metrics.duplicates_suppressed += 1;
-            records.push(EventRecordResult {
-                event_id: event.event_id.clone(),
-                incident_id: event.incident_id.clone(),
-                sequence: event.sequence,
-                delivered_tick: event.delivered_tick,
-                processed_tick: Some(processing_tick),
-                disposition: RecordDisposition::DuplicateSuppressed,
-                detection_latency_ticks: None,
-                deadline_met: true,
-            });
-            return None;
-        }
-        metrics.identity_collisions += 1;
-        records.push(EventRecordResult {
-            event_id: event.event_id.clone(),
-            incident_id: event.incident_id.clone(),
-            sequence: event.sequence,
-            delivered_tick: event.delivered_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::IdentityCollision,
-            detection_latency_ticks: None,
-            deadline_met: false,
-        });
-        return Some(ScheduleStatus::IdentityCollision);
-    }
-
-    if event.source_epoch != checkpoint.source_epoch {
-        records.push(EventRecordResult {
-            event_id: event.event_id.clone(),
-            incident_id: event.incident_id.clone(),
-            sequence: event.sequence,
-            delivered_tick: event.delivered_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::SourceEpochMismatch,
-            detection_latency_ticks: None,
-            deadline_met: false,
-        });
-        return Some(ScheduleStatus::SourceEpochMismatch);
-    }
-
-    if event.sequence > checkpoint.next_sequence {
-        metrics.sequence_gaps += 1;
-        records.push(EventRecordResult {
-            event_id: event.event_id.clone(),
-            incident_id: event.incident_id.clone(),
-            sequence: event.sequence,
-            delivered_tick: event.delivered_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::DeliveryGap,
-            detection_latency_ticks: None,
-            deadline_met: false,
-        });
-        return Some(ScheduleStatus::DeliveryGap);
-    }
-    if event.sequence < checkpoint.next_sequence {
-        metrics.out_of_order_records += 1;
-        records.push(EventRecordResult {
-            event_id: event.event_id.clone(),
-            incident_id: event.incident_id.clone(),
-            sequence: event.sequence,
-            delivered_tick: event.delivered_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::OutOfOrder,
-            detection_latency_ticks: None,
-            deadline_met: false,
-        });
-        return Some(ScheduleStatus::OutOfOrder);
-    }
 
     checkpoint.next_sequence = checkpoint.next_sequence.saturating_add(1);
-    checkpoint.last_stream_tick = event.delivered_tick;
+    checkpoint.last_stream_tick = checkpoint.last_stream_tick.max(event.delivered_tick);
     checkpoint.seen_event_ids.insert(
         event.event_id.clone(),
         (
@@ -722,30 +653,30 @@ fn process_event(
         && event.event_type == watch.event_type;
     if !scope_matches {
         metrics.scope_rejections += 1;
-        records.push(EventRecordResult {
-            event_id: event.event_id.clone(),
-            incident_id: event.incident_id.clone(),
-            sequence: event.sequence,
-            delivered_tick: event.delivered_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::ScopeRejected,
-            detection_latency_ticks: None,
-            deadline_met: true,
-        });
+        push_record(
+            records,
+            &event.event_id,
+            &event.incident_id,
+            event.sequence,
+            event.delivered_tick,
+            processing_tick,
+            RecordDisposition::ScopeRejected,
+            true,
+        );
         return None;
     }
 
     if !authority.current_for(watch, processing_tick) {
-        records.push(EventRecordResult {
-            event_id: event.event_id.clone(),
-            incident_id: event.incident_id.clone(),
-            sequence: event.sequence,
-            delivered_tick: event.delivered_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::AuthorityRevokedOrExpired,
-            detection_latency_ticks: None,
-            deadline_met: false,
-        });
+        push_record(
+            records,
+            &event.event_id,
+            &event.incident_id,
+            event.sequence,
+            event.delivered_tick,
+            processing_tick,
+            RecordDisposition::AuthorityRevokedOrExpired,
+            false,
+        );
         return Some(ScheduleStatus::AuthorityRevokedOrExpired);
     }
 
@@ -757,16 +688,16 @@ fn process_event(
         if event.persistence == Persistence::EphemeralTransition {
             metrics.missed_ephemeral_events += 1;
         }
-        records.push(EventRecordResult {
-            event_id: event.event_id.clone(),
-            incident_id: event.incident_id.clone(),
-            sequence: event.sequence,
-            delivered_tick: event.delivered_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::MissedDeadline,
-            detection_latency_ticks: None,
-            deadline_met: false,
-        });
+        push_record(
+            records,
+            &event.event_id,
+            &event.incident_id,
+            event.sequence,
+            event.delivered_tick,
+            processing_tick,
+            RecordDisposition::MissedDeadline,
+            false,
+        );
         return None;
     }
 
@@ -784,16 +715,16 @@ fn process_event(
         {
             metrics.missed_ephemeral_events += 1;
         }
-        records.push(EventRecordResult {
-            event_id: event.event_id.clone(),
-            incident_id: event.incident_id.clone(),
-            sequence: event.sequence,
-            delivered_tick: event.delivered_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::ExpiredBeforeProcessing,
-            detection_latency_ticks: None,
-            deadline_met: false,
-        });
+        push_record(
+            records,
+            &event.event_id,
+            &event.incident_id,
+            event.sequence,
+            event.delivered_tick,
+            processing_tick,
+            RecordDisposition::ExpiredBeforeProcessing,
+            false,
+        );
         return None;
     }
 
@@ -804,29 +735,29 @@ fn process_event(
     match event.condition {
         ConditionOutcome::NoMatch => {
             metrics.quiet_events += 1;
-            records.push(EventRecordResult {
-                event_id: event.event_id.clone(),
-                incident_id: event.incident_id.clone(),
-                sequence: event.sequence,
-                delivered_tick: event.delivered_tick,
-                processed_tick: Some(processing_tick),
-                disposition: RecordDisposition::Quiet,
-                detection_latency_ticks: None,
-                deadline_met: true,
-            });
+            push_record(
+                records,
+                &event.event_id,
+                &event.incident_id,
+                event.sequence,
+                event.delivered_tick,
+                processing_tick,
+                RecordDisposition::Quiet,
+                true,
+            );
         }
         ConditionOutcome::Indeterminate => {
             metrics.indeterminate_events += 1;
-            records.push(EventRecordResult {
-                event_id: event.event_id.clone(),
-                incident_id: event.incident_id.clone(),
-                sequence: event.sequence,
-                delivered_tick: event.delivered_tick,
-                processed_tick: Some(processing_tick),
-                disposition: RecordDisposition::IndeterminateCondition,
-                detection_latency_ticks: None,
-                deadline_met: false,
-            });
+            push_record(
+                records,
+                &event.event_id,
+                &event.incident_id,
+                event.sequence,
+                event.delivered_tick,
+                processing_tick,
+                RecordDisposition::IndeterminateCondition,
+                false,
+            );
             return Some(ScheduleStatus::Indeterminate);
         }
         ConditionOutcome::Match => {
@@ -869,6 +800,284 @@ fn process_event(
             });
         }
     }
+    None
+}
+
+fn gap_timeout(
+    checkpoint: &EventCheckpoint,
+    processing_tick: u64,
+    metrics: &mut EventScheduleMetrics,
+    records: &mut Vec<EventRecordResult>,
+) -> ScheduleStatus {
+    metrics.gap_timeouts += 1;
+    push_record(
+        records,
+        &format!("gap:{}:{}", checkpoint.source_epoch, checkpoint.next_sequence),
+        "",
+        checkpoint.next_sequence,
+        checkpoint.gap_deadline_tick.unwrap_or(processing_tick),
+        processing_tick,
+        RecordDisposition::DeliveryGap,
+        false,
+    );
+    ScheduleStatus::DeliveryGap
+}
+
+fn process_event(
+    state: &mut EventProcessingState<'_>,
+    event: &SourceEvent,
+    processing_tick: u64,
+) -> Option<ScheduleStatus> {
+    let EventProcessingState {
+        watch,
+        strategy: _,
+        gap_policy,
+        checkpoint,
+        metrics,
+        records,
+        ..
+    } = state;
+    metrics.source_records += 1;
+
+    if event.source_id != watch.source_id {
+        metrics.scope_rejections += 1;
+        push_record(
+            records,
+            &event.event_id,
+            &event.incident_id,
+            event.sequence,
+            event.delivered_tick,
+            processing_tick,
+            RecordDisposition::ScopeRejected,
+            false,
+        );
+        return Some(ScheduleStatus::SourceIdentityMismatch);
+    }
+
+    let previous = checkpoint.seen_event_ids.get(&event.event_id);
+    if let Some((epoch, sequence, digest)) = previous {
+        if epoch == &event.source_epoch
+            && *sequence == event.sequence
+            && digest == &event.payload_digest
+        {
+            metrics.duplicates_suppressed += 1;
+            push_record(
+                records,
+                &event.event_id,
+                &event.incident_id,
+                event.sequence,
+                event.delivered_tick,
+                processing_tick,
+                RecordDisposition::DuplicateSuppressed,
+                true,
+            );
+            return None;
+        }
+        metrics.identity_collisions += 1;
+        push_record(
+            records,
+            &event.event_id,
+            &event.incident_id,
+            event.sequence,
+            event.delivered_tick,
+            processing_tick,
+            RecordDisposition::IdentityCollision,
+            false,
+        );
+        return Some(ScheduleStatus::IdentityCollision);
+    }
+
+    if let Some(buffered) = checkpoint.buffered_events.get(&event.sequence) {
+        if buffered == event {
+            metrics.duplicates_suppressed += 1;
+            push_record(
+                records,
+                &event.event_id,
+                &event.incident_id,
+                event.sequence,
+                event.delivered_tick,
+                processing_tick,
+                RecordDisposition::DuplicateSuppressed,
+                true,
+            );
+            return None;
+        }
+        metrics.identity_collisions += 1;
+        push_record(
+            records,
+            &event.event_id,
+            &event.incident_id,
+            event.sequence,
+            event.delivered_tick,
+            processing_tick,
+            RecordDisposition::IdentityCollision,
+            false,
+        );
+        return Some(ScheduleStatus::IdentityCollision);
+    }
+
+    if checkpoint
+        .buffered_events
+        .values()
+        .any(|buffered| buffered.event_id == event.event_id)
+    {
+        metrics.identity_collisions += 1;
+        push_record(
+            records,
+            &event.event_id,
+            &event.incident_id,
+            event.sequence,
+            event.delivered_tick,
+            processing_tick,
+            RecordDisposition::IdentityCollision,
+            false,
+        );
+        return Some(ScheduleStatus::IdentityCollision);
+    }
+
+    if event.source_epoch != checkpoint.source_epoch {
+        push_record(
+            records,
+            &event.event_id,
+            &event.incident_id,
+            event.sequence,
+            event.delivered_tick,
+            processing_tick,
+            RecordDisposition::SourceEpochMismatch,
+            false,
+        );
+        return Some(ScheduleStatus::SourceEpochMismatch);
+    }
+
+    if event.sequence > checkpoint.next_sequence {
+        metrics.sequence_gaps += 1;
+        if !gap_policy.is_buffered() {
+            push_record(
+                records,
+                &event.event_id,
+                &event.incident_id,
+                event.sequence,
+                event.delivered_tick,
+                processing_tick,
+                RecordDisposition::DeliveryGap,
+                false,
+            );
+            return Some(ScheduleStatus::DeliveryGap);
+        }
+
+        if checkpoint.buffered_events.len() >= gap_policy.max_buffered_events {
+            metrics.gap_buffer_overflows += 1;
+            push_record(
+                records,
+                &event.event_id,
+                &event.incident_id,
+                event.sequence,
+                event.delivered_tick,
+                processing_tick,
+                RecordDisposition::BudgetExhausted,
+                false,
+            );
+            return Some(ScheduleStatus::BudgetExhausted);
+        }
+
+        if checkpoint.gap_started_at_tick.is_none() {
+            let Some(deadline) = processing_tick.checked_add(gap_policy.timeout_ticks) else {
+                return Some(ScheduleStatus::InvalidSchedule);
+            };
+            checkpoint.gap_started_at_tick = Some(processing_tick);
+            checkpoint.gap_deadline_tick = Some(deadline);
+        }
+        checkpoint.last_stream_tick = checkpoint.last_stream_tick.max(event.delivered_tick);
+        checkpoint
+            .buffered_events
+            .insert(event.sequence, event.clone());
+        metrics.buffered_events += 1;
+        metrics.max_buffered_event_count = metrics
+            .max_buffered_event_count
+            .max(checkpoint.buffered_events.len());
+        push_record(
+            records,
+            &event.event_id,
+            &event.incident_id,
+            event.sequence,
+            event.delivered_tick,
+            processing_tick,
+            RecordDisposition::BufferedForSequence,
+            false,
+        );
+        return None;
+    }
+
+    if event.sequence < checkpoint.next_sequence {
+        metrics.out_of_order_records += 1;
+        push_record(
+            records,
+            &event.event_id,
+            &event.incident_id,
+            event.sequence,
+            event.delivered_tick,
+            processing_tick,
+            RecordDisposition::OutOfOrder,
+            false,
+        );
+        return Some(ScheduleStatus::OutOfOrder);
+    }
+
+    if checkpoint
+        .gap_deadline_tick
+        .is_some_and(|deadline| processing_tick >= deadline)
+    {
+        return Some(gap_timeout(checkpoint, processing_tick, metrics, records));
+    }
+
+    if let Some(status) = process_event_in_order(state, event, processing_tick) {
+        return Some(status);
+    }
+
+    if gap_policy.is_buffered() {
+        loop {
+            let next_sequence = state.checkpoint.next_sequence;
+            let Some(buffered_event) = state.checkpoint.buffered_events.remove(&next_sequence)
+            else {
+                break;
+            };
+            if state
+                .checkpoint
+                .gap_deadline_tick
+                .is_some_and(|deadline| processing_tick >= deadline)
+            {
+                state
+                    .checkpoint
+                    .buffered_events
+                    .insert(next_sequence, buffered_event);
+                let state = &mut **state;
+                return Some(gap_timeout(
+                    state.checkpoint,
+                    processing_tick,
+                    state.metrics,
+                    state.records,
+                ));
+            }
+            if let Some(status) =
+                process_event_in_order(state, &buffered_event, processing_tick)
+            {
+                return Some(status);
+            }
+            state.metrics.gap_repairs += 1;
+        }
+
+        if state.checkpoint.buffered_events.is_empty() {
+            state.checkpoint.gap_started_at_tick = None;
+            state.checkpoint.gap_deadline_tick = None;
+        } else {
+            let Some(deadline) = processing_tick.checked_add(gap_policy.timeout_ticks) else {
+                return Some(ScheduleStatus::InvalidSchedule);
+            };
+            state.checkpoint.gap_started_at_tick = Some(processing_tick);
+            state.checkpoint.gap_deadline_tick = Some(deadline);
+        }
+    }
+
     None
 }
 
