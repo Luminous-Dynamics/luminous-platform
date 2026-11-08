@@ -208,3 +208,45 @@ fn measurement_qualification_requires_a_decision_bound_measurement_context() {
     scorecard["measurement_context"]["uncertainty"]["model_sha256"] = json!(null);
     assert!(!schema_validator().is_valid(&scorecard));
 }
+
+#[test]
+fn current_calibration_requires_a_certificate_and_traceability_chain() {
+    let digest = "c".repeat(64);
+    let mut scorecard: Value = serde_json::from_str(SCORECARD_TEMPLATE).expect("template");
+    scorecard["decision_context"]["policy_sha256"] = json!(digest);
+    scorecard["results"]["metric_families"] = json!({
+        "measurement_qualification": [{
+            "metric_id": "false_qualification_rate",
+            "value": 0.0,
+            "unit": "fraction",
+            "aggregation": "rate",
+            "sample_count": 2,
+            "population_id": "synthetic-negative-controls",
+            "numerator": 0,
+            "denominator": 2,
+            "uncertainty": { "method": "exact-binomial" }
+        }]
+    });
+    scorecard["measurement_context"] = json!({
+        "measurand": {"quantity_id":"phase-error","quantity_kind":"time_error","unit":"ns"},
+        "instrument": {
+            "instrument_id":"reference-01","model":"synthetic","hardware_revision":"rev-a",
+            "firmware_sha256":digest,"configuration_sha256":digest,"sensor_front_end_id":"fe-a"
+        },
+        "acquisition": {"method_id":"capture-v1","timebase":"TAI","environment_digest":digest,"capture_config_sha256":digest},
+        "calibration": {
+            "status":"current","certificate_sha256":null,"valid_from":"2026-01-01",
+            "valid_until":"2027-01-01","traceability_refs":[]
+        },
+        "uncertainty": {
+            "status":"unknown","propagation_method":"unknown","model_sha256":null,"budget_sha256":null,
+            "covariance_model":"unknown","nonlinearity_treatment":"unknown","coverage_probability":null,
+            "coverage_lower":null,"coverage_upper":null,"unit":"ns","contributors":[]
+        },
+        "reference_measurement": {
+            "reference_system_id":"reference-01","method_id":"comparison-v1",
+            "evidence_sha256":null,"uncertainty_budget_sha256":null
+        }
+    });
+    assert!(!schema_validator().is_valid(&scorecard));
+}
