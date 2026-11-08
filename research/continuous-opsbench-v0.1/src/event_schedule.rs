@@ -187,7 +187,7 @@ pub struct WakeRecord {
     pub coalesce_key: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct EventScheduleMetrics {
     pub source_records: usize,
     pub unique_events: usize,
@@ -216,38 +216,6 @@ pub struct EventScheduleMetrics {
     pub max_event_backlog_ticks: u64,
     pub max_detection_latency_ticks: u64,
     pub consequential_mutation_attempts: usize,
-}
-
-impl Default for EventScheduleMetrics {
-    fn default() -> Self {
-        Self {
-            source_records: 0,
-            unique_events: 0,
-            duplicates_suppressed: 0,
-            identity_collisions: 0,
-            sequence_gaps: 0,
-            out_of_order_records: 0,
-            restarts_accepted: 0,
-            restarts_rejected: 0,
-            scope_rejections: 0,
-            watermarks_checked: 0,
-            source_unavailable: 0,
-            quiet_events: 0,
-            indeterminate_events: 0,
-            relevant_events: 0,
-            relevant_events_detected: 0,
-            missed_deadlines: 0,
-            missed_ephemeral_events: 0,
-            event_wake_notifications: 0,
-            wakeups: 0,
-            cognitive_invocations: 0,
-            coalesced_events: 0,
-            budget_exhaustions: 0,
-            max_event_backlog_ticks: 0,
-            max_detection_latency_ticks: 0,
-            consequential_mutation_attempts: 0,
-        }
-    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -441,25 +409,29 @@ fn poll_tick_at_or_after(start: u64, interval: u64, target: u64) -> Option<u64> 
     start.checked_add(steps.checked_mul(interval)?)
 }
 
-fn make_result(
-    watch: &EventWatch,
-    strategy: AttentionStrategy,
-    authority: &AuthorityWindow,
+struct ScheduleOutput {
     status: ScheduleStatus,
     metrics: EventScheduleMetrics,
     records: Vec<EventRecordResult>,
     wakes: Vec<WakeRecord>,
     checkpoint: EventCheckpoint,
+}
+
+fn make_result(
+    watch: &EventWatch,
+    strategy: AttentionStrategy,
+    authority: &AuthorityWindow,
+    output: ScheduleOutput,
 ) -> EventScheduleResult {
     EventScheduleResult {
-        status,
+        status: output.status,
         watch_id: watch.watch_id.clone(),
         strategy,
         authority_epoch: authority.epoch,
-        metrics,
-        records,
-        wakes,
-        checkpoint,
+        metrics: output.metrics,
+        records: output.records,
+        wakes: output.wakes,
+        checkpoint: output.checkpoint,
         consequential_mutation_attempts: 0,
     }
 }
@@ -547,18 +519,32 @@ fn apply_wake(
     }
 }
 
-fn process_event(
-    watch: &EventWatch,
-    authority: &AuthorityWindow,
+struct EventProcessingState<'a> {
+    watch: &'a EventWatch,
+    authority: &'a AuthorityWindow,
     strategy: AttentionStrategy,
+    checkpoint: &'a mut EventCheckpoint,
+    metrics: &'a mut EventScheduleMetrics,
+    records: &'a mut Vec<EventRecordResult>,
+    pending: &'a mut Vec<PendingWake>,
+    wakes: &'a mut Vec<WakeRecord>,
+}
+
+fn process_event(
+    state: &mut EventProcessingState<'_>,
     event: &SourceEvent,
     processing_tick: u64,
-    checkpoint: &mut EventCheckpoint,
-    metrics: &mut EventScheduleMetrics,
-    records: &mut Vec<EventRecordResult>,
-    pending: &mut Vec<PendingWake>,
-    wakes: &mut Vec<WakeRecord>,
 ) -> Option<ScheduleStatus> {
+    let EventProcessingState {
+        watch,
+        authority,
+        strategy,
+        checkpoint,
+        metrics,
+        records,
+        pending,
+        wakes,
+    } = state;
     metrics.source_records += 1;
 
     if event.source_id != watch.source_id {
@@ -986,8 +972,8 @@ pub fn evaluate_event_schedule(
             return Err(ScheduleError::InvalidStrategy);
         }
         AttentionStrategy::CoalescedEventTriggered {
-            coalesce_window_ticks,
-        } if coalesce_window_ticks == 0 => return Err(ScheduleError::InvalidStrategy),
+            coalesce_window_ticks: 0,
+        } => return Err(ScheduleError::InvalidStrategy),
         _ => {}
     }
 
@@ -1017,11 +1003,13 @@ pub fn evaluate_event_schedule(
             watch,
             strategy,
             authority,
-            ScheduleStatus::Quiet,
-            metrics,
-            records,
-            wakes,
-            checkpoint,
+            ScheduleOutput {
+                status: ScheduleStatus::Quiet,
+                metrics,
+                records,
+                wakes,
+                checkpoint,
+            },
         ));
     }
 
@@ -1030,11 +1018,13 @@ pub fn evaluate_event_schedule(
             watch,
             strategy,
             authority,
-            ScheduleStatus::AuthorityRevokedOrExpired,
-            metrics,
-            records,
-            wakes,
-            checkpoint,
+            ScheduleOutput {
+                status: ScheduleStatus::AuthorityRevokedOrExpired,
+                metrics,
+                records,
+                wakes,
+                checkpoint,
+            },
         ));
     }
 
@@ -1090,18 +1080,19 @@ pub fn evaluate_event_schedule(
         }
 
         let result = match item {
-            TimelineRecord::Event(event) => process_event(
-                watch,
-                authority,
-                strategy,
-                event,
-                processing_tick,
-                &mut checkpoint,
-                &mut metrics,
-                &mut records,
-                &mut pending,
-                &mut wakes,
-            ),
+            TimelineRecord::Event(event) => {
+                let mut state = EventProcessingState {
+                    watch,
+                    authority,
+                    strategy,
+                    checkpoint: &mut checkpoint,
+                    metrics: &mut metrics,
+                    records: &mut records,
+                    pending: &mut pending,
+                    wakes: &mut wakes,
+                };
+                process_event(&mut state, event, processing_tick)
+            },
             TimelineRecord::Restart(restart) => apply_restart(
                 watch,
                 restart,
@@ -1131,14 +1122,21 @@ pub fn evaluate_event_schedule(
     metrics.wakeups = wakes.len();
     metrics.cognitive_invocations = wakes.len();
 
-    if status == ScheduleStatus::Completed {
-        if metrics.wakeups == 0 {
-            status = ScheduleStatus::Quiet;
-        }
+    if status == ScheduleStatus::Completed && metrics.wakeups == 0 {
+        status = ScheduleStatus::Quiet;
     }
 
     Ok(make_result(
-        watch, strategy, authority, status, metrics, records, wakes, checkpoint,
+        watch,
+        strategy,
+        authority,
+        ScheduleOutput {
+            status,
+            metrics,
+            records,
+            wakes,
+            checkpoint,
+        },
     ))
 }
 
