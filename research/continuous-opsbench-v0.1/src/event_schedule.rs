@@ -1092,7 +1092,7 @@ pub fn evaluate_event_schedule(
                     wakes: &mut wakes,
                 };
                 process_event(&mut state, event, processing_tick)
-            },
+            }
             TimelineRecord::Restart(restart) => apply_restart(
                 watch,
                 restart,
