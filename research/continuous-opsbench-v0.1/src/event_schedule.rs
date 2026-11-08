@@ -878,8 +878,7 @@ fn process_watermark(
 
     let event_id = format!(
         "watermark:{}:{}",
-        watermark.source_epoch,
-        watermark.next_sequence
+        watermark.source_epoch, watermark.next_sequence
     );
     if watermark.source_id != watch.source_id {
         metrics.scope_rejections += 1;
@@ -1212,7 +1211,6 @@ mod tests {
     fn run(strategy: AttentionStrategy, timeline: &[TimelineRecord]) -> EventScheduleResult {
         evaluate_event_schedule(&watch(), &authority(), strategy, timeline, 39, None).unwrap()
     }
-
 
     fn watermark(next_sequence: u64, observed_tick: u64, available: bool) -> SourceWatermark {
         SourceWatermark {
