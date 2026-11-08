@@ -98,7 +98,7 @@
     },
     "cases": {
       "type": "array",
-      "minItems": 18,
+      "minItems": 20,
       "items": {
         "$ref": "#/$defs/case"
       }
@@ -225,6 +225,13 @@
           "type": [
             "string",
             "null"
+          ],
+          "enum": [
+            "valid",
+            "invalid",
+            "missing",
+            "unknown",
+            null
           ]
         },
         "calibration": {
