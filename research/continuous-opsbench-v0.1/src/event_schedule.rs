@@ -10,7 +10,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::watch_probe::{AuthoritySnapshot, WatchSpec};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum EventPriority {
     Normal,
     Critical,
@@ -102,6 +102,7 @@ pub struct EventWakeBatch {
     pub wake_index: u32,
     pub processing_tick: u64,
     pub source_epoch: u64,
+    pub priority: EventPriority,
     pub first_sequence: u64,
     pub last_sequence: u64,
     pub event_ids: Vec<String>,
@@ -311,7 +312,7 @@ struct EventProcessingContext<'a> {
     authority: &'a AuthoritySnapshot,
     metrics: &'a mut EventScheduleMetrics,
     dispositions: &'a mut [EventDispositionRecord],
-    wake_candidates: &'a mut BTreeMap<(u64, u64), WakeCandidate>,
+    wake_candidates: &'a mut BTreeMap<(u64, u64, EventPriority), WakeCandidate>,
 }
 
 fn process_ordered_event(
@@ -374,7 +375,7 @@ fn process_ordered_event(
     context.metrics.valid_relevant_events += 1;
     let candidate = context
         .wake_candidates
-        .entry((effective_processing_tick, source_epoch))
+        .entry((effective_processing_tick, source_epoch, event.priority))
         .or_default();
     candidate.members.push(WakeMember {
         event_id: event.event_id,
@@ -420,7 +421,7 @@ pub fn evaluate_event_schedule(
     let mut pending: BTreeMap<u64, BufferedEvent> = BTreeMap::new();
     let mut gap_started_at: Option<u64> = None;
     let mut records = Vec::new();
-    let mut wake_candidates: BTreeMap<(u64, u64), WakeCandidate> = BTreeMap::new();
+    let mut wake_candidates: BTreeMap<(u64, u64, EventPriority), WakeCandidate> = BTreeMap::new();
 
     if current_tick < watch.starts_at_tick {
         return Ok(result(
@@ -729,13 +730,10 @@ pub fn evaluate_event_schedule(
     let mut normal_wakes = 0u32;
     let mut wake_batches = Vec::new();
 
-    for ((tick, candidate_epoch), candidate) in wake_candidates {
-        let has_critical = candidate
-            .members
-            .iter()
-            .any(|member| member.priority == EventPriority::Critical);
-        let admitted =
-            (wake_batches.len() as u32) < wake_cap && (has_critical || normal_wakes < normal_cap);
+    for ((tick, candidate_epoch, batch_priority), candidate) in wake_candidates {
+        let is_critical_batch = batch_priority == EventPriority::Critical;
+        let admitted = (wake_batches.len() as u32) < wake_cap
+            && (is_critical_batch || normal_wakes < normal_cap);
 
         if !admitted {
             metrics.wake_budget_suppressed_events += candidate.members.len();
@@ -745,7 +743,7 @@ pub fn evaluate_event_schedule(
             continue;
         }
 
-        if !has_critical {
+        if !is_critical_batch {
             normal_wakes += 1;
         }
         let mut event_ids = BTreeSet::new();
@@ -794,6 +792,7 @@ pub fn evaluate_event_schedule(
             wake_index: wake_batches.len() as u32 + 1,
             processing_tick: tick,
             source_epoch: candidate_epoch,
+            priority: batch_priority,
             first_sequence: first_sequence.min(last_sequence),
             last_sequence,
             event_ids: event_ids.into_iter().collect(),
@@ -1140,6 +1139,34 @@ mod tests {
         let result = evaluate(&[event(10, "evt-epoch-1", "incident-a", 5), restart], 6);
         assert_eq!(result.status, EventRunStatus::InvalidSourceEpoch);
         assert_eq!(result.metrics.invalid_source_epochs, 1);
+    }
+
+
+    #[test]
+    fn critical_and_normal_events_at_same_tick_do_not_share_reserved_wake_slot() {
+        let mut cfg = config();
+        cfg.max_wakeups = 1;
+        cfg.critical_wakeup_reserve = 1;
+        let mut normal = event(10, "evt-normal", "incident-normal", 5);
+        normal.priority = EventPriority::Normal;
+        let mut critical = event(11, "evt-critical", "incident-critical", 5);
+        critical.priority = EventPriority::Critical;
+
+        let result = evaluate_event_schedule(
+            &watch(),
+            &authority(),
+            &cfg,
+            &[normal, critical],
+            5,
+        )
+        .unwrap();
+
+        assert_eq!(result.wake_batches.len(), 1);
+        assert_eq!(result.wake_batches[0].priority, EventPriority::Critical);
+        assert_eq!(result.wake_batches[0].event_ids, vec!["evt-critical"]);
+        assert_eq!(result.metrics.wake_budget_suppressed_events, 1);
+        assert_eq!(result.metrics.critical_events_woken, 1);
+        assert_eq!(result.metrics.normal_events_woken, 0);
     }
 
     #[test]
