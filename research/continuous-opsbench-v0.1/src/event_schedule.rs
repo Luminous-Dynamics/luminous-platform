@@ -1043,7 +1043,10 @@ mod tests {
         let result = evaluate(&[wrong_scope, next], &watch(), &authority());
         assert_eq!(result.metrics.rejected_scope_events, 1);
         assert_eq!(result.metrics.wakeups, 1);
-        assert_eq!(result.records[0].disposition, EventRecordDisposition::RejectedScope);
+        assert_eq!(
+            result.records[0].disposition,
+            EventRecordDisposition::RejectedScope
+        );
     }
 
     #[test]
