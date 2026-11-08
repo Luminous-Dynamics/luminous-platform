@@ -1259,7 +1259,7 @@ fn process_watermark(
         detection_latency_ticks: None,
         deadline_met: true,
     });
-    checkpoint.last_stream_tick = watermark.observed_tick;
+    checkpoint.last_stream_tick = checkpoint.last_stream_tick.max(watermark.observed_tick);
     None
 }
 
