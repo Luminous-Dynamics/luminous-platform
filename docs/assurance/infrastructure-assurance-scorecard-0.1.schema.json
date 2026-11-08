@@ -1060,7 +1060,7 @@
           "minLength": 1
         },
         "policy_sha256": {
-          "$ref": "#/$defs/digest"
+          "$ref": "#/$defs/nullableDigest"
         },
         "permitted_dispositions": {
           "type": "array",
@@ -1277,6 +1277,13 @@
                     "outcome"
                   ]
                 }
+              }
+            }
+          },
+          "decision_context": {
+            "properties": {
+              "policy_sha256": {
+                "$ref": "#/$defs/digest"
               }
             }
           }
