@@ -1285,9 +1285,9 @@ mod tests {
         );
         assert_eq!(report.status, AuditStatus::Indeterminate);
         assert_eq!(report.impacts_verified, 0);
-        assert!(report.indeterminate_reasons.contains(
-            &IndeterminateReason::ImpactIndependenceUnestablished
-        ));
+        assert!(report
+            .indeterminate_reasons
+            .contains(&IndeterminateReason::ImpactIndependenceUnestablished));
     }
 
     #[test]
@@ -1371,9 +1371,7 @@ mod tests {
             12,
         );
         assert_eq!(report.status, AuditStatus::Failed);
-        assert!(report
-            .failures
-            .contains(&AuditFailure::MissingWakeDecision));
+        assert!(report.failures.contains(&AuditFailure::MissingWakeDecision));
     }
 
     #[test]
