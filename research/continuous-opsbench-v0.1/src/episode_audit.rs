@@ -305,7 +305,7 @@ fn wake_contains_event(
                 .event_ids
                 .iter()
                 .zip(wake.incident_ids.iter())
-                .any(|(id, incident)| id == event_id && incident == incident_id)
+                .any(|(id, incident)| id.as_str() == event_id && incident.as_str() == incident_id)
     })
 }
 
@@ -1084,6 +1084,7 @@ mod tests {
         }]
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn run(
         watch: &WatchSpec,
         authority: &AuthoritySnapshot,
