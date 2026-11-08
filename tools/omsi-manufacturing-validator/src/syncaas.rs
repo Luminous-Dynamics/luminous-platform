@@ -3,7 +3,7 @@ use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
 pub const FIXTURE_CONTRACT: &str = "omsi.syncaas.annex-g-fixture-pack";
-pub const REPORT_CONTRACT: &str = "omsi-syncaas-annex-g-report/0.2";
+pub const REPORT_CONTRACT: &str = "omsi-syncaas-annex-g-report/0.3";
 const PROFILE_BASE_EDITION: &str = "02/2026";
 const PROFILE_AMENDMENT_STATUS: &str = "BASE_EDITION_ONLY_NOT_AMENDMENT_1_CONFORMANCE";
 const DEFAULT_CLOCKCLASS_THRESHOLD: u8 = 6;
@@ -13,7 +13,7 @@ const MAX_CASES: usize = 100;
 const MAX_SAMPLES_PER_CASE: usize = 100_000;
 const MAX_PERIODS: usize = 10_000;
 
-const EXPECTED_CASE_IDS: [&str; 11] = [
+const EXPECTED_CASE_IDS: [&str; 14] = [
     "SVC-SUPPORTED-NOMINAL-001",
     "SVC-TRANSIENT-DEGRADATION-001",
     "SVC-OUTAGE-RECOVERY-001",
@@ -25,6 +25,9 @@ const EXPECTED_CASE_IDS: [&str; 11] = [
     "SVC-RECORD-MISMATCH-001",
     "SVC-PERIOD-INCOMPLETE-001",
     "SVC-PTS-SEPARATE-001",
+    "SVC-PARTIAL-CLOCKCLASS-COVERAGE-001",
+    "SVC-FTS-CLOCK-TYPE-NOT-APPLICABLE-001",
+    "SVC-PTS-CLOCK-TYPE-NOT-APPLICABLE-001",
 ];
 
 const CLAIM_CEILING: &str = "Synthetic base-edition (02/2026) G.8275.1 Annex M and G.8275.2 Annex G clockClass-to-N1S/D1S classification plus the common G.8275 Annex G AS/UAS state machine and record consistency. The August 2026 amendments are not integrated or claimed. This does not measure physical time error, qualify a PTP implementation, establish operational service quality, or certify equipment or a network.";
@@ -42,6 +45,14 @@ impl ServiceState {
             Self::Unavailable => "UNAVAILABLE",
         }
     }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum ClockClassCoverage {
+    Complete,
+    Partial,
+    Unknown,
+    MaintenancePaused,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -84,6 +95,7 @@ impl Counters {
 struct Sample {
     period_id: String,
     clock_class_values: Vec<u64>,
+    clockclass_coverage: ClockClassCoverage,
     maintenance: bool,
 }
 
@@ -257,12 +269,32 @@ fn parse_samples(
             clock_class_values.push(clock_class);
         }
         let maintenance = boolean(value, "maintenance_window").ok_or("maintenance_flag_missing")?;
-        if maintenance && !clock_class_values.is_empty() {
-            return Err("maintenance_sample_must_not_claim_clockclass_observation");
+        let coverage = match text(value, "clockclass_coverage") {
+            Some("COMPLETE") => ClockClassCoverage::Complete,
+            Some("PARTIAL") => ClockClassCoverage::Partial,
+            Some("UNKNOWN") => ClockClassCoverage::Unknown,
+            Some("MAINTENANCE_PAUSED") => ClockClassCoverage::MaintenancePaused,
+            _ => return Err("clockclass_coverage_missing_or_unsupported"),
+        };
+        if maintenance {
+            if coverage != ClockClassCoverage::MaintenancePaused {
+                return Err("maintenance_sample_requires_maintenance_paused_coverage");
+            }
+            if !clock_class_values.is_empty() {
+                return Err("maintenance_sample_must_not_claim_clockclass_observation");
+            }
+        } else {
+            if coverage == ClockClassCoverage::MaintenancePaused {
+                return Err("non_maintenance_sample_cannot_claim_maintenance_paused_coverage");
+            }
+            if coverage == ClockClassCoverage::Complete && clock_class_values.is_empty() {
+                return Err("complete_clockclass_coverage_requires_observation_values");
+            }
         }
         samples.push(Sample {
             period_id: period_id.to_owned(),
             clock_class_values,
+            clockclass_coverage: coverage,
             maintenance,
         });
     }
@@ -332,7 +364,10 @@ fn flush_pending(
 /// inverse numeric order (smaller is better). Empty observations are a local
 /// UNKNOWN extension, never silently D1S.
 fn classify_clockclass_primary(sample: &Sample, threshold: u8) -> CriterionState {
-    if sample.maintenance || sample.clock_class_values.is_empty() {
+    if sample.maintenance
+        || sample.clockclass_coverage != ClockClassCoverage::Complete
+        || sample.clock_class_values.is_empty()
+    {
         return CriterionState::Unobserved;
     }
     if sample
@@ -349,7 +384,10 @@ fn classify_clockclass_primary(sample: &Sample, threshold: u8) -> CriterionState
 /// Separate reference formulation: inspect the worst (maximum numeric)
 /// clockClass observed within the one-second interval.
 fn classify_clockclass_reference(sample: &Sample, threshold: u8) -> CriterionState {
-    if sample.maintenance || sample.clock_class_values.is_empty() {
+    if sample.maintenance
+        || sample.clockclass_coverage != ClockClassCoverage::Complete
+        || sample.clock_class_values.is_empty()
+    {
         return CriterionState::Unobserved;
     }
     let worst_clock_class = sample
@@ -640,6 +678,21 @@ fn evaluate_case(case: &Value) -> CaseResult {
             "NOT_COMPARABLE",
             "UNKNOWN",
             "profile_specific_syncaas_annex_mismatch",
+            empty.clone(),
+            empty,
+        );
+    }
+    let clock_type = text(profile, "clock_type");
+    let clock_type_applicable = match itu_profile {
+        Some("G.8275.1") => clock_type == Some("T-BC"),
+        Some("G.8275.2") => matches!(clock_type, Some("T-BC-A" | "T-BC-P")),
+        _ => false,
+    };
+    if !clock_type_applicable {
+        return simple_case(
+            "NOT_COMPARABLE",
+            "UNKNOWN",
+            "clock_type_not_applicable_for_profile",
             empty.clone(),
             empty,
         );
@@ -1011,11 +1064,13 @@ mod tests {
         let nominal = super::Sample {
             period_id: "p1".to_owned(),
             clock_class_values: vec![5, 6],
+            clockclass_coverage: ClockClassCoverage::Complete,
             maintenance: false,
         };
         let degraded = super::Sample {
             period_id: "p1".to_owned(),
             clock_class_values: vec![6, 7],
+            clockclass_coverage: ClockClassCoverage::Complete,
             maintenance: false,
         };
         assert_eq!(
@@ -1041,6 +1096,7 @@ mod tests {
         let sample = super::Sample {
             period_id: "p1".to_owned(),
             clock_class_values: vec![7],
+            clockclass_coverage: ClockClassCoverage::Complete,
             maintenance: false,
         };
         assert_eq!(
@@ -1062,6 +1118,7 @@ mod tests {
         let sample = super::Sample {
             period_id: "p1".to_owned(),
             clock_class_values: Vec::new(),
+            clockclass_coverage: ClockClassCoverage::Unknown,
             maintenance: false,
         };
         assert_eq!(
@@ -1075,7 +1132,89 @@ mod tests {
     }
 
     #[test]
-    fn frozen_annex_g_fixture_pack_executes_all_eleven_cases() {
+    fn partial_clockclass_coverage_is_unobserved_even_with_good_observed_values() {
+        let sample = super::Sample {
+            period_id: "p1".to_owned(),
+            clock_class_values: vec![5, 6],
+            clockclass_coverage: super::ClockClassCoverage::Partial,
+            maintenance: false,
+        };
+        assert_eq!(super::classify_clockclass_primary(&sample, 6), super::CriterionState::Unobserved);
+        assert_eq!(super::classify_clockclass_reference(&sample, 6), super::CriterionState::Unobserved);
+    }
+
+    #[test]
+    fn maintenance_pauses_the_ten_second_consecutive_measurement_window() {
+        use super::{ClockClassCoverage, Period, Sample, ServiceState};
+        let mut samples = Vec::new();
+        for _ in 0..9 {
+            samples.push(Sample {
+                period_id: "p1".to_owned(),
+                clock_class_values: vec![7],
+                clockclass_coverage: ClockClassCoverage::Complete,
+                maintenance: false,
+            });
+        }
+        samples.push(Sample {
+            period_id: "p1".to_owned(),
+            clock_class_values: Vec::new(),
+            clockclass_coverage: ClockClassCoverage::MaintenancePaused,
+            maintenance: true,
+        });
+        samples.push(Sample {
+            period_id: "p1".to_owned(),
+            clock_class_values: vec![7],
+            clockclass_coverage: ClockClassCoverage::Complete,
+            maintenance: false,
+        });
+        let periods = vec![Period {
+            id: "p1".to_owned(),
+            wall_seconds: 11,
+            maintenance_paused_seconds: 1,
+        }];
+        let primary = super::streaming_reconstruction(&samples, &periods, 10, 6);
+        let reference = super::run_based_reference(&samples, &periods, 10, 6);
+        assert_eq!(primary, reference);
+        assert_eq!(primary.state, Some(ServiceState::Unavailable));
+        assert_eq!(primary.counters["p1"].unavailable, 10);
+    }
+
+    #[test]
+    fn primary_and_reference_match_for_all_three_state_sequences_through_ten_seconds() {
+        use super::{ClockClassCoverage, Period, Sample};
+        for length in 1..=10usize {
+            let combinations = 3usize.pow(length as u32);
+            for mut encoded in 0..combinations {
+                let mut samples = Vec::with_capacity(length);
+                for _ in 0..length {
+                    let symbol = encoded % 3;
+                    encoded /= 3;
+                    let (values, coverage) = match symbol {
+                        0 => (vec![5], ClockClassCoverage::Complete),
+                        1 => (vec![7], ClockClassCoverage::Complete),
+                        _ => (vec![5, 6], ClockClassCoverage::Partial),
+                    };
+                    samples.push(Sample {
+                        period_id: "p1".to_owned(),
+                        clock_class_values: values,
+                        clockclass_coverage: coverage,
+                        maintenance: false,
+                    });
+                }
+                let periods = vec![Period {
+                    id: "p1".to_owned(),
+                    wall_seconds: length as u64,
+                    maintenance_paused_seconds: 0,
+                }];
+                let primary = super::streaming_reconstruction(&samples, &periods, 10, 6);
+                let reference = super::run_based_reference(&samples, &periods, 10, 6);
+                assert_eq!(primary, reference, "state sequence length={length}");
+            }
+        }
+    }
+
+    #[test]
+    fn frozen_annex_g_fixture_pack_executes_all_fourteen_cases() {
         let document: Value = serde_json::from_str(FIXTURES).expect("SyncaaS fixtures parse");
         let schema: Value = serde_json::from_str(FIXTURE_SCHEMA).expect("fixture schema parses");
         assert!(
@@ -1090,9 +1229,9 @@ mod tests {
 
         let report = validate_fixture_pack(&document, FIXTURES.as_bytes());
         assert_eq!(report["status"], "passed", "{report:#}");
-        assert_eq!(report["case_count_expected"], 11);
-        assert_eq!(report["case_count_discovered"], 11);
-        assert_eq!(report["passed_count"], 11);
+        assert_eq!(report["case_count_expected"], 14);
+        assert_eq!(report["case_count_discovered"], 14);
+        assert_eq!(report["passed_count"], 14);
         assert_eq!(report["failure_count"], 0);
         assert_eq!(report["reference_disagreement_count"], 0);
 

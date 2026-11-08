@@ -36,7 +36,7 @@
   ],
   "properties": {
     "report_contract": {
-      "const": "omsi-syncaas-annex-g-report/0.2"
+      "const": "omsi-syncaas-annex-g-report/0.3"
     },
     "status": {
       "enum": [
@@ -64,7 +64,7 @@
       "const": 10
     },
     "case_count_expected": {
-      "const": 11
+      "const": 14
     },
     "case_count_discovered": {
       "type": "integer",

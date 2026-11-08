@@ -83,7 +83,7 @@ jobs:
           cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
             validate-syncaas docs/standards/omsi/syncaas-annex-g-fixtures-0.1.json > "$report_file"
           jq -e '
-            .report_contract == "omsi-syncaas-annex-g-report/0.2" and
+            .report_contract == "omsi-syncaas-annex-g-report/0.3" and
             .status == "passed" and
             .authority == "synthetic_base_edition_clockclass_and_annex_g_state_machine_only" and
             .profile_baseline == "02/2026" and
@@ -97,13 +97,13 @@ jobs:
             .edition == "01/2026" and
             .annex == "G" and
             .window_seconds == 10 and
-            .case_count_expected == 11 and
-            .case_count_discovered == 11 and
+            .case_count_expected == 14 and
+            .case_count_discovered == 14 and
             .discovery_complete == true and
-            .passed_count == 11 and
+            .passed_count == 14 and
             .failure_count == 0 and
             .reference_disagreement_count == 0 and
-            (.per_case | length) == 11 and
+            (.per_case | length) == 14 and
             ([.per_case[].passed] | all)
           ' "$report_file" > /dev/null
       - name: Validate frozen PNT profile conformance fixtures

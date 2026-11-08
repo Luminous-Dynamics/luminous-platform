@@ -18,7 +18,7 @@
       "const": "omsi.syncaas.annex-g-fixture-pack"
     },
     "version": {
-      "const": "0.2.0-draft"
+      "const": "0.3.0-draft"
     },
     "state": {
       "const": "SYNTHETIC_BASE_EDITION_FIXTURES_EXECUTABLE"
@@ -79,8 +79,8 @@
     },
     "cases": {
       "type": "array",
-      "minItems": 11,
-      "maxItems": 11,
+      "minItems": 14,
+      "maxItems": 14,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -120,7 +120,8 @@
               "itu_t_profile",
               "edition",
               "profile_annex",
-              "amendment_2026_08"
+              "amendment_2026_08",
+              "clock_type"
             ],
             "properties": {
               "itu_t_profile": {
@@ -141,6 +142,14 @@
               },
               "amendment_2026_08": {
                 "const": "NOT_APPLIED"
+              },
+              "clock_type": {
+                "enum": [
+                  "T-BC",
+                  "T-BC-A",
+                  "T-BC-P",
+                  "T-GM"
+                ]
               }
             }
           },
@@ -206,7 +215,8 @@
                 "sequence",
                 "period_id",
                 "clock_class_values",
-                "maintenance_window"
+                "maintenance_window",
+                "clockclass_coverage"
               ],
               "properties": {
                 "sequence": {
@@ -226,6 +236,14 @@
                     "minimum": 0,
                     "maximum": 255
                   }
+                },
+                "clockclass_coverage": {
+                  "enum": [
+                    "COMPLETE",
+                    "PARTIAL",
+                    "UNKNOWN",
+                    "MAINTENANCE_PAUSED"
+                  ]
                 }
               }
             }
