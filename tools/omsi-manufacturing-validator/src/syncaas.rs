@@ -99,7 +99,7 @@ struct Period {
     maintenance_paused_seconds: u64,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 struct Reconstruction {
     state: Option<ServiceState>,
     counters: BTreeMap<String, Counters>,
@@ -187,8 +187,13 @@ fn parse_periods(case: &Value) -> Result<(Vec<Period>, BTreeMap<String, usize>),
     let mut periods = Vec::with_capacity(values.len());
     let mut positions = BTreeMap::new();
     for value in values {
-        let id = text(value, "id").filter(|id| !id.trim().is_empty()).ok_or("period_id_missing")?;
-        let wall = value.get("wall_seconds").and_then(Value::as_u64).ok_or("period_wall_seconds_invalid")?;
+        let id = text(value, "id")
+            .filter(|id| !id.trim().is_empty())
+            .ok_or("period_id_missing")?;
+        let wall = value
+            .get("wall_seconds")
+            .and_then(Value::as_u64)
+            .ok_or("period_wall_seconds_invalid")?;
         let maintenance = value
             .get("maintenance_paused_seconds")
             .and_then(Value::as_u64)
@@ -209,7 +214,11 @@ fn parse_periods(case: &Value) -> Result<(Vec<Period>, BTreeMap<String, usize>),
     Ok((periods, positions))
 }
 
-fn parse_samples(case: &Value, periods: &[Period], period_positions: &BTreeMap<String, usize>) -> Result<Vec<Sample>, &'static str> {
+fn parse_samples(
+    case: &Value,
+    periods: &[Period],
+    period_positions: &BTreeMap<String, usize>,
+) -> Result<Vec<Sample>, &'static str> {
     let values = case
         .get("samples")
         .and_then(Value::as_array)
@@ -230,14 +239,17 @@ fn parse_samples(case: &Value, periods: &[Period], period_positions: &BTreeMap<S
             return Err("sample_sequence_not_contiguous");
         }
         let period_id = text(value, "period_id").ok_or("sample_period_id_missing")?;
-        let period_position = *period_positions.get(period_id).ok_or("sample_references_unknown_period")?;
+        let period_position = *period_positions
+            .get(period_id)
+            .ok_or("sample_references_unknown_period")?;
         if period_position < last_period_position {
             return Err("sample_period_order_regressed");
         }
         last_period_position = period_position;
 
         let criterion_text = text(value, "criterion_state").ok_or("criterion_state_missing")?;
-        let criterion = CriterionState::parse(criterion_text).ok_or("criterion_state_unsupported")?;
+        let criterion =
+            CriterionState::parse(criterion_text).ok_or("criterion_state_unsupported")?;
         let maintenance = boolean(value, "maintenance_window").ok_or("maintenance_flag_missing")?;
         if maintenance && criterion != CriterionState::Unobserved {
             return Err("maintenance_sample_must_not_claim_n1s_or_d1s");
@@ -316,7 +328,11 @@ fn flush_pending(
 /// Streaming implementation. Up to N-1 candidate seconds are held until the
 /// transition is confirmed or broken. This permits a 10-second decision to
 /// cross a PM-period boundary without prematurely finalizing prior-period AS/UAS.
-fn streaming_reconstruction(samples: &[Sample], periods: &[Period], window: usize) -> Reconstruction {
+fn streaming_reconstruction(
+    samples: &[Sample],
+    periods: &[Period],
+    window: usize,
+) -> Reconstruction {
     let mut counters = empty_counters(periods);
     let mut state = None;
     let mut pending_target: Option<ServiceState> = None;
@@ -384,9 +400,9 @@ fn run_based_reference(samples: &[Sample], periods: &[Period], window: usize) ->
     let mut run_periods: Vec<String> = Vec::new();
 
     let flush_run = |target: Option<ServiceState>,
-                         run_periods: &mut Vec<String>,
-                         state: &mut Option<ServiceState>,
-                         counters: &mut BTreeMap<String, Counters>| {
+                     run_periods: &mut Vec<String>,
+                     state: &mut Option<ServiceState>,
+                     counters: &mut BTreeMap<String, Counters>| {
         if run_periods.is_empty() {
             return;
         }
@@ -432,7 +448,10 @@ fn run_based_reference(samples: &[Sample], periods: &[Period], window: usize) ->
     Reconstruction { state, counters }
 }
 
-fn parse_records(case: &Value, periods: &[Period]) -> Result<BTreeMap<String, Value>, &'static str> {
+fn parse_records(
+    case: &Value,
+    periods: &[Period],
+) -> Result<BTreeMap<String, Value>, &'static str> {
     let values = case
         .get("records")
         .and_then(Value::as_array)
@@ -449,23 +468,37 @@ fn parse_records(case: &Value, periods: &[Period]) -> Result<BTreeMap<String, Va
         if !expected_ids.contains(period_id) {
             return Err("record_references_unknown_period");
         }
-        let index = record.get("index").and_then(Value::as_u64).ok_or("record_index_invalid")?;
+        let index = record
+            .get("index")
+            .and_then(Value::as_u64)
+            .ok_or("record_index_invalid")?;
         if index > u16::MAX as u64 || !indices.insert(index) {
             return Err("record_index_out_of_u16_range_or_duplicate");
         }
-        if text(record, "PMTime").filter(|value| !value.trim().is_empty()).is_none() {
+        if text(record, "PMTime")
+            .filter(|value| !value.trim().is_empty())
+            .is_none()
+        {
             return Err("record_pm_time_missing");
         }
-        if records.insert(period_id.to_owned(), record.clone()).is_some() {
+        if records
+            .insert(period_id.to_owned(), record.clone())
+            .is_some()
+        {
             return Err("duplicate_record_for_period");
         }
         for field in ["AS", "UAS"] {
-            let value = record.get(field).and_then(Value::as_u64).ok_or("record_counter_invalid")?;
+            let value = record
+                .get(field)
+                .and_then(Value::as_u64)
+                .ok_or("record_counter_invalid")?;
             if value > u32::MAX as u64 {
                 return Err("record_counter_exceeds_uinteger32");
             }
         }
-        if boolean(record, "measurementValid").is_none() || boolean(record, "periodComplete").is_none() {
+        if boolean(record, "measurementValid").is_none()
+            || boolean(record, "periodComplete").is_none()
+        {
             return Err("record_validity_flags_missing");
         }
     }
@@ -478,57 +511,137 @@ fn evaluate_case(case: &Value) -> CaseResult {
         counters: BTreeMap::new(),
     };
     let Some(dataset) = case.get("dataset") else {
-        return simple_case("INVALID_INPUT", "UNKNOWN", "dataset_capability_missing", empty.clone(), empty);
+        return simple_case(
+            "INVALID_INPUT",
+            "UNKNOWN",
+            "dataset_capability_missing",
+            empty.clone(),
+            empty,
+        );
     };
     let supported = boolean(dataset, "supported");
     let enabled = boolean(dataset, "enable");
     match supported {
-        Some(false) => return simple_case("NOT_SUPPORTED", "UNKNOWN", "annex_g_dataset_not_supported", empty.clone(), empty),
-        None => return simple_case("INDETERMINATE", "UNKNOWN", "annex_g_dataset_support_unknown", empty.clone(), empty),
+        Some(false) => {
+            return simple_case(
+                "NOT_SUPPORTED",
+                "UNKNOWN",
+                "annex_g_dataset_not_supported",
+                empty.clone(),
+                empty,
+            )
+        }
+        None => {
+            return simple_case(
+                "INDETERMINATE",
+                "UNKNOWN",
+                "annex_g_dataset_support_unknown",
+                empty.clone(),
+                empty,
+            )
+        }
         Some(true) => {}
     }
     match enabled {
-        Some(false) => return simple_case("DISABLED", "UNKNOWN", "annex_g_dataset_disabled", empty.clone(), empty),
-        None => return simple_case("INDETERMINATE", "UNKNOWN", "annex_g_enable_state_unknown", empty.clone(), empty),
+        Some(false) => {
+            return simple_case(
+                "DISABLED",
+                "UNKNOWN",
+                "annex_g_dataset_disabled",
+                empty.clone(),
+                empty,
+            )
+        }
+        None => {
+            return simple_case(
+                "INDETERMINATE",
+                "UNKNOWN",
+                "annex_g_enable_state_unknown",
+                empty.clone(),
+                empty,
+            )
+        }
         Some(true) => {}
     }
 
     let profile = case.get("profile").unwrap_or(&Value::Null);
     let itu_profile = text(profile, "itu_t_profile");
     if !matches!(itu_profile, Some("G.8275.1" | "G.8275.2")) {
-        return simple_case("NOT_COMPARABLE", "UNKNOWN", "itu_t_profile_missing_or_unsupported", empty.clone(), empty);
+        return simple_case(
+            "NOT_COMPARABLE",
+            "UNKNOWN",
+            "itu_t_profile_missing_or_unsupported",
+            empty.clone(),
+            empty,
+        );
     }
     if text(profile, "edition").is_none() {
-        return simple_case("NOT_COMPARABLE", "UNKNOWN", "itu_t_profile_edition_missing", empty.clone(), empty);
+        return simple_case(
+            "NOT_COMPARABLE",
+            "UNKNOWN",
+            "itu_t_profile_edition_missing",
+            empty.clone(),
+            empty,
+        );
     }
     if case.get("window_seconds").and_then(Value::as_u64) != Some(WINDOW_SECONDS as u64) {
-        return simple_case("NOT_COMPARABLE", "UNKNOWN", "annex_g_window_must_be_pinned_to_ten_seconds_for_this_profile", empty.clone(), empty);
+        return simple_case(
+            "NOT_COMPARABLE",
+            "UNKNOWN",
+            "annex_g_window_must_be_pinned_to_ten_seconds_for_this_profile",
+            empty.clone(),
+            empty,
+        );
     }
     let criterion = case.get("criterion").unwrap_or(&Value::Null);
-    if text(criterion, "criterion_id").filter(|value| !value.trim().is_empty()).is_none()
-        || text(criterion, "threshold_ref").filter(|value| !value.trim().is_empty()).is_none()
-        || text(criterion, "classification_source_ref").filter(|value| !value.trim().is_empty()).is_none()
+    if text(criterion, "criterion_id")
+        .filter(|value| !value.trim().is_empty())
+        .is_none()
+        || text(criterion, "threshold_ref")
+            .filter(|value| !value.trim().is_empty())
+            .is_none()
+        || text(criterion, "classification_source_ref")
+            .filter(|value| !value.trim().is_empty())
+            .is_none()
     {
-        return simple_case("INVALID_INPUT", "UNKNOWN", "criterion_threshold_or_classifier_provenance_missing", empty.clone(), empty);
+        return simple_case(
+            "INVALID_INPUT",
+            "UNKNOWN",
+            "criterion_threshold_or_classifier_provenance_missing",
+            empty.clone(),
+            empty,
+        );
     }
 
     let (periods, period_positions) = match parse_periods(case) {
         Ok(parsed) => parsed,
-        Err(reason) => return simple_case("INVALID_INPUT", "UNKNOWN", reason, empty.clone(), empty),
+        Err(reason) => {
+            return simple_case("INVALID_INPUT", "UNKNOWN", reason, empty.clone(), empty)
+        }
     };
     let samples = match parse_samples(case, &periods, &period_positions) {
         Ok(parsed) => parsed,
-        Err(reason) => return simple_case("INVALID_INPUT", "UNKNOWN", reason, empty.clone(), empty),
+        Err(reason) => {
+            return simple_case("INVALID_INPUT", "UNKNOWN", reason, empty.clone(), empty)
+        }
     };
     let records = match parse_records(case, &periods) {
         Ok(parsed) => parsed,
-        Err(reason) => return simple_case("INVALID_INPUT", "UNKNOWN", reason, empty.clone(), empty),
+        Err(reason) => {
+            return simple_case("INVALID_INPUT", "UNKNOWN", reason, empty.clone(), empty)
+        }
     };
 
     let primary = streaming_reconstruction(&samples, &periods, WINDOW_SECONDS);
     let reference = run_based_reference(&samples, &periods, WINDOW_SECONDS);
     if primary != reference {
-        return simple_case("REFERENCE_DISAGREEMENT", "UNKNOWN", "streaming_and_run_based_reconstruction_disagree", primary, reference);
+        return simple_case(
+            "REFERENCE_DISAGREEMENT",
+            "UNKNOWN",
+            "streaming_and_run_based_reconstruction_disagree",
+            primary,
+            reference,
+        );
     }
 
     let mut reasons = Vec::new();
@@ -556,9 +669,16 @@ fn evaluate_case(case: &Value) -> CaseResult {
             reasons.push("unobserved_or_unclassified_seconds_present");
         }
 
-        if measurement_valid && period_complete && reconstructed.unobserved == 0 && reconstructed.unclassified == 0 {
+        if measurement_valid
+            && period_complete
+            && reconstructed.unobserved == 0
+            && reconstructed.unclassified == 0
+        {
             let reported_as = record.get("AS").and_then(Value::as_u64).unwrap_or(u64::MAX);
-            let reported_uas = record.get("UAS").and_then(Value::as_u64).unwrap_or(u64::MAX);
+            let reported_uas = record
+                .get("UAS")
+                .and_then(Value::as_u64)
+                .unwrap_or(u64::MAX);
             if reported_as != reconstructed.available || reported_uas != reconstructed.unavailable {
                 mismatch = true;
             } else {
@@ -634,7 +754,10 @@ fn result_matches_expected(result: &CaseResult, expected: &Value) -> bool {
     let mut actual_reasons = result.reasons.clone();
     actual_reasons.sort_unstable();
 
-    if status != Some(result.status) || final_state != Some(result.final_state) || reasons != actual_reasons {
+    if status != Some(result.status)
+        || final_state != Some(result.final_state)
+        || reasons != actual_reasons
+    {
         return false;
     }
 
@@ -646,7 +769,11 @@ fn result_matches_expected(result: &CaseResult, expected: &Value) -> bool {
             return false;
         }
         for (period_id, counters) in &result.primary.counters {
-            let actual = if is_available { counters.available } else { counters.unavailable };
+            let actual = if is_available {
+                counters.available
+            } else {
+                counters.unavailable
+            };
             if expected_map.get(period_id).and_then(Value::as_u64) != Some(actual) {
                 return false;
             }
@@ -672,7 +799,9 @@ pub fn validate_fixture_pack(document: &Value, source_bytes: &[u8]) -> Value {
             if !unique_ids.insert(id.to_owned()) {
                 duplicate_ids.push(id.to_owned());
             }
-            if let Some(profile_id) = text(case.get("profile").unwrap_or(&Value::Null), "itu_t_profile") {
+            if let Some(profile_id) =
+                text(case.get("profile").unwrap_or(&Value::Null), "itu_t_profile")
+            {
                 *profile_groups.entry(profile_id.to_owned()).or_default() += 1;
             }
 
@@ -697,7 +826,10 @@ pub fn validate_fixture_pack(document: &Value, source_bytes: &[u8]) -> Value {
         }
     }
 
-    let expected_set: BTreeSet<String> = EXPECTED_CASE_IDS.iter().map(|id| (*id).to_owned()).collect();
+    let expected_set: BTreeSet<String> = EXPECTED_CASE_IDS
+        .iter()
+        .map(|id| (*id).to_owned())
+        .collect();
     let discovered_set: BTreeSet<String> = discovered.iter().cloned().collect();
     let discovery_complete = discovered.len() == EXPECTED_CASE_IDS.len()
         && discovered_set == expected_set
@@ -712,8 +844,12 @@ pub fn validate_fixture_pack(document: &Value, source_bytes: &[u8]) -> Value {
         && text(standard, "annex") == Some("G")
         && boolean(standard, "optional") == Some(true)
         && text(standard, "dataset_name") == Some("ptpServiceAvailabilityPerformanceMetricsDS")
-        && text(standard, "record_name") == Some("ptpServiceAvailabilityPerformanceMetricsDataRecord")
-        && document.get("default_window_seconds").and_then(Value::as_u64) == Some(WINDOW_SECONDS as u64)
+        && text(standard, "record_name")
+            == Some("ptpServiceAvailabilityPerformanceMetricsDataRecord")
+        && document
+            .get("default_window_seconds")
+            .and_then(Value::as_u64)
+            == Some(WINDOW_SECONDS as u64)
         && cases.is_some_and(|items| items.len() == EXPECTED_CASE_IDS.len())
         && cases.is_some_and(|items| items.len() <= MAX_CASES);
 
@@ -724,7 +860,10 @@ pub fn validate_fixture_pack(document: &Value, source_bytes: &[u8]) -> Value {
 
     let mut profile_summary = serde_json::Map::new();
     for (profile, count) in profile_groups {
-        profile_summary.insert(profile, json!({"case_count": count, "aggregated_with_other_profiles": false}));
+        profile_summary.insert(
+            profile,
+            json!({"case_count": count, "aggregated_with_other_profiles": false}),
+        );
     }
 
     json!({
@@ -765,17 +904,25 @@ mod tests {
     use jsonschema::draft202012;
     use serde_json::Value;
 
-    const FIXTURES: &str = include_str!("../../../docs/standards/omsi/syncaas-annex-g-fixtures-0.1.json");
-    const FIXTURE_SCHEMA: &str = include_str!("../../../docs/standards/omsi/syncaas-annex-g-fixtures-0.1.schema.json");
+    const FIXTURES: &str =
+        include_str!("../../../docs/standards/omsi/syncaas-annex-g-fixtures-0.1.json");
+    const FIXTURE_SCHEMA: &str =
+        include_str!("../../../docs/standards/omsi/syncaas-annex-g-fixtures-0.1.schema.json");
     const REPORT_SCHEMA: &str = include_str!("../schema/syncaas-annex-g-report.schema.json");
 
     #[test]
     fn frozen_annex_g_fixture_pack_executes_all_eleven_cases() {
         let document: Value = serde_json::from_str(FIXTURES).expect("SyncaaS fixtures parse");
         let schema: Value = serde_json::from_str(FIXTURE_SCHEMA).expect("fixture schema parses");
-        assert!(draft202012::meta::is_valid(&schema), "input schema is not Draft 2020-12");
+        assert!(
+            draft202012::meta::is_valid(&schema),
+            "input schema is not Draft 2020-12"
+        );
         let validator = draft202012::new(&schema).expect("input schema compiles");
-        assert!(validator.is_valid(&document), "fixture pack does not match schema");
+        assert!(
+            validator.is_valid(&document),
+            "fixture pack does not match schema"
+        );
 
         let report = validate_fixture_pack(&document, FIXTURES.as_bytes());
         assert_eq!(report["status"], "passed", "{report:#}");
@@ -785,10 +932,17 @@ mod tests {
         assert_eq!(report["failure_count"], 0);
         assert_eq!(report["reference_disagreement_count"], 0);
 
-        let report_schema: Value = serde_json::from_str(REPORT_SCHEMA).expect("report schema parses");
-        assert!(draft202012::meta::is_valid(&report_schema), "report schema is not Draft 2020-12");
+        let report_schema: Value =
+            serde_json::from_str(REPORT_SCHEMA).expect("report schema parses");
+        assert!(
+            draft202012::meta::is_valid(&report_schema),
+            "report schema is not Draft 2020-12"
+        );
         let report_validator = draft202012::new(&report_schema).expect("report schema compiles");
-        assert!(report_validator.is_valid(&report), "report does not match schema: {report:#}");
+        assert!(
+            report_validator.is_valid(&report),
+            "report does not match schema: {report:#}"
+        );
     }
 
     #[test]
