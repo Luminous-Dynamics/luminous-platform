@@ -148,7 +148,30 @@
         "denominator": [
           "numerator"
         ]
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "aggregation": {
+                "enum": [
+                  "rate",
+                  "ratio"
+                ]
+              }
+            },
+            "required": [
+              "aggregation"
+            ]
+          },
+          "then": {
+            "required": [
+              "numerator",
+              "denominator"
+            ]
+          }
+        }
+      ]
     },
     "hardGate": {
       "type": "object",
@@ -188,7 +211,47 @@
         "evidence_ref": {
           "type": "string"
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "pass"
+              }
+            },
+            "required": [
+              "outcome"
+            ]
+          },
+          "then": {
+            "properties": {
+              "failure_count": {
+                "const": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "fail"
+              }
+            },
+            "required": [
+              "outcome"
+            ]
+          },
+          "then": {
+            "properties": {
+              "failure_count": {
+                "minimum": 1
+              }
+            }
+          }
+        }
+      ]
     },
     "metricFamily": {
       "type": "array",
@@ -648,7 +711,105 @@
           "results": {
             "properties": {
               "metric_families": {
-                "minProperties": 1
+                "minProperties": 1,
+                "anyOf": [
+                  {
+                    "required": [
+                      "measurement_qualification"
+                    ],
+                    "properties": {
+                      "measurement_qualification": {
+                        "minItems": 1
+                      }
+                    }
+                  },
+                  {
+                    "required": [
+                      "recognition"
+                    ],
+                    "properties": {
+                      "recognition": {
+                        "minItems": 1
+                      }
+                    }
+                  },
+                  {
+                    "required": [
+                      "evidence_integrity"
+                    ],
+                    "properties": {
+                      "evidence_integrity": {
+                        "minItems": 1
+                      }
+                    }
+                  },
+                  {
+                    "required": [
+                      "dependency_assurance"
+                    ],
+                    "properties": {
+                      "dependency_assurance": {
+                        "minItems": 1
+                      }
+                    }
+                  },
+                  {
+                    "required": [
+                      "decision_quality"
+                    ],
+                    "properties": {
+                      "decision_quality": {
+                        "minItems": 1
+                      }
+                    }
+                  },
+                  {
+                    "required": [
+                      "service_outcomes"
+                    ],
+                    "properties": {
+                      "service_outcomes": {
+                        "minItems": 1
+                      }
+                    }
+                  },
+                  {
+                    "required": [
+                      "recovery"
+                    ],
+                    "properties": {
+                      "recovery": {
+                        "minItems": 1
+                      }
+                    }
+                  },
+                  {
+                    "required": [
+                      "operational_efficiency"
+                    ],
+                    "properties": {
+                      "operational_efficiency": {
+                        "minItems": 1
+                      }
+                    }
+                  }
+                ]
+              },
+              "hard_gates": {
+                "items": {
+                  "properties": {
+                    "outcome": {
+                      "enum": [
+                        "pass",
+                        "fail",
+                        "inconclusive"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "outcome"
+                  ]
+                }
               }
             }
           }
