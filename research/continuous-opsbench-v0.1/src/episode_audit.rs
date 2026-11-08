@@ -1513,4 +1513,79 @@ mod tests {
             .failures
             .contains(&AuditFailure::ScheduleMutationAttempt));
     }
+
+    #[test]
+    fn future_decision_after_audit_clock_is_rejected() {
+        let mut rows = evidence();
+        rows[0].decision.as_mut().unwrap().decided_at_tick = 13;
+        let report = run(
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &rows,
+            12,
+        );
+        assert_eq!(report.status, AuditStatus::Failed);
+        assert_eq!(report.decisions_verified, 0);
+        assert!(report
+            .failures
+            .contains(&AuditFailure::DecisionBindingMismatch));
+    }
+
+    #[test]
+    fn late_observation_and_impact_receipts_are_indeterminate() {
+        let mut requests = request();
+        requests[0].deadline_tick = 8;
+        let mut rows = evidence();
+        rows[0].decision = None;
+        let report = run(
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &requests,
+            &rows,
+            12,
+        );
+        assert_eq!(report.status, AuditStatus::Indeterminate);
+        assert_eq!(report.observations_verified, 0);
+        assert_eq!(report.impacts_verified, 0);
+        assert!(report
+            .indeterminate_reasons
+            .contains(&IndeterminateReason::ReceiptAfterDeadline));
+    }
+
+    #[test]
+    fn scheduled_wake_record_cannot_be_omitted_from_wake_batches() {
+        let mut changed = schedule();
+        changed.records.push(EventRecordResult {
+            event_id: "event-orphan".into(),
+            incident_id: "incident-orphan".into(),
+            sequence: 11,
+            delivered_tick: 7,
+            processed_tick: Some(8),
+            disposition: RecordDisposition::Woke,
+            detection_latency_ticks: Some(1),
+            deadline_met: true,
+        });
+        let report = run(
+            &watch(),
+            &authority(),
+            &catalog(),
+            &changed,
+            &wake_decision(),
+            &request(),
+            &evidence(),
+            12,
+        );
+        assert_eq!(report.status, AuditStatus::Failed);
+        assert!(report
+            .failures
+            .contains(&AuditFailure::UnpairedScheduleWake));
+    }
+
 }
