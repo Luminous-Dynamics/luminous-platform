@@ -104,9 +104,21 @@ pub struct SourceRestart {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SourceWatermark {
+    pub source_id: String,
+    pub source_epoch: String,
+    /// The next source sequence the consumer must receive.
+    pub next_sequence: u64,
+    pub observed_tick: u64,
+    pub available: bool,
+    pub watermark_digest: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TimelineRecord {
     Event(SourceEvent),
     Restart(SourceRestart),
+    Watermark(SourceWatermark),
 }
 
 impl TimelineRecord {
@@ -114,6 +126,7 @@ impl TimelineRecord {
         match self {
             Self::Event(event) => event.delivered_tick,
             Self::Restart(restart) => restart.at_tick,
+            Self::Watermark(watermark) => watermark.observed_tick,
         }
     }
 }
@@ -123,7 +136,7 @@ pub struct EventCheckpoint {
     pub source_id: String,
     pub source_epoch: String,
     pub next_sequence: u64,
-    pub last_delivery_tick: u64,
+    pub last_stream_tick: u64,
     /// Event ID -> (source epoch, sequence, payload digest).
     pub seen_event_ids: BTreeMap<String, (String, u64, String)>,
 }
@@ -143,6 +156,9 @@ pub enum RecordDisposition {
     SourceEpochMismatch,
     RestartAccepted,
     RestartRejected,
+    WatermarkConfirmed,
+    DeliveryGap,
+    SourceUnavailable,
     AuthorityRevokedOrExpired,
     BudgetExhausted,
     WatchExpired,
@@ -183,6 +199,8 @@ pub struct EventScheduleMetrics {
     pub restarts_accepted: usize,
     pub restarts_rejected: usize,
     pub scope_rejections: usize,
+    pub watermarks_checked: usize,
+    pub source_unavailable: usize,
     pub quiet_events: usize,
     pub indeterminate_events: usize,
     pub relevant_events: usize,
@@ -213,6 +231,8 @@ impl Default for EventScheduleMetrics {
             restarts_accepted: 0,
             restarts_rejected: 0,
             scope_rejections: 0,
+            watermarks_checked: 0,
+            source_unavailable: 0,
             quiet_events: 0,
             indeterminate_events: 0,
             relevant_events: 0,
@@ -239,6 +259,8 @@ pub enum ScheduleStatus {
     OutOfOrder,
     IdentityCollision,
     SourceEpochMismatch,
+    SourceIdentityMismatch,
+    SourceUnavailable,
     AuthorityRevokedOrExpired,
     WatchExpired,
     BudgetExhausted,
@@ -365,7 +387,7 @@ fn initial_checkpoint(watch: &EventWatch) -> EventCheckpoint {
         source_id: watch.source_id.clone(),
         source_epoch: watch.initial_source_epoch.clone(),
         next_sequence: watch.first_sequence,
-        last_delivery_tick: watch.starts_at_tick,
+        last_stream_tick: watch.starts_at_tick,
         seen_event_ids: BTreeMap::new(),
     }
 }
@@ -378,7 +400,7 @@ fn validate_checkpoint(
         || !non_empty(&checkpoint.source_epoch)
         || checkpoint.next_sequence == 0
         || checkpoint.next_sequence == u64::MAX
-        || checkpoint.last_delivery_tick < watch.starts_at_tick
+        || checkpoint.last_stream_tick < watch.starts_at_tick
         || checkpoint.seen_event_ids.iter().any(|(event_id, (epoch, sequence, digest))| {
             !non_empty(event_id)
                 || !non_empty(epoch)
@@ -603,7 +625,7 @@ fn process_event(
     }
 
     checkpoint.next_sequence = checkpoint.next_sequence.saturating_add(1);
-    checkpoint.last_delivery_tick = event.delivered_tick;
+    checkpoint.last_stream_tick = event.delivered_tick;
     checkpoint.seen_event_ids.insert(
         event.event_id.clone(),
         (
@@ -810,7 +832,7 @@ fn apply_restart(
     }
     checkpoint.source_epoch = restart.new_epoch.clone();
     checkpoint.next_sequence = restart.sequence_start;
-    checkpoint.last_delivery_tick = restart.at_tick;
+    checkpoint.last_stream_tick = restart.at_tick;
     metrics.restarts_accepted += 1;
     records.push(EventRecordResult {
         event_id: format!("restart:{}", restart.new_epoch),
