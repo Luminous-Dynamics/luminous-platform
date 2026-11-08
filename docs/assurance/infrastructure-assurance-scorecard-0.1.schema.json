@@ -1140,7 +1140,6 @@
               "abstention_behavior": {
                 "enum": [
                   "abstain",
-                  "degrade",
                   "escalate_to_human",
                   "request_more_evidence"
                 ]
