@@ -139,7 +139,7 @@ pub struct EventCheckpoint {
     pub last_stream_tick: u64,
     /// Event ID -> (source epoch, sequence, payload digest).
     pub seen_event_ids: BTreeMap<String, (String, u64, String)>,
-    /// Authenticated source records waiting for a preceding sequence.
+    /// Source-feed records waiting for a preceding sequence.
     pub buffered_events: BTreeMap<u64, SourceEvent>,
     /// Start/deadline for the currently missing cursor sequence.
     pub gap_started_at_tick: Option<u64>,
@@ -164,7 +164,6 @@ pub enum RecordDisposition {
     RestartRejected,
     WatermarkConfirmed,
     DeliveryGap,
-    DeliveryGapPending,
     SourceUnavailable,
     AuthorityRevokedOrExpired,
     BudgetExhausted,
@@ -237,6 +236,7 @@ pub enum ScheduleStatus {
     Completed,
     Quiet,
     DeliveryGap,
+    DeliveryGapPending,
     OutOfOrder,
     IdentityCollision,
     SourceEpochMismatch,
