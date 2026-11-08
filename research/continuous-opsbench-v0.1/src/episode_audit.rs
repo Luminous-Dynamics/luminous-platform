@@ -413,16 +413,28 @@ fn request_matches_catalog(
         && non_empty(&entry.collector_control_domain)
 }
 
-fn audit_decision(
-    request: &ProbeRequestReceipt,
-    evidence: &ProbeEvidenceRecord,
-    observation: &ObservationReceipt,
-    impact: &ImpactReceipt,
-    decision: &DecisionReceipt,
+struct DecisionAuditContext<'a> {
+    request: &'a ProbeRequestReceipt,
+    evidence: &'a ProbeEvidenceRecord,
+    observation: &'a ObservationReceipt,
+    impact: &'a ImpactReceipt,
+    decision: &'a DecisionReceipt,
     audited_at_tick: u64,
+}
+
+fn audit_decision(
+    context: DecisionAuditContext<'_>,
     report: &mut EpisodeAuditReport,
     decision_ids: &mut BTreeSet<String>,
 ) {
+    let DecisionAuditContext {
+        request,
+        evidence,
+        observation,
+        impact,
+        decision,
+        audited_at_tick,
+    } = context;
     if !decision_ids.insert(decision.decision_id.clone()) {
         report.fail(AuditFailure::DuplicateDecisionId);
         return;
@@ -876,12 +888,14 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
         match (&observation, &impact, &row.decision) {
             (Some(observation), Some(impact), Some(decision)) => {
                 audit_decision(
-                    request,
-                    row,
-                    observation,
-                    impact,
-                    decision,
-                    input.audited_at_tick,
+                    DecisionAuditContext {
+                        request,
+                        evidence: row,
+                        observation,
+                        impact,
+                        decision,
+                        audited_at_tick: input.audited_at_tick,
+                    },
                     &mut report,
                     &mut decision_ids,
                 );
