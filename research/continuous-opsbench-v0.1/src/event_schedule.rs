@@ -481,10 +481,10 @@ pub fn evaluate_event_schedule(
         }
         metrics.delivered_records += 1;
 
-        // A missing cursor entry cannot be repaired after the declared gap
-        // timeout merely because it eventually arrives.
+        // A missing cursor entry cannot be repaired at or after the declared
+        // gap deadline merely because it eventually arrives.
         if let Some(gap_start) = gap_started_at {
-            if event.processing_at_tick > gap_start.saturating_add(config.gap_timeout_ticks) {
+            if event.processing_at_tick >= gap_start.saturating_add(config.gap_timeout_ticks) {
                 metrics.sequence_gaps_escalated += 1;
                 for buffered in pending.values() {
                     records[buffered.record_index].disposition = EventDisposition::DeliveryGap;
@@ -901,6 +901,19 @@ mod tests {
         missing.event_time_tick = 8;
         missing.delivered_at_tick = 8;
         let result = evaluate(&[later, missing], 9);
+        assert_eq!(result.status, EventRunStatus::DeliveryGap);
+        assert_eq!(result.metrics.sequence_gaps_escalated, 1);
+        assert!(result.wake_batches.is_empty());
+    }
+
+
+    #[test]
+    fn missing_sequence_arriving_exactly_at_gap_deadline_is_too_late() {
+        let later = event(11, "evt-11", "incident-b", 5);
+        let mut missing = event(10, "evt-10", "incident-a", 8);
+        missing.event_time_tick = 6;
+        missing.delivered_at_tick = 7;
+        let result = evaluate(&[later, missing], 8);
         assert_eq!(result.status, EventRunStatus::DeliveryGap);
         assert_eq!(result.metrics.sequence_gaps_escalated, 1);
         assert!(result.wake_batches.is_empty());
