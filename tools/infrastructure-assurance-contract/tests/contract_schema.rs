@@ -59,7 +59,10 @@ fn metric_denominator_is_required_when_numerator_is_present() {
 #[test]
 fn registry_track_ids_are_unique_and_have_explicit_claim_ceilings() {
     let registry: Value = serde_json::from_str(REGISTRY).expect("registry must be valid JSON");
-    assert_eq!(registry["schema"], "luminous.infrastructure-assurance-registry/0.1");
+    assert_eq!(
+        registry["schema"],
+        "luminous.infrastructure-assurance-registry/0.1"
+    );
     let tracks = registry["tracks"].as_array().expect("tracks array");
     assert!(tracks.len() >= 7);
     let mut ids = std::collections::BTreeSet::new();
@@ -67,10 +70,15 @@ fn registry_track_ids_are_unique_and_have_explicit_claim_ceilings() {
         let id = track["track_id"].as_str().expect("track id");
         assert!(ids.insert(id.to_owned()), "duplicate track id: {id}");
         assert!(
-            track["claim_ceiling"].as_str().is_some_and(|s| !s.trim().is_empty()),
+            track["claim_ceiling"]
+                .as_str()
+                .is_some_and(|s| !s.trim().is_empty()),
             "track {id} must declare a claim ceiling"
         );
-        assert!(track["score_families"].is_array(), "track {id} must declare score families");
+        assert!(
+            track["score_families"].is_array(),
+            "track {id} must declare score families"
+        );
     }
     assert!(registry["external_comparators"].is_array());
     assert!(registry["standards_snapshot"].is_array());
