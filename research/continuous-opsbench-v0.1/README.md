@@ -142,3 +142,16 @@ Important semantics:
 The module's focused tests cover persistence/coalescing, concurrent incidents, ephemeral-clear-before-processing, deadline miss, duplicate suppression, event and sequence identity collisions, gaps, out-of-order events, dormant revocation, watch activation during a pre-existing persistent condition, wake-budget exhaustion, wrong-scope cursor progression, missing identity digest and processing-time regression.
 
 **Claim ceiling:** this is a deterministic event-schedule evaluator over synthetic event records. It does not authenticate producers, consume the actual CloudEvents/inbox/outbox transport, guarantee complete delivery, or establish runtime cancellation, production revocation propagation, live collector/impact receipts or SRE benchmark performance. The event contract and delivery adapter remain #306's responsibility; this module evaluates the event semantics and their effect on attention scheduling.
+
+
+## Event wake → bounded probe policy evaluation v0.1
+
+The additive `src/event_attention.rs` module joins the offline event schedule to the existing `ProbePolicy` and shared eligible-probe filter. It invokes the policy once per distinct incident wake, preserving the exact triggering event, incident ID, source sequence and event/delivery/processing times.
+
+At each policy decision tick, it re-evaluates current authority and supplies only eligible read-only probe identifiers. It records policy invocations, probe-selection calls, admitted proposals, out-of-set denials and no-selection/empty-catalog outcomes separately.
+
+A policy proposal outside the eligible ID set is denied. Authority revoked between event processing and the policy decision produces an empty eligible set. A probe selection remains a proposal only: this evaluator executes no collector, does not write the plant, and has zero mutation capability.
+
+Eight deterministic tests cover per-incident invocation/coalescing, exact event binding, catalog minimization, revocation between delivery and decision, out-of-set denial, no-wake behavior, missed deadlines and decision-clock validation.
+
+**Claim ceiling:** this is an offline schedule→policy adapter. It does not implement production wake delivery, collector admission/execution, source/impact receipts, process-separated evaluator isolation or action authorization. A separate #320 step must add the source/impact receipt join and independent auditor before a complete watch-to-probe episode can be claimed.
