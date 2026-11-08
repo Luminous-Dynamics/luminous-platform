@@ -92,6 +92,7 @@ fn completed_scorecard_requires_a_measured_family_and_executed_gates() {
     scorecard["evidence"]["input_bundle_sha256"] = json!(digest);
     scorecard["evidence"]["output_bundle_sha256"] = json!(digest);
     scorecard["evidence"]["verification_report_sha256"] = json!(digest);
+    scorecard["decision_context"]["policy_sha256"] = json!(digest);
     scorecard["results"]["hard_gates"][0]["outcome"] = json!("pass");
     scorecard["results"]["hard_gates"][0]["sample_count"] = json!(10);
     scorecard["results"]["metric_families"] = json!({
