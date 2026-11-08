@@ -1,0 +1,257 @@
+{
+  "schema": "luminous.infrastructure-assurance-registry/0.1",
+  "version": "0.1.0",
+  "snapshot_date": "2026-11-08",
+  "governing_rule": "Tracks retain domain-specific units and claim ceilings. Do not compute or publish a pooled score, scalar trust score, or universal assurance level.",
+  "tracks": [
+    {
+      "track_id": "DEP-HYPERGRAPH-001",
+      "name": "Time-qualified dependency hypergraph",
+      "owner": "Luminous-Dynamics/mycelix",
+      "owner_issue": "https://github.com/Luminous-Dynamics/mycelix/issues/5923",
+      "implementation": "https://github.com/Luminous-Dynamics/mycelix/pull/5929",
+      "maturity": "synthetic_executable",
+      "current_evidence": "Dedicated reference workflow passed on PR head 5ba6ec1a023f423d82de1ab183c66627db9d9988; broader Mycelix CI run was skipped.",
+      "fixture_state": "Synthetic semantic tests are in the isolated Rust crate; a separately versioned benchmark challenge pack is still required.",
+      "claim_ceiling": "Declared common-dependency assessment over an exact inventory snapshot and evidence frontier; not proof of physical or statistical independence.",
+      "score_families": [
+        "dependency_assurance",
+        "evidence_integrity",
+        "operational_efficiency"
+      ],
+      "next_work": [
+        "Version a dependency-specific challenge pack under Mycelix.",
+        "Add hidden-ancestor and positive-independent controls.",
+        "Measure 10, 100, 1000 and 10000 source scales separately."
+      ]
+    },
+    {
+      "track_id": "PNT-OBS-QUAL-001",
+      "name": "PNT observation qualification and decision conformance",
+      "owner": "Luminous-Dynamics/luminous-platform",
+      "owner_issue": "https://github.com/Luminous-Dynamics/luminous-platform/issues/307",
+      "implementation": "https://github.com/Luminous-Dynamics/luminous-platform/pull/326",
+      "maturity": "synthetic_executable",
+      "current_evidence": "Sixteen frozen synthetic PNT cases pass the exact-head semantic conformance workflow.",
+      "fixture_state": "16 synthetic vectors; no live receiver or independent physical analyzer qualification.",
+      "claim_ceiling": "Synthetic profile semantic conformance only; no real receiver, navigation integrity, physical accuracy or operational authority claim.",
+      "score_families": [
+        "measurement_qualification",
+        "evidence_integrity",
+        "dependency_assurance",
+        "decision_quality",
+        "recovery"
+      ],
+      "next_work": [
+        "Preserve the acquisition-versus-recognition separation.",
+        "Add externally measured timing and position reference campaigns before field claims."
+      ]
+    },
+    {
+      "track_id": "RF-ACQ-RECOG-001",
+      "name": "RF acquisition qualification × open-set recognition",
+      "owner": "Luminous-Dynamics/symthaea",
+      "owner_issue": "https://github.com/Luminous-Dynamics/symthaea/issues/10975",
+      "maturity": "contract_design",
+      "current_evidence": "Cross-domain benchmark plan references a 12-case dual-axis acquisition/recognition contract.",
+      "fixture_state": "Do not copy fixtures into Platform; the Symthaea project remains the profile owner.",
+      "claim_ceiling": "Synthetic or dataset-specific acquisition and recognition results; no emitter attribution, GNSS integrity, actor intent or field assurance claim.",
+      "score_families": [
+        "measurement_qualification",
+        "recognition",
+        "evidence_integrity",
+        "operational_efficiency"
+      ],
+      "next_work": [
+        "Cross acquisition faults with known, unknown and indeterminate labels.",
+        "Hold out complete receiver, front-end, site, day, firmware and campaign groups.",
+        "Compare calibration and selective-risk curves at matched known-class recall."
+      ]
+    },
+    {
+      "track_id": "TELECOM-PTP-SYNCAA-001",
+      "name": "Telecom PTP timing and synchronization-service assurance",
+      "owner": "Luminous-Dynamics/luminous-platform",
+      "owner_issue": "https://github.com/Luminous-Dynamics/luminous-platform/issues/312",
+      "implementation": "https://github.com/Luminous-Dynamics/luminous-platform/pull/313",
+      "maturity": "standards_profile_pinned",
+      "current_evidence": "Profile matrix references 2026 G.8275 family editions; conformance and physical timing accuracy remain unqualified.",
+      "fixture_state": "Profile-specific synthetic scenarios and standards matrix; no independently instrumented timing lab report is registered here.",
+      "claim_ceiling": "Profile-specific software conformance and declared service evidence only; no physical phase/time accuracy or telecom SLA claim.",
+      "score_families": [
+        "measurement_qualification",
+        "dependency_assurance",
+        "service_outcomes",
+        "recovery",
+        "operational_efficiency"
+      ],
+      "next_work": [
+        "Keep G.8275.1 full timing support and G.8275.2 partial timing support as separate tracks.",
+        "Separate Annex F PTP performance monitoring from Annex G SyncaaS availability.",
+        "Compare service availability against independently measured time/phase error and downstream impact."
+      ]
+    },
+    {
+      "track_id": "EDGE-INSTRUMENT-QUAL-001",
+      "name": "Exact-board edge instrumentation qualification",
+      "owner": "Luminous-Dynamics/luminous-platform",
+      "owner_issue": "https://github.com/Luminous-Dynamics/luminous-platform/issues/300",
+      "implementation": "https://github.com/Luminous-Dynamics/luminous-platform/pull/316",
+      "maturity": "contract_design",
+      "current_evidence": "An exact-board qualification manifest is referenced by the cross-domain programme.",
+      "fixture_state": "Hardware identity and workload manifest require exact-board execution evidence.",
+      "claim_ceiling": "Manifest and software conformance only until instrumented board tests establish measurement and resource behavior.",
+      "score_families": [
+        "measurement_qualification",
+        "evidence_integrity",
+        "operational_efficiency",
+        "recovery"
+      ],
+      "next_work": [
+        "Bind board revision, firmware, sensor, calibration and runtime.",
+        "Measure sample loss, RAM/flash, energy, thermal behavior and offline replay.",
+        "Cross quantization/runtime changes with acquisition fault controls."
+      ]
+    },
+    {
+      "track_id": "DECISION-PROBE-001",
+      "name": "Watch-wake-probe-impact-decision evaluation",
+      "owner": "Luminous-Dynamics/luminous-platform",
+      "owner_issue": "https://github.com/Luminous-Dynamics/luminous-platform/issues/306",
+      "implementation": "https://github.com/Luminous-Dynamics/luminous-platform/pull/302",
+      "maturity": "engineering_slice",
+      "current_evidence": "Event-triggered wake and decision-aware probing work is referenced by the programme.",
+      "fixture_state": "Evaluation arms and matched hidden-timeline protocol remain to be frozen.",
+      "claim_ceiling": "Synthetic decision-policy comparison; no claim of field operational benefit until real-world replication.",
+      "score_families": [
+        "decision_quality",
+        "service_outcomes",
+        "operational_efficiency"
+      ],
+      "next_work": [
+        "Compare no-watch, fixed polling, adaptive polling, EIG/cost, robust EIG, EVSI and human consultation.",
+        "Use matched resource budgets and record probe externalities.",
+        "Treat missing probe-impact receipts as unknown, not zero."
+      ]
+    },
+    {
+      "track_id": "SERVICE-REQUAL-001",
+      "name": "Service recovery and requalification",
+      "owner": "Luminous-Dynamics/symtropy",
+      "owner_issue": "https://github.com/Luminous-Dynamics/symtropy/issues/4079",
+      "maturity": "contract_design",
+      "current_evidence": "Repair and requalification receipt semantics are referenced by the programme.",
+      "fixture_state": "A versioned cross-domain challenge pack is not yet registered.",
+      "claim_ceiling": "Synthetic receipt and policy conformance; no automatic production re-entry authority.",
+      "score_families": [
+        "evidence_integrity",
+        "dependency_assurance",
+        "service_outcomes",
+        "recovery"
+      ],
+      "next_work": [
+        "Replay old-good receipts across device, calibration and dependency changes.",
+        "Require independent reconstruction of requalification predicates.",
+        "Measure premature re-entry, false denial and requalification delay."
+      ]
+    },
+    {
+      "track_id": "OMSI-MFG-EVIDENCE-001",
+      "name": "Manufacturing evidence and artifact-binding conformance",
+      "owner": "Luminous-Dynamics/luminous-platform",
+      "owner_issue": "https://github.com/Luminous-Dynamics/luminous-platform/pull/53",
+      "implementation": "https://github.com/Luminous-Dynamics/luminous-platform/pull/53",
+      "maturity": "synthetic_executable",
+      "current_evidence": "Manufacturing validator exact-head workflow passed; this validates software evidence-chain behavior, not physical measurement quality.",
+      "fixture_state": "Synthetic schemas, adapters, replay and provenance bundles.",
+      "claim_ceiling": "Diagnostic-only manufacturing evidence conformance; no quality release, equipment-control or measurement-truth authority.",
+      "score_families": [
+        "evidence_integrity",
+        "decision_quality",
+        "operational_efficiency"
+      ],
+      "next_work": [
+        "Keep transformation and schema-coverage conformance separate from metrology qualification.",
+        "Add real vendor adapters only with licensed source schemas and field datasets."
+      ]
+    }
+  ],
+  "external_comparators": [
+    {
+      "comparator_id": "RF-CALIBRATED-OPENSET-2026",
+      "source_url": "https://doi.org/10.3390/electronics15143077",
+      "publication_status": "published_2026",
+      "result_summary": [
+        {
+          "protocol": "POWDER curated cross-day",
+          "metric": "open_set_macro_f1",
+          "value": 69.47,
+          "unit": "percent"
+        },
+        {
+          "protocol": "POWDER curated cross-day",
+          "metric": "AUROC",
+          "value": 86.73,
+          "unit": "percent"
+        },
+        {
+          "protocol": "Hovering UAV main",
+          "metric": "open_set_macro_f1",
+          "value": 55.95,
+          "unit": "percent"
+        },
+        {
+          "protocol": "Hovering UAV main",
+          "metric": "unknown_f1",
+          "value": 38.67,
+          "unit": "percent"
+        },
+        {
+          "protocol": "Hovering UAV unseen-12ft",
+          "metric": "open_set_macro_f1",
+          "value": 48.45,
+          "unit": "percent"
+        }
+      ],
+      "comparison_rule": "Keep dataset/protocol rows separate. These are paper-reported results, not independently reproduced and not directly comparable to Luminous runs until acquisition, split, label and evaluator protocols are matched.",
+      "limitation": "Curated protocol results do not establish broad industrial emitter generalization or physical RF acquisition qualification."
+    }
+  ],
+  "standards_snapshot": [
+    {
+      "id": "ITU-T G.8275",
+      "edition": "01/2026",
+      "amendment": "08/2026 Amendment 1",
+      "status": "in_force",
+      "url": "https://www.itu.int/rec/T-REC-G.8275/en"
+    },
+    {
+      "id": "ITU-T G.8275.1",
+      "edition": "02/2026",
+      "amendment": "08/2026 Amendment 1",
+      "status": "in_force_prepublished",
+      "url": "https://www.itu.int/rec/T-REC-G.8275.1/en"
+    },
+    {
+      "id": "ITU-T G.8275.2",
+      "edition": "02/2026",
+      "amendment": "08/2026 Amendment 1",
+      "status": "in_force",
+      "url": "https://www.itu.int/itu-t/recommendations/rec.aspx?lang=en&rec=16548"
+    },
+    {
+      "id": "NIST IR 8323 Rev. 2",
+      "edition": "Initial Public Draft 2026-05-06",
+      "amendment": null,
+      "status": "draft_public_comment_closed",
+      "url": "https://csrc.nist.gov/pubs/ir/8323/r2/ipd"
+    },
+    {
+      "id": "IEEE 1588-2019",
+      "edition": "2019 with amendments",
+      "amendment": "1588h-2026 listed by IEEE",
+      "status": "active_standard",
+      "url": "https://standards.ieee.org/ieee/1547/6825/"
+    }
+  ]
+}
