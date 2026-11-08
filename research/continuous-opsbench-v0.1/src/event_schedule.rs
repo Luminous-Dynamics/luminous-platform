@@ -150,7 +150,6 @@ pub enum RecordDisposition {
     ScopeRejected,
     ExpiredBeforeProcessing,
     MissedDeadline,
-    DeliveryGap,
     OutOfOrder,
     IdentityCollision,
     SourceEpochMismatch,
@@ -1239,6 +1238,84 @@ mod tests {
         .unwrap()
     }
 
+
+
+    fn watermark(next_sequence: u64, observed_tick: u64, available: bool) -> SourceWatermark {
+        SourceWatermark {
+            source_id: "event-feed-a".into(),
+            source_epoch: "epoch-1".into(),
+            next_sequence,
+            observed_tick,
+            available,
+            watermark_digest: format!("sha256:{:064x}", next_sequence + observed_tick),
+        }
+    }
+
+    #[test]
+    fn final_lost_event_is_detected_by_source_watermark() {
+        let timeline = vec![
+            TimelineRecord::Event(event(
+                "event-1", "incident-1", 1, 2, 2, 30, 12,
+                Persistence::PersistentCondition,
+            )),
+            TimelineRecord::Watermark(watermark(3, 8, true)),
+        ];
+        let result = run(AttentionStrategy::EventTriggered, &timeline);
+        assert_eq!(result.status, ScheduleStatus::DeliveryGap);
+        assert_eq!(result.metrics.sequence_gaps, 1);
+        assert_eq!(result.metrics.watermarks_checked, 1);
+        assert_eq!(result.metrics.wakeups, 1);
+        assert_eq!(
+            result.records.last().unwrap().disposition,
+            RecordDisposition::DeliveryGap
+        );
+    }
+
+    #[test]
+    fn watermark_at_current_cursor_confirms_quiet_is_not_source_loss() {
+        let timeline = vec![TimelineRecord::Watermark(watermark(1, 8, true))];
+        let result = run(AttentionStrategy::EventTriggered, &timeline);
+        assert_eq!(result.status, ScheduleStatus::Quiet);
+        assert_eq!(result.metrics.watermarks_checked, 1);
+        assert_eq!(result.metrics.sequence_gaps, 0);
+        assert_eq!(
+            result.records[0].disposition,
+            RecordDisposition::WatermarkConfirmed
+        );
+    }
+
+    #[test]
+    fn unavailable_source_is_not_reported_as_quiet() {
+        let timeline = vec![TimelineRecord::Watermark(watermark(1, 8, false))];
+        let result = run(AttentionStrategy::EventTriggered, &timeline);
+        assert_eq!(result.status, ScheduleStatus::SourceUnavailable);
+        assert_eq!(result.metrics.source_unavailable, 1);
+        assert_ne!(result.status, ScheduleStatus::Quiet);
+    }
+
+    #[test]
+    fn foreign_source_event_is_rejected_before_sequence_cursor_advances() {
+        let foreign = SourceEvent {
+            source_id: "other-source".into(),
+            ..event(
+                "foreign-event",
+                "incident-foreign",
+                1,
+                3,
+                3,
+                30,
+                10,
+                Persistence::PersistentCondition,
+            )
+        };
+        let result = run(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(foreign)],
+        );
+        assert_eq!(result.status, ScheduleStatus::SourceIdentityMismatch);
+        assert_eq!(result.checkpoint.next_sequence, 1);
+        assert_eq!(result.metrics.wakeups, 0);
+    }
 
     #[test]
     fn delayed_delivery_before_deadline_keeps_original_event_time() {
