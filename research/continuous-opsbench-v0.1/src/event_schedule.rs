@@ -476,7 +476,9 @@ pub fn evaluate_event_schedule(
             scheduled,
             EventRecordDisposition::Woke,
         ));
-        result.status = EventScheduleStatus::Completed;
+        if result.status != EventScheduleStatus::DeadlineMissed {
+            result.status = EventScheduleStatus::Completed;
+        }
     }
 
     if !terminal_stop
@@ -635,6 +637,30 @@ mod tests {
         assert_eq!(result.records[1].disposition, EventRecordDisposition::DuplicateSuppressed);
     }
 
+
+    #[test]
+    fn same_event_id_and_sequence_with_different_payload_digest_is_collision() {
+        let first = scheduled(1, "event-one", "incident-a", 4, 5, 5, EventPersistence::Persistent, true);
+        let mut changed = first.clone();
+        changed.payload_digest = format!("sha256:{:064x}", 99);
+        changed.processed_at_tick = 6;
+        let result = evaluate(&[first, changed], &watch(), &authority());
+        assert_eq!(result.status, EventScheduleStatus::EventIdentityCollision);
+        assert_eq!(result.metrics.identity_collisions, 1);
+        assert_eq!(result.metrics.duplicate_deliveries, 0);
+    }
+
+    #[test]
+    fn late_event_does_not_erase_miss_when_later_event_wakes() {
+        let late = scheduled(1, "late-1", "incident-late", 3, 7, 10, EventPersistence::Ephemeral, true);
+        let timely = scheduled(2, "timely-2", "incident-timely", 12, 12, 13, EventPersistence::Persistent, true);
+        let result = evaluate(&[late, timely], &watch(), &authority());
+        assert_eq!(result.status, EventScheduleStatus::DeadlineMissed);
+        assert_eq!(result.metrics.late_events, 1);
+        assert_eq!(result.metrics.wakeups, 1);
+        assert_eq!(result.records[1].disposition, EventRecordDisposition::Woke);
+    }
+
     #[test]
     fn same_event_id_with_different_sequence_is_identity_collision() {
         let first = scheduled(1, "event-reused", "incident-a", 4, 5, 5, EventPersistence::Persistent, true);
@@ -671,10 +697,12 @@ mod tests {
     #[test]
     fn out_of_order_old_sequence_is_not_credited_as_duplicate() {
         let first = scheduled(2, "event-two", "incident-a", 4, 5, 5, EventPersistence::Persistent, true);
+        let second = scheduled(1, "event-one", "incident-b", 6, 6, 7, EventPersistence::Persistent, true);
         let mut changed_watch = watch();
-        changed_watch.first_sequence = 1;
-        let result = evaluate(&[first], &changed_watch, &authority());
-        assert_eq!(result.status, EventScheduleStatus::DeliveryGap);
+        changed_watch.first_sequence = 2;
+        let result = evaluate(&[first, second], &changed_watch, &authority());
+        assert_eq!(result.status, EventScheduleStatus::OutOfOrder);
+        assert_eq!(result.metrics.out_of_order_events, 1);
     }
 
     #[test]
