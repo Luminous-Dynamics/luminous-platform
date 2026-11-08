@@ -126,3 +126,84 @@ fn completed_scorecard_requires_a_measured_family_and_executed_gates() {
     scorecard["results"]["hard_gates"][0]["outcome"] = json!("not_run");
     assert!(!schema_validator().is_valid(&scorecard));
 }
+
+#[test]
+fn measurement_qualification_requires_a_decision_bound_measurement_context() {
+    let digest = "b".repeat(64);
+    let mut scorecard: Value = serde_json::from_str(SCORECARD_TEMPLATE).expect("template");
+    scorecard["decision_context"]["policy_sha256"] = json!(digest);
+    scorecard["results"]["metric_families"] = json!({
+        "measurement_qualification": [{
+            "metric_id": "false_qualification_rate",
+            "value": 0.0,
+            "unit": "fraction",
+            "aggregation": "rate",
+            "sample_count": 10,
+            "population_id": "frozen-invalid-measurements-v0.1",
+            "numerator": 0,
+            "denominator": 10,
+            "uncertainty": { "method": "exact-binomial" }
+        }]
+    });
+    assert!(!schema_validator().is_valid(&scorecard));
+
+    scorecard["measurement_context"] = json!({
+        "measurand": {
+            "quantity_id": "time-error",
+            "quantity_kind": "time_interval_error",
+            "unit": "ns"
+        },
+        "instrument": {
+            "instrument_id": "reference-analyzer-01",
+            "model": "synthetic-reference",
+            "hardware_revision": "rev-a",
+            "firmware_sha256": digest,
+            "configuration_sha256": digest,
+            "sensor_front_end_id": "front-end-a"
+        },
+        "acquisition": {
+            "method_id": "synthetic-capture-v1",
+            "timebase": "TAI-with-declared-correlation",
+            "environment_digest": digest,
+            "capture_config_sha256": digest
+        },
+        "calibration": {
+            "status": "current",
+            "certificate_sha256": digest,
+            "valid_from": "2026-01-01T00:00:00Z",
+            "valid_until": "2027-01-01T00:00:00Z",
+            "traceability_refs": ["reference-chain-a"]
+        },
+        "uncertainty": {
+            "status": "quantified",
+            "propagation_method": "monte_carlo",
+            "model_sha256": digest,
+            "budget_sha256": digest,
+            "covariance_model": "correlated_inputs",
+            "nonlinearity_treatment": "monte_carlo",
+            "coverage_probability": 0.95,
+            "coverage_lower": -5.0,
+            "coverage_upper": 5.0,
+            "unit": "ns",
+            "contributors": [{
+                "contributor_id": "oscillator",
+                "distribution": "normal",
+                "standard_uncertainty": 1.0,
+                "unit": "ns",
+                "correlation_group": "clock-domain-a"
+            }]
+        },
+        "reference_measurement": {
+            "reference_system_id": "independent-time-analyzer",
+            "method_id": "comparison-v1",
+            "evidence_sha256": digest,
+            "uncertainty_budget_sha256": digest,
+            "traceability_reference": "synthetic-reference-chain"
+        }
+    });
+    assert!(schema_validator().is_valid(&scorecard));
+
+    scorecard["measurement_context"]["uncertainty"]["status"] = json!("quantified");
+    scorecard["measurement_context"]["uncertainty"]["model_sha256"] = json!(null);
+    assert!(!schema_validator().is_valid(&scorecard));
+}
