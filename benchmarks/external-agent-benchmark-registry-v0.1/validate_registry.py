@@ -17,7 +17,7 @@ from jsonschema import Draft202012Validator, FormatChecker
 
 ROOT = Path(__file__).resolve().parent
 SCHEMA_PATH = ROOT / "registry.schema.json"
-SNAPSHOT_PATH = ROOT / "registry.snapshot-2026-11-07.json"
+SNAPSHOT_PATH = ROOT / "registry.snapshot-2026-11-08.json"
 FORBIDDEN_METRICS = {
     "overall_sre_score",
     "overall_agent_score",
