@@ -474,6 +474,28 @@ pub fn evaluate_event_schedule(
         }
         metrics.delivered_records += 1;
 
+        // A missing cursor entry cannot be repaired after the declared gap
+        // timeout merely because it eventually arrives.
+        if let Some(gap_start) = gap_started_at {
+            if event.processing_at_tick
+                > gap_start.saturating_add(config.gap_timeout_ticks)
+            {
+                metrics.sequence_gaps_escalated += 1;
+                for buffered in pending.values() {
+                    records[buffered.record_index].disposition = EventDisposition::DeliveryGap;
+                }
+                return Ok(result(
+                    EventRunStatus::DeliveryGap,
+                    epoch,
+                    expected_sequence,
+                    authority.epoch,
+                    metrics,
+                    Vec::new(),
+                    records,
+                ));
+            }
+        }
+
         let identity_key = (event.source_epoch, event.event_id.clone());
         if let Some((old_sequence, old_digest)) = seen_ids.get(&identity_key) {
             if *old_sequence == event.sequence && old_digest == &event.payload_digest {
@@ -854,6 +876,63 @@ mod tests {
 
     fn evaluate(events: &[ScheduledAttentionEvent], now: u64) -> EventScheduleResult {
         evaluate_event_schedule(&watch(), &authority(), &config(), events, now).unwrap()
+    }
+
+
+    #[test]
+    fn missing_sequence_arriving_after_gap_deadline_does_not_repair_history() {
+        let later = event(11, "evt-11", "incident-b", 5);
+        let mut missing = event(10, "evt-10", "incident-a", 9);
+        missing.event_time_tick = 8;
+        missing.delivered_at_tick = 8;
+        let result = evaluate(&[later, missing], 9);
+        assert_eq!(result.status, EventRunStatus::DeliveryGap);
+        assert_eq!(result.metrics.sequence_gaps_escalated, 1);
+        assert!(result.wake_batches.is_empty());
+    }
+
+    #[test]
+    fn different_incidents_at_different_ticks_receive_distinct_wake_batches() {
+        let result = evaluate(
+            &[
+                event(10, "evt-10", "incident-a", 5),
+                event(11, "evt-11", "incident-b", 6),
+            ],
+            6,
+        );
+        assert_eq!(result.wake_batches.len(), 2);
+        assert_eq!(result.metrics.coalesced_events, 0);
+        assert_eq!(result.wake_batches[0].incident_ids, vec!["incident-a"]);
+        assert_eq!(result.wake_batches[1].incident_ids, vec!["incident-b"]);
+    }
+
+    #[test]
+    fn delayed_event_inside_deadline_is_woken_and_reports_both_latencies() {
+        let mut delayed = event(10, "evt-delayed", "incident-delayed", 8);
+        delayed.event_time_tick = 2;
+        delayed.delivered_at_tick = 5;
+        delayed.valid_until_tick = 10;
+        delayed.response_deadline_tick = 9;
+        let result = evaluate(&[delayed], 8);
+        assert_eq!(result.wake_batches.len(), 1);
+        assert_eq!(result.metrics.maximum_event_to_wake_latency_ticks, Some(6));
+        assert_eq!(result.metrics.maximum_delivery_to_wake_latency_ticks, Some(3));
+    }
+
+    #[test]
+    fn exact_duplicate_from_previous_epoch_remains_suppressed_after_restart() {
+        let old = event(10, "evt-old", "incident-old", 5);
+        let mut restart = event(10, "evt-new", "incident-new", 6);
+        restart.source_epoch = 2;
+        restart.source_restart = true;
+        let mut replay = old.clone();
+        replay.processing_at_tick = 7;
+        replay.delivered_at_tick = 6;
+        let result = evaluate(&[old, restart, replay], 7);
+        assert_eq!(result.status, EventRunStatus::Completed);
+        assert_eq!(result.metrics.source_epoch_transitions, 1);
+        assert_eq!(result.metrics.duplicate_deliveries, 1);
+        assert_eq!(result.wake_batches.len(), 2);
     }
 
     #[test]
