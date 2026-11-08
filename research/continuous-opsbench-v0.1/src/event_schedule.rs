@@ -1098,10 +1098,10 @@ fn apply_restart(
             restart.sequence_start,
             restart.at_tick,
             processing_tick,
-            RecordDisposition::DeliveryGap,
+            RecordDisposition::SourceEpochMismatch,
             false,
         );
-        return Some(ScheduleStatus::DeliveryGap);
+        return Some(ScheduleStatus::SourceEpochMismatch);
     }
     let valid = restart.source_id == watch.source_id
         && restart.previous_epoch == checkpoint.source_epoch
@@ -2314,7 +2314,7 @@ mod tests {
             5,
             8,
         );
-        assert_eq!(result.status, ScheduleStatus::DeliveryGap);
+        assert_eq!(result.status, ScheduleStatus::SourceEpochMismatch);
         assert_eq!(result.checkpoint.source_epoch, "epoch-1");
         assert_eq!(result.checkpoint.buffered_events.len(), 1);
     }
