@@ -11,8 +11,8 @@
       "owner_issue": "https://github.com/Luminous-Dynamics/mycelix/issues/5923",
       "implementation": "https://github.com/Luminous-Dynamics/mycelix/pull/5929",
       "maturity": "synthetic_executable",
-      "current_evidence": "Dedicated reference workflow passed on PR head 5ba6ec1a023f423d82de1ab183c66627db9d9988; broader Mycelix CI run was skipped.",
-      "fixture_state": "Synthetic semantic tests are in the isolated Rust crate; a separately versioned benchmark challenge pack is still required.",
+      "current_evidence": "The original dedicated reference workflow passed at an earlier head. An 11-case public synthetic challenge pack and integration test have since been added to PR #5929; their updated exact-head workflow is pending. Broad Mycelix CI is skipped for the isolated tooling change.",
+      "fixture_state": "11 frozen public synthetic cases are versioned in Mycelix PR #5929, including the shared-power-does-not-imply-clock negative control and a complete-inventory no-common-ancestor positive control. This is public conformance, not a blind hidden-truth field evaluation.",
       "claim_ceiling": "Declared common-dependency assessment over an exact inventory snapshot and evidence frontier; not proof of physical or statistical independence.",
       "score_families": [
         "dependency_assurance",
@@ -20,9 +20,9 @@
         "operational_efficiency"
       ],
       "next_work": [
-        "Version a dependency-specific challenge pack under Mycelix.",
-        "Add hidden-ancestor and positive-independent controls.",
-        "Measure 10, 100, 1000 and 10000 source scales separately."
+        "Add sealed evaluator-owned hidden-truth scenarios with withheld common-cause edges and outcome schedules.",
+        "Add a cross-language or independently maintained verifier with separately controlled inputs and dependencies.",
+        "Measure 10, 100, 1000 and 10000 source scales, and report node/edge density with p50/p95/p99 runtime and peak memory."
       ]
     },
     {
