@@ -826,34 +826,39 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
                 if receipt.received_at_tick > request.deadline_tick {
                     report.indeterminate(IndeterminateReason::ReceiptAfterDeadline);
                     None
-                } else if !impact_receipt_ids.insert(receipt.receipt_id.clone()) {
-                    report.fail(AuditFailure::DuplicateReceiptId);
-                }
-                if receipt.request_id != request.request_id
-                    || receipt.event_id != request.event_id
-                    || !impact_binding_matches(request, receipt, input.audited_at_tick)
-                {
-                    if !receipt.impact.complete {
-                        report.indeterminate(IndeterminateReason::IncompleteImpact);
-                    } else {
-                        report.fail(AuditFailure::EvidenceBindingMismatch);
-                    }
-                    None
-                } else if let Some(observation) = observation {
-                    if receipt.impact.observer_control_domain
-                        == observation.observation.control_domain
-                        || receipt.impact.observer_control_domain == entry.collector_control_domain
-                    {
-                        report.indeterminate(IndeterminateReason::ImpactIndependenceUnestablished);
-                        None
-                    } else {
-                        report.impacts_verified += 1;
-                        Some(receipt)
-                    }
                 } else {
-                    // An impact receipt cannot close the chain if its paired
-                    // source observation is stale, absent or unknown.
-                    None
+                    if !impact_receipt_ids.insert(receipt.receipt_id.clone()) {
+                        report.fail(AuditFailure::DuplicateReceiptId);
+                    }
+                    if receipt.request_id != request.request_id
+                        || receipt.event_id != request.event_id
+                        || !impact_binding_matches(request, receipt, input.audited_at_tick)
+                    {
+                        if !receipt.impact.complete {
+                            report.indeterminate(IndeterminateReason::IncompleteImpact);
+                        } else {
+                            report.fail(AuditFailure::EvidenceBindingMismatch);
+                        }
+                        None
+                    } else if let Some(observation) = observation {
+                        if receipt.impact.observer_control_domain
+                            == observation.observation.control_domain
+                            || receipt.impact.observer_control_domain
+                                == entry.collector_control_domain
+                        {
+                            report.indeterminate(
+                                IndeterminateReason::ImpactIndependenceUnestablished,
+                            );
+                            None
+                        } else {
+                            report.impacts_verified += 1;
+                            Some(receipt)
+                        }
+                    } else {
+                        // An impact receipt cannot close the chain if its paired
+                        // source observation is stale, absent or unknown.
+                        None
+                    }
                 }
             }
             ReceiptState::Missing => {
