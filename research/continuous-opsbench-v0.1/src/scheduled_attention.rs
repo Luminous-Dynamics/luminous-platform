@@ -8,7 +8,6 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::episode_audit::WakeDisposition;
 use crate::event_schedule::{
     evaluate_event_schedule, AttentionStrategy, ConditionOutcome, EventScheduleResult,
     EventWatch, Persistence, RecordDisposition, ScheduleError, ScheduleStatus, SourceEvent,
