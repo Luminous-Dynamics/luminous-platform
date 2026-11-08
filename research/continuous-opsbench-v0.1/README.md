@@ -196,3 +196,19 @@ Tests cover exact identity mapping, proposal-versus-request distinction, explici
 A proposal now preserves the exact catalog contract visible at selection time: operation digest, tenant/target/purpose, collector source ID, collector control domain, read-only bit, maximum duration, proposal tick and the observation source tick. The source-qualified runner resolves the already-eligible probe ID against exactly one catalog entry before emitting this proposal. The auditor adapter consumes exactly one proposal for every SelectReadOnlyProbe decision and none for other dispositions; it checks the proposal's observation tick against the actual wake observation. The auditor then compares every frozen field against the catalog supplied at audit time. A later catalog mutation, ambiguous entry, substituted operation digest, changed scope/control domain, changed duration or forged proposal time cannot be silently treated as the same proposed operation.
 
 This still remains a policy proposal, not an admission request or collector receipt. A valid catalog snapshot does not grant execution authority.
+
+
+## Observer failure-domain overlap evaluator v0.1
+
+The additive `src/failure_domains.rs` module checks whether a diagnostic collector and an impact observer share declared transitive dependencies. Distinct process/control-domain labels are insufficient: the graph can expose a common host, clock, identity provider, network control plane, storage dependency, scheduler or other declared ancestor.
+
+Each side supplies a complete, revision-bound profile with one or more roots, a profile digest, an observed tick and an exclusive validity bound. The auditor validates graph references and acyclicity, checks inventory age/currentness, computes each transitive dependency closure and returns one of:
+
+- `SharedDeclaredDependency` — the two declared closures overlap;
+- `NoDeclaredOverlap` — no overlap was found in the supplied graph (candidate separation, not proof);
+- `Indeterminate` — either inventory is missing, unknown, stale, expired, future-dated or uses another graph revision;
+- `Invalid` — the graph is malformed or cyclic.
+
+Tests include different process labels on the same host, separate hosts with shared identity/clock dependencies, disjoint declared dependencies, missing/unknown/expired inventories, graph revision mismatch, cycles and unknown edges.
+
+**Claim ceiling:** profiles and graph are supplied structural inputs. This module does not authenticate their publisher, prove inventory completeness, detect undeclared dependencies, establish actual process/organizational independence, or rule out latent common causes. `NoDeclaredOverlap` is not a security proof. A production adapter needs independently governed, signed, freshness-qualified failure-domain inventories and negative-control testing of shared dependencies.
