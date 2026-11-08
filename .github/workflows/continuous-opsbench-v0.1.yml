@@ -43,7 +43,7 @@ jobs:
               print(f"valid JSON: {path}")
           PY
       - name: Check Rust formatting
-        run: rustfmt --edition 2021 --check research/continuous-opsbench-v0.1/src/watch_probe.rs research/continuous-opsbench-v0.1/src/paired_attention.rs
+        run: rustfmt --edition 2021 --check research/continuous-opsbench-v0.1/src/watch_probe.rs research/continuous-opsbench-v0.1/src/paired_attention.rs research/continuous-opsbench-v0.1/src/event_schedule.rs
       - name: Run dependency-locked tests
         run: cargo test --manifest-path research/continuous-opsbench-v0.1/Cargo.toml --locked
       - name: Run Clippy with warnings denied
