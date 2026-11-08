@@ -8,6 +8,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::event_schedule::{EventScheduleResult, RecordDisposition, ScheduleStatus};
+use crate::scheduled_attention::{
+    ScheduledWakeDecision, SourceQualifiedDisposition,
+};
 use crate::watch_probe::{
     AuthoritySnapshot, ImpactObservation, ProbeCatalogEntry, SourceObservation,
     TerminalDisposition, WatchSpec, MAX_RISK_PPM,
@@ -23,6 +26,8 @@ pub enum AuditStatus {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum WakeDisposition {
     ProbeRequested { request_id: String },
+    /// The policy selected an eligible probe, but no admission request exists.
+    ProbeProposedNotAdmitted { probe_id: String },
     StopWithoutProbe,
     AskPrincipal,
     Abstain,
@@ -162,6 +167,7 @@ pub enum IndeterminateReason {
     IncompleteImpact,
     ImpactIndependenceUnestablished,
     MissingDecision,
+    ProbeProposalNotAdmitted,
     ReceiptAfterDeadline,
 }
 
@@ -471,6 +477,87 @@ fn audit_decision(
     });
 }
 
+/// Convert source-qualified policy decisions into the auditor's explicit wake
+/// receipt vocabulary. Probe selection is deliberately represented as a
+/// proposal, never as an admitted request. The deterministic IDs are local
+/// structural join keys, not cryptographic attestations.
+pub fn source_qualified_decisions_to_receipts(
+    scheduled: &[ScheduledWakeDecision],
+) -> Result<Vec<WakeDecisionReceipt>, AuditFailure> {
+    let mut receipts = Vec::new();
+
+    for (wake_index, scheduled_wake) in scheduled.iter().enumerate() {
+        let wake = &scheduled_wake.wake;
+        if !non_empty(&wake.watch_id)
+            || !non_empty(&wake.source_epoch)
+            || wake.events.is_empty()
+            || wake.sequence_start == 0
+            || wake.sequence_start > wake.sequence_end
+        {
+            return Err(AuditFailure::WakeRecordMalformed);
+        }
+
+        let mut expected = BTreeSet::new();
+        for event in &wake.events {
+            if event.identity.source_epoch != wake.source_epoch
+                || !non_empty(&event.identity.source_id)
+                || !non_empty(&event.identity.event_id)
+                || !non_empty(&event.identity.incident_id)
+                || event.identity.sequence < wake.sequence_start
+                || event.identity.sequence > wake.sequence_end
+                || !expected.insert(event.identity.clone())
+            {
+                return Err(AuditFailure::WakeRecordMalformed);
+            }
+        }
+
+        let mut seen = BTreeSet::new();
+        for (decision_index, decision) in scheduled_wake.decisions.iter().enumerate() {
+            if !expected.contains(&decision.event) || !seen.insert(decision.event.clone()) {
+                return Err(AuditFailure::OrphanWakeDecision);
+            }
+
+            let disposition = match &decision.disposition {
+                SourceQualifiedDisposition::SelectReadOnlyProbe { probe_id } => {
+                    if !non_empty(probe_id) {
+                        return Err(AuditFailure::ProbeNotCataloguedReadOnly);
+                    }
+                    WakeDisposition::ProbeProposedNotAdmitted {
+                        probe_id: probe_id.clone(),
+                    }
+                }
+                SourceQualifiedDisposition::StopWithoutProbe => WakeDisposition::StopWithoutProbe,
+                SourceQualifiedDisposition::AskPrincipal => WakeDisposition::AskPrincipal,
+                SourceQualifiedDisposition::Abstain => WakeDisposition::Abstain,
+                SourceQualifiedDisposition::Escalate => WakeDisposition::Escalate,
+            };
+
+            let decision_id = format!(
+                "scheduled-policy:{wake_index}:{decision_index}:{}:{}",
+                decision.event.sequence,
+                wake.wake_tick
+            );
+            receipts.push(WakeDecisionReceipt {
+                decision_id,
+                watch_id: wake.watch_id.clone(),
+                source_epoch: decision.event.source_epoch.clone(),
+                event_id: decision.event.event_id.clone(),
+                incident_id: decision.event.incident_id.clone(),
+                event_sequence: decision.event.sequence,
+                wake_tick: wake.wake_tick,
+                authority_epoch: wake.authority_epoch,
+                disposition,
+            });
+        }
+
+        if seen != expected {
+            return Err(AuditFailure::MissingWakeDecision);
+        }
+    }
+
+    Ok(receipts)
+}
+
 /// Independently audit the join from scheduled event through probe and evidence.
 ///
 /// This checks record identity, scope, timing, authority, read-only catalog
@@ -621,6 +708,25 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
                             report.fail(AuditFailure::RequestNotAuthorizedByWake);
                         }
                     }
+                }
+                WakeDisposition::ProbeProposedNotAdmitted { probe_id } => {
+                    let entry = catalog_by_id.get(probe_id.as_str()).copied();
+                    if entry.is_none_or(|entry| {
+                        !entry.read_only
+                            || entry.tenant_id != watch.tenant_id
+                            || entry.target_id != watch.target_id
+                            || entry.purpose_id != watch.purpose_id
+                    }) {
+                        report.fail(AuditFailure::ProbeNotCataloguedReadOnly);
+                    }
+                    if input.requests.iter().any(|request| {
+                        request.event_id == event.event_id
+                            && request.source_epoch == wake.source_epoch
+                            && request.event_sequence == event.sequence
+                    }) {
+                        report.fail(AuditFailure::RequestNotAuthorizedByWake);
+                    }
+                    report.indeterminate(IndeterminateReason::ProbeProposalNotAdmitted);
                 }
                 WakeDisposition::StopWithoutProbe
                 | WakeDisposition::AskPrincipal
