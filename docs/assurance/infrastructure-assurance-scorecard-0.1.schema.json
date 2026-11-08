@@ -16,7 +16,8 @@
     "environment",
     "evidence",
     "results",
-    "limitations"
+    "limitations",
+    "decision_context"
   ],
   "$defs": {
     "digest": {
@@ -257,6 +258,407 @@
       "type": "array",
       "items": {
         "$ref": "#/$defs/metric"
+      }
+    },
+    "measurementContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "measurand",
+        "instrument",
+        "acquisition",
+        "calibration",
+        "uncertainty",
+        "reference_measurement"
+      ],
+      "properties": {
+        "measurand": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "quantity_id",
+            "quantity_kind",
+            "unit"
+          ],
+          "properties": {
+            "quantity_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "quantity_kind": {
+              "type": "string",
+              "minLength": 1
+            },
+            "unit": {
+              "type": "string",
+              "minLength": 1
+            },
+            "definition_ref": {
+              "type": "string"
+            }
+          }
+        },
+        "instrument": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "instrument_id",
+            "model",
+            "hardware_revision",
+            "firmware_sha256",
+            "configuration_sha256",
+            "sensor_front_end_id"
+          ],
+          "properties": {
+            "instrument_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "model": {
+              "type": "string",
+              "minLength": 1
+            },
+            "hardware_revision": {
+              "type": "string",
+              "minLength": 1
+            },
+            "firmware_sha256": {
+              "$ref": "#/$defs/nullableDigest"
+            },
+            "configuration_sha256": {
+              "$ref": "#/$defs/digest"
+            },
+            "sensor_front_end_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reference_plane": {
+              "type": "string"
+            }
+          }
+        },
+        "acquisition": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "method_id",
+            "timebase",
+            "environment_digest",
+            "capture_config_sha256"
+          ],
+          "properties": {
+            "method_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "timebase": {
+              "type": "string",
+              "minLength": 1
+            },
+            "environment_digest": {
+              "$ref": "#/$defs/nullableDigest"
+            },
+            "capture_config_sha256": {
+              "$ref": "#/$defs/digest"
+            },
+            "sampling_profile": {
+              "type": "string"
+            },
+            "acquisition_start": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "acquisition_end": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "calibration": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "certificate_sha256",
+            "valid_from",
+            "valid_until",
+            "traceability_refs"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "current",
+                "expired",
+                "revoked",
+                "conflicted",
+                "unknown",
+                "not_applicable"
+              ]
+            },
+            "certificate_sha256": {
+              "$ref": "#/$defs/nullableDigest"
+            },
+            "valid_from": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "valid_until": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "traceability_refs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "method_ref": {
+              "type": "string"
+            }
+          }
+        },
+        "uncertainty": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "propagation_method",
+            "model_sha256",
+            "budget_sha256",
+            "covariance_model",
+            "nonlinearity_treatment",
+            "coverage_probability",
+            "coverage_lower",
+            "coverage_upper",
+            "unit",
+            "contributors"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "quantified",
+                "bounded",
+                "not_quantified",
+                "conflicted",
+                "unknown"
+              ]
+            },
+            "propagation_method": {
+              "enum": [
+                "linearized_gum",
+                "monte_carlo",
+                "interval",
+                "numerical",
+                "none",
+                "unknown"
+              ]
+            },
+            "model_sha256": {
+              "$ref": "#/$defs/nullableDigest"
+            },
+            "budget_sha256": {
+              "$ref": "#/$defs/nullableDigest"
+            },
+            "covariance_model": {
+              "enum": [
+                "independent_inputs",
+                "correlated_inputs",
+                "mixed",
+                "unknown"
+              ]
+            },
+            "nonlinearity_treatment": {
+              "enum": [
+                "linear_model",
+                "higher_order_terms",
+                "monte_carlo",
+                "not_assessed",
+                "unknown"
+              ]
+            },
+            "coverage_probability": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            },
+            "coverage_lower": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "coverage_upper": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "unit": {
+              "type": "string",
+              "minLength": 1
+            },
+            "contributors": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "contributor_id",
+                  "distribution",
+                  "standard_uncertainty",
+                  "unit",
+                  "correlation_group"
+                ],
+                "properties": {
+                  "contributor_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "distribution": {
+                    "enum": [
+                      "normal",
+                      "uniform",
+                      "rectangular",
+                      "triangular",
+                      "empirical",
+                      "other",
+                      "unknown"
+                    ]
+                  },
+                  "standard_uncertainty": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "minimum": 0
+                  },
+                  "unit": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "correlation_group": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            },
+            "notes": {
+              "type": "string"
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "quantified"
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "propagation_method": {
+                    "enum": [
+                      "linearized_gum",
+                      "monte_carlo",
+                      "interval",
+                      "numerical"
+                    ]
+                  },
+                  "model_sha256": {
+                    "$ref": "#/$defs/digest"
+                  },
+                  "budget_sha256": {
+                    "$ref": "#/$defs/digest"
+                  },
+                  "coverage_probability": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "maximum": 1
+                  },
+                  "coverage_lower": {
+                    "type": "number"
+                  },
+                  "coverage_upper": {
+                    "type": "number"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "nonlinearity_treatment": {
+                    "const": "not_assessed"
+                  }
+                },
+                "required": [
+                  "nonlinearity_treatment"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "not_quantified",
+                      "conflicted",
+                      "unknown"
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "reference_measurement": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "reference_system_id",
+            "method_id",
+            "evidence_sha256",
+            "uncertainty_budget_sha256"
+          ],
+          "properties": {
+            "reference_system_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "method_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "evidence_sha256": {
+              "$ref": "#/$defs/nullableDigest"
+            },
+            "uncertainty_budget_sha256": {
+              "$ref": "#/$defs/nullableDigest"
+            },
+            "traceability_reference": {
+              "type": "string"
+            },
+            "notes": {
+              "type": "string"
+            }
+          }
+        }
       }
     }
   },
@@ -632,6 +1034,71 @@
         "type": "string",
         "minLength": 1
       }
+    },
+    "decision_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision_id",
+        "intended_decision",
+        "authority_scope",
+        "policy_sha256",
+        "permitted_dispositions",
+        "abstention_behavior"
+      ],
+      "properties": {
+        "decision_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "intended_decision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authority_scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policy_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "permitted_dispositions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "QUALIFIED",
+              "DEGRADED",
+              "INDETERMINATE",
+              "REJECT_RELIANCE",
+              "NOT_AUTHORIZED",
+              "NOT_COMPARABLE"
+            ]
+          }
+        },
+        "abstention_behavior": {
+          "enum": [
+            "abstain",
+            "degrade",
+            "escalate_to_human",
+            "request_more_evidence",
+            "not_permitted"
+          ]
+        },
+        "decision_deadline": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "loss_model_commitment_sha256": {
+          "$ref": "#/$defs/nullableDigest"
+        }
+      }
+    },
+    "measurement_context": {
+      "$ref": "#/$defs/measurementContext"
     }
   },
   "allOf": [
@@ -814,6 +1281,29 @@
             }
           }
         }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "results": {
+            "properties": {
+              "metric_families": {
+                "required": [
+                  "measurement_qualification"
+                ]
+              }
+            }
+          },
+          "required": [
+            "results"
+          ]
+        }
+      },
+      "then": {
+        "required": [
+          "measurement_context"
+        ]
       }
     }
   ]
