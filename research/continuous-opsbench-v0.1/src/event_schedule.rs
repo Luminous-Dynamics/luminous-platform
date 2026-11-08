@@ -6,7 +6,7 @@
 //! Fixed polling sees current condition state; event-triggered policies see
 //! delivered source records. All arms share the same immutable schedule.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Persistence {
@@ -189,7 +189,9 @@ pub struct EventScheduleMetrics {
     pub relevant_events_detected: usize,
     pub missed_deadlines: usize,
     pub missed_ephemeral_events: usize,
-    pub false_wakeups: usize,
+    /// Matching source records that requested attention, before coalescing.
+    pub event_wake_notifications: usize,
+    /// Actual wake groups after optional coalescing.
     pub wakeups: usize,
     pub cognitive_invocations: usize,
     pub coalesced_events: usize,
@@ -217,7 +219,7 @@ impl Default for EventScheduleMetrics {
             relevant_events_detected: 0,
             missed_deadlines: 0,
             missed_ephemeral_events: 0,
-            false_wakeups: 0,
+            event_wake_notifications: 0,
             wakeups: 0,
             cognitive_invocations: 0,
             coalesced_events: 0,
@@ -424,6 +426,24 @@ fn flush_pending(pending: &mut Vec<PendingWake>, wakes: &mut Vec<WakeRecord>) {
     }
 }
 
+fn joins_pending_group(
+    strategy: AttentionStrategy,
+    event: &SourceEvent,
+    processing_tick: u64,
+    pending: &[PendingWake],
+) -> bool {
+    match strategy {
+        AttentionStrategy::CoalescedEventTriggered {
+            coalesce_window_ticks,
+        } => pending.iter().any(|group| {
+            group.source_epoch == event.source_epoch
+                && group.coalesce_key == event.coalesce_key
+                && processing_tick.saturating_sub(group.wake_tick) <= coalesce_window_ticks
+        }),
+        _ => false,
+    }
+}
+
 fn apply_wake(
     strategy: AttentionStrategy,
     event: &SourceEvent,
@@ -431,9 +451,11 @@ fn apply_wake(
     pending: &mut Vec<PendingWake>,
     wakes: &mut Vec<WakeRecord>,
     metrics: &mut EventScheduleMetrics,
-) {
+) -> bool {
     match strategy {
-        AttentionStrategy::CoalescedEventTriggered { coalesce_window_ticks } => {
+        AttentionStrategy::CoalescedEventTriggered {
+            coalesce_window_ticks,
+        } => {
             if let Some(group) = pending.iter_mut().find(|group| {
                 group.source_epoch == event.source_epoch
                     && group.coalesce_key == event.coalesce_key
@@ -444,6 +466,7 @@ fn apply_wake(
                 group.sequence_start = group.sequence_start.min(event.sequence);
                 group.sequence_end = group.sequence_end.max(event.sequence);
                 metrics.coalesced_events += 1;
+                true
             } else {
                 pending.push(PendingWake {
                     wake_tick: processing_tick,
@@ -454,17 +477,21 @@ fn apply_wake(
                     sequence_end: event.sequence,
                     coalesce_key: event.coalesce_key.clone(),
                 });
+                false
             }
         }
-        _ => wakes.push(WakeRecord {
-            wake_tick: processing_tick,
-            source_epoch: event.source_epoch.clone(),
-            event_ids: vec![event.event_id.clone()],
-            incident_ids: vec![event.incident_id.clone()],
-            sequence_start: event.sequence,
-            sequence_end: event.sequence,
-            coalesce_key: event.coalesce_key.clone(),
-        }),
+        _ => {
+            wakes.push(WakeRecord {
+                wake_tick: processing_tick,
+                source_epoch: event.source_epoch.clone(),
+                event_ids: vec![event.event_id.clone()],
+                incident_ids: vec![event.incident_id.clone()],
+                sequence_start: event.sequence,
+                sequence_end: event.sequence,
+                coalesce_key: event.coalesce_key.clone(),
+            });
+            false
+        }
     }
 }
 
@@ -604,11 +631,41 @@ fn process_event(
         return Some(ScheduleStatus::AuthorityRevokedOrExpired);
     }
 
+    if processing_tick > event.deadline_tick {
+        if event.condition == ConditionOutcome::Match {
+            metrics.relevant_events += 1;
+            metrics.missed_deadlines += 1;
+        }
+        if event.persistence == Persistence::EphemeralTransition
+            && matches!(strategy, AttentionStrategy::FixedPolling { .. })
+        {
+            metrics.missed_ephemeral_events += 1;
+        }
+        records.push(EventRecordResult {
+            event_id: event.event_id.clone(),
+            incident_id: event.incident_id.clone(),
+            sequence: event.sequence,
+            delivered_tick: event.delivered_tick,
+            processed_tick: Some(processing_tick),
+            disposition: RecordDisposition::MissedDeadline,
+            detection_latency_ticks: None,
+            deadline_met: false,
+        });
+        return None;
+    }
+
     if processing_tick < event.valid_from_tick
         || processing_tick > event.record_retain_until_tick
         || processing_tick >= watch.expires_at_tick
+        || (matches!(strategy, AttentionStrategy::FixedPolling { .. })
+            && processing_tick >= event.valid_until_tick)
     {
-        if event.persistence == Persistence::EphemeralTransition {
+        if event.condition == ConditionOutcome::Match {
+            metrics.relevant_events += 1;
+        }
+        if event.persistence == Persistence::EphemeralTransition
+            && matches!(strategy, AttentionStrategy::FixedPolling { .. })
+        {
             metrics.missed_ephemeral_events += 1;
         }
         records.push(EventRecordResult {
@@ -624,22 +681,8 @@ fn process_event(
         return None;
     }
 
-    if processing_tick > event.deadline_tick {
-        metrics.missed_deadlines += 1;
-        if event.persistence == Persistence::EphemeralTransition {
-            metrics.missed_ephemeral_events += 1;
-        }
-        records.push(EventRecordResult {
-            event_id: event.event_id.clone(),
-            incident_id: event.incident_id.clone(),
-            sequence: event.sequence,
-            delivered_tick: event.delivered_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::MissedDeadline,
-            detection_latency_ticks: None,
-            deadline_met: false,
-        });
-        return None;
+    if event.condition == ConditionOutcome::Match {
+        metrics.relevant_events += 1;
     }
 
     match event.condition {
@@ -671,14 +714,15 @@ fn process_event(
             return Some(ScheduleStatus::Indeterminate);
         }
         ConditionOutcome::Match => {
-            metrics.relevant_events += 1;
             let latency = processing_tick.saturating_sub(event.event_tick);
             metrics.max_detection_latency_ticks =
                 metrics.max_detection_latency_ticks.max(latency);
             metrics.max_event_backlog_ticks = metrics
                 .max_event_backlog_ticks
                 .max(processing_tick.saturating_sub(event.delivered_tick));
-            if metrics.wakeups >= watch.max_wakeups {
+            let joins_existing =
+                joins_pending_group(strategy, event, processing_tick, pending);
+            if !joins_existing && wakes.len() + pending.len() >= watch.max_wakeups {
                 metrics.budget_exhaustions += 1;
                 records.push(EventRecordResult {
                     event_id: event.event_id.clone(),
@@ -692,7 +736,7 @@ fn process_event(
                 });
                 return Some(ScheduleStatus::BudgetExhausted);
             }
-            apply_wake(
+            let coalesced = apply_wake(
                 strategy,
                 event,
                 processing_tick,
@@ -701,15 +745,18 @@ fn process_event(
                 metrics,
             );
             metrics.relevant_events_detected += 1;
-            metrics.wakeups += 1;
-            metrics.cognitive_invocations += 1;
+            metrics.event_wake_notifications += 1;
             records.push(EventRecordResult {
                 event_id: event.event_id.clone(),
                 incident_id: event.incident_id.clone(),
                 sequence: event.sequence,
                 delivered_tick: event.delivered_tick,
                 processed_tick: Some(processing_tick),
-                disposition: RecordDisposition::Woke,
+                disposition: if coalesced {
+                    RecordDisposition::Coalesced
+                } else {
+                    RecordDisposition::Woke
+                },
                 detection_latency_ticks: Some(latency),
                 deadline_met: true,
             });
@@ -840,10 +887,8 @@ pub fn evaluate_event_schedule(
         AttentionStrategy::FixedPolling { interval_ticks } => Some(interval_ticks),
         _ => None,
     };
-    let mut next_poll = poll_interval.map(|_| watch.starts_at_tick);
-    let mut processed_indices = BTreeSet::new();
 
-    for (index, item) in timeline.iter().enumerate() {
+    for item in timeline.iter() {
         let delivered_tick = item.tick();
         if delivered_tick > horizon_tick {
             break;
@@ -856,9 +901,11 @@ pub fn evaluate_event_schedule(
             break;
         }
 
-        let processing_tick = match (poll_interval, next_poll) {
-            (Some(interval), Some(poll)) => {
-                let Some(poll_tick) = poll_tick_at_or_after(watch.starts_at_tick, interval, delivered_tick) else {
+        let processing_tick = match poll_interval {
+            Some(interval) => {
+                let Some(poll_tick) =
+                    poll_tick_at_or_after(watch.starts_at_tick, interval, delivered_tick)
+                else {
                     status = ScheduleStatus::InvalidSchedule;
                     break;
                 };
@@ -866,10 +913,9 @@ pub fn evaluate_event_schedule(
                     status = ScheduleStatus::WatchExpired;
                     break;
                 }
-                next_poll = Some(poll_tick.saturating_add(interval));
                 poll_tick
             }
-            _ => delivered_tick,
+            None => delivered_tick,
         };
 
         if processing_tick >= watch.expires_at_tick {
@@ -905,7 +951,6 @@ pub fn evaluate_event_schedule(
                 apply_restart(watch, restart, &mut checkpoint, &mut metrics, &mut records)
             }
         };
-        processed_indices.insert(index);
         if let Some(failure) = result {
             status = failure;
             break;
@@ -915,12 +960,8 @@ pub fn evaluate_event_schedule(
     // A coalescing group closes after the last in-window record. Coalescing
     // reduces cognitive wakes; it never erases incident IDs or event receipts.
     flush_pending(&mut pending, &mut wakes);
-    metrics.false_wakeups = 0;
-    if metrics.relevant_events > metrics.relevant_events_detected {
-        metrics.missed_deadlines += metrics.relevant_events - metrics.relevant_events_detected
-            - metrics.missed_deadlines
-            - metrics.missed_ephemeral_events;
-    }
+    metrics.wakeups = wakes.len();
+    metrics.cognitive_invocations = wakes.len();
 
     if status == ScheduleStatus::Completed {
         if metrics.wakeups == 0 {
@@ -928,7 +969,6 @@ pub fn evaluate_event_schedule(
         }
     }
 
-    let _ = processed_indices;
     Ok(make_result(
         watch,
         strategy,
@@ -1102,7 +1142,8 @@ mod tests {
             &[TimelineRecord::Event(first)],
             39,
             initial.checkpoint,
-        );
+        )
+        .unwrap();
         assert_eq!(replayed.metrics.duplicates_suppressed, 1);
         assert_eq!(replayed.metrics.wakeups, 0);
     }
@@ -1263,14 +1304,15 @@ mod tests {
         );
         assert_eq!(result.metrics.relevant_events_detected, 3);
         assert_eq!(result.metrics.coalesced_events, 1);
+        assert_eq!(result.metrics.event_wake_notifications, 3);
         assert_eq!(result.wakes.len(), 2);
         assert_eq!(
             result.wakes[0].incident_ids,
             vec!["incident-1", "incident-2"]
         );
         assert_eq!(result.wakes[0].event_ids, vec!["event-1", "event-2"]);
-        assert_eq!(result.metrics.wakeups, 3);
-        assert_eq!(result.metrics.cognitive_invocations, 3);
+        assert_eq!(result.metrics.wakeups, 2);
+        assert_eq!(result.metrics.cognitive_invocations, 2);
     }
 
     #[test]
@@ -1354,28 +1396,13 @@ pub fn run_from_checkpoint(
     timeline: &[TimelineRecord],
     horizon_tick: u64,
     checkpoint: EventCheckpoint,
-) -> EventScheduleResult {
-    match evaluate_event_schedule(
+) -> Result<EventScheduleResult, ScheduleError> {
+    evaluate_event_schedule(
         watch,
         authority,
         strategy,
         timeline,
         horizon_tick,
         Some(checkpoint),
-    ) {
-        Ok(result) => result,
-        Err(_) => {
-            let checkpoint = initial_checkpoint(watch);
-            make_result(
-                watch,
-                strategy,
-                authority,
-                ScheduleStatus::InvalidSchedule,
-                EventScheduleMetrics::default(),
-                Vec::new(),
-                Vec::new(),
-                checkpoint,
-            )
-        }
-    }
+    )
 }
