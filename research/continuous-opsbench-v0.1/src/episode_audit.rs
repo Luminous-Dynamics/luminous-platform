@@ -1594,5 +1594,4 @@ mod tests {
             .failures
             .contains(&AuditFailure::UnpairedScheduleWake));
     }
-
 }
