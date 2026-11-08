@@ -194,17 +194,15 @@ fn non_empty(value: &str) -> bool {
     !value.trim().is_empty()
 }
 
-fn authority_current_at(
-    authority: &AuthoritySnapshot,
-    watch: &WatchSpec,
-    tick: u64,
-) -> bool {
+fn authority_current_at(authority: &AuthoritySnapshot, watch: &WatchSpec, tick: u64) -> bool {
     authority.tenant_id == watch.tenant_id
         && authority.target_id == watch.target_id
         && authority.purpose_id == watch.purpose_id
         && tick >= authority.valid_from_tick
         && tick < authority.expires_at_tick
-        && authority.revoked_at_tick.is_none_or(|revoked| tick < revoked)
+        && authority
+            .revoked_at_tick
+            .is_none_or(|revoked| tick < revoked)
 }
 
 fn validate_inputs(
@@ -326,11 +324,7 @@ fn process_ordered_event(
     context.metrics.in_order_records += 1;
 
     if !authority_current_at(context.authority, context.watch, event.delivered_at_tick)
-        || !authority_current_at(
-            context.authority,
-            context.watch,
-            effective_processing_tick,
-        )
+        || !authority_current_at(context.authority, context.watch, effective_processing_tick)
     {
         return Err(EventRunStatus::AuthorityRevokedOrExpired);
     }
@@ -489,9 +483,7 @@ pub fn evaluate_event_schedule(
         // A missing cursor entry cannot be repaired after the declared gap
         // timeout merely because it eventually arrives.
         if let Some(gap_start) = gap_started_at {
-            if event.processing_at_tick
-                > gap_start.saturating_add(config.gap_timeout_ticks)
-            {
+            if event.processing_at_tick > gap_start.saturating_add(config.gap_timeout_ticks) {
                 metrics.sequence_gaps_escalated += 1;
                 for buffered in pending.values() {
                     records[buffered.record_index].disposition = EventDisposition::DeliveryGap;
@@ -656,7 +648,9 @@ pub fn evaluate_event_schedule(
         );
 
         while let Some(buffered) = pending.remove(&expected_sequence) {
-            let process_tick = event.processing_at_tick.max(buffered.event.processing_at_tick);
+            let process_tick = event
+                .processing_at_tick
+                .max(buffered.event.processing_at_tick);
             let process_result = {
                 let mut context = EventProcessingContext {
                     watch,
@@ -740,8 +734,8 @@ pub fn evaluate_event_schedule(
             .members
             .iter()
             .any(|member| member.priority == EventPriority::Critical);
-        let admitted = (wake_batches.len() as u32) < wake_cap
-            && (has_critical || normal_wakes < normal_cap);
+        let admitted =
+            (wake_batches.len() as u32) < wake_cap && (has_critical || normal_wakes < normal_cap);
 
         if !admitted {
             metrics.wake_budget_suppressed_events += candidate.members.len();
@@ -901,7 +895,6 @@ mod tests {
         evaluate_event_schedule(&watch(), &authority(), &config(), events, now).unwrap()
     }
 
-
     #[test]
     fn missing_sequence_arriving_after_gap_deadline_does_not_repair_history() {
         let later = event(11, "evt-11", "incident-b", 5);
@@ -939,7 +932,10 @@ mod tests {
         let result = evaluate(&[delayed], 8);
         assert_eq!(result.wake_batches.len(), 1);
         assert_eq!(result.metrics.maximum_event_to_wake_latency_ticks, Some(6));
-        assert_eq!(result.metrics.maximum_delivery_to_wake_latency_ticks, Some(3));
+        assert_eq!(
+            result.metrics.maximum_delivery_to_wake_latency_ticks,
+            Some(3)
+        );
     }
 
     #[test]
@@ -957,7 +953,6 @@ mod tests {
         assert_eq!(result.metrics.duplicate_deliveries, 1);
         assert_eq!(result.wake_batches.len(), 2);
     }
-
 
     #[test]
     fn source_epoch_boundary_is_not_coalesced_with_prior_epoch() {
@@ -1065,10 +1060,12 @@ mod tests {
         assert_eq!(result.status, EventRunStatus::Completed);
         assert_eq!(result.metrics.sequence_gaps_repaired, 1);
         assert_eq!(result.wake_batches.len(), 1);
-        assert_eq!(result.wake_batches[0].incident_ids, vec!["incident-a", "incident-b"]);
+        assert_eq!(
+            result.wake_batches[0].incident_ids,
+            vec!["incident-a", "incident-b"]
+        );
         assert_eq!(result.wake_batches[0].processing_tick, 6);
     }
-
 
     #[test]
     fn unresolved_gap_before_timeout_is_not_reported_as_quiet() {
@@ -1130,13 +1127,7 @@ mod tests {
         let mut restart = event(10, "evt-new-epoch", "incident-b", 6);
         restart.source_epoch = 2;
         restart.source_restart = true;
-        let result = evaluate(
-            &[
-                event(10, "evt-epoch-1", "incident-a", 5),
-                restart,
-            ],
-            6,
-        );
+        let result = evaluate(&[event(10, "evt-epoch-1", "incident-a", 5), restart], 6);
         assert_eq!(result.status, EventRunStatus::Completed);
         assert_eq!(result.final_source_epoch, 2);
         assert_eq!(result.metrics.source_epoch_transitions, 1);
