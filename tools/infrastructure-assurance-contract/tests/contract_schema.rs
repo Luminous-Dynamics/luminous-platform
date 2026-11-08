@@ -250,3 +250,11 @@ fn current_calibration_requires_a_certificate_and_traceability_chain() {
     });
     assert!(!schema_validator().is_valid(&scorecard));
 }
+
+#[test]
+fn a_passing_hard_gate_requires_at_least_one_executed_control() {
+    let mut scorecard: Value = serde_json::from_str(SCORECARD_TEMPLATE).expect("template");
+    scorecard["results"]["hard_gates"][0]["outcome"] = json!("pass");
+    scorecard["results"]["hard_gates"][0]["sample_count"] = json!(0);
+    assert!(!schema_validator().is_valid(&scorecard));
+}
