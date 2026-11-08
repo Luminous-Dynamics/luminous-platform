@@ -93,6 +93,9 @@ The current public suite has 18 synthetic cases:
 16. Period gap.
 17. Timestamp-source switch with a bound new configuration receipt.
 18. Missing dependency assessments for an earlier record even when the latest record has complete lineage.
+19. Invalid source signature status.
+20. Missing/unknown source signature status.
+18. Missing dependency assessments for an earlier record even when the latest record has complete lineage.
 
 The fixture pack is public synthetic conformance, not blind evaluation. Blind generalization belongs to the evaluator-sealed protocol in [#340](https://github.com/Luminous-Dynamics/luminous-platform/issues/340).
 
