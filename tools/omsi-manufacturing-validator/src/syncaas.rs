@@ -1049,7 +1049,7 @@ pub fn validate_fixture_pack(document: &Value, source_bytes: &[u8]) -> Value {
 
 #[cfg(test)]
 mod tests {
-    use super::validate_fixture_pack;
+    use super::{validate_fixture_pack, ClockClassCoverage};
     use jsonschema::draft202012;
     use serde_json::Value;
 
@@ -1139,8 +1139,14 @@ mod tests {
             clockclass_coverage: super::ClockClassCoverage::Partial,
             maintenance: false,
         };
-        assert_eq!(super::classify_clockclass_primary(&sample, 6), super::CriterionState::Unobserved);
-        assert_eq!(super::classify_clockclass_reference(&sample, 6), super::CriterionState::Unobserved);
+        assert_eq!(
+            super::classify_clockclass_primary(&sample, 6),
+            super::CriterionState::Unobserved
+        );
+        assert_eq!(
+            super::classify_clockclass_reference(&sample, 6),
+            super::CriterionState::Unobserved
+        );
     }
 
     #[test]
