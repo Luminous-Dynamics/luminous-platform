@@ -558,6 +558,8 @@ pub fn source_qualified_decisions_to_receipts(
                     let (proposal_index, proposal) = matching_proposals[0];
                     if proposal.probe_id != *probe_id
                         || proposal.proposed_at_tick != wake.wake_tick
+                        || proposal.observation_source_tick
+                            != scheduled_wake.observation.source_tick as u64
                         || proposal.observation_source_tick > proposal.proposed_at_tick
                         || !non_empty(&proposal.operation_digest)
                         || !non_empty(&proposal.tenant_id)
