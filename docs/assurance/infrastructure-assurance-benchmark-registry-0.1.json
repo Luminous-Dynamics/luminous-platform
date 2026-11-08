@@ -88,7 +88,8 @@
       "next_work": [
         "Keep G.8275.1 full timing support and G.8275.2 partial timing support as separate tracks.",
         "Separate Annex F PTP performance monitoring from Annex G SyncaaS availability.",
-        "Compare service availability against independently measured time/phase error and downstream impact."
+        "Compare service availability against independently measured time/phase error and downstream impact.",
+        "Pin clock class, reference point, interface type, measurement filter and applicable G.8273.2 tolerances; never transfer a class-specific limit into a universal threshold."
       ]
     },
     {
@@ -252,6 +253,34 @@
       "amendment": "1588h-2026 listed by IEEE",
       "status": "active_standard",
       "url": "https://standards.ieee.org/ieee/1547/6825/"
+    },
+    {
+      "id": "JCGM 100:2008/Amd.1:2026",
+      "edition": "2026",
+      "amendment": "Nonlinearity in measurement models",
+      "status": "published",
+      "url": "https://www.bipm.org/en/web/guest/publications/guides"
+    },
+    {
+      "id": "JCGM 106:2012",
+      "edition": "2012",
+      "amendment": null,
+      "status": "published_guidance",
+      "url": "https://www.bipm.org/en/doi/10.59161/jcgm106-2012"
+    },
+    {
+      "id": "ITU-T G.8273.2",
+      "edition": "2023",
+      "amendment": "Amendment 2 (11/2025)",
+      "status": "in_force",
+      "url": "https://www.itu.int/rec/dologin_pub.asp?id=T-REC-G.8273.2-202511-I%21Amd2%21PDF-E&lang=s&type=items"
+    },
+    {
+      "id": "IEEE 1588h-2026",
+      "edition": "2026",
+      "amendment": "Option to disable Announce messages",
+      "status": "active_standard",
+      "url": "https://standards.ieee.org/ieee/1588h/11767/"
     }
   ]
 }
