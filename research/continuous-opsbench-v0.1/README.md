@@ -121,3 +121,24 @@ The module includes eight paired-run tests covering invocation reduction, detect
 **Metric boundary:** `monitor_checks` are deterministic monitor callbacks, not LLM calls. `cognitive_invocations` count scheduled policy invocations. `probe_selection_calls` and `admitted_probe_selections` count selection proposals, not actual remote collector executions. The module does not yet consume independent source/impact receipts for every paired wake; that is the next #320 integration increment. A synthetic plant pass is not a live SRE benchmark result.
 
 **Claim ceiling:** the experiment is an offline paired controller comparison on a deterministic synthetic service model. It does not prove production event-delivery guarantees, model superiority, live Xenia authority enforcement, actual probe resource externality, independent observer authenticity or performance on SREGym/SRE-Marathon.
+
+
+## Deterministic durable / ephemeral event schedule evaluator v0.1
+
+The additive `src/event_schedule.rs` module consumes a frozen sequence of scheduled event deliveries and reuses the existing `WatchSpec`, `AuthoritySnapshot` and `EventEnvelope` types. It is an offline evaluator; it is not a broker, inbox, subscription, scheduler or production event transport.
+
+It records event time, delivery time and processing time separately, plus incident identity, event persistence and a payload digest. It checks source sequence continuity, duplicate ID/sequence/digest identity, event-ID collision, sequence collision, out-of-order delivery, target/tenant/purpose scope, authority at processing time, event-to-processing deadline, per-incident coalescing and total wake budget.
+
+Important semantics:
+- A distinct incident receives a distinct wake even while another incident remains active.
+- Repeated events for the same incident are coalesced into one wake while preserving every unique event ID.
+- A timely ephemeral event that occurred during the watch still wakes even when its condition cleared before processing.
+- A persistent condition that predates watch activation wakes only while it remains active at processing.
+- Exact duplicate delivery receives no second wake or evidence credit.
+- Event identity collision, sequence collision, gaps, out-of-order events, dormant revocation and budget exhaustion remain explicit and stop further processing where appropriate.
+- Deadline misses remain visible even when a later incident is successfully woken; they cannot be erased by later successes.
+- The evaluator records the number of unprocessed scheduled events after a terminal integrity/authority/budget stop.
+
+The module's focused tests cover persistence/coalescing, concurrent incidents, ephemeral-clear-before-processing, deadline miss, duplicate suppression, event and sequence identity collisions, gaps, out-of-order events, dormant revocation, watch activation during a pre-existing persistent condition, wake-budget exhaustion, wrong-scope cursor progression, missing identity digest and processing-time regression.
+
+**Claim ceiling:** this is a deterministic event-schedule evaluator over synthetic event records. It does not authenticate producers, consume the actual CloudEvents/inbox/outbox transport, guarantee complete delivery, or establish runtime cancellation, production revocation propagation, live collector/impact receipts or SRE benchmark performance. The event contract and delivery adapter remain #306's responsibility; this module evaluates the event semantics and their effect on attention scheduling.
