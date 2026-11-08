@@ -464,10 +464,15 @@ fn validate_checkpoint(
         || checkpoint
             .observed_watermark_next_sequence
             .is_some_and(|sequence| sequence == 0 || sequence == u64::MAX)
-        || checkpoint
+        || (checkpoint
             .observed_watermark_next_sequence
             .is_some_and(|sequence| sequence > checkpoint.next_sequence)
-            && checkpoint.gap_started_at_tick.is_none()
+            && checkpoint.gap_started_at_tick.is_none())
+        || (checkpoint.gap_started_at_tick.is_some()
+            && checkpoint.buffered_events.is_empty()
+            && !checkpoint
+                .observed_watermark_next_sequence
+                .is_some_and(|sequence| sequence > checkpoint.next_sequence))
     {
         return Err(ScheduleError::InvalidCheckpoint);
     }
@@ -2593,6 +2598,40 @@ mod tests {
             SequenceGapPolicy::buffered(5, 8),
         );
         assert_eq!(resumed, Err(ScheduleError::InvalidCheckpoint));
+    }
+
+    #[test]
+    fn checkpoint_rejects_gap_deadline_without_pending_sequence_evidence() {
+        let first = event(
+            "event-1",
+            "incident-1",
+            1,
+            2,
+            3,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let initial = run(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(first)],
+        );
+        let mut corrupted = initial.checkpoint;
+        corrupted.gap_started_at_tick = Some(4);
+        corrupted.gap_deadline_tick = Some(9);
+        assert!(corrupted.buffered_events.is_empty());
+        assert_eq!(corrupted.observed_watermark_next_sequence, None);
+
+        let result = evaluate_event_schedule_with_gap_policy(
+            &watch(),
+            &authority(),
+            AttentionStrategy::EventTriggered,
+            &[],
+            6,
+            Some(corrupted),
+            SequenceGapPolicy::buffered(5, 8),
+        );
+        assert_eq!(result, Err(ScheduleError::InvalidCheckpoint));
     }
 
     #[test]
