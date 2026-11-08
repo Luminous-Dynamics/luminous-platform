@@ -39,7 +39,7 @@ pub struct AuthoritySnapshot {
 }
 
 impl AuthoritySnapshot {
-    fn current_for(&self, watch: &WatchSpec, at_tick: u64) -> bool {
+    pub(crate) fn current_for(&self, watch: &WatchSpec, at_tick: u64) -> bool {
         self.tenant_id == watch.tenant_id
             && self.target_id == watch.target_id
             && self.purpose_id == watch.purpose_id
