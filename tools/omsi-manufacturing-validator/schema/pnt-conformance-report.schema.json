@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:omsi:pnt-conformance-report:0.1",
+  "title": "OMSI PNT synthetic conformance report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "report_contract",
+    "status",
+    "authority",
+    "input_sha256",
+    "profile_id",
+    "profile_version",
+    "fixture_count_expected",
+    "fixture_count_discovered",
+    "fixture_ids",
+    "discovery_complete",
+    "metadata_valid",
+    "passed_count",
+    "failure_count",
+    "reference_disagreement_count",
+    "false_accept_count",
+    "verification",
+    "per_fixture",
+    "claim_ceiling",
+    "non_claims"
+  ],
+  "properties": {
+    "report_contract": {"const": "omsi-pnt-conformance-report/0.1"},
+    "status": {"enum": ["passed", "failed"]},
+    "authority": {"const": "synthetic_profile_semantic_conformance_only"},
+    "input_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "profile_id": {"const": "omsi.pnt-resilience"},
+    "profile_version": {"type": "string", "minLength": 1},
+    "fixture_pack_version": {"type": "string", "minLength": 1},
+    "fixture_count_expected": {"const": 16},
+    "fixture_count_discovered": {"type": "integer", "minimum": 0},
+    "fixture_ids": {"type": "array", "items": {"type": "string"}},
+    "discovery_complete": {"type": "boolean"},
+    "duplicate_fixture_ids": {"type": "array", "items": {"type": "string"}},
+    "metadata_valid": {"type": "boolean"},
+    "passed_count": {"type": "integer", "minimum": 0},
+    "failure_count": {"type": "integer", "minimum": 0},
+    "reference_disagreement_count": {"type": "integer", "minimum": 0},
+    "false_accept_count": {"type": "integer", "minimum": 0},
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "method", "claim_ceiling"],
+      "properties": {
+        "status": {"enum": ["passed", "failed"]},
+        "method": {"const": "separate_rust_reference_rule_path"},
+        "claim_ceiling": {"type": "string", "minLength": 1}
+      }
+    },
+    "per_fixture": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "expected", "primary", "reference", "expected_match", "independent_agreement", "passed"],
+        "properties": {
+          "id": {"type": "string"},
+          "expected": {"type": "object"},
+          "primary": {"type": "object"},
+          "reference": {"type": "object"},
+          "expected_match": {"type": "boolean"},
+          "independent_agreement": {"type": "boolean"},
+          "passed": {"type": "boolean"}
+        }
+      }
+    },
+    "claim_ceiling": {"type": "string", "minLength": 1},
+    "non_claims": {"type": "array", "items": {"type": "string", "minLength": 1}}
+  }
+}
