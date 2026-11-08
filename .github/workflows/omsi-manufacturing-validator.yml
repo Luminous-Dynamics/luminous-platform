@@ -78,6 +78,7 @@ jobs:
         run: |
           set -euo pipefail
           report_file="$RUNNER_TEMP/omsi-pnt-conformance-report.json"
+          jq empty tools/omsi-manufacturing-validator/schema/pnt-conformance-report.schema.json
           jq empty docs/standards/omsi/pnt-conformance-fixtures-0.1.schema.json
           jq empty docs/standards/omsi/pnt-conformance-vectors-0.1.json
           cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \

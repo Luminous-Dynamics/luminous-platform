@@ -22,7 +22,7 @@
       "const": "0.1.0-draft"
     },
     "state": {
-      "const": "SYNTHETIC_INPUT_FIXTURES_NOT_EXECUTED"
+      "const": "SYNTHETIC_INPUT_FIXTURES_EXECUTABLE"
     },
     "profile_id": {
       "const": "omsi.pnt-resilience"

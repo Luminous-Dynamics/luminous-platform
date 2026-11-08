@@ -53,7 +53,7 @@ impl Outcome {
 /// Primary deterministic evaluator. It applies the profile's conservative
 /// precedence to the supplied observation, dependency, service and authority
 /// facets. It does not infer physical truth or run a PNT estimator.
-pub fn evaluate_input(input: &Value) -> Outcome {
+fn evaluate_input(input: &Value) -> Outcome {
     let profile = input.get("profile").unwrap_or(&Value::Null);
     if text(profile, "id") != Some(PROFILE_ID) || text(profile, "version") != Some(PROFILE_VERSION) {
         return Outcome::new("NOT_COMPARABLE", "profile_identity_or_version_mismatch");
@@ -619,6 +619,7 @@ mod tests {
 
     const FIXTURES: &str = include_str!("../../../docs/standards/omsi/pnt-conformance-fixtures-0.1.json");
     const FIXTURE_SCHEMA: &str = include_str!("../../../docs/standards/omsi/pnt-conformance-fixtures-0.1.schema.json");
+    const REPORT_SCHEMA: &str = include_str!("../schema/pnt-conformance-report.schema.json");
 
     fn pack() -> Value {
         serde_json::from_str(FIXTURES).expect("PNT fixture pack parses")
@@ -641,6 +642,10 @@ mod tests {
         assert_eq!(report["reference_disagreement_count"], 0);
         assert_eq!(report["false_accept_count"], 0);
         assert_eq!(report["verification"]["status"], "passed");
+        let report_schema: Value = serde_json::from_str(REPORT_SCHEMA).expect("PNT report schema parses");
+        assert!(draft202012::meta::is_valid(&report_schema), "PNT report schema is not valid Draft 2020-12");
+        let report_validator = draft202012::new(&report_schema).expect("PNT report schema compiles");
+        assert!(report_validator.is_valid(&report), "PNT report does not match schema: {report:#}");
     }
 
     #[test]

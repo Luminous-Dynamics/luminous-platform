@@ -1,7 +1,7 @@
 {
   "schema": "omsi.pnt-conformance-fixture-pack",
   "version": "0.1.0-draft",
-  "state": "SYNTHETIC_INPUT_FIXTURES_NOT_EXECUTED",
+  "state": "SYNTHETIC_INPUT_FIXTURES_EXECUTABLE",
   "profile_id": "omsi.pnt-resilience",
   "profile_version": "0.1.0-draft",
   "owner_issue": 307,
