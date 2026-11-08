@@ -139,6 +139,11 @@ pub struct EventCheckpoint {
     pub last_stream_tick: u64,
     /// Event ID -> (source epoch, sequence, payload digest).
     pub seen_event_ids: BTreeMap<String, (String, u64, String)>,
+    /// Authenticated source records waiting for a preceding sequence.
+    pub buffered_events: BTreeMap<u64, SourceEvent>,
+    /// Start/deadline for the currently missing cursor sequence.
+    pub gap_started_at_tick: Option<u64>,
+    pub gap_deadline_tick: Option<u64>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -151,12 +156,15 @@ pub enum RecordDisposition {
     ExpiredBeforeProcessing,
     MissedDeadline,
     OutOfOrder,
+    BufferedForSequence,
+    DeliveryGapPending,
     IdentityCollision,
     SourceEpochMismatch,
     RestartAccepted,
     RestartRejected,
     WatermarkConfirmed,
     DeliveryGap,
+    DeliveryGapPending,
     SourceUnavailable,
     AuthorityRevokedOrExpired,
     BudgetExhausted,
@@ -194,6 +202,12 @@ pub struct EventScheduleMetrics {
     pub duplicates_suppressed: usize,
     pub identity_collisions: usize,
     pub sequence_gaps: usize,
+    pub buffered_events: usize,
+    pub gap_repairs: usize,
+    pub gap_timeouts: usize,
+    pub pending_gap_observations: usize,
+    pub gap_buffer_overflows: usize,
+    pub max_buffered_event_count: usize,
     pub out_of_order_records: usize,
     pub restarts_accepted: usize,
     pub restarts_rejected: usize,
@@ -254,10 +268,41 @@ pub enum ScheduleError {
     InvalidWatch,
     InvalidAuthority,
     InvalidStrategy,
+    InvalidGapPolicy,
     EventTimeRegression,
     InvalidEvent,
     InvalidRestart,
     InvalidCheckpoint,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SequenceGapPolicy {
+    /// The gap becomes a delivery failure at this many ticks after first observation.
+    /// The boundary is inclusive: an event arriving exactly at the deadline is late.
+    pub timeout_ticks: u64,
+    pub max_buffered_events: usize,
+}
+
+impl SequenceGapPolicy {
+    /// Preserve the original immediate, fail-closed semantics.
+    pub const fn strict() -> Self {
+        Self {
+            timeout_ticks: 0,
+            max_buffered_events: 0,
+        }
+    }
+
+    /// Opt in to bounded buffering and repair before a deadline.
+    pub const fn buffered(timeout_ticks: u64, max_buffered_events: usize) -> Self {
+        Self {
+            timeout_ticks,
+            max_buffered_events,
+        }
+    }
+
+    const fn is_buffered(self) -> bool {
+        self.timeout_ticks > 0 && self.max_buffered_events > 0
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -371,6 +416,9 @@ fn initial_checkpoint(watch: &EventWatch) -> EventCheckpoint {
         next_sequence: watch.first_sequence,
         last_stream_tick: watch.starts_at_tick,
         seen_event_ids: BTreeMap::new(),
+        buffered_events: BTreeMap::new(),
+        gap_started_at_tick: None,
+        gap_deadline_tick: None,
     }
 }
 
@@ -393,6 +441,23 @@ fn validate_checkpoint(
                     || *sequence == u64::MAX
                     || !valid_sha256(digest)
             })
+        || checkpoint.gap_started_at_tick.is_some()
+            != checkpoint.gap_deadline_tick.is_some()
+        || checkpoint
+            .gap_started_at_tick
+            .zip(checkpoint.gap_deadline_tick)
+            .is_some_and(|(started, deadline)| deadline <= started)
+        || checkpoint.buffered_events.iter().any(|(sequence, event)| {
+            *sequence != event.sequence
+                || event.source_id != checkpoint.source_id
+                || event.source_epoch != checkpoint.source_epoch
+                || event.sequence <= checkpoint.next_sequence
+                || event.delivered_tick > checkpoint.last_stream_tick
+                || checkpoint.seen_event_ids.contains_key(&event.event_id)
+                || validate_event(event).is_err()
+        })
+        || (!checkpoint.buffered_events.is_empty()
+            && checkpoint.gap_started_at_tick.is_none())
     {
         return Err(ScheduleError::InvalidCheckpoint);
     }
@@ -523,6 +588,7 @@ struct EventProcessingState<'a> {
     watch: &'a EventWatch,
     authority: &'a AuthorityWindow,
     strategy: AttentionStrategy,
+    gap_policy: SequenceGapPolicy,
     checkpoint: &'a mut EventCheckpoint,
     metrics: &'a mut EventScheduleMetrics,
     records: &'a mut Vec<EventRecordResult>,
@@ -855,6 +921,7 @@ fn process_watermark(
     watch: &EventWatch,
     watermark: &SourceWatermark,
     processing_tick: u64,
+    gap_policy: SequenceGapPolicy,
     checkpoint: &mut EventCheckpoint,
     metrics: &mut EventScheduleMetrics,
     records: &mut Vec<EventRecordResult>,
@@ -965,8 +1032,35 @@ pub fn evaluate_event_schedule(
     horizon_tick: u64,
     checkpoint: Option<EventCheckpoint>,
 ) -> Result<EventScheduleResult, ScheduleError> {
+    evaluate_event_schedule_with_gap_policy(
+        watch,
+        authority,
+        strategy,
+        timeline,
+        horizon_tick,
+        checkpoint,
+        SequenceGapPolicy::strict(),
+    )
+}
+
+/// Evaluate one frozen source schedule with an explicit bounded gap policy.
+/// The default public evaluator remains strict; buffering is an opt-in contract.
+pub fn evaluate_event_schedule_with_gap_policy(
+    watch: &EventWatch,
+    authority: &AuthorityWindow,
+    strategy: AttentionStrategy,
+    timeline: &[TimelineRecord],
+    horizon_tick: u64,
+    checkpoint: Option<EventCheckpoint>,
+    gap_policy: SequenceGapPolicy,
+) -> Result<EventScheduleResult, ScheduleError> {
     validate_watch(watch)?;
     validate_authority(authority)?;
+    if (gap_policy.timeout_ticks == 0) != (gap_policy.max_buffered_events == 0)
+        || gap_policy.max_buffered_events > watch.max_event_checks
+    {
+        return Err(ScheduleError::InvalidGapPolicy);
+    }
     match strategy {
         AttentionStrategy::FixedPolling { interval_ticks: 0 } => {
             return Err(ScheduleError::InvalidStrategy);
@@ -1085,6 +1179,7 @@ pub fn evaluate_event_schedule(
                     watch,
                     authority,
                     strategy,
+                    gap_policy,
                     checkpoint: &mut checkpoint,
                     metrics: &mut metrics,
                     records: &mut records,
@@ -1097,6 +1192,7 @@ pub fn evaluate_event_schedule(
                 watch,
                 restart,
                 processing_tick,
+                gap_policy,
                 &mut checkpoint,
                 &mut metrics,
                 &mut records,
@@ -1113,6 +1209,44 @@ pub fn evaluate_event_schedule(
         if let Some(failure) = result {
             status = failure;
             break;
+        }
+    }
+
+    if gap_policy.is_buffered() && status == ScheduleStatus::Completed {
+        if let Some(deadline) = checkpoint.gap_deadline_tick {
+            if horizon_tick >= deadline {
+                metrics.gap_timeouts += 1;
+                status = ScheduleStatus::DeliveryGap;
+                records.push(EventRecordResult {
+                    event_id: format!(
+                        "gap:{}:{}",
+                        checkpoint.source_epoch, checkpoint.next_sequence
+                    ),
+                    incident_id: String::new(),
+                    sequence: checkpoint.next_sequence,
+                    delivered_tick: deadline,
+                    processed_tick: Some(horizon_tick),
+                    disposition: RecordDisposition::DeliveryGap,
+                    detection_latency_ticks: None,
+                    deadline_met: false,
+                });
+            } else {
+                metrics.pending_gap_observations += 1;
+                status = ScheduleStatus::DeliveryGapPending;
+                records.push(EventRecordResult {
+                    event_id: format!(
+                        "gap-pending:{}:{}",
+                        checkpoint.source_epoch, checkpoint.next_sequence
+                    ),
+                    incident_id: String::new(),
+                    sequence: checkpoint.next_sequence,
+                    delivered_tick: checkpoint.gap_started_at_tick.unwrap_or(horizon_tick),
+                    processed_tick: Some(horizon_tick),
+                    disposition: RecordDisposition::DeliveryGapPending,
+                    detection_latency_ticks: None,
+                    deadline_met: false,
+                });
+            }
         }
     }
 
