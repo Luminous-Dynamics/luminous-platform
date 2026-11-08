@@ -1401,6 +1401,139 @@
         ]
       },
       "claim_ceiling": "An ongoing NIST methodology project for factual claim grounding. It publishes no numeric benchmark score and does not establish operational effects."
+    },
+    {
+      "id": "pagerduty-sre-agent-benchmark-2026",
+      "name": "PagerDuty PD Labs SRE Agent Benchmark — initial 17-scenario sweep",
+      "benchmark_family": "sre_diagnosis_only",
+      "construct": "Live fault-injected SRE investigation benchmark comparing localization, root-cause diagnosis, mitigation recommendation, evidence grounding, explanation quality, misdirection and latency.",
+      "unit_of_analysis": "agent configuration × injected incident scenario; initial public sweep is one trial per agent per scenario",
+      "owner": "PagerDuty PD Labs",
+      "evidence_status": "vendor_benchmark_report",
+      "publication": {
+        "published_at": "2026-11-03",
+        "observed_at": "2026-11-08",
+        "version": "initial 17-scenario report / fixed judging prompt version"
+      },
+      "source": {
+        "primary_url": "https://www.pagerduty.com/resources/ai/learn/sre-agent-benchmark-report/",
+        "additional_urls": [
+          "https://www.pagerduty.com/eng/lessons-from-pd-labs-from-experimentation-to-a-production-ready-sre-agent/"
+        ],
+        "source_kind": "technical_report",
+        "reference_id": "PagerDuty PD Labs initial 17-scenario SRE Agent Benchmark report",
+        "raw_git_blob_sha": null,
+        "repository_commit_sha": null,
+        "capture": {
+          "status": "metadata_only_no_content_hash",
+          "captured_at": "2026-11-08",
+          "content_sha256": null,
+          "note": "PagerDuty public methodology report and engineering blog inspected. The benchmark substrate is private; table results include an image and source bytes are not archived in this registry."
+        }
+      },
+      "protocol": {
+        "task_count": 17,
+        "run_count": null,
+        "repeat_policy": "Single trial per agent configuration per scenario in the reported sweep; authors cite roughly 2 percentage-point sweep-to-sweep variability from earlier runs, but this sweep has no repeated-trial confidence interval. Agent failures are excluded from quality scores rather than scored zero.",
+        "environment": "Purpose-built financial application with 11 interconnected microservices on EKS; Go, Python, TypeScript and Elixir; Kafka, Redis, PostgreSQL and Secrets Manager; Grafana Cloud telemetry; external load generator hidden from agents.",
+        "tool_surface": "Each agent receives alert details, Grafana MELT data and application source code. Kubernetes substrate access is restricted to avoid exposing Chaos Mesh injection metadata. Service runbooks are available to all agents.",
+        "model_configurations": [
+          "PagerDuty SRE Agent Deep Investigation / GPT-5.6 Sol",
+          "Claude Code / Claude Opus 5.5",
+          "Claude Code / Claude Sonnet 5",
+          "Codex / GPT-5.6 Sol",
+          "Codex / GPT-5.6 Terra",
+          "Codex / GPT-Luna 4"
+        ],
+        "evaluator": "Three-model judge ensemble (DeepSeek, Claude and GPT) scores predeclared per-scenario criteria for localization, diagnosis, mitigation recommendation, evidence grounding, explanation quality and misdirection. Average is the mean of the five quality metrics plus (1 - misdirection).",
+        "judge": "DeepSeek, Claude and GPT judge models from three providers; full judge/human agreement analysis remains ongoing.",
+        "noise_or_controls": "Faults injected using Helm value overrides, Chaos Mesh, real PR merges and AWS control-plane changes. Scenarios span configuration, code, data-integrity and operational faults. Contamination scan checks answer-key, repository and cross-scenario leakage.",
+        "limitations": [
+          "Publisher also builds the evaluated PagerDuty SRE Agent and acknowledges conflict of interest; neutral prompts, three-provider judge ensemble, scenario-defined subcriteria and leakage scanning are mitigations, not independent reproduction.",
+          "Single trial per agent/scenario; authors state larger repeated-trial evaluation is planned.",
+          "Agent failures are excluded from quality score rather than counted as zero; completion/failure rate must be reported separately.",
+          "The initial sweep is triage/diagnosis-heavy; proposed mitigations are not executed and sustained recovery is not independently verified.",
+          "Ground truth descriptions were initially authored by an LLM and reviewed against the scenario evidence.",
+          "LLM judge/human agreement is reported as preliminary; full statistical analysis is ongoing.",
+          "The report's same-model result (PagerDuty agent 0.77 vs Codex 0.66 on Sol 5.6) is a reported harness/context comparison, not an independently reproduced causal estimate.",
+          "Live incident-call transcripts and past-incident memory were not included in the matched benchmark; a separate replay analysis reports up to a 5-point diagnosis-score gain with transcript data."
+        ]
+      },
+      "metrics": [
+        {
+          "metric_id": "scenario-count",
+          "label": "Injected incident scenarios",
+          "value": 17,
+          "unit": "count",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Number of self-contained injected incident scenarios in the latest complete sweep.",
+          "scope": "Initial public benchmark sweep",
+          "limitations": []
+        },
+        {
+          "metric_id": "same-model-pagerduty-score",
+          "label": "PagerDuty SRE Agent score on GPT-5.6 Sol",
+          "value": 0.77,
+          "unit": "fraction",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Reported average quality score with the same underlying model as Codex.",
+          "scope": "GPT-5.6 Sol same-model harness comparison",
+          "limitations": [
+            "Per report, PagerDuty 0.77 versus Codex 0.66. Single trial; judge-derived score; do not generalize as a causal harness effect."
+          ]
+        },
+        {
+          "metric_id": "same-model-codex-score",
+          "label": "Codex score on GPT-5.6 Sol",
+          "value": 0.66,
+          "unit": "fraction",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Reported Codex average quality score with the same underlying model as PagerDuty SRE Agent.",
+          "scope": "GPT-5.6 Sol same-model harness comparison",
+          "limitations": [
+            "Single trial; judge-derived score; public report does not publish the full row-level run data in text."
+          ]
+        },
+        {
+          "metric_id": "internal-diagnosis-rebuild-delta",
+          "label": "Reported diagnosis score improvement after PagerDuty agent rebuild",
+          "value": "approximately 20 percentage points",
+          "unit": "qualitative",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "owner_claim",
+          "definition": "PagerDuty reports a roughly 20-point diagnosis-score improvement after redesigning its initial complex multi-agent investigation architecture.",
+          "scope": "PagerDuty internal earlier-versus-rebuilt SRE Agent configuration",
+          "limitations": [
+            "Internal before/after comparison; exact paired task/score denominators not stated in public report. Not the external 17-scenario leaderboard gap."
+          ]
+        }
+      ],
+      "comparability": {
+        "comparison_group": "sre-investigation-17scenario-multijudge",
+        "comparable_only_with": [
+          "Same 17 scenarios, private benchmark version, same three-judge rubric, equal data access and single-trial protocol."
+        ],
+        "not_comparable_with": [
+          "SREGym-0508 diagnosis+mitigation E2E",
+          "SRE-Marathon Marathon-Score",
+          "Traceway deterministic safe-write pass rate",
+          "AI SRE Arena's 21-incident supported-fix recommendation score"
+        ],
+        "notes": [
+          "Useful comparator for evidence grounding, misdirection, source-code access and multi-axis investigation quality.",
+          "The reported same-model context comparison is a valuable harness ablation idea.",
+          "Do not claim repair success: report focuses on locating, diagnosing and recommending mitigation, not executing remediation and verifying recovery.",
+          "The benchmark uses a hidden load generator, preventing agents from seeing the source of ground-truth request counts."
+        ]
+      },
+      "claim_ceiling": "Vendor-published single-trial diagnosis/investigation benchmark on a private 17-scenario environment. Multi-judge scoring and contamination controls are valuable, but failed runs are excluded, repeated-run uncertainty is not estimated, and actual remediation/recovery is not measured."
     }
   ]
 }
