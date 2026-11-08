@@ -671,7 +671,7 @@ mod tests {
             7,
             EventPersistence::Ephemeral,
             true,
-            );
+        );
         event.condition_cleared_at_tick = Some(6);
         let result = evaluate(&[event], &watch(), &authority());
         assert_eq!(result.metrics.wakeups, 1);
@@ -690,7 +690,7 @@ mod tests {
             10,
             EventPersistence::Ephemeral,
             true,
-            );
+        );
         let result = evaluate(&[event], &watch(), &authority());
         assert_eq!(result.status, EventScheduleStatus::DeadlineMissed);
         assert_eq!(result.metrics.late_events, 1);
@@ -712,7 +712,7 @@ mod tests {
             5,
             EventPersistence::Persistent,
             true,
-            );
+        );
         let mut duplicate = original.clone();
         duplicate.processed_at_tick = 6;
         let result = evaluate(&[original, duplicate], &watch(), &authority());
@@ -723,7 +723,6 @@ mod tests {
             EventRecordDisposition::DuplicateSuppressed
         );
     }
-
 
     #[test]
     fn duplicate_replay_with_new_delivery_time_is_still_same_event_identity() {
@@ -760,7 +759,7 @@ mod tests {
             5,
             EventPersistence::Persistent,
             true,
-            );
+        );
         let mut changed = first.clone();
         changed.payload_digest = format!("sha256:{:064x}", 99);
         changed.processed_at_tick = 6;
@@ -781,7 +780,7 @@ mod tests {
             10,
             EventPersistence::Ephemeral,
             true,
-            );
+        );
         let timely = scheduled(
             2,
             "timely-2",
@@ -791,7 +790,7 @@ mod tests {
             13,
             EventPersistence::Persistent,
             true,
-            );
+        );
         let result = evaluate(&[late, timely], &watch(), &authority());
         assert_eq!(result.status, EventScheduleStatus::DeadlineMissed);
         assert_eq!(result.metrics.late_events, 1);
@@ -810,7 +809,7 @@ mod tests {
             5,
             EventPersistence::Persistent,
             true,
-            );
+        );
         let second = scheduled(
             2,
             "event-reused",
@@ -820,7 +819,7 @@ mod tests {
             7,
             EventPersistence::Persistent,
             true,
-            );
+        );
         let result = evaluate(&[first, second], &watch(), &authority());
         assert_eq!(result.status, EventScheduleStatus::EventIdentityCollision);
         assert_eq!(result.metrics.identity_collisions, 1);
@@ -839,7 +838,7 @@ mod tests {
             5,
             EventPersistence::Persistent,
             true,
-            );
+        );
         let second = scheduled(
             1,
             "event-two",
@@ -849,7 +848,7 @@ mod tests {
             7,
             EventPersistence::Persistent,
             true,
-            );
+        );
         let result = evaluate(&[first, second], &watch(), &authority());
         assert_eq!(result.status, EventScheduleStatus::SequenceCollision);
         assert_eq!(result.metrics.sequence_collisions, 1);
@@ -867,7 +866,7 @@ mod tests {
             5,
             EventPersistence::Persistent,
             true,
-            );
+        );
         let third = scheduled(
             3,
             "event-three",
@@ -877,7 +876,7 @@ mod tests {
             7,
             EventPersistence::Persistent,
             true,
-            );
+        );
         let fourth = scheduled(
             4,
             "event-four",
@@ -887,7 +886,7 @@ mod tests {
             9,
             EventPersistence::Persistent,
             true,
-            );
+        );
         let result = evaluate(&[first, third, fourth], &watch(), &authority());
         assert_eq!(result.status, EventScheduleStatus::DeliveryGap);
         assert_eq!(result.metrics.delivery_gaps, 1);
@@ -906,7 +905,7 @@ mod tests {
             5,
             EventPersistence::Persistent,
             true,
-            );
+        );
         let second = scheduled(
             1,
             "event-one",
@@ -916,7 +915,7 @@ mod tests {
             7,
             EventPersistence::Persistent,
             true,
-            );
+        );
         let mut changed_watch = watch();
         changed_watch.first_sequence = 2;
         let result = evaluate(&[first, second], &changed_watch, &authority());
@@ -935,7 +934,7 @@ mod tests {
             8,
             EventPersistence::Persistent,
             true,
-            );
+        );
         let mut revoked = authority();
         revoked.revoked_at_tick = Some(7);
         let result = evaluate(&[event], &watch(), &revoked);
@@ -958,7 +957,7 @@ mod tests {
             3,
             EventPersistence::Persistent,
             true,
-            );
+        );
         event.condition_cleared_at_tick = Some(6);
         let result = evaluate(&[event], &watch(), &authority());
         assert_eq!(result.metrics.wakeups, 1);
@@ -976,7 +975,7 @@ mod tests {
             7,
             EventPersistence::Persistent,
             true,
-            );
+        );
         event.condition_cleared_at_tick = Some(6);
         let result = evaluate(&[event], &watch(), &authority());
         assert_eq!(result.metrics.wakeups, 0);
@@ -990,24 +989,24 @@ mod tests {
     fn watch_wakeup_budget_exhaustion_is_explicit() {
         let events = [
             scheduled(
-            1,
-            "event-1",
-            "incident-a",
-            4,
-            5,
-            5,
-            EventPersistence::Persistent,
-            true,
+                1,
+                "event-1",
+                "incident-a",
+                4,
+                5,
+                5,
+                EventPersistence::Persistent,
+                true,
             ),
             scheduled(
-            2,
-            "event-2",
-            "incident-b",
-            6,
-            6,
-            7,
-            EventPersistence::Persistent,
-            true,
+                2,
+                "event-2",
+                "incident-b",
+                6,
+                6,
+                7,
+                EventPersistence::Persistent,
+                true,
             ),
         ];
         let mut bounded = watch();
@@ -1029,7 +1028,7 @@ mod tests {
             5,
             EventPersistence::Persistent,
             true,
-            );
+        );
         wrong_scope.envelope.tenant_id = "tenant-b".into();
         let next = scheduled(
             2,
@@ -1040,7 +1039,7 @@ mod tests {
             7,
             EventPersistence::Persistent,
             true,
-            );
+        );
         let result = evaluate(&[wrong_scope, next], &watch(), &authority());
         assert_eq!(result.metrics.rejected_scope_events, 1);
         assert_eq!(result.metrics.wakeups, 1);
@@ -1058,7 +1057,7 @@ mod tests {
             5,
             EventPersistence::Persistent,
             true,
-            );
+        );
         event.payload_digest.clear();
         assert_eq!(
             evaluate_event_schedule(&watch(), &authority(), &config(), &[event], 20),
@@ -1077,7 +1076,7 @@ mod tests {
             7,
             EventPersistence::Persistent,
             true,
-            );
+        );
         let second = scheduled(
             2,
             "event-2",
@@ -1087,7 +1086,7 @@ mod tests {
             6,
             EventPersistence::Persistent,
             true,
-            );
+        );
         assert_eq!(
             evaluate_event_schedule(&watch(), &authority(), &config(), &[first, second], 20),
             Err(EventScheduleError::ProcessingTimeRegression)
