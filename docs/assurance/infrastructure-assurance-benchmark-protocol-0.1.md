@@ -32,6 +32,14 @@ The first track is Mycelix's [time-qualified dependency hypergraph #5923](https:
 
 A measurement can be accurate enough for a dashboard but not for a timing handover, navigation decision or protected manufacturing release. Qualification must bind the exact decision scope, profile, time interval, evidence frontier, uncertainty, authority and loss context. There is no universal trust score.
 
+### From calibration flags to uncertainty-bearing decisions
+
+Do not model calibration as only `current` or `expired`. The scorecard must preserve the calibration certificate and interval, traceability chain, instrument configuration, drift/stability assumptions, environmental conditions, uncertainty contributors, covariance/correlation assumptions, measurement model and the uncertainty propagation method. When the measurement model is materially nonlinear, require the appropriate higher-order or Monte Carlo treatment rather than assuming first-order propagation is adequate.
+
+The decision record must identify the measurand, requirement/tolerance, measurement result, uncertainty/coverage interval, decision rule, guard band (where used), and consequences of false acceptance and false rejection. Keep “measurement result” and “conformity decision” as distinct artifacts. A syntactically valid certificate or in-date calibration does not itself establish that this particular measurement is fit for this decision.
+
+The 2026 amendment to JCGM 100:2008 explicitly addresses nonlinearity in measurement models and refers to Monte Carlo propagation or higher-order Taylor terms where needed. JCGM 106:2012 addresses how uncertainty enters conformity assessment and the decision rule. These are metrology anchors, not proof that this project implements a compliant uncertainty budget.
+
 ### 3. From telemetry health to measurement qualification
 
 A green link, valid signature, fresh timestamp, schema-valid payload or high classifier score is not proof that the underlying physical measurement is fit for purpose. Record instrument identity, acquisition conditions, calibration state, uncertainty method, time basis, reference traceability and environmental limitations separately.
