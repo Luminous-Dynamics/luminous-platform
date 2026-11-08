@@ -769,7 +769,7 @@ fn process_event(
             metrics.max_event_backlog_ticks = metrics
                 .max_event_backlog_ticks
                 .max(processing_tick.saturating_sub(event.delivered_tick));
-            let joins_existing = joins_pending_group(strategy, event, processing_tick, pending);
+            let joins_existing = joins_pending_group(*strategy, event, processing_tick, pending);
             if !joins_existing && wakes.len() + pending.len() >= watch.max_wakeups {
                 metrics.budget_exhaustions += 1;
                 records.push(EventRecordResult {
@@ -784,7 +784,7 @@ fn process_event(
                 });
                 return Some(ScheduleStatus::BudgetExhausted);
             }
-            let coalesced = apply_wake(strategy, event, processing_tick, pending, wakes, metrics);
+            let coalesced = apply_wake(*strategy, event, processing_tick, pending, wakes, metrics);
             metrics.relevant_events_detected += 1;
             metrics.event_wake_notifications += 1;
             records.push(EventRecordResult {
