@@ -189,3 +189,10 @@ A selected probe is represented as ProbeProposedNotAdmitted, not ProbeRequested.
 Tests cover exact identity mapping, proposal-versus-request distinction, explicit indeterminate status for an unadmitted proposal, missing per-event disposition rejection and source-epoch substitution rejection.
 
 **Claim ceiling:** the adapter closes the schedule-to-policy-decision record seam only. It does not close admission, collection, observer independence, impact or sustained recovery. No complete episode qualification is possible from this adapter alone.
+
+
+### Proposal catalog snapshot (follow-up hardening)
+
+A proposal now preserves the exact catalog contract visible at selection time: operation digest, tenant/target/purpose, collector source ID, collector control domain, read-only bit, maximum duration, proposal tick and the observation source tick. The source-qualified runner resolves the already-eligible probe ID against exactly one catalog entry before emitting this proposal. The auditor adapter consumes exactly one proposal for every SelectReadOnlyProbe decision and none for other dispositions; it checks the proposal's observation tick against the actual wake observation. The auditor then compares every frozen field against the catalog supplied at audit time. A later catalog mutation, ambiguous entry, substituted operation digest, changed scope/control domain, changed duration or forged proposal time cannot be silently treated as the same proposed operation.
+
+This still remains a policy proposal, not an admission request or collector receipt. A valid catalog snapshot does not grant execution authority.
