@@ -178,3 +178,14 @@ The runner deliberately stops before Xenia admission, remote collector execution
 Tests cover exact source-identity preservation, one invocation with per-event decisions for a coalesced batch, catalog-bound read-only proposals, rejection of an ineligible proposal, rejection of missing policy dispositions, sequence-gap fail-closed behavior, quiet/no-event behavior and equality with an independent no-action plant replay.
 
 **Claim ceiling:** this is still a deterministic in-process bridge over synthetic event schedules and the existing synthetic plant. It does not authenticate event publishers, prove policy process isolation, integrate live Xenia, execute collectors, measure probe externality, or establish real-world SRE repair performance. Probe proposals are not admitted operations and this runner makes no SREGym/SRE-Marathon claim.
+
+
+## Scheduled-attention → episode-audit bridge v0.1
+
+The source-qualified scheduled-attention runner now has a structural adapter into the independent episode auditor. It maps each per-event policy disposition to a WakeDecisionReceipt without reconstructing event identity from tick or synthetic sequence values. The adapter rejects missing/duplicate/orphan decisions and source-epoch substitution.
+
+A selected probe is represented as ProbeProposedNotAdmitted, not ProbeRequested. The auditor checks the proposal against the read-only, scope-matched catalog, requires that no admission request be represented for the same event, and marks the episode Indeterminate with ProbeProposalNotAdmitted. This is intentional: a policy proposal is not an Xenia admission, collector execution, source observation or impact receipt. Non-probe dispositions can be audited as explicit no-probe decisions. Local decision IDs are deterministic join keys only, not cryptographic attestations.
+
+Tests cover exact identity mapping, proposal-versus-request distinction, explicit indeterminate status for an unadmitted proposal, missing per-event disposition rejection and source-epoch substitution rejection.
+
+**Claim ceiling:** the adapter closes the schedule-to-policy-decision record seam only. It does not close admission, collection, observer independence, impact or sustained recovery. No complete episode qualification is possible from this adapter alone.
