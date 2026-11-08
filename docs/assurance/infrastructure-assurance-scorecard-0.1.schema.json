@@ -423,7 +423,44 @@
             "method_ref": {
               "type": "string"
             }
-          }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "current"
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "certificate_sha256": {
+                    "$ref": "#/$defs/digest"
+                  },
+                  "valid_from": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "valid_until": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "traceability_refs": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          ]
         },
         "uncertainty": {
           "type": "object",
@@ -1095,7 +1132,35 @@
         "loss_model_commitment_sha256": {
           "$ref": "#/$defs/nullableDigest"
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "abstention_behavior": {
+                "enum": [
+                  "abstain",
+                  "degrade",
+                  "escalate_to_human",
+                  "request_more_evidence"
+                ]
+              }
+            },
+            "required": [
+              "abstention_behavior"
+            ]
+          },
+          "then": {
+            "properties": {
+              "permitted_dispositions": {
+                "contains": {
+                  "const": "INDETERMINATE"
+                }
+              }
+            }
+          }
+        }
+      ]
     },
     "measurement_context": {
       "$ref": "#/$defs/measurementContext"
