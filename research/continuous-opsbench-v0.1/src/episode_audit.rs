@@ -8,6 +8,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::event_schedule::{EventScheduleResult, RecordDisposition, ScheduleStatus};
+use crate::failure_domains::{
+    audit_observer_independence, ControlDomainProfile, FailureDomainGraph, IndependencePolicy,
+    IndependenceStatus,
+};
 use crate::scheduled_attention::{
     ProbeSelectionProposal, ScheduledWakeDecision, SourceQualifiedDisposition,
 };
@@ -99,6 +103,9 @@ pub struct ImpactReceipt {
     pub event_id: String,
     pub received_at_tick: u64,
     pub impact: ImpactObservation,
+    /// Observer-owned inventory claim; the collector profile comes from a
+    /// separate registry snapshot supplied to the auditor.
+    pub observer_failure_domain_profile: ReceiptState<ControlDomainProfile>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -139,7 +146,16 @@ pub struct EpisodeAuditInput<'a> {
     pub wake_decisions: &'a [WakeDecisionReceipt],
     pub requests: &'a [ProbeRequestReceipt],
     pub evidence: &'a [ProbeEvidenceRecord],
+    pub failure_domain_registry: Option<&'a FailureDomainRegistrySnapshot>,
     pub audited_at_tick: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FailureDomainRegistrySnapshot {
+    pub graph: FailureDomainGraph,
+    /// Keyed by the exact collector_control_domain in the probe catalog.
+    pub collector_profiles: BTreeMap<String, ControlDomainProfile>,
+    pub policy: IndependencePolicy,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -160,6 +176,8 @@ pub enum AuditFailure {
     ProbeNotCataloguedReadOnly,
     ProbeProposalNotMatched,
     DuplicateProbeProposal,
+    FailureDomainEvidenceInvalid,
+    FailureDomainProfileBindingMismatch,
     DuplicateReceiptId,
     DuplicateEvidenceRecord,
     EvidenceBindingMismatch,
@@ -181,6 +199,10 @@ pub enum IndeterminateReason {
     UnknownImpact,
     IncompleteImpact,
     ImpactIndependenceUnestablished,
+    MissingCollectorFailureDomainProfile,
+    MissingObserverFailureDomainProfile,
+    UnknownObserverFailureDomainProfile,
+    CommonCauseOverlap,
     MissingDecision,
     ProbeProposalNotAdmitted,
     ReceiptAfterDeadline,
