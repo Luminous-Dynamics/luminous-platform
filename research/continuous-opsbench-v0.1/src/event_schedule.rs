@@ -1153,6 +1153,9 @@ fn apply_restart(
     checkpoint.source_epoch = restart.new_epoch.clone();
     checkpoint.next_sequence = restart.sequence_start;
     checkpoint.last_stream_tick = restart.at_tick;
+    checkpoint.observed_watermark_next_sequence = None;
+    checkpoint.gap_started_at_tick = None;
+    checkpoint.gap_deadline_tick = None;
     metrics.restarts_accepted += 1;
     records.push(EventRecordResult {
         event_id: format!("restart:{}", restart.new_epoch),
@@ -2736,6 +2739,57 @@ mod tests {
         assert_eq!(result.metrics.restarts_accepted, 1);
         assert_eq!(result.metrics.wakeups, 2);
         assert_eq!(result.checkpoint.source_epoch, "epoch-2");
+    }
+
+    #[test]
+    fn source_restart_resets_epoch_scoped_watermark_cursor() {
+        let mut quiet = event(
+            "event-1",
+            "incident-1",
+            1,
+            2,
+            2,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        quiet.condition = ConditionOutcome::NoMatch;
+        let timeline = vec![
+            TimelineRecord::Event(quiet),
+            TimelineRecord::Watermark(watermark(2, 3, true)),
+            TimelineRecord::Restart(SourceRestart {
+                source_id: "event-feed-a".into(),
+                previous_epoch: "epoch-1".into(),
+                new_epoch: "epoch-2".into(),
+                sequence_start: 1,
+                at_tick: 4,
+                restart_proof_digest: format!("sha256:{:064x}", 12345),
+            }),
+            TimelineRecord::Watermark(SourceWatermark {
+                source_id: "event-feed-a".into(),
+                source_epoch: "epoch-2".into(),
+                next_sequence: 1,
+                observed_tick: 5,
+                available: true,
+                watermark_digest: format!("sha256:{:064x}", 999),
+            }),
+        ];
+        let result = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &timeline,
+            8,
+            None,
+            5,
+            8,
+        );
+        assert_eq!(result.status, ScheduleStatus::Quiet);
+        assert_eq!(result.metrics.restarts_accepted, 1);
+        assert_eq!(result.checkpoint.source_epoch, "epoch-2");
+        assert_eq!(
+            result.checkpoint.observed_watermark_next_sequence,
+            Some(1)
+        );
+        assert_eq!(result.checkpoint.gap_deadline_tick, None);
     }
 
     #[test]
