@@ -176,10 +176,44 @@ fn validate_inputs(
     Ok(())
 }
 
-fn record_for(
-    event: &ScheduledAttentionEvent,
-    disposition: EventRecordDisposition,
-) -> EventRecord {
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct EventIdentity {
+    event_id: String,
+    source_id: String,
+    sequence: u64,
+    event_type: String,
+    tenant_id: String,
+    target_id: String,
+    purpose_id: String,
+    condition_met: bool,
+    observed_at_tick: u64,
+    payload_digest: String,
+    incident_id: String,
+    persistence: EventPersistence,
+    condition_cleared_at_tick: Option<u64>,
+}
+
+impl From<&ScheduledAttentionEvent> for EventIdentity {
+    fn from(event: &ScheduledAttentionEvent) -> Self {
+        Self {
+            event_id: event.envelope.event_id.clone(),
+            source_id: event.envelope.source_id.clone(),
+            sequence: event.envelope.sequence,
+            event_type: event.envelope.event_type.clone(),
+            tenant_id: event.envelope.tenant_id.clone(),
+            target_id: event.envelope.target_id.clone(),
+            purpose_id: event.envelope.purpose_id.clone(),
+            condition_met: event.envelope.condition_met,
+            observed_at_tick: event.envelope.observed_at_tick,
+            payload_digest: event.payload_digest.clone(),
+            incident_id: event.incident_id.clone(),
+            persistence: event.persistence,
+            condition_cleared_at_tick: event.condition_cleared_at_tick,
+        }
+    }
+}
+
+fn record_for(event: &ScheduledAttentionEvent, disposition: EventRecordDisposition) -> EventRecord {
     EventRecord {
         event_id: event.envelope.event_id.clone(),
         incident_id: event.incident_id.clone(),
@@ -233,8 +267,8 @@ pub fn evaluate_event_schedule(
     }
 
     let mut next_sequence = watch.first_sequence;
-    let mut seen_ids: BTreeMap<String, (u64, String)> = BTreeMap::new();
-    let mut seen_sequences: BTreeMap<u64, (String, String)> = BTreeMap::new();
+    let mut seen_ids: BTreeMap<String, EventIdentity> = BTreeMap::new();
+    let mut seen_sequences: BTreeMap<u64, EventIdentity> = BTreeMap::new();
     let mut incident_wake_index: BTreeMap<String, usize> = BTreeMap::new();
     let mut seen_incidents = BTreeSet::new();
     let mut previous_processed_tick = None;
@@ -307,12 +341,9 @@ pub fn evaluate_event_schedule(
             break;
         }
 
-        if let Some((previous_sequence, previous_digest)) =
-            seen_ids.get(&envelope.event_id)
-        {
-            if *previous_sequence == envelope.sequence
-                && previous_digest == &scheduled.payload_digest
-            {
+        let identity = EventIdentity::from(scheduled);
+        if let Some(previous_identity) = seen_ids.get(&envelope.event_id) {
+            if previous_identity == &identity {
                 result.metrics.duplicate_deliveries += 1;
                 result.records.push(record_for(
                     scheduled,
@@ -331,10 +362,8 @@ pub fn evaluate_event_schedule(
             break;
         }
 
-        if let Some((previous_id, previous_digest)) =
-            seen_sequences.get(&envelope.sequence)
-        {
-            if previous_id != &envelope.event_id || previous_digest != &scheduled.payload_digest {
+        if let Some(previous_identity) = seen_sequences.get(&envelope.sequence) {
+            if previous_identity != &identity {
                 result.metrics.sequence_collisions += 1;
                 result.records.push(record_for(
                     scheduled,
@@ -370,14 +399,8 @@ pub fn evaluate_event_schedule(
             break;
         }
 
-        seen_ids.insert(
-            envelope.event_id.clone(),
-            (envelope.sequence, scheduled.payload_digest.clone()),
-        );
-        seen_sequences.insert(
-            envelope.sequence,
-            (envelope.event_id.clone(), scheduled.payload_digest.clone()),
-        );
+        seen_ids.insert(envelope.event_id.clone(), identity.clone());
+        seen_sequences.insert(envelope.sequence, identity);
         next_sequence = next_sequence.saturating_add(1);
         result.metrics.processed_source_events += 1;
 
@@ -432,8 +455,9 @@ pub fn evaluate_event_schedule(
             continue;
         }
 
-        result.metrics.distinct_incidents +=
-            usize::from(seen_incidents.insert(scheduled.incident_id.clone()));
+        if seen_incidents.insert(scheduled.incident_id.clone()) {
+            result.metrics.distinct_incidents += 1;
+        }
 
         if let Some(wake_index) = incident_wake_index.get(&scheduled.incident_id).copied() {
             result.wakes[wake_index]
