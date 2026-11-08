@@ -351,9 +351,10 @@ pub fn evaluate_event_schedule(
                 continue;
             }
             result.metrics.identity_collisions += 1;
-            result
-                .records
-                .push(record_for(scheduled, EventRecordDisposition::EventIdentityCollision));
+            result.records.push(record_for(
+                scheduled,
+                EventRecordDisposition::EventIdentityCollision,
+            ));
             result.status = EventScheduleStatus::EventIdentityCollision;
             terminal_stop = true;
             result.metrics.unprocessed_events = events.len() - index - 1;
@@ -457,17 +458,19 @@ pub fn evaluate_event_schedule(
                 .event_ids
                 .push(envelope.event_id.clone());
             result.metrics.coalesced_events += 1;
-            result
-                .records
-                .push(record_for(scheduled, EventRecordDisposition::CoalescedSameIncident));
+            result.records.push(record_for(
+                scheduled,
+                EventRecordDisposition::CoalescedSameIncident,
+            ));
             continue;
         }
 
         if result.metrics.wakeups >= watch.max_wakeups as usize {
             result.metrics.wake_budget_exhaustions += 1;
-            result
-                .records
-                .push(record_for(scheduled, EventRecordDisposition::WakeBudgetExhausted));
+            result.records.push(record_for(
+                scheduled,
+                EventRecordDisposition::WakeBudgetExhausted,
+            ));
             result.status = EventScheduleStatus::WakeBudgetExhausted;
             terminal_stop = true;
             result.metrics.unprocessed_events = events.len() - index - 1;
@@ -487,10 +490,9 @@ pub fn evaluate_event_schedule(
         incident_wake_index.insert(scheduled.incident_id.clone(), result.wakes.len());
         result.wakes.push(wake);
         result.metrics.wakeups += 1;
-        result.records.push(record_for(
-            scheduled,
-            EventRecordDisposition::Woke,
-        ));
+        result
+            .records
+            .push(record_for(scheduled, EventRecordDisposition::Woke));
         if result.status != EventScheduleStatus::DeadlineMissed {
             result.status = EventScheduleStatus::Completed;
         }
@@ -661,14 +663,14 @@ mod tests {
     #[test]
     fn ephemeral_event_is_not_lost_when_condition_clears_before_processing() {
         let mut event = scheduled(
-                1,
-                "ephemeral-1",
-                "incident-ephemeral",
-                4,
-                5,
-                7,
-                EventPersistence::Ephemeral,
-                true,
+            1,
+            "ephemeral-1",
+            "incident-ephemeral",
+            4,
+            5,
+            7,
+            EventPersistence::Ephemeral,
+            true,
             );
         event.condition_cleared_at_tick = Some(6);
         let result = evaluate(&[event], &watch(), &authority());
@@ -680,14 +682,14 @@ mod tests {
     #[test]
     fn event_outside_detection_deadline_is_recorded_and_not_woken() {
         let event = scheduled(
-                1,
-                "late-1",
-                "incident-late",
-                3,
-                7,
-                10,
-                EventPersistence::Ephemeral,
-                true,
+            1,
+            "late-1",
+            "incident-late",
+            3,
+            7,
+            10,
+            EventPersistence::Ephemeral,
+            true,
             );
         let result = evaluate(&[event], &watch(), &authority());
         assert_eq!(result.status, EventScheduleStatus::DeadlineMissed);
@@ -702,14 +704,14 @@ mod tests {
     #[test]
     fn exact_duplicate_delivery_is_suppressed_without_second_wake() {
         let original = scheduled(
-                1,
-                "event-1",
-                "incident-a",
-                4,
-                5,
-                5,
-                EventPersistence::Persistent,
-                true,
+            1,
+            "event-1",
+            "incident-a",
+            4,
+            5,
+            5,
+            EventPersistence::Persistent,
+            true,
             );
         let mut duplicate = original.clone();
         duplicate.processed_at_tick = 6;
@@ -722,17 +724,42 @@ mod tests {
         );
     }
 
+
+    #[test]
+    fn duplicate_replay_with_new_delivery_time_is_still_same_event_identity() {
+        let original = scheduled(
+            1,
+            "event-1",
+            "incident-a",
+            4,
+            5,
+            5,
+            EventPersistence::Persistent,
+            true,
+        );
+        let mut replay = original.clone();
+        replay.envelope.delivered_at_tick = 6;
+        replay.processed_at_tick = 7;
+        let result = evaluate(&[original, replay], &watch(), &authority());
+        assert_eq!(result.metrics.duplicate_deliveries, 1);
+        assert_eq!(result.metrics.wakeups, 1);
+        assert_eq!(
+            result.records[1].disposition,
+            EventRecordDisposition::DuplicateSuppressed
+        );
+    }
+
     #[test]
     fn same_event_id_and_sequence_with_different_payload_digest_is_collision() {
         let first = scheduled(
-                1,
-                "event-one",
-                "incident-a",
-                4,
-                5,
-                5,
-                EventPersistence::Persistent,
-                true,
+            1,
+            "event-one",
+            "incident-a",
+            4,
+            5,
+            5,
+            EventPersistence::Persistent,
+            true,
             );
         let mut changed = first.clone();
         changed.payload_digest = format!("sha256:{:064x}", 99);
@@ -746,24 +773,24 @@ mod tests {
     #[test]
     fn late_event_does_not_erase_miss_when_later_event_wakes() {
         let late = scheduled(
-                1,
-                "late-1",
-                "incident-late",
-                3,
-                7,
-                10,
-                EventPersistence::Ephemeral,
-                true,
+            1,
+            "late-1",
+            "incident-late",
+            3,
+            7,
+            10,
+            EventPersistence::Ephemeral,
+            true,
             );
         let timely = scheduled(
-                2,
-                "timely-2",
-                "incident-timely",
-                12,
-                12,
-                13,
-                EventPersistence::Persistent,
-                true,
+            2,
+            "timely-2",
+            "incident-timely",
+            12,
+            12,
+            13,
+            EventPersistence::Persistent,
+            true,
             );
         let result = evaluate(&[late, timely], &watch(), &authority());
         assert_eq!(result.status, EventScheduleStatus::DeadlineMissed);
@@ -775,24 +802,24 @@ mod tests {
     #[test]
     fn same_event_id_with_different_sequence_is_identity_collision() {
         let first = scheduled(
-                1,
-                "event-reused",
-                "incident-a",
-                4,
-                5,
-                5,
-                EventPersistence::Persistent,
-                true,
+            1,
+            "event-reused",
+            "incident-a",
+            4,
+            5,
+            5,
+            EventPersistence::Persistent,
+            true,
             );
         let second = scheduled(
-                2,
-                "event-reused",
-                "incident-b",
-                6,
-                6,
-                7,
-                EventPersistence::Persistent,
-                true,
+            2,
+            "event-reused",
+            "incident-b",
+            6,
+            6,
+            7,
+            EventPersistence::Persistent,
+            true,
             );
         let result = evaluate(&[first, second], &watch(), &authority());
         assert_eq!(result.status, EventScheduleStatus::EventIdentityCollision);
@@ -804,24 +831,24 @@ mod tests {
     #[test]
     fn same_sequence_with_different_event_id_is_sequence_collision() {
         let first = scheduled(
-                1,
-                "event-one",
-                "incident-a",
-                4,
-                5,
-                5,
-                EventPersistence::Persistent,
-                true,
+            1,
+            "event-one",
+            "incident-a",
+            4,
+            5,
+            5,
+            EventPersistence::Persistent,
+            true,
             );
         let second = scheduled(
-                1,
-                "event-two",
-                "incident-b",
-                6,
-                6,
-                7,
-                EventPersistence::Persistent,
-                true,
+            1,
+            "event-two",
+            "incident-b",
+            6,
+            6,
+            7,
+            EventPersistence::Persistent,
+            true,
             );
         let result = evaluate(&[first, second], &watch(), &authority());
         assert_eq!(result.status, EventScheduleStatus::SequenceCollision);
@@ -832,34 +859,34 @@ mod tests {
     #[test]
     fn sequence_gap_stops_schedule_and_preserves_unprocessed_count() {
         let first = scheduled(
-                1,
-                "event-one",
-                "incident-a",
-                4,
-                5,
-                5,
-                EventPersistence::Persistent,
-                true,
+            1,
+            "event-one",
+            "incident-a",
+            4,
+            5,
+            5,
+            EventPersistence::Persistent,
+            true,
             );
         let third = scheduled(
-                3,
-                "event-three",
-                "incident-b",
-                6,
-                7,
-                7,
-                EventPersistence::Persistent,
-                true,
+            3,
+            "event-three",
+            "incident-b",
+            6,
+            7,
+            7,
+            EventPersistence::Persistent,
+            true,
             );
         let fourth = scheduled(
-                4,
-                "event-four",
-                "incident-c",
-                8,
-                9,
-                9,
-                EventPersistence::Persistent,
-                true,
+            4,
+            "event-four",
+            "incident-c",
+            8,
+            9,
+            9,
+            EventPersistence::Persistent,
+            true,
             );
         let result = evaluate(&[first, third, fourth], &watch(), &authority());
         assert_eq!(result.status, EventScheduleStatus::DeliveryGap);
@@ -871,24 +898,24 @@ mod tests {
     #[test]
     fn out_of_order_old_sequence_is_not_credited_as_duplicate() {
         let first = scheduled(
-                2,
-                "event-two",
-                "incident-a",
-                4,
-                5,
-                5,
-                EventPersistence::Persistent,
-                true,
+            2,
+            "event-two",
+            "incident-a",
+            4,
+            5,
+            5,
+            EventPersistence::Persistent,
+            true,
             );
         let second = scheduled(
-                1,
-                "event-one",
-                "incident-b",
-                6,
-                6,
-                7,
-                EventPersistence::Persistent,
-                true,
+            1,
+            "event-one",
+            "incident-b",
+            6,
+            6,
+            7,
+            EventPersistence::Persistent,
+            true,
             );
         let mut changed_watch = watch();
         changed_watch.first_sequence = 2;
@@ -900,19 +927,22 @@ mod tests {
     #[test]
     fn dormant_revocation_prevents_event_wake() {
         let event = scheduled(
-                1,
-                "event-1",
-                "incident-a",
-                4,
-                5,
-                8,
-                EventPersistence::Persistent,
-                true,
+            1,
+            "event-1",
+            "incident-a",
+            4,
+            5,
+            8,
+            EventPersistence::Persistent,
+            true,
             );
         let mut revoked = authority();
         revoked.revoked_at_tick = Some(7);
         let result = evaluate(&[event], &watch(), &revoked);
-        assert_eq!(result.status, EventScheduleStatus::AuthorityRevokedOrExpired);
+        assert_eq!(
+            result.status,
+            EventScheduleStatus::AuthorityRevokedOrExpired
+        );
         assert_eq!(result.metrics.authority_denials, 1);
         assert_eq!(result.metrics.wakeups, 0);
     }
@@ -920,14 +950,14 @@ mod tests {
     #[test]
     fn persistent_condition_existing_before_watch_activation_can_wake_if_still_active() {
         let mut event = scheduled(
-                1,
-                "existing-1",
-                "incident-existing",
-                1,
-                2,
-                3,
-                EventPersistence::Persistent,
-                true,
+            1,
+            "existing-1",
+            "incident-existing",
+            1,
+            2,
+            3,
+            EventPersistence::Persistent,
+            true,
             );
         event.condition_cleared_at_tick = Some(6);
         let result = evaluate(&[event], &watch(), &authority());
@@ -938,43 +968,46 @@ mod tests {
     #[test]
     fn persistent_condition_cleared_before_processing_does_not_wake_from_pre_watch_history() {
         let mut event = scheduled(
-                1,
-                "existing-1",
-                "incident-existing",
-                1,
-                2,
-                7,
-                EventPersistence::Persistent,
-                true,
+            1,
+            "existing-1",
+            "incident-existing",
+            1,
+            2,
+            7,
+            EventPersistence::Persistent,
+            true,
             );
         event.condition_cleared_at_tick = Some(6);
         let result = evaluate(&[event], &watch(), &authority());
         assert_eq!(result.metrics.wakeups, 0);
-        assert_eq!(result.records[0].disposition, EventRecordDisposition::NotInWatchWindow);
+        assert_eq!(
+            result.records[0].disposition,
+            EventRecordDisposition::NotInWatchWindow
+        );
     }
 
     #[test]
     fn watch_wakeup_budget_exhaustion_is_explicit() {
         let events = [
             scheduled(
-                1,
-                "event-1",
-                "incident-a",
-                4,
-                5,
-                5,
-                EventPersistence::Persistent,
-                true,
+            1,
+            "event-1",
+            "incident-a",
+            4,
+            5,
+            5,
+            EventPersistence::Persistent,
+            true,
             ),
             scheduled(
-                2,
-                "event-2",
-                "incident-b",
-                6,
-                6,
-                7,
-                EventPersistence::Persistent,
-                true,
+            2,
+            "event-2",
+            "incident-b",
+            6,
+            6,
+            7,
+            EventPersistence::Persistent,
+            true,
             ),
         ];
         let mut bounded = watch();
@@ -988,25 +1021,25 @@ mod tests {
     #[test]
     fn wrong_tenant_event_consumes_source_cursor_but_never_wakes() {
         let mut wrong_scope = scheduled(
-                1,
-                "wrong-tenant",
-                "incident-a",
-                4,
-                5,
-                5,
-                EventPersistence::Persistent,
-                true,
+            1,
+            "wrong-tenant",
+            "incident-a",
+            4,
+            5,
+            5,
+            EventPersistence::Persistent,
+            true,
             );
         wrong_scope.envelope.tenant_id = "tenant-b".into();
         let next = scheduled(
-                2,
-                "event-2",
-                "incident-b",
-                6,
-                7,
-                7,
-                EventPersistence::Persistent,
-                true,
+            2,
+            "event-2",
+            "incident-b",
+            6,
+            7,
+            7,
+            EventPersistence::Persistent,
+            true,
             );
         let result = evaluate(&[wrong_scope, next], &watch(), &authority());
         assert_eq!(result.metrics.rejected_scope_events, 1);
@@ -1017,14 +1050,14 @@ mod tests {
     #[test]
     fn missing_payload_digest_is_rejected() {
         let mut event = scheduled(
-                1,
-                "event-1",
-                "incident-a",
-                4,
-                5,
-                5,
-                EventPersistence::Persistent,
-                true,
+            1,
+            "event-1",
+            "incident-a",
+            4,
+            5,
+            5,
+            EventPersistence::Persistent,
+            true,
             );
         event.payload_digest.clear();
         assert_eq!(
@@ -1036,24 +1069,24 @@ mod tests {
     #[test]
     fn event_processing_time_regression_is_rejected() {
         let first = scheduled(
-                1,
-                "event-1",
-                "incident-a",
-                4,
-                5,
-                7,
-                EventPersistence::Persistent,
-                true,
+            1,
+            "event-1",
+            "incident-a",
+            4,
+            5,
+            7,
+            EventPersistence::Persistent,
+            true,
             );
         let second = scheduled(
-                2,
-                "event-2",
-                "incident-b",
-                6,
-                7,
-                6,
-                EventPersistence::Persistent,
-                true,
+            2,
+            "event-2",
+            "incident-b",
+            6,
+            7,
+            6,
+            EventPersistence::Persistent,
+            true,
             );
         assert_eq!(
             evaluate_event_schedule(&watch(), &authority(), &config(), &[first, second], 20),
