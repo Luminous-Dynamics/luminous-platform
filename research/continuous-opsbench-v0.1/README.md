@@ -229,3 +229,12 @@ Every arm preserves the same evidence-ID universe; Unknown, Absent and Present r
 Every packet/result is bound to the same paired block, attempt, scenario revision, model snapshot, prompt, permission profile, tool catalogue, scorer, reasoning effort and sampling seed. The caller supplies a preregistered arm order so it can randomize/counterbalance order across blocks. A fresh reasoner conversation/session is required for each arm. All arms share the same byte/token/output/tool/wall-time budgets; an over-budget arm remains in the denominator with BudgetExceeded instead of disappearing. The byte/4 token figure is a preflight estimate only; the model adapter's measured token usage is recorded separately.
 
 **Claim ceiling:** this is an offline paired-experiment harness with scripted test reasoners. It does not call a live model, implement the actual Kubernetes/Radar/Xenia tool gateways, establish SREGym results, or prove context-arm superiority. Confirmatory work still requires a pinned model/provider snapshot, prompt/effort/permissions/tool schemas, native SREGym revision and grader, randomized paired fault/seed blocks, multiple attempts, and separate native versus Luminous assurance scoring. Wall-time budget is measured and scored after the adapter returns; hard cancellation must be implemented by the external model adapter.
+
+
+### Paired context-ablation analysis and denominator discipline
+
+`analyze_paired_context_results` groups records by fault family, scenario, paired block and attempt. It requires exactly one row for every one of the five arms and an identical scenario/model/prompt/permission/tool/scorer/effort/seed manifest within each block. Duplicate arms, incomplete blocks and changed manifests fail rather than being silently dropped.
+
+The analyzer reports, per fault family and arm: paired-block count, scored count, budget-exceeded count, correct-root and grounded-root counts, correctness/grounding over **all** paired blocks, conditional correctness/grounding among scored blocks, context bytes, estimated tokens, measured input tokens and reasoner time. Contrasts against raw-source context report all-block deltas alongside conditional deltas only where both arms scored, plus pair coverage and token/time differences. This preserves the distinction between better quality, better coverage and simply dropping hard/over-budget examples.
+
+These are analysis primitives, not observed results. The fixture reasoner is scripted; competitive results require the pinned live model and native benchmark protocol described in #318.
