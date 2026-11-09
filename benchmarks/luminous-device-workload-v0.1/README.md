@@ -328,3 +328,5 @@ The evaluator is an independent implementation of expected fixture dispositions,
 
 
 The fixture includes DWF-001-22: peer placement abstains when the transfer ceiling is unknown. Missing is not unlimited.
+
+The fixture also keeps DWF-001-06 isolated: the peer has `data:public` but not `compute:execute:read-only`, so the scenario tests only the missing execution scope.

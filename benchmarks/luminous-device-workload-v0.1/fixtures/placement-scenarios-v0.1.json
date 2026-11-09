@@ -1059,7 +1059,8 @@
           "session": {
             "status": "authenticated",
             "scopes": [
-              "view:telemetry"
+              "view:telemetry",
+              "data:public"
             ]
           },
           "authorization": {
