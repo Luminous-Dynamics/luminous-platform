@@ -1,0 +1,100 @@
+{
+  "schema": "sregym-native-oracle-contract-v0.1",
+  "source_repository": "SREGym/SREGym",
+  "source_commit_sha": "ce73adf2c9212b4804793cbbabbfbb33eccd0f0f",
+  "orchestrator_path": "sregym/conductor/conductor.py",
+  "orchestrator_blob_sha": "4efcfbaf7219a8e0b55028632b7771684e90f7d6",
+  "problem_registry_path": "sregym/conductor/problems/registry.py",
+  "problem_registry_blob_sha": "3ff155517a8e1982cdce44ec69677feee2d0aee6",
+  "files": [
+    {
+      "role": "conductor",
+      "path": "sregym/conductor/conductor.py",
+      "git_blob_sha": "4efcfbaf7219a8e0b55028632b7771684e90f7d6"
+    },
+    {
+      "role": "conductor_api",
+      "path": "sregym/conductor/conductor_api.py",
+      "git_blob_sha": "f87095eb339bd29e2aa3d495f5d8e2171bdc85ed"
+    },
+    {
+      "role": "problem_registry",
+      "path": "sregym/conductor/problems/registry.py",
+      "git_blob_sha": "3ff155517a8e1982cdce44ec69677feee2d0aee6"
+    },
+    {
+      "role": "diagnosis_oracle",
+      "path": "sregym/conductor/oracles/diagnosis_oracle.py",
+      "git_blob_sha": "5482b29493152245904c5349b644eea0961b41f4"
+    },
+    {
+      "role": "llm_judge_oracle",
+      "path": "sregym/conductor/oracles/llm_as_a_judge/llm_as_a_judge_oracle.py",
+      "git_blob_sha": "a6a09cb33ea3fbd6049c63b5637bb5757bca52ed"
+    },
+    {
+      "role": "llm_judge_engine",
+      "path": "sregym/conductor/oracles/llm_as_a_judge/judge.py",
+      "git_blob_sha": "cb50272b2abdf31109af4a4c6af684f5a8d7b6fd"
+    },
+    {
+      "role": "llm_judge_checklist",
+      "path": "sregym/conductor/oracles/llm_as_a_judge/rca_checklists.yaml",
+      "git_blob_sha": "239c43b94c0ba58263c0193b4b3634b30fb6d726"
+    },
+    {
+      "role": "mitigation_oracle",
+      "path": "sregym/conductor/oracles/mitigation.py",
+      "git_blob_sha": "20d4bf9215fd933ca726b88f11bf0cc739e053bb"
+    },
+    {
+      "role": "alert_oracle",
+      "path": "sregym/conductor/oracles/alert_oracle.py",
+      "git_blob_sha": "2439d327b861218eb8041cb3e92ba68fb4321f06"
+    },
+    {
+      "role": "sustained_readiness_oracle",
+      "path": "sregym/conductor/oracles/sustained_readiness.py",
+      "git_blob_sha": "a3bc4f069fbb936fdf6a514a72d74bb6736185bb"
+    },
+    {
+      "role": "kafka_fault_definition",
+      "path": "sregym/conductor/problems/kafka_queue_problems.py",
+      "git_blob_sha": "f0e6fcfd584eb2752c9bcf023860f7219a795fe0"
+    },
+    {
+      "role": "kubelet_fault_definition",
+      "path": "sregym/conductor/problems/kubelet_crash.py",
+      "git_blob_sha": "6f103550aaf3378ae0cfa7109678fc0e33737ec4"
+    }
+  ],
+  "observed_failure_semantics": {
+    "judge_backend_unavailable": "null_verdict_success_unknown",
+    "judge_checklist_parse_exhausted": "default_all_answers_no_low_confidence",
+    "diagnosis_checkpoint_instability": "warning_only_score_current_expectation",
+    "prometheus_query_failure": "empty_firing_list_can_pass_sustained_silence",
+    "alert_oracle_window": "buffer_30s_poll_10s_for_120s_query_timeout_15s",
+    "generic_mitigation_rollout_timeout": "wait_60s_then_evaluate_current_pod_container_state"
+  },
+  "representative_problem_oracle_bindings": [
+    {
+      "problem_id": "kafka_queue_problems",
+      "diagnosis_oracle": "LLMAsAJudgeOracle",
+      "mitigation_oracle": "AlertOracle",
+      "problem_source_path": "sregym/conductor/problems/kafka_queue_problems.py",
+      "problem_source_blob_sha": "f0e6fcfd584eb2752c9bcf023860f7219a795fe0"
+    },
+    {
+      "problem_id": "kubelet_crash",
+      "diagnosis_oracle": "LLMAsAJudgeOracle",
+      "mitigation_oracle": "AlertOracle",
+      "problem_source_path": "sregym/conductor/problems/kubelet_crash.py",
+      "problem_source_blob_sha": "6f103550aaf3378ae0cfa7109678fc0e33737ec4"
+    }
+  ],
+  "claim_ceiling": [
+    "This file records code identities and behavior observed at the exact pinned SREGym candidate commit; it is not proof that this revision powered historical leaderboard runs.",
+    "The native SREGym score must retain the pinned native behavior, including oracle failure semantics.",
+    "A separate Luminous supplemental oracle-availability and evidence-reliability report must identify native fail-open or unknown conditions without rewriting the native diagnosis, mitigation, or E2E score."
+  ]
+}
