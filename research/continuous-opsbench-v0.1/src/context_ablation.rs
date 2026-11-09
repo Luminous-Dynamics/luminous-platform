@@ -614,6 +614,12 @@ fn ranked_candidates(
             relation.from_object == input.target_object_ref
                 && relation.to_object == object_ref
                 && relation.state == EvidenceState::Present
+                && relation.observed_at_ms <= input.audited_at_ms
+                && input.audited_at_ms.saturating_sub(relation.observed_at_ms)
+                    <= input.maximum_evidence_age_ms
+                && temporal_by_id
+                    .get(relation.evidence_id.as_str())
+                    .is_some_and(|view| view.freshness == Freshness::Current)
         });
         if dependency_of_target {
             score += 25;
@@ -643,6 +649,7 @@ fn ranked_candidates(
         }
         let recent_change = records.iter().any(|item| {
             item.object_kind == EvidenceKind::Change
+                && item.state == EvidenceState::Present
                 && temporal_by_id
                     .get(item.evidence_id.as_str())
                     .is_some_and(|view| view.freshness == Freshness::Current)
@@ -900,9 +907,11 @@ fn score_answer(
             .collect(),
     };
     let mut claimed = BTreeSet::new();
+    let mut claim_count = 0_usize;
     let mut supported = BTreeSet::new();
     let mut unsupported = 0_usize;
     for evidence_id in &answer.supporting_evidence_ids {
+        claim_count += 1;
         if !claimed.insert(evidence_id.as_str()) {
             unsupported += 1;
             continue;
@@ -915,10 +924,10 @@ fn score_answer(
         }
     }
 
-    let precision = if claimed.is_empty() {
+    let precision = if claim_count == 0 {
         0
     } else {
-        ((supported.len() as u64 * 1_000_000) / claimed.len() as u64) as u32
+        ((supported.len() as u64 * 1_000_000) / claim_count as u64) as u32
     };
     let required_visible = truth
         .required_evidence_ids
@@ -935,10 +944,13 @@ fn score_answer(
             / truth.required_evidence_ids.len() as u64) as u32
     };
 
-    let root_object_visible = answer
-        .root_object_ref
-        .as_deref()
-        .is_some_and(|root| object_by_id.values().any(|object_ref| *object_ref == root));
+    let root_object_visible = answer.root_object_ref.as_deref().is_some_and(|root| {
+        object_by_id.values().any(|object_ref| *object_ref == root)
+            || packet
+                .relations
+                .iter()
+                .any(|relation| relation.from_object == root || relation.to_object == root)
+    });
     let root_object_grounded = answer.root_object_ref.as_deref().is_some_and(|root| {
         supported.iter().any(|evidence_id| {
             object_by_id
@@ -2771,6 +2783,66 @@ mod tests {
             compile_context_packet(&bad_block, ContextArm::RawSourceRecords),
             Err(ContextExperimentError::EmptyPairedBlockId)
         );
+    }
+
+    #[test]
+    fn duplicate_citations_reduce_support_precision_and_count_as_unsupported() {
+        let packet =
+            compile_context_packet(&input(), ContextArm::NormalizedRecords).unwrap().0;
+        let answer = DiagnosisAnswer {
+            root_object_ref: Some("payments-config".into()),
+            supporting_evidence_ids: vec!["ev-change".into(), "ev-change".into()],
+            alternative_object_refs: Vec::new(),
+            abstained: false,
+        };
+        let score = score_answer(&packet, &truth(), &answer);
+        assert_eq!(score.supported_evidence_precision_ppm, 500_000);
+        assert_eq!(score.unsupported_evidence_claims, 1);
+        assert!(score.root_object_grounded);
+    }
+
+    #[test]
+    fn topology_relation_can_make_a_root_object_visible_without_direct_record() {
+        let mut input = input();
+        input.relations[0].to_object = "database-9".into();
+        let packet =
+            compile_context_packet(&input, ContextArm::TopologyAndDiffs).unwrap().0;
+        let truth = ContextGroundTruth {
+            correct_root_object_ref: "database-9".into(),
+            required_evidence_ids: ["ev-change".to_owned()].into_iter().collect(),
+        };
+        let answer = DiagnosisAnswer {
+            root_object_ref: Some("database-9".into()),
+            supporting_evidence_ids: vec!["ev-change".into()],
+            alternative_object_refs: Vec::new(),
+            abstained: false,
+        };
+        let score = score_answer(&packet, &truth, &answer);
+        assert!(score.root_cause_correct);
+        assert!(score.root_object_visible);
+        assert!(score.root_object_grounded);
+    }
+
+    #[test]
+    fn stale_future_or_unknown_topology_cannot_boost_ranked_dependencies() {
+        let mut input = input();
+        input.relations[0].observed_at_ms = 500;
+        let (packet, _) = compile_context_packet(&input, ContextArm::RankedCausalEvidence).unwrap();
+        let payments = packet
+            .ranked_candidates
+            .iter()
+            .find(|candidate| candidate.object_ref == "payments-config")
+            .unwrap();
+        assert!(!payments.reason_codes.contains(&CandidateReason::DependencyOfTarget));
+
+        input.relations[0].observed_at_ms = 1_100;
+        let (future, _) = compile_context_packet(&input, ContextArm::RankedCausalEvidence).unwrap();
+        let payments = future
+            .ranked_candidates
+            .iter()
+            .find(|candidate| candidate.object_ref == "payments-config")
+            .unwrap();
+        assert!(!payments.reason_codes.contains(&CandidateReason::DependencyOfTarget));
     }
 
     #[test]
