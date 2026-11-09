@@ -347,19 +347,27 @@ fn validate_structure(input: &AssuranceCaseInput) -> Vec<String> {
             errors.push(format!("node_{}_kind_data_mismatch", node.id));
         }
     }
+
     let Some(root) = nodes.get(input.root_claim_id.as_str()) else {
         errors.push("root_claim_missing".to_owned());
         return sort_unique(errors);
     };
     if root.kind != NodeKind::Claim {
         errors.push("root_node_is_not_claim".to_owned());
-    } else if root.claim.as_ref().is_some_and(|spec| {
-        spec.decision_scope != input.decision_scope
-    }) {
+    } else if root
+        .claim
+        .as_ref()
+        .is_some_and(|spec| spec.decision_scope != input.decision_scope)
+    {
         errors.push("root_claim_scope_mismatch".to_owned());
     }
 
+    // Build edge indexes once. Structural checks below are O(E log E + V + E)
+    // for ordinary bounded fan-out rather than repeatedly scanning all edges.
     let mut edge_ids = BTreeSet::new();
+    let mut edges_from: BTreeMap<&str, Vec<&CaseEdge>> = BTreeMap::new();
+    let mut edges_to: BTreeMap<&str, Vec<&CaseEdge>> = BTreeMap::new();
+
     for edge in &input.edges {
         if edge.id.trim().is_empty() || !edge_ids.insert(edge.id.as_str()) {
             errors.push("empty_or_duplicate_edge_id".to_owned());
@@ -374,9 +382,20 @@ fn validate_structure(input: &AssuranceCaseInput) -> Vec<String> {
         if !edge_types_valid(edge.kind, from.kind, to.kind) {
             errors.push(format!("edge_{}_endpoint_type_invalid", edge.id));
         }
+        edges_from.entry(edge.from.as_str()).or_default().push(edge);
+        edges_to.entry(edge.to.as_str()).or_default().push(edge);
     }
 
     for node in &input.nodes {
+        let outgoing = edges_from
+            .get(node.id.as_str())
+            .map(Vec::as_slice)
+            .unwrap_or(&[]);
+        let incoming = edges_to
+            .get(node.id.as_str())
+            .map(Vec::as_slice)
+            .unwrap_or(&[]);
+
         match node.kind {
             NodeKind::Claim => {
                 if let Some(spec) = &node.claim {
@@ -395,65 +414,74 @@ fn validate_structure(input: &AssuranceCaseInput) -> Vec<String> {
                         && spec.required_subclaim_ids.is_empty()
                         && spec.required_argument_ids.is_empty()
                     {
-                        errors.push(format!("claim_{}_has_no_evidence_or_subclaim_obligation", node.id));
+                        errors.push(format!(
+                            "claim_{}_has_no_evidence_or_subclaim_obligation",
+                            node.id
+                        ));
                     }
                     for evidence_id in &spec.required_evidence_ids {
                         if !has_node_kind(&nodes, evidence_id, NodeKind::Evidence)
-                            || !has_edge(&input.edges, EdgeKind::Supports, evidence_id, &node.id)
+                            || !edges_from.get(evidence_id.as_str()).is_some_and(|edges| {
+                                edges.iter().any(|edge| {
+                                    edge.kind == EdgeKind::Supports && edge.to == node.id
+                                })
+                            })
                         {
                             errors.push(format!("claim_{}_required_evidence_unbound", node.id));
                         }
                     }
                     for subclaim_id in &spec.required_subclaim_ids {
                         if !has_node_kind(&nodes, subclaim_id, NodeKind::Claim)
-                            || !has_edge(
-                                &input.edges,
-                                EdgeKind::DecomposesInto,
-                                &node.id,
-                                subclaim_id,
-                            )
+                            || !outgoing.iter().any(|edge| {
+                                edge.kind == EdgeKind::DecomposesInto && edge.to == *subclaim_id
+                            })
                         {
                             errors.push(format!("claim_{}_required_subclaim_unbound", node.id));
                         }
                     }
                     for argument_id in &spec.required_argument_ids {
                         if !has_node_kind(&nodes, argument_id, NodeKind::Argument)
-                            || !has_edge(
-                                &input.edges,
-                                EdgeKind::Supports,
-                                argument_id,
-                                &node.id,
-                            )
+                            || !edges_from.get(argument_id.as_str()).is_some_and(|edges| {
+                                edges.iter().any(|edge| {
+                                    edge.kind == EdgeKind::Supports && edge.to == node.id
+                                })
+                            })
                         {
                             errors.push(format!("claim_{}_required_argument_unbound", node.id));
                         }
                     }
-                    if !input.edges.iter().any(|edge| {
+                    if !incoming.iter().any(|edge| {
                         edge.kind == EdgeKind::Contextualizes
-                            && edge.to == node.id
-                            && nodes.get(edge.from.as_str()).is_some_and(|n| n.kind == NodeKind::Context)
+                            && nodes
+                                .get(edge.from.as_str())
+                                .is_some_and(|context| context.kind == NodeKind::Context)
                     }) {
                         errors.push(format!("claim_{}_context_missing", node.id));
                     }
                 }
             }
             NodeKind::Argument => {
-                if node.argument.as_ref().is_none_or(|spec| spec.rationale.trim().is_empty()) {
+                if node
+                    .argument
+                    .as_ref()
+                    .is_none_or(|spec| spec.rationale.trim().is_empty())
+                {
                     errors.push(format!("argument_{}_rationale_empty", node.id));
                 }
-                let has_claim_support = input.edges.iter().any(|edge| {
+                let has_claim_support = outgoing.iter().any(|edge| {
                     edge.kind == EdgeKind::Supports
-                        && edge.from == node.id
-                        && nodes.get(edge.to.as_str()).is_some_and(|n| n.kind == NodeKind::Claim)
+                        && nodes
+                            .get(edge.to.as_str())
+                            .is_some_and(|target| target.kind == NodeKind::Claim)
                 });
-                let has_evidence_support = input.edges.iter().any(|edge| {
+                let has_evidence_support = incoming.iter().any(|edge| {
                     edge.kind == EdgeKind::Supports
-                        && edge.to == node.id
-                        && nodes.get(edge.from.as_str()).is_some_and(|n| n.kind == NodeKind::Evidence)
+                        && nodes
+                            .get(edge.from.as_str())
+                            .is_some_and(|source| source.kind == NodeKind::Evidence)
                 });
-                let required_by_parent_claim = input.edges.iter().any(|edge| {
+                let required_by_parent_claim = outgoing.iter().any(|edge| {
                     edge.kind == EdgeKind::Supports
-                        && edge.from == node.id
                         && nodes.get(edge.to.as_str()).is_some_and(|target| {
                             target.kind == NodeKind::Claim
                                 && target.claim.as_ref().is_some_and(|claim| {
@@ -462,7 +490,10 @@ fn validate_structure(input: &AssuranceCaseInput) -> Vec<String> {
                         })
                 });
                 if !has_claim_support || !has_evidence_support || !required_by_parent_claim {
-                    errors.push(format!("argument_{}_support_chain_incomplete_or_unrequired", node.id));
+                    errors.push(format!(
+                        "argument_{}_support_chain_incomplete_or_unrequired",
+                        node.id
+                    ));
                 }
             }
             NodeKind::Context => {
@@ -472,22 +503,25 @@ fn validate_structure(input: &AssuranceCaseInput) -> Vec<String> {
                 }) {
                     errors.push(format!("context_{}_scope_or_description_invalid", node.id));
                 }
-                if !input.edges.iter().any(|edge| {
-                    edge.kind == EdgeKind::Contextualizes && edge.from == node.id
-                }) {
+                if !outgoing
+                    .iter()
+                    .any(|edge| edge.kind == EdgeKind::Contextualizes)
+                {
                     errors.push(format!("context_{}_not_attached", node.id));
                 }
             }
             NodeKind::Assumption => {
-                let assumption = node.assumption.as_ref().expect("kind data validated");
-                if !input.edges.iter().any(|edge| {
-                    edge.kind == EdgeKind::Assumes && edge.from == node.id
-                }) {
+                let Some(assumption) = node.assumption.as_ref() else {
+                    continue;
+                };
+                if !outgoing.iter().any(|edge| edge.kind == EdgeKind::Assumes) {
                     errors.push(format!("assumption_{}_not_attached", node.id));
                 }
                 if matches!(
                     assumption.status,
-                    AssumptionStatus::Supported | AssumptionStatus::Bounded | AssumptionStatus::Refuted
+                    AssumptionStatus::Supported
+                        | AssumptionStatus::Bounded
+                        | AssumptionStatus::Refuted
                 ) && assumption.evidence_ids.is_empty()
                 {
                     errors.push(format!("assumption_{}_evidence_required", node.id));
@@ -497,38 +531,41 @@ fn validate_structure(input: &AssuranceCaseInput) -> Vec<String> {
                 }
                 for evidence_id in &assumption.evidence_ids {
                     if !has_node_kind(&nodes, evidence_id, NodeKind::Evidence)
-                        || !has_edge(&input.edges, EdgeKind::Supports, evidence_id, &node.id)
+                        || !edges_from.get(evidence_id.as_str()).is_some_and(|edges| {
+                            edges.iter().any(|edge| {
+                                edge.kind == EdgeKind::Supports && edge.to == node.id
+                            })
+                        })
                     {
                         errors.push(format!("assumption_{}_evidence_unbound", node.id));
                     }
                 }
             }
             NodeKind::Evidence => {
-                if !input.edges.iter().any(|edge| {
-                    edge.kind == EdgeKind::Supports && edge.from == node.id
-                }) {
+                if !outgoing.iter().any(|edge| edge.kind == EdgeKind::Supports) {
                     errors.push(format!("evidence_{}_disconnected", node.id));
                 }
             }
             NodeKind::Defeater => {
-                let defeater = node.defeater.as_ref().expect("kind data validated");
+                let Some(defeater) = node.defeater.as_ref() else {
+                    continue;
+                };
                 if defeater.description.trim().is_empty() {
                     errors.push(format!("defeater_{}_description_empty", node.id));
                 }
                 if defeater.raised_at > input.as_of {
                     errors.push(format!("defeater_{}_raised_after_case_as_of", node.id));
                 }
-                if !input.edges.iter().any(|edge| {
-                    edge.kind == EdgeKind::Defeats && edge.from == node.id
-                }) {
+                if !outgoing.iter().any(|edge| edge.kind == EdgeKind::Defeats) {
                     errors.push(format!("defeater_{}_not_attached", node.id));
                 }
             }
             NodeKind::Rebuttal => {
-                let rebuttal = node.rebuttal.as_ref().expect("kind data validated");
-                let matching = input.edges.iter().any(|edge| {
+                let Some(rebuttal) = node.rebuttal.as_ref() else {
+                    continue;
+                };
+                let matching = outgoing.iter().any(|edge| {
                     edge.kind == EdgeKind::Rebuts
-                        && edge.from == node.id
                         && edge.to == rebuttal.target_defeater_id
                 });
                 if !matching
@@ -540,7 +577,11 @@ fn validate_structure(input: &AssuranceCaseInput) -> Vec<String> {
                 }
                 for evidence_id in &rebuttal.evidence_ids {
                     if !has_node_kind(&nodes, evidence_id, NodeKind::Evidence)
-                        || !has_edge(&input.edges, EdgeKind::Supports, evidence_id, &node.id)
+                        || !edges_from.get(evidence_id.as_str()).is_some_and(|edges| {
+                            edges.iter().any(|edge| {
+                                edge.kind == EdgeKind::Supports && edge.to == node.id
+                            })
+                        })
                     {
                         errors.push(format!("rebuttal_{}_evidence_unbound", node.id));
                     }
