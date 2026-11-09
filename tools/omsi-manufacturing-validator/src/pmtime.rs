@@ -36,7 +36,18 @@ const REQUIRED_VERIFIER_CHECKS: [&str; 5] = [
     "authority-and-claim-ceiling",
 ];
 
-type PreviousRecord<'a> = (u64, u64, u64, &'a str, &'a str, &'a str, &'a str, &'a str, &'a str, &'a str);
+type PreviousRecord<'a> = (
+    u64,
+    u64,
+    u64,
+    &'a str,
+    &'a str,
+    &'a str,
+    &'a str,
+    &'a str,
+    &'a str,
+    &'a str,
+);
 
 const CLAIM_CEILING: &str = "Synthetic PMTime source/record-time integrity and structural composition of declared Mycelix dependency-verification outputs. It does not authenticate upstream reports, prove absolute physical time accuracy, qualify a PTP implementation, or establish service availability.";
 
