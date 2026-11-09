@@ -23,6 +23,13 @@ pub enum EvidenceFreshness {
     Unknown,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EvidenceAvailability {
+    Present,
+    Absent,
+    Unknown,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SourceEvidence {
     pub evidence_id: String,
@@ -30,7 +37,11 @@ pub struct SourceEvidence {
     pub source_id: String,
     /// A declared label used to look up a profile; it is not an independence claim.
     pub control_domain: String,
-    pub freshness: EvidenceFreshness,
+    pub availability: EvidenceAvailability,
+    pub event_tick: u64,
+    pub observed_at_tick: u64,
+    /// Exclusive validity bound. None means the source did not provide one.
+    pub valid_until_tick: Option<u64>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -97,10 +108,38 @@ pub enum CorroborationError {
     EmptyControlDomain,
     DuplicateEvidenceId,
     InvalidProfileBinding,
+    InvalidEvidenceInterval,
 }
 
 fn non_empty(value: &str) -> bool {
     !value.trim().is_empty()
+}
+
+fn classify_freshness(
+    item: &SourceEvidence,
+    audited_at_tick: u64,
+    maximum_evidence_age_ticks: u64,
+) -> EvidenceFreshness {
+    match item.availability {
+        EvidenceAvailability::Absent => EvidenceFreshness::Absent,
+        EvidenceAvailability::Unknown => EvidenceFreshness::Unknown,
+        EvidenceAvailability::Present => {
+            if item.observed_at_tick > audited_at_tick {
+                EvidenceFreshness::FutureDated
+            } else if item
+                .valid_until_tick
+                .is_some_and(|valid_until| valid_until <= audited_at_tick)
+            {
+                EvidenceFreshness::Expired
+            } else if audited_at_tick.saturating_sub(item.observed_at_tick)
+                > maximum_evidence_age_ticks
+            {
+                EvidenceFreshness::Stale
+            } else {
+                EvidenceFreshness::Current
+            }
+        }
+    }
 }
 
 fn validate_evidence(evidence: &[SourceEvidence]) -> Result<(), CorroborationError> {
@@ -120,6 +159,12 @@ fn validate_evidence(evidence: &[SourceEvidence]) -> Result<(), CorroborationErr
         }
         if !identities.insert(item.evidence_id.as_str()) {
             return Err(CorroborationError::DuplicateEvidenceId);
+        }
+        if item
+            .valid_until_tick
+            .is_some_and(|valid_until| valid_until <= item.observed_at_tick)
+        {
+            return Err(CorroborationError::InvalidEvidenceInterval);
         }
     }
     Ok(())
@@ -222,6 +267,7 @@ pub fn evaluate_evidence_corroboration(
     profiles: &BTreeMap<String, ControlDomainProfile>,
     graph: &FailureDomainGraph,
     audited_at_tick: u64,
+    maximum_evidence_age_ticks: u64,
     policy: IndependencePolicy,
 ) -> Result<Vec<CandidateCorroboration>, CorroborationError> {
     validate_evidence(evidence)?;
@@ -250,7 +296,10 @@ pub fn evaluate_evidence_corroboration(
         let current: Vec<_> = records
             .iter()
             .copied()
-            .filter(|item| item.freshness == EvidenceFreshness::Current)
+            .filter(|item| {
+                classify_freshness(item, audited_at_tick, maximum_evidence_age_ticks)
+                    == EvidenceFreshness::Current
+            })
             .collect();
         let current_source_count = current
             .iter()
@@ -372,7 +421,10 @@ mod tests {
             object_ref: object.into(),
             source_id: source.into(),
             control_domain: domain.into(),
-            freshness: EvidenceFreshness::Current,
+            availability: EvidenceAvailability::Present,
+            event_tick: 1,
+            observed_at_tick: 2,
+            valid_until_tick: Some(30),
         }
     }
 
@@ -406,7 +458,7 @@ mod tests {
         .collect();
 
         let rows =
-            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, policy()).unwrap();
+            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, 10, policy()).unwrap();
         assert_eq!(rows[0].declared_source_count, 3);
         assert_eq!(rows[0].declared_control_domain_count, 1);
         assert_eq!(rows[0].current_control_domain_count, 1);
@@ -444,7 +496,7 @@ mod tests {
         .collect();
 
         let rows =
-            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, policy()).unwrap();
+            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, 10, policy()).unwrap();
         assert_eq!(
             rows[0].status,
             CandidateCorroborationStatus::SharedDeclaredDependency
@@ -475,7 +527,7 @@ mod tests {
         .collect();
 
         let rows =
-            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, policy()).unwrap();
+            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, 10, policy()).unwrap();
         assert_eq!(
             rows[0].status,
             CandidateCorroborationStatus::PairwiseNoDeclaredOverlap
@@ -499,7 +551,7 @@ mod tests {
         .collect();
 
         let rows =
-            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, policy()).unwrap();
+            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, 10, policy()).unwrap();
         assert_eq!(rows[0].status, CandidateCorroborationStatus::Indeterminate);
         assert_eq!(rows[0].indeterminate_pair_count, 1);
         assert_eq!(
@@ -527,7 +579,7 @@ mod tests {
         .into_iter()
         .collect();
         let unknown_rows =
-            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, policy()).unwrap();
+            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, 10, policy()).unwrap();
         assert_eq!(
             unknown_rows[0].status,
             CandidateCorroborationStatus::Indeterminate
@@ -555,6 +607,67 @@ mod tests {
     }
 
     #[test]
+    fn evidence_freshness_is_computed_from_source_time_not_a_caller_label() {
+        let stale = SourceEvidence {
+            evidence_id: "stale".into(),
+            object_ref: "service".into(),
+            source_id: "logs".into(),
+            control_domain: "domain-a".into(),
+            availability: EvidenceAvailability::Present,
+            event_tick: 1,
+            observed_at_tick: 1,
+            valid_until_tick: Some(50),
+        };
+        let future = SourceEvidence {
+            evidence_id: "future".into(),
+            observed_at_tick: 11,
+            ..stale.clone()
+        };
+        let expired = SourceEvidence {
+            evidence_id: "expired".into(),
+            observed_at_tick: 2,
+            valid_until_tick: Some(5),
+            ..stale.clone()
+        };
+        let absent = SourceEvidence {
+            evidence_id: "absent".into(),
+            availability: EvidenceAvailability::Absent,
+            ..stale.clone()
+        };
+        let unknown = SourceEvidence {
+            evidence_id: "unknown".into(),
+            availability: EvidenceAvailability::Unknown,
+            ..stale.clone()
+        };
+        assert_eq!(classify_freshness(&stale, 20, 10), EvidenceFreshness::Stale);
+        assert_eq!(classify_freshness(&future, 10, 10), EvidenceFreshness::FutureDated);
+        assert_eq!(classify_freshness(&expired, 10, 10), EvidenceFreshness::Expired);
+        assert_eq!(classify_freshness(&absent, 10, 10), EvidenceFreshness::Absent);
+        assert_eq!(classify_freshness(&unknown, 10, 10), EvidenceFreshness::Unknown);
+        assert_eq!(
+            classify_freshness(&stale, 10, 10),
+            EvidenceFreshness::Current
+        );
+    }
+
+    #[test]
+    fn malformed_evidence_validity_interval_is_rejected() {
+        let mut bad = evidence("ev-1", "checkout-api", "metrics-a", "domain-a");
+        bad.valid_until_tick = Some(bad.observed_at_tick);
+        assert_eq!(
+            evaluate_evidence_corroboration(
+                &[bad],
+                &BTreeMap::new(),
+                &separated_graph(),
+                5,
+                10,
+                policy(),
+            ),
+            Err(CorroborationError::InvalidEvidenceInterval)
+        );
+    }
+
+    #[test]
     fn only_current_evidence_participates_in_pairwise_comparisons() {
         let graph = separated_graph();
         let evidence = vec![
@@ -564,7 +677,10 @@ mod tests {
                 object_ref: "checkout-api".into(),
                 source_id: "logs-b".into(),
                 control_domain: "domain-b".into(),
-                freshness: EvidenceFreshness::Stale,
+                availability: EvidenceAvailability::Present,
+                event_tick: 1,
+                observed_at_tick: 0,
+                valid_until_tick: Some(30),
             },
         ];
         let profiles = [
@@ -581,7 +697,7 @@ mod tests {
         .collect();
 
         let rows =
-            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, policy()).unwrap();
+            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, 10, policy()).unwrap();
         assert_eq!(rows[0].declared_control_domain_count, 2);
         assert_eq!(rows[0].current_control_domain_count, 1);
         assert_eq!(
@@ -625,7 +741,7 @@ mod tests {
         .collect();
 
         let rows =
-            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, policy()).unwrap();
+            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, 10, policy()).unwrap();
         assert_eq!(
             rows[0].status,
             CandidateCorroborationStatus::SharedDeclaredDependency
@@ -656,7 +772,7 @@ mod tests {
         .collect();
 
         assert_eq!(
-            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, policy()),
+            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, 10, policy()),
             Err(CorroborationError::InvalidProfileBinding)
         );
     }
@@ -671,6 +787,7 @@ mod tests {
                 &BTreeMap::new(),
                 &graph,
                 5,
+                10,
                 policy(),
             ),
             Err(CorroborationError::DuplicateEvidenceId)
@@ -698,7 +815,7 @@ mod tests {
         .collect();
 
         let rows =
-            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, policy()).unwrap();
+            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, 10, policy()).unwrap();
         assert_eq!(rows[0].status, CandidateCorroborationStatus::Invalid);
         assert_eq!(rows[0].invalid_pair_count, 1);
     }
@@ -712,19 +829,25 @@ mod tests {
                 object_ref: "checkout-api".into(),
                 source_id: "metrics-a".into(),
                 control_domain: "domain-a".into(),
-                freshness: EvidenceFreshness::Absent,
+                availability: EvidenceAvailability::Absent,
+                event_tick: 1,
+                observed_at_tick: 2,
+                valid_until_tick: None,
             },
             SourceEvidence {
                 evidence_id: "ev-unknown".into(),
                 object_ref: "checkout-api".into(),
                 source_id: "logs-b".into(),
                 control_domain: "domain-b".into(),
-                freshness: EvidenceFreshness::Unknown,
+                availability: EvidenceAvailability::Unknown,
+                event_tick: 1,
+                observed_at_tick: 2,
+                valid_until_tick: None,
             },
         ];
 
         let rows =
-            evaluate_evidence_corroboration(&evidence, &BTreeMap::new(), &graph, 5, policy())
+            evaluate_evidence_corroboration(&evidence, &BTreeMap::new(), &graph, 5, 10, policy())
                 .unwrap();
         assert_eq!(rows[0].current_evidence_count, 0);
         assert_eq!(
@@ -755,7 +878,7 @@ mod tests {
         .collect();
 
         let rows =
-            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, policy()).unwrap();
+            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, 10, policy()).unwrap();
         assert_eq!(
             rows.iter()
                 .map(|row| row.object_ref.as_str())
