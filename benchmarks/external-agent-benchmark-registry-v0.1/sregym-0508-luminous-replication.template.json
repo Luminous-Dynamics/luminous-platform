@@ -33,7 +33,8 @@
     "common_sampling_policy": null,
     "common_context_budget_digest": null,
     "common_tool_budget_digest": null,
-    "capability_equivalence_artifact_digest": null
+    "capability_equivalence_artifact_digest": null,
+    "common_agent_scaffold_digest": null
   },
   "native_protocol": {
     "native_scorer_required": true,
