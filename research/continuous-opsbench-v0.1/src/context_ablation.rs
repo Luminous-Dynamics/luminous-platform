@@ -964,10 +964,7 @@ fn validate_arm_order(
     {
         return Err(ContextExperimentError::InvalidArmOrder);
     }
-    let expected = counterbalanced_arm_order(
-        profile.arm_order_seed,
-        profile.counterbalance_slot,
-    )?;
+    let expected = counterbalanced_arm_order(profile.arm_order_seed, profile.counterbalance_slot)?;
     if order != expected {
         return Err(ContextExperimentError::InvalidArmOrder);
     }
@@ -1990,14 +1987,9 @@ mod tests {
             calls: Vec::new(),
             next_session: 0,
         };
-        let results = run_paired_context_ablation(
-            &input,
-            &truth(),
-            budget(),
-            &test_order(),
-            &mut reasoner,
-        )
-        .unwrap();
+        let results =
+            run_paired_context_ablation(&input, &truth(), budget(), &test_order(), &mut reasoner)
+                .unwrap();
         assert_eq!(reasoner.calls.len(), CONTEXT_COMPILATION_ARMS.len());
         assert_eq!(
             reasoner.calls.iter().collect::<BTreeSet<_>>().len(),
@@ -2043,10 +2035,7 @@ mod tests {
         assert_ne!(orders[0], counterbalanced_arm_order(seed ^ 1, 0).unwrap());
 
         for position in 0..5 {
-            let at_position: BTreeSet<_> = orders
-                .iter()
-                .map(|order| order[position])
-                .collect();
+            let at_position: BTreeSet<_> = orders.iter().map(|order| order[position]).collect();
             assert_eq!(at_position, CONTEXT_COMPILATION_ARMS.into_iter().collect());
         }
     }
@@ -2141,14 +2130,9 @@ mod tests {
             calls: Vec::new(),
             next_session: 0,
         };
-        let results = run_paired_context_ablation(
-            &input,
-            &truth(),
-            budget(),
-            &test_order(),
-            &mut reasoner,
-        )
-        .unwrap();
+        let results =
+            run_paired_context_ablation(&input, &truth(), budget(), &test_order(), &mut reasoner)
+                .unwrap();
 
         let analysis = analyze_paired_context_results(&results, 0xC0FF_EE01_5EED_2026).unwrap();
         assert_eq!(analysis.arm_aggregates.len(), 5);
@@ -2231,14 +2215,9 @@ mod tests {
             calls: Vec::new(),
             next_session: 0,
         };
-        let results = run_paired_context_ablation(
-            &input,
-            &truth(),
-            budget(),
-            &test_order(),
-            &mut reasoner,
-        )
-        .unwrap();
+        let results =
+            run_paired_context_ablation(&input, &truth(), budget(), &test_order(), &mut reasoner)
+                .unwrap();
 
         let mut duplicate = results.clone();
         duplicate.push(results[0].clone());
