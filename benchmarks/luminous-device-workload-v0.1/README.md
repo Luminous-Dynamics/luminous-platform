@@ -19,7 +19,9 @@ Build a reproducible, cross-form-factor benchmark programme that answers:
 
 This is not a single leaderboard or a new general benchmark framework. It composes public industry suites with profile-specific tests and the existing OMSI admission/evidence contracts. Unlike device classes and unlike workload families must not be collapsed into one weighted score.
 
-The Platform programme owns product-level selection and comparison policy, not a second canonical workload suite, architecture optimizer or accelerator implementation. The canonical work is distributed across:
+The Platform programme owns product-level selection and comparison policy, not a second canonical workload suite, architecture optimizer or accelerator implementation.
+
+The local HDC retrieval/data-movement baseline already has an executable candidate in Symthaea [#7864 / PR #7866](https://github.com/Luminous-Dynamics/symthaea/pull/7866). Symthaea [#10460](https://github.com/Luminous-Dynamics/symthaea/issues/10460) owns Rust-native energy-meter backends and receipt semantics; [#7919](https://github.com/Luminous-Dynamics/symthaea/issues/7919) owns memory/storage architecture. The cross-device programme must consume these local baselines and meter receipts, then add only the local-vs-peer placement experiment. It must not implement a second HDC benchmark, data-locality engine, EnergyMeter API, or memory manager. The canonical work is distributed across:
 
 - Symthaea [HDC/CfC workload and conventional baseline map #5805](https://github.com/Luminous-Dynamics/symthaea/issues/5805), [mobile device qualification #8413](https://github.com/Luminous-Dynamics/symthaea/issues/8413), [laptop co-design #8446](https://github.com/Luminous-Dynamics/symthaea/issues/8446), [compute architecture frontier #7905](https://github.com/Luminous-Dynamics/symthaea/issues/7905), [phone/laptop co-design #8459](https://github.com/Luminous-Dynamics/symthaea/issues/8459), [GPU Fabric #6968](https://github.com/Luminous-Dynamics/symthaea/issues/6968), and [MLPerf Tiny v1.4 track #9647](https://github.com/Luminous-Dynamics/symthaea/issues/9647).
 - Symtropy [laptop power/thermal twin #2697](https://github.com/Luminous-Dynamics/symtropy/issues/2697) and [phone/laptop system DSE #2706](https://github.com/Luminous-Dynamics/symtropy/issues/2706).
@@ -79,7 +81,7 @@ The Luminous suite should measure tasks the platform actually performs, not opti
 
 Each workload has a frozen input corpus, output/reference oracle, versioned acceptance criteria and exact runner revision. Maintain separate quality and systems tracks.
 
-### 3.1 Symthaea cognitive workloads\n\nThe list below is a product-family projection of the canonical workload owners. Use the existing HDC/CfC workload map #5805 and the phone/laptop physical protocols #8413/#8446; add no duplicate operation semantics, fixture registry or reference implementation here.
+### 3.1 Symthaea cognitive workloads\n\nThe list below is a product-family projection of the canonical workload owners. Use the existing HDC/CfC workload map #5805, executable HDC locality baseline #7866, Rust energy receipts #10460 and the phone/laptop physical protocols #8413/#8446; add no duplicate operation semantics, fixture registry, EnergyMeter API or reference implementation here.
 
 Use the same semantic task and expected outputs across CPU, GPU and NPU backends where implementations exist:
 
