@@ -147,3 +147,20 @@ The existing registry workflow validates the new schema/template and rejects neg
 
 
 The new validator cross-checks the three-way join between the upstream cohort CSV, the archived registry-ID snapshot and the pinned candidate registry metadata. It verifies the copied CSV's Git blob SHA-1 byte-for-byte, checks all 90 unique problem IDs and categories, compares the cohort and registry sets exactly, validates the tasklist selection policy and retains a negative control for substituting the later 91-ID source revision. The source-match check does not upgrade the historical-run attestation bit.
+
+
+### Native oracle provenance and failure semantics (9 Nov 2026)
+
+The planning manifest now pins the exact implementation files that form the native Conductor/oracle path at the selected SREGym candidate commit. The source snapshot is `sregym-0508-oracle-contract.json`; the manifest carries all 12 role/path/Git-blob identities, and the validator checks them against that archived snapshot. It includes the Conductor and API stage runner, problem registry, structured diagnosis oracle, LLM-as-a-judge wrapper/engine/checklist, generic mitigation oracle, AlertOracle, SustainedReadinessOracle, and the Kafka queue and kubelet-crash problem definitions. The native scorer path is explicitly `sregym/conductor/conductor.py`, not a null placeholder.
+
+The source review also freezes the native failure semantics that must not be silently rewritten during replication:
+
+- An unavailable LLM-judge backend returns a null verdict/success, which is unknown and cannot receive same-run E2E credit.
+- After two checklist-parse failures, the judge fills missing answers with No/Low-confidence rather than treating the result as a pass.
+- Structured diagnosis checkpoint drift is logged as a warning; the diagnosis oracle evaluates against its newly observed expectation.
+- AlertOracle's Prometheus query helper returns an empty firing-alert list on query/timeout/JSON errors; under the native implementation that can be interpreted as sustained alert silence. This is a **native fail-open risk**, not a property we endorse.
+- AlertOracle uses a 30-second buffer, 10-second polling, a 120-second silence window and 15-second query timeout. The generic mitigation oracle waits up to 60 seconds for rollout settlement, then evaluates the current pod/container state.
+
+The exact native score must preserve these behaviors for comparability. Separately, a Luminous supplemental oracle-reliability result should track telemetry query availability, judge availability, unknown outcomes and whether the oracle had adequate evidence. It must not overwrite or alter native diagnosis, mitigation or E2E metrics. This makes a native leaderboard reproduction comparable while still making scorer blind spots visible.
+
+The profile remains `planning_only`: the exact runtime/container/submodule/image/reset/agent/model pins and actual execution receipts are still required before a native run can be marked ready or executed.
