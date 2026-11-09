@@ -219,6 +219,27 @@ Begin on existing OpenXR-capable hardware and commodity displays/touch surfaces.
 
 Only after repeated benchmarks show a stable unmet requirement should Luminous commission custom carrier boards, secure elements, battery/power modules, sensor modules, compute modules or silicon. Any custom design must have complete editable source files, licensing, manufacturing files, BOM, firmware and reproducibility evidence before it is called open hardware.
 
+### 8.1 Canonical cross-project design and workload owners
+
+This Platform document is the **portfolio/product integration contract**. It does not replace the following existing design, workload, silicon, or system-model owners:
+
+| Concern | Canonical owner | Platform-family role |
+|---|---|---|
+| General CPU / RAM / GPU / storage architecture frontier | [Symthaea COMPUTE-ARCH-001 #7905](https://github.com/Luminous-Dynamics/symthaea/issues/7905) | Consume candidate profiles and task-conditioned Pareto evidence |
+| Phone/laptop CPU-GPU/accelerator co-design | [Symthaea SOC-DESIGN-001 #8459](https://github.com/Luminous-Dynamics/symthaea/issues/8459) | Map phone and laptop family constraints onto this shared product taxonomy |
+| Laptop architecture / product co-design | [Symthaea LAPTOP-ARCH-001 #8446](https://github.com/Luminous-Dynamics/symthaea/issues/8446) | Use its laptop archetypes, repairability, service-life and workload gates |
+| Personal-device energy / thermal / privacy qualification | [Symthaea MOBILE-DEVICE-001 #8413](https://github.com/Luminous-Dynamics/symthaea/issues/8413) | Compose its physical-device battery, privacy, offline and workload protocol |
+| Canonical HDC/CfC workload map and conventional baselines | [Symthaea NEURO-SILICON-001A #5805](https://github.com/Luminous-Dynamics/symthaea/issues/5805) | Reuse canonical semantics, fixtures and CPU/GPU/FPGA baselines |
+| HDC RTL semantic equivalence | [Symthaea #5808](https://github.com/Luminous-Dynamics/symthaea/issues/5808) | Do not create a second HDC algebra or accelerator oracle |
+| Semantic GPU execution | [Symthaea GPU Fabric #6968](https://github.com/Luminous-Dynamics/symthaea/issues/6968) and [backend evidence #6991](https://github.com/Luminous-Dynamics/symthaea/issues/6991) | Consume backend identity and actual-execution receipts; no acceleration claims from API selection |
+| Cross-paradigm compute comparison | [Symthaea QARCH-019 #9236](https://github.com/Luminous-Dynamics/symthaea/issues/9236) | Keep CPU/GPU/NPU/FPGA/neuromorphic/CIM/photonic/quantum families task-conditioned and on separate frontiers |
+| Embedded and tiny inference standard track | [Symthaea NAS-MLPERF-001 #9647](https://github.com/Luminous-Dynamics/symthaea/issues/9647) | Reuse MLPerf Tiny v1.4 Closed/Open tracks; do not duplicate its harness or conflate its divisions |
+| Laptop power/thermal twin | [Symtropy LAPTOP-TWIN-001 #2697](https://github.com/Luminous-Dynamics/symtropy/issues/2697) | Use Symtropy's calibrated, held-out model residuals and NOT_QUALIFIED behavior |
+| Phone/laptop system design-space exploration | [Symtropy SOC-DSE-001 #2706](https://github.com/Luminous-Dynamics/symtropy/issues/2706) | Consume system-level Pareto results; do not create a parallel optimizer |
+| Computer manufacturing/BOM closure and successor frontier | [Symthaea #5796](https://github.com/Luminous-Dynamics/symthaea/issues/5796), [#5798](https://github.com/Luminous-Dynamics/symthaea/issues/5798), [#7698](https://github.com/Luminous-Dynamics/symthaea/issues/7698) | Map supply, repairability and lifecycle constraints to sellable SKUs |
+
+The cross-paradigm portfolio is important: CPU, GPU, NPU, FPGA, HDC-native, neuromorphic, compute-in-memory, photonic and quantum candidates answer different physical/workload questions. The Platform must not imply that one architecture wins every workload. Candidate selection is task-conditioned, constraint-aware and allowed to abstain when evidence is incomplete.
+
 ## 9. Evidence and maturity language
 
 Every claim must be labelled at the level actually achieved:
