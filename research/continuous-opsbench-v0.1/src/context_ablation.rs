@@ -991,8 +991,6 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
     Ok(results)
 }
 
-
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ContextArmAggregate {
     pub fault_family_id: String,
@@ -1074,10 +1072,8 @@ pub fn analyze_paired_context_results(
         return Err(ContextExperimentError::EmptyEvidence);
     }
 
-    let mut blocks: BTreeMap<
-        ContextBlockKey,
-        BTreeMap<ContextArm, &ContextArmResult>,
-    > = BTreeMap::new();
+    let mut blocks: BTreeMap<ContextBlockKey, BTreeMap<ContextArm, &ContextArmResult>> =
+        BTreeMap::new();
 
     for result in results {
         if !non_empty(&result.scenario_id)
@@ -1104,7 +1100,9 @@ pub fn analyze_paired_context_results(
 
     for block in blocks.values() {
         if block.len() != CONTEXT_COMPILATION_ARMS.len()
-            || CONTEXT_COMPILATION_ARMS.iter().any(|arm| !block.contains_key(arm))
+            || CONTEXT_COMPILATION_ARMS
+                .iter()
+                .any(|arm| !block.contains_key(arm))
         {
             return Err(ContextExperimentError::IncompletePairedBlock);
         }
@@ -1150,11 +1148,19 @@ pub fn analyze_paired_context_results(
             let budget_exceeded_blocks = n - scored.len();
             let correct_roots = scored
                 .iter()
-                .filter(|row| row.score.as_ref().is_some_and(|score| score.root_cause_correct))
+                .filter(|row| {
+                    row.score
+                        .as_ref()
+                        .is_some_and(|score| score.root_cause_correct)
+                })
                 .count();
             let grounded_roots = scored
                 .iter()
-                .filter(|row| row.score.as_ref().is_some_and(|score| score.root_object_grounded))
+                .filter(|row| {
+                    row.score
+                        .as_ref()
+                        .is_some_and(|score| score.root_object_grounded)
+                })
                 .count();
 
             let total_context_bytes = rows.iter().map(|row| row.context_bytes as u128).sum();
@@ -1200,7 +1206,12 @@ pub fn analyze_paired_context_results(
 
         let raw_rows: Vec<_> = family_blocks
             .iter()
-            .map(|block| block.get(&ContextArm::RawSourceRecords).copied().expect("validated"))
+            .map(|block| {
+                block
+                    .get(&ContextArm::RawSourceRecords)
+                    .copied()
+                    .expect("validated")
+            })
             .collect();
 
         for arm in CONTEXT_COMPILATION_ARMS
@@ -1226,17 +1237,17 @@ pub fn analyze_paired_context_results(
                 if raw.status == ArmStatus::Scored && candidate.status == ArmStatus::Scored {
                     both_scored += 1;
                     let raw_score = raw.score.as_ref().expect("scored rows have a score");
-                    let candidate_score = candidate.score.as_ref().expect("scored rows have a score");
+                    let candidate_score =
+                        candidate.score.as_ref().expect("scored rows have a score");
                     raw_correct_both += usize::from(raw_score.root_cause_correct);
                     candidate_correct_both += usize::from(candidate_score.root_cause_correct);
                     raw_grounded_both += usize::from(raw_score.root_object_grounded);
                     candidate_grounded_both += usize::from(candidate_score.root_object_grounded);
 
-                    if let (Some(raw_usage), Some(candidate_usage)) =
-                        (&raw.usage, &candidate.usage)
+                    if let (Some(raw_usage), Some(candidate_usage)) = (&raw.usage, &candidate.usage)
                     {
-                        actual_token_delta += candidate_usage.input_tokens as i128
-                            - raw_usage.input_tokens as i128;
+                        actual_token_delta +=
+                            candidate_usage.input_tokens as i128 - raw_usage.input_tokens as i128;
                         actual_token_pairs += 1;
                     }
                     if let (Some(raw_time), Some(candidate_time)) =
@@ -1250,7 +1261,11 @@ pub fn analyze_paired_context_results(
 
             let raw_correct_all = raw_rows
                 .iter()
-                .filter(|row| row.score.as_ref().is_some_and(|score| score.root_cause_correct))
+                .filter(|row| {
+                    row.score
+                        .as_ref()
+                        .is_some_and(|score| score.root_cause_correct)
+                })
                 .count();
             let candidate_correct_all = candidate_rows
                 .iter()
@@ -1258,7 +1273,11 @@ pub fn analyze_paired_context_results(
                 .count();
             let raw_grounded_all = raw_rows
                 .iter()
-                .filter(|row| row.score.as_ref().is_some_and(|score| score.root_object_grounded))
+                .filter(|row| {
+                    row.score
+                        .as_ref()
+                        .is_some_and(|score| score.root_object_grounded)
+                })
                 .count();
             let candidate_grounded_all = candidate_rows
                 .iter()
@@ -1782,8 +1801,7 @@ mod tests {
     #[test]
     fn correct_root_with_cited_dependency_evidence_is_grounded() {
         let input = input();
-        let (packet, _) =
-            compile_context_packet(&input, ContextArm::TopologyAndDiffs).unwrap();
+        let (packet, _) = compile_context_packet(&input, ContextArm::TopologyAndDiffs).unwrap();
         let answer = DiagnosisAnswer {
             root_object_ref: Some("payments-config".into()),
             supporting_evidence_ids: vec!["ev-change".into()],
