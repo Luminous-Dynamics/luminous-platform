@@ -642,9 +642,11 @@ mod tests {
                 node("proc-a", &["host-a"]),
                 node("proc-b", &["host-b"]),
                 node("proc-c", &["host-c"]),
+                node("proc-d", &["host-d"]),
                 node("host-a", &[]),
                 node("host-b", &[]),
                 node("host-c", &[]),
+                node("host-d", &[]),
             ]
             .into_iter()
             .map(|node| (node.id.clone(), node))
