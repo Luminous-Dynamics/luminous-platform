@@ -19,6 +19,14 @@ Build a reproducible, cross-form-factor benchmark programme that answers:
 
 This is not a single leaderboard or a new general benchmark framework. It composes public industry suites with profile-specific tests and the existing OMSI admission/evidence contracts. Unlike device classes and unlike workload families must not be collapsed into one weighted score.
 
+The Platform programme owns product-level selection and comparison policy, not a second canonical workload suite, architecture optimizer or accelerator implementation. The canonical work is distributed across:
+
+- Symthaea [HDC/CfC workload and conventional baseline map #5805](https://github.com/Luminous-Dynamics/symthaea/issues/5805), [mobile device qualification #8413](https://github.com/Luminous-Dynamics/symthaea/issues/8413), [laptop co-design #8446](https://github.com/Luminous-Dynamics/symthaea/issues/8446), [compute architecture frontier #7905](https://github.com/Luminous-Dynamics/symthaea/issues/7905), [phone/laptop co-design #8459](https://github.com/Luminous-Dynamics/symthaea/issues/8459), [GPU Fabric #6968](https://github.com/Luminous-Dynamics/symthaea/issues/6968), and [MLPerf Tiny v1.4 track #9647](https://github.com/Luminous-Dynamics/symthaea/issues/9647).
+- Symtropy [laptop power/thermal twin #2697](https://github.com/Luminous-Dynamics/symtropy/issues/2697) and [phone/laptop system DSE #2706](https://github.com/Luminous-Dynamics/symtropy/issues/2706).
+- Symthaea [cross-paradigm compute frontier #9236](https://github.com/Luminous-Dynamics/symthaea/issues/9236).
+
+Use these owners' frozen task identities, input fixtures, correctness oracles and domain-specific gates. This benchmark document only defines how the Platform compares resulting evidence across product profiles without flattening it.
+
 ## 2. Reference benchmark families
 
 Pin the exact edition, rules, harness, workload and result submission rules before each comparison.
@@ -26,9 +34,9 @@ Pin the exact edition, rules, harness, workload and result submission rules befo
 | Domain | External reference | What it measures | Limits / Luminous use |
 |---|---|---|---|
 | CPU and memory | SPEC CPU 2026 | CPU-intensive workloads, memory hierarchy and compiler behavior across rate/speed suites | Not a full client, GPU, I/O, battery or system-power benchmark. Use the exact official run rules and report the suite edition. |
-| AI inference | MLPerf Inference v6.0 | Standardized inference performance across datacenter, edge and supported tasks | Compare only matching scenarios, model/task and quality constraints. Do not compare unrelated systems or infer full device value from one workload. |
-| AI PC / client | MLPerf Client v2.0 | On-device AI PC workloads, including agentic software engineering and data-analysis tasks | Use its native scenarios and scoring; add Luminous workloads separately rather than changing official tasks. |
-| Energy | MLPerf Power methodology plus calibrated wall/battery measurement | Energy-aware inference measurement | Use one power boundary and disclose whether it includes display, host, accelerator, PSU losses, network and cooling. Legacy SPECpower_ssj2008 may be informative for historical server comparisons but is not a sufficient modern whole-system energy score by itself. |
+| AI inference | MLPerf Inference v6.1 | Standardized inference performance across datacenter, edge and supported tasks | Compare only matching scenarios, model/task and quality constraints. Do not compare unrelated systems or infer full device value from one workload. |
+| Mobile AI | MLPerf Mobile v6.0 | Standardized on-device Android LLM tests (Llama 3.2 1B/3B and Llama 3.1 8B) plus vision/image workloads | Use supported exact device/backend paths; do not assume all phones or NPUs are covered. For Luminous mobile power/privacy work also compose Symthaea #8413. |\n| AI PC / client | MLPerf Client v2.0 | On-device AI PC workloads, including agentic software engineering and data-analysis tasks | Use its native scenarios and scoring; add Luminous workloads separately rather than changing official tasks. |
+| Embedded / MCU AI | MLPerf Tiny v1.4 | Fixed task/model/dataset/accuracy targets, latency and energy per inference for low-power devices | Reuse Closed Division for matched comparisons and Open Division for candidate innovation; do not mix the two. Compose Symthaea #9647. |\n| Energy | MLPerf Power methodology plus calibrated wall/battery measurement | Energy-aware inference measurement | Use one power boundary and disclose whether it includes display, host, accelerator, PSU losses, network and cooling. Legacy SPECpower_ssj2008 may be informative for historical server comparisons but is not a sufficient modern whole-system energy score by itself. |
 | XR runtime | OpenXR Conformance Test Suite | OpenXR API/runtime conformance | Necessary for a conformant runtime, not evidence of tracking accuracy, motion-to-photon latency, comfort, optics, accessibility or safety. Those require separate measurements. |
 | Storage / I/O / network | Pinned fio, iperf3 and/or applicable vendor-native tools with declared profiles | Storage and network behavior | Results depend on block size, queue depth, cache, device state, topology, link speed and test duration. No unqualified cross-vendor aggregate. |
 | Environmental | Exact methods selected from IEC 60529, tailored MIL-STD-810H methods and applicable product standards | Ingress, shock, vibration, temperature and other declared environments | A method is not a universal certification. Publish tailoring, samples, orientation, preconditioning, pass criteria, instrumentation and all failures. |
@@ -36,7 +44,7 @@ Pin the exact edition, rules, harness, workload and result submission rules befo
 Standards and upstream references:
 
 - SPEC CPU 2026: https://www.spec.org/cpu2026/
-- MLPerf Inference: https://mlcommons.org/benchmarks/inference-datacenter/
+- MLPerf Inference v6.1 results: https://mlcommons.org/2026/09/mlperf-inference-v6-1-results/\n- MLPerf Mobile v6.0: https://mlcommons.org/2026/06/mlperf-mobile-v6/\n- MLPerf Tiny v1.4: https://mlcommons.org/2026/07/mlperf-tiny-v1-4-results/\n- MLPerf Power working group: https://mlcommons.org/working-groups/benchmarks/power/
 - MLPerf Client: https://mlcommons.org/benchmarks/client/
 - MLCommons benchmark programme: https://mlcommons.org/
 - OpenXR CTS: https://github.com/KhronosGroup/OpenXR-CTS
@@ -53,7 +61,7 @@ The Luminous suite should measure tasks the platform actually performs, not opti
 
 Each workload has a frozen input corpus, output/reference oracle, versioned acceptance criteria and exact runner revision. Maintain separate quality and systems tracks.
 
-### 3.1 Symthaea cognitive workloads
+### 3.1 Symthaea cognitive workloads\n\nThe list below is a product-family projection of the canonical workload owners. Use the existing HDC/CfC workload map #5805 and the phone/laptop physical protocols #8413/#8446; add no duplicate operation semantics, fixture registry or reference implementation here.
 
 Use the same semantic task and expected outputs across CPU, GPU and NPU backends where implementations exist:
 
@@ -66,7 +74,7 @@ Use the same semantic task and expected outputs across CPU, GPU and NPU backends
 
 Record the actual backend for every operation. If NPU support is absent, unsupported, or silently falls back to CPU, report that fact. A device's NPU TOPS specification is metadata, not a benchmark result.
 
-### 3.2 Mycelix and platform workloads
+### 3.2 Mycelix and platform workloads\n\nThese are platform-level measurements and must use the owning repository's exact identity, authorization, receipt, and transport fixtures. The Platform suite does not implement parallel cryptographic or authorization logic.
 
 - Local identity / signature verification and receipt validation, with exact cryptographic suite and key sizes.
 - Authorization decision fast path under single-thread and concurrent load; include p50/p95/p99 and contention.
@@ -75,7 +83,7 @@ Record the actual backend for every operation. If NPU support is absent, unsuppo
 - Xenia peer communication under controlled packet loss, latency, peer churn and partition.
 - Nixward read-only observation, plan/validation and postcondition-check costs. Mutation paths are evaluated separately in an isolated disposable lab; no benchmark grants authority.
 
-### 3.3 Symtropy and Sol-Atlas workloads
+### 3.3 Symtropy and Sol-Atlas workloads\n\nSymtropy's existing phone/laptop DSE #2706 and thermal twin #2697 own their models, parameter spaces, calibration and prediction-error gates. The Platform consumes their qualified outputs and reports evidence level; it does not train a second general thermal model or optimizer.
 
 - Symtropy: deterministic simulation and replay workloads with frozen initial state, solver version, timestep and tolerance; report numerical error and stability along with speed.
 - Symtropy: telemetry ingestion/aggregation and model-to-observation comparison, distinguishing measured from simulated values.
@@ -193,7 +201,7 @@ Publish the full configuration and resource budget, including purchase price, po
 
 If results are not matched, label not_comparable and explain why. Do not impute missing values or extrapolate results across SKUs.
 
-### 7.3 Proposed internal stretch targets
+### 7.3 Proposed internal stretch targets\n\nThese cross-family targets do not override stricter profile-specific proposals in the canonical owners (for example, mobile #8413 and accelerator selection gates in #8459/#7905). Always report the owner, exact workload and target version.
 
 These are **targets to attempt**, not achievements or external SOTA claims:
 
