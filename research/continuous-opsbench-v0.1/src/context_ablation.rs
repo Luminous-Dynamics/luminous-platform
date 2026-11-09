@@ -1163,8 +1163,7 @@ pub fn analyze_paired_context_results(
                 })
                 .count();
 
-            let total_context_bytes: u128 =
-                rows.iter().map(|row| row.context_bytes as u128).sum();
+            let total_context_bytes: u128 = rows.iter().map(|row| row.context_bytes as u128).sum();
             let total_estimated_tokens = rows
                 .iter()
                 .map(|row| row.estimated_input_tokens as u128)
