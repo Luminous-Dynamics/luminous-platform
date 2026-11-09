@@ -2138,8 +2138,9 @@ mod tests {
         assert!(analyze_paired_context_results(&results, 77).is_ok());
 
         let mut repeated_seed = results.clone();
+        let duplicate_seed = repeated_seed[0].profile.sampling_seed;
         for row in &mut repeated_seed[5..10] {
-            row.profile.sampling_seed = repeated_seed[0].profile.sampling_seed;
+            row.profile.sampling_seed = duplicate_seed;
         }
         assert_eq!(
             analyze_paired_context_results(&repeated_seed, 77),
