@@ -15,8 +15,13 @@
     "registry_path": "sregym/conductor/problems/registry.py",
     "registry_git_blob_sha": "3ff155517a8e1982cdce44ec69677feee2d0aee6",
     "registered_problem_count": 90,
-    "runtime_selection": "ProblemRegistry.get_problem_ids() returns every registered ID when tasklist.yml is absent",
-    "exact_set_match": true
+    "runtime_selection": "must_be_absent_to_select_all_registered_ids",
+    "exact_set_match": true,
+    "derived_registry_ids_snapshot": "sregym-0508-registry-ids.txt",
+    "tasklist_yml_example_path": "sregym/conductor/tasklist.yml.example",
+    "tasklist_yml_example_blob_sha": "2ad43f241e153cfacff26c62544ca79b930529bb",
+    "tasklist_yml_example_id_count": 86,
+    "runtime_selection_detail": "ProblemRegistry.get_problem_ids() returns all registered IDs when the gitignored tasklist.yml is absent."
   },
   "later_revision_control": {
     "repository": "SREGym/SREGym",
