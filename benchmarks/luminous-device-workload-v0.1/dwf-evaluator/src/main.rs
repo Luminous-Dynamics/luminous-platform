@@ -492,6 +492,9 @@ fn evaluate_result_validation(scenario: &Value) -> Disposition {
     // signature verification or execution of the oracle.
     let required_claims = [
         "candidate_id",
+        "receipt_device_profile_digest",
+        "receipt_posture_digest",
+        "receipt_board_revision",
         "dispatch_state",
         "completion_state",
         "receipt_posture_freshness",
@@ -658,6 +661,47 @@ fn evaluate_result_validation(scenario: &Value) -> Disposition {
     if executor_id.is_none() || selected_peer.is_none() {
         push_reason(&mut reasons, "EXECUTOR_CANDIDATE_NOT_SELECTED");
         push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+    }
+
+    if let Some(peer) = selected_peer {
+        let expected_profile = text_at(peer, &["evidence", "device_profile_digest"]);
+        match text_at(execution, &["receipt_device_profile_digest"]) {
+            Some(receipt_profile) if Some(receipt_profile) == expected_profile => {}
+            Some(_) => {
+                push_reason(&mut reasons, "EXECUTOR_DEVICE_PROFILE_DIGEST_MISMATCH");
+                push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+            }
+            None => {
+                push_reason(&mut reasons, "EXECUTOR_DEVICE_PROFILE_DIGEST_MISSING");
+                push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+            }
+        }
+
+        let expected_posture = text_at(peer, &["evidence", "posture_digest"]);
+        match text_at(execution, &["receipt_posture_digest"]) {
+            Some(receipt_posture) if Some(receipt_posture) == expected_posture => {}
+            Some(_) => {
+                push_reason(&mut reasons, "EXECUTOR_POSTURE_DIGEST_MISMATCH");
+                push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+            }
+            None => {
+                push_reason(&mut reasons, "EXECUTOR_POSTURE_DIGEST_MISSING");
+                push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+            }
+        }
+
+        let expected_board = text_at(peer, &["device", "board_revision"]);
+        match text_at(execution, &["receipt_board_revision"]) {
+            Some(receipt_board) if Some(receipt_board) == expected_board => {}
+            Some(_) => {
+                push_reason(&mut reasons, "EXECUTOR_BOARD_REVISION_MISMATCH");
+                push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+            }
+            None => {
+                push_reason(&mut reasons, "EXECUTOR_BOARD_REVISION_MISSING");
+                push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+            }
+        }
     }
 
     let selected = selected_peer
@@ -972,6 +1016,22 @@ mod tests {
     }
 
     #[test]
+    fn result_receipt_must_bind_to_the_selected_device_profile() {
+        let fixture = fixture_value();
+        let (actual, _) = evaluate_case(case(&fixture, "DWF-001-29"));
+        assert_eq!(actual.result, "REJECTED");
+        assert!(actual.reason_codes.contains(&"EXECUTOR_DEVICE_PROFILE_DIGEST_MISMATCH".to_owned()));
+    }
+
+    #[test]
+    fn result_receipt_must_bind_to_the_selected_posture_snapshot() {
+        let fixture = fixture_value();
+        let (actual, _) = evaluate_case(case(&fixture, "DWF-001-30"));
+        assert_eq!(actual.result, "REJECTED");
+        assert!(actual.reason_codes.contains(&"EXECUTOR_POSTURE_DIGEST_MISMATCH".to_owned()));
+    }
+
+    #[test]
     fn disconnected_peer_is_ineligible_while_local_execution_remains_available() {
         let fixture = fixture_value();
         let mut scenario = case(&fixture, "DWF-001-01").clone();
@@ -1039,9 +1099,9 @@ mod tests {
     fn every_preregistered_scenario_matches_the_independent_evaluator() {
         let fixture = fixture_value();
         let report = evaluate_fixture(&fixture, FIXTURE.as_bytes()).expect("evaluation succeeds");
-        assert_eq!(report.scenario_count, 28);
+        assert_eq!(report.scenario_count, 30);
         assert_eq!(report.failed, 0, "{:#?}", report.cases);
-        assert_eq!(report.passed, 28);
+        assert_eq!(report.passed, 30);
         assert_eq!(report.evidence_class, "synthetic_fixture_evaluation_only");
     }
 

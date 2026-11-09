@@ -2,7 +2,7 @@
 
 **Status:** standalone Rust source and synthetic-fixture evaluator; not a production scheduler or authorization service.
 
-This crate implements an independent, deterministic evaluator for the 28-case DWF-001 placement and evidence scenario corpus. It deliberately lives outside a repository-wide Cargo workspace so that it does not create a new workspace/build boundary for Luminous Platform.
+This crate implements an independent, deterministic evaluator for the 30-case DWF-001 placement and evidence scenario corpus. It deliberately lives outside a repository-wide Cargo workspace so that it does not create a new workspace/build boundary for Luminous Platform.
 
 ## Run
 
@@ -63,3 +63,8 @@ Before any expected disposition is evaluated, the evaluator validates the fixtur
 
 
 The accepted network-state vocabulary includes explicit `disconnected` as well as connected, pre-dispatch partition, post-dispatch partition and reconnected states. A disconnected peer is ineligible before dispatch; the local origin may remain eligible.
+
+
+### Device-profile and posture binding
+
+The result receipt must now bind to the selected peer's device-profile digest, posture digest and exact board revision. DWF-001-29 rejects a receipt from the correct peer ID but a different device-profile digest; DWF-001-30 rejects a receipt tied to a different posture snapshot. These values are fixture assertions, not cryptographic attestation appraisal.
