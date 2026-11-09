@@ -449,8 +449,18 @@ fn validate_structure(input: &AssuranceCaseInput) -> Vec<String> {
                         && edge.to == node.id
                         && nodes.get(edge.from.as_str()).is_some_and(|n| n.kind == NodeKind::Evidence)
                 });
-                if !has_claim_support || !has_evidence_support {
-                    errors.push(format!("argument_{}_support_chain_incomplete", node.id));
+                let required_by_parent_claim = input.edges.iter().any(|edge| {
+                    edge.kind == EdgeKind::Supports
+                        && edge.from == node.id
+                        && nodes.get(edge.to.as_str()).is_some_and(|target| {
+                            target.kind == NodeKind::Claim
+                                && target.claim.as_ref().is_some_and(|claim| {
+                                    claim.required_argument_ids.contains(&node.id)
+                                })
+                        })
+                });
+                if !has_claim_support || !has_evidence_support || !required_by_parent_claim {
+                    errors.push(format!("argument_{}_support_chain_incomplete_or_unrequired", node.id));
                 }
             }
             NodeKind::Context => {
@@ -578,8 +588,14 @@ fn kind_matches_data(node: &CaseNode) -> bool {
 fn edge_types_valid(kind: EdgeKind, from: NodeKind, to: NodeKind) -> bool {
     match kind {
         EdgeKind::DecomposesInto => from == NodeKind::Claim && to == NodeKind::Claim,
-        EdgeKind::Supports => matches!(from, NodeKind::Evidence | NodeKind::Claim | NodeKind::Argument)
-            && matches!(to, NodeKind::Claim | NodeKind::Argument | NodeKind::Rebuttal | NodeKind::Assumption),
+        EdgeKind::Supports => {
+            (from == NodeKind::Evidence
+                && matches!(
+                    to,
+                    NodeKind::Claim | NodeKind::Argument | NodeKind::Assumption | NodeKind::Rebuttal
+                ))
+                || (from == NodeKind::Argument && to == NodeKind::Claim)
+        }
         EdgeKind::Contextualizes => from == NodeKind::Context
             && matches!(to, NodeKind::Claim | NodeKind::Argument | NodeKind::Evidence),
         EdgeKind::Assumes => from == NodeKind::Assumption
@@ -915,8 +931,11 @@ fn evaluate_evidence(
     if evidence.observed_at > as_of
         || evidence.valid_from.is_some_and(|start| start > as_of)
         || evidence.valid_until.is_some_and(|end| as_of >= end)
+        || evidence.valid_from.is_some_and(|start| evidence.observed_at < start)
+        || evidence.valid_until.is_some_and(|end| evidence.observed_at >= end)
+        || evidence.valid_from.zip(evidence.valid_until).is_some_and(|(start, end)| start >= end)
     {
-        reasons.push("evidence_not_temporally_valid_at_case_as_of".to_owned());
+        reasons.push("evidence_not_temporally_valid_at_case_as_of_or_observation".to_owned());
     }
 
     match requirement {
