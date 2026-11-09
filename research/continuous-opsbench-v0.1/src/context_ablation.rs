@@ -1200,6 +1200,8 @@ pub struct ContextArmAggregate {
     pub grounded_rate_scored_ppm: Option<u32>,
     pub mean_context_bytes: u128,
     pub mean_estimated_input_tokens: u128,
+    pub mean_model_token_preflight: Option<u128>,
+    pub mean_compiler_time_micros: u128,
     /// Mean observed provider input usage, including calls that exceeded budget.
     pub mean_actual_input_tokens_invoked: Option<u128>,
     pub mean_reported_cost_microusd_invoked: Option<u128>,
@@ -1240,6 +1242,9 @@ pub struct ContextArmContrast {
     pub grounded_rate_delta_both_scored_ppm: Option<i64>,
     /// Candidate minus raw average estimated tokens over all paired blocks.
     pub mean_estimated_tokens_delta: i128,
+    pub mean_compiler_time_delta_micros_all: i128,
+    pub mean_adapter_setup_time_delta_micros_all: i128,
+    pub mean_model_token_preflight_delta_both_exact: Option<i128>,
     /// Candidate minus raw actual tokens and reported cost where both arms were invoked.
     pub mean_actual_tokens_delta_both_invoked: Option<i128>,
     pub mean_reported_cost_delta_microusd_both_invoked: Option<i128>,
@@ -1597,6 +1602,10 @@ pub fn analyze_paired_context_results(
                 .iter()
                 .map(|row| row.estimated_input_tokens as u128)
                 .sum();
+            let model_token_preflights: Vec<u128> = rows
+                .iter()
+                .filter_map(|row| row.model_token_preflight.map(u128::from))
+                .collect();
             let actual_tokens: Vec<u128> = rows
                 .iter()
                 .filter_map(|row| row.usage.as_ref().map(|usage| usage.input_tokens as u128))
@@ -1630,6 +1639,15 @@ pub fn analyze_paired_context_results(
                     .then(|| rate_ppm(grounded_roots, scored.len())),
                 mean_context_bytes: total_context_bytes / n as u128,
                 mean_estimated_input_tokens: total_estimated_tokens / n as u128,
+                mean_model_token_preflight: mean_u128(
+                    model_token_preflights.iter().sum(),
+                    model_token_preflights.len(),
+                ),
+                mean_compiler_time_micros: rows
+                    .iter()
+                    .map(|row| row.compiler_time_micros)
+                    .sum::<u128>()
+                    / n as u128,
                 mean_actual_input_tokens_invoked: mean_u128(
                     actual_tokens.iter().sum(),
                     actual_tokens.len(),
@@ -1686,10 +1704,25 @@ pub fn analyze_paired_context_results(
             let mut time_delta = 0i128;
             let mut time_pairs = 0usize;
             let mut total_arm_time_delta = 0i128;
+            let mut compiler_time_delta = 0i128;
+            let mut adapter_setup_time_delta = 0i128;
+            let mut model_token_preflight_delta = 0i128;
+            let mut exact_tokenizer_pairs = 0usize;
 
             for (raw, candidate) in raw_rows.iter().zip(candidate_rows.iter()) {
                 total_arm_time_delta +=
                     candidate.total_arm_time_micros as i128 - raw.total_arm_time_micros as i128;
+                compiler_time_delta +=
+                    candidate.compiler_time_micros as i128 - raw.compiler_time_micros as i128;
+                adapter_setup_time_delta += candidate.adapter_setup_time_micros as i128
+                    - raw.adapter_setup_time_micros as i128;
+                if let (Some(raw_tokens), Some(candidate_tokens)) =
+                    (raw.model_token_preflight, candidate.model_token_preflight)
+                {
+                    model_token_preflight_delta +=
+                        i128::from(candidate_tokens) - i128::from(raw_tokens);
+                    exact_tokenizer_pairs += 1;
+                }
 
                 if let (Some(raw_usage), Some(candidate_usage)) = (&raw.usage, &candidate.usage) {
                     both_invoked_blocks += 1;
@@ -1841,6 +1874,12 @@ pub fn analyze_paired_context_results(
                 mean_estimated_tokens_delta: (candidate_token_total as i128
                     - raw_token_total as i128)
                     / n as i128,
+                mean_compiler_time_delta_micros_all: compiler_time_delta / n as i128,
+                mean_adapter_setup_time_delta_micros_all: adapter_setup_time_delta / n as i128,
+                mean_model_token_preflight_delta_both_exact: mean_i128(
+                    model_token_preflight_delta,
+                    exact_tokenizer_pairs,
+                ),
                 mean_actual_tokens_delta_both_invoked: mean_i128(
                     actual_token_delta,
                     actual_usage_pairs,
