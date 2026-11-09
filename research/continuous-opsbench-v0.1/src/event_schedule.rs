@@ -468,9 +468,9 @@ fn validate_checkpoint(
             && checkpoint.gap_started_at_tick.is_none())
         || (checkpoint.gap_started_at_tick.is_some()
             && checkpoint.buffered_events.is_empty()
-            && !checkpoint
+            && checkpoint
                 .observed_watermark_next_sequence
-                .is_some_and(|sequence| sequence > checkpoint.next_sequence))
+                .is_none_or(|sequence| sequence <= checkpoint.next_sequence))
     {
         return Err(ScheduleError::InvalidCheckpoint);
     }
@@ -609,21 +609,36 @@ struct EventProcessingState<'a> {
     wakes: &'a mut Vec<WakeRecord>,
 }
 
-fn push_record(
-    records: &mut Vec<EventRecordResult>,
-    event_id: &str,
-    incident_id: &str,
+struct EventRecordIdentity<'a> {
+    event_id: &'a str,
+    incident_id: &'a str,
     sequence: u64,
     delivered_tick: u64,
+}
+
+impl<'a> From<&'a SourceEvent> for EventRecordIdentity<'a> {
+    fn from(event: &'a SourceEvent) -> Self {
+        Self {
+            event_id: &event.event_id,
+            incident_id: &event.incident_id,
+            sequence: event.sequence,
+            delivered_tick: event.delivered_tick,
+        }
+    }
+}
+
+fn push_record(
+    records: &mut Vec<EventRecordResult>,
+    identity: EventRecordIdentity<'_>,
     processing_tick: u64,
     disposition: RecordDisposition,
     deadline_met: bool,
 ) {
     records.push(EventRecordResult {
-        event_id: event_id.to_owned(),
-        incident_id: incident_id.to_owned(),
-        sequence,
-        delivered_tick,
+        event_id: identity.event_id.to_owned(),
+        incident_id: identity.incident_id.to_owned(),
+        sequence: identity.sequence,
+        delivered_tick: identity.delivered_tick,
         processed_tick: Some(processing_tick),
         disposition,
         detection_latency_ticks: None,
@@ -668,10 +683,7 @@ fn process_event_in_order(
         metrics.scope_rejections += 1;
         push_record(
             records,
-            &event.event_id,
-            &event.incident_id,
-            event.sequence,
-            event.delivered_tick,
+            EventRecordIdentity::from(event),
             processing_tick,
             RecordDisposition::ScopeRejected,
             true,
@@ -682,10 +694,7 @@ fn process_event_in_order(
     if !authority.current_for(watch, processing_tick) {
         push_record(
             records,
-            &event.event_id,
-            &event.incident_id,
-            event.sequence,
-            event.delivered_tick,
+            EventRecordIdentity::from(event),
             processing_tick,
             RecordDisposition::AuthorityRevokedOrExpired,
             false,
@@ -703,10 +712,7 @@ fn process_event_in_order(
         }
         push_record(
             records,
-            &event.event_id,
-            &event.incident_id,
-            event.sequence,
-            event.delivered_tick,
+            EventRecordIdentity::from(event),
             processing_tick,
             RecordDisposition::MissedDeadline,
             false,
@@ -730,10 +736,7 @@ fn process_event_in_order(
         }
         push_record(
             records,
-            &event.event_id,
-            &event.incident_id,
-            event.sequence,
-            event.delivered_tick,
+            EventRecordIdentity::from(event),
             processing_tick,
             RecordDisposition::ExpiredBeforeProcessing,
             false,
@@ -749,28 +752,22 @@ fn process_event_in_order(
         ConditionOutcome::NoMatch => {
             metrics.quiet_events += 1;
             push_record(
-                records,
-                &event.event_id,
-                &event.incident_id,
-                event.sequence,
-                event.delivered_tick,
-                processing_tick,
-                RecordDisposition::Quiet,
-                true,
-            );
+            records,
+            EventRecordIdentity::from(event),
+            processing_tick,
+            RecordDisposition::Quiet,
+            true,
+        );
         }
         ConditionOutcome::Indeterminate => {
             metrics.indeterminate_events += 1;
             push_record(
-                records,
-                &event.event_id,
-                &event.incident_id,
-                event.sequence,
-                event.delivered_tick,
-                processing_tick,
-                RecordDisposition::IndeterminateCondition,
-                false,
-            );
+            records,
+            EventRecordIdentity::from(event),
+            processing_tick,
+            RecordDisposition::IndeterminateCondition,
+            false,
+        );
             return Some(ScheduleStatus::Indeterminate);
         }
         ConditionOutcome::Match => {
@@ -823,15 +820,18 @@ fn gap_timeout(
     records: &mut Vec<EventRecordResult>,
 ) -> ScheduleStatus {
     metrics.gap_timeouts += 1;
+    let gap_event_id = format!(
+        "gap:{}:{}",
+        checkpoint.source_epoch, checkpoint.next_sequence
+    );
     push_record(
         records,
-        &format!(
-            "gap:{}:{}",
-            checkpoint.source_epoch, checkpoint.next_sequence
-        ),
-        "",
-        checkpoint.next_sequence,
-        checkpoint.gap_deadline_tick.unwrap_or(processing_tick),
+        EventRecordIdentity {
+            event_id: &gap_event_id,
+            incident_id: "",
+            sequence: checkpoint.next_sequence,
+            delivered_tick: checkpoint.gap_deadline_tick.unwrap_or(processing_tick),
+        },
         processing_tick,
         RecordDisposition::DeliveryGap,
         false,
@@ -860,10 +860,7 @@ fn process_event(
         metrics.scope_rejections += 1;
         push_record(
             records,
-            &event.event_id,
-            &event.incident_id,
-            event.sequence,
-            event.delivered_tick,
+            EventRecordIdentity::from(event),
             processing_tick,
             RecordDisposition::ScopeRejected,
             false,
@@ -879,24 +876,18 @@ fn process_event(
         {
             metrics.duplicates_suppressed += 1;
             push_record(
-                records,
-                &event.event_id,
-                &event.incident_id,
-                event.sequence,
-                event.delivered_tick,
-                processing_tick,
-                RecordDisposition::DuplicateSuppressed,
-                true,
-            );
+            records,
+            EventRecordIdentity::from(event),
+            processing_tick,
+            RecordDisposition::DuplicateSuppressed,
+            true,
+        );
             return None;
         }
         metrics.identity_collisions += 1;
         push_record(
             records,
-            &event.event_id,
-            &event.incident_id,
-            event.sequence,
-            event.delivered_tick,
+            EventRecordIdentity::from(event),
             processing_tick,
             RecordDisposition::IdentityCollision,
             false,
@@ -908,24 +899,18 @@ fn process_event(
         if buffered == event {
             metrics.duplicates_suppressed += 1;
             push_record(
-                records,
-                &event.event_id,
-                &event.incident_id,
-                event.sequence,
-                event.delivered_tick,
-                processing_tick,
-                RecordDisposition::DuplicateSuppressed,
-                true,
-            );
+            records,
+            EventRecordIdentity::from(event),
+            processing_tick,
+            RecordDisposition::DuplicateSuppressed,
+            true,
+        );
             return None;
         }
         metrics.identity_collisions += 1;
         push_record(
             records,
-            &event.event_id,
-            &event.incident_id,
-            event.sequence,
-            event.delivered_tick,
+            EventRecordIdentity::from(event),
             processing_tick,
             RecordDisposition::IdentityCollision,
             false,
@@ -941,10 +926,7 @@ fn process_event(
         metrics.identity_collisions += 1;
         push_record(
             records,
-            &event.event_id,
-            &event.incident_id,
-            event.sequence,
-            event.delivered_tick,
+            EventRecordIdentity::from(event),
             processing_tick,
             RecordDisposition::IdentityCollision,
             false,
@@ -955,10 +937,7 @@ fn process_event(
     if event.source_epoch != checkpoint.source_epoch {
         push_record(
             records,
-            &event.event_id,
-            &event.incident_id,
-            event.sequence,
-            event.delivered_tick,
+            EventRecordIdentity::from(event),
             processing_tick,
             RecordDisposition::SourceEpochMismatch,
             false,
@@ -970,30 +949,24 @@ fn process_event(
         if !gap_policy.is_buffered() {
             metrics.sequence_gaps += 1;
             push_record(
-                records,
-                &event.event_id,
-                &event.incident_id,
-                event.sequence,
-                event.delivered_tick,
-                processing_tick,
-                RecordDisposition::DeliveryGap,
-                false,
-            );
+            records,
+            EventRecordIdentity::from(event),
+            processing_tick,
+            RecordDisposition::DeliveryGap,
+            false,
+        );
             return Some(ScheduleStatus::DeliveryGap);
         }
 
         if checkpoint.buffered_events.len() >= gap_policy.max_buffered_events {
             metrics.gap_buffer_overflows += 1;
             push_record(
-                records,
-                &event.event_id,
-                &event.incident_id,
-                event.sequence,
-                event.delivered_tick,
-                processing_tick,
-                RecordDisposition::BudgetExhausted,
-                false,
-            );
+            records,
+            EventRecordIdentity::from(event),
+            processing_tick,
+            RecordDisposition::BudgetExhausted,
+            false,
+        );
             return Some(ScheduleStatus::BudgetExhausted);
         }
 
@@ -1015,10 +988,7 @@ fn process_event(
             .max(checkpoint.buffered_events.len());
         push_record(
             records,
-            &event.event_id,
-            &event.incident_id,
-            event.sequence,
-            event.delivered_tick,
+            EventRecordIdentity::from(event),
             processing_tick,
             RecordDisposition::BufferedForSequence,
             false,
@@ -1030,10 +1000,7 @@ fn process_event(
         metrics.out_of_order_records += 1;
         push_record(
             records,
-            &event.event_id,
-            &event.incident_id,
-            event.sequence,
-            event.delivered_tick,
+            EventRecordIdentity::from(event),
             processing_tick,
             RecordDisposition::OutOfOrder,
             false,
@@ -1123,12 +1090,15 @@ fn apply_restart(
 ) -> Option<ScheduleStatus> {
     metrics.source_records += 1;
     if checkpoint.gap_started_at_tick.is_some() || !checkpoint.buffered_events.is_empty() {
+        let restart_event_id = format!("restart:{}", restart.new_epoch);
         push_record(
             records,
-            &format!("restart:{}", restart.new_epoch),
-            "",
-            restart.sequence_start,
-            restart.at_tick,
+            EventRecordIdentity {
+                event_id: &restart_event_id,
+                incident_id: "",
+                sequence: restart.sequence_start,
+                delivered_tick: restart.at_tick,
+            },
             processing_tick,
             RecordDisposition::SourceEpochMismatch,
             false,
@@ -1194,10 +1164,12 @@ fn process_watermark(
         metrics.scope_rejections += 1;
         push_record(
             records,
-            &event_id,
-            "",
-            watermark.next_sequence,
-            watermark.observed_tick,
+            EventRecordIdentity {
+                event_id: &event_id,
+                incident_id: "",
+                sequence: watermark.next_sequence,
+                delivered_tick: watermark.observed_tick,
+            },
             processing_tick,
             RecordDisposition::ScopeRejected,
             false,
@@ -1208,10 +1180,12 @@ fn process_watermark(
         metrics.source_unavailable += 1;
         push_record(
             records,
-            &event_id,
-            "",
-            watermark.next_sequence,
-            watermark.observed_tick,
+            EventRecordIdentity {
+                event_id: &event_id,
+                incident_id: "",
+                sequence: watermark.next_sequence,
+                delivered_tick: watermark.observed_tick,
+            },
             processing_tick,
             RecordDisposition::SourceUnavailable,
             false,
@@ -1221,10 +1195,12 @@ fn process_watermark(
     if watermark.source_epoch != checkpoint.source_epoch {
         push_record(
             records,
-            &event_id,
-            "",
-            watermark.next_sequence,
-            watermark.observed_tick,
+            EventRecordIdentity {
+                event_id: &event_id,
+                incident_id: "",
+                sequence: watermark.next_sequence,
+                delivered_tick: watermark.observed_tick,
+            },
             processing_tick,
             RecordDisposition::SourceEpochMismatch,
             false,
@@ -1240,10 +1216,12 @@ fn process_watermark(
         metrics.out_of_order_records += 1;
         push_record(
             records,
-            &event_id,
-            "",
-            watermark.next_sequence,
-            watermark.observed_tick,
+            EventRecordIdentity {
+                event_id: &event_id,
+                incident_id: "",
+                sequence: watermark.next_sequence,
+                delivered_tick: watermark.observed_tick,
+            },
             processing_tick,
             RecordDisposition::OutOfOrder,
             false,
@@ -1255,15 +1233,17 @@ fn process_watermark(
         if !gap_policy.is_buffered() {
             metrics.sequence_gaps += 1;
             push_record(
-                records,
-                &event_id,
-                "",
-                watermark.next_sequence,
-                watermark.observed_tick,
-                processing_tick,
-                RecordDisposition::DeliveryGap,
-                false,
-            );
+            records,
+            EventRecordIdentity {
+                event_id: &event_id,
+                incident_id: "",
+                sequence: watermark.next_sequence,
+                delivered_tick: watermark.observed_tick,
+            },
+            processing_tick,
+            RecordDisposition::DeliveryGap,
+            false,
+        );
             return Some(ScheduleStatus::DeliveryGap);
         }
 
@@ -1279,10 +1259,12 @@ fn process_watermark(
         checkpoint.last_stream_tick = checkpoint.last_stream_tick.max(watermark.observed_tick);
         push_record(
             records,
-            &event_id,
-            "",
-            watermark.next_sequence,
-            watermark.observed_tick,
+            EventRecordIdentity {
+                event_id: &event_id,
+                incident_id: "",
+                sequence: watermark.next_sequence,
+                delivered_tick: watermark.observed_tick,
+            },
             processing_tick,
             RecordDisposition::DeliveryGapPending,
             false,
@@ -1297,10 +1279,12 @@ fn process_watermark(
         metrics.identity_collisions += 1;
         push_record(
             records,
-            &event_id,
-            "",
-            watermark.next_sequence,
-            watermark.observed_tick,
+            EventRecordIdentity {
+                event_id: &event_id,
+                incident_id: "",
+                sequence: watermark.next_sequence,
+                delivered_tick: watermark.observed_tick,
+            },
             processing_tick,
             RecordDisposition::IdentityCollision,
             false,
@@ -1312,15 +1296,17 @@ fn process_watermark(
     checkpoint.gap_started_at_tick = None;
     checkpoint.gap_deadline_tick = None;
     push_record(
-        records,
-        &event_id,
-        "",
-        watermark.next_sequence,
-        watermark.observed_tick,
-        processing_tick,
-        RecordDisposition::WatermarkConfirmed,
-        true,
-    );
+            records,
+            EventRecordIdentity {
+                event_id: &event_id,
+                incident_id: "",
+                sequence: watermark.next_sequence,
+                delivered_tick: watermark.observed_tick,
+            },
+            processing_tick,
+            RecordDisposition::WatermarkConfirmed,
+            true,
+        );
     checkpoint.last_stream_tick = checkpoint.last_stream_tick.max(watermark.observed_tick);
     None
 }
