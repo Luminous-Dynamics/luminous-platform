@@ -52,7 +52,7 @@
         "attempts_per_scenario",
         "expected_attempt_rows",
         "inventory_revision",
-        "inventory_source"
+        "cohort_observation_source"
       ],
       "properties": {
         "cohort_id": {
