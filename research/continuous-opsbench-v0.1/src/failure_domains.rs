@@ -301,8 +301,7 @@ pub fn audit_observer_independence(
     audited_at_tick: u64,
     policy: IndependencePolicy,
 ) -> IndependenceReport {
-    let mut report =
-        IndependenceReport::new(&collector.subject_id, &observer.subject_id);
+    let mut report = IndependenceReport::new(&collector.subject_id, &observer.subject_id);
 
     if let Err(reason) = validate_graph(graph) {
         report.add_reason(reason);
@@ -332,11 +331,12 @@ pub fn audit_observer_independence(
         report.add_reason(reason);
     }
     if !report.reasons.is_empty() {
-        report.status = if report
-            .reasons
-            .iter()
-            .any(|reason| matches!(reason, IndependenceReason::MalformedGraph | IndependenceReason::DependencyCycle))
-        {
+        report.status = if report.reasons.iter().any(|reason| {
+            matches!(
+                reason,
+                IndependenceReason::MalformedGraph | IndependenceReason::DependencyCycle
+            )
+        }) {
             IndependenceStatus::Invalid
         } else {
             IndependenceStatus::Indeterminate
@@ -406,7 +406,10 @@ mod tests {
     fn graph(nodes: Vec<FailureDomainNode>) -> FailureDomainGraph {
         FailureDomainGraph {
             revision: "registry-v1".into(),
-            nodes: nodes.into_iter().map(|node| (node.id.clone(), node)).collect(),
+            nodes: nodes
+                .into_iter()
+                .map(|node| (node.id.clone(), node))
+                .collect(),
         }
     }
 
@@ -450,10 +453,7 @@ mod tests {
             policy(),
         );
 
-        assert_eq!(
-            report.status,
-            IndependenceStatus::SharedDeclaredDependency
-        );
+        assert_eq!(report.status, IndependenceStatus::SharedDeclaredDependency);
         assert_eq!(report.shared_dependencies, vec!["shared-host"]);
         assert_eq!(report.shared_failure_domain_classes, vec!["physical-host"]);
     }
@@ -469,7 +469,12 @@ mod tests {
             node(
                 "observer",
                 "process",
-                &["observer-host", "shared-idp", "shared-clock", "shared-network"],
+                &[
+                    "observer-host",
+                    "shared-idp",
+                    "shared-clock",
+                    "shared-network",
+                ],
             ),
             node("collector-host", "host", &[]),
             node("observer-host", "host", &[]),
@@ -498,7 +503,11 @@ mod tests {
     #[test]
     fn disjoint_declared_dependency_closures_are_only_a_candidate() {
         let graph = graph(vec![
-            node("collector", "process", &["collector-host", "collector-clock"]),
+            node(
+                "collector",
+                "process",
+                &["collector-host", "collector-clock"],
+            ),
             node("observer", "process", &["observer-host", "observer-clock"]),
             node("collector-host", "host", &[]),
             node("collector-clock", "clock", &[]),
@@ -544,16 +553,14 @@ mod tests {
         ]);
         let mut collector = profile("collector", &["collector"], 8, 30);
         let observer = profile("observer", &["observer"], 2, 30);
-        let future =
-            audit_observer_independence(&collector, &observer, &graph, 5, policy());
+        let future = audit_observer_independence(&collector, &observer, &graph, 5, policy());
         assert_eq!(future.status, IndependenceStatus::Indeterminate);
         assert!(future
             .reasons
             .contains(&IndependenceReason::CollectorProfileFromFuture));
 
         collector.observed_at_tick = 1;
-        let stale =
-            audit_observer_independence(&collector, &observer, &graph, 20, policy());
+        let stale = audit_observer_independence(&collector, &observer, &graph, 20, policy());
         assert_eq!(stale.status, IndependenceStatus::Indeterminate);
         assert!(stale
             .reasons
@@ -593,8 +600,13 @@ mod tests {
         ]);
         let mut collector = profile("collector", &["collector"], 2, 30);
         collector.state = InventoryState::Missing;
-        let report =
-            audit_observer_independence(&collector, &profile("observer", &["observer"], 2, 30), &graph, 5, policy());
+        let report = audit_observer_independence(
+            &collector,
+            &profile("observer", &["observer"], 2, 30),
+            &graph,
+            5,
+            policy(),
+        );
 
         assert_eq!(report.status, IndependenceStatus::Indeterminate);
         assert_eq!(
@@ -614,16 +626,14 @@ mod tests {
         let collector = profile("collector", &["collector"], 2, 30);
         let mut observer = profile("observer", &["observer"], 2, 5);
         observer.state = InventoryState::Unknown;
-        let unknown =
-            audit_observer_independence(&collector, &observer, &graph, 5, policy());
+        let unknown = audit_observer_independence(&collector, &observer, &graph, 5, policy());
         assert_eq!(unknown.status, IndependenceStatus::Indeterminate);
         assert!(unknown
             .reasons
             .contains(&IndependenceReason::ObserverProfileUnknown));
 
         observer.state = InventoryState::Complete;
-        let expired =
-            audit_observer_independence(&collector, &observer, &graph, 5, policy());
+        let expired = audit_observer_independence(&collector, &observer, &graph, 5, policy());
         assert_eq!(expired.status, IndependenceStatus::Indeterminate);
         assert!(expired
             .reasons
@@ -641,8 +651,7 @@ mod tests {
         let collector = profile("collector", &["collector"], 2, 30);
         let mut observer = profile("observer", &["observer"], 2, 30);
         observer.graph_revision = "registry-v0".into();
-        let report =
-            audit_observer_independence(&collector, &observer, &graph, 5, policy());
+        let report = audit_observer_independence(&collector, &observer, &graph, 5, policy());
 
         assert_eq!(report.status, IndependenceStatus::Indeterminate);
         assert!(report
