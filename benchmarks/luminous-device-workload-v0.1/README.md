@@ -210,6 +210,14 @@ In addition to raw task performance, measure:
 
 Do not compute a single combined score. Privacy/authority/correctness failures are hard failures, not weighted penalties. Simulated and predicted resource estimates remain separate from physical measurements.
 
+### 6.1 Cross-device placement negative controls
+
+The initial synthetic corpus is committed at [`fixtures/placement-scenarios-v0.1.json`](./fixtures/placement-scenarios-v0.1.json) and tracked by [DWF-001 #351](https://github.com/Luminous-Dynamics/luminous-platform/issues/351).
+
+It contains 20 unique cases across placement, pre-dispatch recheck, result validation, reconciliation and recovery. Expected outcomes include local-only fallback, remote selection, a Pareto set, rejected results and indeterminate completion. Cases cover unsupported runtimes, unauthorized data classes, unknown board revisions, stale/revoked evidence, missing Xenia scope, absent/expired Mycelix local lease, partition before/after dispatch, lost acknowledgement, origin restart, CPU fallback instead of required NPU, digest mismatch, signed-but-incorrect output, thermal/energy hard limits and Pareto ties.
+
+**Fixture ceiling:** every device, profile, evidence state, resource estimate, network condition and output is synthetic. The JSON was fetched back and parsed with 20 unique scenario IDs; this is structural file verification only. No independent placement evaluator exists yet, no physical device data is included and no policy implementation is claimed. The independent evaluator must implement the expected decisions separately from the fixture producer and must not trust candidate-provided booleans or signatures as correctness evidence.
+
 ## 7. Competitive comparison protocol
 
 ### 7.1 Baseline classes
