@@ -201,3 +201,14 @@ This still remains a policy proposal, not an admission request or collector rece
 ### Source identity carried through the audit receipt
 
 The adapter's wake-decision receipt now retains source ID and payload digest in addition to source epoch, event ID, incident ID, sequence, watch and authority epoch. The admission/request receipt carries the same source ID and payload digest, and the auditor requires exact equality to the wake-decision receipt plus the watch's source ID. This prevents a downstream admission record from matching only by event ID/tick while changing the source or payload identity. The structural auditor validates the digest's SHA-256 encoding but does not authenticate its publisher or re-read the original event bytes; that still belongs to the source-owned signed evidence path.
+
+
+## Observer failure-domain overlap evaluator v0.1
+
+The additive `src/failure_domains.rs` module checks whether a diagnostic collector and an impact observer share declared transitive dependencies. Distinct process/control-domain labels are insufficient: the graph can expose a common host, clock, identity provider, network control plane, storage dependency, scheduler or other declared ancestor.
+
+Each side supplies a complete, revision-bound profile with one or more roots, a profile digest, an observed tick and an exclusive validity bound. The auditor validates graph references and acyclicity, checks inventory age/currentness, computes each transitive dependency closure and returns `SharedDeclaredDependency`, `NoDeclaredOverlap`, `Indeterminate` or `Invalid`. `NoDeclaredOverlap` means only that the supplied graph shows no overlap; it is not proof of independence.
+
+Tests include different process labels on the same host, separate hosts with shared identity/clock dependencies, disjoint declared dependencies, missing/unknown/expired inventories, graph revision mismatch, cycles and unknown edges.
+
+**Claim ceiling:** profiles and graph are supplied structural inputs. This module does not authenticate their publisher, prove inventory completeness, detect undeclared dependencies, establish actual process/organizational independence, or rule out latent common causes. Production use requires independently governed, signed, freshness-qualified inventories and negative-control testing of shared dependencies.
