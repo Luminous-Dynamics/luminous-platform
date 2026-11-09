@@ -2421,6 +2421,30 @@ mod tests {
     }
 
     #[test]
+    fn input_counterbalance_slot_is_bound_to_attempt_number() {
+        let mut invalid = input();
+        invalid.profile.counterbalance_slot = 1;
+        assert_eq!(
+            compile_context_packet(&invalid, ContextArm::RawSourceRecords),
+            Err(ContextExperimentError::InvalidExperimentProfile)
+        );
+    }
+
+    #[test]
+    fn analyzer_rejects_arm_position_tampering_even_if_positions_remain_unique() {
+        let mut results = Vec::new();
+        for arm in CONTEXT_COMPILATION_ARMS {
+            results.push(synthetic_arm_result(0, 1, arm, true, true));
+        }
+        results[0].arm_order_position = results[1].arm_order_position;
+        results[1].arm_order_position = results[0].arm_order_position;
+        assert_eq!(
+            analyze_paired_context_results(&results, 77),
+            Err(ContextExperimentError::InvalidArmOrder)
+        );
+    }
+
+    #[test]
     fn analyzer_rejects_duplicate_or_missing_arm_order_positions() {
         let mut results = Vec::new();
         for arm in CONTEXT_COMPILATION_ARMS {
