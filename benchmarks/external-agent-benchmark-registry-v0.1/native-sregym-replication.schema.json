@@ -1,0 +1,1065 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/benchmarks/external-agent-benchmark-registry-v0.1/native-sregym-replication.schema.json",
+  "title": "Native SREGym Replication Study Manifest v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "manifest_id",
+    "profile_status",
+    "created_at",
+    "cohort",
+    "study_design",
+    "native_protocol",
+    "source_pins",
+    "execution_environment",
+    "arms",
+    "accounting",
+    "supplemental_metrics",
+    "claim_ceiling"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous-native-sregym-replication-v0.1"
+    },
+    "version": {
+      "const": 1
+    },
+    "manifest_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]+$"
+    },
+    "profile_status": {
+      "enum": [
+        "planning_only",
+        "ready_to_run",
+        "executed",
+        "blocked"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "cohort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cohort_id",
+        "scenario_count",
+        "attempts_per_scenario",
+        "expected_attempt_rows",
+        "inventory_revision",
+        "cohort_observation_source",
+        "cohort_manifest_source",
+        "source_reconciliation"
+      ],
+      "properties": {
+        "cohort_id": {
+          "enum": [
+            "SREGym-0508",
+            "SREGym-Lite-1004"
+          ]
+        },
+        "scenario_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "attempts_per_scenario": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "expected_attempt_rows": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "inventory_revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cohort_observation_source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "repository",
+            "commit_sha",
+            "path",
+            "git_blob_sha",
+            "content_sha256",
+            "capture_status"
+          ],
+          "properties": {
+            "repository": {
+              "type": "string",
+              "minLength": 1
+            },
+            "commit_sha": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "git_blob_sha": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^([a-f0-9]{40})?$"
+            },
+            "content_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^([a-f0-9]{64})?$"
+            },
+            "capture_status": {
+              "enum": [
+                "metadata_only",
+                "git_blob_only",
+                "content_sha256_verified"
+              ]
+            }
+          }
+        },
+        "cohort_manifest_source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "repository",
+            "commit_sha",
+            "path",
+            "git_blob_sha",
+            "content_sha256",
+            "capture_status",
+            "local_snapshot_path"
+          ],
+          "properties": {
+            "repository": {
+              "type": "string",
+              "minLength": 1
+            },
+            "commit_sha": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "git_blob_sha": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            "content_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^([a-f0-9]{64})?$"
+            },
+            "capture_status": {
+              "enum": [
+                "metadata_only",
+                "git_blob_only",
+                "content_sha256_verified"
+              ]
+            },
+            "local_snapshot_path": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "source_reconciliation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "candidate_repository",
+            "candidate_commit_sha",
+            "candidate_commit_date_utc",
+            "registry_path",
+            "registry_blob_sha",
+            "registry_id_count",
+            "registry_ids_snapshot_path",
+            "tasklist_yml_example_path",
+            "tasklist_yml_example_blob_sha",
+            "tasklist_yml_example_id_count",
+            "tasklist_yml_runtime_policy",
+            "cohort_registry_match",
+            "execution_revision_attested",
+            "interpretation"
+          ],
+          "properties": {
+            "candidate_repository": {
+              "type": "string",
+              "minLength": 1
+            },
+            "candidate_commit_sha": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            "candidate_commit_date_utc": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "registry_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "registry_blob_sha": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            "registry_id_count": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "registry_ids_snapshot_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "tasklist_yml_example_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "tasklist_yml_example_blob_sha": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            "tasklist_yml_example_id_count": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "tasklist_yml_runtime_policy": {
+              "const": "must_be_absent_to_select_all_registered_ids"
+            },
+            "cohort_registry_match": {
+              "const": "exact_set_match"
+            },
+            "execution_revision_attested": {
+              "type": "boolean"
+            },
+            "interpretation": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "study_design": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "comparison_mode",
+        "randomization",
+        "pairing_unit",
+        "cluster_unit",
+        "arm_order_seed",
+        "preregistered_protocol_digest",
+        "common_model_snapshot_digest",
+        "common_prompt_digest",
+        "common_permission_profile_digest",
+        "common_reasoning_effort",
+        "common_sampling_policy",
+        "common_context_budget_digest",
+        "common_tool_budget_digest",
+        "capability_equivalence_artifact_digest",
+        "common_agent_scaffold_digest"
+      ],
+      "properties": {
+        "comparison_mode": {
+          "enum": [
+            "native_replication",
+            "matched_tool_surface_ablation"
+          ]
+        },
+        "randomization": {
+          "enum": [
+            "randomized",
+            "counterbalanced",
+            "fixed_native_protocol"
+          ]
+        },
+        "pairing_unit": {
+          "enum": [
+            "scenario_attempt",
+            "scenario_seed",
+            "scenario"
+          ]
+        },
+        "cluster_unit": {
+          "enum": [
+            "scenario",
+            "fault_family",
+            "scenario_seed"
+          ]
+        },
+        "arm_order_seed": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "preregistered_protocol_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "common_model_snapshot_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "common_prompt_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "common_permission_profile_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "common_reasoning_effort": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "common_sampling_policy": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "common_context_budget_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "common_tool_budget_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "capability_equivalence_artifact_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "common_agent_scaffold_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        }
+      }
+    },
+    "native_protocol": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "native_scorer_required",
+        "native_scorer_revision",
+        "native_scorer_digest",
+        "diagnosis_metric",
+        "mitigation_metric",
+        "same_run_e2e_metric",
+        "retry_policy",
+        "dropped_run_policy",
+        "native_benchmark_harness_unchanged",
+        "attempts_per_scenario",
+        "deployment_start_attempt_limit",
+        "additional_end_to_end_retries",
+        "diagnosis_scoring_semantics",
+        "mitigation_scoring_semantics",
+        "same_run_e2e_rule",
+        "missing_stage_policy",
+        "oracle_failure_semantics"
+      ],
+      "properties": {
+        "native_scorer_required": {
+          "const": true
+        },
+        "native_scorer_revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "native_scorer_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "diagnosis_metric": {
+          "const": "native_sregym_diagnosis"
+        },
+        "mitigation_metric": {
+          "const": "native_sregym_mitigation"
+        },
+        "same_run_e2e_metric": {
+          "const": "native_sregym_same_run_diagnosis_and_mitigation"
+        },
+        "retry_policy": {
+          "enum": [
+            "no_additional_end_to_end_retry",
+            "predeclared_retry_budget",
+            "native_default"
+          ],
+          "const": "no_additional_end_to_end_retry"
+        },
+        "dropped_run_policy": {
+          "const": "retain_all_started_attempts"
+        },
+        "native_benchmark_harness_unchanged": {
+          "const": true
+        },
+        "attempts_per_scenario": {
+          "const": 3
+        },
+        "deployment_start_attempt_limit": {
+          "const": 3
+        },
+        "additional_end_to_end_retries": {
+          "const": 0
+        },
+        "diagnosis_scoring_semantics": {
+          "const": "per_problem_native_diagnosis_oracle_output"
+        },
+        "mitigation_scoring_semantics": {
+          "const": "per_problem_native_mitigation_state_oracle_output"
+        },
+        "same_run_e2e_rule": {
+          "const": "diagnosis.success == true AND mitigation.success == true in the same scenario_attempt receipt"
+        },
+        "missing_stage_policy": {
+          "const": "unknown_and_not_credited_as_success"
+        },
+        "oracle_failure_semantics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "judge_backend_unavailable",
+            "judge_checklist_parse_exhausted",
+            "diagnosis_checkpoint_instability",
+            "prometheus_query_failure",
+            "alert_oracle_window",
+            "generic_mitigation_rollout_timeout"
+          ],
+          "properties": {
+            "judge_backend_unavailable": {
+              "const": "null_verdict_success_unknown"
+            },
+            "judge_checklist_parse_exhausted": {
+              "const": "default_all_answers_no_low_confidence"
+            },
+            "diagnosis_checkpoint_instability": {
+              "const": "warning_only_score_current_expectation"
+            },
+            "prometheus_query_failure": {
+              "const": "empty_firing_list_can_pass_sustained_silence"
+            },
+            "alert_oracle_window": {
+              "const": "buffer_30s_poll_10s_for_120s_query_timeout_15s"
+            },
+            "generic_mitigation_rollout_timeout": {
+              "const": "wait_60s_then_evaluate_current_pod_container_state"
+            }
+          }
+        }
+      }
+    },
+    "source_pins": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sregym_repository",
+        "sregym_commit_sha",
+        "scenario_manifest_path",
+        "scenario_manifest_blob_sha",
+        "scorer_path",
+        "scorer_blob_sha",
+        "submodules_digest",
+        "container_lock_digest",
+        "fault_injector_digest",
+        "scenario_manifest_repository",
+        "scenario_manifest_commit_sha",
+        "registry_path",
+        "registry_blob_sha",
+        "tasklist_yml_path",
+        "tasklist_yml_must_be_absent",
+        "oracle_contract_snapshot_path",
+        "oracle_implementation_files"
+      ],
+      "properties": {
+        "sregym_repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sregym_commit_sha": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{40})?$"
+        },
+        "scenario_manifest_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scenario_manifest_blob_sha": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{40})?$"
+        },
+        "scorer_path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scorer_blob_sha": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{40})?$"
+        },
+        "submodules_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "container_lock_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "fault_injector_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "scenario_manifest_repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scenario_manifest_commit_sha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "registry_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "registry_blob_sha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "tasklist_yml_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tasklist_yml_must_be_absent": {
+          "const": true
+        },
+        "oracle_contract_snapshot_path": {
+          "const": "sregym-0508-oracle-contract.json"
+        },
+        "oracle_implementation_files": {
+          "type": "array",
+          "minItems": 12,
+          "maxItems": 12,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "role",
+              "path",
+              "git_blob_sha"
+            ],
+            "properties": {
+              "role": {
+                "enum": [
+                  "conductor",
+                  "conductor_api",
+                  "problem_registry",
+                  "diagnosis_oracle",
+                  "llm_judge_oracle",
+                  "llm_judge_engine",
+                  "llm_judge_checklist",
+                  "mitigation_oracle",
+                  "alert_oracle",
+                  "sustained_readiness_oracle",
+                  "kafka_fault_definition",
+                  "kubelet_fault_definition"
+                ]
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "git_blob_sha": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "execution_environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cluster_provider",
+        "kubernetes_version",
+        "node_image_digest",
+        "application_images",
+        "helm_lock_digest",
+        "runtime_lock_digest",
+        "reset_protocol_digest",
+        "network_profile_digest",
+        "tasklist_override_state",
+        "tasklist_override_digest"
+      ],
+      "properties": {
+        "cluster_provider": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kubernetes_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "node_image_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "application_images": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "image_digest"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "image_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              }
+            }
+          }
+        },
+        "helm_lock_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "runtime_lock_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "reset_protocol_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "network_profile_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "tasklist_override_state": {
+          "enum": [
+            "absent",
+            "present_pinned"
+          ]
+        },
+        "tasklist_override_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        }
+      }
+    },
+    "arms": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "arm_id",
+          "arm_kind",
+          "model_provider",
+          "model_snapshot_digest",
+          "agent_scaffold_digest",
+          "prompt_digest",
+          "reasoning_effort",
+          "sampling_policy",
+          "permission_profile_digest",
+          "tool_surface_digest",
+          "tool_surface_description",
+          "luminous_supplemental_gates_enabled"
+        ],
+        "properties": {
+          "arm_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._-]+$"
+          },
+          "arm_kind": {
+            "enum": [
+              "native_reference",
+              "raw_cli",
+              "structured_gateway",
+              "luminous_evidence_gateway",
+              "custom_participant"
+            ]
+          },
+          "model_provider": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "model_snapshot_digest": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^([a-f0-9]{64})?$"
+          },
+          "agent_scaffold_digest": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^([a-f0-9]{64})?$"
+          },
+          "prompt_digest": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^([a-f0-9]{64})?$"
+          },
+          "reasoning_effort": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sampling_policy": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "permission_profile_digest": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^([a-f0-9]{64})?$"
+          },
+          "tool_surface_digest": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^([a-f0-9]{64})?$"
+          },
+          "tool_surface_description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "luminous_supplemental_gates_enabled": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "accounting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expected_attempt_rows",
+        "started_attempt_rows",
+        "completed_attempt_rows",
+        "missing_attempt_rows",
+        "retried_attempt_rows",
+        "dropped_attempt_rows",
+        "attempt_receipt_bundle_digest",
+        "result_artifact_digest",
+        "attempt_receipts_path"
+      ],
+      "properties": {
+        "expected_attempt_rows": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "started_attempt_rows": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "completed_attempt_rows": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "missing_attempt_rows": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "retried_attempt_rows": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dropped_attempt_rows": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "attempt_receipt_bundle_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "result_artifact_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "attempt_receipts_path": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      }
+    },
+    "supplemental_metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "separate_from_native_scorer",
+        "metric_artifact_digest",
+        "metrics"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "separate_from_native_scorer": {
+          "const": true
+        },
+        "metric_artifact_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "claim_ceiling": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "profile_status": {
+            "enum": [
+              "ready_to_run",
+              "executed"
+            ]
+          }
+        },
+        "required": [
+          "profile_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "source_pins": {
+            "properties": {
+              "sregym_commit_sha": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              "scenario_manifest_blob_sha": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              "scorer_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "scorer_blob_sha": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              "scenario_manifest_commit_sha": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              }
+            }
+          },
+          "native_protocol": {
+            "properties": {
+              "native_scorer_revision": {
+                "type": "string",
+                "minLength": 1
+              },
+              "native_scorer_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "execution_environment": {
+            "properties": {
+              "kubernetes_version": {
+                "type": "string",
+                "minLength": 1
+              },
+              "node_image_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "helm_lock_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "runtime_lock_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "reset_protocol_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "tasklist_override_state": {
+                "const": "absent"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "profile_status": {
+            "const": "executed"
+          }
+        },
+        "required": [
+          "profile_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "accounting": {
+            "properties": {
+              "attempt_receipt_bundle_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "result_artifact_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "attempt_receipts_path": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "attempt_receipts_path"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,350 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/benchmarks/external-agent-benchmark-registry-v0.1/native-sregym-attempt.schema.json",
+  "title": "Native SREGym Scenario Attempt Receipt v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "manifest_id",
+    "cohort_id",
+    "scenario_id",
+    "attempt_index",
+    "expected_attempts",
+    "arm_id",
+    "receipt_id",
+    "run_status",
+    "deploy_start_attempts",
+    "started_at",
+    "finished_at",
+    "diagnosis",
+    "mitigation",
+    "same_run_e2e_success",
+    "diagnosis_ttl_seconds",
+    "mitigation_ttm_seconds",
+    "submission_sha256",
+    "raw_result_payload_sha256"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous-native-sregym-attempt-v0.1"
+    },
+    "manifest_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cohort_id": {
+      "const": "SREGym-0508"
+    },
+    "scenario_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "attempt_index": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3
+    },
+    "expected_attempts": {
+      "const": 3
+    },
+    "arm_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "receipt_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_status": {
+      "enum": [
+        "completed",
+        "deploy_failed",
+        "agent_timed_out",
+        "harness_error",
+        "not_started"
+      ]
+    },
+    "deploy_start_attempts": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "started_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "finished_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "diagnosis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "oracle_kind",
+        "success",
+        "accuracy_percent",
+        "result_payload_sha256"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "scored",
+            "not_run",
+            "unknown",
+            "error"
+          ]
+        },
+        "oracle_kind": {
+          "enum": [
+            "structured_native",
+            "llm_as_a_judge",
+            "custom_native",
+            "none"
+          ]
+        },
+        "success": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "accuracy_percent": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "result_payload_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "dimensions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "submission_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        }
+      }
+    },
+    "mitigation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "oracle_kind",
+        "success",
+        "result_payload_sha256"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "scored",
+            "not_run",
+            "unknown",
+            "error"
+          ]
+        },
+        "oracle_kind": {
+          "enum": [
+            "native_state",
+            "custom_native",
+            "none"
+          ]
+        },
+        "success": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "result_payload_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        }
+      }
+    },
+    "same_run_e2e_success": {
+      "type": "boolean"
+    },
+    "diagnosis_ttl_seconds": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "mitigation_ttm_seconds": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "submission_sha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^([a-f0-9]{64})?$"
+    },
+    "raw_result_payload_sha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^([a-f0-9]{64})?$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "run_status": {
+            "const": "completed"
+          }
+        },
+        "required": [
+          "run_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finished_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "diagnosis": {
+            "properties": {
+              "state": {
+                "const": "scored"
+              },
+              "success": {
+                "type": "boolean"
+              },
+              "accuracy_percent": {
+                "type": "number"
+              },
+              "result_payload_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "mitigation": {
+            "properties": {
+              "state": {
+                "const": "scored"
+              },
+              "success": {
+                "type": "boolean"
+              },
+              "result_payload_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "raw_result_payload_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "run_status": {
+            "const": "deploy_failed"
+          }
+        },
+        "required": [
+          "run_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "deploy_start_attempts": {
+            "const": 3
+          },
+          "diagnosis": {
+            "properties": {
+              "state": {
+                "const": "not_run"
+              },
+              "success": {
+                "type": "null"
+              }
+            }
+          },
+          "mitigation": {
+            "properties": {
+              "state": {
+                "const": "not_run"
+              },
+              "success": {
+                "type": "null"
+              }
+            }
+          },
+          "same_run_e2e_success": {
+            "const": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "run_status": {
+            "enum": [
+              "agent_timed_out",
+              "harness_error",
+              "not_started"
+            ]
+          }
+        },
+        "required": [
+          "run_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "same_run_e2e_success": {
+            "const": false
+          }
+        }
+      }
+    }
+  ]
+}

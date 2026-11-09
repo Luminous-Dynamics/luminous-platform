@@ -1,0 +1,222 @@
+{
+  "schema": "luminous-native-sregym-replication-v0.1",
+  "version": 1,
+  "manifest_id": "sregym-0508-luminous-native-replication",
+  "profile_status": "planning_only",
+  "created_at": "2026-11-09",
+  "cohort": {
+    "cohort_id": "SREGym-0508",
+    "scenario_count": 90,
+    "attempts_per_scenario": 3,
+    "expected_attempt_rows": 270,
+    "inventory_revision": "SREGym-0508",
+    "cohort_observation_source": {
+      "repository": "SREGym/SREGym-website",
+      "commit_sha": "c4101aace3578353c96a2d837f60e48c3e95d9c4",
+      "path": "lib/leaderboard-data.ts",
+      "git_blob_sha": "bdb3c26b361cbfcdb7e68425af65f4b0d51434b1",
+      "content_sha256": null,
+      "capture_status": "git_blob_only"
+    },
+    "cohort_manifest_source": {
+      "repository": "SREGym/SREGym-website",
+      "commit_sha": "c4101aace3578353c96a2d837f60e48c3e95d9c4",
+      "path": "public/data/sregym-0508-problems.csv",
+      "git_blob_sha": "8943b471a38f03238321b3e052a147a7fb8a668c",
+      "content_sha256": null,
+      "capture_status": "git_blob_only",
+      "local_snapshot_path": "sregym-0508-cohort.csv"
+    },
+    "source_reconciliation": {
+      "candidate_repository": "SREGym/SREGym",
+      "candidate_commit_sha": "ce73adf2c9212b4804793cbbabbfbb33eccd0f0f",
+      "candidate_commit_date_utc": "2026-04-24T17:11:27Z",
+      "registry_path": "sregym/conductor/problems/registry.py",
+      "registry_blob_sha": "3ff155517a8e1982cdce44ec69677feee2d0aee6",
+      "registry_id_count": 90,
+      "registry_ids_snapshot_path": "sregym-0508-registry-ids.txt",
+      "tasklist_yml_example_path": "sregym/conductor/tasklist.yml.example",
+      "tasklist_yml_example_blob_sha": "2ad43f241e153cfacff26c62544ca79b930529bb",
+      "tasklist_yml_example_id_count": 86,
+      "tasklist_yml_runtime_policy": "must_be_absent_to_select_all_registered_ids",
+      "cohort_registry_match": "exact_set_match",
+      "execution_revision_attested": false,
+      "interpretation": "The candidate 24-April revision's registered problem IDs exactly equal the published SREGym-0508 90-ID cohort. The checked-in tasklist.yml.example contains 86 IDs and is not the 90-fault cohort. At this revision, absence of the gitignored tasklist.yml makes ProblemRegistry select all 90 registered IDs. This is a source-set match, not proof that this revision was used by every historical leaderboard execution."
+    }
+  },
+  "study_design": {
+    "comparison_mode": "native_replication",
+    "randomization": "fixed_native_protocol",
+    "pairing_unit": "scenario_attempt",
+    "cluster_unit": "scenario",
+    "arm_order_seed": null,
+    "preregistered_protocol_digest": null,
+    "common_model_snapshot_digest": null,
+    "common_prompt_digest": null,
+    "common_permission_profile_digest": null,
+    "common_reasoning_effort": null,
+    "common_sampling_policy": null,
+    "common_context_budget_digest": null,
+    "common_tool_budget_digest": null,
+    "capability_equivalence_artifact_digest": null,
+    "common_agent_scaffold_digest": null
+  },
+  "native_protocol": {
+    "native_scorer_required": true,
+    "native_scorer_revision": "ce73adf2c9212b4804793cbbabbfbb33eccd0f0f",
+    "native_scorer_digest": null,
+    "diagnosis_metric": "native_sregym_diagnosis",
+    "mitigation_metric": "native_sregym_mitigation",
+    "same_run_e2e_metric": "native_sregym_same_run_diagnosis_and_mitigation",
+    "retry_policy": "no_additional_end_to_end_retry",
+    "dropped_run_policy": "retain_all_started_attempts",
+    "native_benchmark_harness_unchanged": true,
+    "attempts_per_scenario": 3,
+    "deployment_start_attempt_limit": 3,
+    "additional_end_to_end_retries": 0,
+    "diagnosis_scoring_semantics": "per_problem_native_diagnosis_oracle_output",
+    "mitigation_scoring_semantics": "per_problem_native_mitigation_state_oracle_output",
+    "same_run_e2e_rule": "diagnosis.success == true AND mitigation.success == true in the same scenario_attempt receipt",
+    "missing_stage_policy": "unknown_and_not_credited_as_success",
+    "oracle_failure_semantics": {
+      "judge_backend_unavailable": "null_verdict_success_unknown",
+      "judge_checklist_parse_exhausted": "default_all_answers_no_low_confidence",
+      "diagnosis_checkpoint_instability": "warning_only_score_current_expectation",
+      "prometheus_query_failure": "empty_firing_list_can_pass_sustained_silence",
+      "alert_oracle_window": "buffer_30s_poll_10s_for_120s_query_timeout_15s",
+      "generic_mitigation_rollout_timeout": "wait_60s_then_evaluate_current_pod_container_state"
+    }
+  },
+  "source_pins": {
+    "sregym_repository": "SREGym/SREGym",
+    "sregym_commit_sha": "ce73adf2c9212b4804793cbbabbfbb33eccd0f0f",
+    "scenario_manifest_path": "public/data/sregym-0508-problems.csv",
+    "scenario_manifest_blob_sha": "8943b471a38f03238321b3e052a147a7fb8a668c",
+    "scorer_path": "sregym/conductor/conductor.py",
+    "scorer_blob_sha": "4efcfbaf7219a8e0b55028632b7771684e90f7d6",
+    "submodules_digest": null,
+    "container_lock_digest": null,
+    "fault_injector_digest": null,
+    "scenario_manifest_repository": "SREGym/SREGym-website",
+    "scenario_manifest_commit_sha": "c4101aace3578353c96a2d837f60e48c3e95d9c4",
+    "registry_path": "sregym/conductor/problems/registry.py",
+    "registry_blob_sha": "3ff155517a8e1982cdce44ec69677feee2d0aee6",
+    "tasklist_yml_path": "sregym/conductor/tasklist.yml",
+    "tasklist_yml_must_be_absent": true,
+    "oracle_contract_snapshot_path": "sregym-0508-oracle-contract.json",
+    "oracle_implementation_files": [
+      {
+        "role": "conductor",
+        "path": "sregym/conductor/conductor.py",
+        "git_blob_sha": "4efcfbaf7219a8e0b55028632b7771684e90f7d6"
+      },
+      {
+        "role": "conductor_api",
+        "path": "sregym/conductor/conductor_api.py",
+        "git_blob_sha": "f87095eb339bd29e2aa3d495f5d8e2171bdc85ed"
+      },
+      {
+        "role": "problem_registry",
+        "path": "sregym/conductor/problems/registry.py",
+        "git_blob_sha": "3ff155517a8e1982cdce44ec69677feee2d0aee6"
+      },
+      {
+        "role": "diagnosis_oracle",
+        "path": "sregym/conductor/oracles/diagnosis_oracle.py",
+        "git_blob_sha": "5482b29493152245904c5349b644eea0961b41f4"
+      },
+      {
+        "role": "llm_judge_oracle",
+        "path": "sregym/conductor/oracles/llm_as_a_judge/llm_as_a_judge_oracle.py",
+        "git_blob_sha": "a6a09cb33ea3fbd6049c63b5637bb5757bca52ed"
+      },
+      {
+        "role": "llm_judge_engine",
+        "path": "sregym/conductor/oracles/llm_as_a_judge/judge.py",
+        "git_blob_sha": "cb50272b2abdf31109af4a4c6af684f5a8d7b6fd"
+      },
+      {
+        "role": "llm_judge_checklist",
+        "path": "sregym/conductor/oracles/llm_as_a_judge/rca_checklists.yaml",
+        "git_blob_sha": "239c43b94c0ba58263c0193b4b3634b30fb6d726"
+      },
+      {
+        "role": "mitigation_oracle",
+        "path": "sregym/conductor/oracles/mitigation.py",
+        "git_blob_sha": "20d4bf9215fd933ca726b88f11bf0cc739e053bb"
+      },
+      {
+        "role": "alert_oracle",
+        "path": "sregym/conductor/oracles/alert_oracle.py",
+        "git_blob_sha": "2439d327b861218eb8041cb3e92ba68fb4321f06"
+      },
+      {
+        "role": "sustained_readiness_oracle",
+        "path": "sregym/conductor/oracles/sustained_readiness.py",
+        "git_blob_sha": "a3bc4f069fbb936fdf6a514a72d74bb6736185bb"
+      },
+      {
+        "role": "kafka_fault_definition",
+        "path": "sregym/conductor/problems/kafka_queue_problems.py",
+        "git_blob_sha": "f0e6fcfd584eb2752c9bcf023860f7219a795fe0"
+      },
+      {
+        "role": "kubelet_fault_definition",
+        "path": "sregym/conductor/problems/kubelet_crash.py",
+        "git_blob_sha": "6f103550aaf3378ae0cfa7109678fc0e33737ec4"
+      }
+    ]
+  },
+  "execution_environment": {
+    "cluster_provider": null,
+    "kubernetes_version": null,
+    "node_image_digest": null,
+    "application_images": [],
+    "helm_lock_digest": null,
+    "runtime_lock_digest": null,
+    "reset_protocol_digest": null,
+    "network_profile_digest": null,
+    "tasklist_override_state": "absent",
+    "tasklist_override_digest": null
+  },
+  "arms": [
+    {
+      "arm_id": "luminous-native-candidate",
+      "arm_kind": "custom_participant",
+      "model_provider": null,
+      "model_snapshot_digest": null,
+      "agent_scaffold_digest": null,
+      "prompt_digest": null,
+      "reasoning_effort": null,
+      "sampling_policy": null,
+      "permission_profile_digest": null,
+      "tool_surface_digest": null,
+      "tool_surface_description": "Not yet pinned. Must use the native SREGym task/scorer contract; no supplemental Luminous authorization or observer gate may alter the native arm.",
+      "luminous_supplemental_gates_enabled": false
+    }
+  ],
+  "accounting": {
+    "expected_attempt_rows": 270,
+    "started_attempt_rows": 0,
+    "completed_attempt_rows": 0,
+    "missing_attempt_rows": 270,
+    "retried_attempt_rows": 0,
+    "dropped_attempt_rows": 0,
+    "attempt_receipt_bundle_digest": null,
+    "result_artifact_digest": null,
+    "attempt_receipts_path": null
+  },
+  "supplemental_metrics": {
+    "enabled": false,
+    "separate_from_native_scorer": true,
+    "metric_artifact_digest": null,
+    "metrics": []
+  },
+  "claim_ceiling": [
+    "This is a planning template, not an execution or reproduction result.",
+    "The captured leaderboard-data Git blob SHA-1 is not a SHA-256 content hash of archived scenario/scorer bytes.",
+    "The full cohort denominator is 90 scenarios × 3 attempts; SREGym-Lite must be represented by a separate manifest.",
+    "No SREGym superiority claim is permitted until all source, scorer, environment and arm digests are pinned and all attempt rows are retained.",
+    "Luminous-only authority, evidence, impact and sustained-recovery checks must remain separate supplemental metrics and must not change native SREGym scoring."
+  ]
+}
