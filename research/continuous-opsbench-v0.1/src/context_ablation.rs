@@ -1157,7 +1157,7 @@ mod tests {
         input.evidence[0].value = Some("bad|value\\ncontinued".into());
         let (packet, _) =
             compile_context_packet(&input, ContextArm::RawSourceRecords).unwrap();
-        assert!(packet.rendered_context.contains("bad\\\\|value\\\\ncontinued"));
+        assert!(packet.rendered_context.contains("bad\\|value\\\\ncontinued"));
         assert!(packet.rendered_context.contains("Some(10000)"));
     }
 
