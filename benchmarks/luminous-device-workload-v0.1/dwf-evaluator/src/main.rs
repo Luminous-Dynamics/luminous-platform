@@ -620,9 +620,16 @@ fn evaluate_result_validation(scenario: &Value) -> Disposition {
         push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
     }
 
-    if text_at(execution, &["oracle_output_digest"]) != output_digest {
-        push_reason(&mut reasons, "ORACLE_OUTPUT_DIGEST_MISMATCH");
-        push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+    match text_at(execution, &["oracle_output_digest"]) {
+        Some(oracle_output) if Some(oracle_output) == output_digest => {}
+        Some(_) => {
+            push_reason(&mut reasons, "ORACLE_OUTPUT_DIGEST_MISMATCH");
+            push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+        }
+        None => {
+            push_reason(&mut reasons, "ORACLE_OUTPUT_DIGEST_MISSING");
+            push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+        }
     }
 
     match text_at(execution, &["oracle_result"]) {
