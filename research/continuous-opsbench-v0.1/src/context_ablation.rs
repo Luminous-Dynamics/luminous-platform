@@ -2634,12 +2634,14 @@ mod tests {
         profile: Option<ReasonerSetupProfile>,
         preflight_tokens: Option<u64>,
         actual_usage_tokens: u64,
+        next_session: u32,
     }
 
     impl ContextReasoner for ExactTokenizerReasoner {
         fn start_fresh_session(&mut self, profile: &ReasonerSetupProfile) -> String {
             self.profile = Some(profile.clone());
-            "exact-tokenizer-session".into()
+            self.next_session += 1;
+            format!("exact-tokenizer-session-{}", self.next_session)
         }
 
         fn count_input_tokens(
@@ -2695,6 +2697,7 @@ mod tests {
                 profile: None,
                 preflight_tokens: Some(100),
                 actual_usage_tokens: 100,
+                next_session: 0,
             },
         )
         .unwrap();
@@ -2724,6 +2727,7 @@ mod tests {
                 profile: None,
                 preflight_tokens: None,
                 actual_usage_tokens: 100,
+                next_session: 0,
             },
         )
         .unwrap();
@@ -2747,6 +2751,7 @@ mod tests {
                 profile: None,
                 preflight_tokens: Some(101),
                 actual_usage_tokens: 101,
+                next_session: 0,
             },
         )
         .unwrap();
@@ -2777,6 +2782,7 @@ mod tests {
                 profile: None,
                 preflight_tokens: None,
                 actual_usage_tokens: 101,
+                next_session: 0,
             },
         )
         .unwrap();
@@ -2813,6 +2819,7 @@ mod tests {
                 profile: None,
                 preflight_tokens: None,
                 actual_usage_tokens: 101,
+                next_session: 0,
             },
         )
         .unwrap();
