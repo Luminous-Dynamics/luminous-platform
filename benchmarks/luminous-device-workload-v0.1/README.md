@@ -314,3 +314,14 @@ Have a second run/operator repeat the frozen set with the same exact source and 
 ## 10. Claim ceiling
 
 This protocol and its target values do not establish any result. No better-than-SOTA, lower-TCO, ruggedness, privacy, performance-per-watt, safety or hardware-support claim is permitted until the specific target, benchmark rules, sample size, exact equipment and independent evidence support it.
+
+
+## 10. Independent DWF-001 evaluator
+
+The standalone Rust evaluator is in [dwf-evaluator](dwf-evaluator/README.md). It evaluates the synthetic placement, pre-dispatch, result-validation, reconciliation and recovery scenarios without introducing a scheduler or a repository-wide Cargo workspace. Run its tests and CLI using the commands in that directory. Its JSON report binds results to the exact fixture SHA-256 and compares every case to its preregistered expected disposition.
+
+**Fixture hardening in evaluator v0.1:**
+- DWF-001-19 now abstains when both local and remote candidates exceed the declared hard energy budget; a candidate that violates a hard requirement is not “eligible” merely because it is local.
+- DWF-001-21 verifies that private derived HDC query representations do not inherit a public classification. Peer execution requires an explicit data-class scope such as `data:private`; derived vectors, features and result metadata do not become anonymous by transformation alone.
+
+The evaluator is an independent implementation of expected fixture dispositions, not an independent authority that proves those expectations, and not a production scheduler. Fixture values remain synthetic. Rust compilation, unit tests and CI must be run on the exact branch head before any implementation or assurance claim is made.

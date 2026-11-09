@@ -3326,7 +3326,7 @@
     },
     {
       "id": "DWF-001-19",
-      "name": "remote thermal and energy limits fail hard requirements",
+      "name": "all candidates exceed the hard energy budget",
       "phase": "placement",
       "request": {
         "task_id": "fixture-task-000",
@@ -3496,14 +3496,13 @@
         "rtt_ms": 4
       },
       "expected": {
-        "placement": "LOCAL",
-        "selected": [
-          "origin-book"
-        ],
-        "result": "PENDING",
+        "placement": "ABSTAIN",
+        "selected": [],
+        "result": "NOT_DISPATCHED",
         "reason_codes": [
+          "LOCAL_ENERGY_BUDGET_EXCEEDED",
           "REMOTE_ENERGY_BUDGET_EXCEEDED",
-          "LOCAL_ELIGIBLE"
+          "NO_CANDIDATE_MEETS_HARD_REQUIREMENTS"
         ]
       }
     },
@@ -3687,6 +3686,188 @@
         "reason_codes": [
           "MULTIPLE_NONDOMINATED_CANDIDATES",
           "NO_OPAQUE_SCALAR_WINNER"
+        ]
+      }
+    },
+    {
+      "id": "DWF-001-21",
+      "name": "private derived query lacks peer data scope",
+      "phase": "placement",
+      "request": {
+        "task_id": "fixture-task-000",
+        "workload": {
+          "semantic_id": "hdc-retrieval-v1",
+          "semantic_version": "1",
+          "workload_digest": "workload:hdc-retrieval-v1",
+          "runtime_digest": "runtime:hdc-v1",
+          "correctness_oracle": "oracle:hdc-retrieval-v1",
+          "operation_class": "pure_read_only"
+        },
+        "input": {
+          "commitment": "fixture:input-private-021",
+          "data_classification": "private",
+          "bytes": 1048576
+        },
+        "policy": {
+          "local_only": false,
+          "permitted_destinations": [
+            "origin-book",
+            "edge-node"
+          ],
+          "maximum_transfer_bytes": 4194304,
+          "result_retention": "origin_only"
+        },
+        "requirements": {
+          "isa": [
+            "x86_64",
+            "aarch64"
+          ],
+          "minimum_memory_mib": 8192,
+          "accelerator": "cpu",
+          "deadline_ms": 150,
+          "maximum_joules_per_accepted_task": 5,
+          "runtime_digest": "runtime:hdc-v1",
+          "workload_digest": "workload:hdc-retrieval-v1"
+        },
+        "replay": {
+          "deterministic": true,
+          "duplicate_execution_safe": true,
+          "external_effects": false
+        }
+      },
+      "candidates": [
+        {
+          "candidate_id": "origin-book",
+          "role": "origin",
+          "evidence_class": "synthetic_fixture",
+          "device": {
+            "vendor": "Luminous Synthetic Lab",
+            "sku": "LD-BOOK-REF-A1",
+            "board_revision": "A1",
+            "isa": "x86_64",
+            "memory_mib": 32768,
+            "accelerators": [
+              "cpu",
+              "gpu"
+            ],
+            "runtime_digests": [
+              "runtime:hdc-v1",
+              "runtime:cfc-v1"
+            ],
+            "workload_digests": [
+              "workload:hdc-retrieval-v1",
+              "workload:cfc-update-v1"
+            ]
+          },
+          "evidence": {
+            "device_profile_status": "qualified_fixture",
+            "posture_status": "fresh",
+            "posture_expires": "after_scenario",
+            "device_profile_digest": "fixture:origin-book:profile",
+            "posture_digest": "fixture:origin-book:posture",
+            "evidence_freshness": "fresh"
+          },
+          "session": {
+            "status": "local_owner_context",
+            "scopes": [
+              "compute:execute:read-only"
+            ]
+          },
+          "authorization": {
+            "local_policy": "allow",
+            "local_lease": "not_required",
+            "destination_policy": "local_origin"
+          },
+          "runtime": {
+            "runtime_digest": "runtime:hdc-v1",
+            "backend_required": "cpu",
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "gpu"
+            ]
+          },
+          "resources": {
+            "latency_ms": 70,
+            "joules_per_accepted_task": 2.4,
+            "thermal_headroom_c": 12,
+            "evidence_class": "synthetic_fixture"
+          }
+        },
+        {
+          "candidate_id": "edge-node",
+          "role": "peer",
+          "evidence_class": "synthetic_fixture",
+          "device": {
+            "vendor": "Luminous Synthetic Lab",
+            "sku": "LD-NODE-REF-A1",
+            "board_revision": "A1",
+            "isa": "aarch64",
+            "memory_mib": 65536,
+            "accelerators": [
+              "cpu",
+              "npu"
+            ],
+            "runtime_digests": [
+              "runtime:hdc-v1",
+              "runtime:cfc-v1"
+            ],
+            "workload_digests": [
+              "workload:hdc-retrieval-v1",
+              "workload:cfc-update-v1"
+            ]
+          },
+          "evidence": {
+            "device_profile_status": "qualified_fixture",
+            "posture_status": "fresh",
+            "posture_expires": "after_scenario",
+            "device_profile_digest": "fixture:edge-node:profile",
+            "posture_digest": "fixture:edge-node:posture",
+            "evidence_freshness": "fresh"
+          },
+          "session": {
+            "status": "authenticated",
+            "scopes": [
+              "compute:execute:read-only",
+              "data:public"
+            ]
+          },
+          "authorization": {
+            "local_policy": "allow",
+            "local_lease": "valid",
+            "lease_scope": "compute:execute:read-only",
+            "destination_policy": "explicitly_allowed"
+          },
+          "runtime": {
+            "runtime_digest": "runtime:hdc-v1",
+            "backend_required": "cpu",
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "npu"
+            ]
+          },
+          "resources": {
+            "latency_ms": 25,
+            "joules_per_accepted_task": 1.4,
+            "thermal_headroom_c": 18,
+            "evidence_class": "synthetic_fixture"
+          }
+        }
+      ],
+      "network": {
+        "state": "connected",
+        "rtt_ms": 4
+      },
+      "expected": {
+        "placement": "LOCAL",
+        "selected": [
+          "origin-book"
+        ],
+        "result": "PENDING",
+        "reason_codes": [
+          "REMOTE_DATA_SCOPE_MISSING",
+          "LOCAL_ELIGIBLE"
         ]
       }
     }
