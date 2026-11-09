@@ -228,10 +228,15 @@ fn compare_pair(
 fn summarize_status(
     current_evidence_count: usize,
     current_domain_count: usize,
+    has_unusable_evidence: bool,
     pairs: &[PairwiseCorroboration],
 ) -> CandidateCorroborationStatus {
     if current_evidence_count == 0 {
-        return CandidateCorroborationStatus::NoCurrentEvidence;
+        return if has_unusable_evidence {
+            CandidateCorroborationStatus::Indeterminate
+        } else {
+            CandidateCorroborationStatus::NoCurrentEvidence
+        };
     }
     if current_domain_count < 2 {
         return CandidateCorroborationStatus::SingleDeclaredControlDomain;
@@ -365,9 +370,14 @@ pub fn evaluate_evidence_corroboration(
             .count();
         let current_evidence_count = current.len();
         let current_control_domain_count = current_domains.len();
+        let has_unusable_evidence = stale_evidence_count > 0
+            || future_dated_evidence_count > 0
+            || expired_evidence_count > 0
+            || unknown_evidence_count > 0;
         let status = summarize_status(
             current_evidence_count,
             current_control_domain_count,
+            has_unusable_evidence,
             &pairwise,
         );
 
@@ -473,7 +483,11 @@ mod tests {
         let evidence = vec![
             evidence("ev-1", "checkout-api", "metrics-a", "domain-a"),
             evidence("ev-2", "checkout-api", "logs-a", "domain-a"),
-            evidence("ev-3", "checkout-api", "traces-a", "domain-a"),
+            SourceEvidence {
+                evidence_id: "ev-3".into(),
+                observed_at_tick: 1,
+                ..evidence("ev-3", "checkout-api", "traces-a", "domain-a")
+            },
         ];
         let profiles = [(
             "domain-a".to_owned(),
@@ -483,7 +497,7 @@ mod tests {
         .collect();
 
         let rows =
-            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, 10, policy()).unwrap();
+            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, 3, policy()).unwrap();
         assert_eq!(rows[0].declared_source_count, 3);
         assert_eq!(rows[0].declared_control_domain_count, 1);
         assert_eq!(rows[0].current_control_domain_count, 1);
@@ -737,7 +751,7 @@ mod tests {
         .collect();
 
         let rows =
-            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, 10, policy()).unwrap();
+            evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, 3, policy()).unwrap();
         assert_eq!(rows[0].declared_control_domain_count, 2);
         assert_eq!(rows[0].current_control_domain_count, 1);
         assert_eq!(
@@ -750,13 +764,14 @@ mod tests {
     #[test]
     fn every_pair_must_be_disjoint_before_candidate_is_marked_no_overlap() {
         let graph = graph(vec![
-            node("process-a", "process", &["host-a"]),
-            node("process-b", "process", &["host-b"]),
-            node("process-c", "process", &["host-c"]),
+            node("process-a", "process", &["host-a", "host-x"]),
+            node("process-b", "process", &["host-b", "host-y"]),
+            node("process-c", "process", &["host-c", "host-x", "host-y"]),
             node("host-a", "host", &[]),
             node("host-b", "host", &[]),
-            node("host-c", "host", &["shared-host"]),
-            node("shared-host", "physical-host", &[]),
+            node("host-c", "host", &[]),
+            node("host-x", "shared-clock-domain", &[]),
+            node("host-y", "shared-identity-domain", &[]),
         ]);
         let evidence = vec![
             evidence("ev-a", "checkout-api", "source-a", "domain-a"),
