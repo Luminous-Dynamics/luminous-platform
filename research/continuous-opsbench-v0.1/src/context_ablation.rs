@@ -924,7 +924,32 @@ fn score_answer(
     }
 }
 
-fn validate_arm_order(order: &[ContextArm]) -> Result<(), ContextExperimentError> {
+/// Derive a reproducible five-arm order from a preregistered seed and one
+/// of five cyclic counterbalance slots. The seeded base permutation is fixed
+/// across a scenario; rotating it by each slot places every arm at every
+/// position exactly once over a complete five-block cycle.
+pub fn counterbalanced_arm_order(
+    seed: u64,
+    counterbalance_slot: u8,
+) -> Result<[ContextArm; 5], ContextExperimentError> {
+    if usize::from(counterbalance_slot) >= CONTEXT_COMPILATION_ARMS.len() {
+        return Err(ContextExperimentError::InvalidArmOrder);
+    }
+
+    let mut arms = CONTEXT_COMPILATION_ARMS;
+    let mut state = seed ^ 0x434f_4e54_4558_5431;
+    for index in (1..arms.len()).rev() {
+        let selected = (next_bootstrap_u64(&mut state) % (index as u64 + 1)) as usize;
+        arms.swap(index, selected);
+    }
+    arms.rotate_left(usize::from(counterbalance_slot));
+    Ok(arms)
+}
+
+fn validate_arm_order(
+    order: &[ContextArm],
+    profile: &ContextExperimentProfile,
+) -> Result<(), ContextExperimentError> {
     if order.len() != CONTEXT_COMPILATION_ARMS.len() {
         return Err(ContextExperimentError::InvalidArmOrder);
     }
@@ -934,6 +959,13 @@ fn validate_arm_order(order: &[ContextArm]) -> Result<(), ContextExperimentError
             .iter()
             .any(|arm| !set.contains(arm))
     {
+        return Err(ContextExperimentError::InvalidArmOrder);
+    }
+    let expected = counterbalanced_arm_order(
+        profile.arm_order_seed,
+        profile.counterbalance_slot,
+    )?;
+    if order != expected {
         return Err(ContextExperimentError::InvalidArmOrder);
     }
     Ok(())
@@ -953,7 +985,7 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
     validate_input(input)?;
     validate_truth(input, truth)?;
     validate_budget(budget)?;
-    validate_arm_order(arm_order)?;
+    validate_arm_order(arm_order, &input.profile)?;
 
     let mut results = Vec::with_capacity(arm_order.len());
     let mut session_ids = BTreeSet::new();
@@ -1769,6 +1801,15 @@ mod tests {
         }
     }
 
+    fn test_order() -> [ContextArm; 5] {
+        let input = input();
+        counterbalanced_arm_order(
+            input.profile.arm_order_seed,
+            input.profile.counterbalance_slot,
+        )
+        .unwrap()
+    }
+
     struct ScriptedReasoner {
         calls: Vec<String>,
         next_session: u32,
@@ -1929,7 +1970,7 @@ mod tests {
             &input,
             &truth(),
             budget(),
-            &CONTEXT_COMPILATION_ARMS,
+            &test_order(),
             &mut reasoner,
         )
         .unwrap();
@@ -1966,6 +2007,44 @@ mod tests {
             .all(|result| result.paired_block_id == "fault-kafka-01-seed-7"));
         assert!(results.iter().all(|result| result.attempt_id == 1));
         assert!(results[0].score.as_ref().unwrap().required_evidence_total == 1);
+    }
+
+    #[test]
+    fn counterbalanced_orders_are_seeded_and_rotate_each_arm_through_every_position() {
+        let seed = 0x5eed_cafe_d00d_beef;
+        let orders: Vec<_> = (0..5)
+            .map(|slot| counterbalanced_arm_order(seed, slot).unwrap())
+            .collect();
+        assert_eq!(orders[0], counterbalanced_arm_order(seed, 0).unwrap());
+        assert_ne!(orders[0], counterbalanced_arm_order(seed ^ 1, 0).unwrap());
+
+        for position in 0..5 {
+            let at_position: BTreeSet<_> = orders
+                .iter()
+                .map(|order| order[position])
+                .collect();
+            assert_eq!(at_position, CONTEXT_COMPILATION_ARMS.into_iter().collect());
+        }
+    }
+
+    #[test]
+    fn runner_rejects_order_that_does_not_match_preregistered_seed_and_slot() {
+        let input = input();
+        let mut wrong_order = test_order();
+        wrong_order.rotate_left(1);
+        assert_eq!(
+            run_paired_context_ablation(
+                &input,
+                &truth(),
+                budget(),
+                &wrong_order,
+                &mut ScriptedReasoner {
+                    calls: Vec::new(),
+                    next_session: 0,
+                },
+            ),
+            Err(ContextExperimentError::InvalidArmOrder)
+        );
     }
 
     #[test]
@@ -2024,7 +2103,7 @@ mod tests {
                 &input(),
                 &truth(),
                 budget(),
-                &CONTEXT_COMPILATION_ARMS,
+                &test_order(),
                 &mut ReusedSessionReasoner,
             ),
             Err(ContextExperimentError::DuplicateReasonerSessionId)
@@ -2042,7 +2121,7 @@ mod tests {
             &input,
             &truth(),
             budget(),
-            &CONTEXT_COMPILATION_ARMS,
+            &test_order(),
             &mut reasoner,
         )
         .unwrap();
@@ -2132,7 +2211,7 @@ mod tests {
             &input,
             &truth(),
             budget(),
-            &CONTEXT_COMPILATION_ARMS,
+            &test_order(),
             &mut reasoner,
         )
         .unwrap();
@@ -2214,7 +2293,7 @@ mod tests {
             &input(),
             &truth(),
             tight,
-            &CONTEXT_COMPILATION_ARMS,
+            &test_order(),
             &mut ScriptedReasoner {
                 calls: Vec::new(),
                 next_session: 0,
@@ -2392,7 +2471,7 @@ mod tests {
                 &input(),
                 &invalid_truth,
                 budget(),
-                &CONTEXT_COMPILATION_ARMS,
+                &test_order(),
                 &mut ScriptedReasoner {
                     calls: Vec::new(),
                     next_session: 0,
@@ -2412,7 +2491,7 @@ mod tests {
             &input(),
             &truth(),
             tight,
-            &CONTEXT_COMPILATION_ARMS,
+            &test_order(),
             &mut ScriptedReasoner {
                 calls: Vec::new(),
                 next_session: 0,
@@ -2451,7 +2530,7 @@ mod tests {
                 &bad_input,
                 &truth(),
                 budget(),
-                &CONTEXT_COMPILATION_ARMS,
+                &test_order(),
                 &mut ScriptedReasoner {
                     calls: Vec::new(),
                     next_session: 0,
