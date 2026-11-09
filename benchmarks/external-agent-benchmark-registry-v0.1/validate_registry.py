@@ -166,7 +166,7 @@ def native_sregym_source_errors(manifest: dict[str, Any]) -> list[str]:
         return [f"source snapshots: cannot load exact SREGym-0508 cohort/registry inputs: {exc}"]
 
     git_blob = hashlib.sha1(
-        b"blob " + str(len(csv_bytes)).encode("ascii") + b"\\0" + csv_bytes
+        b"blob " + str(len(csv_bytes)).encode("ascii") + b"\0" + csv_bytes
     ).hexdigest()
     if git_blob != source["git_blob_sha"]:
         errors.append("cohort_manifest_source: archived CSV bytes do not match the upstream Git blob SHA")
@@ -419,6 +419,11 @@ def validate_native_sregym_profile() -> None:
     wrong_registry_candidate = copy.deepcopy(manifest)
     wrong_registry_candidate["source_pins"]["sregym_commit_sha"] = "2f5fd1c73f5f1f9b2702d15cdc79bb25dfa774a9"
     expect_native_rejected("later 91-ID registry substituted for exact 90-ID candidate", wrong_registry_candidate, schema)
+
+    tampered_cohort_blob = copy.deepcopy(manifest)
+    tampered_cohort_blob["cohort"]["cohort_manifest_source"]["git_blob_sha"] = "f" * 40
+    expect_native_rejected("cohort CSV blob substitution", tampered_cohort_blob, schema)
+
 
     tasklist_override = copy.deepcopy(manifest)
     tasklist_override["execution_environment"]["tasklist_override_state"] = "present_pinned"
