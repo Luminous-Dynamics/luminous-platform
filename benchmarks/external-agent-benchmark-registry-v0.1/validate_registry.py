@@ -180,7 +180,7 @@ def native_sregym_source_errors(manifest: dict[str, Any]) -> list[str]:
     categories = {row.get("category", "") for row in rows}
     if len(rows) != 90 or len(set(ids)) != 90 or any(not item for item in ids):
         errors.append("cohort manifest: expected exactly 90 unique non-empty problem IDs")
-    if "category" not in rows[0] if rows else True:
+    if not rows or "category" not in rows[0] or "problem_id" not in rows[0]:
         errors.append("cohort manifest: expected problem_id,category CSV columns")
     if not categories.issubset({"Ported", "Similar Failures", "New Failures"}):
         errors.append("cohort manifest: unknown cohort category")
