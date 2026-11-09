@@ -1369,11 +1369,11 @@
                 ]
               }
             }
-          },
-          "required": [
-            "results"
-          ]
-        }
+          }
+        },
+        "required": [
+          "results"
+        ]
       },
       "then": {
         "required": [
