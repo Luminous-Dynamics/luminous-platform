@@ -231,6 +231,7 @@ This Platform document is the **portfolio/product integration contract**. It doe
 
 | Concern | Canonical owner | Platform-family role |
 |---|---|---|
+| Peer-resident HDC / query-to-data paired experiment | [Symthaea NEURO-SILICON-003B #11251](https://github.com/Luminous-Dynamics/symthaea/issues/11251) | Compare local, query-to-data, data-to-compute and replication using #7866's canonical task; Platform DWF-001 owns policy/placement contract |
 | HDC retrieval locality and executable host baseline | [Symthaea #7864](https://github.com/Luminous-Dynamics/symthaea/issues/7864) / [executable baseline PR #7866](https://github.com/Luminous-Dynamics/symthaea/pull/7866) | Reuse canonical exact retrieval workload, host CPU baseline, data-movement accounting and receipt semantics; DWF adds only local-vs-peer placement |
 | Rust-native hardware energy measurement | [Symthaea ENG-ENERGY-MEASURE-001 #10460](https://github.com/Luminous-Dynamics/symthaea/issues/10460) | Reuse EnergyMeter/counter semantics and energy receipt; do not create another hardware energy API or derive joules from FLOPs/TDP |
 | Workload memory and storage substrate | [Symthaea #7919](https://github.com/Luminous-Dynamics/symthaea/issues/7919) and [memory resilience #7515](https://github.com/Luminous-Dynamics/symthaea/issues/7515) | Consume capacity/locality and degradation envelopes; do not create a second memory manager |
@@ -251,6 +252,8 @@ This Platform document is the **portfolio/product integration contract**. It doe
 | Computer manufacturing/BOM closure and successor frontier | [Symthaea #5796](https://github.com/Luminous-Dynamics/symthaea/issues/5796), [#5798](https://github.com/Luminous-Dynamics/symthaea/issues/5798), [#7698](https://github.com/Luminous-Dynamics/symthaea/issues/7698) | Map supply, repairability and lifecycle constraints to sellable SKUs |
 
 LEX-NET #1149 is a local lease profile for recognized foreign principals, not a device-compute permission. It is a semantic example only unless Mycelix's owner separately qualifies an exact device-use profile. Hardware/workload admission should compose Mycelix [SEC-ENCLAVE-003 #3972](https://github.com/Luminous-Dynamics/mycelix/issues/3972) and physical TPM profile [#3992](https://github.com/Luminous-Dynamics/mycelix/issues/3992), with Xenia session evidence and the relevant local authority contract.
+
+The first physical cross-device research path is [Symthaea NEURO-SILICON-003B #11251](https://github.com/Luminous-Dynamics/symthaea/issues/11251): a paired query-to-data versus data-to-compute HDC retrieval experiment. It is the measurement companion to Platform DWF-001 #351. It does not create a distributed scheduler; it measures whether placement is worthwhile under matched task, byte, energy, network and privacy boundaries.
 
 The cross-paradigm portfolio is important: CPU, GPU, NPU, FPGA, HDC-native, neuromorphic, compute-in-memory, photonic and quantum candidates answer different physical/workload questions. The Platform must not imply that one architecture wins every workload. Candidate selection is task-conditioned, constraint-aware and allowed to abstain when evidence is incomplete.
 
