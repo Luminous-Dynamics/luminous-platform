@@ -485,36 +485,101 @@ fn evaluate_result_validation(scenario: &Value) -> Disposition {
     let execution = &scenario["execution"];
     let mut reasons = Vec::new();
 
-    if text_at(execution, &["receipt_posture_freshness"]).is_some_and(|value| value != "fresh") {
-        push_reason(&mut reasons, "RESULT_POSTURE_EXPIRED");
+    // A result is not eligible for acceptance merely because no invalid claim
+    // was supplied. The complete execution receipt must contain every field
+    // needed to bind dispatch, completion, posture, backend, runtime, signature,
+    // output and independent-oracle disposition.
+    let required_claims = [
+        "dispatch_state",
+        "completion_state",
+        "receipt_posture_freshness",
+        "observed_backend",
+        "receipt_runtime_digest",
+        "signature_valid",
+        "output_digest",
+        "oracle_result",
+    ];
+    let missing_claim = required_claims.iter().any(|field| {
+        execution.get(*field).is_none_or(|value| {
+            value.is_null()
+                || value.as_str().is_some_and(|text| text.trim().is_empty())
+        })
+    });
+    if missing_claim {
+        push_reason(&mut reasons, "EXECUTION_RECEIPT_INCOMPLETE");
         push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
     }
 
-    let required_backend = text_at(&scenario["request"], &["requirements", "accelerator"]);
-    if let Some(observed) = text_at(execution, &["observed_backend"]) {
-        if Some(observed) != required_backend {
-            push_reason(&mut reasons, "REQUIRED_BACKEND_NOT_OBSERVED");
+    if text_at(execution, &["dispatch_state"]) != Some("dispatched")
+        || text_at(execution, &["completion_state"]) != Some("completed")
+    {
+        push_reason(&mut reasons, "EXECUTION_NOT_COMPLETED");
+        push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+    }
+
+    match text_at(execution, &["receipt_posture_freshness"]) {
+        Some("fresh") => {}
+        Some(_) => {
+            push_reason(&mut reasons, "RESULT_POSTURE_EXPIRED");
             push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
         }
+        None => {
+            push_reason(&mut reasons, "RESULT_POSTURE_MISSING");
+            push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+        }
+    }
+
+    let required_backend = text_at(&scenario["request"], &["requirements", "accelerator"]);
+    if text_at(execution, &["observed_backend"]) != required_backend {
+        push_reason(&mut reasons, "REQUIRED_BACKEND_NOT_OBSERVED");
+        push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
     }
 
     let expected_runtime = text_at(execution, &["expected_runtime_digest"])
         .or_else(|| text_at(&scenario["request"], &["workload", "runtime_digest"]));
-    if let Some(receipt_runtime) = text_at(execution, &["receipt_runtime_digest"]) {
-        if Some(receipt_runtime) != expected_runtime {
+    match text_at(execution, &["receipt_runtime_digest"]) {
+        Some(receipt_runtime) if Some(receipt_runtime) == expected_runtime => {}
+        Some(_) => {
             push_reason(&mut reasons, "RUNTIME_DIGEST_MISMATCH");
+            push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+        }
+        None => {
+            push_reason(&mut reasons, "RUNTIME_DIGEST_MISSING");
             push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
         }
     }
 
-    if bool_at(execution, &["signature_valid"]) == Some(false) {
-        push_reason(&mut reasons, "RESULT_SIGNATURE_INVALID");
+    match bool_at(execution, &["signature_valid"]) {
+        Some(true) => {}
+        Some(false) => {
+            push_reason(&mut reasons, "RESULT_SIGNATURE_INVALID");
+            push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+        }
+        None => {
+            push_reason(&mut reasons, "RESULT_SIGNATURE_MISSING");
+            push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+        }
+    }
+
+    if text_at(execution, &["output_digest"]).is_none_or(|digest| digest.trim().is_empty()) {
+        push_reason(&mut reasons, "OUTPUT_DIGEST_MISSING");
         push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
     }
 
-    if text_at(execution, &["oracle_result"]) == Some("fail") {
-        push_reason(&mut reasons, "SIGNATURE_DOES_NOT_PROVE_CORRECTNESS");
-        push_reason(&mut reasons, "ORACLE_REJECTED_RESULT");
+    match text_at(execution, &["oracle_result"]) {
+        Some("pass") => {}
+        Some("fail") => {
+            push_reason(&mut reasons, "SIGNATURE_DOES_NOT_PROVE_CORRECTNESS");
+            push_reason(&mut reasons, "ORACLE_REJECTED_RESULT");
+        }
+        Some(_) => {
+            push_reason(&mut reasons, "ORACLE_OUTCOME_NOT_ACCEPTED");
+            push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+        }
+        None => {
+            push_reason(&mut reasons, "ORACLE_OUTCOME_MISSING");
+            push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+        }
     }
 
     let remote = scenario["candidates"]
@@ -677,9 +742,9 @@ mod tests {
     fn every_preregistered_scenario_matches_the_independent_evaluator() {
         let fixture = fixture_value();
         let report = evaluate_fixture(&fixture, FIXTURE.as_bytes()).expect("evaluation succeeds");
-        assert_eq!(report.scenario_count, 22);
+        assert_eq!(report.scenario_count, 23);
         assert_eq!(report.failed, 0, "{:#?}", report.cases);
-        assert_eq!(report.passed, 22);
+        assert_eq!(report.passed, 23);
         assert_eq!(report.evidence_class, "synthetic_fixture_evaluation_only");
     }
 
@@ -728,6 +793,16 @@ mod tests {
         let (actual, _) = evaluate_case(scenario);
         assert_eq!(actual.result, "REJECTED");
         assert!(actual.reason_codes.contains(&"ORACLE_REJECTED_RESULT".to_owned()));
+    }
+
+    #[test]
+    fn incomplete_execution_receipt_cannot_be_accepted() {
+        let fixture = fixture_value();
+        let scenario = case(&fixture, "DWF-001-23");
+        let (actual, _) = evaluate_case(scenario);
+        assert_eq!(actual.result, "REJECTED");
+        assert!(actual.reason_codes.contains(&"EXECUTION_RECEIPT_INCOMPLETE".to_owned()));
+        assert!(actual.reason_codes.contains(&"RESULT_NOT_ACCEPTED".to_owned()));
     }
 
     #[test]

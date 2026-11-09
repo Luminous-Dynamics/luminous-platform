@@ -2,7 +2,7 @@
 
 **Status:** standalone Rust source and synthetic-fixture evaluator; not a production scheduler or authorization service.
 
-This crate implements an independent, deterministic evaluator for the 22-case DWF-001 placement and evidence scenario corpus. It deliberately lives outside a repository-wide Cargo workspace so that it does not create a new workspace/build boundary for Luminous Platform.
+This crate implements an independent, deterministic evaluator for the 23-case DWF-001 placement and evidence scenario corpus. It deliberately lives outside a repository-wide Cargo workspace so that it does not create a new workspace/build boundary for Luminous Platform.
 
 ## Run
 
@@ -23,7 +23,7 @@ The default fixture path is `../fixtures/placement-scenarios-v0.1.json`. The CLI
 4. ISA, exact runtime/workload digests, required backend, memory, latency deadline, energy budget and (where specified) thermal headroom are hard gates.
 5. If no candidate satisfies every hard gate, the disposition is ABSTAIN / NOT_DISPATCHED. This includes the case where both local and remote devices exceed the energy budget.
 6. Eligible candidates are compared as a Pareto set over latency, energy and thermal headroom. No opaque scalar score trades privacy, correctness or eligibility for speed.
-7. A signed result is still rejected when the independent correctness oracle fails. Missing acknowledgements or durable receipts remain INDETERMINATE; no success is inferred.
+7. A result is accepted only when its execution receipt contains dispatch/completion, fresh posture, observed backend, exact runtime digest, valid signature, output digest and an explicit passing independent-oracle outcome. Missing claims reject the result; a signed result is still rejected when the oracle fails. Missing acknowledgements or durable receipts remain INDETERMINATE; no success is inferred.
 
 ## Evidence ceiling
 
