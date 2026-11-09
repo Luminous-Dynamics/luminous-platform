@@ -201,3 +201,106 @@ This still remains a policy proposal, not an admission request or collector rece
 ### Source identity carried through the audit receipt
 
 The adapter's wake-decision receipt now retains source ID and payload digest in addition to source epoch, event ID, incident ID, sequence, watch and authority epoch. The admission/request receipt carries the same source ID and payload digest, and the auditor requires exact equality to the wake-decision receipt plus the watch's source ID. This prevents a downstream admission record from matching only by event ID/tick while changing the source or payload identity. The structural auditor validates the digest's SHA-256 encoding but does not authenticate its publisher or re-read the original event bytes; that still belongs to the source-owned signed evidence path.
+
+
+## Paired five-arm context-compilation ablation v0.1
+
+The additive `src/context_ablation.rs` module implements the orthogonal context-compiler factor described in issue #318. It builds five presentations from the same frozen source-evidence universe:
+
+1. raw source records;
+2. normalized canonical records;
+3. normalized records plus topology relations and exact change/diff evidence;
+4. topology plus event-time/observation-time ordering and explicit freshness states;
+5. temporal context plus transparent, deterministic evidence/object ranking and alternative candidates.
+
+All arms preserve the same evidence-ID universe. Unknown, absent and present remain distinct. Ranking is based only on visible evidence, target/dependency relationships, freshness and source diversity; source diversity is not treated as proof of independent failure domains. No evaluator-owned root-cause truth is passed through the `ContextReasoner` interface. The evaluator scores the returned diagnosis afterward using a separate ground-truth object.
+
+The runner uses one reasoner adapter, preregistered arm order and identical per-arm context/token/tool/time budgets. It retains budget-exceeded arms in the denominator rather than dropping them, and records context bytes, estimated input tokens, compiler time, reasoner time, token usage, tool calls, cost, root correctness, support precision/recall and unsupported evidence claims. The byte/4 token estimate is preflight only; the reasoner adapter's actual usage is recorded separately. Arm order is supplied by the experiment harness so scenario blocks can be randomized/counterbalanced externally.
+
+**Claim ceiling:** this is an offline experiment harness with scripted test reasoners. It does not call a live model, provide real tool adapters, establish SREGym results, or prove context-arm superiority. Confirmatory results require pinned model/provider snapshot, prompts, effort, tool permissions, fault/seed blocks, native grader, and paired multi-attempt runs. Native SREGym outcomes and Luminous-specific authority/effect metrics remain separate.
+
+
+## Paired five-arm context-compilation ablation v0.1
+
+The additive `src/context_ablation.rs` module implements the orthogonal context-compiler factor described in issue #318. It builds five presentations from the same frozen source-evidence universe: (1) raw source records; (2) normalized canonical records; (3) topology relations plus exact change/diff evidence; (4) temporal ordering and freshness/completeness; and (5) ranked causal evidence with alternative candidate objects and explicit support IDs.
+
+Every arm preserves the same evidence-ID universe; Unknown, Absent and Present remain distinct. Ranking uses only visible evidence, target/dependency relationships, freshness and source diversity—different source IDs are not described as independent failure domains. The reasoner interface receives no evaluator-owned root cause or required-evidence list. The evaluator scores only after the answer returns, and separates root correctness, root visibility, root grounding, evidence precision/recall and unsupported citations.
+
+Every packet/result is bound to the same paired block, attempt, scenario revision, model snapshot, prompt, permission profile, tool catalogue, scorer, reasoning effort and sampling seed. The caller supplies a preregistered arm order so it can randomize/counterbalance order across blocks. A fresh reasoner conversation/session is required for each arm. All arms share the same byte/token/output/tool/wall-time budgets; an over-budget arm remains in the denominator with BudgetExceeded instead of disappearing. The byte/4 token figure is a preflight estimate only; the model adapter's measured token usage is recorded separately.
+
+**Claim ceiling:** this is an offline paired-experiment harness with scripted test reasoners. It does not call a live model, implement the actual Kubernetes/Radar/Xenia tool gateways, establish SREGym results, or prove context-arm superiority. Confirmatory work still requires a pinned model/provider snapshot, prompt/effort/permissions/tool schemas, native SREGym revision and grader, randomized paired fault/seed blocks, multiple attempts, and separate native versus Luminous assurance scoring. Wall-time budget is measured and scored after the adapter returns; hard cancellation must be implemented by the external model adapter.
+
+
+### Paired context-ablation analysis and denominator discipline
+
+`analyze_paired_context_results` groups records by fault family, scenario, paired block and attempt. It requires exactly one row for every one of the five arms and an identical scenario/model/prompt/permission/tool/scorer/effort/seed manifest within each block. Duplicate arms, incomplete blocks and changed manifests fail rather than being silently dropped.
+
+The analyzer reports, per fault family and arm: paired-block count, scored count, budget-exceeded count, correct-root and grounded-root counts, correctness/grounding over **all** paired blocks, conditional correctness/grounding among scored blocks, context bytes, estimated tokens, measured input tokens and reasoner time. Contrasts against raw-source context report all-block deltas alongside conditional deltas only where both arms scored, plus pair coverage and token/time differences. This preserves the distinction between better quality, better coverage and simply dropping hard/over-budget examples.
+
+These are analysis primitives, not observed results. The fixture reasoner is scripted; competitive results require the pinned live model and native benchmark protocol described in #318.
+
+
+### Model-visible context isolation and fresh sessions
+
+The reasoner adapter now receives only the rendered operational evidence text plus an equal per-arm budget. It does not receive the full `ContextPacket` or the evaluator-side scenario ID, paired-block ID, attempt number, arm enum/name, model/prompt/permission/tool/scorer digests, or sampling seed. The rendered context exposes the operational target and evidence; the arm-specific evidence presentation is necessarily visible, but the treatment label and pairing metadata are not serialized into the prompt.
+
+Before each arm, the adapter must create a fresh provider session and return its session ID. The runner rejects empty, reused or mismatched session IDs, and the result row retains the session ID for audit. The paired-results analyzer independently rejects duplicate session IDs across result rows. This is a structural contract, not proof that a remote provider truly erased all hidden conversational state; a live adapter must be tested with sentinel leakage controls and independent conversation isolation verification.
+
+The exact-head test suite also covers the `bool::then_some` eager-evaluation traps found during initial CI: future-dated timestamps must not subtract before their validity check, and empty scored-pair means must produce `None` rather than divide by zero.
+
+
+### Prompt isolation, per-arm sessions and scenario-clustered inference
+
+The context reasoner receives only the rendered operational evidence text plus an equal budget. The benchmark treatment label (arm), scenario ID, paired-block ID, attempt number, model/prompt/permission/tool/scorer digests and seed are kept evaluator-side and are not serialized into the prompt or supplied as a ContextPacket to the reasoner. A fresh provider session is created for each arm; its ID is retained in the result and reused/empty/mismatched session IDs are rejected. A real adapter still needs provider-level sentinel leakage tests: unique local IDs alone cannot prove that a remote service discarded hidden conversation state.
+
+The paired-results analyzer rejects duplicate arm rows, incomplete five-arm blocks, mismatched per-block manifests, duplicate reasoner sessions, duplicate scenario/attempt identities, repeated sampling seeds within one scenario, and model/prompt/permission/tool/scorer/scenario-revision drift across attempts in the same scenario cluster. Sampling seeds may vary across attempts; the other execution conditions remain fixed.
+
+Repeated attempts are nested within the fault scenario. For each candidate-vs-raw contrast, attempts are first averaged within each distinct scenario. The analyzer reports scenario-level wins/losses/ties and the equal-scenario-weighted macro delta. A deterministic SplitMix64 bootstrap resamples the scenario clusters (not attempts), using 10,000 replicates and the caller's preregistered seed. A percentile 95% interval is omitted below 20 distinct scenario clusters. This is intentionally conservative; 17-fault Lite cannot produce the interval, even if each fault is attempted three times. All-block denominators still count budget-exceeded rows as unsuccessful, while scored-only and both-scored contrasts remain separately labeled.
+
+This is a descriptive inferential aid, not a substitute for a preregistered power analysis, a hierarchical model for multiple fault families, multiplicity control across arms/families, or provider-native uncertainty. Confirmatory claims should report the number of independent scenarios, attempts per scenario, per-cluster outcomes, interval method, seed and all exclusions.
+
+
+### Executable randomization and five-slot counterbalancing
+
+The arm-order seed and counterbalance slot are no longer passive manifest fields. `counterbalanced_arm_order(seed, slot)` derives a deterministic seeded base permutation and rotates it by the slot. Slots 0 through 4 therefore place each of the five context arms at each invocation position exactly once over a complete cycle. The runner recomputes the expected order from the profile and rejects a caller-supplied order that does not match. The input validator requires a valid preregistered slot (0 through 4), while the result analyzer verifies each arm's recorded position against the recomputed order and enforces near-equal slot allocation across all paired blocks in each fault family. It rejects duplicate/missing positions and an arm-position swap even when the position set remains 0–4.
+
+The seed and slot remain evaluator-side and are not rendered into the model prompt. The slot is a separate preregistered block assignment, not derived from attempt number. The results analyzer recomputes every block's seeded order and requires the slot allocation to be balanced within each fault family (largest slot count minus smallest slot count at most one). This allows repeat attempts of one fault to be distributed across all five positions, and avoids making a three-attempt benchmark systematically omit two slots. The base permutation is shared within an experiment seed so cyclic rotation controls position effects without changing the underlying shuffled sequence. Tests prove deterministic replay, changed-seed permutation changes for the fixed fixture, full five-position coverage across a complete cycle, rejection of position tampering and rejection of unbalanced slot allocation.
+
+
+### Effective reasoner manifest attestation
+
+A requested experiment manifest is not enough: a provider alias can resolve to a changed model snapshot, a tool adapter can drift, or a request can silently use another effort/seed. Each adapter response therefore returns an effective invocation manifest containing the served model snapshot digest, exact system/developer prompt-template digest, permission-profile digest, tool-catalog digest, reasoning effort and sampling seed. The runner requires byte-for-byte digest/value equality with the preregistered block manifest before scoring the answer. Mismatch aborts the block as `ReasonerManifestMismatch`; it is not counted as a model failure or silently pooled under the requested model label.
+
+This is an adapter-reported manifest, not a cryptographic provider attestation. The live provider adapter must source the values from the actual request/response metadata and immutable prompt/tool configuration, not blindly echo the requested profile. Unknown/unpinned provider model revisions must remain unqualified for model-comparative claims. A further provider-side audit and independent capture path is still needed to prove the adapter's report is truthful.
+
+
+### Model-specific token preflight and unknown-tokenizer behavior
+
+The byte/4 input-token figure remains a rough diagnostic estimate and is not a hard rejection criterion. Before each arm, the adapter may return an exact token count from the pinned model snapshot's tokenizer. If available, that exact count is used for preflight and an over-budget arm is retained as `BudgetExceeded` without opening a model session. If exact preflight is unavailable, the runner still calls the adapter with the hard token budget; returned actual input-token usage is checked and an overrun is retained as `BudgetExceeded`, never scored. Every row stores both the rough byte/4 estimate and the optional model-specific preflight count so their errors can be quantified against actual usage. The adapter is responsible for enforcing the supplied budget before submission when exact local token counting is unavailable; the post-call result alone cannot prevent provider-side spend.
+
+
+### Counterbalance slot allocation clarified
+
+The counterbalance slot is independent of attempt ID and is assigned by the preregistered block schedule. The analyzer counts slots across all paired blocks per fault family and fails if the largest slot count exceeds the smallest by more than one. This is the required allocation for the five-order cyclic design; a three-attempt-per-scenario cohort is not restricted to the first three positions. The seeded base permutation is rotated by the explicit slot, and each recorded arm/position must exactly match the recomputed schedule.
+
+
+### Scoring and temporal-topology hardening
+
+Evidence precision now uses every citation occurrence as its denominator. Repeated/duplicate evidence IDs are not silently collapsed into one supported citation: each duplicate counts as an unsupported claim and lowers precision. Root visibility recognizes both direct evidence objects and objects exposed through a visible topology relation; root grounding still requires a supported evidence ID attached to a present relation. Ranked dependency candidates now require a present relation, a non-future and fresh relation observation, and fresh backing evidence. Stale/future relation timestamps cannot increase a candidate's dependency score. Tests cover duplicate citation precision, relation-only root visibility/grounding and stale/future relation exclusion.
+
+
+### Full per-arm cost accounting (including failed/over-budget calls)
+
+The result row now records compiler time, adapter setup time (exact-tokenizer preflight plus fresh-session creation), provider-call time and total arm elapsed time. The aggregate reports compiler/setup/total time separately so context compilation cannot appear free merely because model time fell. It reports exact-tokenizer preflight separately from the byte/4 estimate and actual provider usage. Actual input tokens, reported cost and provider-call time are aggregated over **all invoked calls**, including calls later classified BudgetExceeded; preflight-only rejections have no provider usage and remain distinguishable. Paired quality deltas still use both-scored blocks, while token/cost/provider-time deltas use both-invoked blocks, and end-to-end arm-time deltas include every paired block. This prevents over-budget, expensive calls from disappearing from efficiency comparisons.
+
+
+### Provider setup is now a least-privilege projection
+
+The adapter receives a dedicated `ReasonerSetupProfile`, not the complete evaluator `ContextExperimentProfile`. The projection contains only effective model snapshot, prompt digest, permission profile, tool catalogue, reasoning effort and sampling seed. It deliberately excludes scenario revision, scorer digest, arm-order seed and counterbalance slot. The model prompt remains only the rendered evidence. Invocation attestation is checked against the minimal setup profile returned by the adapter. This narrows both prompt leakage and the trusted adapter API surface; it does not prove a third-party provider's internal state isolation.
+
+
+### Exact token budget and freshness-qualified citation scoring
+
+The paired-result auditor now stores the exact per-arm `ContextBudget` and rejects a five-arm block if any byte, input-token, output-token, tool-call or wall-time limit differs. The model adapter must provide an exact model-token preflight for the rendered context before a session is created; if it cannot, the arm is retained as `PreflightUnavailable` and no model call occurs. A known byte/4 estimate is diagnostic only and never substitutes for an exact hard token limit. `BudgetExceeded` and `PreflightUnavailable` have separate counts and both remain in the all-block denominator. The analyzer also verifies that exact-tokenizer preflight is available for all five arms or none within a paired block.
+
+Citation scoring now distinguishes source-valid references from fresh/current references. It reports the existing source-valid precision/recall plus fresh-evidence precision and fresh required-evidence recall, alongside stale/expired/future citation counts. Root grounding continues to require current evidence. This prevents a citation to a valid historical or expired receipt from being described as current grounding while preserving the fact that the citation did refer to an actual source record.

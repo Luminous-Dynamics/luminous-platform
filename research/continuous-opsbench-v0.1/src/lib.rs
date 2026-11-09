@@ -11,6 +11,7 @@ pub mod paired_attention;
 pub mod event_schedule;
 pub mod episode_audit;
 pub mod scheduled_attention;
+pub mod context_ablation;
 
 use std::collections::{BTreeMap, BTreeSet};
 
