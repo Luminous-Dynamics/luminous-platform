@@ -5,7 +5,7 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const FIXTURE_CONTRACT: &str = "omsi.pmtime.integrity.fixture-pack";
 pub const REPORT_CONTRACT: &str = "omsi-pmtime-integrity-report/0.1";
 
-const EXPECTED_CASE_IDS: [&str; 14] = [
+const EXPECTED_CASE_IDS: [&str; 20] = [
     "PMT-001-fully-qualified",
     "PMT-002-shared-clock",
     "PMT-003-shared-oscillator",
