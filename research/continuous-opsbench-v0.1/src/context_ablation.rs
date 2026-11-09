@@ -295,6 +295,15 @@ pub trait ContextReasoner {
     /// It receives no evaluator truth, expected root, arm label, scenario/block
     /// IDs, attempt, scorer digest, or required-evidence list. The adapter must
     /// return the exact fresh session ID and never reuse it across arms.
+    /// Return a model-specific input-token count when an exact local tokenizer
+    /// for the pinned model snapshot is available. None means preflight is
+    /// unavailable; actual provider usage is still checked after invocation.
+    fn count_input_tokens(
+        &mut self,
+        profile: &ContextExperimentProfile,
+        rendered_context: &str,
+    ) -> Option<u64>;
+
     fn diagnose(
         &mut self,
         session_id: &str,
@@ -342,7 +351,10 @@ pub struct ContextArmResult {
     /// Provider/harness conversation identity used for this arm; never shared.
     pub reasoner_session_id: Option<String>,
     pub context_bytes: usize,
+    /// Approximate byte/4 preflight estimate; never used as the hard token gate.
     pub estimated_input_tokens: u64,
+    /// Exact tokenizer count supplied by the reasoner adapter when available.
+    pub model_token_preflight: Option<u64>,
     pub usage: Option<ReasonerUsage>,
     pub answer: Option<DiagnosisAnswer>,
     pub score: Option<ContextScore>,
@@ -1019,8 +1031,11 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
     let mut session_ids = BTreeSet::new();
     for (arm_order_position, arm) in arm_order.iter().enumerate() {
         let (packet, compiler_time_micros) = compile_context_packet(input, *arm)?;
+        let model_token_preflight =
+            reasoner.count_input_tokens(&packet.profile, &packet.rendered_context);
         if packet.context_bytes > budget.maximum_context_bytes
-            || packet.estimated_input_tokens > budget.maximum_input_tokens
+            || model_token_preflight
+                .is_some_and(|tokens| tokens > budget.maximum_input_tokens)
         {
             results.push(ContextArmResult {
                 scenario_id: packet.scenario_id.clone(),
@@ -1036,6 +1051,7 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
                 reasoner_session_id: None,
                 context_bytes: packet.context_bytes,
                 estimated_input_tokens: packet.estimated_input_tokens,
+                model_token_preflight,
                 usage: None,
                 answer: None,
                 score: None,
@@ -1085,6 +1101,7 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
             reasoner_session_id: Some(session_id),
             context_bytes: packet.context_bytes,
             estimated_input_tokens: packet.estimated_input_tokens,
+            model_token_preflight,
             usage: Some(response.usage),
             answer: Some(response.answer),
             score,
@@ -1869,6 +1886,14 @@ mod tests {
             format!("fresh-session-{}", self.next_session)
         }
 
+        fn count_input_tokens(
+            &mut self,
+            _profile: &ContextExperimentProfile,
+            rendered_context: &str,
+        ) -> Option<u64> {
+            Some(rendered_context.len().div_ceil(4) as u64)
+        }
+
         fn diagnose(
             &mut self,
             session_id: &str,
@@ -1942,6 +1967,7 @@ mod tests {
             reasoner_session_id: Some(format!("{scenario_id}-{attempt_id}-{arm:?}")),
             context_bytes: 512,
             estimated_input_tokens: 128,
+            model_token_preflight: Some(128),
             usage: Some(ReasonerUsage {
                 input_tokens: 128,
                 output_tokens: 32,
@@ -2123,6 +2149,14 @@ mod tests {
             "reused-session".into()
         }
 
+        fn count_input_tokens(
+            &mut self,
+            _profile: &ContextExperimentProfile,
+            _rendered_context: &str,
+        ) -> Option<u64> {
+            Some(1)
+        }
+
         fn diagnose(
             &mut self,
             session_id: &str,
@@ -2165,6 +2199,14 @@ mod tests {
             "manifest-drift-session".into()
         }
 
+        fn count_input_tokens(
+            &mut self,
+            _profile: &ContextExperimentProfile,
+            _rendered_context: &str,
+        ) -> Option<u64> {
+            Some(1)
+        }
+
         fn diagnose(
             &mut self,
             session_id: &str,
@@ -2192,6 +2234,95 @@ mod tests {
                 },
             }
         }
+    }
+
+    struct ExactTokenizerReasoner {
+        profile: Option<ContextExperimentProfile>,
+        token_count: u64,
+    }
+
+    impl ContextReasoner for ExactTokenizerReasoner {
+        fn start_fresh_session(&mut self, profile: &ContextExperimentProfile) -> String {
+            self.profile = Some(profile.clone());
+            "exact-tokenizer-session".into()
+        }
+
+        fn count_input_tokens(
+            &mut self,
+            _profile: &ContextExperimentProfile,
+            _rendered_context: &str,
+        ) -> Option<u64> {
+            Some(self.token_count)
+        }
+
+        fn diagnose(
+            &mut self,
+            session_id: &str,
+            _rendered_context: &str,
+            _budget: ContextBudget,
+        ) -> ReasonerResponse {
+            let manifest = ReasonerInvocationManifest::from(
+                self.profile.as_ref().expect("session profile is initialized"),
+            );
+            ReasonerResponse {
+                session_id: session_id.into(),
+                invocation_manifest: manifest,
+                answer: DiagnosisAnswer {
+                    root_object_ref: Some("payments-config".into()),
+                    supporting_evidence_ids: vec!["ev-change".into()],
+                    alternative_object_refs: Vec::new(),
+                    abstained: false,
+                },
+                usage: ReasonerUsage {
+                    input_tokens: self.token_count,
+                    output_tokens: 32,
+                    tool_calls: 0,
+                    reported_cost_microusd: 1_000,
+                },
+            }
+        }
+    }
+
+    #[test]
+    fn exact_model_tokenizer_overrides_conservative_byte_estimate() {
+        let tight = ContextBudget {
+            maximum_input_tokens: 100,
+            ..budget()
+        };
+        let results = run_paired_context_ablation(
+            &input(),
+            &truth(),
+            tight,
+            &test_order(),
+            &mut ExactTokenizerReasoner {
+                profile: None,
+                token_count: 100,
+            },
+        )
+        .unwrap();
+        assert!(results.iter().all(|result| result.estimated_input_tokens > 100));
+        assert!(results.iter().all(|result| result.model_token_preflight == Some(100)));
+        assert!(results.iter().all(|result| result.status == ArmStatus::Scored));
+    }
+
+    #[test]
+    fn unknown_exact_tokenizer_does_not_turn_byte_estimate_into_hard_rejection() {
+        let tight = ContextBudget {
+            maximum_input_tokens: 100,
+            ..budget()
+        };
+        let results = run_paired_context_ablation(
+            &input(),
+            &truth(),
+            tight,
+            &test_order(),
+            &mut ExactTokenizerReasoner {
+                profile: None,
+                token_count: 100,
+            },
+        )
+        .unwrap();
+        assert!(results.iter().all(|result| result.status == ArmStatus::Scored));
     }
 
     #[test]
