@@ -2566,7 +2566,9 @@ mod tests {
             ReasonerResponse {
                 session_id: session_id.into(),
                 invocation_manifest: ReasonerInvocationManifest::from(
-                    self.profile.as_ref().expect("session profile is initialized"),
+                    self.profile
+                        .as_ref()
+                        .expect("session profile is initialized"),
                 ),
                 answer: DiagnosisAnswer {
                     root_object_ref: None,
