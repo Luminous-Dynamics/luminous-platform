@@ -1,8 +1,8 @@
 use assurance_case_contract::{
-    AssuranceCaseInput, AssumptionSpec, AssumptionStatus, CaseEdge, CaseNode,
+    AssumptionSpec, AssumptionStatus, AssuranceCaseInput, CaseEdge, CaseNode, CaseOutcome,
     ClaimSpec, ContextSpec, DefeaterSpec, DependencyAssessment, DependencyDisposition,
     DependencyRequirement, EdgeKind, EvidenceClass, EvidenceSpec, EvidenceStatus, NodeKind,
-    RebuttalSpec, CaseOutcome, evaluate_bytes,
+    RebuttalSpec, evaluate_bytes,
 };
 use jsonschema::draft202012;
 use serde_json::json;
@@ -26,10 +26,8 @@ fn node(
         id: id.to_owned(),
         kind,
         claim,
-        argument: argument.map(|rationale| {
-            assurance_case_contract::ArgumentSpec {
-                rationale: rationale.to_owned(),
-            }
+        argument: argument.map(|rationale| assurance_case_contract::ArgumentSpec {
+            rationale: rationale.to_owned(),
         }),
         context,
         assumption,
@@ -180,7 +178,10 @@ fn run(input: &AssuranceCaseInput) -> assurance_case_contract::AssuranceCaseRepo
 }
 
 fn add_assumption(input: &mut AssuranceCaseInput, status: AssumptionStatus, critical: bool) {
-    let evidence_ids = if matches!(status, AssumptionStatus::Supported | AssumptionStatus::Bounded | AssumptionStatus::Refuted) {
+    let evidence_ids = if matches!(
+        status,
+        AssumptionStatus::Supported | AssumptionStatus::Bounded | AssumptionStatus::Refuted
+    ) {
         vec!["e-assumption".to_owned()]
     } else {
         Vec::new()
@@ -303,7 +304,11 @@ fn complete_claim_with_direct_and_argument_support_is_supported() {
 #[test]
 fn missing_required_evidence_cannot_support_a_claim() {
     let mut input = base_case();
-    let direct = input.nodes.iter_mut().find(|node| node.id == "e-direct").unwrap();
+    let direct = input
+        .nodes
+        .iter_mut()
+        .find(|node| node.id == "e-direct")
+        .unwrap();
     direct.evidence.as_mut().unwrap().status = EvidenceStatus::Missing;
     let report = run(&input);
     assert_eq!(report.outcome, CaseOutcome::Indeterminate);
@@ -403,8 +408,11 @@ fn missing_assumption_evidence_reference_is_invalid_not_a_panic() {
 #[test]
 fn shared_dependency_defeats_independent_corroboration_claim() {
     let mut input = base_case();
-    input.nodes[0].claim.as_mut().unwrap().dependency_requirement =
-        DependencyRequirement::NoDeclaredCommonDomain;
+    input.nodes[0]
+        .claim
+        .as_mut()
+        .unwrap()
+        .dependency_requirement = DependencyRequirement::NoDeclaredCommonDomain;
     for id in ["e-direct", "e-argument"] {
         let evidence = input.nodes.iter_mut().find(|node| node.id == id).unwrap();
         evidence.evidence.as_mut().unwrap().dependency_assessment = Some(DependencyAssessment {
@@ -419,8 +427,11 @@ fn shared_dependency_defeats_independent_corroboration_claim() {
 #[test]
 fn unknown_dependency_cannot_discharge_independence_obligation() {
     let mut input = base_case();
-    input.nodes[0].claim.as_mut().unwrap().dependency_requirement =
-        DependencyRequirement::NoDeclaredCommonDomain;
+    input.nodes[0]
+        .claim
+        .as_mut()
+        .unwrap()
+        .dependency_requirement = DependencyRequirement::NoDeclaredCommonDomain;
     for id in ["e-direct", "e-argument"] {
         let evidence = input.nodes.iter_mut().find(|node| node.id == id).unwrap();
         evidence.evidence.as_mut().unwrap().dependency_assessment = Some(DependencyAssessment {
@@ -435,8 +446,11 @@ fn unknown_dependency_cannot_discharge_independence_obligation() {
 #[test]
 fn complete_no_declared_common_domain_supports_only_the_scoped_claim() {
     let mut input = base_case();
-    input.nodes[0].claim.as_mut().unwrap().dependency_requirement =
-        DependencyRequirement::NoDeclaredCommonDomain;
+    input.nodes[0]
+        .claim
+        .as_mut()
+        .unwrap()
+        .dependency_requirement = DependencyRequirement::NoDeclaredCommonDomain;
     for id in ["e-direct", "e-argument"] {
         let evidence = input.nodes.iter_mut().find(|node| node.id == id).unwrap();
         evidence.evidence.as_mut().unwrap().dependency_assessment = Some(no_common_dependency());
@@ -448,8 +462,11 @@ fn complete_no_declared_common_domain_supports_only_the_scoped_claim() {
 #[test]
 fn no_declared_common_domain_never_proves_physical_independence() {
     let mut input = base_case();
-    input.nodes[0].claim.as_mut().unwrap().dependency_requirement =
-        DependencyRequirement::PhysicalOrStatisticalIndependence;
+    input.nodes[0]
+        .claim
+        .as_mut()
+        .unwrap()
+        .dependency_requirement = DependencyRequirement::PhysicalOrStatisticalIndependence;
     for id in ["e-direct", "e-argument"] {
         let evidence = input.nodes.iter_mut().find(|node| node.id == id).unwrap();
         evidence.evidence.as_mut().unwrap().dependency_assessment = Some(no_common_dependency());
@@ -461,8 +478,11 @@ fn no_declared_common_domain_never_proves_physical_independence() {
 #[test]
 fn incomplete_inventory_cannot_satisfy_no_common_dependency_obligation() {
     let mut input = base_case();
-    input.nodes[0].claim.as_mut().unwrap().dependency_requirement =
-        DependencyRequirement::NoDeclaredCommonDomain;
+    input.nodes[0]
+        .claim
+        .as_mut()
+        .unwrap()
+        .dependency_requirement = DependencyRequirement::NoDeclaredCommonDomain;
     for id in ["e-direct", "e-argument"] {
         let evidence = input.nodes.iter_mut().find(|node| node.id == id).unwrap();
         evidence.evidence.as_mut().unwrap().dependency_assessment = Some(DependencyAssessment {
@@ -477,7 +497,11 @@ fn incomplete_inventory_cannot_satisfy_no_common_dependency_obligation() {
 #[test]
 fn expired_evidence_is_indeterminate() {
     let mut input = base_case();
-    let direct = input.nodes.iter_mut().find(|node| node.id == "e-direct").unwrap();
+    let direct = input
+        .nodes
+        .iter_mut()
+        .find(|node| node.id == "e-direct")
+        .unwrap();
     direct.evidence.as_mut().unwrap().valid_until = Some(50);
     let report = run(&input);
     assert_eq!(report.outcome, CaseOutcome::Indeterminate);
@@ -486,7 +510,11 @@ fn expired_evidence_is_indeterminate() {
 #[test]
 fn evidence_outside_decision_scope_is_indeterminate() {
     let mut input = base_case();
-    let direct = input.nodes.iter_mut().find(|node| node.id == "e-direct").unwrap();
+    let direct = input
+        .nodes
+        .iter_mut()
+        .find(|node| node.id == "e-direct")
+        .unwrap();
     direct.evidence.as_mut().unwrap().decision_scope = "different-system".to_owned();
     let report = run(&input);
     assert_eq!(report.outcome, CaseOutcome::Indeterminate);
@@ -540,7 +568,12 @@ fn unsupported_argument_dependency_cycle_is_invalid() {
 #[test]
 fn all_required_argument_support_can_satisfy_a_claim_without_direct_evidence() {
     let mut input = base_case();
-    input.nodes[0].claim.as_mut().unwrap().required_evidence_ids.clear();
+    input.nodes[0]
+        .claim
+        .as_mut()
+        .unwrap()
+        .required_evidence_ids
+        .clear();
     input.nodes.retain(|node| node.id != "e-direct");
     input.edges.retain(|edge| edge.id != "edge-direct");
     let report = run(&input);
@@ -581,7 +614,11 @@ fn defeater_attached_to_argument_is_propagated_to_root_claim() {
 fn assumptions_attached_to_arguments_are_not_ignored() {
     let mut input = base_case();
     add_assumption(&mut input, AssumptionStatus::Open, true);
-    let assumption_edge = input.edges.iter_mut().find(|edge| edge.id == "edge-assumption").unwrap();
+    let assumption_edge = input
+        .edges
+        .iter_mut()
+        .find(|edge| edge.id == "edge-assumption")
+        .unwrap();
     assumption_edge.to = "arg-main".to_owned();
     let report = run(&input);
     assert_eq!(report.outcome, CaseOutcome::Indeterminate);
@@ -645,7 +682,10 @@ fn node_and_edge_permutations_preserve_assessment_semantics() {
     assert_eq!(original.outcome, reordered.outcome);
     assert_eq!(original.claim_assessments, reordered.claim_assessments);
     assert_eq!(original.open_defeater_ids, reordered.open_defeater_ids);
-    assert_eq!(original.unresolved_assumption_ids, reordered.unresolved_assumption_ids);
+    assert_eq!(
+        original.unresolved_assumption_ids,
+        reordered.unresolved_assumption_ids
+    );
     assert_ne!(original.input_sha256, reordered.input_sha256);
 }
 
@@ -690,7 +730,11 @@ fn degrading_required_evidence_from_current_to_stale_never_improves_the_outcome(
     let input = base_case();
     assert_eq!(run(&input).outcome, CaseOutcome::SupportedForDeclaredScope);
     let mut degraded = input;
-    let direct = degraded.nodes.iter_mut().find(|node| node.id == "e-direct").unwrap();
+    let direct = degraded
+        .nodes
+        .iter_mut()
+        .find(|node| node.id == "e-direct")
+        .unwrap();
     direct.evidence.as_mut().unwrap().status = EvidenceStatus::Stale;
     assert_eq!(run(&degraded).outcome, CaseOutcome::Indeterminate);
 }
@@ -706,13 +750,20 @@ fn evidence_expiring_at_the_case_as_of_boundary_is_not_current() {
 #[test]
 fn unsorted_dependency_sources_cannot_satisfy_no_common_domain_obligation() {
     let mut input = base_case();
-    input.nodes[0].claim.as_mut().unwrap().dependency_requirement =
-        DependencyRequirement::NoDeclaredCommonDomain;
+    input.nodes[0]
+        .claim
+        .as_mut()
+        .unwrap()
+        .dependency_requirement = DependencyRequirement::NoDeclaredCommonDomain;
     for id in ["e-direct", "e-argument"] {
         let evidence_node = input.nodes.iter_mut().find(|node| node.id == id).unwrap();
         let mut assessment = no_common_dependency();
         assessment.source_ids.reverse();
-        evidence_node.evidence.as_mut().unwrap().dependency_assessment = Some(assessment);
+        evidence_node
+            .evidence
+            .as_mut()
+            .unwrap()
+            .dependency_assessment = Some(assessment);
     }
     assert_eq!(run(&input).outcome, CaseOutcome::Indeterminate);
 }
