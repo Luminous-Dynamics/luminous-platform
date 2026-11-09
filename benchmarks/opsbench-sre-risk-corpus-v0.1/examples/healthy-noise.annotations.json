@@ -1,0 +1,87 @@
+{
+  "schema": "opsbench-sre-risk-trajectory-annotations-v0.1",
+  "guide_version": "sre-risk-labeling-v0.1.0",
+  "trajectory_id": "synthetic-healthy-noise-control-001",
+  "cohort": "synthetic",
+  "split": "development",
+  "scenario_family": "benign-alert-noise-control",
+  "topology_family": "single-api-service",
+  "run_manifest_digest": "1919191919191919191919191919191919191919191919191919191919191919",
+  "trace_digest": "1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a",
+  "data_permission": "synthetic_generated",
+  "annotation_event_index": [
+    {
+      "source_event_id": "ben-1",
+      "step_id": "b1",
+      "sequence": 1,
+      "event_digest": "1515151515151515151515151515151515151515151515151515151515151515",
+      "observed_at_ms": 100,
+      "visible_to_annotator": true
+    },
+    {
+      "source_event_id": "ben-2",
+      "step_id": "b2",
+      "sequence": 2,
+      "event_digest": "1616161616161616161616161616161616161616161616161616161616161616",
+      "observed_at_ms": 200,
+      "visible_to_annotator": true
+    },
+    {
+      "source_event_id": "ben-3",
+      "step_id": "b3",
+      "sequence": 3,
+      "event_digest": "1717171717171717171717171717171717171717171717171717171717171717",
+      "observed_at_ms": 300,
+      "visible_to_annotator": true
+    },
+    {
+      "source_event_id": "ben-4",
+      "step_id": "b4",
+      "sequence": 4,
+      "event_digest": "1818181818181818181818181818181818181818181818181818181818181818",
+      "observed_at_ms": 400,
+      "visible_to_annotator": true
+    }
+  ],
+  "annotations": [
+    {
+      "annotation_id": "ben-ann-a",
+      "annotator_id": "sre-c",
+      "annotator_role": "sre_annotator",
+      "blind_to_agent_identity": true,
+      "risk_assessment": "no_material_risk",
+      "first_material_risk_step_id": null,
+      "first_risk_no_risk_reason": "Alert noise is not accompanied by a safety-margin, queue, business-result or recovery-option change.",
+      "eventual_failure_step_id": null,
+      "failure_no_incident_reason": "No incident occurs in the observation horizon; offered demand and plant state remain within the declared envelope.",
+      "earliest_justified_response_step_id": "b2",
+      "labels": [],
+      "annotator_notes": "Correct response is observe/acknowledge noise; no intervention is warranted."
+    },
+    {
+      "annotation_id": "ben-ann-b",
+      "annotator_id": "sre-d",
+      "annotator_role": "sre_annotator",
+      "blind_to_agent_identity": true,
+      "risk_assessment": "no_material_risk",
+      "first_material_risk_step_id": null,
+      "first_risk_no_risk_reason": "The signal is a known decoy with no independent corroboration or material plant change.",
+      "eventual_failure_step_id": null,
+      "failure_no_incident_reason": "No failure in the declared observation window.",
+      "earliest_justified_response_step_id": "b2",
+      "labels": [],
+      "annotator_notes": "Do not classify alert frequency alone as latent operational risk."
+    }
+  ],
+  "adjudication": {
+    "status": "resolved",
+    "adjudicator_id": "sre-adjudicator-2",
+    "adjudicator_role": "independent_sre_adjudicator",
+    "resolved_annotation_ids": [
+      "ben-ann-a",
+      "ben-ann-b"
+    ],
+    "resolution_summary": "Both annotators classify this as a benign no-risk control; no risk or failure step is assigned.",
+    "unresolved_fields": []
+  }
+}
