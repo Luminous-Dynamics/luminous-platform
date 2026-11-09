@@ -1200,8 +1200,12 @@ pub struct ContextArmAggregate {
     pub grounded_rate_scored_ppm: Option<u32>,
     pub mean_context_bytes: u128,
     pub mean_estimated_input_tokens: u128,
-    pub mean_actual_input_tokens_scored: Option<u128>,
-    pub mean_reasoner_time_micros_scored: Option<u128>,
+    /// Mean observed provider input usage, including calls that exceeded budget.
+    pub mean_actual_input_tokens_invoked: Option<u128>,
+    pub mean_reported_cost_microusd_invoked: Option<u128>,
+    pub mean_adapter_setup_time_micros: u128,
+    pub mean_reasoner_time_micros_invoked: Option<u128>,
+    pub mean_total_arm_time_micros: u128,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1224,6 +1228,8 @@ pub struct ContextArmContrast {
     pub correct_rate_delta_cluster_ci95_ppm: Option<(i64, i64)>,
     pub grounded_rate_delta_cluster_ci95_ppm: Option<(i64, i64)>,
     pub both_scored_blocks: usize,
+    /// Both arms made a model call and returned actual usage, regardless of score eligibility.
+    pub both_invoked_blocks: usize,
     pub candidate_budget_exceeded_blocks: usize,
     pub raw_budget_exceeded_blocks: usize,
     /// Candidate minus raw, over all paired blocks (budget misses remain in denominator).
@@ -1234,10 +1240,13 @@ pub struct ContextArmContrast {
     pub grounded_rate_delta_both_scored_ppm: Option<i64>,
     /// Candidate minus raw average estimated tokens over all paired blocks.
     pub mean_estimated_tokens_delta: i128,
-    /// Candidate minus raw actual input tokens where both arms returned usage.
-    pub mean_actual_tokens_delta_both_scored: Option<i128>,
-    /// Candidate minus raw reasoner elapsed time for paired scored blocks.
-    pub mean_reasoner_time_delta_micros_both_scored: Option<i128>,
+    /// Candidate minus raw actual tokens and reported cost where both arms were invoked.
+    pub mean_actual_tokens_delta_both_invoked: Option<i128>,
+    pub mean_reported_cost_delta_microusd_both_invoked: Option<i128>,
+    /// Provider time delta for paired invocations, including calls later marked over budget.
+    pub mean_reasoner_time_delta_micros_both_invoked: Option<i128>,
+    /// End-to-end arm latency delta across all paired blocks, including preflight-only misses.
+    pub mean_total_arm_time_delta_micros_all: i128,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1588,11 +1597,19 @@ pub fn analyze_paired_context_results(
                 .iter()
                 .map(|row| row.estimated_input_tokens as u128)
                 .sum();
-            let actual_tokens: Vec<u128> = scored
+            let actual_tokens: Vec<u128> = rows
                 .iter()
                 .filter_map(|row| row.usage.as_ref().map(|usage| usage.input_tokens as u128))
                 .collect();
-            let reasoner_times: Vec<u128> = scored
+            let reported_costs: Vec<u128> = rows
+                .iter()
+                .filter_map(|row| {
+                    row.usage
+                        .as_ref()
+                        .map(|usage| usage.reported_cost_microusd as u128)
+                })
+                .collect();
+            let reasoner_times: Vec<u128> = rows
                 .iter()
                 .filter_map(|row| row.reasoner_time_micros)
                 .collect();
@@ -1613,14 +1630,28 @@ pub fn analyze_paired_context_results(
                     .then(|| rate_ppm(grounded_roots, scored.len())),
                 mean_context_bytes: total_context_bytes / n as u128,
                 mean_estimated_input_tokens: total_estimated_tokens / n as u128,
-                mean_actual_input_tokens_scored: mean_u128(
+                mean_actual_input_tokens_invoked: mean_u128(
                     actual_tokens.iter().sum(),
                     actual_tokens.len(),
                 ),
-                mean_reasoner_time_micros_scored: mean_u128(
+                mean_reported_cost_microusd_invoked: mean_u128(
+                    reported_costs.iter().sum(),
+                    reported_costs.len(),
+                ),
+                mean_adapter_setup_time_micros: rows
+                    .iter()
+                    .map(|row| row.adapter_setup_time_micros)
+                    .sum::<u128>()
+                    / n as u128,
+                mean_reasoner_time_micros_invoked: mean_u128(
                     reasoner_times.iter().sum(),
                     reasoner_times.len(),
                 ),
+                mean_total_arm_time_micros: rows
+                    .iter()
+                    .map(|row| row.total_arm_time_micros)
+                    .sum::<u128>()
+                    / n as u128,
             });
         }
 
