@@ -2401,6 +2401,7 @@ mod tests {
             &mut ScriptedReasoner {
                 calls: Vec::new(),
                 next_session: 0,
+                active_profile: None,
             },
         )
         .unwrap();
@@ -2624,6 +2625,7 @@ mod tests {
             &mut ScriptedReasoner {
                 calls: Vec::new(),
                 next_session: 0,
+                active_profile: None,
             },
         )
         .unwrap();
