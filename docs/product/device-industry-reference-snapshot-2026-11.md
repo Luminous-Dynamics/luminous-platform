@@ -12,12 +12,13 @@ We need to compete against actual products and mature ecosystems, not caricature
 
 ## 1. Mobile: repairability and support already have serious competitors
 
-**Fairphone (Gen. 6)** is a strong longevity and repairability reference. Fairphone lists 12 user-replaceable spare parts, a user-replaceable display, battery, USB-C port and back cover, spare-parts availability through 2033, software support through 2033 and a five-year warranty. The manufacturer states that several of these modules can be changed in under five minutes. Its published security description lists a Trusted Execution Environment and says there is no hardware secure element beyond the eSIM chip; this distinction matters when mapping actual trust primitives rather than treating “secure” as a generic badge.
+**Fairphone (Gen. 6 and Gen. 6+)** are strong longevity and repairability references. Fairphone's current Gen. 6+ profile uses Snapdragon 7s Gen 4 and 12 GB RAM; the Gen. 6 uses Snapdragon 7s Gen 3 and 8 GB RAM. Both have 12 user-replaceable parts, including battery, display, USB-C port and back cover; Fairphone states that several common modules can be replaced in under five minutes and parts/software support extend to 2033. The manufacturer lists a five-year warranty. Its security description lists a Trusted Execution Environment and says there is no hardware secure element beyond the eSIM chip. That distinction matters when mapping actual trust primitives rather than treating “secure” as a generic badge.
 
 Sources:
 - https://www.fairphone.com/the-fairphone-gen-6
+- https://us.fairphone.com/the-fairphone-gen-6-plus
+- https://www.fairphone.info/the-fairphone-gen-6-plus
 - https://support.fairphone.com/hc/en-us/articles/9979180437393-How-long-will-my-Fairphone-receive-software-and-security-updates
-- https://www.fairphone.com/warranty
 
 **Implication for Luminous:** A repairable phone and long software support are not novel differentiators by themselves. The opportunity is to combine those qualities with user-controlled local intelligence, offline operation, transparent sensor/data policy, independently appraised boot/device evidence, cross-device workload delegation and cryptographically linked repair/requalification records. We should compare repair cost and time against Fairphone directly on exact parts and procedures.
 
@@ -25,22 +26,24 @@ Do not promise an open mobile boot chain, custom modem or custom phone board unt
 
 ## 2. Laptops and workstations: repairability is entering mainstream business hardware
 
-**Framework Laptop 13 Pro (2026)** is a high-value repairability, upgradeability and Linux-support comparator. Framework currently promotes Core Ultra Series 3, LPCAMM2 memory, modular repair/upgrades and a 20-hour battery claim. Its battery result is a vendor test under a specified media-streaming and Windows power profile; it must not be compared directly with a Luminous mixed-use or local-AI runtime unless the test is matched.
+**Framework Laptop 13 Pro (2026)** is a high-value repairability, upgradeability and Linux-support comparator. Framework lists Core Ultra Series 3 options, up to 64 GB LPCAMM2, NVMe storage up to 8 TB, a 74 Wh battery, repairable/upgradeable design and Ubuntu preloaded options. Its advertised 20-hour battery result is a vendor test under a defined Netflix 4K / 250-nit / 30%-volume / Windows 11 profile; it must not be compared directly with a Luminous mixed-use or local-AI runtime unless the test is matched.
 
-Source: https://frame.work/
+Sources:
+- https://frame.work/laptop13pro
+- https://frame.work/blog/introducing-framework-laptop-13-pro
 
-**Lenovo ThinkPad P16s Gen 5** is a current professional workstation comparator. The 2026 iFixit assessment describes upgradeable LPCAMM2 memory and SSD, customer-replaceable battery, and straightforward display, keyboard and fan replacement, while noting that some ports remain soldered. Exact Intel/AMD machine type and configuration matter.
+**Lenovo ThinkPad P16s Gen 5** is a current professional workstation comparator. iFixit's 2026 assessment reports upgradeable LPCAMM2 memory up to 96 GB, one M.2 SSD slot, customer-replaceable 60 or 90 Wh battery, and straightforward display, keyboard and fan replacements; some ports remain soldered. Lenovo's repair guide lists 36 service parts for the AMD variant, including a replaceable USB-C module. Exact Intel/AMD machine type matters: 21XE/21XF and 21XG/21XH are distinct SKUs.
 
 Sources:
 - https://www.ifixit.com/repairability/laptop-repairability-scores
 - https://www.ifixit.com/Device/Lenovo_ThinkPad_P16s_Gen_5
-- https://psref.lenovo.com/
+- https://pcsupport.lenovo.com/us/en/products/laptops-and-netbooks/thinkpad-p-series-laptops/thinkpad-p16s-gen-5-type-21xg-21xh/21xh/selfrepair/removalsreplacements
 
 **Implication for Luminous:** Competing on “modular laptop” alone is insufficient. We need a stronger combined result: repairability, sustained local Symthaea workload performance, whole-device joules per accepted task, good Linux/firmware lifecycle, offline recovery, privacy-preserving workload placement and a validated thermal model. Use Symthaea LAPTOP-ARCH-001 #8446 and Symtropy LAPTOP-TWIN-001 #2697 as the canonical comparison owners.
 
 ## 3. Field devices: environmental and service capabilities are mature
 
-**Panasonic TOUGHBOOK G2** is a reference for field tablet engineering and enterprise support. Panasonic lists an Intel Core Ultra 5 platform with NPU, a 1,000-nit glove-compatible display, modular expansion options, IP65, MIL-STD-810H and MIL-STD-461G testing, optional hazardous-location configuration and a three-year limited warranty. It also lists Red Hat Enterprise Linux options for this SKU. These claims are model- and configuration-specific.
+**Panasonic TOUGHBOOK G2 (FZ-G2)** is a reference for field tablet engineering and enterprise support. Panasonic's current product page lists an Intel Core Ultra 5 135U with NPU, 10.1-inch 1,000-nit glove-compatible display, optional expansion modules, IP65, MIL-STD-810H and MIL-STD-461G test claims, and Red Hat Enterprise Linux options. Panasonic lists up to 15 hours under MobileMark 2025 and a three-year limited warranty. These figures are model- and configuration-specific vendor claims; obtain the underlying test reports and match the workload before comparison.
 
 Sources:
 - https://connect.na.panasonic.com/toughbook/rugged-laptops-tablets/toughbook-g2
@@ -50,12 +53,12 @@ Sources:
 
 ## 4. Servers and edge nodes: raw performance is a very high bar
 
-**AMD EPYC 9005** spans up to 192 CPU cores in the top 9965 model. AMD publishes model-specific core, memory-channel, TDP and PCIe data; the part number and TDP matter more than a “9005” family label.
+**AMD EPYC 9965** is the top-end 9005-series reference with 192 cores / 384 threads, 12 DDR5 memory channels, up to 614 GB/s per-socket memory bandwidth and a 500 W default TDP. This is an important reminder that raw core count is not equivalent to efficiency or affordable edge compute; compare exact model and full-system power.
 
-**Dell PowerEdge R7725** is a concrete 2U server reference supporting two EPYC 9005 processors, with up to 192 cores per processor on supported configurations. Its ecosystem includes ECC RDIMM, hot-plug components and Dell's iDRAC/Redfish-based management.
+**Dell PowerEdge R7725** is a concrete 2U server reference supporting two EPYC 9005 processors on supported configurations. It is a platform-management and serviceability comparator, not a single CPU benchmark point. Record the exact chassis, CPU, DIMM, storage, NIC and firmware configuration.
 
 Sources:
-- https://www.amd.com/en/products/processors/server/epyc/9005-series.html
+- https://www.amd.com/en/products/processors/server/epyc/9005-series/amd-epyc-9965.html
 - https://www.amd.com/en/partner/articles/epyc-9005-series-processors.html
 - https://www.dell.com/support/product-details/en-us/product/poweredge-r7725/
 
@@ -67,9 +70,11 @@ Source: https://www.opencompute.org/projects/server/
 
 ## 5. XR: reuse the runtime and optics ecosystem
 
-**HTC VIVE Focus Vision** is a useful enterprise XR reference. The official VIVE Business specification lists 2448 × 2448 pixels per eye, depth and stereo passthrough sensors, eye tracking, 12 GB memory, expandable storage and a removable/swappable battery with up to two hours of battery life. The 120 Hz DisplayPort mode is labelled Beta on the business specification page; do not treat that as a universally available standalone mode.
+**HTC VIVE Focus Vision** is a useful enterprise XR reference. The official specification lists dual 2448 × 2448 LCD panels, up to 120° FOV, 12 GB LPDDR5 RAM, 128 GB ROM and microSD expansion up to 2 TB. Its 120 Hz DisplayPort mode is labelled Beta; do not treat it as a universally available standalone mode. Verify the exact commercial SKU, firmware, tracking-sensor set, battery configuration and runtime before comparing it with another headset.
 
-Source: https://business.vive.com/eu/product/vive-focus-vision/
+Sources:
+- https://business.vive.com/eu/product/vive-focus-vision/
+- https://www.vive.com/sea/product/vive-focus-vision/specs/
 
 The OpenXR Conformance Test Suite is necessary evidence for runtime API conformance, but it is not evidence of tracking accuracy, end-to-end motion-to-photon latency, spatial mapping accuracy, comfort, optics or safety.
 
