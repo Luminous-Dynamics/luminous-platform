@@ -236,8 +236,8 @@
       "owner_issue": "https://github.com/Luminous-Dynamics/mycelix/issues/5981",
       "implementation": "https://github.com/Luminous-Dynamics/mycelix/pull/5983",
       "maturity": "initial_synthetic_reference_implementation_pending_exact_head_ci",
-      "current_evidence": "An isolated Rust package separates a public-only candidate evaluator from hidden-truth scoring. It models active/sham interventions, per-endpoint response contrasts, event-time/receive-time, clock-mapping quality, missing observations, sham nuisance and hidden causal paths. The public suite contains 12 adversarial/property tests, a strict input/report/truth/score schema set, and public common-cause, sham-nuisance and synchronous-independent controls. Exact-head CI is pending.",
-      "fixture_state": "12 named public synthetic software-conformance cases. Public fixtures are separate from hidden-truth examples. Includes common-cause positive, no-path negative, sham nuisance, missing observation, unknown/invalid time mapping, delayed receive time, false non-detection, false positive synchronous unrelated faults, stale report binding, hidden topology commitment mutation and duplicate observations.",
+      "current_evidence": "An isolated Rust package separates a public-only candidate evaluator from hidden-truth scoring. It models active/sham interventions, per-endpoint response contrasts, explicit negative-control channels, event-time/receive-time, clock-mapping quality, missing observations, sham nuisance and hidden causal paths. The public suite contains 13 adversarial/property tests, strict input/report/truth/score schemas, and public common-cause, sham-nuisance and synchronous-independent controls. Exact-head CI has not yet qualified the latest head.",
+      "fixture_state": "13 named public synthetic software-conformance cases. Public fixtures are separate from hidden-truth examples. Includes common-cause positive, no-path negative, sham nuisance, explicit negative-control collector artifact, missing observation, unknown/invalid time mapping, delayed receive time, false non-detection, false-positive synchronous unrelated faults, stale report binding, hidden topology commitment mutation and duplicate observations.",
       "claim_ceiling": "Synthetic intervention/observation semantics and hidden-topology scoring under a declared intervention envelope. Non-detection does not establish physical/statistical independence. No arbitrary causal discovery, field failure probability, evaluator-custody authentication, PNT/telecom qualification or safety certification.",
       "score_families": [
         "causal_discovery",
@@ -249,10 +249,11 @@
         "reproducibility"
       ],
       "next_work": [
-        "Complete exact-head formatting, Rust compilation, schema tests, 12-case registry, 12 adversarial tests, candidate CLI smoke and Clippy.",
-        "Separate actual evaluator-held hidden truth from candidate-repository fixtures and add authenticated run-order/access-boundary receipts using the sealed-evaluation owner.",
-        "Add multi-domain interventions for GNSS antenna/reference, oscillator, power, network, correction provider, collector pipeline, firmware and antenna-site environmental causes.",
-        "Add nuisance and synchronized-independent controls with confidence bounds and intervention coverage stratification.",
+        "Complete exact-head formatting, Rust compilation, schema tests, 13-case registry, adversarial tests, candidate CLI smoke and Clippy.",
+        "Add evaluator-held hidden truth outside the candidate repository and authenticated schedule/custody receipts using the sealed-evaluation owner.",
+        "Add multi-domain interventions for GNSS antenna/reference, oscillator, power, network, correction provider, firmware and antenna-site causes.",
+        "Add nuisance controls for shared collectors, adapters, clocks and environmental channels; publish confidence bounds per domain.",
+        "Add safe active-experiment planning (EMSR-ACTIVE-001 / Mycelix #5984) using minimax hypothesis separation within a declared safety envelope.",
         "Report p50/p95/p99 detection latency and scale by endpoint count, trial count and causal-path depth; then run hardware-in-the-loop replications."
       ]
     }
