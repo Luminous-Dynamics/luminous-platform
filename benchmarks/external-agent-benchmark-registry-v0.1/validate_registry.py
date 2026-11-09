@@ -159,13 +159,13 @@ def native_sregym_semantic_errors(manifest: dict[str, Any]) -> list[str]:
     if capture_status == "metadata_only" and (
         inventory["git_blob_sha"] is not None or inventory["content_sha256"] is not None
     ):
-        errors.append("cohort.inventory_source: metadata_only cannot claim captured bytes")
+        errors.append("cohort.cohort_observation_source: metadata_only cannot claim captured bytes")
     if capture_status == "git_blob_only" and (
         inventory["git_blob_sha"] is None or inventory["content_sha256"] is not None
     ):
-        errors.append("cohort.inventory_source: git_blob_only requires a Git blob SHA and no content SHA-256")
+        errors.append("cohort.cohort_observation_source: git_blob_only requires a Git blob SHA and no content SHA-256")
     if capture_status == "content_sha256_verified" and inventory["content_sha256"] is None:
-        errors.append("cohort.inventory_source: content_sha256_verified requires the raw content SHA-256")
+        errors.append("cohort.cohort_observation_source: content_sha256_verified requires the raw content SHA-256")
 
     accounting = manifest["accounting"]
     if accounting["expected_attempt_rows"] != cohort["expected_attempt_rows"]:
@@ -199,7 +199,7 @@ def native_sregym_semantic_errors(manifest: dict[str, Any]) -> list[str]:
     if len(set(arm_ids)) != len(arm_ids):
         errors.append("arms: arm_id values must be unique")
     if not protocol["native_benchmark_harness_unchanged"]:
-        errors.append("native_protocol: the official native reference arm/tool surface must remain unchanged")
+        errors.append("native_protocol: the official native benchmark harness/task/scorer must remain unchanged")
 
     if design["comparison_mode"] == "native_replication":
         if len(arms) != 1:
