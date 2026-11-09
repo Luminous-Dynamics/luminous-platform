@@ -640,10 +640,22 @@ mod tests {
             ..stale.clone()
         };
         assert_eq!(classify_freshness(&stale, 20, 10), EvidenceFreshness::Stale);
-        assert_eq!(classify_freshness(&future, 10, 10), EvidenceFreshness::FutureDated);
-        assert_eq!(classify_freshness(&expired, 10, 10), EvidenceFreshness::Expired);
-        assert_eq!(classify_freshness(&absent, 10, 10), EvidenceFreshness::Absent);
-        assert_eq!(classify_freshness(&unknown, 10, 10), EvidenceFreshness::Unknown);
+        assert_eq!(
+            classify_freshness(&future, 10, 10),
+            EvidenceFreshness::FutureDated
+        );
+        assert_eq!(
+            classify_freshness(&expired, 10, 10),
+            EvidenceFreshness::Expired
+        );
+        assert_eq!(
+            classify_freshness(&absent, 10, 10),
+            EvidenceFreshness::Absent
+        );
+        assert_eq!(
+            classify_freshness(&unknown, 10, 10),
+            EvidenceFreshness::Unknown
+        );
         assert_eq!(
             classify_freshness(&stale, 10, 10),
             EvidenceFreshness::Current
