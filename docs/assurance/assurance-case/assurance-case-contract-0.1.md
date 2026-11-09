@@ -44,9 +44,9 @@ Mycelix remains the owner of dependency closure and its independent verifier. Pr
 
 ## Conformance and adversarial properties
 
-The current public software suite contains 26 Rust tests plus a 25-ID frozen registry. It covers positive support, missing/stale/out-of-scope evidence, assumption and defeater propagation, fresh versus stale rebuttals, shared/unknown dependencies, physical-independence overclaim, inventory incompleteness, dangling/wrong-type edges, cycles, argument-only support, malformed references and exact-byte report binding.
+The current public software suite contains 33 adversarial Rust tests plus a 25-ID frozen registry. It covers positive support, missing/stale/out-of-scope evidence, assumption and defeater propagation, fresh versus stale rebuttals, shared/unknown dependencies, physical-independence overclaim, inventory incompleteness, dangling/wrong-type edges, cycles, argument-only support, malformed references and exact-byte report binding.
 
-The graph validator builds incoming/outgoing edge indexes once instead of repeatedly scanning the entire edge set per node. The benchmark programme should still measure p50/p95/p99 latency and peak memory; no performance result is claimed by the implementation alone.
+The graph validator builds incoming/outgoing edge indexes once instead of repeatedly scanning the entire edge set per node. The included scale harness constructs evidence-only cases at 10, 100, 1,000 and 10,000 nodes and reports p50/p95/p99 latency plus process peak RSS. The CI smoke run checks only that the harness executes and produces correctly shaped measurements; it does not impose or claim a performance result.
 
 Passing this suite is not a blind evaluation. Blind generalization requires evaluator-held truth, access isolation, post-lock reveal and external review through the sealed-evaluation protocol.
 
