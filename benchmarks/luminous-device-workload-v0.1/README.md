@@ -196,6 +196,20 @@ Hard safety/privacy gates:
 
 These are acceptance criteria for the test harness. They are not claims about current implementation.
 
+The product-level contract, task envelope, 20-scenario synthetic corpus and composition handoffs are tracked in [DWF-001 #351](https://github.com/Luminous-Dynamics/luminous-platform/issues/351). V0 is restricted to pure/read-only/advisory computation; consequential effects are explicitly excluded and must continue through their existing effect/authority owners.
+
+### 6.1 Placement decision quality
+
+In addition to raw task performance, measure:
+- eligibility false-acceptance and false-rejection rates against the independent fixture oracle;
+- scheduler decision overhead as a fraction of the task latency budget;
+- placement regret against a measured feasible Pareto oracle, with the measurement boundary and uncertainty declared;
+- number of no-winner/abstention decisions and whether the reason is correct;
+- unauthorized egress and transfer volume by data class/destination;
+- remote execution receipt acceptance/rejection, including signed-but-incorrect results.
+
+Do not compute a single combined score. Privacy/authority/correctness failures are hard failures, not weighted penalties. Simulated and predicted resource estimates remain separate from physical measurements.
+
 ## 7. Competitive comparison protocol
 
 ### 7.1 Baseline classes
