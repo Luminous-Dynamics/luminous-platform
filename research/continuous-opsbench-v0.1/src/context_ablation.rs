@@ -1003,7 +1003,7 @@ fn validate_arm_order(
         return Err(ContextExperimentError::InvalidArmOrder);
     }
     let expected = counterbalanced_arm_order(profile.arm_order_seed, profile.counterbalance_slot)?;
-    if order != expected {
+    if order.iter().copied().ne(expected.into_iter()) {
         return Err(ContextExperimentError::InvalidArmOrder);
     }
     Ok(())
