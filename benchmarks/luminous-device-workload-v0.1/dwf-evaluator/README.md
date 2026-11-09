@@ -2,7 +2,7 @@
 
 **Status:** standalone Rust source and synthetic-fixture evaluator; not a production scheduler or authorization service.
 
-This crate implements an independent, deterministic evaluator for the 26-case DWF-001 placement and evidence scenario corpus. It deliberately lives outside a repository-wide Cargo workspace so that it does not create a new workspace/build boundary for Luminous Platform.
+This crate implements an independent, deterministic evaluator for the 28-case DWF-001 placement and evidence scenario corpus. It deliberately lives outside a repository-wide Cargo workspace so that it does not create a new workspace/build boundary for Luminous Platform.
 
 ## Run
 
@@ -37,3 +37,10 @@ This is a pure evaluator for the fixture contract. It does not connect to device
 The expected runtime digest is taken from the frozen workload requirements in the request, never from an execution-receipt field. The receipt's runtime digest is compared to that request-owned value. DWF-001-26 is the positive control: it accepts a complete receipt without duplicating an `expected_runtime_digest` field inside the execution receipt.
 
 **Fixture-only verification limit:** `signature_valid` and `oracle_result` are synthetic fixture outcomes. This evaluator does not cryptographically verify a result signature, authenticate an oracle, run the HDC oracle, appraise device attestation or authorize dispatch. A production result-verifier must independently verify the signer and oracle evidence against trusted, request-bound identities and digests.
+
+
+### Request and oracle binding
+
+Result validation now binds the executor receipt to the selected peer, request-owned runtime/workload digests, input commitment, required correctness-oracle ID and required verifier ID. The oracle receipt must bind the exact request input and output digest. DWF-001-27 rejects a result from a peer that was not selected; DWF-001-28 rejects an oracle receipt for a different output.
+
+These verifier/signature booleans and IDs are synthetic fixture assertions only. The evaluator checks that the contract fields exist and agree; it does not cryptographically authenticate the executor or oracle, appraise the device, or run the HDC oracle. That production work is DWF-RESULT-001 #358.

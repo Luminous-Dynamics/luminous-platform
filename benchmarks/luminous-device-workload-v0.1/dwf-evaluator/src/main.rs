@@ -483,20 +483,29 @@ fn evaluate_placement(scenario: &Value) -> (Disposition, Vec<CandidateAssessment
 
 fn evaluate_result_validation(scenario: &Value) -> Disposition {
     let execution = &scenario["execution"];
+    let request = &scenario["request"];
     let mut reasons = Vec::new();
 
-    // A result is not eligible for acceptance merely because no invalid claim
-    // was supplied. The complete execution receipt must contain every field
-    // needed to bind dispatch, completion, posture, backend, runtime, signature,
-    // output and independent-oracle disposition.
+    // Every claim needed to bind the result to the request, selected peer,
+    // execution attempt and independent correctness verifier is mandatory.
+    // This is fixture-level semantic validation; it is not cryptographic
+    // signature verification or execution of the oracle.
     let required_claims = [
+        "candidate_id",
         "dispatch_state",
         "completion_state",
         "receipt_posture_freshness",
         "observed_backend",
         "receipt_runtime_digest",
+        "receipt_workload_digest",
+        "input_commitment",
         "signature_valid",
         "output_digest",
+        "oracle_id",
+        "oracle_verifier_id",
+        "oracle_verifier_signature_valid",
+        "oracle_input_commitment",
+        "oracle_output_digest",
         "oracle_result",
     ];
     let missing_claim = required_claims.iter().any(|field| {
@@ -529,16 +538,16 @@ fn evaluate_result_validation(scenario: &Value) -> Disposition {
         }
     }
 
-    let required_backend = text_at(&scenario["request"], &["requirements", "accelerator"]);
+    let required_backend = text_at(request, &["requirements", "accelerator"]);
     if text_at(execution, &["observed_backend"]) != required_backend {
         push_reason(&mut reasons, "REQUIRED_BACKEND_NOT_OBSERVED");
         push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
     }
 
-    // The expected runtime is owned by the frozen request contract. The
-    // execution receipt cannot supply or override the expected value.
-    let expected_runtime = text_at(&scenario["request"], &["requirements", "runtime_digest"])
-        .or_else(|| text_at(&scenario["request"], &["workload", "runtime_digest"]));
+    // Expected runtime/workload/input commitments and the required oracle
+    // identity are owned by the frozen request, never by the executor receipt.
+    let expected_runtime = text_at(request, &["requirements", "runtime_digest"])
+        .or_else(|| text_at(request, &["workload", "runtime_digest"]));
     match text_at(execution, &["receipt_runtime_digest"]) {
         Some(receipt_runtime) if Some(receipt_runtime) == expected_runtime => {}
         Some(_) => {
@@ -549,6 +558,26 @@ fn evaluate_result_validation(scenario: &Value) -> Disposition {
             push_reason(&mut reasons, "RUNTIME_DIGEST_MISSING");
             push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
         }
+    }
+
+    let expected_workload = text_at(request, &["requirements", "workload_digest"])
+        .or_else(|| text_at(request, &["workload", "workload_digest"]));
+    match text_at(execution, &["receipt_workload_digest"]) {
+        Some(receipt_workload) if Some(receipt_workload) == expected_workload => {}
+        Some(_) => {
+            push_reason(&mut reasons, "WORKLOAD_DIGEST_MISMATCH");
+            push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+        }
+        None => {
+            push_reason(&mut reasons, "WORKLOAD_DIGEST_MISSING");
+            push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+        }
+    }
+
+    let expected_input = text_at(request, &["input", "commitment"]);
+    if text_at(execution, &["input_commitment"]) != expected_input {
+        push_reason(&mut reasons, "INPUT_COMMITMENT_MISMATCH");
+        push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
     }
 
     match bool_at(execution, &["signature_valid"]) {
@@ -563,8 +592,36 @@ fn evaluate_result_validation(scenario: &Value) -> Disposition {
         }
     }
 
-    if text_at(execution, &["output_digest"]).is_none_or(|digest| digest.trim().is_empty()) {
+    let output_digest = text_at(execution, &["output_digest"]);
+    if output_digest.is_none_or(|digest| digest.trim().is_empty()) {
         push_reason(&mut reasons, "OUTPUT_DIGEST_MISSING");
+        push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+    }
+
+    let expected_oracle = text_at(request, &["workload", "correctness_oracle"]);
+    if text_at(execution, &["oracle_id"]) != expected_oracle {
+        push_reason(&mut reasons, "ORACLE_ID_MISMATCH");
+        push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+    }
+
+    let expected_oracle_verifier = text_at(request, &["requirements", "oracle_verifier_id"]);
+    if text_at(execution, &["oracle_verifier_id"]) != expected_oracle_verifier {
+        push_reason(&mut reasons, "ORACLE_VERIFIER_ID_MISMATCH");
+        push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+    }
+
+    if bool_at(execution, &["oracle_verifier_signature_valid"]) != Some(true) {
+        push_reason(&mut reasons, "ORACLE_VERIFIER_SIGNATURE_INVALID");
+        push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+    }
+
+    if text_at(execution, &["oracle_input_commitment"]) != expected_input {
+        push_reason(&mut reasons, "ORACLE_INPUT_COMMITMENT_MISMATCH");
+        push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+    }
+
+    if text_at(execution, &["oracle_output_digest"]) != output_digest {
+        push_reason(&mut reasons, "ORACLE_OUTPUT_DIGEST_MISMATCH");
         push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
     }
 
@@ -584,12 +641,19 @@ fn evaluate_result_validation(scenario: &Value) -> Disposition {
         }
     }
 
-    let remote = scenario["candidates"]
+    let executor_id = text_at(execution, &["candidate_id"]);
+    let selected_peer = scenario["candidates"]
         .as_array()
         .and_then(|items| items.iter().find(|candidate| {
             text_at(candidate, &["role"]) == Some("peer")
+                && text_at(candidate, &["candidate_id"]) == executor_id
         }));
-    let selected = remote
+    if executor_id.is_none() || selected_peer.is_none() {
+        push_reason(&mut reasons, "EXECUTOR_CANDIDATE_NOT_SELECTED");
+        push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
+    }
+
+    let selected = selected_peer
         .and_then(|candidate| text_at(candidate, &["candidate_id"]))
         .map(str::to_owned)
         .into_iter()
@@ -819,6 +883,22 @@ mod tests {
         let (actual, _) = evaluate_case(&scenario);
         assert_eq!(actual.result, "ACCEPTED", "{:#?}", actual.reason_codes);
         assert!(actual.reason_codes.is_empty());
+    }
+
+    #[test]
+    fn result_receipt_must_bind_to_the_selected_peer() {
+        let fixture = fixture_value();
+        let (actual, _) = evaluate_case(case(&fixture, "DWF-001-27"));
+        assert_eq!(actual.result, "REJECTED");
+        assert!(actual.reason_codes.contains(&"EXECUTOR_CANDIDATE_NOT_SELECTED".to_owned()));
+    }
+
+    #[test]
+    fn independent_oracle_receipt_must_bind_to_the_exact_output() {
+        let fixture = fixture_value();
+        let (actual, _) = evaluate_case(case(&fixture, "DWF-001-28"));
+        assert_eq!(actual.result, "REJECTED");
+        assert!(actual.reason_codes.contains(&"ORACLE_OUTPUT_DIGEST_MISMATCH".to_owned()));
     }
 
     #[test]

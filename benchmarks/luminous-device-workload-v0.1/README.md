@@ -341,3 +341,8 @@ The fixture includes DWF-001-24 as the positive complete-receipt acceptance cont
 ### Runtime requirement binding
 
 The expected runtime digest is request-owned: it is taken from the frozen request's workload requirements and compared with the runtime digest in the execution receipt. A peer receipt may not supply its own expected value. DWF-001-26 is the positive control for this invariant.
+
+
+### Result-to-request binding hardening
+
+The synthetic result-validation controls now require an executor candidate ID matching the selected peer, request-owned runtime and workload digests, input commitment, expected oracle ID and expected oracle verifier ID. The oracle receipt's input commitment and output digest must match the request and exact output. DWF-001-27 and -28 are negative controls for wrong executor and wrong-output oracle receipts.

@@ -1687,7 +1687,8 @@
           "deadline_ms": 150,
           "maximum_joules_per_accepted_task": 5,
           "runtime_digest": "runtime:hdc-v1",
-          "workload_digest": "workload:hdc-retrieval-v1"
+          "workload_digest": "workload:hdc-retrieval-v1",
+          "oracle_verifier_id": "oracle-verifier:trusted-hdc-v1"
         },
         "replay": {
           "deterministic": true,
@@ -1827,7 +1828,15 @@
         "receipt_runtime_digest": "runtime:hdc-v1",
         "signature_valid": true,
         "output_digest": "fixture:output-10",
-        "oracle_result": "pass"
+        "oracle_result": "pass",
+        "candidate_id": "edge-node",
+        "receipt_workload_digest": "workload:hdc-retrieval-v1",
+        "input_commitment": "fixture:input-digest-000",
+        "oracle_id": "oracle:hdc-retrieval-v1",
+        "oracle_verifier_id": "oracle-verifier:trusted-hdc-v1",
+        "oracle_verifier_signature_valid": true,
+        "oracle_input_commitment": "fixture:input-digest-000",
+        "oracle_output_digest": "fixture:output-10"
       },
       "expected": {
         "placement": "REMOTE",
@@ -2624,7 +2633,8 @@
           "deadline_ms": 150,
           "maximum_joules_per_accepted_task": 5,
           "runtime_digest": "runtime:hdc-v1",
-          "workload_digest": "workload:hdc-retrieval-v1"
+          "workload_digest": "workload:hdc-retrieval-v1",
+          "oracle_verifier_id": "oracle-verifier:trusted-hdc-v1"
         },
         "replay": {
           "deterministic": true,
@@ -2766,7 +2776,15 @@
         "receipt_runtime_digest": "runtime:hdc-v1",
         "signature_valid": true,
         "output_digest": "fixture:output-15",
-        "oracle_result": "pass"
+        "oracle_result": "pass",
+        "candidate_id": "edge-node",
+        "receipt_workload_digest": "workload:hdc-retrieval-v1",
+        "input_commitment": "fixture:input-digest-000",
+        "oracle_id": "oracle:hdc-retrieval-v1",
+        "oracle_verifier_id": "oracle-verifier:trusted-hdc-v1",
+        "oracle_verifier_signature_valid": true,
+        "oracle_input_commitment": "fixture:input-digest-000",
+        "oracle_output_digest": "fixture:output-15"
       },
       "expected": {
         "placement": "REMOTE",
@@ -2818,7 +2836,8 @@
           "deadline_ms": 150,
           "maximum_joules_per_accepted_task": 5,
           "runtime_digest": "runtime:hdc-v1",
-          "workload_digest": "workload:hdc-retrieval-v1"
+          "workload_digest": "workload:hdc-retrieval-v1",
+          "oracle_verifier_id": "oracle-verifier:trusted-hdc-v1"
         },
         "replay": {
           "deterministic": true,
@@ -2959,7 +2978,15 @@
         "observed_backend": "cpu",
         "signature_valid": true,
         "output_digest": "fixture:output-16",
-        "oracle_result": "pass"
+        "oracle_result": "pass",
+        "candidate_id": "edge-node",
+        "receipt_workload_digest": "workload:hdc-retrieval-v1",
+        "input_commitment": "fixture:input-digest-000",
+        "oracle_id": "oracle:hdc-retrieval-v1",
+        "oracle_verifier_id": "oracle-verifier:trusted-hdc-v1",
+        "oracle_verifier_signature_valid": true,
+        "oracle_input_commitment": "fixture:input-digest-000",
+        "oracle_output_digest": "fixture:output-16"
       },
       "expected": {
         "placement": "REMOTE",
@@ -3011,7 +3038,8 @@
           "deadline_ms": 150,
           "maximum_joules_per_accepted_task": 5,
           "runtime_digest": "runtime:hdc-v1",
-          "workload_digest": "workload:hdc-retrieval-v1"
+          "workload_digest": "workload:hdc-retrieval-v1",
+          "oracle_verifier_id": "oracle-verifier:trusted-hdc-v1"
         },
         "replay": {
           "deterministic": true,
@@ -3152,7 +3180,15 @@
         "receipt_posture_freshness": "fresh",
         "observed_backend": "cpu",
         "receipt_runtime_digest": "runtime:hdc-v1",
-        "expected_runtime_digest": "runtime:hdc-v1"
+        "expected_runtime_digest": "runtime:hdc-v1",
+        "candidate_id": "edge-node",
+        "receipt_workload_digest": "workload:hdc-retrieval-v1",
+        "input_commitment": "fixture:input-digest-000",
+        "oracle_id": "oracle:hdc-retrieval-v1",
+        "oracle_verifier_id": "oracle-verifier:trusted-hdc-v1",
+        "oracle_verifier_signature_valid": true,
+        "oracle_input_commitment": "fixture:input-digest-000",
+        "oracle_output_digest": "fixture:output-wrong"
       },
       "expected": {
         "placement": "REMOTE",
@@ -4113,7 +4149,8 @@
           "deadline_ms": 150,
           "maximum_joules_per_accepted_task": 5,
           "runtime_digest": "runtime:hdc-v1",
-          "workload_digest": "workload:hdc-retrieval-v1"
+          "workload_digest": "workload:hdc-retrieval-v1",
+          "oracle_verifier_id": "oracle-verifier:trusted-hdc-v1"
         },
         "replay": {
           "deterministic": true,
@@ -4247,7 +4284,8 @@
       },
       "execution": {
         "dispatch_state": "dispatched",
-        "completion_state": "completed"
+        "completion_state": "completed",
+        "candidate_id": "edge-node"
       },
       "expected": {
         "placement": "REMOTE",
@@ -4261,8 +4299,15 @@
           "RESULT_POSTURE_MISSING",
           "REQUIRED_BACKEND_NOT_OBSERVED",
           "RUNTIME_DIGEST_MISSING",
+          "WORKLOAD_DIGEST_MISSING",
+          "INPUT_COMMITMENT_MISMATCH",
           "RESULT_SIGNATURE_MISSING",
           "OUTPUT_DIGEST_MISSING",
+          "ORACLE_ID_MISMATCH",
+          "ORACLE_VERIFIER_ID_MISMATCH",
+          "ORACLE_VERIFIER_SIGNATURE_INVALID",
+          "ORACLE_INPUT_COMMITMENT_MISMATCH",
+          "ORACLE_OUTPUT_DIGEST_MISMATCH",
           "ORACLE_OUTCOME_MISSING"
         ]
       }
@@ -4305,7 +4350,8 @@
           "deadline_ms": 150,
           "maximum_joules_per_accepted_task": 5,
           "runtime_digest": "runtime:hdc-v1",
-          "workload_digest": "workload:hdc-retrieval-v1"
+          "workload_digest": "workload:hdc-retrieval-v1",
+          "oracle_verifier_id": "oracle-verifier:trusted-hdc-v1"
         },
         "replay": {
           "deterministic": true,
@@ -4446,7 +4492,15 @@
         "receipt_posture_freshness": "fresh",
         "observed_backend": "cpu",
         "receipt_runtime_digest": "runtime:hdc-v1",
-        "expected_runtime_digest": "runtime:hdc-v1"
+        "expected_runtime_digest": "runtime:hdc-v1",
+        "candidate_id": "edge-node",
+        "receipt_workload_digest": "workload:hdc-retrieval-v1",
+        "input_commitment": "fixture:input-digest-000",
+        "oracle_id": "oracle:hdc-retrieval-v1",
+        "oracle_verifier_id": "oracle-verifier:trusted-hdc-v1",
+        "oracle_verifier_signature_valid": true,
+        "oracle_input_commitment": "fixture:input-digest-000",
+        "oracle_output_digest": "fixture:output-correct-024"
       },
       "expected": {
         "placement": "REMOTE",
@@ -4495,7 +4549,8 @@
           "deadline_ms": 150,
           "maximum_joules_per_accepted_task": 5,
           "runtime_digest": "runtime:hdc-v1",
-          "workload_digest": "workload:hdc-retrieval-v1"
+          "workload_digest": "workload:hdc-retrieval-v1",
+          "oracle_verifier_id": "oracle-verifier:trusted-hdc-v1"
         },
         "replay": {
           "deterministic": true,
@@ -4636,7 +4691,15 @@
         "receipt_posture_freshness": "fresh",
         "observed_backend": "cpu",
         "receipt_runtime_digest": "runtime:hdc-v1",
-        "expected_runtime_digest": "runtime:hdc-v1"
+        "expected_runtime_digest": "runtime:hdc-v1",
+        "candidate_id": "edge-node",
+        "receipt_workload_digest": "workload:hdc-retrieval-v1",
+        "input_commitment": "fixture:input-digest-000",
+        "oracle_id": "oracle:hdc-retrieval-v1",
+        "oracle_verifier_id": "oracle-verifier:trusted-hdc-v1",
+        "oracle_verifier_signature_valid": true,
+        "oracle_input_commitment": "fixture:input-digest-000",
+        "oracle_output_digest": "fixture:output-correct-024"
       },
       "expected": {
         "placement": "REMOTE",
@@ -4688,7 +4751,8 @@
           "deadline_ms": 150,
           "maximum_joules_per_accepted_task": 5,
           "runtime_digest": "runtime:hdc-v1",
-          "workload_digest": "workload:hdc-retrieval-v1"
+          "workload_digest": "workload:hdc-retrieval-v1",
+          "oracle_verifier_id": "oracle-verifier:trusted-hdc-v1"
         },
         "replay": {
           "deterministic": true,
@@ -4828,7 +4892,15 @@
         "completion_state": "completed",
         "receipt_posture_freshness": "fresh",
         "observed_backend": "cpu",
-        "receipt_runtime_digest": "runtime:hdc-v1"
+        "receipt_runtime_digest": "runtime:hdc-v1",
+        "candidate_id": "edge-node",
+        "receipt_workload_digest": "workload:hdc-retrieval-v1",
+        "input_commitment": "fixture:input-digest-000",
+        "oracle_id": "oracle:hdc-retrieval-v1",
+        "oracle_verifier_id": "oracle-verifier:trusted-hdc-v1",
+        "oracle_verifier_signature_valid": true,
+        "oracle_input_commitment": "fixture:input-digest-000",
+        "oracle_output_digest": "fixture:output-correct-024"
       },
       "expected": {
         "placement": "REMOTE",
@@ -4837,6 +4909,408 @@
         ],
         "result": "ACCEPTED",
         "reason_codes": []
+      }
+    },
+    {
+      "id": "DWF-001-27",
+      "name": "receipt executor is not the selected peer",
+      "phase": "result_validation",
+      "request": {
+        "task_id": "fixture-task-000",
+        "workload": {
+          "semantic_id": "hdc-retrieval-v1",
+          "semantic_version": "1",
+          "workload_digest": "workload:hdc-retrieval-v1",
+          "runtime_digest": "runtime:hdc-v1",
+          "correctness_oracle": "oracle:hdc-retrieval-v1",
+          "operation_class": "pure_read_only"
+        },
+        "input": {
+          "commitment": "fixture:input-digest-000",
+          "data_classification": "public",
+          "bytes": 1048576
+        },
+        "policy": {
+          "local_only": false,
+          "permitted_destinations": [
+            "origin-book",
+            "edge-node"
+          ],
+          "maximum_transfer_bytes": 4194304,
+          "result_retention": "origin_only"
+        },
+        "requirements": {
+          "isa": [
+            "x86_64",
+            "aarch64"
+          ],
+          "minimum_memory_mib": 8192,
+          "accelerator": "cpu",
+          "deadline_ms": 150,
+          "maximum_joules_per_accepted_task": 5,
+          "runtime_digest": "runtime:hdc-v1",
+          "workload_digest": "workload:hdc-retrieval-v1",
+          "oracle_verifier_id": "oracle-verifier:trusted-hdc-v1"
+        },
+        "replay": {
+          "deterministic": true,
+          "duplicate_execution_safe": true,
+          "external_effects": false
+        }
+      },
+      "candidates": [
+        {
+          "candidate_id": "origin-book",
+          "role": "origin",
+          "evidence_class": "synthetic_fixture",
+          "device": {
+            "vendor": "Luminous Synthetic Lab",
+            "sku": "LD-BOOK-REF-A1",
+            "board_revision": "A1",
+            "isa": "x86_64",
+            "memory_mib": 32768,
+            "accelerators": [
+              "cpu",
+              "gpu"
+            ],
+            "runtime_digests": [
+              "runtime:hdc-v1",
+              "runtime:cfc-v1"
+            ],
+            "workload_digests": [
+              "workload:hdc-retrieval-v1",
+              "workload:cfc-update-v1"
+            ]
+          },
+          "evidence": {
+            "device_profile_status": "qualified_fixture",
+            "posture_status": "fresh",
+            "posture_expires": "after_scenario",
+            "device_profile_digest": "fixture:origin-book:profile",
+            "posture_digest": "fixture:origin-book:posture",
+            "evidence_freshness": "fresh"
+          },
+          "session": {
+            "status": "local_owner_context",
+            "scopes": [
+              "compute:execute:read-only"
+            ]
+          },
+          "authorization": {
+            "local_policy": "allow",
+            "local_lease": "not_required",
+            "destination_policy": "local_origin"
+          },
+          "runtime": {
+            "runtime_digest": "runtime:hdc-v1",
+            "backend_required": "cpu",
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "gpu"
+            ]
+          },
+          "resources": {
+            "latency_ms": 70,
+            "joules_per_accepted_task": 2.4,
+            "thermal_headroom_c": 12,
+            "evidence_class": "synthetic_fixture"
+          }
+        },
+        {
+          "candidate_id": "edge-node",
+          "role": "peer",
+          "evidence_class": "synthetic_fixture",
+          "device": {
+            "vendor": "Luminous Synthetic Lab",
+            "sku": "LD-NODE-REF-A1",
+            "board_revision": "A1",
+            "isa": "aarch64",
+            "memory_mib": 65536,
+            "accelerators": [
+              "cpu",
+              "npu"
+            ],
+            "runtime_digests": [
+              "runtime:hdc-v1",
+              "runtime:cfc-v1"
+            ],
+            "workload_digests": [
+              "workload:hdc-retrieval-v1",
+              "workload:cfc-update-v1"
+            ]
+          },
+          "evidence": {
+            "device_profile_status": "qualified_fixture",
+            "posture_status": "fresh",
+            "posture_expires": "after_scenario",
+            "device_profile_digest": "fixture:edge-node:profile",
+            "posture_digest": "fixture:edge-node:posture",
+            "evidence_freshness": "fresh"
+          },
+          "session": {
+            "status": "authenticated",
+            "scopes": [
+              "compute:execute:read-only",
+              "data:public"
+            ]
+          },
+          "authorization": {
+            "local_policy": "allow",
+            "local_lease": "valid",
+            "lease_scope": "compute:execute:read-only",
+            "destination_policy": "explicitly_allowed"
+          },
+          "runtime": {
+            "runtime_digest": "runtime:hdc-v1",
+            "backend_required": "cpu",
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "npu"
+            ]
+          },
+          "resources": {
+            "latency_ms": 25,
+            "joules_per_accepted_task": 1.4,
+            "thermal_headroom_c": 18,
+            "evidence_class": "synthetic_fixture"
+          }
+        }
+      ],
+      "network": {
+        "state": "connected",
+        "rtt_ms": 4
+      },
+      "execution": {
+        "dispatch_state": "dispatched",
+        "signature_valid": true,
+        "output_digest": "fixture:output-correct-024",
+        "oracle_result": "pass",
+        "completion_state": "completed",
+        "receipt_posture_freshness": "fresh",
+        "observed_backend": "cpu",
+        "receipt_runtime_digest": "runtime:hdc-v1",
+        "expected_runtime_digest": "runtime:hdc-v1",
+        "candidate_id": "rogue-peer",
+        "receipt_workload_digest": "workload:hdc-retrieval-v1",
+        "input_commitment": "fixture:input-digest-000",
+        "oracle_id": "oracle:hdc-retrieval-v1",
+        "oracle_verifier_id": "oracle-verifier:trusted-hdc-v1",
+        "oracle_verifier_signature_valid": true,
+        "oracle_input_commitment": "fixture:input-digest-000",
+        "oracle_output_digest": "fixture:output-correct-024"
+      },
+      "expected": {
+        "placement": "REMOTE",
+        "selected": [],
+        "result": "REJECTED",
+        "reason_codes": [
+          "EXECUTOR_CANDIDATE_NOT_SELECTED",
+          "RESULT_NOT_ACCEPTED"
+        ]
+      }
+    },
+    {
+      "id": "DWF-001-28",
+      "name": "oracle receipt is bound to a different output",
+      "phase": "result_validation",
+      "request": {
+        "task_id": "fixture-task-000",
+        "workload": {
+          "semantic_id": "hdc-retrieval-v1",
+          "semantic_version": "1",
+          "workload_digest": "workload:hdc-retrieval-v1",
+          "runtime_digest": "runtime:hdc-v1",
+          "correctness_oracle": "oracle:hdc-retrieval-v1",
+          "operation_class": "pure_read_only"
+        },
+        "input": {
+          "commitment": "fixture:input-digest-000",
+          "data_classification": "public",
+          "bytes": 1048576
+        },
+        "policy": {
+          "local_only": false,
+          "permitted_destinations": [
+            "origin-book",
+            "edge-node"
+          ],
+          "maximum_transfer_bytes": 4194304,
+          "result_retention": "origin_only"
+        },
+        "requirements": {
+          "isa": [
+            "x86_64",
+            "aarch64"
+          ],
+          "minimum_memory_mib": 8192,
+          "accelerator": "cpu",
+          "deadline_ms": 150,
+          "maximum_joules_per_accepted_task": 5,
+          "runtime_digest": "runtime:hdc-v1",
+          "workload_digest": "workload:hdc-retrieval-v1",
+          "oracle_verifier_id": "oracle-verifier:trusted-hdc-v1"
+        },
+        "replay": {
+          "deterministic": true,
+          "duplicate_execution_safe": true,
+          "external_effects": false
+        }
+      },
+      "candidates": [
+        {
+          "candidate_id": "origin-book",
+          "role": "origin",
+          "evidence_class": "synthetic_fixture",
+          "device": {
+            "vendor": "Luminous Synthetic Lab",
+            "sku": "LD-BOOK-REF-A1",
+            "board_revision": "A1",
+            "isa": "x86_64",
+            "memory_mib": 32768,
+            "accelerators": [
+              "cpu",
+              "gpu"
+            ],
+            "runtime_digests": [
+              "runtime:hdc-v1",
+              "runtime:cfc-v1"
+            ],
+            "workload_digests": [
+              "workload:hdc-retrieval-v1",
+              "workload:cfc-update-v1"
+            ]
+          },
+          "evidence": {
+            "device_profile_status": "qualified_fixture",
+            "posture_status": "fresh",
+            "posture_expires": "after_scenario",
+            "device_profile_digest": "fixture:origin-book:profile",
+            "posture_digest": "fixture:origin-book:posture",
+            "evidence_freshness": "fresh"
+          },
+          "session": {
+            "status": "local_owner_context",
+            "scopes": [
+              "compute:execute:read-only"
+            ]
+          },
+          "authorization": {
+            "local_policy": "allow",
+            "local_lease": "not_required",
+            "destination_policy": "local_origin"
+          },
+          "runtime": {
+            "runtime_digest": "runtime:hdc-v1",
+            "backend_required": "cpu",
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "gpu"
+            ]
+          },
+          "resources": {
+            "latency_ms": 70,
+            "joules_per_accepted_task": 2.4,
+            "thermal_headroom_c": 12,
+            "evidence_class": "synthetic_fixture"
+          }
+        },
+        {
+          "candidate_id": "edge-node",
+          "role": "peer",
+          "evidence_class": "synthetic_fixture",
+          "device": {
+            "vendor": "Luminous Synthetic Lab",
+            "sku": "LD-NODE-REF-A1",
+            "board_revision": "A1",
+            "isa": "aarch64",
+            "memory_mib": 65536,
+            "accelerators": [
+              "cpu",
+              "npu"
+            ],
+            "runtime_digests": [
+              "runtime:hdc-v1",
+              "runtime:cfc-v1"
+            ],
+            "workload_digests": [
+              "workload:hdc-retrieval-v1",
+              "workload:cfc-update-v1"
+            ]
+          },
+          "evidence": {
+            "device_profile_status": "qualified_fixture",
+            "posture_status": "fresh",
+            "posture_expires": "after_scenario",
+            "device_profile_digest": "fixture:edge-node:profile",
+            "posture_digest": "fixture:edge-node:posture",
+            "evidence_freshness": "fresh"
+          },
+          "session": {
+            "status": "authenticated",
+            "scopes": [
+              "compute:execute:read-only",
+              "data:public"
+            ]
+          },
+          "authorization": {
+            "local_policy": "allow",
+            "local_lease": "valid",
+            "lease_scope": "compute:execute:read-only",
+            "destination_policy": "explicitly_allowed"
+          },
+          "runtime": {
+            "runtime_digest": "runtime:hdc-v1",
+            "backend_required": "cpu",
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "npu"
+            ]
+          },
+          "resources": {
+            "latency_ms": 25,
+            "joules_per_accepted_task": 1.4,
+            "thermal_headroom_c": 18,
+            "evidence_class": "synthetic_fixture"
+          }
+        }
+      ],
+      "network": {
+        "state": "connected",
+        "rtt_ms": 4
+      },
+      "execution": {
+        "dispatch_state": "dispatched",
+        "signature_valid": true,
+        "output_digest": "fixture:output-correct-024",
+        "oracle_result": "pass",
+        "completion_state": "completed",
+        "receipt_posture_freshness": "fresh",
+        "observed_backend": "cpu",
+        "receipt_runtime_digest": "runtime:hdc-v1",
+        "expected_runtime_digest": "runtime:hdc-v1",
+        "candidate_id": "edge-node",
+        "receipt_workload_digest": "workload:hdc-retrieval-v1",
+        "input_commitment": "fixture:input-digest-000",
+        "oracle_id": "oracle:hdc-retrieval-v1",
+        "oracle_verifier_id": "oracle-verifier:trusted-hdc-v1",
+        "oracle_verifier_signature_valid": true,
+        "oracle_input_commitment": "fixture:input-digest-000",
+        "oracle_output_digest": "fixture:other-output"
+      },
+      "expected": {
+        "placement": "REMOTE",
+        "selected": [
+          "edge-node"
+        ],
+        "result": "REJECTED",
+        "reason_codes": [
+          "ORACLE_OUTPUT_DIGEST_MISMATCH",
+          "RESULT_NOT_ACCEPTED"
+        ]
       }
     }
   ]
