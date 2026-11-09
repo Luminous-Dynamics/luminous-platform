@@ -382,6 +382,8 @@ fn validate_structure(input: &AssuranceCaseInput) -> Vec<String> {
                 if let Some(spec) = &node.claim {
                     if spec.decision_scope.trim().is_empty() {
                         errors.push(format!("claim_{}_scope_empty", node.id));
+                    } else if spec.decision_scope != input.decision_scope {
+                        errors.push(format!("claim_{}_scope_mismatch", node.id));
                     }
                     if !unique_ids(&spec.required_evidence_ids)
                         || !unique_ids(&spec.required_subclaim_ids)
@@ -928,6 +930,9 @@ fn evaluate_evidence(
     if evidence.decision_scope != decision_scope {
         reasons.push("evidence_outside_decision_scope".to_owned());
     }
+    if evidence.valid_from.is_none() || evidence.valid_until.is_none() {
+        reasons.push("evidence_validity_interval_unbounded".to_owned());
+    }
     if evidence.observed_at > as_of
         || evidence.valid_from.is_some_and(|start| start > as_of)
         || evidence.valid_until.is_some_and(|end| as_of >= end)
@@ -960,6 +965,11 @@ fn evaluate_evidence(
                             || !sources_sorted
                         {
                             reasons.push("no_declared_common_domain_evidence_incomplete".to_owned());
+                        } else if assessment.domain.trim().is_empty()
+                            || assessment.claim_ceiling.trim().is_empty()
+                            || assessment.source_ids.len() < 2
+                        {
+                            reasons.push("no_declared_common_domain_assessment_scope_invalid".to_owned());
                         } else if requirement == DependencyRequirement::PhysicalOrStatisticalIndependence {
                             reasons.push("no_declared_common_domain_does_not_prove_physical_or_statistical_independence".to_owned());
                         }
