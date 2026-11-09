@@ -477,9 +477,7 @@ fn audit_impact_failure_domains(
         );
     };
     if collector_profile.subject_id != entry.collector_control_domain {
-        return FailureDomainOutcome::Failed(
-            AuditFailure::FailureDomainProfileBindingMismatch,
-        );
+        return FailureDomainOutcome::Failed(AuditFailure::FailureDomainProfileBindingMismatch);
     }
 
     let observer_profile = match &receipt.observer_failure_domain_profile {
@@ -513,11 +511,9 @@ fn audit_impact_failure_domains(
         IndependenceStatus::SharedDeclaredDependency => {
             FailureDomainOutcome::Indeterminate(IndeterminateReason::CommonCauseOverlap)
         }
-        IndependenceStatus::Indeterminate => {
-            FailureDomainOutcome::Indeterminate(
-                IndeterminateReason::ImpactIndependenceUnestablished,
-            )
-        }
+        IndependenceStatus::Indeterminate => FailureDomainOutcome::Indeterminate(
+            IndeterminateReason::ImpactIndependenceUnestablished,
+        )
         IndependenceStatus::Invalid => {
             FailureDomainOutcome::Failed(AuditFailure::FailureDomainEvidenceInvalid)
         }
@@ -1477,7 +1473,9 @@ mod tests {
                 io_bytes: 0,
                 complete: true,
             },
-            observer_failure_domain_profile: ReceiptState::Present(observer_failure_domain_profile()),
+            observer_failure_domain_profile: ReceiptState::Present(
+                observer_failure_domain_profile(),
+            ),
         }
     }
 
