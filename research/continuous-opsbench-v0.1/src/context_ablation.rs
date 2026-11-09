@@ -2800,7 +2800,7 @@ mod tests {
             .all(|result| result.status == ArmStatus::BudgetExceeded));
         assert!(results
             .iter()
-            .all(|result| result.model_token_preflight.is_none()));
+            .all(|result| result.model_token_preflight == Some(100)));
         assert!(results
             .iter()
             .all(|result| result.reasoner_session_id.is_some()));
