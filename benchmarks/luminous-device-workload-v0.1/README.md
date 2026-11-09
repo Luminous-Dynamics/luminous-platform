@@ -35,11 +35,25 @@ Pin the exact edition, rules, harness, workload and result submission rules befo
 |---|---|---|---|
 | CPU and memory | SPEC CPU 2026 | CPU-intensive workloads, memory hierarchy and compiler behavior across rate/speed suites | Not a full client, GPU, I/O, battery or system-power benchmark. Use the exact official run rules and report the suite edition. |
 | AI inference | MLPerf Inference v6.1 | Standardized inference performance across datacenter, edge and supported tasks | Compare only matching scenarios, model/task and quality constraints. Do not compare unrelated systems or infer full device value from one workload. |
-| Mobile AI | MLPerf Mobile v6.0 | Standardized on-device Android LLM tests (Llama 3.2 1B/3B and Llama 3.1 8B) plus vision/image workloads | Use supported exact device/backend paths; do not assume all phones or NPUs are covered. For Luminous mobile power/privacy work also compose Symthaea #8413. |\n| AI PC / client | MLPerf Client v2.0 | On-device AI PC workloads, including agentic software engineering and data-analysis tasks | Use its native scenarios and scoring; add Luminous workloads separately rather than changing official tasks. |
+| Mobile AI | MLPerf Mobile v6.0 | Standardized on-device Android LLM tests (Llama 3.2 1B/3B and Llama 3.1 8B) plus vision/image workloads | Use supported exact device/backend paths; do not assume all phones or NPUs are covered. For Luminous mobile power/privacy work also compose Symthaea #8413. |
+| AI PC / client | MLPerf Client v2.0 | On-device AI PC workloads, including agentic software engineering and data-analysis tasks | Use its native scenarios and scoring; add Luminous workloads separately rather than changing official tasks. |
 | Embedded / MCU AI | MLPerf Tiny v1.4 | Fixed task/model/dataset/accuracy targets, latency and energy per inference for low-power devices | Reuse Closed Division for matched comparisons and Open Division for candidate innovation; do not mix the two. Compose Symthaea #9647. |\n| Energy | MLPerf Power methodology plus calibrated wall/battery measurement | Energy-aware inference measurement | Use one power boundary and disclose whether it includes display, host, accelerator, PSU losses, network and cooling. Legacy SPECpower_ssj2008 may be informative for historical server comparisons but is not a sufficient modern whole-system energy score by itself. |
 | XR runtime | OpenXR Conformance Test Suite | OpenXR API/runtime conformance | Necessary for a conformant runtime, not evidence of tracking accuracy, motion-to-photon latency, comfort, optics, accessibility or safety. Those require separate measurements. |
 | Storage / I/O / network | Pinned fio, iperf3 and/or applicable vendor-native tools with declared profiles | Storage and network behavior | Results depend on block size, queue depth, cache, device state, topology, link speed and test duration. No unqualified cross-vendor aggregate. |
 | Environmental | Exact methods selected from IEC 60529, tailored MIL-STD-810H methods and applicable product standards | Ingress, shock, vibration, temperature and other declared environments | A method is not a universal certification. Publish tailoring, samples, orientation, preconditioning, pass criteria, instrumentation and all failures. |
+
+### 2.1 Current release interpretation (checked 2026-11-09)
+
+Do not treat the benchmark families as interchangeable:
+
+- **SPEC CPU 2026** is the CPU/memory/compiler reference. It contains 52 benchmarks in SPECspeed Integer/FP and SPECrate Integer/FP suites, with optional energy reporting. It is a licensed commercial suite; check current licensing/pricing before procurement. It is not a free cross-platform whole-device battery benchmark.
+- **MLPerf Inference v6.1** is divided into Datacenter and Edge suites. The September 2026 round included 10 Datacenter and 6 Edge benchmarks, including new End-to-End RAG and Agentic Edge Inference tracks. Use these for supported Node/edge profiles and only where exact task, model, scenario and scoring rules match.
+- **MLPerf Client v2.0** adds end-to-end agentic Software Engineering and Data Analyst workloads that include tool execution time, plus an experimental Flux 2 Klein 4B image-generation category. Its mandatory base LLM set includes Phi 4 Mini Instruct, with Qwen 3 8B experimental. It is the strongest listed external reference for supported desktop/laptop AI-PC experiences.
+- **MLPerf Mobile v6.0** brings standard LLM testing to Android devices, with Llama 3.2 1B/3B and Llama 3.1 8B plus supported CPU/NPU paths. The NPU-accelerated 8B path is device-specific; do not generalize it to every phone or NPU.
+- **MLPerf Tiny v1.4** has five embedded task families: Keyword Spotting, Visual Wake Words, Image Classification, Anomaly Detection and Streaming Wake Word. Keep Closed Division reference reproduction separate from Open Division candidate innovation.
+- **OpenXR CTS** establishes API/runtime conformance only. XR system performance and safety require independent optical, tracking, latency, human-factors and environmental measurements.
+
+Use the native suite and preserve its official scoring; use Luminous frozen workloads as an additional, separate product-level evaluation. The suite's result population or headline scores are not themselves a baseline for a different device class.
 
 Standards and upstream references:
 
