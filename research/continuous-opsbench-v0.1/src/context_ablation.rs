@@ -1140,10 +1140,8 @@ fn scenario_cluster_deltas(
             .is_some_and(|score| score.root_object_grounded);
 
         let entry = by_scenario.entry(key.scenario_id.clone()).or_default();
-        entry.0 += i128::from(u8::from(candidate_correct))
-            - i128::from(u8::from(raw_correct));
-        entry.1 += i128::from(u8::from(candidate_grounded))
-            - i128::from(u8::from(raw_grounded));
+        entry.0 += i128::from(u8::from(candidate_correct)) - i128::from(u8::from(raw_correct));
+        entry.1 += i128::from(u8::from(candidate_grounded)) - i128::from(u8::from(raw_grounded));
         entry.2 += 1;
     }
 
@@ -1165,8 +1163,7 @@ fn scenario_cluster_deltas(
 
 fn mean_i64(values: &[i64]) -> Option<i64> {
     (!values.is_empty()).then(|| {
-        (values.iter().map(|value| i128::from(*value)).sum::<i128>()
-            / values.len() as i128) as i64
+        (values.iter().map(|value| i128::from(*value)).sum::<i128>() / values.len() as i128) as i64
     })
 }
 
@@ -1186,13 +1183,14 @@ fn derive_bootstrap_seed(base: u64, family: &str, arm: ContextArm) -> u64 {
         hash ^= u64::from(byte);
         hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
     }
-    if hash == 0 { 1 } else { hash }
+    if hash == 0 {
+        1
+    } else {
+        hash
+    }
 }
 
-fn scenario_cluster_bootstrap_ci95(
-    scenario_deltas: &[i64],
-    seed: u64,
-) -> Option<(i64, i64)> {
+fn scenario_cluster_bootstrap_ci95(scenario_deltas: &[i64], seed: u64) -> Option<(i64, i64)> {
     if scenario_deltas.len() < MIN_SCENARIO_CLUSTERS_FOR_CI95 {
         return None;
     }
@@ -1471,10 +1469,14 @@ pub fn analyze_paired_context_results(
                 .sum();
 
             let scenario_deltas = scenario_cluster_deltas(&blocks, &family, arm);
-            let correct_cluster_deltas: Vec<_> =
-                scenario_deltas.iter().map(|(_, correct, _)| *correct).collect();
-            let grounded_cluster_deltas: Vec<_> =
-                scenario_deltas.iter().map(|(_, _, grounded)| *grounded).collect();
+            let correct_cluster_deltas: Vec<_> = scenario_deltas
+                .iter()
+                .map(|(_, correct, _)| *correct)
+                .collect();
+            let grounded_cluster_deltas: Vec<_> = scenario_deltas
+                .iter()
+                .map(|(_, _, grounded)| *grounded)
+                .collect();
             let scenario_correct_wins = correct_cluster_deltas
                 .iter()
                 .filter(|delta| **delta > 0)
@@ -1735,7 +1737,6 @@ mod tests {
             maximum_wall_time_ms: 1_000,
         }
     }
-
 
     fn synthetic_arm_result(
         scenario_index: usize,
@@ -2005,8 +2006,7 @@ mod tests {
             }
         }
 
-        let analysis =
-            analyze_paired_context_results(&results, 0x1234_5678_9abc_def0).unwrap();
+        let analysis = analyze_paired_context_results(&results, 0x1234_5678_9abc_def0).unwrap();
         let temporal = analysis
             .contrasts_vs_raw
             .iter()
