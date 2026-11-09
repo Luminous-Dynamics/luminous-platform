@@ -9,8 +9,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::event_schedule::{EventScheduleResult, RecordDisposition, ScheduleStatus};
 use crate::failure_domains::{
-    audit_observer_independence, ControlDomainProfile, FailureDomainGraph, IndependencePolicy,
-    IndependenceStatus,
+    audit_observer_independence, ControlDomainProfile, FailureDomainGraph, FailureDomainNode,
+    IndependencePolicy, IndependenceStatus, InventoryState,
 };
 use crate::scheduled_attention::{
     ProbeSelectionProposal, ScheduledWakeDecision, SourceQualifiedDisposition,
@@ -1477,6 +1477,92 @@ mod tests {
                 io_bytes: 0,
                 complete: true,
             },
+            observer_failure_domain_profile: ReceiptState::Present(observer_failure_domain_profile()),
+        }
+    }
+
+    fn failure_domain_profile(subject_id: &str, root: &str, digest: u64) -> ControlDomainProfile {
+        ControlDomainProfile {
+            subject_id: subject_id.into(),
+            profile_digest: format!("sha256:{digest:064x}"),
+            graph_revision: "registry-v1".into(),
+            roots: [root.to_owned()].into_iter().collect(),
+            state: InventoryState::Complete,
+            observed_at_tick: 5,
+            valid_until_tick: 30,
+        }
+    }
+
+    fn observer_failure_domain_profile() -> ControlDomainProfile {
+        failure_domain_profile("observer-domain", "observer-domain", 2)
+    }
+
+    fn failure_domain_registry() -> FailureDomainRegistrySnapshot {
+        let nodes = vec![
+            FailureDomainNode {
+                id: "collector-domain".into(),
+                class: "collector-process".into(),
+                depends_on: ["collector-host", "collector-clock", "collector-idp"]
+                    .into_iter()
+                    .map(str::to_owned)
+                    .collect(),
+            },
+            FailureDomainNode {
+                id: "observer-domain".into(),
+                class: "observer-process".into(),
+                depends_on: ["observer-host", "observer-clock", "observer-idp"]
+                    .into_iter()
+                    .map(str::to_owned)
+                    .collect(),
+            },
+            FailureDomainNode {
+                id: "collector-host".into(),
+                class: "host".into(),
+                depends_on: BTreeSet::new(),
+            },
+            FailureDomainNode {
+                id: "collector-clock".into(),
+                class: "time-source".into(),
+                depends_on: BTreeSet::new(),
+            },
+            FailureDomainNode {
+                id: "collector-idp".into(),
+                class: "identity-provider".into(),
+                depends_on: BTreeSet::new(),
+            },
+            FailureDomainNode {
+                id: "observer-host".into(),
+                class: "host".into(),
+                depends_on: BTreeSet::new(),
+            },
+            FailureDomainNode {
+                id: "observer-clock".into(),
+                class: "time-source".into(),
+                depends_on: BTreeSet::new(),
+            },
+            FailureDomainNode {
+                id: "observer-idp".into(),
+                class: "identity-provider".into(),
+                depends_on: BTreeSet::new(),
+            },
+        ];
+        FailureDomainRegistrySnapshot {
+            graph: FailureDomainGraph {
+                revision: "registry-v1".into(),
+                nodes: nodes
+                    .into_iter()
+                    .map(|node| (node.id.clone(), node))
+                    .collect(),
+            },
+            collector_profiles: [(
+                "collector-domain".into(),
+                failure_domain_profile("collector-domain", "collector-domain", 1),
+            )]
+            .into_iter()
+            .collect(),
+            policy: IndependencePolicy {
+                maximum_inventory_age_ticks: 10,
+            },
         }
     }
 
@@ -1589,6 +1675,32 @@ mod tests {
         evidence: &[ProbeEvidenceRecord],
         audited_at_tick: u64,
     ) -> EpisodeAuditReport {
+        let registry = failure_domain_registry();
+        run_with_failure_domain_registry(
+            watch,
+            authority,
+            catalog,
+            schedule,
+            wake_decisions,
+            requests,
+            evidence,
+            Some(&registry),
+            audited_at_tick,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn run_with_failure_domain_registry(
+        watch: &WatchSpec,
+        authority: &AuthoritySnapshot,
+        catalog: &[ProbeCatalogEntry],
+        schedule: &EventScheduleResult,
+        wake_decisions: &[WakeDecisionReceipt],
+        requests: &[ProbeRequestReceipt],
+        evidence: &[ProbeEvidenceRecord],
+        failure_domain_registry: Option<&FailureDomainRegistrySnapshot>,
+        audited_at_tick: u64,
+    ) -> EpisodeAuditReport {
         audit_episode(&EpisodeAuditInput {
             watch,
             authority,
@@ -1597,6 +1709,7 @@ mod tests {
             wake_decisions,
             requests,
             evidence,
+            failure_domain_registry,
             audited_at_tick,
         })
     }
