@@ -1,0 +1,491 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/opsbench-challenge-successor-v0.1.schema.json",
+  "title": "OpsBench Challenge Successor Manifest v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "epoch",
+    "scenario_id",
+    "parent_scenario_id",
+    "parent_manifest_sha256",
+    "lane",
+    "generator",
+    "change",
+    "construct",
+    "parameters",
+    "environment",
+    "anchor_set_sha256",
+    "contamination",
+    "semantic_review",
+    "release_state",
+    "native_comparability",
+    "anchor_immutable"
+  ],
+  "properties": {
+    "schema": {
+      "const": "opsbench-challenge-successor-v0.1"
+    },
+    "epoch": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "scenario_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"
+    },
+    "parent_scenario_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"
+    },
+    "parent_manifest_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "lane": {
+      "enum": [
+        "development",
+        "screening",
+        "sealed",
+        "retired"
+      ]
+    },
+    "generator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "configuration_sha256",
+        "algorithm",
+        "seed",
+        "seed_commitment_sha256",
+        "output_payload_sha256"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "configuration_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "algorithm": {
+          "type": "string",
+          "minLength": 1
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709552000
+        },
+        "seed_commitment_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "output_payload_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "change": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primary_axis",
+        "parent_parameters_sha256",
+        "successor_parameters_sha256",
+        "changed_parameter_paths",
+        "single_axis_change"
+      ],
+      "properties": {
+        "primary_axis": {
+          "enum": [
+            "fault_multiplicity",
+            "fault_overlap",
+            "causal_interaction_depth",
+            "observability_degradation",
+            "topology_churn",
+            "demand_pressure",
+            "recovery_horizon",
+            "harness_evolution",
+            "metastability"
+          ]
+        },
+        "parent_parameters_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "successor_parameters_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "changed_parameter_paths": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^/parameters/[a-z0-9_/-]+$"
+          }
+        },
+        "single_axis_change": {
+          "const": true
+        }
+      }
+    },
+    "construct": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario_family_id",
+        "fault_mechanism_id",
+        "ground_truth_sha256",
+        "native_verifier_sha256",
+        "outcome_semantics_sha256",
+        "task_prompt_sha256",
+        "tool_manifest_sha256",
+        "scenario_family_sha256",
+        "semantics_preserved"
+      ],
+      "properties": {
+        "scenario_family_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fault_mechanism_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ground_truth_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "native_verifier_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "outcome_semantics_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "task_prompt_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "tool_manifest_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "scenario_family_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "semantics_preserved": {
+          "const": true
+        }
+      }
+    },
+    "parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fault_count",
+        "overlapping_faults",
+        "causal_interaction_depth",
+        "observation_loss_ppm",
+        "maximum_event_delay_ms",
+        "clock_uncertainty_ms",
+        "topology_transitions",
+        "demand_burst_factor_milli",
+        "recovery_tail_ticks"
+      ],
+      "properties": {
+        "fault_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "overlapping_faults": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "causal_interaction_depth": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32
+        },
+        "observation_loss_ppm": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "maximum_event_delay_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 86400000
+        },
+        "clock_uncertainty_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3600000
+        },
+        "topology_transitions": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "demand_burst_factor_milli": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 100000
+        },
+        "recovery_tail_ticks": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "image_lock_sha256",
+        "topology_sha256",
+        "workload_sha256",
+        "runtime_sha256",
+        "observer_policy_sha256"
+      ],
+      "properties": {
+        "image_lock_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "topology_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "workload_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "runtime_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "observer_policy_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "anchor_set_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "contamination": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scan_state",
+        "examined_source_families"
+      ],
+      "properties": {
+        "scan_state": {
+          "enum": [
+            "not_required",
+            "passed",
+            "failed"
+          ]
+        },
+        "scanner_revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "scanner_configuration_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "report_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "examined_source_families": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "sealed_case_commitment_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "sealed_oracle_commitment_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "semantic_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "reviewer_ids"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "pending",
+            "passed",
+            "rejected"
+          ]
+        },
+        "adjudication_report_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "reviewer_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "interrater_agreement": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "release_state": {
+      "enum": [
+        "draft",
+        "screening",
+        "confirmatory",
+        "retired"
+      ]
+    },
+    "native_comparability": {
+      "const": false
+    },
+    "anchor_immutable": {
+      "const": true
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "lane": {
+            "const": "sealed"
+          }
+        },
+        "required": [
+          "lane"
+        ]
+      },
+      "then": {
+        "properties": {
+          "contamination": {
+            "properties": {
+              "scan_state": {
+                "const": "passed"
+              },
+              "examined_source_families": {
+                "minItems": 8
+              }
+            },
+            "required": [
+              "scanner_revision",
+              "scanner_configuration_sha256",
+              "report_sha256",
+              "sealed_case_commitment_sha256",
+              "sealed_oracle_commitment_sha256"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "release_state": {
+            "const": "confirmatory"
+          }
+        },
+        "required": [
+          "release_state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "lane": {
+            "const": "sealed"
+          },
+          "semantic_review": {
+            "properties": {
+              "status": {
+                "const": "passed"
+              },
+              "reviewer_ids": {
+                "minItems": 2
+              }
+            },
+            "required": [
+              "adjudication_report_sha256"
+            ]
+          },
+          "contamination": {
+            "properties": {
+              "scan_state": {
+                "const": "passed"
+              },
+              "examined_source_families": {
+                "minItems": 8
+              }
+            },
+            "required": [
+              "scanner_revision",
+              "scanner_configuration_sha256",
+              "report_sha256",
+              "sealed_case_commitment_sha256",
+              "sealed_oracle_commitment_sha256"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "lane": {
+            "const": "retired"
+          }
+        },
+        "required": [
+          "lane"
+        ]
+      },
+      "then": {
+        "properties": {
+          "release_state": {
+            "const": "retired"
+          }
+        }
+      }
+    }
+  ]
+}
