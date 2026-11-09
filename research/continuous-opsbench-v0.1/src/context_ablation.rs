@@ -162,7 +162,7 @@ pub enum CandidateReason {
     DirectTargetEvidence,
     DependencyOfTarget,
     FreshObservation,
-    MultipleIndependentSources,
+    MultipleSources,
     RecentChange,
 }
 
@@ -512,12 +512,15 @@ fn ranked_candidates(
             .len();
         if source_count > 1 {
             score += 10;
-            reasons.insert(CandidateReason::MultipleIndependentSources);
+            reasons.insert(CandidateReason::MultipleSources);
         }
-        if records
-            .iter()
-            .any(|item| item.object_kind == EvidenceKind::Change)
-        {
+        let recent_change = records.iter().any(|item| {
+            item.object_kind == EvidenceKind::Change
+                && temporal_by_id
+                    .get(item.evidence_id.as_str())
+                    .is_some_and(|view| view.freshness == Freshness::Current)
+        });
+        if recent_change {
             score += 15;
             reasons.insert(CandidateReason::RecentChange);
         }
