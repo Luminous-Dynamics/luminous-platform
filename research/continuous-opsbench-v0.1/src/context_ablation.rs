@@ -1581,6 +1581,103 @@ mod tests {
     }
 
     #[test]
+    fn paired_analysis_reports_all_blocks_scored_pairs_and_fault_family() {
+        let input = input();
+        let mut reasoner = ScriptedReasoner { calls: Vec::new() };
+        let results = run_paired_context_ablation(
+            &input,
+            &truth(),
+            budget(),
+            &CONTEXT_COMPILATION_ARMS,
+            &mut reasoner,
+        )
+        .unwrap();
+
+        let analysis = analyze_paired_context_results(&results).unwrap();
+        assert_eq!(analysis.arm_aggregates.len(), 5);
+        assert_eq!(analysis.contrasts_vs_raw.len(), 4);
+        assert!(analysis
+            .arm_aggregates
+            .iter()
+            .all(|row| row.fault_family_id == "queue_dependency"));
+        assert!(analysis
+            .arm_aggregates
+            .iter()
+            .all(|row| row.paired_blocks == 1 && row.scored_blocks == 1));
+        assert!(analysis
+            .contrasts_vs_raw
+            .iter()
+            .all(|row| row.paired_blocks == 1 && row.both_scored_blocks == 1));
+    }
+
+    #[test]
+    fn paired_analysis_rejects_duplicate_incomplete_and_manifest_mismatched_blocks() {
+        let input = input();
+        let mut reasoner = ScriptedReasoner { calls: Vec::new() };
+        let results = run_paired_context_ablation(
+            &input,
+            &truth(),
+            budget(),
+            &CONTEXT_COMPILATION_ARMS,
+            &mut reasoner,
+        )
+        .unwrap();
+
+        let mut duplicate = results.clone();
+        duplicate.push(results[0].clone());
+        assert_eq!(
+            analyze_paired_context_results(&duplicate),
+            Err(ContextExperimentError::DuplicateArmResult)
+        );
+
+        assert_eq!(
+            analyze_paired_context_results(&results[..4]),
+            Err(ContextExperimentError::IncompletePairedBlock)
+        );
+
+        let mut mismatched = results.clone();
+        mismatched[1].profile.model_snapshot_digest = Digest::from_byte(99);
+        assert_eq!(
+            analyze_paired_context_results(&mismatched),
+            Err(ContextExperimentError::ManifestMismatch)
+        );
+    }
+
+    #[test]
+    fn paired_analysis_keeps_budget_misses_in_the_full_denominator() {
+        let tight = ContextBudget {
+            maximum_context_bytes: 16,
+            ..budget()
+        };
+        let results = run_paired_context_ablation(
+            &input(),
+            &truth(),
+            tight,
+            &CONTEXT_COMPILATION_ARMS,
+            &mut ScriptedReasoner { calls: Vec::new() },
+        )
+        .unwrap();
+        let analysis = analyze_paired_context_results(&results).unwrap();
+
+        assert!(analysis.arm_aggregates.iter().all(|row| {
+            row.paired_blocks == 1
+                && row.scored_blocks == 0
+                && row.budget_exceeded_blocks == 1
+                && row.correct_rate_all_ppm == 0
+                && row.grounded_rate_all_ppm == 0
+                && row.correct_rate_scored_ppm.is_none()
+                && row.grounded_rate_scored_ppm.is_none()
+        }));
+        assert!(analysis.contrasts_vs_raw.iter().all(|row| {
+            row.both_scored_blocks == 0
+                && row.correct_rate_delta_all_ppm == 0
+                && row.grounded_rate_delta_all_ppm == 0
+                && row.correct_rate_delta_both_scored_ppm.is_none()
+                && row.grounded_rate_delta_both_scored_ppm.is_none()
+        }));
+    }
+
+    #[test]
     fn stale_future_and_expired_observations_keep_distinct_freshness_states() {
         let mut input = input();
         input.evidence.push(ContextEvidence {
