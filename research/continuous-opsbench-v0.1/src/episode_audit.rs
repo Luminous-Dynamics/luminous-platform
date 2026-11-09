@@ -8,6 +8,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::event_schedule::{EventScheduleResult, RecordDisposition, ScheduleStatus};
+use crate::scheduled_attention::{
+    ProbeSelectionProposal, ScheduledWakeDecision, SourceQualifiedDisposition,
+};
 use crate::watch_probe::{
     AuthoritySnapshot, ImpactObservation, ProbeCatalogEntry, SourceObservation,
     TerminalDisposition, WatchSpec, MAX_RISK_PPM,
@@ -22,7 +25,24 @@ pub enum AuditStatus {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum WakeDisposition {
-    ProbeRequested { request_id: String },
+    ProbeRequested {
+        request_id: String,
+    },
+    /// The policy selected an eligible probe, but no admission request exists.
+    /// Carries the exact catalog contract snapshot visible at proposal time.
+    ProbeProposedNotAdmitted {
+        probe_id: String,
+        operation_digest: String,
+        tenant_id: String,
+        target_id: String,
+        purpose_id: String,
+        source_id: String,
+        collector_control_domain: String,
+        read_only: bool,
+        maximum_duration_ticks: u64,
+        proposed_at_tick: u64,
+        observation_source_tick: u64,
+    },
     StopWithoutProbe,
     AskPrincipal,
     Abstain,
@@ -34,10 +54,12 @@ pub enum WakeDisposition {
 pub struct WakeDecisionReceipt {
     pub decision_id: String,
     pub watch_id: String,
+    pub source_id: String,
     pub source_epoch: String,
     pub event_id: String,
     pub incident_id: String,
     pub event_sequence: u64,
+    pub payload_digest: String,
     pub wake_tick: u64,
     pub authority_epoch: u64,
     pub disposition: WakeDisposition,
@@ -48,10 +70,12 @@ pub struct ProbeRequestReceipt {
     pub request_id: String,
     pub wake_decision_id: String,
     pub watch_id: String,
+    pub source_id: String,
     pub source_epoch: String,
     pub event_id: String,
     pub incident_id: String,
     pub event_sequence: u64,
+    pub payload_digest: String,
     pub wake_tick: u64,
     pub requested_at_tick: u64,
     pub admitted_at_tick: u64,
@@ -140,6 +164,8 @@ pub enum AuditFailure {
     RequestBindingMismatch,
     RequestOutsideWatchOrAuthority,
     ProbeNotCataloguedReadOnly,
+    ProbeProposalNotMatched,
+    DuplicateProbeProposal,
     DuplicateReceiptId,
     DuplicateEvidenceRecord,
     EvidenceBindingMismatch,
@@ -162,6 +188,7 @@ pub enum IndeterminateReason {
     IncompleteImpact,
     ImpactIndependenceUnestablished,
     MissingDecision,
+    ProbeProposalNotAdmitted,
     ReceiptAfterDeadline,
 }
 
@@ -227,6 +254,15 @@ impl EpisodeAuditReport {
 
 fn non_empty(value: &str) -> bool {
     !value.trim().is_empty()
+}
+
+fn valid_sha256(value: &str) -> bool {
+    value.strip_prefix("sha256:").is_some_and(|hex| {
+        hex.len() == 64
+            && hex
+                .bytes()
+                .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
+    })
 }
 
 fn authority_current_at(authority: &AuthoritySnapshot, watch: &WatchSpec, tick: u64) -> bool {
@@ -471,6 +507,161 @@ fn audit_decision(
     });
 }
 
+/// Convert source-qualified policy decisions into the auditor's explicit wake
+/// receipt vocabulary. Probe selection is deliberately represented as a
+/// proposal, never as an admitted request. The deterministic IDs are local
+/// structural join keys, not cryptographic attestations.
+///
+/// Each selected probe must have one proposal snapshot from the catalog-bound
+/// scheduled-attention runner. A decision without a matching snapshot, a
+/// snapshot for a non-probe decision, or a duplicate proposal fails closed.
+pub fn source_qualified_decisions_to_receipts(
+    scheduled: &[ScheduledWakeDecision],
+    probe_proposals: &[ProbeSelectionProposal],
+) -> Result<Vec<WakeDecisionReceipt>, AuditFailure> {
+    let mut receipts = Vec::new();
+    let mut consumed_proposals = BTreeSet::new();
+
+    for (wake_index, scheduled_wake) in scheduled.iter().enumerate() {
+        let wake = &scheduled_wake.wake;
+        if !non_empty(&wake.watch_id)
+            || !non_empty(&wake.source_epoch)
+            || wake.events.is_empty()
+            || wake.sequence_start == 0
+            || wake.sequence_start > wake.sequence_end
+        {
+            return Err(AuditFailure::WakeRecordMalformed);
+        }
+
+        let mut expected = BTreeSet::new();
+        for event in &wake.events {
+            if event.identity.source_epoch != wake.source_epoch
+                || !non_empty(&event.identity.source_id)
+                || !non_empty(&event.identity.event_id)
+                || !non_empty(&event.identity.incident_id)
+                || !valid_sha256(&event.identity.payload_digest)
+                || event.identity.sequence < wake.sequence_start
+                || event.identity.sequence > wake.sequence_end
+                || !expected.insert(event.identity.clone())
+            {
+                return Err(AuditFailure::WakeRecordMalformed);
+            }
+        }
+
+        let mut seen = BTreeSet::new();
+        for (decision_index, decision) in scheduled_wake.decisions.iter().enumerate() {
+            if !expected.contains(&decision.event) || !seen.insert(decision.event.clone()) {
+                return Err(AuditFailure::OrphanWakeDecision);
+            }
+
+            let matching_proposals: Vec<(usize, &ProbeSelectionProposal)> = probe_proposals
+                .iter()
+                .enumerate()
+                .filter(|(_, proposal)| proposal.event == decision.event)
+                .collect();
+
+            let disposition = match &decision.disposition {
+                SourceQualifiedDisposition::SelectReadOnlyProbe { probe_id } => {
+                    if !non_empty(probe_id) {
+                        return Err(AuditFailure::ProbeNotCataloguedReadOnly);
+                    }
+                    if matching_proposals.is_empty() {
+                        return Err(AuditFailure::ProbeProposalNotMatched);
+                    }
+                    if matching_proposals.len() != 1 {
+                        return Err(AuditFailure::DuplicateProbeProposal);
+                    }
+                    let (proposal_index, proposal) = matching_proposals[0];
+                    if proposal.probe_id != *probe_id
+                        || proposal.proposed_at_tick != wake.wake_tick
+                        || proposal.observation_source_tick
+                            != scheduled_wake.observation.source_tick as u64
+                        || proposal.observation_source_tick > proposal.proposed_at_tick
+                        || !non_empty(&proposal.operation_digest)
+                        || !non_empty(&proposal.tenant_id)
+                        || !non_empty(&proposal.target_id)
+                        || !non_empty(&proposal.purpose_id)
+                        || !non_empty(&proposal.source_id)
+                        || !non_empty(&proposal.collector_control_domain)
+                        || !proposal.read_only
+                        || proposal.maximum_duration_ticks == 0
+                    {
+                        return Err(AuditFailure::ProbeProposalNotMatched);
+                    }
+                    if !consumed_proposals.insert(proposal_index) {
+                        return Err(AuditFailure::DuplicateProbeProposal);
+                    }
+                    WakeDisposition::ProbeProposedNotAdmitted {
+                        probe_id: proposal.probe_id.clone(),
+                        operation_digest: proposal.operation_digest.clone(),
+                        tenant_id: proposal.tenant_id.clone(),
+                        target_id: proposal.target_id.clone(),
+                        purpose_id: proposal.purpose_id.clone(),
+                        source_id: proposal.source_id.clone(),
+                        collector_control_domain: proposal.collector_control_domain.clone(),
+                        read_only: proposal.read_only,
+                        maximum_duration_ticks: proposal.maximum_duration_ticks,
+                        proposed_at_tick: proposal.proposed_at_tick,
+                        observation_source_tick: proposal.observation_source_tick,
+                    }
+                }
+                SourceQualifiedDisposition::StopWithoutProbe => {
+                    if !matching_proposals.is_empty() {
+                        return Err(AuditFailure::ProbeProposalNotMatched);
+                    }
+                    WakeDisposition::StopWithoutProbe
+                }
+                SourceQualifiedDisposition::AskPrincipal => {
+                    if !matching_proposals.is_empty() {
+                        return Err(AuditFailure::ProbeProposalNotMatched);
+                    }
+                    WakeDisposition::AskPrincipal
+                }
+                SourceQualifiedDisposition::Abstain => {
+                    if !matching_proposals.is_empty() {
+                        return Err(AuditFailure::ProbeProposalNotMatched);
+                    }
+                    WakeDisposition::Abstain
+                }
+                SourceQualifiedDisposition::Escalate => {
+                    if !matching_proposals.is_empty() {
+                        return Err(AuditFailure::ProbeProposalNotMatched);
+                    }
+                    WakeDisposition::Escalate
+                }
+            };
+
+            let decision_id = format!(
+                "scheduled-policy:{wake_index}:{decision_index}:{}:{}",
+                decision.event.sequence, wake.wake_tick
+            );
+            receipts.push(WakeDecisionReceipt {
+                decision_id,
+                watch_id: wake.watch_id.clone(),
+                source_id: decision.event.source_id.clone(),
+                source_epoch: decision.event.source_epoch.clone(),
+                event_id: decision.event.event_id.clone(),
+                incident_id: decision.event.incident_id.clone(),
+                event_sequence: decision.event.sequence,
+                payload_digest: decision.event.payload_digest.clone(),
+                wake_tick: wake.wake_tick,
+                authority_epoch: wake.authority_epoch,
+                disposition,
+            });
+        }
+
+        if seen != expected {
+            return Err(AuditFailure::MissingWakeDecision);
+        }
+    }
+
+    if consumed_proposals.len() != probe_proposals.len() {
+        return Err(AuditFailure::ProbeProposalNotMatched);
+    }
+
+    Ok(receipts)
+}
+
 /// Independently audit the join from scheduled event through probe and evidence.
 ///
 /// This checks record identity, scope, timing, authority, read-only catalog
@@ -591,6 +782,10 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
                 continue;
             }
             let decision = matching[0];
+            if decision.source_id != watch.source_id || !valid_sha256(&decision.payload_digest) {
+                report.fail(AuditFailure::WakeRecordMalformed);
+                continue;
+            }
             if !non_empty(&decision.decision_id)
                 || !wake_decision_ids.insert(decision.decision_id.clone())
                 || !wake_decision_keys.insert(key)
@@ -612,6 +807,10 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
                     } else {
                         let request = linked[0];
                         if request.wake_decision_id != decision.decision_id
+                            || request.source_id != decision.source_id
+                            || request.source_id != watch.source_id
+                            || request.payload_digest != decision.payload_digest
+                            || !valid_sha256(&request.payload_digest)
                             || request.event_id != event.event_id
                             || request.incident_id != event.incident_id
                             || request.event_sequence != event.sequence
@@ -621,6 +820,51 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
                             report.fail(AuditFailure::RequestNotAuthorizedByWake);
                         }
                     }
+                }
+                WakeDisposition::ProbeProposedNotAdmitted {
+                    probe_id,
+                    operation_digest,
+                    tenant_id,
+                    target_id,
+                    purpose_id,
+                    source_id,
+                    collector_control_domain,
+                    read_only,
+                    maximum_duration_ticks,
+                    proposed_at_tick,
+                    observation_source_tick,
+                } => {
+                    let entry = catalog_by_id.get(probe_id.as_str()).copied();
+                    if entry.is_none_or(|entry| {
+                        entry.operation_digest != *operation_digest
+                            || entry.tenant_id != *tenant_id
+                            || entry.target_id != *target_id
+                            || entry.purpose_id != *purpose_id
+                            || entry.source_id != *source_id
+                            || entry.collector_control_domain != *collector_control_domain
+                            || entry.read_only != *read_only
+                            || entry.maximum_duration_ticks != *maximum_duration_ticks
+                            || !entry.read_only
+                            || entry.tenant_id != watch.tenant_id
+                            || entry.target_id != watch.target_id
+                            || entry.purpose_id != watch.purpose_id
+                            || !non_empty(operation_digest)
+                            || !non_empty(source_id)
+                            || !non_empty(collector_control_domain)
+                            || *maximum_duration_ticks == 0
+                            || *proposed_at_tick != wake.wake_tick
+                            || *observation_source_tick > *proposed_at_tick
+                    }) {
+                        report.fail(AuditFailure::ProbeNotCataloguedReadOnly);
+                    }
+                    if input.requests.iter().any(|request| {
+                        request.event_id == event.event_id
+                            && request.source_epoch == wake.source_epoch
+                            && request.event_sequence == event.sequence
+                    }) {
+                        report.fail(AuditFailure::RequestNotAuthorizedByWake);
+                    }
+                    report.indeterminate(IndeterminateReason::ProbeProposalNotAdmitted);
                 }
                 WakeDisposition::StopWithoutProbe
                 | WakeDisposition::AskPrincipal
@@ -936,6 +1180,12 @@ mod tests {
         AttentionStrategy, EventCheckpoint, EventRecordResult, EventScheduleMetrics,
         ScheduleStatus, WakeRecord,
     };
+    use crate::scheduled_attention::{
+        ProbeSelectionProposal, ScheduledWakeDecision, SourceQualifiedDisposition,
+        SourceQualifiedEvent, SourceQualifiedEventDecision, SourceQualifiedEventIdentity,
+        SourceQualifiedWakeBatch,
+    };
+    use crate::stability::PlantObservation;
     use std::collections::BTreeMap;
 
     fn watch() -> WatchSpec {
@@ -1032,6 +1282,8 @@ mod tests {
             event_sequence: 10,
             wake_tick: 6,
             authority_epoch: 7,
+            source_id: "event-feed-a".into(),
+            payload_digest: format!("sha256:{:064x}", 10),
             disposition: WakeDisposition::ProbeRequested {
                 request_id: "request-1".into(),
             },
@@ -1043,10 +1295,12 @@ mod tests {
             request_id: "request-1".into(),
             wake_decision_id: "wake-decision-1".into(),
             watch_id: "watch-a".into(),
+            source_id: "event-feed-a".into(),
             source_epoch: "epoch-1".into(),
             event_id: "event-10".into(),
             incident_id: "incident-a".into(),
             event_sequence: 10,
+            payload_digest: format!("sha256:{:064x}", 10),
             wake_tick: 6,
             requested_at_tick: 6,
             admitted_at_tick: 7,
@@ -1107,6 +1361,80 @@ mod tests {
         }
     }
 
+    fn scheduled_policy_decision() -> Vec<ScheduledWakeDecision> {
+        let identity = SourceQualifiedEventIdentity {
+            source_id: "event-feed-a".into(),
+            source_epoch: "epoch-1".into(),
+            event_id: "event-10".into(),
+            incident_id: "incident-a".into(),
+            sequence: 10,
+            payload_digest: format!("sha256:{:064x}", 10),
+        };
+        vec![ScheduledWakeDecision {
+            wake: SourceQualifiedWakeBatch {
+                watch_id: "watch-a".into(),
+                authority_epoch: 7,
+                source_epoch: "epoch-1".into(),
+                wake_tick: 6,
+                sequence_start: 10,
+                sequence_end: 10,
+                events: vec![SourceQualifiedEvent {
+                    identity: identity.clone(),
+                    tenant_id: "tenant-a".into(),
+                    target_id: "service-a".into(),
+                    purpose_id: "incident-diagnosis".into(),
+                    event_type: "service-degraded".into(),
+                    condition: crate::event_schedule::ConditionOutcome::Match,
+                    persistence: crate::event_schedule::Persistence::PersistentCondition,
+                    event_tick: 5,
+                    valid_from_tick: 5,
+                    valid_until_tick: 24,
+                    delivered_tick: 5,
+                    processing_tick: 6,
+                    record_retain_until_tick: 30,
+                    response_deadline_tick: 15,
+                }],
+            },
+            observation: PlantObservation {
+                tick: 6,
+                source_tick: 5,
+                observed_queue_depth: 12,
+                observed_latency_ms: 35,
+                observed_failed_ppm: 100_000,
+            },
+            decisions: vec![SourceQualifiedEventDecision {
+                event: identity,
+                disposition: SourceQualifiedDisposition::SelectReadOnlyProbe {
+                    probe_id: "probe-queue".into(),
+                },
+            }],
+        }]
+    }
+
+    fn probe_proposals() -> Vec<ProbeSelectionProposal> {
+        vec![ProbeSelectionProposal {
+            event: SourceQualifiedEventIdentity {
+                source_id: "event-feed-a".into(),
+                source_epoch: "epoch-1".into(),
+                event_id: "event-10".into(),
+                incident_id: "incident-a".into(),
+                sequence: 10,
+                payload_digest: format!("sha256:{:064x}", 10),
+            },
+            probe_id: "probe-queue".into(),
+            operation_digest: "sha256:operation-a".into(),
+            tenant_id: "tenant-a".into(),
+            target_id: "service-a".into(),
+            purpose_id: "incident-diagnosis".into(),
+            source_id: "collector-a".into(),
+            collector_control_domain: "collector-domain".into(),
+            read_only: true,
+            maximum_duration_ticks: 3,
+            proposed_at_tick: 6,
+            observation_source_tick: 5,
+        }]
+    }
+
     fn decision() -> DecisionReceipt {
         DecisionReceipt {
             decision_id: "decision-1".into(),
@@ -1155,6 +1483,129 @@ mod tests {
     }
 
     #[test]
+    fn source_qualified_probe_proposal_maps_to_non_admission_and_indeterminate_audit() {
+        let scheduled = scheduled_policy_decision();
+        let proposals = probe_proposals();
+        let receipts = source_qualified_decisions_to_receipts(&scheduled, &proposals).unwrap();
+
+        assert_eq!(receipts.len(), 1);
+        assert_eq!(receipts[0].source_id, "event-feed-a");
+        assert_eq!(receipts[0].source_epoch, "epoch-1");
+        assert_eq!(receipts[0].event_id, "event-10");
+        assert_eq!(receipts[0].payload_digest, format!("sha256:{:064x}", 10));
+        assert_eq!(receipts[0].incident_id, "incident-a");
+        assert_eq!(receipts[0].event_sequence, 10);
+        assert_eq!(receipts[0].wake_tick, 6);
+        assert_eq!(receipts[0].authority_epoch, 7);
+        assert_eq!(
+            receipts[0].disposition,
+            WakeDisposition::ProbeProposedNotAdmitted {
+                probe_id: "probe-queue".into(),
+                operation_digest: "sha256:operation-a".into(),
+                tenant_id: "tenant-a".into(),
+                target_id: "service-a".into(),
+                purpose_id: "incident-diagnosis".into(),
+                source_id: "collector-a".into(),
+                collector_control_domain: "collector-domain".into(),
+                read_only: true,
+                maximum_duration_ticks: 3,
+                proposed_at_tick: 6,
+                observation_source_tick: 5,
+            }
+        );
+
+        let report = run(
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &receipts,
+            &[],
+            &[],
+            12,
+        );
+        assert_eq!(report.status, AuditStatus::Indeterminate);
+        assert_eq!(report.wake_events, 1);
+        assert_eq!(report.wake_decisions, 1);
+        assert_eq!(report.probe_requests, 0);
+        assert!(report.failures.is_empty());
+        assert!(report
+            .indeterminate_reasons
+            .contains(&IndeterminateReason::ProbeProposalNotAdmitted));
+    }
+
+    #[test]
+    fn audit_rejects_catalog_mutation_after_probe_was_proposed() {
+        let scheduled = scheduled_policy_decision();
+        let proposals = probe_proposals();
+        let receipts = source_qualified_decisions_to_receipts(&scheduled, &proposals).unwrap();
+        let mut changed_catalog = catalog();
+        changed_catalog[0].operation_digest = "sha256:substituted-operation".into();
+
+        let report = run(
+            &watch(),
+            &authority(),
+            &changed_catalog,
+            &schedule(),
+            &receipts,
+            &[],
+            &[],
+            12,
+        );
+        assert_eq!(report.status, AuditStatus::Failed);
+        assert!(report
+            .failures
+            .contains(&AuditFailure::ProbeNotCataloguedReadOnly));
+        assert!(report
+            .indeterminate_reasons
+            .contains(&IndeterminateReason::ProbeProposalNotAdmitted));
+    }
+
+    #[test]
+    fn proposal_snapshot_must_match_exact_event_and_wake_tick() {
+        let scheduled = scheduled_policy_decision();
+        let mut proposals = probe_proposals();
+        proposals[0].proposed_at_tick = 7;
+        assert_eq!(
+            source_qualified_decisions_to_receipts(&scheduled, &proposals),
+            Err(AuditFailure::ProbeProposalNotMatched)
+        );
+    }
+
+    #[test]
+    fn source_qualified_audit_bridge_rejects_malformed_payload_digest() {
+        let mut scheduled = scheduled_policy_decision();
+        scheduled[0].wake.events[0].identity.payload_digest = "sha256:truncated".into();
+        scheduled[0].decisions[0].event.payload_digest = "sha256:truncated".into();
+        let mut proposals = probe_proposals();
+        proposals[0].event.payload_digest = "sha256:truncated".into();
+        assert_eq!(
+            source_qualified_decisions_to_receipts(&scheduled, &proposals),
+            Err(AuditFailure::WakeRecordMalformed)
+        );
+    }
+
+    #[test]
+    fn source_qualified_audit_bridge_rejects_missing_per_event_disposition() {
+        let mut scheduled = scheduled_policy_decision();
+        scheduled[0].decisions.clear();
+        assert_eq!(
+            source_qualified_decisions_to_receipts(&scheduled, &[]),
+            Err(AuditFailure::MissingWakeDecision)
+        );
+    }
+
+    #[test]
+    fn source_qualified_audit_bridge_rejects_event_epoch_substitution() {
+        let mut scheduled = scheduled_policy_decision();
+        scheduled[0].decisions[0].event.source_epoch = "substituted-epoch".into();
+        assert_eq!(
+            source_qualified_decisions_to_receipts(&scheduled, &probe_proposals()),
+            Err(AuditFailure::OrphanWakeDecision)
+        );
+    }
+
+    #[test]
     fn exact_event_probe_observation_impact_and_decision_chain_qualifies() {
         let report = run(
             &watch(),
@@ -1173,6 +1624,41 @@ mod tests {
         assert_eq!(report.impacts_verified, 1);
         assert_eq!(report.decisions_verified, 1);
         assert_eq!(report.decisions[0].realized_loss_reduction_ppm, 300_000);
+    }
+
+    #[test]
+    fn admission_request_cannot_substitute_source_or_payload_digest() {
+        let mut requests = request();
+        requests[0].payload_digest = format!("sha256:{:064x}", 11);
+        let report = run(
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &requests,
+            &evidence(),
+            12,
+        );
+        assert_eq!(report.status, AuditStatus::Failed);
+        assert!(report
+            .failures
+            .contains(&AuditFailure::RequestNotAuthorizedByWake));
+
+        let mut decisions = wake_decision();
+        decisions[0].source_id = "substituted-source".into();
+        let report = run(
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &decisions,
+            &request(),
+            &evidence(),
+            12,
+        );
+        assert_eq!(report.status, AuditStatus::Failed);
+        assert!(report.failures.contains(&AuditFailure::WakeRecordMalformed));
     }
 
     #[test]

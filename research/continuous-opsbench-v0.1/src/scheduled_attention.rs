@@ -97,6 +97,15 @@ pub struct ScheduledWakeDecision {
 pub struct ProbeSelectionProposal {
     pub event: SourceQualifiedEventIdentity,
     pub probe_id: String,
+    /// Frozen catalog operation identity and scope at proposal time.
+    pub operation_digest: String,
+    pub tenant_id: String,
+    pub target_id: String,
+    pub purpose_id: String,
+    pub source_id: String,
+    pub collector_control_domain: String,
+    pub read_only: bool,
+    pub maximum_duration_ticks: u64,
     pub proposed_at_tick: u64,
     pub observation_source_tick: u64,
 }
@@ -157,6 +166,7 @@ pub enum ScheduledAttentionError {
     DuplicatePolicyDisposition,
     OrphanPolicyDisposition,
     IneligibleProbeProposal,
+    AmbiguousProbeCatalogEntry,
     Schedule(ScheduleError),
     ProbeEligibility(EpisodeError),
     Stability(StabilityError),
@@ -512,9 +522,33 @@ pub fn run_scheduled_attention(
             match &decision.disposition {
                 SourceQualifiedDisposition::SelectReadOnlyProbe { probe_id } => {
                     metrics.probe_selection_proposals += 1;
+                    let matching_catalog_entries: Vec<_> = input
+                        .catalog
+                        .iter()
+                        .filter(|entry| entry.probe_id == *probe_id)
+                        .collect();
+                    if matching_catalog_entries.len() != 1 {
+                        return Err(ScheduledAttentionError::AmbiguousProbeCatalogEntry);
+                    }
+                    let entry = matching_catalog_entries[0];
+                    if !entry.read_only
+                        || entry.tenant_id != input.watch.tenant_id
+                        || entry.target_id != input.watch.target_id
+                        || entry.purpose_id != input.watch.purpose_id
+                    {
+                        return Err(ScheduledAttentionError::IneligibleProbeProposal);
+                    }
                     probe_proposals.push(ProbeSelectionProposal {
                         event: decision.event.clone(),
                         probe_id: probe_id.clone(),
+                        operation_digest: entry.operation_digest.clone(),
+                        tenant_id: entry.tenant_id.clone(),
+                        target_id: entry.target_id.clone(),
+                        purpose_id: entry.purpose_id.clone(),
+                        source_id: entry.source_id.clone(),
+                        collector_control_domain: entry.collector_control_domain.clone(),
+                        read_only: entry.read_only,
+                        maximum_duration_ticks: entry.maximum_duration_ticks,
                         proposed_at_tick: wake_batch.wake_tick,
                         observation_source_tick: observation.source_tick as u64,
                     });

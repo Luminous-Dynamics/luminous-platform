@@ -178,3 +178,26 @@ The runner deliberately stops before Xenia admission, remote collector execution
 Tests cover exact source-identity preservation, one invocation with per-event decisions for a coalesced batch, catalog-bound read-only proposals, rejection of an ineligible proposal, rejection of missing policy dispositions, sequence-gap fail-closed behavior, quiet/no-event behavior and equality with an independent no-action plant replay.
 
 **Claim ceiling:** this is still a deterministic in-process bridge over synthetic event schedules and the existing synthetic plant. It does not authenticate event publishers, prove policy process isolation, integrate live Xenia, execute collectors, measure probe externality, or establish real-world SRE repair performance. Probe proposals are not admitted operations and this runner makes no SREGym/SRE-Marathon claim.
+
+
+## Scheduled-attention → episode-audit bridge v0.1
+
+The source-qualified scheduled-attention runner now has a structural adapter into the independent episode auditor. It maps each per-event policy disposition to a WakeDecisionReceipt without reconstructing event identity from tick or synthetic sequence values. The adapter rejects missing/duplicate/orphan decisions and source-epoch substitution.
+
+A selected probe is represented as ProbeProposedNotAdmitted, not ProbeRequested. The auditor checks the proposal against the read-only, scope-matched catalog, requires that no admission request be represented for the same event, and marks the episode Indeterminate with ProbeProposalNotAdmitted. This is intentional: a policy proposal is not an Xenia admission, collector execution, source observation or impact receipt. Non-probe dispositions can be audited as explicit no-probe decisions. Local decision IDs are deterministic join keys only, not cryptographic attestations.
+
+Tests cover exact identity mapping, proposal-versus-request distinction, explicit indeterminate status for an unadmitted proposal, missing per-event disposition rejection and source-epoch substitution rejection.
+
+**Claim ceiling:** the adapter closes the schedule-to-policy-decision record seam only. It does not close admission, collection, observer independence, impact or sustained recovery. No complete episode qualification is possible from this adapter alone.
+
+
+### Proposal catalog snapshot (follow-up hardening)
+
+A proposal now preserves the exact catalog contract visible at selection time: operation digest, tenant/target/purpose, collector source ID, collector control domain, read-only bit, maximum duration, proposal tick and the observation source tick. The source-qualified runner resolves the already-eligible probe ID against exactly one catalog entry before emitting this proposal. The auditor adapter consumes exactly one proposal for every SelectReadOnlyProbe decision and none for other dispositions; it checks the proposal's observation tick against the actual wake observation. The auditor then compares every frozen field against the catalog supplied at audit time. A later catalog mutation, ambiguous entry, substituted operation digest, changed scope/control domain, changed duration or forged proposal time cannot be silently treated as the same proposed operation.
+
+This still remains a policy proposal, not an admission request or collector receipt. A valid catalog snapshot does not grant execution authority.
+
+
+### Source identity carried through the audit receipt
+
+The adapter's wake-decision receipt now retains source ID and payload digest in addition to source epoch, event ID, incident ID, sequence, watch and authority epoch. The admission/request receipt carries the same source ID and payload digest, and the auditor requires exact equality to the wake-decision receipt plus the watch's source ID. This prevents a downstream admission record from matching only by event ID/tick while changing the source or payload identity. The structural auditor validates the digest's SHA-256 encoding but does not authenticate its publisher or re-read the original event bytes; that still belongs to the source-owned signed evidence path.
