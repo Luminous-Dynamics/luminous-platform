@@ -2219,6 +2219,31 @@ mod tests {
         }
     }
 
+    struct NoTokenizerReasoner;
+
+    impl ContextReasoner for NoTokenizerReasoner {
+        fn start_fresh_session(&mut self, _profile: &ReasonerSetupProfile) -> String {
+            panic!("session must not start without exact token preflight");
+        }
+
+        fn count_input_tokens(
+            &mut self,
+            _profile: &ReasonerSetupProfile,
+            _rendered_context: &str,
+        ) -> Option<u64> {
+            None
+        }
+
+        fn diagnose(
+            &mut self,
+            _session_id: &str,
+            _rendered_context: &str,
+            _budget: ContextBudget,
+        ) -> ReasonerResponse {
+            panic!("model must not be invoked without exact token preflight");
+        }
+    }
+
     fn budget() -> ContextBudget {
         ContextBudget {
             maximum_context_bytes: 100_000,
@@ -2975,6 +3000,59 @@ mod tests {
         assert_eq!(mean_i128(0, 0), None);
         assert_eq!(mean_u128(12, 3), Some(4));
         assert_eq!(mean_i128(-12, 3), Some(-4));
+    }
+
+    #[test]
+    fn exact_tokenizer_preflight_unavailable_prevents_any_model_call() {
+        let results = run_paired_context_ablation(
+            &input(),
+            &truth(),
+            budget(),
+            &test_order(),
+            &mut NoTokenizerReasoner,
+        )
+        .unwrap();
+
+        assert_eq!(results.len(), 5);
+        assert!(results.iter().all(|row| row.status == ArmStatus::PreflightUnavailable));
+        assert!(results.iter().all(|row| row.model_token_preflight.is_none()));
+        assert!(results.iter().all(|row| row.reasoner_session_id.is_none()));
+        assert!(results.iter().all(|row| row.usage.is_none()));
+        assert!(results.iter().all(|row| row.answer.is_none()));
+
+        let analysis = analyze_paired_context_results(&results, 77).unwrap();
+        assert!(analysis.arm_aggregates.iter().all(|row| {
+            row.preflight_unavailable_blocks == 1
+                && row.budget_exceeded_blocks == 0
+                && row.scored_blocks == 0
+                && row.correct_rate_all_ppm == 0
+        }));
+    }
+
+    #[test]
+    fn stale_citations_are_separated_from_fresh_evidence_grounding() {
+        let input = input();
+        let (packet, _) = compile_context_packet(&input, ContextArm::RawSourceRecords).unwrap();
+        let truth = ContextGroundTruth {
+            correct_root_object_ref: "worker-7".into(),
+            required_evidence_ids: ["ev-node".to_owned()].into_iter().collect(),
+        };
+        let answer = DiagnosisAnswer {
+            root_object_ref: Some("worker-7".into()),
+            supporting_evidence_ids: vec!["ev-node".into()],
+            alternative_object_refs: Vec::new(),
+            abstained: false,
+        };
+
+        let score = score_answer(&packet, &truth, &answer);
+        assert!(score.root_cause_correct);
+        assert!(score.root_object_visible);
+        assert!(!score.root_object_grounded);
+        assert_eq!(score.supported_evidence_precision_ppm, 1_000_000);
+        assert_eq!(score.fresh_evidence_precision_ppm, 0);
+        assert_eq!(score.required_evidence_recall_ppm, 1_000_000);
+        assert_eq!(score.fresh_required_evidence_recall_ppm, 0);
+        assert_eq!(score.stale_or_future_evidence_claims, 1);
     }
 
     #[test]
