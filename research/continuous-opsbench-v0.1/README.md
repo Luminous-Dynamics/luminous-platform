@@ -282,3 +282,8 @@ The byte/4 input-token figure remains a rough diagnostic estimate and is not a h
 ### Counterbalance slot allocation clarified
 
 The counterbalance slot is independent of attempt ID and is assigned by the preregistered block schedule. The analyzer counts slots across all paired blocks per fault family and fails if the largest slot count exceeds the smallest by more than one. This is the required allocation for the five-order cyclic design; a three-attempt-per-scenario cohort is not restricted to the first three positions. The seeded base permutation is rotated by the explicit slot, and each recorded arm/position must exactly match the recomputed schedule.
+
+
+### Scoring and temporal-topology hardening
+
+Evidence precision now uses every citation occurrence as its denominator. Repeated/duplicate evidence IDs are not silently collapsed into one supported citation: each duplicate counts as an unsupported claim and lowers precision. Root visibility recognizes both direct evidence objects and objects exposed through a visible topology relation; root grounding still requires a supported evidence ID attached to a present relation. Ranked dependency candidates now require a present relation, a non-future and fresh relation observation, and fresh backing evidence. Stale/future relation timestamps cannot increase a candidate's dependency score. Tests cover duplicate citation precision, relation-only root visibility/grounding and stale/future relation exclusion.
