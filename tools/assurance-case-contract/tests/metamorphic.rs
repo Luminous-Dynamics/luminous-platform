@@ -520,12 +520,12 @@ fn unsupported_argument_dependency_cycle_is_invalid() {
         id: "cycle-a".to_owned(),
         kind: EdgeKind::DependsOn,
         from: "claim-root".to_owned(),
-        to: "arg-main".to_owned(),
+        to: "e-direct".to_owned(),
     });
     input.edges.push(CaseEdge {
         id: "cycle-b".to_owned(),
         kind: EdgeKind::DependsOn,
-        from: "arg-main".to_owned(),
+        from: "e-direct".to_owned(),
         to: "claim-root".to_owned(),
     });
     let report = run(&input);
