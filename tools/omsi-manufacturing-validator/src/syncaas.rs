@@ -971,7 +971,7 @@ pub fn validate_fixture_pack(document: &Value, source_bytes: &[u8]) -> Value {
 
     let standard = document.get("standard").unwrap_or(&Value::Null);
     let metadata_valid = text(document, "contract") == Some(FIXTURE_CONTRACT)
-        && text(document, "version") == Some("0.2.0-draft")
+        && text(document, "version") == Some("0.3.0-draft")
         && text(document, "state") == Some("SYNTHETIC_BASE_EDITION_FIXTURES_EXECUTABLE")
         && text(standard, "recommendation") == Some("ITU-T G.8275")
         && text(standard, "edition") == Some("01/2026")
