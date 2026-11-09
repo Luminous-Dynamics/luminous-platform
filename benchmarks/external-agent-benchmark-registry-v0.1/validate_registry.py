@@ -176,6 +176,8 @@ def native_sregym_semantic_errors(manifest: dict[str, Any]) -> list[str]:
         errors.append("accounting: started attempts cannot exceed expected attempts plus declared retries")
     if accounting["dropped_attempt_rows"] > accounting["missing_attempt_rows"]:
         errors.append("accounting: dropped rows must be included in the missing-row count")
+    if accounting["dropped_attempt_rows"] != 0:
+        errors.append("accounting: dropped attempt rows are prohibited; retain every started attempt's terminal record")
     if manifest["native_protocol"]["retry_policy"] == "no_retry" and accounting["retried_attempt_rows"] != 0:
         errors.append("accounting: no_retry protocol cannot contain retried attempts")
     if manifest["profile_status"] == "executed":
@@ -252,6 +254,10 @@ def native_sregym_semantic_errors(manifest: dict[str, Any]) -> list[str]:
             errors.append("ready/executed: each arm needs exact model, agent, prompt, permission and tool-surface identities")
         if design["preregistered_protocol_digest"] is None:
             errors.append("ready/executed: preregistered protocol digest is mandatory")
+        if design["common_context_budget_digest"] is None or design["common_tool_budget_digest"] is None:
+            errors.append("ready/executed: context and tool budgets must be digest-pinned")
+        if design["comparison_mode"] == "matched_tool_surface_ablation" and design["capability_equivalence_artifact_digest"] is None:
+            errors.append("ready/executed matched ablation: capability-equivalence evidence is mandatory")
 
     supplemental = manifest["supplemental_metrics"]
     if supplemental["enabled"] and not supplemental["metrics"]:
@@ -328,6 +334,51 @@ def validate_native_sregym_profile() -> None:
     executed_missing["accounting"]["attempt_receipt_bundle_digest"] = "a" * 64
     executed_missing["accounting"]["result_artifact_digest"] = "b" * 64
     expect_native_rejected("executed run with a missing attempt", executed_missing, schema)
+
+    matched = copy.deepcopy(manifest)
+    matched["study_design"]["comparison_mode"] = "matched_tool_surface_ablation"
+    matched["study_design"]["common_model_snapshot_digest"] = "1" * 64
+    matched["study_design"]["common_agent_scaffold_digest"] = "2" * 64
+    matched["study_design"]["common_prompt_digest"] = "3" * 64
+    matched["study_design"]["common_permission_profile_digest"] = "4" * 64
+    matched["study_design"]["common_reasoning_effort"] = "medium"
+    matched["study_design"]["common_sampling_policy"] = "temperature=0;seeded"
+    matched["study_design"]["common_context_budget_digest"] = "5" * 64
+    matched["study_design"]["common_tool_budget_digest"] = "6" * 64
+    matched["study_design"]["capability_equivalence_artifact_digest"] = "7" * 64
+    matched["arms"][0].update({
+        "arm_kind": "native_reference",
+        "model_provider": "provider-x",
+        "model_snapshot_digest": "1" * 64,
+        "agent_scaffold_digest": "2" * 64,
+        "prompt_digest": "3" * 64,
+        "reasoning_effort": "medium",
+        "sampling_policy": "temperature=0;seeded",
+        "permission_profile_digest": "4" * 64,
+        "tool_surface_digest": "8" * 64,
+        "tool_surface_description": "Pinned native reference surface.",
+    })
+    candidate_arm = copy.deepcopy(matched["arms"][0])
+    candidate_arm.update({
+        "arm_id": "structured-gateway",
+        "arm_kind": "structured_gateway",
+        "tool_surface_digest": "9" * 64,
+        "tool_surface_description": "Semantically capability-matched structured gateway.",
+    })
+    matched["arms"].append(candidate_arm)
+    matched_errors = validate_native_sregym(matched, schema)
+    if matched_errors:
+        raise SystemExit(f"matched-tool-surface positive control unexpectedly failed: {matched_errors}")
+    print("accepted as expected: matched model/tool-surface positive control")
+
+    mismatched_model = copy.deepcopy(matched)
+    mismatched_model["arms"][1]["model_snapshot_digest"] = "a" * 64
+    expect_native_rejected("tool-surface arms with mismatched models", mismatched_model, schema)
+
+    matched_contamination = copy.deepcopy(matched)
+    matched_contamination["arms"][0]["luminous_supplemental_gates_enabled"] = True
+    expect_native_rejected("native reference contaminated by supplemental gates", matched_contamination, schema)
+
 
 def main() -> int:
     validate_native_sregym_profile()
