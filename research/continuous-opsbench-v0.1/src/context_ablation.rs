@@ -212,6 +212,9 @@ pub struct ContextPacket {
     pub paired_block_id: String,
     pub attempt_id: u32,
     pub profile: ContextExperimentProfile,
+    /// Evaluator-only temporal bounds; never rendered into the model prompt.
+    pub audited_at_ms: u64,
+    pub maximum_evidence_age_ms: u64,
     /// Zero-based position in the supplied, preregistered arm order.
     pub arm_order_position: u8,
     pub arm: ContextArm,
@@ -808,6 +811,8 @@ pub fn compile_context_packet(
         paired_block_id: input.paired_block_id.clone(),
         attempt_id: input.attempt_id,
         profile: input.profile.clone(),
+        audited_at_ms: input.audited_at_ms,
+        maximum_evidence_age_ms: input.maximum_evidence_age_ms,
         arm,
         target_object_ref: input.target_object_ref.clone(),
         evidence: if arm == ContextArm::RawSourceRecords {
@@ -960,7 +965,20 @@ fn score_answer(
             relation.state == EvidenceState::Present
                 && relation.from_object == packet.target_object_ref
                 && relation.to_object == root
+                && relation.observed_at_ms <= packet.audited_at_ms
+                && packet
+                    .audited_at_ms
+                    .saturating_sub(relation.observed_at_ms)
+                    <= packet.maximum_evidence_age_ms
                 && supported.contains(relation.evidence_id.as_str())
+                && state_by_id.get(relation.evidence_id.as_str())
+                    == Some(&EvidenceState::Present)
+                && packet.evidence_ids.contains(&relation.evidence_id)
+                && packet
+                    .temporal
+                    .iter()
+                    .find(|item| item.evidence_id == relation.evidence_id)
+                    .is_none_or(|item| item.freshness == Freshness::Current)
         })
     });
 
@@ -2821,6 +2839,31 @@ mod tests {
         assert!(score.root_cause_correct);
         assert!(score.root_object_visible);
         assert!(score.root_object_grounded);
+    }
+
+    #[test]
+    fn stale_or_future_topology_cannot_ground_a_root_even_when_visible() {
+        let mut input = input();
+        input.relations[0].to_object = "payments-config".into();
+        input.relations[0].observed_at_ms = 500;
+        let (stale_packet, _) =
+            compile_context_packet(&input, ContextArm::TopologyAndDiffs).unwrap();
+        let answer = DiagnosisAnswer {
+            root_object_ref: Some("payments-config".into()),
+            supporting_evidence_ids: vec!["ev-change".into()],
+            alternative_object_refs: Vec::new(),
+            abstained: false,
+        };
+        let stale_score = score_answer(&stale_packet, &truth(), &answer);
+        assert!(stale_score.root_object_visible);
+        assert!(!stale_score.root_object_grounded);
+
+        input.relations[0].observed_at_ms = 1_100;
+        let (future_packet, _) =
+            compile_context_packet(&input, ContextArm::TopologyAndDiffs).unwrap();
+        let future_score = score_answer(&future_packet, &truth(), &answer);
+        assert!(future_score.root_object_visible);
+        assert!(!future_score.root_object_grounded);
     }
 
     #[test]
