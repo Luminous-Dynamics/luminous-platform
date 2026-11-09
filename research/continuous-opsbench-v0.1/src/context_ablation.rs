@@ -1352,7 +1352,7 @@ pub fn analyze_paired_context_results(
 }
 
 fn mean_i128(total: i128, count: usize) -> Option<i128> {
-    (count > 0).then_some(total / count as i128)
+    (count > 0).then(|| total / count as i128)
 }
 
 #[cfg(test)]
@@ -1702,6 +1702,14 @@ mod tests {
                 && row.correct_rate_delta_both_scored_ppm.is_none()
                 && row.grounded_rate_delta_both_scored_ppm.is_none()
         }));
+    }
+
+    #[test]
+    fn empty_paired_subsets_produce_none_instead_of_dividing_by_zero() {
+        assert_eq!(mean_u128(0, 0), None);
+        assert_eq!(mean_i128(0, 0), None);
+        assert_eq!(mean_u128(12, 3), Some(4));
+        assert_eq!(mean_i128(-12, 3), Some(-4));
     }
 
     #[test]
