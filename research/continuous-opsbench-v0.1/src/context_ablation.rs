@@ -23,6 +23,11 @@ pub const CONTEXT_COMPILATION_ARMS: [ContextArm; 5] = [
     ContextArm::RankedCausalEvidence,
 ];
 
+/// Require enough distinct fault scenarios before reporting bootstrap intervals.
+pub const MIN_SCENARIO_CLUSTERS_FOR_CI95: usize = 20;
+/// Fixed replicate count; the caller supplies and the result records the seed.
+pub const CLUSTER_BOOTSTRAP_REPLICATES: usize = 10_000;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ContextArm {
     RawSourceRecords,
@@ -1039,6 +1044,20 @@ pub struct ContextArmContrast {
     pub fault_family_id: String,
     pub arm: ContextArm,
     pub paired_blocks: usize,
+    /// Distinct scenario IDs; repeat attempts are nested inside these clusters.
+    pub scenario_clusters: usize,
+    pub scenario_correct_wins: usize,
+    pub scenario_correct_losses: usize,
+    pub scenario_correct_ties: usize,
+    pub scenario_grounded_wins: usize,
+    pub scenario_grounded_losses: usize,
+    pub scenario_grounded_ties: usize,
+    /// Equal-weight mean of per-scenario attempt-averaged differences.
+    pub correct_rate_delta_scenario_macro_ppm: Option<i64>,
+    pub grounded_rate_delta_scenario_macro_ppm: Option<i64>,
+    /// Scenario-cluster bootstrap percentile intervals; absent below 20 clusters.
+    pub correct_rate_delta_cluster_ci95_ppm: Option<(i64, i64)>,
+    pub grounded_rate_delta_cluster_ci95_ppm: Option<(i64, i64)>,
     pub both_scored_blocks: usize,
     pub candidate_budget_exceeded_blocks: usize,
     pub raw_budget_exceeded_blocks: usize,
@@ -1060,6 +1079,9 @@ pub struct ContextArmContrast {
 pub struct ContextAblationAnalysis {
     pub arm_aggregates: Vec<ContextArmAggregate>,
     pub contrasts_vs_raw: Vec<ContextArmContrast>,
+    pub cluster_bootstrap_seed: u64,
+    pub cluster_bootstrap_replicates: usize,
+    pub minimum_scenario_clusters_for_ci95: usize,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -1082,6 +1104,118 @@ fn mean_u128(total: u128, count: usize) -> Option<u128> {
     (count > 0).then(|| total / count as u128)
 }
 
+fn scenario_cluster_deltas(
+    blocks: &BTreeMap<ContextBlockKey, BTreeMap<ContextArm, &ContextArmResult>>,
+    family: &str,
+    arm: ContextArm,
+) -> Vec<(String, i64, i64)> {
+    let mut by_scenario: BTreeMap<String, (i128, i128, usize)> = BTreeMap::new();
+
+    for (key, block) in blocks {
+        if key.fault_family_id != family {
+            continue;
+        }
+        let Some(raw) = block.get(&ContextArm::RawSourceRecords).copied() else {
+            continue;
+        };
+        let Some(candidate) = block.get(&arm).copied() else {
+            continue;
+        };
+        // Budget misses are deliberately zero in the all-block outcome.
+        let raw_correct = raw
+            .score
+            .as_ref()
+            .is_some_and(|score| score.root_cause_correct);
+        let candidate_correct = candidate
+            .score
+            .as_ref()
+            .is_some_and(|score| score.root_cause_correct);
+        let raw_grounded = raw
+            .score
+            .as_ref()
+            .is_some_and(|score| score.root_object_grounded);
+        let candidate_grounded = candidate
+            .score
+            .as_ref()
+            .is_some_and(|score| score.root_object_grounded);
+
+        let entry = by_scenario.entry(key.scenario_id.clone()).or_default();
+        entry.0 += i128::from(candidate_correct) - i128::from(raw_correct);
+        entry.1 += i128::from(candidate_grounded) - i128::from(raw_grounded);
+        entry.2 += 1;
+    }
+
+    by_scenario
+        .into_iter()
+        .filter_map(|(scenario_id, (correct_delta, grounded_delta, attempts))| {
+            if attempts == 0 {
+                return None;
+            }
+            let denominator = attempts as i128;
+            Some((
+                scenario_id,
+                ((correct_delta * 1_000_000) / denominator) as i64,
+                ((grounded_delta * 1_000_000) / denominator) as i64,
+            ))
+        })
+        .collect()
+}
+
+fn mean_i64(values: &[i64]) -> Option<i64> {
+    (!values.is_empty()).then(|| {
+        (values.iter().map(|value| i128::from(*value)).sum::<i128>()
+            / values.len() as i128) as i64
+    })
+}
+
+fn next_bootstrap_u64(state: &mut u64) -> u64 {
+    // SplitMix64: deterministic, small, and adequate for percentile resampling.
+    *state = state.wrapping_add(0x9e37_79b9_7f4a_7c15);
+    let mut value = *state;
+    value = (value ^ (value >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+    value = (value ^ (value >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+    value ^ (value >> 31)
+}
+
+fn derive_bootstrap_seed(base: u64, family: &str, arm: ContextArm) -> u64 {
+    let mut hash = base ^ 0xcbf2_9ce4_8422_2325;
+    for byte in family
+        .bytes()
+        .chain(format!("{arm:?}").bytes())
+    {
+        hash ^= u64::from(byte);
+        hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+    }
+    if hash == 0 { 1 } else { hash }
+}
+
+fn scenario_cluster_bootstrap_ci95(
+    scenario_deltas: &[i64],
+    seed: u64,
+) -> Option<(i64, i64)> {
+    if scenario_deltas.len() < MIN_SCENARIO_CLUSTERS_FOR_CI95 {
+        return None;
+    }
+
+    let mut state = seed;
+    let cluster_count = scenario_deltas.len();
+    let mut bootstrap_means = Vec::with_capacity(CLUSTER_BOOTSTRAP_REPLICATES);
+    for _ in 0..CLUSTER_BOOTSTRAP_REPLICATES {
+        let mut sum = 0_i128;
+        for _ in 0..cluster_count {
+            let index = (next_bootstrap_u64(&mut state) % cluster_count as u64) as usize;
+            sum += i128::from(scenario_deltas[index]);
+        }
+        bootstrap_means.push((sum / cluster_count as i128) as i64);
+    }
+    bootstrap_means.sort_unstable();
+
+    let last = bootstrap_means.len() - 1;
+    let lower = (last * 25) / 1_000;
+    let upper = (last * 975) / 1_000;
+    Some((bootstrap_means[lower], bootstrap_means[upper]))
+}
+
 /// Analyze complete, preregistered five-arm blocks by fault family.
 ///
 /// Incomplete blocks, duplicate arms or any mismatch in the scenario/model/prompt/
@@ -1089,6 +1223,7 @@ fn mean_u128(total: u128, count: usize) -> Option<u128> {
 /// retained in the all-block denominator and separately exposed as coverage loss.
 pub fn analyze_paired_context_results(
     results: &[ContextArmResult],
+    bootstrap_seed: u64,
 ) -> Result<ContextAblationAnalysis, ContextExperimentError> {
     if results.is_empty() {
         return Err(ContextExperimentError::EmptyEvidence);
@@ -1335,10 +1470,58 @@ pub fn analyze_paired_context_results(
                 .map(|row| row.estimated_input_tokens as u128)
                 .sum();
 
+            let scenario_deltas = scenario_cluster_deltas(&blocks, &family, arm);
+            let correct_cluster_deltas: Vec<_> =
+                scenario_deltas.iter().map(|(_, correct, _)| *correct).collect();
+            let grounded_cluster_deltas: Vec<_> =
+                scenario_deltas.iter().map(|(_, _, grounded)| *grounded).collect();
+            let scenario_correct_wins = correct_cluster_deltas
+                .iter()
+                .filter(|delta| **delta > 0)
+                .count();
+            let scenario_correct_losses = correct_cluster_deltas
+                .iter()
+                .filter(|delta| **delta < 0)
+                .count();
+            let scenario_correct_ties = correct_cluster_deltas
+                .iter()
+                .filter(|delta| **delta == 0)
+                .count();
+            let scenario_grounded_wins = grounded_cluster_deltas
+                .iter()
+                .filter(|delta| **delta > 0)
+                .count();
+            let scenario_grounded_losses = grounded_cluster_deltas
+                .iter()
+                .filter(|delta| **delta < 0)
+                .count();
+            let scenario_grounded_ties = grounded_cluster_deltas
+                .iter()
+                .filter(|delta| **delta == 0)
+                .count();
+            let stratum_seed = derive_bootstrap_seed(bootstrap_seed, &family, arm);
+
             contrasts_vs_raw.push(ContextArmContrast {
                 fault_family_id: family.clone(),
                 arm,
                 paired_blocks: n,
+                scenario_clusters: scenario_deltas.len(),
+                scenario_correct_wins,
+                scenario_correct_losses,
+                scenario_correct_ties,
+                scenario_grounded_wins,
+                scenario_grounded_losses,
+                scenario_grounded_ties,
+                correct_rate_delta_scenario_macro_ppm: mean_i64(&correct_cluster_deltas),
+                grounded_rate_delta_scenario_macro_ppm: mean_i64(&grounded_cluster_deltas),
+                correct_rate_delta_cluster_ci95_ppm: scenario_cluster_bootstrap_ci95(
+                    &correct_cluster_deltas,
+                    stratum_seed,
+                ),
+                grounded_rate_delta_cluster_ci95_ppm: scenario_cluster_bootstrap_ci95(
+                    &grounded_cluster_deltas,
+                    stratum_seed ^ 0xa5a5_5a5a_d3c1_b2e7,
+                ),
                 both_scored_blocks: both_scored,
                 candidate_budget_exceeded_blocks: candidate_rows
                     .iter()
@@ -1382,6 +1565,9 @@ pub fn analyze_paired_context_results(
     Ok(ContextAblationAnalysis {
         arm_aggregates,
         contrasts_vs_raw,
+        cluster_bootstrap_seed: bootstrap_seed,
+        cluster_bootstrap_replicates: CLUSTER_BOOTSTRAP_REPLICATES,
+        minimum_scenario_clusters_for_ci95: MIN_SCENARIO_CLUSTERS_FOR_CI95,
     })
 }
 
@@ -1721,7 +1907,7 @@ mod tests {
         )
         .unwrap();
 
-        let analysis = analyze_paired_context_results(&results).unwrap();
+        let analysis = analyze_paired_context_results(&results, 0xC0FF_EE01_5EED_2026).unwrap();
         assert_eq!(analysis.arm_aggregates.len(), 5);
         assert_eq!(analysis.contrasts_vs_raw.len(), 4);
         assert!(analysis
@@ -1757,19 +1943,19 @@ mod tests {
         let mut duplicate = results.clone();
         duplicate.push(results[0].clone());
         assert_eq!(
-            analyze_paired_context_results(&duplicate),
+            analyze_paired_context_results(&duplicate, 0xC0FF_EE01_5EED_2026),
             Err(ContextExperimentError::DuplicateArmResult)
         );
 
         assert_eq!(
-            analyze_paired_context_results(&results[..4]),
+            analyze_paired_context_results(&results[..4], 0xC0FF_EE01_5EED_2026),
             Err(ContextExperimentError::IncompletePairedBlock)
         );
 
         let mut mismatched = results.clone();
         mismatched[1].profile.model_snapshot_digest = Digest::from_byte(99);
         assert_eq!(
-            analyze_paired_context_results(&mismatched),
+            analyze_paired_context_results(&mismatched, 0xC0FF_EE01_5EED_2026),
             Err(ContextExperimentError::ManifestMismatch)
         );
     }
@@ -1791,7 +1977,7 @@ mod tests {
             },
         )
         .unwrap();
-        let analysis = analyze_paired_context_results(&results).unwrap();
+        let analysis = analyze_paired_context_results(&results, 0xC0FF_EE01_5EED_2026).unwrap();
 
         assert!(analysis.arm_aggregates.iter().all(|row| {
             row.paired_blocks == 1
