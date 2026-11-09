@@ -2069,11 +2069,11 @@ mod tests {
     struct ScriptedReasoner {
         calls: Vec<String>,
         next_session: u32,
-        active_profile: Option<ContextExperimentProfile>,
+        active_profile: Option<ReasonerSetupProfile>,
     }
 
     impl ContextReasoner for ScriptedReasoner {
-        fn start_fresh_session(&mut self, profile: &ContextExperimentProfile) -> String {
+        fn start_fresh_session(&mut self, profile: &ReasonerSetupProfile) -> String {
             self.next_session += 1;
             self.active_profile = Some(profile.clone());
             format!("fresh-session-{}", self.next_session)
@@ -2081,7 +2081,7 @@ mod tests {
 
         fn count_input_tokens(
             &mut self,
-            _profile: &ContextExperimentProfile,
+            _profile: &ReasonerSetupProfile,
             rendered_context: &str,
         ) -> Option<u64> {
             Some(rendered_context.len().div_ceil(4) as u64)
@@ -2321,6 +2321,20 @@ mod tests {
     }
 
     #[test]
+    fn provider_setup_projection_excludes_evaluator_and_counterbalance_metadata() {
+        let profile = input().profile;
+        let setup = ReasonerSetupProfile::from(&profile);
+        assert_eq!(setup.model_snapshot_digest, profile.model_snapshot_digest);
+        assert_eq!(setup.prompt_digest, profile.prompt_digest);
+        assert_eq!(setup.permission_profile_digest, profile.permission_profile_digest);
+        assert_eq!(setup.tool_catalog_digest, profile.tool_catalog_digest);
+        assert_eq!(setup.reasoning_effort, profile.reasoning_effort);
+        assert_eq!(setup.sampling_seed, profile.sampling_seed);
+        // Evaluator-only fields have no representation in ReasonerSetupProfile:
+        // scenario revision, scorer digest, arm-order seed and counterbalance slot.
+    }
+
+    #[test]
     fn model_visible_context_excludes_arm_and_evaluator_pairing_metadata() {
         let input = input();
         for arm in CONTEXT_COMPILATION_ARMS {
@@ -2347,7 +2361,7 @@ mod tests {
 
         fn count_input_tokens(
             &mut self,
-            _profile: &ContextExperimentProfile,
+            _profile: &ReasonerSetupProfile,
             _rendered_context: &str,
         ) -> Option<u64> {
             Some(1)
@@ -2386,18 +2400,18 @@ mod tests {
     }
 
     struct DriftedManifestReasoner {
-        profile: Option<ContextExperimentProfile>,
+        profile: Option<ReasonerSetupProfile>,
     }
 
     impl ContextReasoner for DriftedManifestReasoner {
-        fn start_fresh_session(&mut self, profile: &ContextExperimentProfile) -> String {
+        fn start_fresh_session(&mut self, profile: &ReasonerSetupProfile) -> String {
             self.profile = Some(profile.clone());
             "manifest-drift-session".into()
         }
 
         fn count_input_tokens(
             &mut self,
-            _profile: &ContextExperimentProfile,
+            _profile: &ReasonerSetupProfile,
             _rendered_context: &str,
         ) -> Option<u64> {
             Some(1)
@@ -2433,20 +2447,20 @@ mod tests {
     }
 
     struct ExactTokenizerReasoner {
-        profile: Option<ContextExperimentProfile>,
+        profile: Option<ReasonerSetupProfile>,
         preflight_tokens: Option<u64>,
         actual_usage_tokens: u64,
     }
 
     impl ContextReasoner for ExactTokenizerReasoner {
-        fn start_fresh_session(&mut self, profile: &ContextExperimentProfile) -> String {
+        fn start_fresh_session(&mut self, profile: &ReasonerSetupProfile) -> String {
             self.profile = Some(profile.clone());
             "exact-tokenizer-session".into()
         }
 
         fn count_input_tokens(
             &mut self,
-            _profile: &ContextExperimentProfile,
+            _profile: &ReasonerSetupProfile,
             _rendered_context: &str,
         ) -> Option<u64> {
             self.preflight_tokens
