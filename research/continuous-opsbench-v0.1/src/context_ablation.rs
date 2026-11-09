@@ -1804,12 +1804,14 @@ mod tests {
     ) -> ContextArmResult {
         let input = input();
         let scenario_id = format!("fault-{scenario_index:02}");
+        let mut profile = input.profile;
+        profile.sampling_seed = u64::from(attempt_id);
         ContextArmResult {
             scenario_id: scenario_id.clone(),
             fault_family_id: "queue_dependency".into(),
             paired_block_id: format!("{scenario_id}-attempt-{attempt_id}"),
             attempt_id,
-            profile: input.profile,
+            profile,
             arm,
             status: ArmStatus::Scored,
             compiler_time_micros: 10,
@@ -2136,7 +2138,9 @@ mod tests {
         assert!(analyze_paired_context_results(&results, 77).is_ok());
 
         let mut repeated_seed = results.clone();
-        repeated_seed[5].profile.sampling_seed = repeated_seed[0].profile.sampling_seed;
+        for row in &mut repeated_seed[5..10] {
+            row.profile.sampling_seed = repeated_seed[0].profile.sampling_seed;
+        }
         assert_eq!(
             analyze_paired_context_results(&repeated_seed, 77),
             Err(ContextExperimentError::DuplicateScenarioSamplingSeed)
