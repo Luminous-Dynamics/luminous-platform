@@ -125,6 +125,8 @@ pub enum RankingAblationError {
     IncompleteArmSet,
     DuplicateArm,
     ManifestMismatch,
+    CandidateUniverseMismatch,
+    InvalidRankedCandidate,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -421,9 +423,63 @@ pub fn analyze_corroboration_ranking_results(
             return Err(RankingAblationError::IncompleteArmSet);
         }
         let mut seen = BTreeSet::new();
+        let mut reference_universe: Option<
+            BTreeMap<&str, (u64, usize, usize, usize, usize, CandidateCorroborationStatus)>,
+        > = None;
         for result in &run.arms {
             if !seen.insert(result.arm) {
                 return Err(RankingAblationError::DuplicateArm);
+            }
+            if result.candidates.is_empty() {
+                return Err(RankingAblationError::CandidateUniverseMismatch);
+            }
+
+            let mut universe = BTreeMap::new();
+            let mut previous: Option<&RankedCandidate> = None;
+            for (index, candidate) in result.candidates.iter().enumerate() {
+                if !non_empty(&candidate.object_ref)
+                    || candidate.rank != index + 1
+                    || candidate.final_score
+                        != candidate.base_score.saturating_add(candidate.bonus_points)
+                    || universe
+                        .insert(
+                            candidate.object_ref.as_str(),
+                            (
+                                candidate.base_score,
+                                candidate.declared_source_count,
+                                candidate.current_source_count,
+                                candidate.current_control_domain_count,
+                                candidate.no_declared_overlap_pair_count,
+                                candidate.corroboration_status,
+                            ),
+                        )
+                        .is_some()
+                {
+                    return Err(RankingAblationError::InvalidRankedCandidate);
+                }
+                if let Some(previous_candidate) = previous {
+                    let correctly_ordered = previous_candidate.final_score > candidate.final_score
+                        || (previous_candidate.final_score == candidate.final_score
+                            && previous_candidate.object_ref < candidate.object_ref);
+                    if !correctly_ordered {
+                        return Err(RankingAblationError::InvalidRankedCandidate);
+                    }
+                }
+                previous = Some(candidate);
+            }
+            if let Some(reference) = &reference_universe {
+                if reference != &universe {
+                    return Err(RankingAblationError::CandidateUniverseMismatch);
+                }
+            } else {
+                reference_universe = Some(universe);
+            }
+            if result.metrics.mrr_ppm > 1_000_000
+                || result.metrics.ndcg_at_1_ppm > 1_000_000
+                || result.metrics.ndcg_at_3_ppm > 1_000_000
+                || result.metrics.ndcg_at_5_ppm > 1_000_000
+            {
+                return Err(RankingAblationError::InvalidRankedCandidate);
             }
         }
         if CORROBORATION_RANKING_ARMS
@@ -706,6 +762,88 @@ mod tests {
         let candidate = graph_arm.candidates.iter().find(|item| item.object_ref == "candidate").unwrap();
         assert_eq!(candidate.corroboration_status, CandidateCorroborationStatus::SharedDeclaredDependency);
         assert_eq!(candidate.bonus_points, 0);
+    }
+
+    #[test]
+    fn graph_qualified_corroboration_can_rescue_the_correct_candidate_ranking() {
+        let candidates = vec![
+            CandidateRankingInput { object_ref: "true-root".into(), base_score: 1_050 },
+            CandidateRankingInput { object_ref: "decoy".into(), base_score: 1_100 },
+        ];
+        let evidence = vec![
+            ev("r1", "true-root", "r-src-a", "domain-a"),
+            ev("r2", "true-root", "r-src-b", "domain-b"),
+            ev("d1", "decoy", "d-src-c", "domain-c"),
+            ev("d2", "decoy", "d-src-d", "domain-d"),
+        ];
+        let mut graph = graph();
+        graph.nodes.get_mut("host-c").unwrap().depends_on.insert("shared".into());
+        graph.nodes.get_mut("host-d").unwrap().depends_on.insert("shared".into());
+        graph.nodes.insert("shared".into(), node("shared", &[]));
+        let profiles = [
+            ("domain-a".into(), profile("domain-a", "proc-a")),
+            ("domain-b".into(), profile("domain-b", "proc-b")),
+            ("domain-c".into(), profile("domain-c", "proc-c")),
+            ("domain-d".into(), profile("domain-d", "proc-d")),
+        ].into_iter().collect();
+        let truth = RankingGroundTruth {
+            relevance: vec![EvaluatorRelevance {
+                object_ref: "true-root".into(),
+                grade: 3,
+            }],
+        };
+        let run = evaluate_corroboration_ranking_ablation(&input(
+            &candidates, &evidence, &truth, &profiles, &graph
+        )).unwrap();
+
+        for arm in &run.arms[..3] {
+            assert_eq!(arm.candidates[0].object_ref, "decoy");
+        }
+        let graph_arm = &run.arms[3];
+        assert_eq!(graph_arm.candidates[0].object_ref, "true-root");
+        assert!(graph_arm.metrics.mrr_ppm > run.arms[0].metrics.mrr_ppm);
+        assert!(graph_arm.metrics.ndcg_at_1_ppm > run.arms[0].metrics.ndcg_at_1_ppm);
+    }
+
+    #[test]
+    fn analysis_rejects_candidate_universe_or_base_score_changes_between_arms() {
+        let candidate = RankedCandidate {
+            object_ref: "root".into(),
+            base_score: 100,
+            bonus_points: 0,
+            final_score: 100,
+            rank: 1,
+            declared_source_count: 1,
+            current_source_count: 1,
+            current_control_domain_count: 1,
+            no_declared_overlap_pair_count: 0,
+            corroboration_status: CandidateCorroborationStatus::SingleDeclaredControlDomain,
+        };
+        let base = ScenarioRankingResult {
+            scenario_id: "scenario".into(),
+            fault_family_id: "queue".into(),
+            attempt_id: 1,
+            manifest_digest: Digest::from_byte(1),
+            arms: CORROBORATION_RANKING_ARMS.iter().map(|arm| RankingArmResult {
+                arm: *arm,
+                candidates: vec![candidate.clone()],
+                metrics: RankingMetrics { mrr_ppm: 1_000_000, ndcg_at_1_ppm: 1_000_000, ndcg_at_3_ppm: 1_000_000, ndcg_at_5_ppm: 1_000_000 },
+            }).collect(),
+        };
+        let mut changed = base.clone();
+        changed.arms[2].candidates[0].base_score = 99;
+        changed.arms[2].candidates[0].final_score = 99;
+        assert_eq!(
+            analyze_corroboration_ranking_results(&[changed], 7),
+            Err(RankingAblationError::CandidateUniverseMismatch)
+        );
+
+        let mut bad_rank = base;
+        bad_rank.arms[1].candidates[0].rank = 2;
+        assert_eq!(
+            analyze_corroboration_ranking_results(&[bad_rank], 7),
+            Err(RankingAblationError::InvalidRankedCandidate)
+        );
     }
 
     #[test]
