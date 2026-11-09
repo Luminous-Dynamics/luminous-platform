@@ -244,6 +244,33 @@ fn bonus_for(
     }
 }
 
+fn expected_bonus_for_ranked(
+    arm: CorroborationRankingArm,
+    candidate: &RankedCandidate,
+) -> u64 {
+    match arm {
+        CorroborationRankingArm::NoDiversityBonus => 0,
+        CorroborationRankingArm::NaiveSourceIdCount => (candidate
+            .current_source_count
+            .saturating_sub(1) as u64)
+            .saturating_mul(CORROBORATION_BONUS_POINTS),
+        CorroborationRankingArm::DeclaredControlDomainCount => (candidate
+            .current_control_domain_count
+            .saturating_sub(1) as u64)
+            .saturating_mul(CORROBORATION_BONUS_POINTS),
+        CorroborationRankingArm::GraphQualifiedNoDeclaredOverlap => {
+            if candidate.corroboration_status
+                == CandidateCorroborationStatus::PairwiseNoDeclaredOverlap
+            {
+                (candidate.no_declared_overlap_pair_count as u64)
+                    .saturating_mul(CORROBORATION_BONUS_POINTS)
+            } else {
+                0
+            }
+        }
+    }
+}
+
 /// Build four rankings over exactly the same frozen candidate/evidence universe.
 /// Only the corroboration bonus changes between arms. Ground truth is read solely
 /// after all four rankings have been produced, by this evaluator function.
@@ -441,6 +468,8 @@ pub fn analyze_corroboration_ranking_results(
                     || candidate.rank != index + 1
                     || candidate.final_score
                         != candidate.base_score.saturating_add(candidate.bonus_points)
+                    || candidate.bonus_points
+                        != expected_bonus_for_ranked(result.arm, candidate)
                     || universe
                         .insert(
                             candidate.object_ref.as_str(),
@@ -840,10 +869,18 @@ mod tests {
             Err(RankingAblationError::CandidateUniverseMismatch)
         );
 
-        let mut bad_rank = base;
+        let mut bad_rank = base.clone();
         bad_rank.arms[1].candidates[0].rank = 2;
         assert_eq!(
             analyze_corroboration_ranking_results(&[bad_rank], 7),
+            Err(RankingAblationError::InvalidRankedCandidate)
+        );
+
+        let mut bad_bonus = base;
+        bad_bonus.arms[1].candidates[0].bonus_points = 1_000;
+        bad_bonus.arms[1].candidates[0].final_score = 1_100;
+        assert_eq!(
+            analyze_corroboration_ranking_results(&[bad_bonus], 7),
             Err(RankingAblationError::InvalidRankedCandidate)
         );
     }
