@@ -1598,7 +1598,11 @@ mod tests {
             &mut reasoner,
         )
         .unwrap();
-        assert_eq!(reasoner.calls, CONTEXT_COMPILATION_ARMS);
+        assert_eq!(reasoner.calls.len(), CONTEXT_COMPILATION_ARMS.len());
+        assert_eq!(
+            reasoner.calls.iter().collect::<BTreeSet<_>>().len(),
+            CONTEXT_COMPILATION_ARMS.len()
+        );
         assert_eq!(results.len(), 5);
         assert!(results
             .iter()
@@ -1677,7 +1681,10 @@ mod tests {
     #[test]
     fn paired_analysis_reports_all_blocks_scored_pairs_and_fault_family() {
         let input = input();
-        let mut reasoner = ScriptedReasoner { calls: Vec::new() };
+        let mut reasoner = ScriptedReasoner {
+                    calls: Vec::new(),
+                    next_session: 0,
+                };
         let results = run_paired_context_ablation(
             &input,
             &truth(),
@@ -1707,7 +1714,10 @@ mod tests {
     #[test]
     fn paired_analysis_rejects_duplicate_incomplete_and_manifest_mismatched_blocks() {
         let input = input();
-        let mut reasoner = ScriptedReasoner { calls: Vec::new() };
+        let mut reasoner = ScriptedReasoner {
+                    calls: Vec::new(),
+                    next_session: 0,
+                };
         let results = run_paired_context_ablation(
             &input,
             &truth(),
@@ -1913,7 +1923,10 @@ mod tests {
                 &invalid_truth,
                 budget(),
                 &CONTEXT_COMPILATION_ARMS,
-                &mut ScriptedReasoner { calls: Vec::new() },
+                &mut ScriptedReasoner {
+                    calls: Vec::new(),
+                    next_session: 0,
+                },
             ),
             Err(ContextExperimentError::GroundTruthEvidenceMissing)
         );
@@ -1930,7 +1943,10 @@ mod tests {
             &truth(),
             tight,
             &CONTEXT_COMPILATION_ARMS,
-            &mut ScriptedReasoner { calls: Vec::new() },
+            &mut ScriptedReasoner {
+                    calls: Vec::new(),
+                    next_session: 0,
+                },
         )
         .unwrap();
         assert_eq!(results.len(), 5);
@@ -1950,7 +1966,10 @@ mod tests {
                 &truth(),
                 budget(),
                 &bad_order,
-                &mut ScriptedReasoner { calls: Vec::new() },
+                &mut ScriptedReasoner {
+                    calls: Vec::new(),
+                    next_session: 0,
+                },
             ),
             Err(ContextExperimentError::InvalidArmOrder)
         );
@@ -1963,7 +1982,10 @@ mod tests {
                 &truth(),
                 budget(),
                 &CONTEXT_COMPILATION_ARMS,
-                &mut ScriptedReasoner { calls: Vec::new() },
+                &mut ScriptedReasoner {
+                    calls: Vec::new(),
+                    next_session: 0,
+                },
             ),
             Err(ContextExperimentError::DuplicateEvidenceId)
         );
