@@ -381,7 +381,10 @@ fn validate_input(input: &ContextExperimentInput) -> Result<(), ContextExperimen
     if !non_empty(&input.paired_block_id) {
         return Err(ContextExperimentError::EmptyPairedBlockId);
     }
+    let expected_counterbalance_slot = input.attempt_id.saturating_sub(1) % 5;
     if !non_empty(&input.profile.reasoning_effort)
+        || input.attempt_id == 0
+        || u32::from(input.profile.counterbalance_slot) != expected_counterbalance_slot
         || usize::from(input.profile.counterbalance_slot) >= CONTEXT_COMPILATION_ARMS.len()
     {
         return Err(ContextExperimentError::InvalidExperimentProfile);
@@ -1385,12 +1388,27 @@ pub fn analyze_paired_context_results(
         }) {
             return Err(ContextExperimentError::ManifestMismatch);
         }
-        let order_positions: BTreeSet<_> = block
-            .values()
-            .map(|result| result.arm_order_position)
-            .collect();
+        let expected_slot = key.attempt_id.saturating_sub(1) % 5;
+        if key.attempt_id == 0
+            || u32::from(first.profile.counterbalance_slot) != expected_slot
+        {
+            return Err(ContextExperimentError::InvalidArmOrder);
+        }
+        let expected_order = counterbalanced_arm_order(
+            first.profile.arm_order_seed,
+            first.profile.counterbalance_slot,
+        )?;
+        let mut observed_positions = BTreeSet::new();
+        for result in block.values() {
+            if usize::from(result.arm_order_position) >= expected_order.len()
+                || expected_order[usize::from(result.arm_order_position)] != result.arm
+                || !observed_positions.insert(result.arm_order_position)
+            {
+                return Err(ContextExperimentError::InvalidArmOrder);
+            }
+        }
         let expected_positions: BTreeSet<_> = (0..CONTEXT_COMPILATION_ARMS.len() as u8).collect();
-        if order_positions != expected_positions {
+        if observed_positions != expected_positions {
             return Err(ContextExperimentError::InvalidArmOrder);
         }
     }
@@ -1868,13 +1886,19 @@ mod tests {
         let scenario_id = format!("fault-{scenario_index:02}");
         let mut profile = input.profile;
         profile.sampling_seed = u64::from(attempt_id);
+        profile.counterbalance_slot = ((attempt_id.saturating_sub(1)) % 5) as u8;
+        let order = counterbalanced_arm_order(
+            profile.arm_order_seed,
+            profile.counterbalance_slot,
+        )
+        .unwrap();
         ContextArmResult {
             scenario_id: scenario_id.clone(),
             fault_family_id: "queue_dependency".into(),
             paired_block_id: format!("{scenario_id}-attempt-{attempt_id}"),
             attempt_id,
             profile,
-            arm_order_position: CONTEXT_COMPILATION_ARMS
+            arm_order_position: order
                 .iter()
                 .position(|candidate| *candidate == arm)
                 .unwrap() as u8,
