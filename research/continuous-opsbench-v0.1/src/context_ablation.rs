@@ -868,7 +868,7 @@ fn score_answer(
     let root_object_grounded = answer.root_object_ref.as_deref().is_some_and(|root| {
         supported.iter().any(|evidence_id| {
             object_by_id
-                .get(evidence_id)
+                .get(evidence_id.as_str())
                 .is_some_and(|object_ref| *object_ref == root)
         }) || packet.relations.iter().any(|relation| {
             relation.state == EvidenceState::Present
@@ -1330,6 +1330,24 @@ mod tests {
         assert!(score.root_object_visible);
         assert!(!score.root_object_grounded);
         assert_eq!(score.required_evidence_recall_ppm, 0);
+    }
+
+    #[test]
+    fn correct_root_with_cited_dependency_evidence_is_grounded() {
+        let input = input();
+        let (packet, _) =
+            compile_context_packet(&input, ContextArm::TopologyAndDiffs).unwrap();
+        let answer = DiagnosisAnswer {
+            root_object_ref: Some("payments-config".into()),
+            supporting_evidence_ids: vec!["ev-change".into()],
+            alternative_object_refs: Vec::new(),
+            abstained: false,
+        };
+        let score = score_answer(&packet, &truth(), &answer);
+        assert!(score.root_cause_correct);
+        assert!(score.root_object_visible);
+        assert!(score.root_object_grounded);
+        assert_eq!(score.required_evidence_recall_ppm, 1_000_000);
     }
 
     #[test]
