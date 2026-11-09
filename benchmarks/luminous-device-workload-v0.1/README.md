@@ -337,3 +337,7 @@ The evaluator now requires a complete execution receipt: dispatch and completion
 
 
 The fixture includes DWF-001-24 as the positive complete-receipt acceptance control and DWF-001-25 as the corresponding invalid-signature rejection control.
+
+### Runtime requirement binding
+
+The expected runtime digest is request-owned: it is taken from the frozen request's workload requirements and compared with the runtime digest in the execution receipt. A peer receipt may not supply its own expected value. DWF-001-26 is the positive control for this invariant.

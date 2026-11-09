@@ -535,7 +535,9 @@ fn evaluate_result_validation(scenario: &Value) -> Disposition {
         push_reason(&mut reasons, "RESULT_NOT_ACCEPTED");
     }
 
-    let expected_runtime = text_at(execution, &["expected_runtime_digest"])
+    // The expected runtime is owned by the frozen request contract. The
+    // execution receipt cannot supply or override the expected value.
+    let expected_runtime = text_at(&scenario["request"], &["requirements", "runtime_digest"])
         .or_else(|| text_at(&scenario["request"], &["workload", "runtime_digest"]));
     match text_at(execution, &["receipt_runtime_digest"]) {
         Some(receipt_runtime) if Some(receipt_runtime) == expected_runtime => {}
@@ -803,6 +805,20 @@ mod tests {
         assert_eq!(actual.result, "REJECTED");
         assert!(actual.reason_codes.contains(&"EXECUTION_RECEIPT_INCOMPLETE".to_owned()));
         assert!(actual.reason_codes.contains(&"RESULT_NOT_ACCEPTED".to_owned()));
+    }
+
+    #[test]
+    fn runtime_receipt_is_compared_to_request_owned_requirement() {
+        let fixture = fixture_value();
+        let mut scenario = case(&fixture, "DWF-001-24").clone();
+        scenario["execution"]
+            .as_object_mut()
+            .expect("execution object")
+            .remove("expected_runtime_digest");
+
+        let (actual, _) = evaluate_case(&scenario);
+        assert_eq!(actual.result, "ACCEPTED", "{:#?}", actual.reason_codes);
+        assert!(actual.reason_codes.is_empty());
     }
 
     #[test]

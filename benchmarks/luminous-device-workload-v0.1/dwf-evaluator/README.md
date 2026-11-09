@@ -2,7 +2,7 @@
 
 **Status:** standalone Rust source and synthetic-fixture evaluator; not a production scheduler or authorization service.
 
-This crate implements an independent, deterministic evaluator for the 25-case DWF-001 placement and evidence scenario corpus. It deliberately lives outside a repository-wide Cargo workspace so that it does not create a new workspace/build boundary for Luminous Platform.
+This crate implements an independent, deterministic evaluator for the 26-case DWF-001 placement and evidence scenario corpus. It deliberately lives outside a repository-wide Cargo workspace so that it does not create a new workspace/build boundary for Luminous Platform.
 
 ## Run
 
@@ -30,3 +30,10 @@ The default fixture path is `../fixtures/placement-scenarios-v0.1.json`. The CLI
 The fixture contains synthetic scenarios and synthetic resource observations. A passing evaluator test means only that this implementation agrees with the expected dispositions encoded in that fixture. It does **not** establish that the expected outcomes are correct, that a real device is trusted, that remote execution is safe, that network isolation exists, or that any physical performance/energy advantage has been measured.
 
 This is a pure evaluator for the fixture contract. It does not connect to devices, Xenia, Mycelix, Symthaea, EnergyMeter, a network, a task runtime or an effect executor. It does not authorize dispatch or consequential actions. Independent review and exact-head Rust tests/CI remain required.
+
+
+### Runtime identity source of truth
+
+The expected runtime digest is taken from the frozen workload requirements in the request, never from an execution-receipt field. The receipt's runtime digest is compared to that request-owned value. DWF-001-26 is the positive control: it accepts a complete receipt without duplicating an `expected_runtime_digest` field inside the execution receipt.
+
+**Fixture-only verification limit:** `signature_valid` and `oracle_result` are synthetic fixture outcomes. This evaluator does not cryptographically verify a result signature, authenticate an oracle, run the HDC oracle, appraise device attestation or authorize dispatch. A production result-verifier must independently verify the signer and oracle evidence against trusted, request-bound identities and digests.
