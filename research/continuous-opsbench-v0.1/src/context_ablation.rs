@@ -2657,7 +2657,9 @@ mod tests {
             _budget: ContextBudget,
         ) -> ReasonerResponse {
             let manifest = ReasonerInvocationManifest::from(
-                self.profile.as_ref().expect("session profile is initialized"),
+                self.profile
+                    .as_ref()
+                    .expect("session profile is initialized"),
             );
             ReasonerResponse {
                 session_id: session_id.into(),
