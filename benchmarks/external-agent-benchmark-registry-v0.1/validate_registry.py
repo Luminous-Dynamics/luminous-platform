@@ -145,6 +145,7 @@ NATIVE_SREGYM_ATTEMPT_SCHEMA_PATH = ROOT / "native-sregym-attempt.schema.json"
 SREGYM_0508_COHORT_CSV_PATH = ROOT / "sregym-0508-cohort.csv"
 SREGYM_0508_REGISTRY_IDS_PATH = ROOT / "sregym-0508-registry-ids.txt"
 SREGYM_0508_RECONCILIATION_PATH = ROOT / "sregym-0508-source-reconciliation.json"
+SREGYM_0508_ORACLE_CONTRACT_PATH = ROOT / "sregym-0508-oracle-contract.json"
 
 
 def native_sregym_source_errors(manifest: dict[str, Any]) -> list[str]:
@@ -163,8 +164,9 @@ def native_sregym_source_errors(manifest: dict[str, Any]) -> list[str]:
             if line.strip()
         ]
         source_record = read_json(SREGYM_0508_RECONCILIATION_PATH)
-    except (OSError, UnicodeDecodeError, csv.Error) as exc:
-        return [f"source snapshots: cannot load exact SREGym-0508 cohort/registry inputs: {exc}"]
+        oracle_contract = read_json(SREGYM_0508_ORACLE_CONTRACT_PATH)
+    except (OSError, UnicodeDecodeError, csv.Error, json.JSONDecodeError) as exc:
+        return [f"source snapshots: cannot load exact SREGym-0508 cohort/registry/oracle inputs: {exc}"]
 
     git_blob = hashlib.sha1(
         b"blob " + str(len(csv_bytes)).encode("ascii") + b"\0" + csv_bytes
@@ -222,6 +224,17 @@ def native_sregym_source_errors(manifest: dict[str, Any]) -> list[str]:
         errors.append("source_pins: scenario manifest does not match the exact archived upstream cohort CSV")
     if pins["tasklist_yml_must_be_absent"] is not True:
         errors.append("source_pins: tasklist.yml must be absent to select all 90 registered IDs on this revision")
+    if pins["scorer_path"] != oracle_contract["orchestrator_path"] \
+        or pins["scorer_blob_sha"] != oracle_contract["orchestrator_blob_sha"]:
+        errors.append("source_pins: scorer path/blob does not match the archived Conductor orchestrator")
+    if pins["oracle_contract_snapshot_path"] != SREGYM_0508_ORACLE_CONTRACT_PATH.name:
+        errors.append("source_pins: oracle contract snapshot path is not the archived native oracle contract")
+    if pins["oracle_implementation_files"] != oracle_contract["files"]:
+        errors.append("source_pins: native oracle implementation files differ from the exact source-commit blob snapshot")
+    if manifest["native_protocol"]["native_scorer_revision"] != oracle_contract["source_commit_sha"]:
+        errors.append("native_protocol: scorer revision differs from the oracle contract source commit")
+    if manifest["native_protocol"]["oracle_failure_semantics"] != oracle_contract["observed_failure_semantics"]:
+        errors.append("native_protocol: native oracle failure semantics differ from the archived source review")
     if manifest["execution_environment"]["tasklist_override_state"] != "absent" \
         or manifest["execution_environment"]["tasklist_override_digest"] is not None:
         errors.append("execution_environment: the ignored tasklist.yml override must be absent for the full 90-ID default selection")
@@ -587,6 +600,18 @@ def validate_native_sregym_profile() -> None:
     falsely_ready = copy.deepcopy(manifest)
     falsely_ready["profile_status"] = "ready_to_run"
     expect_native_rejected("ready-to-run without pinned scorer/environment", falsely_ready, schema)
+
+    changed_oracle_source = copy.deepcopy(manifest)
+    changed_oracle_source["source_pins"]["oracle_implementation_files"][0]["git_blob_sha"] = "f" * 40
+    expect_native_rejected("oracle implementation source substitution", changed_oracle_source, schema)
+
+    dropped_oracle_source = copy.deepcopy(manifest)
+    dropped_oracle_source["source_pins"]["oracle_implementation_files"].pop()
+    expect_native_rejected("missing oracle implementation source pin", dropped_oracle_source, schema)
+
+    changed_oracle_failure_mode = copy.deepcopy(manifest)
+    changed_oracle_failure_mode["native_protocol"]["oracle_failure_semantics"]["prometheus_query_failure"] = "fail_closed"
+    expect_native_rejected("rewritten native oracle failure behavior", changed_oracle_failure_mode, schema)
 
     executed_missing = copy.deepcopy(manifest)
     executed_missing["profile_status"] = "executed"
