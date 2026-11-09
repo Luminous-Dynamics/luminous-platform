@@ -450,6 +450,80 @@ fn impact_binding_matches(
         && receipt.received_at_tick <= audited_at_tick
 }
 
+enum FailureDomainOutcome {
+    NoDeclaredOverlap,
+    Indeterminate(IndeterminateReason),
+    Failed(AuditFailure),
+}
+
+fn audit_impact_failure_domains(
+    registry: Option<&FailureDomainRegistrySnapshot>,
+    entry: &ProbeCatalogEntry,
+    receipt: &ImpactReceipt,
+    audited_at_tick: u64,
+) -> FailureDomainOutcome {
+    let Some(registry) = registry else {
+        return FailureDomainOutcome::Indeterminate(
+            IndeterminateReason::MissingFailureDomainRegistry,
+        );
+    };
+
+    let Some(collector_profile) = registry
+        .collector_profiles
+        .get(&entry.collector_control_domain)
+    else {
+        return FailureDomainOutcome::Indeterminate(
+            IndeterminateReason::MissingCollectorFailureDomainProfile,
+        );
+    };
+    if collector_profile.subject_id != entry.collector_control_domain {
+        return FailureDomainOutcome::Failed(
+            AuditFailure::FailureDomainProfileBindingMismatch,
+        );
+    }
+
+    let observer_profile = match &receipt.observer_failure_domain_profile {
+        ReceiptState::Present(profile) => profile,
+        ReceiptState::Missing => {
+            return FailureDomainOutcome::Indeterminate(
+                IndeterminateReason::MissingObserverFailureDomainProfile,
+            );
+        }
+        ReceiptState::Unknown => {
+            return FailureDomainOutcome::Indeterminate(
+                IndeterminateReason::UnknownObserverFailureDomainProfile,
+            );
+        }
+    };
+    if observer_profile.subject_id != receipt.impact.observer_control_domain {
+        return FailureDomainOutcome::Failed(
+            AuditFailure::FailureDomainProfileBindingMismatch,
+        );
+    }
+
+    let report = audit_observer_independence(
+        collector_profile,
+        observer_profile,
+        &registry.graph,
+        audited_at_tick,
+        registry.policy,
+    );
+    match report.status {
+        IndependenceStatus::NoDeclaredOverlap => FailureDomainOutcome::NoDeclaredOverlap,
+        IndependenceStatus::SharedDeclaredDependency => {
+            FailureDomainOutcome::Indeterminate(IndeterminateReason::CommonCauseOverlap)
+        }
+        IndependenceStatus::Indeterminate => {
+            FailureDomainOutcome::Indeterminate(
+                IndeterminateReason::ImpactIndependenceUnestablished,
+            )
+        }
+        IndependenceStatus::Invalid => {
+            FailureDomainOutcome::Failed(AuditFailure::FailureDomainEvidenceInvalid)
+        }
+    }
+}
+
 fn request_matches_catalog(
     request: &ProbeRequestReceipt,
     entry: &ProbeCatalogEntry,
@@ -1100,6 +1174,7 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
             }
         };
 
+        let mut impact_independence_indeterminate = false;
         let impact = match &row.impact {
             ReceiptState::Present(receipt) => {
                 if receipt.received_at_tick > request.deadline_tick {
@@ -1125,13 +1200,32 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
                             || receipt.impact.observer_control_domain
                                 == entry.collector_control_domain
                         {
+                            impact_independence_indeterminate = true;
                             report.indeterminate(
                                 IndeterminateReason::ImpactIndependenceUnestablished,
                             );
                             None
                         } else {
-                            report.impacts_verified += 1;
-                            Some(receipt)
+                            match audit_impact_failure_domains(
+                                input.failure_domain_registry,
+                                entry,
+                                receipt,
+                                input.audited_at_tick,
+                            ) {
+                                FailureDomainOutcome::NoDeclaredOverlap => {
+                                    report.impacts_verified += 1;
+                                    Some(receipt)
+                                }
+                                FailureDomainOutcome::Indeterminate(reason) => {
+                                    impact_independence_indeterminate = true;
+                                    report.indeterminate(reason);
+                                    None
+                                }
+                                FailureDomainOutcome::Failed(failure) => {
+                                    report.fail(failure);
+                                    None
+                                }
+                            }
                         }
                     } else {
                         // An impact receipt cannot close the chain if its paired
@@ -1172,7 +1266,9 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
                 report.indeterminate(IndeterminateReason::MissingDecision);
             }
             (None, _, Some(_)) | (_, None, Some(_)) => {
-                report.fail(AuditFailure::DecisionWithoutCompleteEvidence);
+                if !impact_independence_indeterminate {
+                    report.fail(AuditFailure::DecisionWithoutCompleteEvidence);
+                }
             }
             _ => {}
         }
