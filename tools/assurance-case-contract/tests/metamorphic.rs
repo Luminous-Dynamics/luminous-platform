@@ -1,10 +1,15 @@
 use assurance_case_contract::{
-    AssuranceCaseInput, AssumptionSpec, AssumptionStatus, CaseEdge, CaseNode, ClaimOutcome,
+    AssuranceCaseInput, AssumptionSpec, AssumptionStatus, CaseEdge, CaseNode,
     ClaimSpec, ContextSpec, DefeaterSpec, DependencyAssessment, DependencyDisposition,
     DependencyRequirement, EdgeKind, EvidenceClass, EvidenceSpec, EvidenceStatus, NodeKind,
     RebuttalSpec, CaseOutcome, evaluate_bytes,
 };
+use jsonschema::draft202012;
 use serde_json::json;
+
+const INPUT_SCHEMA: &str =
+    include_str!("../../../docs/assurance/assurance-case/assurance-case-input-0.1.schema.json");
+const REPORT_SCHEMA: &str = include_str!("../schema/assurance-case-report-0.1.schema.json");
 
 fn node(
     id: &str,
@@ -602,4 +607,29 @@ fn unknown_node_fields_are_rejected_by_the_closed_contract() {
     let bytes = serde_json::to_vec(&value).expect("serialize malformed case");
     let report = evaluate_bytes(&bytes);
     assert_eq!(report.outcome, CaseOutcome::InvalidArgumentGraph);
+}
+
+#[test]
+fn input_and_report_are_valid_against_closed_json_schemas() {
+    let input = base_case();
+    let input_value = serde_json::to_value(&input).expect("serialize input");
+    let input_schema: serde_json::Value =
+        serde_json::from_str(INPUT_SCHEMA).expect("input schema JSON");
+    assert!(draft202012::meta::is_valid(&input_schema));
+    let input_validator = draft202012::new(&input_schema).expect("compile input schema");
+    assert!(
+        input_validator.is_valid(&input_value),
+        "input schema rejected valid input: {input_value:#}"
+    );
+
+    let report = run(&input);
+    let report_value = serde_json::to_value(&report).expect("serialize report");
+    let report_schema: serde_json::Value =
+        serde_json::from_str(REPORT_SCHEMA).expect("report schema JSON");
+    assert!(draft202012::meta::is_valid(&report_schema));
+    let report_validator = draft202012::new(&report_schema).expect("compile report schema");
+    assert!(
+        report_validator.is_valid(&report_value),
+        "report schema rejected valid report: {report_value:#}"
+    );
 }
