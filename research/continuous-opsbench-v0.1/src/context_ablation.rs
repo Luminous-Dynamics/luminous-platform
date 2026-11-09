@@ -467,7 +467,7 @@ fn temporal_view(
             event_time_ms: item.event_time_ms,
             observed_at_ms: item.observed_at_ms,
             age_ms: (item.observed_at_ms <= input.audited_at_ms)
-                .then_some(input.audited_at_ms - item.observed_at_ms),
+                .then(|| input.audited_at_ms - item.observed_at_ms),
             freshness: freshness(item, input),
             source_id: item.source_id.clone(),
             control_domain: item.control_domain.clone(),
@@ -1057,7 +1057,7 @@ fn rate_ppm(numerator: usize, denominator: usize) -> u32 {
 }
 
 fn mean_u128(total: u128, count: usize) -> Option<u128> {
-    (count > 0).then_some(total / count as u128)
+    (count > 0).then(|| total / count as u128)
 }
 
 /// Analyze complete, preregistered five-arm blocks by fault family.
