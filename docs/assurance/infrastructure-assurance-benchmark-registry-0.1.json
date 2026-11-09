@@ -201,6 +201,33 @@
         "Run hardware-in-the-loop PMTime comparison against a separately traceable analyzer and quantify time error/uncertainty.",
         "Hold out clock sources, PTP instances, firmware, source adapters, network paths and sites for field generalization."
       ]
+    },
+    {
+      "track_id": "ASSURANCE-CASE-001",
+      "name": "Defeater-aware executable assurance case graph",
+      "owner": "Luminous-Dynamics/luminous-platform",
+      "owner_issue": "https://github.com/Luminous-Dynamics/luminous-platform/issues/345",
+      "implementation_branch": "feat/assurance-case-contract-v0.1",
+      "maturity": "initial_reference_implementation_pending_exact_head_ci",
+      "current_evidence": "An isolated Rust evaluator models claims, arguments, context, assumptions, evidence, defeaters and rebuttals. It uses strict input/report schemas, exact-byte SHA-256 binding, bounded evidence validity, dependency-admissibility checks, exact-target fresh rebuttals and indexed graph validation. The public suite contains 26 Rust tests plus a 25-ID discovery registry; exact-head CI has not yet run.",
+      "fixture_state": "Public synthetic software conformance: 25 frozen case IDs and 26 tests. Includes argument-level assumption/defeater propagation, fresh/stale rebuttals, shared/unknown dependencies, physical-independence overclaim, invalid graph controls, exact-byte binding and schema checks.",
+      "claim_ceiling": "Graph-structure and declared evidence-obligation evaluation for a synthetic case. No proof of evidence truth, signature authentication, organizational independence, premises truth, safety certification or regulatory conformity.",
+      "score_families": [
+        "argument_integrity",
+        "evidence_integrity",
+        "temporal_validity",
+        "dependency_admissibility",
+        "defeater_coverage",
+        "reproducibility",
+        "performance"
+      ],
+      "next_work": [
+        "Complete exact-head format, compile, 26-test, schema and Clippy gates; repair any failures.",
+        "Add generated/metamorphic assurance graphs and verify invariance under node/edge order permutations.",
+        "Build scale harnesses at 10, 100, 1000 and 10000 nodes with exact p50/p95/p99 latency and peak-memory reports.",
+        "Add independent evaluator-owned blind cases and mutation campaigns; do not treat public tests as blind evaluation.",
+        "Integrate authenticated evidence and monitor/custody receipts through existing owners without introducing another trust root."
+      ]
     }
   ],
   "external_comparators": [
