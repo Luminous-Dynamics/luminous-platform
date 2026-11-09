@@ -1297,12 +1297,9 @@ pub fn analyze_paired_context_results(
         }
     }
 
-    let mut scenario_profiles: BTreeMap<
-        (String, String),
-        &ContextExperimentProfile,
-    > = BTreeMap::new();
-    let mut scenario_sampling_seeds: BTreeMap<(String, String), BTreeSet<u64>> =
+    let mut scenario_profiles: BTreeMap<(String, String), &ContextExperimentProfile> =
         BTreeMap::new();
+    let mut scenario_sampling_seeds: BTreeMap<(String, String), BTreeSet<u64>> = BTreeMap::new();
     for (key, block) in &blocks {
         let first = block
             .get(&ContextArm::RawSourceRecords)
@@ -2131,13 +2128,7 @@ mod tests {
         let mut results = Vec::new();
         for attempt_id in 1..=2 {
             for arm in CONTEXT_COMPILATION_ARMS {
-                let mut row = synthetic_arm_result(
-                    0,
-                    attempt_id,
-                    arm,
-                    true,
-                    true,
-                );
+                let mut row = synthetic_arm_result(0, attempt_id, arm, true, true);
                 row.profile.sampling_seed = 100 + u64::from(attempt_id);
                 results.push(row);
             }
@@ -2188,9 +2179,9 @@ mod tests {
             tight,
             &CONTEXT_COMPILATION_ARMS,
             &mut ScriptedReasoner {
-                calls: Vec::new(),
-                next_session: 0,
-            },
+                    calls: Vec::new(),
+                    next_session: 0,
+                },
         )
         .unwrap();
         let analysis = analyze_paired_context_results(&results, 0xC0FF_EE01_5EED_2026).unwrap();
@@ -2353,9 +2344,9 @@ mod tests {
                 budget(),
                 &CONTEXT_COMPILATION_ARMS,
                 &mut ScriptedReasoner {
-                calls: Vec::new(),
-                next_session: 0,
-            },
+                    calls: Vec::new(),
+                    next_session: 0,
+                },
             ),
             Err(ContextExperimentError::GroundTruthEvidenceMissing)
         );
@@ -2373,9 +2364,9 @@ mod tests {
             tight,
             &CONTEXT_COMPILATION_ARMS,
             &mut ScriptedReasoner {
-                calls: Vec::new(),
-                next_session: 0,
-            },
+                    calls: Vec::new(),
+                    next_session: 0,
+                },
         )
         .unwrap();
         assert_eq!(results.len(), 5);
@@ -2396,9 +2387,9 @@ mod tests {
                 budget(),
                 &bad_order,
                 &mut ScriptedReasoner {
-                calls: Vec::new(),
-                next_session: 0,
-            },
+                    calls: Vec::new(),
+                    next_session: 0,
+                },
             ),
             Err(ContextExperimentError::InvalidArmOrder)
         );
@@ -2412,9 +2403,9 @@ mod tests {
                 budget(),
                 &CONTEXT_COMPILATION_ARMS,
                 &mut ScriptedReasoner {
-                calls: Vec::new(),
-                next_session: 0,
-            },
+                    calls: Vec::new(),
+                    next_session: 0,
+                },
             ),
             Err(ContextExperimentError::DuplicateEvidenceId)
         );
