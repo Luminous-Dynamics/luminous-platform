@@ -139,6 +139,13 @@ pub struct EventCheckpoint {
     pub last_stream_tick: u64,
     /// Event ID -> (source epoch, sequence, payload digest).
     pub seen_event_ids: BTreeMap<String, (String, u64, String)>,
+    /// Source-feed records waiting for a preceding sequence.
+    pub buffered_events: BTreeMap<u64, SourceEvent>,
+    /// Start/deadline for the currently missing cursor sequence.
+    pub gap_started_at_tick: Option<u64>,
+    pub gap_deadline_tick: Option<u64>,
+    /// Highest source watermark cursor observed in this epoch.
+    pub observed_watermark_next_sequence: Option<u64>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -151,6 +158,8 @@ pub enum RecordDisposition {
     ExpiredBeforeProcessing,
     MissedDeadline,
     OutOfOrder,
+    BufferedForSequence,
+    DeliveryGapPending,
     IdentityCollision,
     SourceEpochMismatch,
     RestartAccepted,
@@ -194,6 +203,12 @@ pub struct EventScheduleMetrics {
     pub duplicates_suppressed: usize,
     pub identity_collisions: usize,
     pub sequence_gaps: usize,
+    pub buffered_events: usize,
+    pub gap_repairs: usize,
+    pub gap_timeouts: usize,
+    pub pending_gap_observations: usize,
+    pub gap_buffer_overflows: usize,
+    pub max_buffered_event_count: usize,
     pub out_of_order_records: usize,
     pub restarts_accepted: usize,
     pub restarts_rejected: usize,
@@ -223,6 +238,7 @@ pub enum ScheduleStatus {
     Completed,
     Quiet,
     DeliveryGap,
+    DeliveryGapPending,
     OutOfOrder,
     IdentityCollision,
     SourceEpochMismatch,
@@ -254,10 +270,41 @@ pub enum ScheduleError {
     InvalidWatch,
     InvalidAuthority,
     InvalidStrategy,
+    InvalidGapPolicy,
     EventTimeRegression,
     InvalidEvent,
     InvalidRestart,
     InvalidCheckpoint,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SequenceGapPolicy {
+    /// The gap becomes a delivery failure at this many ticks after first observation.
+    /// The boundary is inclusive: an event arriving exactly at the deadline is late.
+    pub timeout_ticks: u64,
+    pub max_buffered_events: usize,
+}
+
+impl SequenceGapPolicy {
+    /// Preserve the original immediate, fail-closed semantics.
+    pub const fn strict() -> Self {
+        Self {
+            timeout_ticks: 0,
+            max_buffered_events: 0,
+        }
+    }
+
+    /// Opt in to bounded buffering and repair before a deadline.
+    pub const fn buffered(timeout_ticks: u64, max_buffered_events: usize) -> Self {
+        Self {
+            timeout_ticks,
+            max_buffered_events,
+        }
+    }
+
+    const fn is_buffered(self) -> bool {
+        self.timeout_ticks > 0 && self.max_buffered_events > 0
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -371,6 +418,10 @@ fn initial_checkpoint(watch: &EventWatch) -> EventCheckpoint {
         next_sequence: watch.first_sequence,
         last_stream_tick: watch.starts_at_tick,
         seen_event_ids: BTreeMap::new(),
+        buffered_events: BTreeMap::new(),
+        gap_started_at_tick: None,
+        gap_deadline_tick: None,
+        observed_watermark_next_sequence: None,
     }
 }
 
@@ -393,6 +444,33 @@ fn validate_checkpoint(
                     || *sequence == u64::MAX
                     || !valid_sha256(digest)
             })
+        || checkpoint.gap_started_at_tick.is_some() != checkpoint.gap_deadline_tick.is_some()
+        || checkpoint
+            .gap_started_at_tick
+            .zip(checkpoint.gap_deadline_tick)
+            .is_some_and(|(started, deadline)| deadline <= started)
+        || checkpoint.buffered_events.iter().any(|(sequence, event)| {
+            *sequence != event.sequence
+                || event.source_id != checkpoint.source_id
+                || event.source_epoch != checkpoint.source_epoch
+                || event.sequence <= checkpoint.next_sequence
+                || event.delivered_tick > checkpoint.last_stream_tick
+                || checkpoint.seen_event_ids.contains_key(&event.event_id)
+                || validate_event(event).is_err()
+        })
+        || (!checkpoint.buffered_events.is_empty() && checkpoint.gap_started_at_tick.is_none())
+        || checkpoint
+            .observed_watermark_next_sequence
+            .is_some_and(|sequence| sequence == 0 || sequence == u64::MAX)
+        || (checkpoint
+            .observed_watermark_next_sequence
+            .is_some_and(|sequence| sequence > checkpoint.next_sequence)
+            && checkpoint.gap_started_at_tick.is_none())
+        || (checkpoint.gap_started_at_tick.is_some()
+            && checkpoint.buffered_events.is_empty()
+            && checkpoint
+                .observed_watermark_next_sequence
+                .is_none_or(|sequence| sequence <= checkpoint.next_sequence))
     {
         return Err(ScheduleError::InvalidCheckpoint);
     }
@@ -523,6 +601,7 @@ struct EventProcessingState<'a> {
     watch: &'a EventWatch,
     authority: &'a AuthorityWindow,
     strategy: AttentionStrategy,
+    gap_policy: SequenceGapPolicy,
     checkpoint: &'a mut EventCheckpoint,
     metrics: &'a mut EventScheduleMetrics,
     records: &'a mut Vec<EventRecordResult>,
@@ -530,7 +609,44 @@ struct EventProcessingState<'a> {
     wakes: &'a mut Vec<WakeRecord>,
 }
 
-fn process_event(
+struct EventRecordIdentity<'a> {
+    event_id: &'a str,
+    incident_id: &'a str,
+    sequence: u64,
+    delivered_tick: u64,
+}
+
+impl<'a> From<&'a SourceEvent> for EventRecordIdentity<'a> {
+    fn from(event: &'a SourceEvent) -> Self {
+        Self {
+            event_id: &event.event_id,
+            incident_id: &event.incident_id,
+            sequence: event.sequence,
+            delivered_tick: event.delivered_tick,
+        }
+    }
+}
+
+fn push_record(
+    records: &mut Vec<EventRecordResult>,
+    identity: EventRecordIdentity<'_>,
+    processing_tick: u64,
+    disposition: RecordDisposition,
+    deadline_met: bool,
+) {
+    records.push(EventRecordResult {
+        event_id: identity.event_id.to_owned(),
+        incident_id: identity.incident_id.to_owned(),
+        sequence: identity.sequence,
+        delivered_tick: identity.delivered_tick,
+        processed_tick: Some(processing_tick),
+        disposition,
+        detection_latency_ticks: None,
+        deadline_met,
+    });
+}
+
+fn process_event_in_order(
     state: &mut EventProcessingState<'_>,
     event: &SourceEvent,
     processing_tick: u64,
@@ -544,102 +660,11 @@ fn process_event(
         records,
         pending,
         wakes,
+        ..
     } = state;
-    metrics.source_records += 1;
-
-    if event.source_id != watch.source_id {
-        metrics.scope_rejections += 1;
-        records.push(EventRecordResult {
-            event_id: event.event_id.clone(),
-            incident_id: event.incident_id.clone(),
-            sequence: event.sequence,
-            delivered_tick: event.delivered_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::ScopeRejected,
-            detection_latency_ticks: None,
-            deadline_met: false,
-        });
-        return Some(ScheduleStatus::SourceIdentityMismatch);
-    }
-
-    let previous = checkpoint.seen_event_ids.get(&event.event_id);
-    if let Some((epoch, sequence, digest)) = previous {
-        if epoch == &event.source_epoch
-            && *sequence == event.sequence
-            && digest == &event.payload_digest
-        {
-            metrics.duplicates_suppressed += 1;
-            records.push(EventRecordResult {
-                event_id: event.event_id.clone(),
-                incident_id: event.incident_id.clone(),
-                sequence: event.sequence,
-                delivered_tick: event.delivered_tick,
-                processed_tick: Some(processing_tick),
-                disposition: RecordDisposition::DuplicateSuppressed,
-                detection_latency_ticks: None,
-                deadline_met: true,
-            });
-            return None;
-        }
-        metrics.identity_collisions += 1;
-        records.push(EventRecordResult {
-            event_id: event.event_id.clone(),
-            incident_id: event.incident_id.clone(),
-            sequence: event.sequence,
-            delivered_tick: event.delivered_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::IdentityCollision,
-            detection_latency_ticks: None,
-            deadline_met: false,
-        });
-        return Some(ScheduleStatus::IdentityCollision);
-    }
-
-    if event.source_epoch != checkpoint.source_epoch {
-        records.push(EventRecordResult {
-            event_id: event.event_id.clone(),
-            incident_id: event.incident_id.clone(),
-            sequence: event.sequence,
-            delivered_tick: event.delivered_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::SourceEpochMismatch,
-            detection_latency_ticks: None,
-            deadline_met: false,
-        });
-        return Some(ScheduleStatus::SourceEpochMismatch);
-    }
-
-    if event.sequence > checkpoint.next_sequence {
-        metrics.sequence_gaps += 1;
-        records.push(EventRecordResult {
-            event_id: event.event_id.clone(),
-            incident_id: event.incident_id.clone(),
-            sequence: event.sequence,
-            delivered_tick: event.delivered_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::DeliveryGap,
-            detection_latency_ticks: None,
-            deadline_met: false,
-        });
-        return Some(ScheduleStatus::DeliveryGap);
-    }
-    if event.sequence < checkpoint.next_sequence {
-        metrics.out_of_order_records += 1;
-        records.push(EventRecordResult {
-            event_id: event.event_id.clone(),
-            incident_id: event.incident_id.clone(),
-            sequence: event.sequence,
-            delivered_tick: event.delivered_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::OutOfOrder,
-            detection_latency_ticks: None,
-            deadline_met: false,
-        });
-        return Some(ScheduleStatus::OutOfOrder);
-    }
 
     checkpoint.next_sequence = checkpoint.next_sequence.saturating_add(1);
-    checkpoint.last_stream_tick = event.delivered_tick;
+    checkpoint.last_stream_tick = checkpoint.last_stream_tick.max(event.delivered_tick);
     checkpoint.seen_event_ids.insert(
         event.event_id.clone(),
         (
@@ -656,30 +681,24 @@ fn process_event(
         && event.event_type == watch.event_type;
     if !scope_matches {
         metrics.scope_rejections += 1;
-        records.push(EventRecordResult {
-            event_id: event.event_id.clone(),
-            incident_id: event.incident_id.clone(),
-            sequence: event.sequence,
-            delivered_tick: event.delivered_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::ScopeRejected,
-            detection_latency_ticks: None,
-            deadline_met: true,
-        });
+        push_record(
+            records,
+            EventRecordIdentity::from(event),
+            processing_tick,
+            RecordDisposition::ScopeRejected,
+            true,
+        );
         return None;
     }
 
     if !authority.current_for(watch, processing_tick) {
-        records.push(EventRecordResult {
-            event_id: event.event_id.clone(),
-            incident_id: event.incident_id.clone(),
-            sequence: event.sequence,
-            delivered_tick: event.delivered_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::AuthorityRevokedOrExpired,
-            detection_latency_ticks: None,
-            deadline_met: false,
-        });
+        push_record(
+            records,
+            EventRecordIdentity::from(event),
+            processing_tick,
+            RecordDisposition::AuthorityRevokedOrExpired,
+            false,
+        );
         return Some(ScheduleStatus::AuthorityRevokedOrExpired);
     }
 
@@ -691,16 +710,13 @@ fn process_event(
         if event.persistence == Persistence::EphemeralTransition {
             metrics.missed_ephemeral_events += 1;
         }
-        records.push(EventRecordResult {
-            event_id: event.event_id.clone(),
-            incident_id: event.incident_id.clone(),
-            sequence: event.sequence,
-            delivered_tick: event.delivered_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::MissedDeadline,
-            detection_latency_ticks: None,
-            deadline_met: false,
-        });
+        push_record(
+            records,
+            EventRecordIdentity::from(event),
+            processing_tick,
+            RecordDisposition::MissedDeadline,
+            false,
+        );
         return None;
     }
 
@@ -718,16 +734,13 @@ fn process_event(
         {
             metrics.missed_ephemeral_events += 1;
         }
-        records.push(EventRecordResult {
-            event_id: event.event_id.clone(),
-            incident_id: event.incident_id.clone(),
-            sequence: event.sequence,
-            delivered_tick: event.delivered_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::ExpiredBeforeProcessing,
-            detection_latency_ticks: None,
-            deadline_met: false,
-        });
+        push_record(
+            records,
+            EventRecordIdentity::from(event),
+            processing_tick,
+            RecordDisposition::ExpiredBeforeProcessing,
+            false,
+        );
         return None;
     }
 
@@ -738,29 +751,23 @@ fn process_event(
     match event.condition {
         ConditionOutcome::NoMatch => {
             metrics.quiet_events += 1;
-            records.push(EventRecordResult {
-                event_id: event.event_id.clone(),
-                incident_id: event.incident_id.clone(),
-                sequence: event.sequence,
-                delivered_tick: event.delivered_tick,
-                processed_tick: Some(processing_tick),
-                disposition: RecordDisposition::Quiet,
-                detection_latency_ticks: None,
-                deadline_met: true,
-            });
+            push_record(
+                records,
+                EventRecordIdentity::from(event),
+                processing_tick,
+                RecordDisposition::Quiet,
+                true,
+            );
         }
         ConditionOutcome::Indeterminate => {
             metrics.indeterminate_events += 1;
-            records.push(EventRecordResult {
-                event_id: event.event_id.clone(),
-                incident_id: event.incident_id.clone(),
-                sequence: event.sequence,
-                delivered_tick: event.delivered_tick,
-                processed_tick: Some(processing_tick),
-                disposition: RecordDisposition::IndeterminateCondition,
-                detection_latency_ticks: None,
-                deadline_met: false,
-            });
+            push_record(
+                records,
+                EventRecordIdentity::from(event),
+                processing_tick,
+                RecordDisposition::IndeterminateCondition,
+                false,
+            );
             return Some(ScheduleStatus::Indeterminate);
         }
         ConditionOutcome::Match => {
@@ -806,6 +813,273 @@ fn process_event(
     None
 }
 
+fn gap_timeout(
+    checkpoint: &EventCheckpoint,
+    processing_tick: u64,
+    metrics: &mut EventScheduleMetrics,
+    records: &mut Vec<EventRecordResult>,
+) -> ScheduleStatus {
+    metrics.gap_timeouts += 1;
+    let gap_event_id = format!(
+        "gap:{}:{}",
+        checkpoint.source_epoch, checkpoint.next_sequence
+    );
+    push_record(
+        records,
+        EventRecordIdentity {
+            event_id: &gap_event_id,
+            incident_id: "",
+            sequence: checkpoint.next_sequence,
+            delivered_tick: checkpoint.gap_deadline_tick.unwrap_or(processing_tick),
+        },
+        processing_tick,
+        RecordDisposition::DeliveryGap,
+        false,
+    );
+    ScheduleStatus::DeliveryGap
+}
+
+fn process_event(
+    state: &mut EventProcessingState<'_>,
+    event: &SourceEvent,
+    processing_tick: u64,
+) -> Option<ScheduleStatus> {
+    let gap_policy = state.gap_policy;
+    let EventProcessingState {
+        watch,
+        strategy: _,
+        gap_policy: _,
+        checkpoint,
+        metrics,
+        records,
+        ..
+    } = state;
+    metrics.source_records += 1;
+
+    if event.source_id != watch.source_id {
+        metrics.scope_rejections += 1;
+        push_record(
+            records,
+            EventRecordIdentity::from(event),
+            processing_tick,
+            RecordDisposition::ScopeRejected,
+            false,
+        );
+        return Some(ScheduleStatus::SourceIdentityMismatch);
+    }
+
+    let previous = checkpoint.seen_event_ids.get(&event.event_id);
+    if let Some((epoch, sequence, digest)) = previous {
+        if epoch == &event.source_epoch
+            && *sequence == event.sequence
+            && digest == &event.payload_digest
+        {
+            metrics.duplicates_suppressed += 1;
+            push_record(
+                records,
+                EventRecordIdentity::from(event),
+                processing_tick,
+                RecordDisposition::DuplicateSuppressed,
+                true,
+            );
+            return None;
+        }
+        metrics.identity_collisions += 1;
+        push_record(
+            records,
+            EventRecordIdentity::from(event),
+            processing_tick,
+            RecordDisposition::IdentityCollision,
+            false,
+        );
+        return Some(ScheduleStatus::IdentityCollision);
+    }
+
+    if let Some(buffered) = checkpoint.buffered_events.get(&event.sequence) {
+        if buffered == event {
+            metrics.duplicates_suppressed += 1;
+            push_record(
+                records,
+                EventRecordIdentity::from(event),
+                processing_tick,
+                RecordDisposition::DuplicateSuppressed,
+                true,
+            );
+            return None;
+        }
+        metrics.identity_collisions += 1;
+        push_record(
+            records,
+            EventRecordIdentity::from(event),
+            processing_tick,
+            RecordDisposition::IdentityCollision,
+            false,
+        );
+        return Some(ScheduleStatus::IdentityCollision);
+    }
+
+    if checkpoint
+        .buffered_events
+        .values()
+        .any(|buffered| buffered.event_id == event.event_id)
+    {
+        metrics.identity_collisions += 1;
+        push_record(
+            records,
+            EventRecordIdentity::from(event),
+            processing_tick,
+            RecordDisposition::IdentityCollision,
+            false,
+        );
+        return Some(ScheduleStatus::IdentityCollision);
+    }
+
+    if event.source_epoch != checkpoint.source_epoch {
+        push_record(
+            records,
+            EventRecordIdentity::from(event),
+            processing_tick,
+            RecordDisposition::SourceEpochMismatch,
+            false,
+        );
+        return Some(ScheduleStatus::SourceEpochMismatch);
+    }
+
+    if event.sequence > checkpoint.next_sequence {
+        if !gap_policy.is_buffered() {
+            metrics.sequence_gaps += 1;
+            push_record(
+                records,
+                EventRecordIdentity::from(event),
+                processing_tick,
+                RecordDisposition::DeliveryGap,
+                false,
+            );
+            return Some(ScheduleStatus::DeliveryGap);
+        }
+
+        if checkpoint.buffered_events.len() >= gap_policy.max_buffered_events {
+            metrics.gap_buffer_overflows += 1;
+            push_record(
+                records,
+                EventRecordIdentity::from(event),
+                processing_tick,
+                RecordDisposition::BudgetExhausted,
+                false,
+            );
+            return Some(ScheduleStatus::BudgetExhausted);
+        }
+
+        if checkpoint.gap_started_at_tick.is_none() {
+            let Some(deadline) = processing_tick.checked_add(gap_policy.timeout_ticks) else {
+                return Some(ScheduleStatus::InvalidSchedule);
+            };
+            checkpoint.gap_started_at_tick = Some(processing_tick);
+            checkpoint.gap_deadline_tick = Some(deadline);
+            metrics.sequence_gaps += 1;
+        }
+        checkpoint.last_stream_tick = checkpoint.last_stream_tick.max(event.delivered_tick);
+        checkpoint
+            .buffered_events
+            .insert(event.sequence, event.clone());
+        metrics.buffered_events += 1;
+        metrics.max_buffered_event_count = metrics
+            .max_buffered_event_count
+            .max(checkpoint.buffered_events.len());
+        push_record(
+            records,
+            EventRecordIdentity::from(event),
+            processing_tick,
+            RecordDisposition::BufferedForSequence,
+            false,
+        );
+        return None;
+    }
+
+    if event.sequence < checkpoint.next_sequence {
+        metrics.out_of_order_records += 1;
+        push_record(
+            records,
+            EventRecordIdentity::from(event),
+            processing_tick,
+            RecordDisposition::OutOfOrder,
+            false,
+        );
+        return Some(ScheduleStatus::OutOfOrder);
+    }
+
+    if checkpoint
+        .gap_deadline_tick
+        .is_some_and(|deadline| processing_tick >= deadline)
+    {
+        return Some(gap_timeout(checkpoint, processing_tick, metrics, records));
+    }
+
+    let had_gap = state.checkpoint.gap_started_at_tick.is_some()
+        || !state.checkpoint.buffered_events.is_empty()
+        || state
+            .checkpoint
+            .observed_watermark_next_sequence
+            .is_some_and(|sequence| sequence > state.checkpoint.next_sequence);
+
+    if let Some(status) = process_event_in_order(state, event, processing_tick) {
+        return Some(status);
+    }
+
+    if gap_policy.is_buffered() {
+        loop {
+            let next_sequence = state.checkpoint.next_sequence;
+            let Some(buffered_event) = state.checkpoint.buffered_events.remove(&next_sequence)
+            else {
+                break;
+            };
+            if state
+                .checkpoint
+                .gap_deadline_tick
+                .is_some_and(|deadline| processing_tick >= deadline)
+            {
+                state
+                    .checkpoint
+                    .buffered_events
+                    .insert(next_sequence, buffered_event);
+                return Some(gap_timeout(
+                    state.checkpoint,
+                    processing_tick,
+                    state.metrics,
+                    state.records,
+                ));
+            }
+            if let Some(status) = process_event_in_order(state, &buffered_event, processing_tick) {
+                return Some(status);
+            }
+        }
+
+        let watermark_gap = state
+            .checkpoint
+            .observed_watermark_next_sequence
+            .is_some_and(|sequence| sequence > state.checkpoint.next_sequence);
+        let unresolved_gap = !state.checkpoint.buffered_events.is_empty() || watermark_gap;
+
+        if had_gap {
+            state.metrics.gap_repairs += 1;
+        }
+
+        if unresolved_gap {
+            let Some(deadline) = processing_tick.checked_add(gap_policy.timeout_ticks) else {
+                return Some(ScheduleStatus::InvalidSchedule);
+            };
+            state.checkpoint.gap_started_at_tick = Some(processing_tick);
+            state.checkpoint.gap_deadline_tick = Some(deadline);
+            state.metrics.sequence_gaps += 1;
+        } else {
+            state.checkpoint.gap_started_at_tick = None;
+            state.checkpoint.gap_deadline_tick = None;
+        }
+    }
+
+    None
+}
+
 fn apply_restart(
     watch: &EventWatch,
     restart: &SourceRestart,
@@ -815,6 +1089,22 @@ fn apply_restart(
     records: &mut Vec<EventRecordResult>,
 ) -> Option<ScheduleStatus> {
     metrics.source_records += 1;
+    if checkpoint.gap_started_at_tick.is_some() || !checkpoint.buffered_events.is_empty() {
+        let restart_event_id = format!("restart:{}", restart.new_epoch);
+        push_record(
+            records,
+            EventRecordIdentity {
+                event_id: &restart_event_id,
+                incident_id: "",
+                sequence: restart.sequence_start,
+                delivered_tick: restart.at_tick,
+            },
+            processing_tick,
+            RecordDisposition::SourceEpochMismatch,
+            false,
+        );
+        return Some(ScheduleStatus::SourceEpochMismatch);
+    }
     let valid = restart.source_id == watch.source_id
         && restart.previous_epoch == checkpoint.source_epoch
         && restart.new_epoch != checkpoint.source_epoch
@@ -837,6 +1127,9 @@ fn apply_restart(
     checkpoint.source_epoch = restart.new_epoch.clone();
     checkpoint.next_sequence = restart.sequence_start;
     checkpoint.last_stream_tick = restart.at_tick;
+    checkpoint.observed_watermark_next_sequence = None;
+    checkpoint.gap_started_at_tick = None;
+    checkpoint.gap_deadline_tick = None;
     metrics.restarts_accepted += 1;
     records.push(EventRecordResult {
         event_id: format!("restart:{}", restart.new_epoch),
@@ -855,6 +1148,7 @@ fn process_watermark(
     watch: &EventWatch,
     watermark: &SourceWatermark,
     processing_tick: u64,
+    gap_policy: SequenceGapPolicy,
     checkpoint: &mut EventCheckpoint,
     metrics: &mut EventScheduleMetrics,
     records: &mut Vec<EventRecordResult>,
@@ -868,85 +1162,152 @@ fn process_watermark(
     );
     if watermark.source_id != watch.source_id {
         metrics.scope_rejections += 1;
-        records.push(EventRecordResult {
-            event_id,
-            incident_id: String::new(),
-            sequence: watermark.next_sequence,
-            delivered_tick: watermark.observed_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::ScopeRejected,
-            detection_latency_ticks: None,
-            deadline_met: false,
-        });
+        push_record(
+            records,
+            EventRecordIdentity {
+                event_id: &event_id,
+                incident_id: "",
+                sequence: watermark.next_sequence,
+                delivered_tick: watermark.observed_tick,
+            },
+            processing_tick,
+            RecordDisposition::ScopeRejected,
+            false,
+        );
         return Some(ScheduleStatus::SourceIdentityMismatch);
     }
     if !watermark.available {
         metrics.source_unavailable += 1;
-        records.push(EventRecordResult {
-            event_id,
-            incident_id: String::new(),
-            sequence: watermark.next_sequence,
-            delivered_tick: watermark.observed_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::SourceUnavailable,
-            detection_latency_ticks: None,
-            deadline_met: false,
-        });
+        push_record(
+            records,
+            EventRecordIdentity {
+                event_id: &event_id,
+                incident_id: "",
+                sequence: watermark.next_sequence,
+                delivered_tick: watermark.observed_tick,
+            },
+            processing_tick,
+            RecordDisposition::SourceUnavailable,
+            false,
+        );
         return Some(ScheduleStatus::SourceUnavailable);
     }
     if watermark.source_epoch != checkpoint.source_epoch {
-        records.push(EventRecordResult {
-            event_id,
-            incident_id: String::new(),
-            sequence: watermark.next_sequence,
-            delivered_tick: watermark.observed_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::SourceEpochMismatch,
-            detection_latency_ticks: None,
-            deadline_met: false,
-        });
+        push_record(
+            records,
+            EventRecordIdentity {
+                event_id: &event_id,
+                incident_id: "",
+                sequence: watermark.next_sequence,
+                delivered_tick: watermark.observed_tick,
+            },
+            processing_tick,
+            RecordDisposition::SourceEpochMismatch,
+            false,
+        );
         return Some(ScheduleStatus::SourceEpochMismatch);
     }
-    if watermark.next_sequence > checkpoint.next_sequence {
-        metrics.sequence_gaps += 1;
-        records.push(EventRecordResult {
-            event_id,
-            incident_id: String::new(),
-            sequence: watermark.next_sequence,
-            delivered_tick: watermark.observed_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::DeliveryGap,
-            detection_latency_ticks: None,
-            deadline_met: false,
-        });
-        return Some(ScheduleStatus::DeliveryGap);
-    }
-    if watermark.next_sequence < checkpoint.next_sequence {
+
+    if checkpoint
+        .observed_watermark_next_sequence
+        .is_some_and(|previous| watermark.next_sequence < previous)
+        || watermark.next_sequence < checkpoint.next_sequence
+    {
         metrics.out_of_order_records += 1;
-        records.push(EventRecordResult {
-            event_id,
-            incident_id: String::new(),
-            sequence: watermark.next_sequence,
-            delivered_tick: watermark.observed_tick,
-            processed_tick: Some(processing_tick),
-            disposition: RecordDisposition::OutOfOrder,
-            detection_latency_ticks: None,
-            deadline_met: false,
-        });
+        push_record(
+            records,
+            EventRecordIdentity {
+                event_id: &event_id,
+                incident_id: "",
+                sequence: watermark.next_sequence,
+                delivered_tick: watermark.observed_tick,
+            },
+            processing_tick,
+            RecordDisposition::OutOfOrder,
+            false,
+        );
         return Some(ScheduleStatus::OutOfOrder);
     }
 
-    records.push(EventRecordResult {
-        event_id,
-        incident_id: String::new(),
-        sequence: watermark.next_sequence,
-        delivered_tick: watermark.observed_tick,
-        processed_tick: Some(processing_tick),
-        disposition: RecordDisposition::WatermarkConfirmed,
-        detection_latency_ticks: None,
-        deadline_met: true,
-    });
-    checkpoint.last_stream_tick = watermark.observed_tick;
+    if watermark.next_sequence > checkpoint.next_sequence {
+        if !gap_policy.is_buffered() {
+            metrics.sequence_gaps += 1;
+            push_record(
+                records,
+                EventRecordIdentity {
+                    event_id: &event_id,
+                    incident_id: "",
+                    sequence: watermark.next_sequence,
+                    delivered_tick: watermark.observed_tick,
+                },
+                processing_tick,
+                RecordDisposition::DeliveryGap,
+                false,
+            );
+            return Some(ScheduleStatus::DeliveryGap);
+        }
+
+        if checkpoint.gap_started_at_tick.is_none() {
+            let Some(deadline) = processing_tick.checked_add(gap_policy.timeout_ticks) else {
+                return Some(ScheduleStatus::InvalidSchedule);
+            };
+            checkpoint.gap_started_at_tick = Some(processing_tick);
+            checkpoint.gap_deadline_tick = Some(deadline);
+            metrics.sequence_gaps += 1;
+        }
+        checkpoint.observed_watermark_next_sequence = Some(watermark.next_sequence);
+        checkpoint.last_stream_tick = checkpoint.last_stream_tick.max(watermark.observed_tick);
+        push_record(
+            records,
+            EventRecordIdentity {
+                event_id: &event_id,
+                incident_id: "",
+                sequence: watermark.next_sequence,
+                delivered_tick: watermark.observed_tick,
+            },
+            processing_tick,
+            RecordDisposition::DeliveryGapPending,
+            false,
+        );
+        return None;
+    }
+
+    // A watermark at the exact consumer cursor closes a watermark-only gap.
+    // If later events are already buffered, this watermark contradicts the
+    // source timeline and must not clear their unresolved sequence hole.
+    if !checkpoint.buffered_events.is_empty() {
+        metrics.identity_collisions += 1;
+        push_record(
+            records,
+            EventRecordIdentity {
+                event_id: &event_id,
+                incident_id: "",
+                sequence: watermark.next_sequence,
+                delivered_tick: watermark.observed_tick,
+            },
+            processing_tick,
+            RecordDisposition::IdentityCollision,
+            false,
+        );
+        return Some(ScheduleStatus::IdentityCollision);
+    }
+
+    checkpoint.observed_watermark_next_sequence = Some(watermark.next_sequence);
+    checkpoint.gap_started_at_tick = None;
+    checkpoint.gap_deadline_tick = None;
+    push_record(
+        records,
+        EventRecordIdentity {
+            event_id: &event_id,
+            incident_id: "",
+            sequence: watermark.next_sequence,
+            delivered_tick: watermark.observed_tick,
+        },
+        processing_tick,
+        RecordDisposition::WatermarkConfirmed,
+        true,
+    );
+    checkpoint.last_stream_tick = checkpoint.last_stream_tick.max(watermark.observed_tick);
     None
 }
 
@@ -965,8 +1326,35 @@ pub fn evaluate_event_schedule(
     horizon_tick: u64,
     checkpoint: Option<EventCheckpoint>,
 ) -> Result<EventScheduleResult, ScheduleError> {
+    evaluate_event_schedule_with_gap_policy(
+        watch,
+        authority,
+        strategy,
+        timeline,
+        horizon_tick,
+        checkpoint,
+        SequenceGapPolicy::strict(),
+    )
+}
+
+/// Evaluate one frozen source schedule with an explicit bounded gap policy.
+/// The default public evaluator remains strict; buffering is an opt-in contract.
+pub fn evaluate_event_schedule_with_gap_policy(
+    watch: &EventWatch,
+    authority: &AuthorityWindow,
+    strategy: AttentionStrategy,
+    timeline: &[TimelineRecord],
+    horizon_tick: u64,
+    checkpoint: Option<EventCheckpoint>,
+    gap_policy: SequenceGapPolicy,
+) -> Result<EventScheduleResult, ScheduleError> {
     validate_watch(watch)?;
     validate_authority(authority)?;
+    if (gap_policy.timeout_ticks == 0) != (gap_policy.max_buffered_events == 0)
+        || gap_policy.max_buffered_events > watch.max_event_checks
+    {
+        return Err(ScheduleError::InvalidGapPolicy);
+    }
     match strategy {
         AttentionStrategy::FixedPolling { interval_ticks: 0 } => {
             return Err(ScheduleError::InvalidStrategy);
@@ -979,6 +1367,12 @@ pub fn evaluate_event_schedule(
 
     let mut checkpoint = checkpoint.unwrap_or_else(|| initial_checkpoint(watch));
     validate_checkpoint(watch, &checkpoint)?;
+    if (!gap_policy.is_buffered()
+        && (checkpoint.gap_started_at_tick.is_some() || !checkpoint.buffered_events.is_empty()))
+        || checkpoint.buffered_events.len() > gap_policy.max_buffered_events
+    {
+        return Err(ScheduleError::InvalidGapPolicy);
+    }
     let mut last_timeline_tick = checkpoint.last_stream_tick;
     for record in timeline {
         if record.tick() < last_timeline_tick {
@@ -1073,6 +1467,15 @@ pub fn evaluate_event_schedule(
             break;
         }
 
+        if gap_policy.is_buffered()
+            && checkpoint
+                .gap_deadline_tick
+                .is_some_and(|deadline| processing_tick >= deadline)
+        {
+            status = gap_timeout(&checkpoint, processing_tick, &mut metrics, &mut records);
+            break;
+        }
+
         if metrics.source_records >= watch.max_event_checks {
             metrics.budget_exhaustions += 1;
             status = ScheduleStatus::BudgetExhausted;
@@ -1085,6 +1488,7 @@ pub fn evaluate_event_schedule(
                     watch,
                     authority,
                     strategy,
+                    gap_policy,
                     checkpoint: &mut checkpoint,
                     metrics: &mut metrics,
                     records: &mut records,
@@ -1105,6 +1509,7 @@ pub fn evaluate_event_schedule(
                 watch,
                 watermark,
                 processing_tick,
+                gap_policy,
                 &mut checkpoint,
                 &mut metrics,
                 &mut records,
@@ -1113,6 +1518,44 @@ pub fn evaluate_event_schedule(
         if let Some(failure) = result {
             status = failure;
             break;
+        }
+    }
+
+    if gap_policy.is_buffered() && status == ScheduleStatus::Completed {
+        if let Some(deadline) = checkpoint.gap_deadline_tick {
+            if horizon_tick >= deadline {
+                metrics.gap_timeouts += 1;
+                status = ScheduleStatus::DeliveryGap;
+                records.push(EventRecordResult {
+                    event_id: format!(
+                        "gap:{}:{}",
+                        checkpoint.source_epoch, checkpoint.next_sequence
+                    ),
+                    incident_id: String::new(),
+                    sequence: checkpoint.next_sequence,
+                    delivered_tick: deadline,
+                    processed_tick: Some(horizon_tick),
+                    disposition: RecordDisposition::DeliveryGap,
+                    detection_latency_ticks: None,
+                    deadline_met: false,
+                });
+            } else {
+                metrics.pending_gap_observations += 1;
+                status = ScheduleStatus::DeliveryGapPending;
+                records.push(EventRecordResult {
+                    event_id: format!(
+                        "gap-pending:{}:{}",
+                        checkpoint.source_epoch, checkpoint.next_sequence
+                    ),
+                    incident_id: String::new(),
+                    sequence: checkpoint.next_sequence,
+                    delivered_tick: checkpoint.gap_started_at_tick.unwrap_or(horizon_tick),
+                    processed_tick: Some(horizon_tick),
+                    disposition: RecordDisposition::DeliveryGapPending,
+                    detection_latency_ticks: None,
+                    deadline_met: false,
+                });
+            }
         }
     }
 
@@ -1208,6 +1651,26 @@ mod tests {
 
     fn run(strategy: AttentionStrategy, timeline: &[TimelineRecord]) -> EventScheduleResult {
         evaluate_event_schedule(&watch(), &authority(), strategy, timeline, 39, None).unwrap()
+    }
+
+    fn run_with_gap(
+        strategy: AttentionStrategy,
+        timeline: &[TimelineRecord],
+        horizon_tick: u64,
+        checkpoint: Option<EventCheckpoint>,
+        timeout_ticks: u64,
+        max_buffered_events: usize,
+    ) -> EventScheduleResult {
+        evaluate_event_schedule_with_gap_policy(
+            &watch(),
+            &authority(),
+            strategy,
+            timeline,
+            horizon_tick,
+            checkpoint,
+            SequenceGapPolicy::buffered(timeout_ticks, max_buffered_events),
+        )
+        .unwrap()
     }
 
     fn watermark(next_sequence: u64, observed_tick: u64, available: bool) -> SourceWatermark {
@@ -1635,6 +2098,632 @@ mod tests {
     }
 
     #[test]
+    fn buffered_gap_repairs_before_deadline_and_releases_in_sequence_order() {
+        let later = event(
+            "event-2",
+            "incident-2",
+            2,
+            2,
+            3,
+            30,
+            12,
+            Persistence::PersistentCondition,
+        );
+        let missing = event(
+            "event-1",
+            "incident-1",
+            1,
+            3,
+            7,
+            30,
+            12,
+            Persistence::PersistentCondition,
+        );
+        let result = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(later), TimelineRecord::Event(missing)],
+            10,
+            None,
+            5,
+            8,
+        );
+
+        assert_eq!(result.status, ScheduleStatus::Completed);
+        assert_eq!(result.metrics.buffered_events, 1);
+        assert_eq!(result.metrics.gap_repairs, 1);
+        assert_eq!(result.metrics.gap_timeouts, 0);
+        assert_eq!(result.checkpoint.next_sequence, 3);
+        assert!(result.checkpoint.buffered_events.is_empty());
+        assert_eq!(result.checkpoint.gap_deadline_tick, None);
+        assert_eq!(result.wakes.len(), 2);
+        assert_eq!(result.wakes[0].event_ids, vec!["event-1"]);
+        assert_eq!(result.wakes[1].event_ids, vec!["event-2"]);
+    }
+
+    #[test]
+    fn repairing_one_cursor_starts_a_fresh_deadline_for_the_next_gap() {
+        let timeline = vec![
+            TimelineRecord::Event(event(
+                "event-3",
+                "incident-3",
+                3,
+                2,
+                3,
+                30,
+                15,
+                Persistence::PersistentCondition,
+            )),
+            TimelineRecord::Event(event(
+                "event-1",
+                "incident-1",
+                1,
+                3,
+                4,
+                30,
+                15,
+                Persistence::PersistentCondition,
+            )),
+            TimelineRecord::Event(event(
+                "event-2",
+                "incident-2",
+                2,
+                5,
+                8,
+                30,
+                15,
+                Persistence::PersistentCondition,
+            )),
+        ];
+        let result = run_with_gap(AttentionStrategy::EventTriggered, &timeline, 10, None, 5, 8);
+
+        assert_eq!(result.status, ScheduleStatus::Completed);
+        assert_eq!(result.metrics.sequence_gaps, 2);
+        assert_eq!(result.metrics.gap_repairs, 2);
+        assert_eq!(result.checkpoint.next_sequence, 4);
+        assert!(result.checkpoint.buffered_events.is_empty());
+        assert_eq!(
+            result
+                .wakes
+                .iter()
+                .map(|wake| wake.event_ids[0].as_str())
+                .collect::<Vec<_>>(),
+            vec!["event-1", "event-2", "event-3"]
+        );
+    }
+
+    #[test]
+    fn buffered_gap_checkpoint_survives_runner_restart_and_repairs() {
+        let later = event(
+            "event-2",
+            "incident-2",
+            2,
+            2,
+            3,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let first = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(later)],
+            5,
+            None,
+            5,
+            8,
+        );
+        assert_eq!(first.status, ScheduleStatus::DeliveryGapPending);
+        assert_eq!(first.checkpoint.gap_started_at_tick, Some(3));
+        assert_eq!(first.checkpoint.gap_deadline_tick, Some(8));
+        assert_eq!(first.checkpoint.buffered_events.len(), 1);
+
+        let missing = event(
+            "event-1",
+            "incident-1",
+            1,
+            5,
+            6,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let resume_timeline = [TimelineRecord::Event(missing)];
+        let resumed = run_from_checkpoint_with_gap_policy(
+            &watch(),
+            &authority(),
+            AttentionStrategy::EventTriggered,
+            &resume_timeline,
+            7,
+            first.checkpoint,
+            SequenceGapPolicy::buffered(5, 8),
+        )
+        .unwrap();
+        assert_eq!(resumed.status, ScheduleStatus::Completed);
+        assert_eq!(resumed.metrics.gap_repairs, 1);
+        assert_eq!(resumed.checkpoint.next_sequence, 3);
+        assert!(resumed.checkpoint.buffered_events.is_empty());
+        assert_eq!(resumed.wakes.len(), 2);
+    }
+
+    #[test]
+    fn event_arriving_exactly_at_gap_deadline_cannot_repair_gap() {
+        let later = event(
+            "event-2",
+            "incident-2",
+            2,
+            2,
+            3,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let first = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(later)],
+            5,
+            None,
+            5,
+            8,
+        );
+        let missing = event(
+            "event-1",
+            "incident-1",
+            1,
+            7,
+            8,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let late = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(missing)],
+            8,
+            Some(first.checkpoint),
+            5,
+            8,
+        );
+        assert_eq!(late.status, ScheduleStatus::DeliveryGap);
+        assert_eq!(late.metrics.gap_timeouts, 1);
+        assert_eq!(late.metrics.wakeups, 0);
+        assert_eq!(late.checkpoint.next_sequence, 1);
+        assert_eq!(late.checkpoint.buffered_events.len(), 1);
+    }
+
+    #[test]
+    fn event_arriving_after_gap_deadline_cannot_repair_gap() {
+        let later = event(
+            "event-2",
+            "incident-2",
+            2,
+            2,
+            3,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let first = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(later)],
+            5,
+            None,
+            5,
+            8,
+        );
+        let missing = event(
+            "event-1",
+            "incident-1",
+            1,
+            8,
+            9,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let late = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(missing)],
+            9,
+            Some(first.checkpoint),
+            5,
+            8,
+        );
+        assert_eq!(late.status, ScheduleStatus::DeliveryGap);
+        assert_eq!(late.metrics.gap_timeouts, 1);
+        assert_eq!(late.metrics.wakeups, 0);
+        assert_eq!(late.checkpoint.next_sequence, 1);
+        assert_eq!(late.checkpoint.buffered_events.len(), 1);
+    }
+
+    #[test]
+    fn final_watermark_without_later_event_reports_pending_then_timeout() {
+        let pending = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Watermark(watermark(3, 4, true))],
+            7,
+            None,
+            5,
+            8,
+        );
+        assert_eq!(pending.status, ScheduleStatus::DeliveryGapPending);
+        assert_eq!(pending.checkpoint.gap_started_at_tick, Some(4));
+        assert_eq!(pending.checkpoint.gap_deadline_tick, Some(9));
+
+        let timed_out = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[],
+            9,
+            Some(pending.checkpoint),
+            5,
+            8,
+        );
+        assert_eq!(timed_out.status, ScheduleStatus::DeliveryGap);
+        assert_eq!(timed_out.metrics.gap_timeouts, 1);
+        assert_ne!(timed_out.status, ScheduleStatus::Quiet);
+    }
+
+    #[test]
+    fn watermark_only_gap_requires_source_cursor_to_be_reached_before_clearing() {
+        let pending = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Watermark(watermark(2, 4, true))],
+            5,
+            None,
+            5,
+            8,
+        );
+        assert_eq!(pending.status, ScheduleStatus::DeliveryGapPending);
+        assert_eq!(pending.checkpoint.observed_watermark_next_sequence, Some(2));
+
+        let missing = event(
+            "event-1",
+            "incident-1",
+            1,
+            5,
+            6,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let repaired = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(missing)],
+            7,
+            Some(pending.checkpoint),
+            5,
+            8,
+        );
+        assert_eq!(repaired.status, ScheduleStatus::Completed);
+        assert_eq!(repaired.checkpoint.next_sequence, 2);
+        assert_eq!(repaired.metrics.gap_repairs, 1);
+        assert_eq!(repaired.checkpoint.gap_deadline_tick, None);
+        assert_eq!(
+            repaired.checkpoint.observed_watermark_next_sequence,
+            Some(2)
+        );
+    }
+
+    #[test]
+    fn watermark_gap_with_two_missing_sequences_gets_two_deadlines() {
+        let pending = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Watermark(watermark(3, 4, true))],
+            5,
+            None,
+            5,
+            8,
+        );
+        let event_one = event(
+            "event-1",
+            "incident-1",
+            1,
+            5,
+            6,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let first_repair = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(event_one)],
+            7,
+            Some(pending.checkpoint),
+            5,
+            8,
+        );
+        assert_eq!(first_repair.status, ScheduleStatus::DeliveryGapPending);
+        assert_eq!(first_repair.checkpoint.next_sequence, 2);
+        assert_eq!(first_repair.checkpoint.gap_started_at_tick, Some(6));
+        assert_eq!(first_repair.checkpoint.gap_deadline_tick, Some(11));
+        assert_eq!(first_repair.metrics.gap_repairs, 1);
+
+        let event_two = event(
+            "event-2",
+            "incident-2",
+            2,
+            6,
+            8,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let second_repair = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(event_two)],
+            10,
+            Some(first_repair.checkpoint),
+            5,
+            8,
+        );
+        assert_eq!(second_repair.status, ScheduleStatus::Completed);
+        assert_eq!(second_repair.checkpoint.next_sequence, 3);
+        assert_eq!(second_repair.metrics.gap_repairs, 1);
+        assert_eq!(second_repair.checkpoint.gap_deadline_tick, None);
+    }
+
+    #[test]
+    fn regressing_source_watermark_is_rejected_after_a_higher_watermark() {
+        let first = watermark(3, 4, true);
+        let pending = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Watermark(first)],
+            5,
+            None,
+            5,
+            8,
+        );
+        let regressing = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Watermark(watermark(2, 6, true))],
+            7,
+            Some(pending.checkpoint),
+            5,
+            8,
+        );
+        assert_eq!(regressing.status, ScheduleStatus::OutOfOrder);
+        assert_eq!(regressing.metrics.out_of_order_records, 1);
+        assert_eq!(
+            regressing.checkpoint.observed_watermark_next_sequence,
+            Some(3)
+        );
+    }
+
+    #[test]
+    fn duplicate_buffered_delivery_is_suppressed_without_extra_buffer_slot() {
+        let first = event(
+            "event-2",
+            "incident-2",
+            2,
+            2,
+            3,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let result = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[
+                TimelineRecord::Event(first.clone()),
+                TimelineRecord::Event(first),
+            ],
+            6,
+            None,
+            5,
+            8,
+        );
+        assert_eq!(result.status, ScheduleStatus::DeliveryGapPending);
+        assert_eq!(result.metrics.buffered_events, 1);
+        assert_eq!(result.metrics.duplicates_suppressed, 1);
+        assert_eq!(result.checkpoint.buffered_events.len(), 1);
+    }
+
+    #[test]
+    fn invalid_or_mismatched_gap_policy_is_rejected() {
+        let timeline = vec![TimelineRecord::Event(event(
+            "event-2",
+            "incident-2",
+            2,
+            2,
+            3,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        ))];
+        let result = evaluate_event_schedule_with_gap_policy(
+            &watch(),
+            &authority(),
+            AttentionStrategy::EventTriggered,
+            &timeline,
+            6,
+            None,
+            SequenceGapPolicy::buffered(0, 8),
+        );
+        assert_eq!(result, Err(ScheduleError::InvalidGapPolicy));
+
+        let oversized = evaluate_event_schedule_with_gap_policy(
+            &watch(),
+            &authority(),
+            AttentionStrategy::EventTriggered,
+            &timeline,
+            6,
+            None,
+            SequenceGapPolicy::buffered(5, 65),
+        );
+        assert_eq!(oversized, Err(ScheduleError::InvalidGapPolicy));
+    }
+
+    #[test]
+    fn source_epoch_restart_cannot_discard_an_unresolved_gap() {
+        let later = event(
+            "event-2",
+            "incident-2",
+            2,
+            2,
+            3,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let restart = SourceRestart {
+            source_id: "event-feed-a".into(),
+            previous_epoch: "epoch-1".into(),
+            new_epoch: "epoch-2".into(),
+            sequence_start: 1,
+            at_tick: 4,
+            restart_proof_digest: format!("sha256:{:064x}", 12345),
+        };
+        let result = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[
+                TimelineRecord::Event(later),
+                TimelineRecord::Restart(restart),
+            ],
+            6,
+            None,
+            5,
+            8,
+        );
+        assert_eq!(result.status, ScheduleStatus::SourceEpochMismatch);
+        assert_eq!(result.checkpoint.source_epoch, "epoch-1");
+        assert_eq!(result.checkpoint.buffered_events.len(), 1);
+    }
+
+    #[test]
+    fn checkpoint_rejects_buffered_event_with_wrong_cursor_or_epoch() {
+        let later = event(
+            "event-2",
+            "incident-2",
+            2,
+            2,
+            3,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let pending = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(later)],
+            5,
+            None,
+            5,
+            8,
+        );
+        let mut corrupted = pending.checkpoint;
+        corrupted.buffered_events.get_mut(&2).unwrap().source_epoch = "wrong-epoch".into();
+        let resumed = evaluate_event_schedule_with_gap_policy(
+            &watch(),
+            &authority(),
+            AttentionStrategy::EventTriggered,
+            &[],
+            6,
+            Some(corrupted),
+            SequenceGapPolicy::buffered(5, 8),
+        );
+        assert_eq!(resumed, Err(ScheduleError::InvalidCheckpoint));
+    }
+
+    #[test]
+    fn checkpoint_rejects_gap_deadline_without_pending_sequence_evidence() {
+        let first = event(
+            "event-1",
+            "incident-1",
+            1,
+            2,
+            3,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let initial = run(
+            AttentionStrategy::EventTriggered,
+            &[TimelineRecord::Event(first)],
+        );
+        let mut corrupted = initial.checkpoint;
+        corrupted.gap_started_at_tick = Some(4);
+        corrupted.gap_deadline_tick = Some(9);
+        assert!(corrupted.buffered_events.is_empty());
+        assert_eq!(corrupted.observed_watermark_next_sequence, None);
+
+        let result = evaluate_event_schedule_with_gap_policy(
+            &watch(),
+            &authority(),
+            AttentionStrategy::EventTriggered,
+            &[],
+            6,
+            Some(corrupted),
+            SequenceGapPolicy::buffered(5, 8),
+        );
+        assert_eq!(result, Err(ScheduleError::InvalidCheckpoint));
+    }
+
+    #[test]
+    fn different_identity_reusing_buffered_sequence_is_rejected() {
+        let first = event(
+            "event-2",
+            "incident-2",
+            2,
+            2,
+            3,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let collision = event(
+            "event-2b",
+            "incident-2b",
+            2,
+            3,
+            4,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        let result = run_with_gap(
+            AttentionStrategy::EventTriggered,
+            &[
+                TimelineRecord::Event(first),
+                TimelineRecord::Event(collision),
+            ],
+            6,
+            None,
+            5,
+            8,
+        );
+        assert_eq!(result.status, ScheduleStatus::IdentityCollision);
+        assert_eq!(result.metrics.identity_collisions, 1);
+        assert_eq!(result.checkpoint.buffered_events.len(), 1);
+    }
+
+    #[test]
+    fn buffered_event_budget_is_bounded() {
+        let timeline = vec![
+            TimelineRecord::Event(event(
+                "event-2",
+                "incident-2",
+                2,
+                2,
+                3,
+                30,
+                15,
+                Persistence::PersistentCondition,
+            )),
+            TimelineRecord::Event(event(
+                "event-3",
+                "incident-3",
+                3,
+                3,
+                4,
+                30,
+                15,
+                Persistence::PersistentCondition,
+            )),
+        ];
+        let result = run_with_gap(AttentionStrategy::EventTriggered, &timeline, 6, None, 5, 1);
+        assert_eq!(result.status, ScheduleStatus::BudgetExhausted);
+        assert_eq!(result.metrics.gap_buffer_overflows, 1);
+        assert_eq!(result.checkpoint.buffered_events.len(), 1);
+    }
+
+    #[test]
     fn out_of_order_sequence_is_not_counted_as_a_duplicate() {
         let timeline = vec![
             TimelineRecord::Event(event(
@@ -1703,6 +2792,47 @@ mod tests {
         assert_eq!(result.metrics.restarts_accepted, 1);
         assert_eq!(result.metrics.wakeups, 2);
         assert_eq!(result.checkpoint.source_epoch, "epoch-2");
+    }
+
+    #[test]
+    fn source_restart_resets_epoch_scoped_watermark_cursor() {
+        let mut quiet = event(
+            "event-1",
+            "incident-1",
+            1,
+            2,
+            2,
+            30,
+            15,
+            Persistence::PersistentCondition,
+        );
+        quiet.condition = ConditionOutcome::NoMatch;
+        let timeline = vec![
+            TimelineRecord::Event(quiet),
+            TimelineRecord::Watermark(watermark(2, 3, true)),
+            TimelineRecord::Restart(SourceRestart {
+                source_id: "event-feed-a".into(),
+                previous_epoch: "epoch-1".into(),
+                new_epoch: "epoch-2".into(),
+                sequence_start: 1,
+                at_tick: 4,
+                restart_proof_digest: format!("sha256:{:064x}", 12345),
+            }),
+            TimelineRecord::Watermark(SourceWatermark {
+                source_id: "event-feed-a".into(),
+                source_epoch: "epoch-2".into(),
+                next_sequence: 1,
+                observed_tick: 5,
+                available: true,
+                watermark_digest: format!("sha256:{:064x}", 999),
+            }),
+        ];
+        let result = run_with_gap(AttentionStrategy::EventTriggered, &timeline, 8, None, 5, 8);
+        assert_eq!(result.status, ScheduleStatus::Quiet);
+        assert_eq!(result.metrics.restarts_accepted, 1);
+        assert_eq!(result.checkpoint.source_epoch, "epoch-2");
+        assert_eq!(result.checkpoint.observed_watermark_next_sequence, Some(1));
+        assert_eq!(result.checkpoint.gap_deadline_tick, None);
     }
 
     #[test]
@@ -1915,5 +3045,28 @@ pub fn run_from_checkpoint(
         timeline,
         horizon_tick,
         Some(checkpoint),
+    )
+}
+
+/// Resume a persisted sequence-gap checkpoint under the same explicit bounded
+/// gap policy. A pending checkpoint cannot be resumed through the strict
+/// compatibility wrapper because strict mode has no buffer/deadline semantics.
+pub fn run_from_checkpoint_with_gap_policy(
+    watch: &EventWatch,
+    authority: &AuthorityWindow,
+    strategy: AttentionStrategy,
+    timeline: &[TimelineRecord],
+    horizon_tick: u64,
+    checkpoint: EventCheckpoint,
+    gap_policy: SequenceGapPolicy,
+) -> Result<EventScheduleResult, ScheduleError> {
+    evaluate_event_schedule_with_gap_policy(
+        watch,
+        authority,
+        strategy,
+        timeline,
+        horizon_tick,
+        Some(checkpoint),
+        gap_policy,
     )
 }
