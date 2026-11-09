@@ -68,3 +68,6 @@ The accepted network-state vocabulary includes explicit `disconnected` as well a
 ### Device-profile and posture binding
 
 The result receipt must now bind to the selected peer's device-profile digest, posture digest and exact board revision. DWF-001-29 rejects a receipt from the correct peer ID but a different device-profile digest; DWF-001-30 rejects a receipt tied to a different posture snapshot. These values are fixture assertions, not cryptographic attestation appraisal.
+
+
+The 30-case corpus also binds result receipts to the exact selected peer device-profile digest, posture digest and board revision. The incomplete-receipt negative control includes missing device/posture claims as explicit rejection reasons.
