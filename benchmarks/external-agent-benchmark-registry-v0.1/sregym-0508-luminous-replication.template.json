@@ -68,9 +68,16 @@
     "diagnosis_metric": "native_sregym_diagnosis",
     "mitigation_metric": "native_sregym_mitigation",
     "same_run_e2e_metric": "native_sregym_same_run_diagnosis_and_mitigation",
-    "retry_policy": "no_retry",
+    "retry_policy": "no_additional_end_to_end_retry",
     "dropped_run_policy": "retain_all_started_attempts",
-    "native_benchmark_harness_unchanged": true
+    "native_benchmark_harness_unchanged": true,
+    "attempts_per_scenario": 3,
+    "deployment_start_attempt_limit": 3,
+    "additional_end_to_end_retries": 0,
+    "diagnosis_scoring_semantics": "per_problem_native_diagnosis_oracle_output",
+    "mitigation_scoring_semantics": "per_problem_native_mitigation_state_oracle_output",
+    "same_run_e2e_rule": "diagnosis.success == true AND mitigation.success == true in the same scenario_attempt receipt",
+    "missing_stage_policy": "unknown_and_not_credited_as_success"
   },
   "source_pins": {
     "sregym_repository": "SREGym/SREGym",
@@ -125,7 +132,8 @@
     "retried_attempt_rows": 0,
     "dropped_attempt_rows": 0,
     "attempt_receipt_bundle_digest": null,
-    "result_artifact_digest": null
+    "result_artifact_digest": null,
+    "attempt_receipts_path": null
   },
   "supplemental_metrics": {
     "enabled": false,
