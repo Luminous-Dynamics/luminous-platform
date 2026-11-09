@@ -9,8 +9,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::failure_domains::{
-    audit_observer_independence, ControlDomainProfile, FailureDomainGraph,
-    IndependencePolicy, IndependenceReason, IndependenceStatus,
+    audit_observer_independence, ControlDomainProfile, FailureDomainGraph, IndependencePolicy,
+    IndependenceReason, IndependenceStatus,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -154,13 +154,8 @@ fn compare_pair(
         return Err(CorroborationError::InvalidProfileBinding);
     }
 
-    let report = audit_observer_independence(
-        left_profile,
-        right_profile,
-        graph,
-        audited_at_tick,
-        policy,
-    );
+    let report =
+        audit_observer_independence(left_profile, right_profile, graph, audited_at_tick, policy);
     pair.shared_dependencies = report.shared_dependencies;
     pair.shared_failure_domain_classes = report.shared_failure_domain_classes;
     pair.independence_reasons = report.reasons;
@@ -173,8 +168,7 @@ fn compare_pair(
             PairwiseStatus::Indeterminate
         }
         IndependenceStatus::Invalid => {
-            pair.reasons
-                .push(CorroborationReason::PairwiseAuditInvalid);
+            pair.reasons.push(CorroborationReason::PairwiseAuditInvalid);
             PairwiseStatus::Invalid
         }
     };
@@ -192,7 +186,10 @@ fn summarize_status(
     if current_domain_count < 2 {
         return CandidateCorroborationStatus::SingleDeclaredControlDomain;
     }
-    if pairs.iter().any(|pair| pair.status == PairwiseStatus::Invalid) {
+    if pairs
+        .iter()
+        .any(|pair| pair.status == PairwiseStatus::Invalid)
+    {
         CandidateCorroborationStatus::Invalid
     } else if pairs
         .iter()
@@ -231,7 +228,10 @@ pub fn evaluate_evidence_corroboration(
 
     let mut by_object: BTreeMap<&str, Vec<&SourceEvidence>> = BTreeMap::new();
     for item in evidence {
-        by_object.entry(item.object_ref.as_str()).or_default().push(item);
+        by_object
+            .entry(item.object_ref.as_str())
+            .or_default()
+            .push(item);
     }
 
     let mut output = Vec::with_capacity(by_object.len());
@@ -348,7 +348,9 @@ mod tests {
             subject_id: subject.into(),
             profile_digest: format!(
                 "sha256:{:064x}",
-                subject.bytes().fold(0_u64, |sum, byte| sum + u64::from(byte))
+                subject
+                    .bytes()
+                    .fold(0_u64, |sum, byte| sum + u64::from(byte))
             ),
             graph_revision: "registry-v1".into(),
             roots: [root.to_owned()].into_iter().collect(),
@@ -429,8 +431,14 @@ mod tests {
             evidence("ev-2", "checkout-api", "logs-b", "domain-b"),
         ];
         let profiles = [
-            ("domain-a".to_owned(), profile("domain-a", "process-a", 2, 30)),
-            ("domain-b".to_owned(), profile("domain-b", "process-b", 2, 30)),
+            (
+                "domain-a".to_owned(),
+                profile("domain-a", "process-a", 2, 30),
+            ),
+            (
+                "domain-b".to_owned(),
+                profile("domain-b", "process-b", 2, 30),
+            ),
         ]
         .into_iter()
         .collect();
@@ -454,8 +462,14 @@ mod tests {
             evidence("ev-2", "checkout-api", "logs-b", "domain-b"),
         ];
         let profiles = [
-            ("domain-a".to_owned(), profile("domain-a", "process-a", 2, 30)),
-            ("domain-b".to_owned(), profile("domain-b", "process-b", 2, 30)),
+            (
+                "domain-a".to_owned(),
+                profile("domain-a", "process-a", 2, 30),
+            ),
+            (
+                "domain-b".to_owned(),
+                profile("domain-b", "process-b", 2, 30),
+            ),
         ]
         .into_iter()
         .collect();
@@ -504,7 +518,10 @@ mod tests {
         let mut unknown = profile("domain-b", "process-b", 2, 30);
         unknown.state = InventoryState::Unknown;
         let profiles = [
-            ("domain-a".to_owned(), profile("domain-a", "process-a", 2, 30)),
+            (
+                "domain-a".to_owned(),
+                profile("domain-a", "process-a", 2, 30),
+            ),
             ("domain-b".to_owned(), unknown),
         ]
         .into_iter()
@@ -517,8 +534,14 @@ mod tests {
         );
 
         let stale_profiles = [
-            ("domain-a".to_owned(), profile("domain-a", "process-a", 2, 30)),
-            ("domain-b".to_owned(), profile("domain-b", "process-b", 0, 30)),
+            (
+                "domain-a".to_owned(),
+                profile("domain-a", "process-a", 2, 30),
+            ),
+            (
+                "domain-b".to_owned(),
+                profile("domain-b", "process-b", 0, 30),
+            ),
         ]
         .into_iter()
         .collect();
@@ -545,8 +568,14 @@ mod tests {
             },
         ];
         let profiles = [
-            ("domain-a".to_owned(), profile("domain-a", "process-a", 2, 30)),
-            ("domain-b".to_owned(), profile("domain-b", "process-b", 2, 30)),
+            (
+                "domain-a".to_owned(),
+                profile("domain-a", "process-a", 2, 30),
+            ),
+            (
+                "domain-b".to_owned(),
+                profile("domain-b", "process-b", 2, 30),
+            ),
         ]
         .into_iter()
         .collect();
@@ -579,9 +608,18 @@ mod tests {
             evidence("ev-c", "checkout-api", "source-c", "domain-c"),
         ];
         let profiles = [
-            ("domain-a".to_owned(), profile("domain-a", "process-a", 2, 30)),
-            ("domain-b".to_owned(), profile("domain-b", "process-b", 2, 30)),
-            ("domain-c".to_owned(), profile("domain-c", "process-c", 2, 30)),
+            (
+                "domain-a".to_owned(),
+                profile("domain-a", "process-a", 2, 30),
+            ),
+            (
+                "domain-b".to_owned(),
+                profile("domain-b", "process-b", 2, 30),
+            ),
+            (
+                "domain-c".to_owned(),
+                profile("domain-c", "process-c", 2, 30),
+            ),
         ]
         .into_iter()
         .collect();
@@ -605,8 +643,14 @@ mod tests {
             evidence("ev-2", "checkout-api", "logs-b", "domain-b"),
         ];
         let profiles = [
-            ("domain-a".to_owned(), profile("domain-a", "process-a", 2, 30)),
-            ("domain-b".to_owned(), profile("wrong-subject", "process-b", 2, 30)),
+            (
+                "domain-a".to_owned(),
+                profile("domain-a", "process-a", 2, 30),
+            ),
+            (
+                "domain-b".to_owned(),
+                profile("wrong-subject", "process-b", 2, 30),
+            ),
         ]
         .into_iter()
         .collect();
@@ -644,8 +688,14 @@ mod tests {
             evidence("ev-2", "checkout-api", "logs-b", "domain-b"),
         ];
         let profiles = [
-            ("domain-a".to_owned(), profile("domain-a", "process-a", 2, 30)),
-            ("domain-b".to_owned(), profile("domain-b", "host", 2, 30)),
+            (
+                "domain-a".to_owned(),
+                profile("domain-a", "process-a", 2, 30),
+            ),
+            (
+                "domain-b".to_owned(),
+                profile("domain-b", "host", 2, 30),
+            ),
         ]
         .into_iter()
         .collect();
@@ -676,14 +726,9 @@ mod tests {
             },
         ];
 
-        let rows = evaluate_evidence_corroboration(
-            &evidence,
-            &BTreeMap::new(),
-            &graph,
-            5,
-            policy(),
-        )
-        .unwrap();
+        let rows =
+            evaluate_evidence_corroboration(&evidence, &BTreeMap::new(), &graph, 5, policy())
+                .unwrap();
         assert_eq!(rows[0].current_evidence_count, 0);
         assert_eq!(
             rows[0].status,
@@ -700,8 +745,14 @@ mod tests {
             evidence("z-2", "z-object", "source-b", "domain-a"),
         ];
         let profiles = [
-            ("domain-a".to_owned(), profile("domain-a", "process-a", 2, 30)),
-            ("domain-b".to_owned(), profile("domain-b", "process-b", 2, 30)),
+            (
+                "domain-a".to_owned(),
+                profile("domain-a", "process-a", 2, 30),
+            ),
+            (
+                "domain-b".to_owned(),
+                profile("domain-b", "process-b", 2, 30),
+            ),
         ]
         .into_iter()
         .collect();
@@ -709,7 +760,9 @@ mod tests {
         let rows =
             evaluate_evidence_corroboration(&evidence, &profiles, &graph, 5, policy()).unwrap();
         assert_eq!(
-            rows.iter().map(|row| row.object_ref.as_str()).collect::<Vec<_>>(),
+            rows.iter()
+                .map(|row| row.object_ref.as_str())
+                .collect::<Vec<_>>(),
             vec!["a-object", "z-object"]
         );
         assert_eq!(rows[1].pairwise.len(), 1);
