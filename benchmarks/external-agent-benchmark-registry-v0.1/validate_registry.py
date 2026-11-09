@@ -154,7 +154,7 @@ def native_sregym_semantic_errors(manifest: dict[str, Any]) -> list[str]:
         if cohort["scenario_count"] != 17:
             errors.append("SREGym-Lite-1004: the captured Lite cohort has 17 scenarios; do not substitute the full cohort")
 
-    inventory = cohort["inventory_source"]
+    inventory = cohort["cohort_observation_source"]
     capture_status = inventory["capture_status"]
     if capture_status == "metadata_only" and (
         inventory["git_blob_sha"] is not None or inventory["content_sha256"] is not None
@@ -174,6 +174,10 @@ def native_sregym_semantic_errors(manifest: dict[str, Any]) -> list[str]:
         errors.append("accounting: completed + missing attempt rows must equal the expected denominator")
     if accounting["started_attempt_rows"] > accounting["expected_attempt_rows"] + accounting["retried_attempt_rows"]:
         errors.append("accounting: started attempts cannot exceed expected attempts plus declared retries")
+    if accounting["completed_attempt_rows"] > accounting["started_attempt_rows"]:
+        errors.append("accounting: completed attempt rows cannot exceed attempts actually started")
+    if manifest["profile_status"] == "executed" and accounting["started_attempt_rows"] < accounting["expected_attempt_rows"]:
+        errors.append("executed: every expected attempt must have been started")
     if accounting["dropped_attempt_rows"] > accounting["missing_attempt_rows"]:
         errors.append("accounting: dropped rows must be included in the missing-row count")
     if accounting["dropped_attempt_rows"] != 0:
@@ -194,7 +198,7 @@ def native_sregym_semantic_errors(manifest: dict[str, Any]) -> list[str]:
     arm_ids = [arm["arm_id"] for arm in arms]
     if len(set(arm_ids)) != len(arm_ids):
         errors.append("arms: arm_id values must be unique")
-    if not protocol["native_tool_surface_unchanged"]:
+    if not protocol["native_benchmark_harness_unchanged"]:
         errors.append("native_protocol: the official native reference arm/tool surface must remain unchanged")
 
     if design["comparison_mode"] == "native_replication":
