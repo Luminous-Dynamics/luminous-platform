@@ -2329,6 +2329,57 @@ mod tests {
     }
 
     #[test]
+    fn exact_model_tokenizer_over_budget_is_rejected_before_session_creation() {
+        let tight = ContextBudget {
+            maximum_input_tokens: 100,
+            ..budget()
+        };
+        let results = run_paired_context_ablation(
+            &input(),
+            &truth(),
+            tight,
+            &test_order(),
+            &mut ExactTokenizerReasoner {
+                profile: None,
+                preflight_tokens: Some(101),
+                actual_usage_tokens: 101,
+            },
+        )
+        .unwrap();
+        assert!(results.iter().all(|result| result.status == ArmStatus::BudgetExceeded));
+        assert!(results.iter().all(|result| result.model_token_preflight == Some(101)));
+        assert!(results.iter().all(|result| result.reasoner_session_id.is_none()));
+        assert!(results.iter().all(|result| result.usage.is_none()));
+    }
+
+    #[test]
+    fn unavailable_tokenizer_is_checked_against_actual_usage_after_call() {
+        let tight = ContextBudget {
+            maximum_input_tokens: 100,
+            ..budget()
+        };
+        let results = run_paired_context_ablation(
+            &input(),
+            &truth(),
+            tight,
+            &test_order(),
+            &mut ExactTokenizerReasoner {
+                profile: None,
+                preflight_tokens: None,
+                actual_usage_tokens: 101,
+            },
+        )
+        .unwrap();
+        assert!(results.iter().all(|result| result.status == ArmStatus::BudgetExceeded));
+        assert!(results.iter().all(|result| result.model_token_preflight.is_none()));
+        assert!(results.iter().all(|result| result.reasoner_session_id.is_some()));
+        assert!(results.iter().all(|result| {
+            result.usage.as_ref().is_some_and(|usage| usage.input_tokens == 101)
+        }));
+        assert!(results.iter().all(|result| result.score.is_none()));
+    }
+
+    #[test]
     fn runner_rejects_effective_model_manifest_drift() {
         assert_eq!(
             run_paired_context_ablation(
