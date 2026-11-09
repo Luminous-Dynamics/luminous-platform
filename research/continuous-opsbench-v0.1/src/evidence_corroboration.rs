@@ -89,6 +89,11 @@ pub struct CandidateCorroboration {
     /// Unique control-domain labels over all records, including stale records.
     pub declared_control_domain_count: usize,
     pub current_evidence_count: usize,
+    pub stale_evidence_count: usize,
+    pub future_dated_evidence_count: usize,
+    pub expired_evidence_count: usize,
+    pub absent_evidence_count: usize,
+    pub unknown_evidence_count: usize,
     pub current_source_count: usize,
     pub current_control_domain_count: usize,
     /// Count of pairwise no-declared-overlap results, never a count of proven-independent sources.
@@ -301,6 +306,21 @@ pub fn evaluate_evidence_corroboration(
                     == EvidenceFreshness::Current
             })
             .collect();
+        let freshness_counts = |freshness| {
+            records
+                .iter()
+                .filter(|item| {
+                    classify_freshness(item, audited_at_tick, maximum_evidence_age_ticks)
+                        == freshness
+                })
+                .count()
+        };
+        let stale_evidence_count = freshness_counts(EvidenceFreshness::Stale);
+        let future_dated_evidence_count = freshness_counts(EvidenceFreshness::FutureDated);
+        let expired_evidence_count = freshness_counts(EvidenceFreshness::Expired);
+        let absent_evidence_count = freshness_counts(EvidenceFreshness::Absent);
+        let unknown_evidence_count = freshness_counts(EvidenceFreshness::Unknown);
+
         let current_source_count = current
             .iter()
             .map(|item| item.source_id.as_str())
@@ -356,6 +376,11 @@ pub fn evaluate_evidence_corroboration(
             declared_source_count,
             declared_control_domain_count,
             current_evidence_count,
+            stale_evidence_count,
+            future_dated_evidence_count,
+            expired_evidence_count,
+            absent_evidence_count,
+            unknown_evidence_count,
             current_source_count,
             current_control_domain_count,
             no_declared_overlap_pair_count,
@@ -462,6 +487,9 @@ mod tests {
         assert_eq!(rows[0].declared_source_count, 3);
         assert_eq!(rows[0].declared_control_domain_count, 1);
         assert_eq!(rows[0].current_control_domain_count, 1);
+        assert_eq!(rows[0].stale_evidence_count, 1);
+        assert_eq!(rows[0].future_dated_evidence_count, 0);
+        assert_eq!(rows[0].expired_evidence_count, 0);
         assert_eq!(rows[0].no_declared_overlap_pair_count, 0);
         assert_eq!(
             rows[0].status,
@@ -862,6 +890,8 @@ mod tests {
             evaluate_evidence_corroboration(&evidence, &BTreeMap::new(), &graph, 5, 10, policy())
                 .unwrap();
         assert_eq!(rows[0].current_evidence_count, 0);
+        assert_eq!(rows[0].absent_evidence_count, 1);
+        assert_eq!(rows[0].unknown_evidence_count, 1);
         assert_eq!(
             rows[0].status,
             CandidateCorroborationStatus::NoCurrentEvidence
