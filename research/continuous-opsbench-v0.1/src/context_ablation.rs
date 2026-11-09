@@ -248,11 +248,7 @@ pub trait ContextReasoner {
     /// It receives no evaluator-owned truth, expected root, or required evidence IDs.
     /// The adapter must use a fresh conversation/session per call while keeping
     /// the packet's model, prompt, reasoning-effort and seed manifest unchanged.
-    fn diagnose(
-        &mut self,
-        packet: &ContextPacket,
-        budget: ContextBudget,
-    ) -> ReasonerResponse;
+    fn diagnose(&mut self, packet: &ContextPacket, budget: ContextBudget) -> ReasonerResponse;
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -364,7 +360,9 @@ fn validate_input(input: &ContextExperimentInput) -> Result<(), ContextExperimen
             || !non_empty(&item.field_path)
             || (item.state == EvidenceState::Present && item.value.is_none())
             || (item.state != EvidenceState::Present && item.value.is_some())
-            || item.valid_until_ms.is_some_and(|end| end <= item.observed_at_ms)
+            || item
+                .valid_until_ms
+                .is_some_and(|end| end <= item.observed_at_ms)
         {
             return Err(ContextExperimentError::InvalidEvidenceRecord);
         }
@@ -442,9 +440,7 @@ fn freshness(item: &ContextEvidence, input: &ContextExperimentInput) -> Freshnes
     {
         return Freshness::Expired;
     }
-    if input.audited_at_ms.saturating_sub(item.observed_at_ms)
-        > input.maximum_evidence_age_ms
-    {
+    if input.audited_at_ms.saturating_sub(item.observed_at_ms) > input.maximum_evidence_age_ms {
         return Freshness::Stale;
     }
     Freshness::Current
@@ -491,12 +487,18 @@ fn object_diffs(evidence: &[ContextEvidence]) -> Vec<ObjectDiff> {
         })
         .collect();
     diffs.sort_by(|left, right| {
-        (&left.object_ref, &left.field_path, left.observed_at_ms, &left.evidence_id).cmp(&(
-            &right.object_ref,
-            &right.field_path,
-            right.observed_at_ms,
-            &right.evidence_id,
-        ))
+        (
+            &left.object_ref,
+            &left.field_path,
+            left.observed_at_ms,
+            &left.evidence_id,
+        )
+            .cmp(&(
+                &right.object_ref,
+                &right.field_path,
+                right.observed_at_ms,
+                &right.evidence_id,
+            ))
     });
     diffs
 }
@@ -859,12 +861,15 @@ fn score_answer(
             / truth.required_evidence_ids.len() as u64) as u32
     };
 
-    let root_object_visible = answer.root_object_ref.as_deref().is_some_and(|root| {
-        object_by_id.values().any(|object_ref| *object_ref == root)
-    });
+    let root_object_visible = answer
+        .root_object_ref
+        .as_deref()
+        .is_some_and(|root| object_by_id.values().any(|object_ref| *object_ref == root));
     let root_object_grounded = answer.root_object_ref.as_deref().is_some_and(|root| {
         supported.iter().any(|evidence_id| {
-            object_by_id.get(evidence_id).is_some_and(|object_ref| *object_ref == root)
+            object_by_id
+                .get(evidence_id)
+                .is_some_and(|object_ref| *object_ref == root)
         }) || packet.relations.iter().any(|relation| {
             relation.state == EvidenceState::Present
                 && relation.from_object == packet.target_object_ref
@@ -953,8 +958,8 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
         } else {
             ArmStatus::Scored
         };
-        let score = (status == ArmStatus::Scored)
-            .then(|| score_answer(&packet, truth, &response.answer));
+        let score =
+            (status == ArmStatus::Scored).then(|| score_answer(&packet, truth, &response.answer));
         results.push(ContextArmResult {
             scenario_id: packet.scenario_id.clone(),
             paired_block_id: packet.paired_block_id.clone(),
@@ -982,7 +987,13 @@ mod tests {
         Digest::from_byte(byte)
     }
 
-    fn evidence(id: &str, source: &str, object_ref: &str, kind: EvidenceKind, observed: u64) -> ContextEvidence {
+    fn evidence(
+        id: &str,
+        source: &str,
+        object_ref: &str,
+        kind: EvidenceKind,
+        observed: u64,
+    ) -> ContextEvidence {
         ContextEvidence {
             evidence_id: id.into(),
             source_id: source.into(),
@@ -1001,10 +1012,34 @@ mod tests {
 
     fn input() -> ContextExperimentInput {
         let evidence = vec![
-            evidence("ev-alert", "alertmanager", "checkout-api", EvidenceKind::Alert, 990),
-            evidence("ev-metric", "prometheus", "checkout-api", EvidenceKind::Metric, 995),
-            evidence("ev-change", "git", "payments-config", EvidenceKind::Change, 980),
-            evidence("ev-node", "node-exporter", "worker-7", EvidenceKind::Node, 800),
+            evidence(
+                "ev-alert",
+                "alertmanager",
+                "checkout-api",
+                EvidenceKind::Alert,
+                990,
+            ),
+            evidence(
+                "ev-metric",
+                "prometheus",
+                "checkout-api",
+                EvidenceKind::Metric,
+                995,
+            ),
+            evidence(
+                "ev-change",
+                "git",
+                "payments-config",
+                EvidenceKind::Change,
+                980,
+            ),
+            evidence(
+                "ev-node",
+                "node-exporter",
+                "worker-7",
+                EvidenceKind::Node,
+                800,
+            ),
             ContextEvidence {
                 evidence_id: "ev-unknown".into(),
                 source_id: "traces".into(),
@@ -1069,8 +1104,12 @@ mod tests {
                 .first()
                 .map(|candidate| candidate.object_ref.clone())
                 .or_else(|| match &packet.evidence {
-                    ContextPresentation::Raw(records) => records.first().map(|item| item.object_ref.clone()),
-                    ContextPresentation::Normalized(records) => records.first().map(|item| item.object_ref.clone()),
+                    ContextPresentation::Raw(records) => {
+                        records.first().map(|item| item.object_ref.clone())
+                    }
+                    ContextPresentation::Normalized(records) => {
+                        records.first().map(|item| item.object_ref.clone())
+                    }
                 });
             let supporting_evidence_ids = match &packet.evidence {
                 ContextPresentation::Raw(records) => records
@@ -1136,8 +1175,7 @@ mod tests {
         let input = input();
         let (normalized, _) =
             compile_context_packet(&input, ContextArm::NormalizedRecords).unwrap();
-        let (topology, _) =
-            compile_context_packet(&input, ContextArm::TopologyAndDiffs).unwrap();
+        let (topology, _) = compile_context_packet(&input, ContextArm::TopologyAndDiffs).unwrap();
         let (temporal, _) =
             compile_context_packet(&input, ContextArm::TemporalAndFreshness).unwrap();
 
@@ -1155,8 +1193,7 @@ mod tests {
     #[test]
     fn ranking_is_deterministic_and_never_uses_evaluator_truth() {
         let input = input();
-        let (packet, _) =
-            compile_context_packet(&input, ContextArm::RankedCausalEvidence).unwrap();
+        let (packet, _) = compile_context_packet(&input, ContextArm::RankedCausalEvidence).unwrap();
         assert_eq!(
             packet.ranked_candidates.first().unwrap().object_ref,
             "checkout-api"
@@ -1182,9 +1219,13 @@ mod tests {
         .unwrap();
         assert_eq!(reasoner.calls, CONTEXT_COMPILATION_ARMS);
         assert_eq!(results.len(), 5);
-        assert!(results.iter().all(|result| result.status == ArmStatus::Scored));
+        assert!(results
+            .iter()
+            .all(|result| result.status == ArmStatus::Scored));
         assert!(results.iter().all(|result| result.profile == input.profile));
-        assert!(results.iter().all(|result| result.paired_block_id == "fault-kafka-01-seed-7"));
+        assert!(results
+            .iter()
+            .all(|result| result.paired_block_id == "fault-kafka-01-seed-7"));
         assert!(results.iter().all(|result| result.attempt_id == 1));
         assert!(results[0].score.as_ref().unwrap().required_evidence_total == 1);
     }
@@ -1235,8 +1276,7 @@ mod tests {
             digest: digest(8),
         });
 
-        let (packet, _) =
-            compile_context_packet(&input, ContextArm::TemporalAndFreshness).unwrap();
+        let (packet, _) = compile_context_packet(&input, ContextArm::TemporalAndFreshness).unwrap();
         let states: BTreeMap<_, _> = packet
             .temporal
             .iter()
@@ -1251,9 +1291,10 @@ mod tests {
     fn raw_context_encoding_escapes_delimiters_and_preserves_validity_bounds() {
         let mut input = input();
         input.evidence[0].value = Some("bad|value\\ncontinued".into());
-        let (packet, _) =
-            compile_context_packet(&input, ContextArm::RawSourceRecords).unwrap();
-        assert!(packet.rendered_context.contains("bad\\|value\\\\ncontinued"));
+        let (packet, _) = compile_context_packet(&input, ContextArm::RawSourceRecords).unwrap();
+        assert!(packet
+            .rendered_context
+            .contains("bad\\|value\\\\ncontinued"));
         assert!(packet.rendered_context.contains("Some(10000)"));
     }
 
@@ -1277,8 +1318,7 @@ mod tests {
     #[test]
     fn correct_root_guess_without_visible_support_is_not_grounded() {
         let input = input();
-        let (packet, _) =
-            compile_context_packet(&input, ContextArm::NormalizedRecords).unwrap();
+        let (packet, _) = compile_context_packet(&input, ContextArm::NormalizedRecords).unwrap();
         let answer = DiagnosisAnswer {
             root_object_ref: Some("payments-config".into()),
             supporting_evidence_ids: vec!["ev-node".into()],
@@ -1295,7 +1335,9 @@ mod tests {
     #[test]
     fn missing_required_evidence_and_unknown_records_remain_distinct() {
         let mut invalid_truth = truth();
-        invalid_truth.required_evidence_ids.insert("not-in-universe".into());
+        invalid_truth
+            .required_evidence_ids
+            .insert("not-in-universe".into());
         assert_eq!(
             run_paired_context_ablation(
                 &input(),
@@ -1323,7 +1365,9 @@ mod tests {
         )
         .unwrap();
         assert_eq!(results.len(), 5);
-        assert!(results.iter().all(|result| result.status == ArmStatus::BudgetExceeded));
+        assert!(results
+            .iter()
+            .all(|result| result.status == ArmStatus::BudgetExceeded));
         assert!(results.iter().all(|result| result.score.is_none()));
     }
 
