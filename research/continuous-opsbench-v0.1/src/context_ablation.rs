@@ -350,6 +350,8 @@ pub struct ContextGroundTruth {
 pub enum ArmStatus {
     Scored,
     BudgetExceeded,
+    /// Exact model-token preflight was unavailable, so no model call was made.
+    PreflightUnavailable,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -357,9 +359,16 @@ pub struct ContextScore {
     pub root_cause_correct: bool,
     pub root_object_visible: bool,
     pub root_object_grounded: bool,
+    /// Cited IDs that exist and are Present/Absent, irrespective of freshness.
     pub supported_evidence_precision_ppm: u32,
+    /// Cited IDs that are also fresh/current at the evaluator cutoff.
+    pub fresh_evidence_precision_ppm: u32,
     pub required_evidence_recall_ppm: u32,
+    /// Required evidence cited and current at the evaluator cutoff.
+    pub fresh_required_evidence_recall_ppm: u32,
     pub unsupported_evidence_claims: usize,
+    /// Valid source-backed citations that were stale, expired or future-dated.
+    pub stale_or_future_evidence_claims: usize,
     pub required_evidence_visible: usize,
     pub required_evidence_total: usize,
 }
@@ -982,7 +991,9 @@ fn score_answer(
     let mut claimed = BTreeSet::new();
     let mut claim_count = 0_usize;
     let mut supported = BTreeSet::new();
+    let mut fresh_supported = BTreeSet::new();
     let mut unsupported = 0_usize;
+    let mut stale_or_future = 0_usize;
     for evidence_id in &answer.supporting_evidence_ids {
         claim_count += 1;
         if !claimed.insert(evidence_id.as_str()) {
@@ -992,6 +1003,11 @@ fn score_answer(
         match state_by_id.get(evidence_id.as_str()) {
             Some(EvidenceState::Present | EvidenceState::Absent) => {
                 supported.insert(evidence_id.clone());
+                if current_evidence_ids.contains(evidence_id.as_str()) {
+                    fresh_supported.insert(evidence_id.clone());
+                } else {
+                    stale_or_future += 1;
+                }
             }
             _ => unsupported += 1,
         }
@@ -1002,18 +1018,35 @@ fn score_answer(
     } else {
         ((supported.len() as u64 * 1_000_000) / claim_count as u64) as u32
     };
+    let fresh_precision = if claim_count == 0 {
+        0
+    } else {
+        ((fresh_supported.len() as u64 * 1_000_000) / claim_count as u64) as u32
+    };
     let required_visible = truth
         .required_evidence_ids
         .intersection(&packet.evidence_ids)
         .count();
+    let required_supported: BTreeSet<String> = truth
+        .required_evidence_ids
+        .intersection(&supported)
+        .cloned()
+        .collect();
+    let required_fresh_supported: BTreeSet<String> = truth
+        .required_evidence_ids
+        .intersection(&fresh_supported)
+        .cloned()
+        .collect();
     let recall = if truth.required_evidence_ids.is_empty() {
         0
     } else {
-        ((truth
-            .required_evidence_ids
-            .intersection(&supported.iter().map(|id| (*id).to_owned()).collect())
-            .count() as u64
-            * 1_000_000)
+        ((required_supported.len() as u64 * 1_000_000)
+            / truth.required_evidence_ids.len() as u64) as u32
+    };
+    let fresh_recall = if truth.required_evidence_ids.is_empty() {
+        0
+    } else {
+        ((required_fresh_supported.len() as u64 * 1_000_000)
             / truth.required_evidence_ids.len() as u64) as u32
     };
 
@@ -1053,8 +1086,11 @@ fn score_answer(
         root_object_visible,
         root_object_grounded,
         supported_evidence_precision_ppm: precision,
+        fresh_evidence_precision_ppm: fresh_precision,
         required_evidence_recall_ppm: recall,
+        fresh_required_evidence_recall_ppm: fresh_recall,
         unsupported_evidence_claims: unsupported,
+        stale_or_future_evidence_claims: stale_or_future,
         required_evidence_visible: required_visible,
         required_evidence_total: truth.required_evidence_ids.len(),
     }
@@ -1129,10 +1165,17 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
         let reasoner_profile = ReasonerSetupProfile::from(&packet.profile);
         let model_token_preflight =
             reasoner.count_input_tokens(&reasoner_profile, &packet.rendered_context);
-        if packet.context_bytes > budget.maximum_context_bytes
+        let preflight_status = if packet.context_bytes > budget.maximum_context_bytes
             || model_token_preflight
                 .is_some_and(|tokens| tokens > budget.maximum_input_tokens)
         {
+            Some(ArmStatus::BudgetExceeded)
+        } else if model_token_preflight.is_none() {
+            Some(ArmStatus::PreflightUnavailable)
+        } else {
+            None
+        };
+        if let Some(status) = preflight_status {
             let adapter_setup_time_micros = adapter_setup_started.elapsed().as_micros();
             let total_arm_time_micros = arm_started.elapsed().as_micros();
             results.push(ContextArmResult {
@@ -1144,7 +1187,7 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
                 budget,
                 arm_order_position: arm_order_position as u8,
                 arm: *arm,
-                status: ArmStatus::BudgetExceeded,
+                status,
                 compiler_time_micros,
                 adapter_setup_time_micros,
                 total_arm_time_micros,
@@ -1223,6 +1266,7 @@ pub struct ContextArmAggregate {
     pub paired_blocks: usize,
     pub scored_blocks: usize,
     pub budget_exceeded_blocks: usize,
+    pub preflight_unavailable_blocks: usize,
     pub correct_roots: usize,
     pub grounded_roots: usize,
     /// Correct/grounded counts divided by every paired block, including budget misses.
@@ -1267,6 +1311,8 @@ pub struct ContextArmContrast {
     pub both_invoked_blocks: usize,
     pub candidate_budget_exceeded_blocks: usize,
     pub raw_budget_exceeded_blocks: usize,
+    pub candidate_preflight_unavailable_blocks: usize,
+    pub raw_preflight_unavailable_blocks: usize,
     /// Candidate minus raw, over all paired blocks (budget misses remain in denominator).
     pub correct_rate_delta_all_ppm: i64,
     pub grounded_rate_delta_all_ppm: i64,
@@ -1469,10 +1515,14 @@ pub fn analyze_paired_context_results(
             return Err(ContextExperimentError::InvalidExperimentProfile);
         }
         let invoked = result.reasoner_time_micros.is_some();
-        let preflight_rejected = result.context_bytes > result.budget.maximum_context_bytes
-            || result
-                .model_token_preflight
-                .is_some_and(|tokens| tokens > result.budget.maximum_input_tokens);
+        let byte_or_token_budget_exceeded =
+            result.context_bytes > result.budget.maximum_context_bytes
+                || result
+                    .model_token_preflight
+                    .is_some_and(|tokens| tokens > result.budget.maximum_input_tokens);
+        let preflight_unavailable =
+            result.context_bytes <= result.budget.maximum_context_bytes
+                && result.model_token_preflight.is_none();
         let actual_usage_exceeded = result.usage.as_ref().is_some_and(|usage| {
             usage.input_tokens > result.budget.maximum_input_tokens
                 || usage.output_tokens > result.budget.maximum_output_tokens
@@ -1485,10 +1535,14 @@ pub fn analyze_paired_context_results(
             || invoked != result.usage.is_some()
             || invoked != result.reasoner_session_id.is_some()
             || invoked != result.answer.is_some()
-            || (preflight_rejected && invoked)
+            || (byte_or_token_budget_exceeded
+                && (invoked || result.status != ArmStatus::BudgetExceeded))
+            || (preflight_unavailable
+                && (invoked || result.status != ArmStatus::PreflightUnavailable))
             || (actual_usage_exceeded && result.status != ArmStatus::BudgetExceeded)
             || (wall_time_exceeded && result.status != ArmStatus::BudgetExceeded)
-            || (result.status == ArmStatus::Scored && preflight_rejected)
+            || (result.status == ArmStatus::Scored
+                && (byte_or_token_budget_exceeded || preflight_unavailable))
         {
             return Err(ContextExperimentError::InvalidExperimentProfile);
         }
@@ -1639,7 +1693,14 @@ pub fn analyze_paired_context_results(
                 .copied()
                 .filter(|row| row.status == ArmStatus::Scored)
                 .collect();
-            let budget_exceeded_blocks = n - scored.len();
+            let budget_exceeded_blocks = rows
+                .iter()
+                .filter(|row| row.status == ArmStatus::BudgetExceeded)
+                .count();
+            let preflight_unavailable_blocks = rows
+                .iter()
+                .filter(|row| row.status == ArmStatus::PreflightUnavailable)
+                .count();
             let correct_roots = scored
                 .iter()
                 .filter(|row| {
@@ -1689,6 +1750,7 @@ pub fn analyze_paired_context_results(
                 paired_blocks: n,
                 scored_blocks: scored.len(),
                 budget_exceeded_blocks,
+                preflight_unavailable_blocks,
                 correct_roots,
                 grounded_roots,
                 correct_rate_all_ppm: rate_ppm(correct_roots, n),
@@ -1918,6 +1980,14 @@ pub fn analyze_paired_context_results(
                 raw_budget_exceeded_blocks: raw_rows
                     .iter()
                     .filter(|row| row.status == ArmStatus::BudgetExceeded)
+                    .count(),
+                candidate_preflight_unavailable_blocks: candidate_rows
+                    .iter()
+                    .filter(|row| row.status == ArmStatus::PreflightUnavailable)
+                    .count(),
+                raw_preflight_unavailable_blocks: raw_rows
+                    .iter()
+                    .filter(|row| row.status == ArmStatus::PreflightUnavailable)
                     .count(),
                 correct_rate_delta_all_ppm: rate_ppm(candidate_correct_all, n) as i64
                     - rate_ppm(raw_correct_all, n) as i64,
@@ -2215,8 +2285,11 @@ mod tests {
                 root_object_visible: true,
                 root_object_grounded: grounded,
                 supported_evidence_precision_ppm: 1_000_000,
+                fresh_evidence_precision_ppm: 1_000_000,
                 required_evidence_recall_ppm: if grounded { 1_000_000 } else { 0 },
+                fresh_required_evidence_recall_ppm: if grounded { 1_000_000 } else { 0 },
                 unsupported_evidence_claims: 0,
+                stale_or_future_evidence_claims: 0,
                 required_evidence_visible: 1,
                 required_evidence_total: 1,
             }),
