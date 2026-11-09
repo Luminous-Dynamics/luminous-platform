@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:assurance-case-report:0.1",
+  "title": "Executable assurance case report 0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "report_contract",
+    "case_id",
+    "outcome",
+    "input_sha256",
+    "root_claim_id",
+    "decision_scope",
+    "claim_assessments",
+    "open_defeater_ids",
+    "unresolved_assumption_ids",
+    "invalid_reasons",
+    "claim_ceiling"
+  ],
+  "properties": {
+    "report_contract": {
+      "const": "luminous.executable-assurance-case-report/0.1"
+    },
+    "case_id": {
+      "type": "string"
+    },
+    "outcome": {
+      "enum": [
+        "SUPPORTED_FOR_DECLARED_SCOPE",
+        "DEFEATED",
+        "INDETERMINATE",
+        "INVALID_ARGUMENT_GRAPH"
+      ]
+    },
+    "input_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "root_claim_id": {
+      "type": "string"
+    },
+    "decision_scope": {
+      "type": "string"
+    },
+    "claim_assessments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "claim_id",
+          "outcome",
+          "reason_codes"
+        ],
+        "properties": {
+          "claim_id": {
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "SUPPORTED",
+              "DEFEATED",
+              "INDETERMINATE"
+            ]
+          },
+          "reason_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "open_defeater_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "unresolved_assumption_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "invalid_reasons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "claim_ceiling": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}
