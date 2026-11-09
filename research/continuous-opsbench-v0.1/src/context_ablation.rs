@@ -107,6 +107,8 @@ pub struct ContextExperimentProfile {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ContextExperimentInput {
     pub scenario_id: String,
+    /// Evaluator-side stratum label. It is deliberately not sent to the reasoner.
+    pub fault_family_id: String,
     pub paired_block_id: String,
     pub attempt_id: u32,
     pub profile: ContextExperimentProfile,
@@ -279,6 +281,7 @@ pub struct ContextScore {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ContextArmResult {
     pub scenario_id: String,
+    pub fault_family_id: String,
     pub paired_block_id: String,
     pub attempt_id: u32,
     pub profile: ContextExperimentProfile,
@@ -296,11 +299,15 @@ pub struct ContextArmResult {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ContextExperimentError {
     EmptyScenarioId,
+    EmptyFaultFamilyId,
     EmptyTargetObject,
     EmptyPairedBlockId,
     InvalidExperimentProfile,
     EmptyEvidence,
     DuplicateEvidenceId,
+    DuplicateArmResult,
+    IncompletePairedBlock,
+    ManifestMismatch,
     InvalidEvidenceRecord,
     DuplicateRelationId,
     InvalidRelation,
@@ -334,6 +341,9 @@ fn escape_field(value: &str) -> String {
 fn validate_input(input: &ContextExperimentInput) -> Result<(), ContextExperimentError> {
     if !non_empty(&input.scenario_id) {
         return Err(ContextExperimentError::EmptyScenarioId);
+    }
+    if !non_empty(&input.fault_family_id) {
+        return Err(ContextExperimentError::EmptyFaultFamilyId);
     }
     if !non_empty(&input.target_object_ref) {
         return Err(ContextExperimentError::EmptyTargetObject);
@@ -930,6 +940,7 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
         {
             results.push(ContextArmResult {
                 scenario_id: packet.scenario_id.clone(),
+                fault_family_id: input.fault_family_id.clone(),
                 paired_block_id: packet.paired_block_id.clone(),
                 attempt_id: packet.attempt_id,
                 profile: packet.profile.clone(),
@@ -962,6 +973,7 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
             (status == ArmStatus::Scored).then(|| score_answer(&packet, truth, &response.answer));
         results.push(ContextArmResult {
             scenario_id: packet.scenario_id.clone(),
+            fault_family_id: input.fault_family_id.clone(),
             paired_block_id: packet.paired_block_id.clone(),
             attempt_id: packet.attempt_id,
             profile: packet.profile.clone(),
@@ -977,6 +989,343 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
         });
     }
     Ok(results)
+}
+
+
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ContextArmAggregate {
+    pub fault_family_id: String,
+    pub arm: ContextArm,
+    pub paired_blocks: usize,
+    pub scored_blocks: usize,
+    pub budget_exceeded_blocks: usize,
+    pub correct_roots: usize,
+    pub grounded_roots: usize,
+    /// Correct/grounded counts divided by every paired block, including budget misses.
+    pub correct_rate_all_ppm: u32,
+    pub grounded_rate_all_ppm: u32,
+    /// Conditional rates among scored blocks; always accompanied by scored_blocks.
+    pub correct_rate_scored_ppm: Option<u32>,
+    pub grounded_rate_scored_ppm: Option<u32>,
+    pub mean_context_bytes: u128,
+    pub mean_estimated_input_tokens: u128,
+    pub mean_actual_input_tokens_scored: Option<u128>,
+    pub mean_reasoner_time_micros_scored: Option<u128>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ContextArmContrast {
+    pub fault_family_id: String,
+    pub arm: ContextArm,
+    pub paired_blocks: usize,
+    pub both_scored_blocks: usize,
+    pub candidate_budget_exceeded_blocks: usize,
+    pub raw_budget_exceeded_blocks: usize,
+    /// Candidate minus raw, over all paired blocks (budget misses remain in denominator).
+    pub correct_rate_delta_all_ppm: i64,
+    pub grounded_rate_delta_all_ppm: i64,
+    /// Candidate minus raw, conditional on both arms scoring the same block.
+    pub correct_rate_delta_both_scored_ppm: Option<i64>,
+    pub grounded_rate_delta_both_scored_ppm: Option<i64>,
+    /// Candidate minus raw average estimated tokens over all paired blocks.
+    pub mean_estimated_tokens_delta: i128,
+    /// Candidate minus raw actual input tokens where both arms returned usage.
+    pub mean_actual_tokens_delta_both_scored: Option<i128>,
+    /// Candidate minus raw reasoner elapsed time for paired scored blocks.
+    pub mean_reasoner_time_delta_micros_both_scored: Option<i128>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ContextAblationAnalysis {
+    pub arm_aggregates: Vec<ContextArmAggregate>,
+    pub contrasts_vs_raw: Vec<ContextArmContrast>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct ContextBlockKey {
+    fault_family_id: String,
+    scenario_id: String,
+    paired_block_id: String,
+    attempt_id: u32,
+}
+
+fn rate_ppm(numerator: usize, denominator: usize) -> u32 {
+    if denominator == 0 {
+        0
+    } else {
+        ((numerator as u128 * 1_000_000) / denominator as u128) as u32
+    }
+}
+
+fn mean_u128(total: u128, count: usize) -> Option<u128> {
+    (count > 0).then_some(total / count as u128)
+}
+
+/// Analyze complete, preregistered five-arm blocks by fault family.
+///
+/// Incomplete blocks, duplicate arms or any mismatch in the scenario/model/prompt/
+/// permissions/tools/scorer/effort/seed manifest are rejected. BudgetExceeded is
+/// retained in the all-block denominator and separately exposed as coverage loss.
+pub fn analyze_paired_context_results(
+    results: &[ContextArmResult],
+) -> Result<ContextAblationAnalysis, ContextExperimentError> {
+    if results.is_empty() {
+        return Err(ContextExperimentError::EmptyEvidence);
+    }
+
+    let mut blocks: BTreeMap<
+        ContextBlockKey,
+        BTreeMap<ContextArm, &ContextArmResult>,
+    > = BTreeMap::new();
+
+    for result in results {
+        if !non_empty(&result.scenario_id)
+            || !non_empty(&result.fault_family_id)
+            || !non_empty(&result.paired_block_id)
+            || !non_empty(&result.profile.reasoning_effort)
+        {
+            return Err(ContextExperimentError::InvalidExperimentProfile);
+        }
+        if (result.status == ArmStatus::Scored) != result.score.is_some() {
+            return Err(ContextExperimentError::InvalidExperimentProfile);
+        }
+        let key = ContextBlockKey {
+            fault_family_id: result.fault_family_id.clone(),
+            scenario_id: result.scenario_id.clone(),
+            paired_block_id: result.paired_block_id.clone(),
+            attempt_id: result.attempt_id,
+        };
+        let block = blocks.entry(key).or_default();
+        if block.insert(result.arm, result).is_some() {
+            return Err(ContextExperimentError::DuplicateArmResult);
+        }
+    }
+
+    for block in blocks.values() {
+        if block.len() != CONTEXT_COMPILATION_ARMS.len()
+            || CONTEXT_COMPILATION_ARMS.iter().any(|arm| !block.contains_key(arm))
+        {
+            return Err(ContextExperimentError::IncompletePairedBlock);
+        }
+        let first = block
+            .get(&ContextArm::RawSourceRecords)
+            .ok_or(ContextExperimentError::IncompletePairedBlock)?;
+        if block.values().any(|result| {
+            result.profile != first.profile
+                || result.fault_family_id != first.fault_family_id
+                || result.scenario_id != first.scenario_id
+                || result.paired_block_id != first.paired_block_id
+                || result.attempt_id != first.attempt_id
+        }) {
+            return Err(ContextExperimentError::ManifestMismatch);
+        }
+    }
+
+    let mut by_family: BTreeMap<String, Vec<&BTreeMap<ContextArm, &ContextArmResult>>> =
+        BTreeMap::new();
+    for (key, block) in &blocks {
+        by_family
+            .entry(key.fault_family_id.clone())
+            .or_default()
+            .push(block);
+    }
+
+    let mut arm_aggregates = Vec::new();
+    let mut contrasts_vs_raw = Vec::new();
+
+    for (family, family_blocks) in by_family {
+        let n = family_blocks.len();
+        for arm in CONTEXT_COMPILATION_ARMS {
+            let rows: Vec<_> = family_blocks
+                .iter()
+                .map(|block| block.get(&arm).copied().expect("validated complete block"))
+                .collect();
+
+            let scored: Vec<_> = rows
+                .iter()
+                .copied()
+                .filter(|row| row.status == ArmStatus::Scored)
+                .collect();
+            let budget_exceeded_blocks = n - scored.len();
+            let correct_roots = scored
+                .iter()
+                .filter(|row| row.score.as_ref().is_some_and(|score| score.root_cause_correct))
+                .count();
+            let grounded_roots = scored
+                .iter()
+                .filter(|row| row.score.as_ref().is_some_and(|score| score.root_object_grounded))
+                .count();
+
+            let total_context_bytes = rows.iter().map(|row| row.context_bytes as u128).sum();
+            let total_estimated_tokens = rows
+                .iter()
+                .map(|row| row.estimated_input_tokens as u128)
+                .sum();
+            let actual_tokens: Vec<u128> = scored
+                .iter()
+                .filter_map(|row| row.usage.as_ref().map(|usage| usage.input_tokens as u128))
+                .collect();
+            let reasoner_times: Vec<u128> = scored
+                .iter()
+                .filter_map(|row| row.reasoner_time_micros)
+                .collect();
+
+            arm_aggregates.push(ContextArmAggregate {
+                fault_family_id: family.clone(),
+                arm,
+                paired_blocks: n,
+                scored_blocks: scored.len(),
+                budget_exceeded_blocks,
+                correct_roots,
+                grounded_roots,
+                correct_rate_all_ppm: rate_ppm(correct_roots, n),
+                grounded_rate_all_ppm: rate_ppm(grounded_roots, n),
+                correct_rate_scored_ppm: (scored.len() > 0)
+                    .then(|| rate_ppm(correct_roots, scored.len())),
+                grounded_rate_scored_ppm: (scored.len() > 0)
+                    .then(|| rate_ppm(grounded_roots, scored.len())),
+                mean_context_bytes: total_context_bytes / n as u128,
+                mean_estimated_input_tokens: total_estimated_tokens / n as u128,
+                mean_actual_input_tokens_scored: mean_u128(
+                    actual_tokens.iter().sum(),
+                    actual_tokens.len(),
+                ),
+                mean_reasoner_time_micros_scored: mean_u128(
+                    reasoner_times.iter().sum(),
+                    reasoner_times.len(),
+                ),
+            });
+        }
+
+        let raw_rows: Vec<_> = family_blocks
+            .iter()
+            .map(|block| block.get(&ContextArm::RawSourceRecords).copied().expect("validated"))
+            .collect();
+
+        for arm in CONTEXT_COMPILATION_ARMS
+            .into_iter()
+            .filter(|arm| *arm != ContextArm::RawSourceRecords)
+        {
+            let candidate_rows: Vec<_> = family_blocks
+                .iter()
+                .map(|block| block.get(&arm).copied().expect("validated"))
+                .collect();
+
+            let mut both_scored = 0usize;
+            let mut raw_correct_both = 0usize;
+            let mut candidate_correct_both = 0usize;
+            let mut raw_grounded_both = 0usize;
+            let mut candidate_grounded_both = 0usize;
+            let mut actual_token_delta = 0i128;
+            let mut actual_token_pairs = 0usize;
+            let mut time_delta = 0i128;
+            let mut time_pairs = 0usize;
+
+            for (raw, candidate) in raw_rows.iter().zip(candidate_rows.iter()) {
+                if raw.status == ArmStatus::Scored && candidate.status == ArmStatus::Scored {
+                    both_scored += 1;
+                    let raw_score = raw.score.as_ref().expect("scored rows have a score");
+                    let candidate_score = candidate.score.as_ref().expect("scored rows have a score");
+                    raw_correct_both += usize::from(raw_score.root_cause_correct);
+                    candidate_correct_both += usize::from(candidate_score.root_cause_correct);
+                    raw_grounded_both += usize::from(raw_score.root_object_grounded);
+                    candidate_grounded_both += usize::from(candidate_score.root_object_grounded);
+
+                    if let (Some(raw_usage), Some(candidate_usage)) =
+                        (&raw.usage, &candidate.usage)
+                    {
+                        actual_token_delta += candidate_usage.input_tokens as i128
+                            - raw_usage.input_tokens as i128;
+                        actual_token_pairs += 1;
+                    }
+                    if let (Some(raw_time), Some(candidate_time)) =
+                        (raw.reasoner_time_micros, candidate.reasoner_time_micros)
+                    {
+                        time_delta += candidate_time as i128 - raw_time as i128;
+                        time_pairs += 1;
+                    }
+                }
+            }
+
+            let raw_correct_all = raw_rows
+                .iter()
+                .filter(|row| row.score.as_ref().is_some_and(|score| score.root_cause_correct))
+                .count();
+            let candidate_correct_all = candidate_rows
+                .iter()
+                .filter(|row| row.score.as_ref().is_some_and(|score| score.root_cause_correct))
+                .count();
+            let raw_grounded_all = raw_rows
+                .iter()
+                .filter(|row| row.score.as_ref().is_some_and(|score| score.root_object_grounded))
+                .count();
+            let candidate_grounded_all = candidate_rows
+                .iter()
+                .filter(|row| row.score.as_ref().is_some_and(|score| score.root_object_grounded))
+                .count();
+
+            let raw_token_total: u128 = raw_rows
+                .iter()
+                .map(|row| row.estimated_input_tokens as u128)
+                .sum();
+            let candidate_token_total: u128 = candidate_rows
+                .iter()
+                .map(|row| row.estimated_input_tokens as u128)
+                .sum();
+
+            contrasts_vs_raw.push(ContextArmContrast {
+                fault_family_id: family.clone(),
+                arm,
+                paired_blocks: n,
+                both_scored_blocks: both_scored,
+                candidate_budget_exceeded_blocks: candidate_rows
+                    .iter()
+                    .filter(|row| row.status == ArmStatus::BudgetExceeded)
+                    .count(),
+                raw_budget_exceeded_blocks: raw_rows
+                    .iter()
+                    .filter(|row| row.status == ArmStatus::BudgetExceeded)
+                    .count(),
+                correct_rate_delta_all_ppm: rate_ppm(candidate_correct_all, n) as i64
+                    - rate_ppm(raw_correct_all, n) as i64,
+                grounded_rate_delta_all_ppm: rate_ppm(candidate_grounded_all, n) as i64
+                    - rate_ppm(raw_grounded_all, n) as i64,
+                correct_rate_delta_both_scored_ppm: (both_scored > 0).then(|| {
+                    rate_ppm(candidate_correct_both, both_scored) as i64
+                        - rate_ppm(raw_correct_both, both_scored) as i64
+                }),
+                grounded_rate_delta_both_scored_ppm: (both_scored > 0).then(|| {
+                    rate_ppm(candidate_grounded_both, both_scored) as i64
+                        - rate_ppm(raw_grounded_both, both_scored) as i64
+                }),
+                mean_estimated_tokens_delta: (candidate_token_total as i128
+                    - raw_token_total as i128)
+                    / n as i128,
+                mean_actual_tokens_delta_both_scored: mean_i128(
+                    actual_token_delta,
+                    actual_token_pairs,
+                ),
+                mean_reasoner_time_delta_micros_both_scored: mean_i128(time_delta, time_pairs),
+            });
+        }
+    }
+
+    arm_aggregates.sort_by(|left, right| {
+        (&left.fault_family_id, left.arm).cmp(&(&right.fault_family_id, right.arm))
+    });
+    contrasts_vs_raw.sort_by(|left, right| {
+        (&left.fault_family_id, left.arm).cmp(&(&right.fault_family_id, right.arm))
+    });
+
+    Ok(ContextAblationAnalysis {
+        arm_aggregates,
+        contrasts_vs_raw,
+    })
+}
+
+fn mean_i128(total: i128, count: usize) -> Option<i128> {
+    (count > 0).then_some(total / count as i128)
 }
 
 #[cfg(test)]
@@ -1057,6 +1406,7 @@ mod tests {
         ];
         ContextExperimentInput {
             scenario_id: "scenario-1".into(),
+            fault_family_id: "queue_dependency".into(),
             paired_block_id: "fault-kafka-01-seed-7".into(),
             attempt_id: 1,
             profile: ContextExperimentProfile {
