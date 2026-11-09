@@ -1,0 +1,42 @@
+{
+  "schema": "sregym-0508-source-reconciliation-v0.1",
+  "cohort": {
+    "id": "SREGym-0508",
+    "expected_faults": 90,
+    "repository": "SREGym/SREGym-website",
+    "commit_sha": "c4101aace3578353c96a2d837f60e48c3e95d9c4",
+    "manifest_path": "public/data/sregym-0508-problems.csv",
+    "manifest_git_blob_sha": "8943b471a38f03238321b3e052a147a7fb8a668c"
+  },
+  "candidate_source": {
+    "repository": "SREGym/SREGym",
+    "commit_sha": "ce73adf2c9212b4804793cbbabbfbb33eccd0f0f",
+    "commit_date_utc": "2026-04-24T17:11:27Z",
+    "registry_path": "sregym/conductor/problems/registry.py",
+    "registry_git_blob_sha": "3ff155517a8e1982cdce44ec69677feee2d0aee6",
+    "registered_problem_count": 90,
+    "runtime_selection": "ProblemRegistry.get_problem_ids() returns every registered ID when tasklist.yml is absent",
+    "exact_set_match": true
+  },
+  "later_revision_control": {
+    "repository": "SREGym/SREGym",
+    "commit_sha": "2f5fd1c73f5f1f9b2702d15cdc79bb25dfa774a9",
+    "commit_date_utc": "2026-05-06T17:44:04Z",
+    "registered_problem_count": 91,
+    "additional_registered_problem_ids": [
+      "load_spike_rpc_retry_storm"
+    ]
+  },
+  "current_main_control": {
+    "repository": "SREGym/SREGym",
+    "commit_sha": "b4c8a293eab4b8e08122e2f033e027b224cc31e6",
+    "commit_date_utc": "2026-11-08T22:14:08Z",
+    "registered_problem_count": 117,
+    "overlap_with_historical_cohort": 70
+  },
+  "interpretation": {
+    "status": "historical_source_candidate_exact_id_match_not_run_attested",
+    "run_commit_attested": false,
+    "note": "The 24-April registry exactly matches the official SREGym-0508 cohort CSV. This proves source-set equivalence at that commit, not that every leaderboard execution used this exact commit. The runtime tasklist.yml is gitignored; reproducibility therefore requires recording whether it was absent or archiving its exact bytes."
+  }
+}
