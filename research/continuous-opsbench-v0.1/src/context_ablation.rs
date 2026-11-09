@@ -2184,9 +2184,9 @@ mod tests {
             tight,
             &CONTEXT_COMPILATION_ARMS,
             &mut ScriptedReasoner {
-                    calls: Vec::new(),
-                    next_session: 0,
-                },
+                calls: Vec::new(),
+                next_session: 0,
+            },
         )
         .unwrap();
         let analysis = analyze_paired_context_results(&results, 0xC0FF_EE01_5EED_2026).unwrap();
@@ -2349,9 +2349,9 @@ mod tests {
                 budget(),
                 &CONTEXT_COMPILATION_ARMS,
                 &mut ScriptedReasoner {
-                    calls: Vec::new(),
-                    next_session: 0,
-                },
+                calls: Vec::new(),
+                next_session: 0,
+            },
             ),
             Err(ContextExperimentError::GroundTruthEvidenceMissing)
         );
