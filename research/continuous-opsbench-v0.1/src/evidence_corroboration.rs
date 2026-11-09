@@ -692,10 +692,7 @@ mod tests {
                 "domain-a".to_owned(),
                 profile("domain-a", "process-a", 2, 30),
             ),
-            (
-                "domain-b".to_owned(),
-                profile("domain-b", "host", 2, 30),
-            ),
+            ("domain-b".to_owned(), profile("domain-b", "host", 2, 30)),
         ]
         .into_iter()
         .collect();
