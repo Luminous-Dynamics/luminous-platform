@@ -1,7 +1,7 @@
 use serde::Serialize;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
-use std::{env, error::Error, fs, process};
+use std::{collections::BTreeSet, env, error::Error, fs, process};
 
 const EVALUATOR_VERSION: &str = "dwf-001-evaluator-0.1.0";
 const DEFAULT_FIXTURE: &str = "../fixtures/placement-scenarios-v0.1.json";
@@ -733,7 +733,167 @@ fn matches_expected(disposition: &Disposition, expected: &Value) -> bool {
         && disposition.reason_codes == strings_at(expected, "reason_codes")
 }
 
+
+fn require_nonempty_text(value: &Value, path: &[&str], label: &str) -> Result<(), String> {
+    if text_at(value, path).is_none_or(|text| text.trim().is_empty()) {
+        return Err(format!("{label} must be a non-empty string"));
+    }
+    Ok(())
+}
+
+fn require_positive_number(value: &Value, path: &[&str], label: &str) -> Result<(), String> {
+    let number = number_at(value, path)
+        .ok_or_else(|| format!("{label} must be a finite positive number"))?;
+    if !number.is_finite() || number <= 0.0 {
+        return Err(format!("{label} must be a finite positive number"));
+    }
+    Ok(())
+}
+
+fn require_string_array(value: &Value, path: &[&str], label: &str, nonempty: bool) -> Result<(), String> {
+    let items = at(value, path)
+        .and_then(Value::as_array)
+        .ok_or_else(|| format!("{label} must be an array of strings"))?;
+    if nonempty && items.is_empty() {
+        return Err(format!("{label} must not be empty"));
+    }
+    if items.iter().any(|item| item.as_str().is_none_or(|text| text.trim().is_empty())) {
+        return Err(format!("{label} must contain only non-empty strings"));
+    }
+    Ok(())
+}
+
+/// Validate the scenario/request envelope before evaluating any disposition.
+/// Negative controls may omit execution evidence deliberately; mandatory request
+/// constraints and candidate identity structure may never be omitted.
+fn validate_fixture_contract(fixture: &Value) -> Result<(), String> {
+    if text_at(fixture, &["schema_version"]) != Some("0.1") {
+        return Err("fixture schema_version must be 0.1".to_owned());
+    }
+    let scenarios = fixture.get("scenarios")
+        .and_then(Value::as_array)
+        .ok_or_else(|| "fixture scenarios must be an array".to_owned())?;
+    if scenarios.is_empty() {
+        return Err("fixture scenarios must not be empty".to_owned());
+    }
+
+    let mut scenario_ids = BTreeSet::new();
+    for (index, scenario) in scenarios.iter().enumerate() {
+        let label = format!("scenario[{index}]");
+        require_nonempty_text(scenario, &["id"], &format!("{label}.id"))?;
+        let scenario_id = text_at(scenario, &["id"]).expect("validated scenario id");
+        if !scenario_ids.insert(scenario_id.to_owned()) {
+            return Err(format!("duplicate scenario id: {scenario_id}"));
+        }
+        require_nonempty_text(scenario, &["name"], &format!("{label}.name"))?;
+        let phase = text_at(scenario, &["phase"]).unwrap_or("placement");
+        if !matches!(phase, "placement" | "pre_dispatch_recheck" | "result_validation" | "reconciliation" | "recovery") {
+            return Err(format!("{label}.phase has unsupported value {phase:?}"));
+        }
+
+        let expected = scenario.get("expected")
+            .ok_or_else(|| format!("{label}.expected is required"))?;
+        for field in ["placement", "result"] {
+            require_nonempty_text(expected, &[field], &format!("{label}.expected.{field}"))?;
+        }
+        require_string_array(expected, &["selected"], &format!("{label}.expected.selected"), false)?;
+        require_string_array(expected, &["reason_codes"], &format!("{label}.expected.reason_codes"), false)?;
+
+        let request = scenario.get("request")
+            .ok_or_else(|| format!("{label}.request is required"))?;
+        require_nonempty_text(request, &["task_id"], &format!("{label}.request.task_id"))?;
+        for field in ["semantic_id", "semantic_version", "workload_digest", "runtime_digest", "correctness_oracle"] {
+            require_nonempty_text(request, &["workload", field], &format!("{label}.request.workload.{field}"))?;
+        }
+        if text_at(request, &["workload", "operation_class"]) != Some("pure_read_only") {
+            return Err(format!("{label}.request.workload.operation_class must be pure_read_only"));
+        }
+        require_nonempty_text(request, &["input", "commitment"], &format!("{label}.request.input.commitment"))?;
+        require_nonempty_text(request, &["input", "data_classification"], &format!("{label}.request.input.data_classification"))?;
+        if at(request, &["input", "bytes"]).and_then(Value::as_u64).is_none() {
+            return Err(format!("{label}.request.input.bytes must be an unsigned integer"));
+        }
+        if bool_at(request, &["policy", "local_only"]).is_none() {
+            return Err(format!("{label}.request.policy.local_only must be boolean"));
+        }
+        require_string_array(request, &["policy", "permitted_destinations"], &format!("{label}.request.policy.permitted_destinations"), false)?;
+        if let Some(transfer_limit) = at(request, &["policy", "maximum_transfer_bytes"]) {
+            if transfer_limit.as_u64().is_none() {
+                return Err(format!("{label}.request.policy.maximum_transfer_bytes must be an unsigned integer when present"));
+            }
+        }
+        require_string_array(request, &["requirements", "isa"], &format!("{label}.request.requirements.isa"), true)?;
+        require_positive_number(request, &["requirements", "minimum_memory_mib"], &format!("{label}.request.requirements.minimum_memory_mib"))?;
+        require_nonempty_text(request, &["requirements", "accelerator"], &format!("{label}.request.requirements.accelerator"))?;
+        require_positive_number(request, &["requirements", "deadline_ms"], &format!("{label}.request.requirements.deadline_ms"))?;
+        require_positive_number(request, &["requirements", "maximum_joules_per_accepted_task"], &format!("{label}.request.requirements.maximum_joules_per_accepted_task"))?;
+        require_nonempty_text(request, &["requirements", "runtime_digest"], &format!("{label}.request.requirements.runtime_digest"))?;
+        require_nonempty_text(request, &["requirements", "workload_digest"], &format!("{label}.request.requirements.workload_digest"))?;
+        if bool_at(request, &["replay", "external_effects"]) != Some(false) {
+            return Err(format!("{label}.request.replay.external_effects must be false"));
+        }
+        if bool_at(request, &["replay", "deterministic"]).is_none()
+            || bool_at(request, &["replay", "duplicate_execution_safe"]).is_none()
+        {
+            return Err(format!("{label}.request.replay must declare deterministic and duplicate_execution_safe booleans"));
+        }
+        let network_state = text_at(scenario, &["network", "state"])
+            .ok_or_else(|| format!("{label}.network.state is required"))?;
+        if !matches!(network_state, "connected" | "partitioned_before_dispatch" | "partitioned_after_dispatch" | "connected_after_partition") {
+            return Err(format!("{label}.network.state has unsupported value {network_state:?}"));
+        }
+
+        let candidates = scenario.get("candidates")
+            .and_then(Value::as_array)
+            .ok_or_else(|| format!("{label}.candidates must be an array"))?;
+        if candidates.is_empty() {
+            return Err(format!("{label}.candidates must not be empty"));
+        }
+        let mut candidate_ids = BTreeSet::new();
+        let mut origins = 0usize;
+        for (candidate_index, candidate) in candidates.iter().enumerate() {
+            let candidate_label = format!("{label}.candidates[{candidate_index}]");
+            require_nonempty_text(candidate, &["candidate_id"], &format!("{candidate_label}.candidate_id"))?;
+            let candidate_id = text_at(candidate, &["candidate_id"]).expect("validated candidate id");
+            if !candidate_ids.insert(candidate_id.to_owned()) {
+                return Err(format!("{candidate_label} duplicates candidate_id {candidate_id}"));
+            }
+            match text_at(candidate, &["role"]) {
+                Some("origin") => origins += 1,
+                Some("peer") => {}
+                Some(other) => return Err(format!("{candidate_label}.role has unsupported value {other:?}")),
+                None => return Err(format!("{candidate_label}.role is required")),
+            }
+            for (path, metric_label, strictly_positive) in [
+                (&["device", "memory_mib"][..], "memory_mib", false),
+                (&["resources", "latency_ms"][..], "latency_ms", true),
+                (&["resources", "joules_per_accepted_task"][..], "joules_per_accepted_task", true),
+                (&["resources", "thermal_headroom_c"][..], "thermal_headroom_c", false),
+            ] {
+                if let Some(value) = at(candidate, path) {
+                    if !value.is_null() {
+                        let number = value.as_f64()
+                            .ok_or_else(|| format!("{candidate_label}.{metric_label} must be numeric when present"))?;
+                        if !number.is_finite() || (strictly_positive && number <= 0.0) || (!strictly_positive && metric_label == "memory_mib" && number < 0.0) {
+                            return Err(format!("{candidate_label}.{metric_label} has an invalid numeric value"));
+                        }
+                    }
+                }
+            }
+        }
+        if origins != 1 {
+            return Err(format!("{label}.candidates must contain exactly one origin candidate"));
+        }
+        if phase == "result_validation" {
+            require_nonempty_text(request, &["requirements", "oracle_verifier_id"], &format!("{label}.request.requirements.oracle_verifier_id"))?;
+        }
+    }
+    Ok(())
+}
+
 fn evaluate_fixture(fixture: &Value, fixture_bytes: &[u8]) -> Result<EvaluationReport, Box<dyn Error>> {
+    validate_fixture_contract(fixture)
+        .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
     let scenarios = fixture["scenarios"]
         .as_array()
         .ok_or_else(|| std::io::Error::new(
@@ -809,6 +969,49 @@ mod tests {
             .iter()
             .find(|scenario| text_at(scenario, &["id"]) == Some(id))
             .expect("scenario exists")
+    }
+
+    #[test]
+    fn malformed_candidate_role_is_rejected_before_placement() {
+        let mut fixture = fixture_value();
+        fixture["scenarios"][0]["candidates"][1]["role"] = Value::String("mystery".to_owned());
+        let error = validate_fixture_contract(&fixture).unwrap_err();
+        assert!(error.contains("unsupported value"), "{error}");
+    }
+
+    #[test]
+    fn missing_deadline_is_rejected_instead_of_becoming_unbounded() {
+        let mut fixture = fixture_value();
+        fixture["scenarios"][0]["request"]["requirements"]
+            .as_object_mut().unwrap().remove("deadline_ms");
+        let error = validate_fixture_contract(&fixture).unwrap_err();
+        assert!(error.contains("deadline_ms"), "{error}");
+    }
+
+    #[test]
+    fn missing_energy_ceiling_is_rejected_instead_of_becoming_unbounded() {
+        let mut fixture = fixture_value();
+        fixture["scenarios"][0]["request"]["requirements"]
+            .as_object_mut().unwrap().remove("maximum_joules_per_accepted_task");
+        let error = validate_fixture_contract(&fixture).unwrap_err();
+        assert!(error.contains("maximum_joules_per_accepted_task"), "{error}");
+    }
+
+    #[test]
+    fn duplicate_candidate_identity_is_rejected() {
+        let mut fixture = fixture_value();
+        fixture["scenarios"][0]["candidates"][1]["candidate_id"] =
+            fixture["scenarios"][0]["candidates"][0]["candidate_id"].clone();
+        let error = validate_fixture_contract(&fixture).unwrap_err();
+        assert!(error.contains("duplicates candidate_id"), "{error}");
+    }
+
+    #[test]
+    fn duplicate_scenario_ids_are_rejected() {
+        let mut fixture = fixture_value();
+        fixture["scenarios"][1]["id"] = fixture["scenarios"][0]["id"].clone();
+        let error = validate_fixture_contract(&fixture).unwrap_err();
+        assert!(error.contains("duplicate scenario id"), "{error}");
     }
 
     #[test]

@@ -55,3 +55,8 @@ The 28-case corpus includes:
 - DWF-001-26: request-owned runtime digest positive control;
 - DWF-001-27: wrong/unselected executor rejection;
 - DWF-001-28: oracle output-commitment mismatch rejection.
+
+
+## Input contract validation
+
+Before any expected disposition is evaluated, the evaluator validates the fixture envelope: schema version, unique scenario/candidate IDs, exact origin/peer roles, request semantic identity, non-empty ISA, positive minimum memory/deadline/energy ceiling, read-only/no-external-effect constraints, typed policy and transfer-budget fields, network state, and result-phase oracle-verifier identity. This prevents missing requirements from silently becoming unconstrained defaults. Deliberately incomplete execution receipts remain valid *negative-control inputs* and are evaluated as rejected results; they are not rejected as malformed fixture envelopes.
