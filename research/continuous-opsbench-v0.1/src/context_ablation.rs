@@ -2238,7 +2238,8 @@ mod tests {
 
     struct ExactTokenizerReasoner {
         profile: Option<ContextExperimentProfile>,
-        token_count: u64,
+        preflight_tokens: Option<u64>,
+        actual_usage_tokens: u64,
     }
 
     impl ContextReasoner for ExactTokenizerReasoner {
@@ -2252,7 +2253,7 @@ mod tests {
             _profile: &ContextExperimentProfile,
             _rendered_context: &str,
         ) -> Option<u64> {
-            Some(self.token_count)
+            self.preflight_tokens
         }
 
         fn diagnose(
@@ -2274,7 +2275,7 @@ mod tests {
                     abstained: false,
                 },
                 usage: ReasonerUsage {
-                    input_tokens: self.token_count,
+                    input_tokens: self.actual_usage_tokens,
                     output_tokens: 32,
                     tool_calls: 0,
                     reported_cost_microusd: 1_000,
@@ -2296,7 +2297,8 @@ mod tests {
             &test_order(),
             &mut ExactTokenizerReasoner {
                 profile: None,
-                token_count: 100,
+                preflight_tokens: Some(100),
+                actual_usage_tokens: 100,
             },
         )
         .unwrap();
@@ -2318,7 +2320,8 @@ mod tests {
             &test_order(),
             &mut ExactTokenizerReasoner {
                 profile: None,
-                token_count: 100,
+                preflight_tokens: None,
+                actual_usage_tokens: 100,
             },
         )
         .unwrap();
