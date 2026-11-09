@@ -598,7 +598,7 @@ mod tests {
         .into_iter()
         .collect();
         let stale_rows =
-            evaluate_evidence_corroboration(&evidence, &stale_profiles, &graph, 20, policy())
+            evaluate_evidence_corroboration(&evidence, &stale_profiles, &graph, 20, 10, policy())
                 .unwrap();
         assert_eq!(
             stale_rows[0].status,
