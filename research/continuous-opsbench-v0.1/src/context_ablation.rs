@@ -271,6 +271,8 @@ pub enum ArmStatus {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ContextScore {
     pub root_cause_correct: bool,
+    pub root_object_visible: bool,
+    pub root_object_grounded: bool,
     pub supported_evidence_precision_ppm: u32,
     pub required_evidence_recall_ppm: u32,
     pub unsupported_evidence_claims: usize,
@@ -811,6 +813,16 @@ fn score_answer(
             .collect(),
     };
 
+    let object_by_id: BTreeMap<_, _> = match &packet.evidence {
+        ContextPresentation::Raw(records) => records
+            .iter()
+            .map(|item| (item.evidence_id.as_str(), item.object_ref.as_str()))
+            .collect(),
+        ContextPresentation::Normalized(records) => records
+            .iter()
+            .map(|item| (item.evidence_id.as_str(), item.object_ref.as_str()))
+            .collect(),
+    };
     let mut claimed = BTreeSet::new();
     let mut supported = BTreeSet::new();
     let mut unsupported = 0_usize;
@@ -847,9 +859,25 @@ fn score_answer(
             / truth.required_evidence_ids.len() as u64) as u32
     };
 
+    let root_object_visible = answer.root_object_ref.as_deref().is_some_and(|root| {
+        object_by_id.values().any(|object_ref| *object_ref == root)
+    });
+    let root_object_grounded = answer.root_object_ref.as_deref().is_some_and(|root| {
+        supported.iter().any(|evidence_id| {
+            object_by_id.get(evidence_id).is_some_and(|object_ref| *object_ref == root)
+        }) || packet.relations.iter().any(|relation| {
+            relation.state == EvidenceState::Present
+                && relation.from_object == packet.target_object_ref
+                && relation.to_object == root
+                && supported.contains(relation.evidence_id.as_str())
+        })
+    });
+
     ContextScore {
         root_cause_correct: !answer.abstained
             && answer.root_object_ref.as_deref() == Some(truth.correct_root_object_ref.as_str()),
+        root_object_visible,
+        root_object_grounded,
         supported_evidence_precision_ppm: precision,
         required_evidence_recall_ppm: recall,
         unsupported_evidence_claims: unsupported,
@@ -1244,6 +1272,24 @@ mod tests {
             compile_context_packet(&bad_block, ContextArm::RawSourceRecords),
             Err(ContextExperimentError::EmptyPairedBlockId)
         );
+    }
+
+    #[test]
+    fn correct_root_guess_without_visible_support_is_not_grounded() {
+        let input = input();
+        let (packet, _) =
+            compile_context_packet(&input, ContextArm::NormalizedRecords).unwrap();
+        let answer = DiagnosisAnswer {
+            root_object_ref: Some("payments-config".into()),
+            supporting_evidence_ids: vec!["ev-node".into()],
+            alternative_object_refs: Vec::new(),
+            abstained: false,
+        };
+        let score = score_answer(&packet, &truth(), &answer);
+        assert!(score.root_cause_correct);
+        assert!(score.root_object_visible);
+        assert!(!score.root_object_grounded);
+        assert_eq!(score.required_evidence_recall_ppm, 0);
     }
 
     #[test]
