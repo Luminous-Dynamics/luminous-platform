@@ -87,9 +87,8 @@ fn check_dependency_assessment(
         return Err("dependency_domain_mismatch");
     }
 
-    let Some(sources) = sorted_unique_strings(
-        assessment.get("source_ids").unwrap_or(&Value::Null),
-    ) else {
+    let Some(sources) = sorted_unique_strings(assessment.get("source_ids").unwrap_or(&Value::Null))
+    else {
         return Err("dependency_source_set_invalid");
     };
     if sources != expected_sources {
@@ -125,8 +124,7 @@ fn check_dependency_assessment(
     let Some(report) = assessment.get("dependency_report") else {
         return Err("dependency_report_missing");
     };
-    if string(report, "report_contract")
-        != Some("emsr-dependency-hypergraph-report/0.1")
+    if string(report, "report_contract") != Some("emsr-dependency-hypergraph-report/0.1")
         || string(report, "input_sha256") != string(assessment, "input_sha256")
         || string(report, "snapshot_id") != Some(snapshot_id)
         || number(report, "evidence_frontier") != Some(frontier)
@@ -137,9 +135,9 @@ fn check_dependency_assessment(
         return Err("dependency_report_binding_mismatch");
     }
 
-    let Some(report_sources) = sorted_unique_strings(
-        report.get("source_ids").unwrap_or(&Value::Null),
-    ) else {
+    let Some(report_sources) =
+        sorted_unique_strings(report.get("source_ids").unwrap_or(&Value::Null))
+    else {
         return Err("dependency_report_source_set_invalid");
     };
     if report_sources != expected_sources {
@@ -289,7 +287,9 @@ fn evaluate_case(
                 | "unknown"
         );
         if !source_type_supported || source_type == "unknown" {
-            unknown.push(format!("record_{index}_timestamp_source_type_not_qualified"));
+            unknown.push(format!(
+                "record_{index}_timestamp_source_type_not_qualified"
+            ));
         }
 
         if period_start >= period_end || timestamp < period_start || timestamp >= period_end {
@@ -301,7 +301,9 @@ fn evaluate_case(
         if !string(record, "record_content_sha256").is_some_and(is_sha256)
             || !string(record, "timestamp_uncertainty_budget_sha256").is_some_and(is_sha256)
         {
-            unknown.push(format!("record_{index}_source_or_uncertainty_artifact_missing"));
+            unknown.push(format!(
+                "record_{index}_source_or_uncertainty_artifact_missing"
+            ));
         }
         match string(record, "signature_status") {
             Some("valid") => {}
@@ -312,13 +314,17 @@ fn evaluate_case(
                 unknown.push(format!("record_{index}_source_signature_not_qualified"));
             }
             Some(_) => {
-                unknown.push(format!("record_{index}_source_signature_status_unsupported"));
+                unknown.push(format!(
+                    "record_{index}_source_signature_status_unsupported"
+                ));
             }
         }
         if time_scale != "TAI" {
             unknown.push(format!("record_{index}_unsupported_or_unmapped_time_scale"));
             if !string(record, "time_scale_mapping_sha256").is_some_and(is_sha256) {
-                unknown.push(format!("record_{index}_time_scale_mapping_evidence_missing"));
+                unknown.push(format!(
+                    "record_{index}_time_scale_mapping_evidence_missing"
+                ));
             }
         }
         if uncertainty > max_uncertainty {
@@ -392,7 +398,9 @@ fn evaluate_case(
             if (source_changed || config_changed)
                 && !string(record, "configuration_change_receipt_sha256").is_some_and(is_sha256)
             {
-                unknown.push(format!("record_{index}_source_or_configuration_switch_unbound"));
+                unknown.push(format!(
+                    "record_{index}_source_or_configuration_switch_unbound"
+                ));
             }
         }
         previous = Some((
@@ -470,7 +478,9 @@ fn evaluate_case(
             )),
         }
 
-        let snapshot_id = string(assessment, "snapshot_id").unwrap_or_default().to_owned();
+        let snapshot_id = string(assessment, "snapshot_id")
+            .unwrap_or_default()
+            .to_owned();
         let frontier = number(assessment, "evidence_frontier_tai_ns").unwrap_or(0);
         match snapshot_by_event.get(&event_time) {
             Some((known_snapshot, known_frontier))
@@ -639,8 +649,10 @@ mod tests {
     use jsonschema::draft202012;
     use serde_json::Value;
 
-    const FIXTURES: &str = include_str!("../../../docs/standards/omsi/pmtime-integrity-fixtures-0.1.json");
-    const FIXTURE_SCHEMA: &str = include_str!("../../../docs/standards/omsi/pmtime-integrity-fixtures-0.1.schema.json");
+    const FIXTURES: &str =
+        include_str!("../../../docs/standards/omsi/pmtime-integrity-fixtures-0.1.json");
+    const FIXTURE_SCHEMA: &str =
+        include_str!("../../../docs/standards/omsi/pmtime-integrity-fixtures-0.1.schema.json");
     const REPORT_SCHEMA: &str = include_str!("../schema/pmtime-integrity-report.schema.json");
 
     #[test]
@@ -649,7 +661,10 @@ mod tests {
         let input_schema: Value = serde_json::from_str(FIXTURE_SCHEMA).expect("input schema JSON");
         assert!(draft202012::meta::is_valid(&input_schema));
         let input_validator = draft202012::new(&input_schema).expect("compile input schema");
-        assert!(input_validator.is_valid(&document), "fixture pack schema validation failed");
+        assert!(
+            input_validator.is_valid(&document),
+            "fixture pack schema validation failed"
+        );
 
         let report = validate_fixture_pack(&document, FIXTURES.as_bytes());
         assert_eq!(report["status"], "passed", "{report:#}");
@@ -661,7 +676,10 @@ mod tests {
         let report_schema: Value = serde_json::from_str(REPORT_SCHEMA).expect("report schema JSON");
         assert!(draft202012::meta::is_valid(&report_schema));
         let report_validator = draft202012::new(&report_schema).expect("compile report schema");
-        assert!(report_validator.is_valid(&report), "report schema validation failed: {report:#}");
+        assert!(
+            report_validator.is_valid(&report),
+            "report schema validation failed: {report:#}"
+        );
     }
 
     #[test]
