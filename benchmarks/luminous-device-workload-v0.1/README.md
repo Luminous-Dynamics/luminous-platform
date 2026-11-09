@@ -55,6 +55,8 @@ Standards and upstream references:
 
 Do not treat an external benchmark's existence as evidence Luminous has run it. Preserve official score rules and label independent custom measurements separately.
 
+The current named product comparator and market baseline list is maintained in [Device Industry Reference Snapshot 2026-11](../../docs/product/device-industry-reference-snapshot-2026-11.md). It is a dated procurement research input, not a performance result; vendor claims must be independently matched before comparison.
+
 ## 3. Frozen Luminous workload suite
 
 The Luminous suite should measure tasks the platform actually performs, not optimize a processor-specific microbenchmark that has no product relevance.
