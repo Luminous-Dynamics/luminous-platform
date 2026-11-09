@@ -268,6 +268,12 @@ These are Luminous evidence stages, not external certification. An open design, 
 - [OpenXR Conformance Test Suite](https://github.com/KhronosGroup/OpenXR-CTS) — runtime API conformance tests, not a complete XR performance or safety assessment.
 - [MIL-STD-810 document status and scope](https://quicksearch.dla.mil/qaDocDetails.aspx?ident_number=35978) — environmental tailoring framework; tests must match the intended lifecycle.
 
+## 10.1 Industry reference snapshot
+
+The named 2026 comparator set and product-specific claims are collected separately in [Device Industry Reference Snapshot 2026-11](./device-industry-reference-snapshot-2026-11.md). It covers Fairphone Gen. 6, Framework Laptop 13 Pro, Lenovo ThinkPad P16s Gen 5, Panasonic TOUGHBOOK G2, AMD EPYC 9005 / Dell PowerEdge R7725 and HTC VIVE Focus Vision.
+
+Those products establish existing industry capability floors. Luminous must not claim repairability, ruggedness, long software support, enterprise management or spatial computing as novel without a matched test. Use the comparator snapshot as a dated procurement/experiment guide, not as a static ranking or an assertion that vendor-reported figures have been independently reproduced.
+
 ## 11. Open questions
 
 - Which existing public Luminous OS/mobile experience is suitable for the first Android integration?
