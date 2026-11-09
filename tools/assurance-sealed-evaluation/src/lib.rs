@@ -490,7 +490,7 @@ mod tests {
         br#"{"expected":"SHARED_DEPENDENCY","hidden_edge":"grandmaster-a"}"#;
 
     fn digest(byte: u8) -> String {
-        vec![byte; 32]
+        [byte; 32]
             .iter()
             .map(|value| format!("{value:02x}"))
             .collect()
