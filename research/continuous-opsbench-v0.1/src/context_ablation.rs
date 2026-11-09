@@ -2349,9 +2349,9 @@ mod tests {
                 budget(),
                 &CONTEXT_COMPILATION_ARMS,
                 &mut ScriptedReasoner {
-                calls: Vec::new(),
-                next_session: 0,
-            },
+                    calls: Vec::new(),
+                    next_session: 0,
+                },
             ),
             Err(ContextExperimentError::GroundTruthEvidenceMissing)
         );
@@ -2369,9 +2369,9 @@ mod tests {
             tight,
             &CONTEXT_COMPILATION_ARMS,
             &mut ScriptedReasoner {
-                    calls: Vec::new(),
-                    next_session: 0,
-                },
+                calls: Vec::new(),
+                next_session: 0,
+            },
         )
         .unwrap();
         assert_eq!(results.len(), 5);
