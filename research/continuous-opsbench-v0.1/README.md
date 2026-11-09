@@ -223,3 +223,22 @@ A shared declared dependency produces `Indeterminate` and cannot support a decis
 The full episode test fixture now supplies different declared collector/observer host, clock and identity-provider dependencies. Adversarial tests add a shared host, remove the registry/profile, mark observer inventory missing/unknown, age a profile out, inject a graph cycle and substitute the observer subject ID. Each case is checked at the episode-auditor level rather than only in the standalone graph helper.
 
 **Claim ceiling:** this is still a structural evaluator over supplied inventories. It does not authenticate registry/profile publishers, attest that inventories are complete, detect undeclared dependencies, or prove a real observer remains independent under production fault injection. Production qualification still requires independently governed signed inventories, a trust root and failure-injection against each shared dependency.
+
+
+## Evidence corroboration against failure-domain dependencies v0.1
+
+The additive `src/evidence_corroboration.rs` module composes the existing `failure_domains` graph evaluator. It keeps three concepts distinct: raw source-ID count, declared control-domain-label count, and pairwise comparison of complete current dependency closures. Multiple source IDs in one control domain do not become multiple independent votes. Distinct labels that share a host, clock, identity provider, storage, network or other declared ancestor are marked `SharedDeclaredDependency`.
+
+Only `Current` evidence participates in pairwise comparison. Stale, future-dated, expired, absent and unknown records remain present in the counts/records but cannot contribute a no-overlap result. Missing, unknown, stale, expired, future-dated or revision-mismatched profiles yield `Indeterminate`; malformed graphs and profile-subject substitution cannot be converted to no-overlap. A candidate receives `PairwiseNoDeclaredOverlap` only if every pair of current control-domain profiles reports `NoDeclaredOverlap`. Three domains therefore require all three pair checks to pass.
+
+The output names the result `PairwiseNoDeclaredOverlap`, not independent-source count. This is only structural screening against the supplied graph. It does not authenticate inventories, prove that the graph is complete, detect hidden common causes, or establish cryptographic or operational independence. Production qualification requires independently governed/authenticated inventories and deliberate common-cause fault injection.
+
+Tests cover multiple source IDs in one domain, different labels sharing a host, disjoint profiles, missing/unknown/stale inventories, exclusion of stale evidence, one shared pair among three domains, subject substitution, duplicate evidence IDs, invalid/cyclic graph and deterministic ordering. This module does not alter the frozen five-arm context-ablation treatment in PR #348; it is a separate evaluator for the follow-on issue #356.
+
+
+### Evidence freshness is computed, not trusted as a caller label
+
+The corroboration input no longer accepts a caller-supplied `Current`/`Stale` freshness assertion. Each record carries its source availability state (`Present`, `Absent`, or `Unknown`), event tick, observation tick and optional exclusive validity bound. The evaluator derives `Current`, `Stale`, `FutureDated`, `Expired`, `Absent` or `Unknown` against the audit tick and an explicit maximum evidence age. A malformed validity interval is rejected. Only derived `Current` records enter pairwise dependency comparisons; the other states remain distinguishable in the source record and do not create a corroboration bonus. This prevents a caller from promoting an old or future observation by setting a freshness enum to Current. The caller still supplies these timestamps and availability claims, so production use must bind them to authenticated source-owned evidence and clock uncertainty.
+
+
+The candidate summary also reports separate counts for current, stale, future-dated, expired, absent and unknown records. These are coverage/quality descriptors, not components of a scalar evidence-confidence score. A large declared-source count with poor freshness or many unknown records remains visibly different from a complete current evidence set.

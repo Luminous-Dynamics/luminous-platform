@@ -12,6 +12,7 @@ pub mod event_schedule;
 pub mod episode_audit;
 pub mod scheduled_attention;
 pub mod failure_domains;
+pub mod evidence_corroboration;
 
 use std::collections::{BTreeMap, BTreeSet};
 
