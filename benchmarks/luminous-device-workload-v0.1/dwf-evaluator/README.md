@@ -2,7 +2,7 @@
 
 **Status:** standalone Rust source and synthetic-fixture evaluator; not a production scheduler or authorization service.
 
-This crate implements an independent, deterministic evaluator for the DWF-001 placement and evidence scenario corpus. It deliberately lives outside a repository-wide Cargo workspace so that it does not create a new workspace/build boundary for Luminous Platform.
+This crate implements an independent, deterministic evaluator for the 22-case DWF-001 placement and evidence scenario corpus. It deliberately lives outside a repository-wide Cargo workspace so that it does not create a new workspace/build boundary for Luminous Platform.
 
 ## Run
 

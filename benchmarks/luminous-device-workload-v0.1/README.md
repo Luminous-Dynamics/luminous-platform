@@ -325,3 +325,6 @@ The standalone Rust evaluator is in [dwf-evaluator](dwf-evaluator/README.md). It
 - DWF-001-21 verifies that private derived HDC query representations do not inherit a public classification. Peer execution requires an explicit data-class scope such as `data:private`; derived vectors, features and result metadata do not become anonymous by transformation alone.
 
 The evaluator is an independent implementation of expected fixture dispositions, not an independent authority that proves those expectations, and not a production scheduler. Fixture values remain synthetic. Rust compilation, unit tests and CI must be run on the exact branch head before any implementation or assurance claim is made.
+
+
+The fixture includes DWF-001-22: peer placement abstains when the transfer ceiling is unknown. Missing is not unlimited.

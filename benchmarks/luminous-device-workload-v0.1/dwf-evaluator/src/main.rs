@@ -180,13 +180,15 @@ fn assess_candidate(scenario: &Value, candidate: &Value) -> CandidateAssessment 
             push_reason(&mut reasons, "REMOTE_UNREACHABLE_BEFORE_DISPATCH");
         }
 
-        if let (Some(input_bytes), Some(maximum)) = (
+        match (
             at(input, &["bytes"]).and_then(Value::as_u64),
             at(policy, &["maximum_transfer_bytes"]).and_then(Value::as_u64),
         ) {
-            if input_bytes > maximum {
+            (Some(input_bytes), Some(maximum)) if input_bytes > maximum => {
                 push_reason(&mut reasons, "REMOTE_TRANSFER_BUDGET_EXCEEDED");
             }
+            (Some(_), Some(_)) => {}
+            _ => push_reason(&mut reasons, "REMOTE_TRANSFER_BUDGET_UNKNOWN"),
         }
 
         if !reasons.is_empty() {
@@ -596,7 +598,10 @@ fn matches_expected(disposition: &Disposition, expected: &Value) -> bool {
 fn evaluate_fixture(fixture: &Value, fixture_bytes: &[u8]) -> Result<EvaluationReport, Box<dyn Error>> {
     let scenarios = fixture["scenarios"]
         .as_array()
-        .ok_or("fixture must contain a scenarios array")?;
+        .ok_or_else(|| std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "fixture must contain a scenarios array",
+        ))?;
 
     let mut cases = Vec::with_capacity(scenarios.len());
     for scenario in scenarios {
@@ -672,9 +677,9 @@ mod tests {
     fn every_preregistered_scenario_matches_the_independent_evaluator() {
         let fixture = fixture_value();
         let report = evaluate_fixture(&fixture, FIXTURE.as_bytes()).expect("evaluation succeeds");
-        assert_eq!(report.scenario_count, 21);
+        assert_eq!(report.scenario_count, 22);
         assert_eq!(report.failed, 0, "{:#?}", report.cases);
-        assert_eq!(report.passed, 21);
+        assert_eq!(report.passed, 22);
         assert_eq!(report.evidence_class, "synthetic_fixture_evaluation_only");
     }
 
@@ -695,6 +700,15 @@ mod tests {
         assert_eq!(actual.placement, "LOCAL");
         assert_eq!(actual.selected, vec!["origin-book".to_owned()]);
         assert!(actual.reason_codes.contains(&"REMOTE_DATA_SCOPE_MISSING".to_owned()));
+    }
+
+    #[test]
+    fn missing_transfer_budget_blocks_peer_placement() {
+        let fixture = fixture_value();
+        let (actual, _) = evaluate_case(case(&fixture, "DWF-001-22"));
+        assert_eq!(actual.placement, "LOCAL");
+        assert_eq!(actual.selected, vec!["origin-book".to_owned()]);
+        assert!(actual.reason_codes.contains(&"REMOTE_TRANSFER_BUDGET_UNKNOWN".to_owned()));
     }
 
     #[test]
