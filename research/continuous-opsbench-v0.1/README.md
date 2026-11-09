@@ -242,3 +242,26 @@ The corroboration input no longer accepts a caller-supplied `Current`/`Stale` fr
 
 
 The candidate summary also reports separate counts for current, stale, future-dated, expired, absent and unknown records. These are coverage/quality descriptors, not components of a scalar evidence-confidence score. A large declared-source count with poor freshness or many unknown records remains visibly different from a complete current evidence set.
+
+
+## Four-arm candidate-corroboration ranking ablation v0.1
+
+The separate `src/corroboration_ranking_ablation.rs` experiment isolates the ranking-factor question in issue #356 without changing the frozen five-arm context-ablation treatment in #348. It creates four deterministic rankings over the same candidate/evidence universe:
+
+1. **NoDiversityBonus** — frozen base ranking only.
+2. **NaiveSourceIdCount** — bounded bonus from the number of current distinct source IDs.
+3. **DeclaredControlDomainCount** — bounded bonus from the number of current declared control-domain labels.
+4. **GraphQualifiedNoDeclaredOverlap** — bonus only when every pair of current control domains has a fresh, revision-matched `NoDeclaredOverlap` result from the existing #347/#357 failure-domain graph evaluator.
+
+A source count or label count is not an independent vote. Missing/stale/unknown/expired/future evidence cannot generate a current count; pairwise graph overlap/indeterminate/invalid outcomes produce no graph-qualified bonus. `PairwiseNoDeclaredOverlap` remains a structural screen, not proof of real-world independence.
+
+The evaluator computes MRR and NDCG@1/@3/@5 only after the four rankings are fixed, using evaluator-owned graded relevance. That truth is never passed into the ranking function. Attempt results are paired on the same scenario/candidate universe; analysis averages repeated attempts within each scenario before treating distinct scenarios as bootstrap clusters. It reports scenario-macro deltas against no-diversity and scenario-cluster percentile intervals only at 20 or more distinct scenario clusters.
+
+Tests cover: no-bonus preserving base ranking; graph bonus blocked by common-cause overlap; naive source-count and control-label bonuses remaining distinct; stale evidence not earning bonuses; evaluator truth affecting metrics but not scores; incomplete arm sets; attempt averaging at scenario level; and deterministic confidence intervals with the 20-scenario minimum.
+
+**Claim ceiling:** this is an offline deterministic ranking-factor ablation with synthetic fixtures. It does not run a live reasoner, establish an accuracy improvement, prove a failure-domain inventory complete, or establish operational independence. A live experiment requires the same pinned base ranking/evidence for all four arms, blinded evaluator truth, scenario-family coverage, independently governed dependency inventories and all-run retention.
+
+
+### Paired-result integrity (follow-up hardening)
+
+The results analyzer now verifies every row's candidate order and arithmetic before accepting the experiment: the candidate universe and frozen base score/support facts must match across all four arms; every rank must be contiguous; rows must be sorted by descending final score with deterministic object-ref tie-breaking; `final_score` must equal saturated `base_score + bonus_points`; and the claimed bonus must exactly match the declared arm's formula. This prevents a malformed result bundle from claiming a graph-qualified improvement by changing candidates, base relevance, support counts, or bonus magnitude between arms. These checks validate the experiment's accounting; they do not authenticate a live reasoner or prove the supplied corroboration graph complete.
