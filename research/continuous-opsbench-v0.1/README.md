@@ -260,3 +260,8 @@ The evaluator computes MRR and NDCG@1/@3/@5 only after the four rankings are fix
 Tests cover: no-bonus preserving base ranking; graph bonus blocked by common-cause overlap; naive source-count and control-label bonuses remaining distinct; stale evidence not earning bonuses; evaluator truth affecting metrics but not scores; incomplete arm sets; attempt averaging at scenario level; and deterministic confidence intervals with the 20-scenario minimum.
 
 **Claim ceiling:** this is an offline deterministic ranking-factor ablation with synthetic fixtures. It does not run a live reasoner, establish an accuracy improvement, prove a failure-domain inventory complete, or establish operational independence. A live experiment requires the same pinned base ranking/evidence for all four arms, blinded evaluator truth, scenario-family coverage, independently governed dependency inventories and all-run retention.
+
+
+### Paired-result integrity (follow-up hardening)
+
+The results analyzer now verifies every row's candidate order and arithmetic before accepting the experiment: the candidate universe and frozen base score/support facts must match across all four arms; every rank must be contiguous; rows must be sorted by descending final score with deterministic object-ref tie-breaking; `final_score` must equal saturated `base_score + bonus_points`; and the claimed bonus must exactly match the declared arm's formula. This prevents a malformed result bundle from claiming a graph-qualified improvement by changing candidates, base relevance, support counts, or bonus magnitude between arms. These checks validate the experiment's accounting; they do not authenticate a live reasoner or prove the supplied corroboration graph complete.
