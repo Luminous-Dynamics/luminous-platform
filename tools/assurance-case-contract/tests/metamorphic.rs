@@ -633,3 +633,96 @@ fn input_and_report_are_valid_against_closed_json_schemas() {
         "report schema rejected valid report: {report_value:#}"
     );
 }
+
+#[test]
+fn node_and_edge_permutations_preserve_assessment_semantics() {
+    let input = base_case();
+    let original = run(&input);
+    let mut permuted = input;
+    permuted.nodes.reverse();
+    permuted.edges.reverse();
+    let reordered = run(&permuted);
+    assert_eq!(original.outcome, reordered.outcome);
+    assert_eq!(original.claim_assessments, reordered.claim_assessments);
+    assert_eq!(original.open_defeater_ids, reordered.open_defeater_ids);
+    assert_eq!(original.unresolved_assumption_ids, reordered.unresolved_assumption_ids);
+    assert_ne!(original.input_sha256, reordered.input_sha256);
+}
+
+#[test]
+fn adding_connected_but_unrequired_evidence_does_not_change_the_claim() {
+    let input = base_case();
+    let original = run(&input);
+    let mut augmented = input;
+    augmented.nodes.push(node(
+        "e-unrequired",
+        NodeKind::Evidence,
+        None,
+        None,
+        None,
+        None,
+        Some(evidence(EvidenceStatus::Current, 35)),
+        None,
+        None,
+    ));
+    augmented.edges.push(CaseEdge {
+        id: "edge-unrequired".to_owned(),
+        kind: EdgeKind::Supports,
+        from: "e-unrequired".to_owned(),
+        to: "claim-root".to_owned(),
+    });
+    let report = run(&augmented);
+    assert_eq!(original.outcome, report.outcome);
+    assert_eq!(original.claim_assessments, report.claim_assessments);
+}
+
+#[test]
+fn adding_an_applicable_critical_defeater_never_improves_the_outcome() {
+    let input = base_case();
+    assert_eq!(run(&input).outcome, CaseOutcome::SupportedForDeclaredScope);
+    let mut defeated = input;
+    add_defeater(&mut defeated, 20);
+    assert_eq!(run(&defeated).outcome, CaseOutcome::Defeated);
+}
+
+#[test]
+fn degrading_required_evidence_from_current_to_stale_never_improves_the_outcome() {
+    let input = base_case();
+    assert_eq!(run(&input).outcome, CaseOutcome::SupportedForDeclaredScope);
+    let mut degraded = input;
+    let direct = degraded.nodes.iter_mut().find(|node| node.id == "e-direct").unwrap();
+    direct.evidence.as_mut().unwrap().status = EvidenceStatus::Stale;
+    assert_eq!(run(&degraded).outcome, CaseOutcome::Indeterminate);
+}
+
+#[test]
+fn evidence_expiring_at_the_case_as_of_boundary_is_not_current() {
+    let mut input = base_case();
+    input.as_of = 100;
+    let report = run(&input);
+    assert_eq!(report.outcome, CaseOutcome::Indeterminate);
+}
+
+#[test]
+fn unsorted_dependency_sources_cannot_satisfy_no_common_domain_obligation() {
+    let mut input = base_case();
+    input.nodes[0].claim.as_mut().unwrap().dependency_requirement =
+        DependencyRequirement::NoDeclaredCommonDomain;
+    for id in ["e-direct", "e-argument"] {
+        let evidence_node = input.nodes.iter_mut().find(|node| node.id == id).unwrap();
+        let mut assessment = no_common_dependency();
+        assessment.source_ids.reverse();
+        evidence_node.evidence.as_mut().unwrap().dependency_assessment = Some(assessment);
+    }
+    assert_eq!(run(&input).outcome, CaseOutcome::Indeterminate);
+}
+
+#[test]
+fn a_rebuttal_observed_after_case_as_of_cannot_close_a_defeater() {
+    let mut input = base_case();
+    add_defeater(&mut input, 20);
+    add_rebuttal(&mut input, 60, "defeater-a");
+    let report = run(&input);
+    assert_eq!(report.outcome, CaseOutcome::Defeated);
+    assert_eq!(report.open_defeater_ids, vec!["defeater-a"]);
+}
