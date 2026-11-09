@@ -103,9 +103,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "gpu"
+            ]
           },
           "resources": {
             "latency_ms": 70,
@@ -160,9 +163,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "npu"
+            ]
           },
           "resources": {
             "latency_ms": 25,
@@ -279,9 +285,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "gpu"
+            ]
           },
           "resources": {
             "latency_ms": 70,
@@ -335,9 +344,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "npu"
+            ]
           },
           "resources": {
             "latency_ms": 25,
@@ -453,9 +465,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "gpu"
+            ]
           },
           "resources": {
             "latency_ms": 70,
@@ -510,9 +525,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "npu"
+            ]
           },
           "resources": {
             "latency_ms": 25,
@@ -629,9 +647,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "gpu"
+            ]
           },
           "resources": {
             "latency_ms": 70,
@@ -686,9 +707,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "npu"
+            ]
           },
           "resources": {
             "latency_ms": 25,
@@ -805,9 +829,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "gpu"
+            ]
           },
           "resources": {
             "latency_ms": 70,
@@ -862,9 +889,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "npu"
+            ]
           },
           "resources": {
             "latency_ms": 25,
@@ -981,9 +1011,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "gpu"
+            ]
           },
           "resources": {
             "latency_ms": 70,
@@ -1037,9 +1070,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "npu"
+            ]
           },
           "resources": {
             "latency_ms": 25,
@@ -1156,9 +1192,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "gpu"
+            ]
           },
           "resources": {
             "latency_ms": 70,
@@ -1213,9 +1252,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "npu"
+            ]
           },
           "resources": {
             "latency_ms": 25,
@@ -1332,9 +1374,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "gpu"
+            ]
           },
           "resources": {
             "latency_ms": 70,
@@ -1389,9 +1434,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "npu"
+            ]
           },
           "resources": {
             "latency_ms": 25,
@@ -1508,9 +1556,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "gpu"
+            ]
           },
           "resources": {
             "latency_ms": 70,
@@ -1565,9 +1616,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "npu"
+            ]
           },
           "resources": {
             "latency_ms": 25,
@@ -1685,9 +1739,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "gpu"
+            ]
           },
           "resources": {
             "latency_ms": 70,
@@ -1742,9 +1799,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "npu"
+            ]
           },
           "resources": {
             "latency_ms": 25,
@@ -1866,9 +1926,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "gpu"
+            ]
           },
           "resources": {
             "latency_ms": 70,
@@ -1923,9 +1986,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "npu"
+            ]
           },
           "resources": {
             "latency_ms": 25,
@@ -2042,9 +2108,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "gpu"
+            ]
           },
           "resources": {
             "latency_ms": 70,
@@ -2099,9 +2168,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "npu"
+            ]
           },
           "resources": {
             "latency_ms": 25,
@@ -2224,9 +2296,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "gpu"
+            ]
           },
           "resources": {
             "latency_ms": 70,
@@ -2281,9 +2356,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "npu"
+            ]
           },
           "resources": {
             "latency_ms": 25,
@@ -2407,9 +2485,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "gpu"
+            ]
           },
           "resources": {
             "latency_ms": 70,
@@ -2464,9 +2545,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "npu"
+            ]
           },
           "resources": {
             "latency_ms": 25,
@@ -2587,9 +2671,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "gpu"
+            ]
           },
           "resources": {
             "latency_ms": 70,
@@ -2644,9 +2731,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "npu"
+            ]
           },
           "resources": {
             "latency_ms": 25,
@@ -2769,9 +2859,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "gpu"
+            ]
           },
           "resources": {
             "latency_ms": 70,
@@ -2826,9 +2919,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "npu"
+            ]
           },
           "resources": {
             "latency_ms": 25,
@@ -2950,9 +3046,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "gpu"
+            ]
           },
           "resources": {
             "latency_ms": 70,
@@ -3007,9 +3106,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "npu"
+            ]
           },
           "resources": {
             "latency_ms": 25,
@@ -3131,9 +3233,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "gpu"
+            ]
           },
           "resources": {
             "latency_ms": 70,
@@ -3188,9 +3293,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "npu"
+            ]
           },
           "resources": {
             "latency_ms": 25,
@@ -3308,9 +3416,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "gpu"
+            ]
           },
           "resources": {
             "latency_ms": 70,
@@ -3365,9 +3476,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "npu"
+            ]
           },
           "resources": {
             "latency_ms": 25,
@@ -3484,9 +3598,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "gpu"
+            ]
           },
           "resources": {
             "latency_ms": 20,
@@ -3541,9 +3658,12 @@
           },
           "runtime": {
             "runtime_digest": "runtime:hdc-v1",
-            "backend_observed": "cpu",
             "backend_required": "cpu",
-            "workload_digest": "workload:hdc-retrieval-v1"
+            "workload_digest": "workload:hdc-retrieval-v1",
+            "backend_support_claims": [
+              "cpu",
+              "npu"
+            ]
           },
           "resources": {
             "latency_ms": 35,
