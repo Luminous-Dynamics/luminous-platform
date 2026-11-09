@@ -3249,6 +3249,12 @@ mod tests {
             .map(|arm| synthetic_arm_result(0, 1, arm, true, true))
             .collect();
         results[1].model_token_preflight = None;
+        results[1].status = ArmStatus::PreflightUnavailable;
+        results[1].score = None;
+        results[1].reasoner_time_micros = None;
+        results[1].reasoner_session_id = None;
+        results[1].usage = None;
+        results[1].answer = None;
         assert_eq!(
             analyze_paired_context_results(&results, 77),
             Err(ContextExperimentError::TokenizerPreflightAvailabilityMismatch)
