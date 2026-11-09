@@ -1127,7 +1127,7 @@ fn validate_arm_order(
         return Err(ContextExperimentError::InvalidArmOrder);
     }
     let expected = counterbalanced_arm_order(profile.arm_order_seed, profile.counterbalance_slot)?;
-    if order.iter().copied().ne(expected.into_iter()) {
+    if order.iter().copied().ne(expected) {
         return Err(ContextExperimentError::InvalidArmOrder);
     }
     Ok(())
@@ -1808,9 +1808,9 @@ pub fn analyze_paired_context_results(
                 total_stale_or_future_evidence_claims,
                 correct_rate_all_ppm: rate_ppm(correct_roots, n),
                 grounded_rate_all_ppm: rate_ppm(grounded_roots, n),
-                correct_rate_scored_ppm: (scored.len() > 0)
+                correct_rate_scored_ppm: (!scored.is_empty())
                     .then(|| rate_ppm(correct_roots, scored.len())),
-                grounded_rate_scored_ppm: (scored.len() > 0)
+                grounded_rate_scored_ppm: (!scored.is_empty())
                     .then(|| rate_ppm(grounded_roots, scored.len())),
                 mean_context_bytes: total_context_bytes / n as u128,
                 mean_estimated_input_tokens: total_estimated_tokens / n as u128,
