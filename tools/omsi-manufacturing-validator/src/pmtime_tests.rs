@@ -9,7 +9,7 @@ const FIXTURE_SCHEMA: &str =
 const REPORT_SCHEMA: &str = include_str!("../schema/pmtime-integrity-report.schema.json");
 
 #[test]
-fn frozen_pmtime_pack_executes_all_fourteen_cases() {
+fn frozen_pmtime_pack_executes_all_twenty_cases() {
     let document: Value = serde_json::from_str(FIXTURES).expect("fixture JSON");
     let input_schema: Value = serde_json::from_str(FIXTURE_SCHEMA).expect("fixture schema JSON");
     assert!(draft202012::meta::is_valid(&input_schema));
