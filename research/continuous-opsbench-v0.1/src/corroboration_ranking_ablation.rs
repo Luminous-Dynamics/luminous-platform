@@ -682,7 +682,8 @@ mod tests {
         let evidence = vec![
             ev("e1", "candidate", "s1", "domain-a"),
             ev("e2", "candidate", "s2", "domain-b"),
-            ev("e3", "other", "s3", "domain-c"),
+            ev("e3", "candidate", "s3", "domain-c"),
+            ev("e4", "other", "s4", "domain-c"),
         ];
         let mut graph = graph();
         graph.nodes.get_mut("host-a").unwrap().depends_on.insert("shared".into());
