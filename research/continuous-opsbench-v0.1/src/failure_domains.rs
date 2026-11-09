@@ -490,10 +490,7 @@ mod tests {
             policy(),
         );
 
-        assert_eq!(
-            report.status,
-            IndependenceStatus::SharedDeclaredDependency
-        );
+        assert_eq!(report.status, IndependenceStatus::SharedDeclaredDependency);
         assert_eq!(
             report.shared_dependencies,
             vec!["shared-clock", "shared-idp"]
