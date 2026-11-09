@@ -25,7 +25,9 @@ pub enum AuditStatus {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum WakeDisposition {
-    ProbeRequested { request_id: String },
+    ProbeRequested {
+        request_id: String,
+    },
     /// The policy selected an eligible probe, but no admission request exists.
     /// Carries the exact catalog contract snapshot visible at proposal time.
     ProbeProposedNotAdmitted {
@@ -631,8 +633,7 @@ pub fn source_qualified_decisions_to_receipts(
 
             let decision_id = format!(
                 "scheduled-policy:{wake_index}:{decision_index}:{}:{}",
-                decision.event.sequence,
-                wake.wake_tick
+                decision.event.sequence, wake.wake_tick
             );
             receipts.push(WakeDecisionReceipt {
                 decision_id,
@@ -781,9 +782,7 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
                 continue;
             }
             let decision = matching[0];
-            if decision.source_id != watch.source_id
-                || !valid_sha256(&decision.payload_digest)
-            {
+            if decision.source_id != watch.source_id || !valid_sha256(&decision.payload_digest) {
                 report.fail(AuditFailure::WakeRecordMalformed);
                 continue;
             }
@@ -1493,10 +1492,7 @@ mod tests {
         assert_eq!(receipts[0].source_id, "event-feed-a");
         assert_eq!(receipts[0].source_epoch, "epoch-1");
         assert_eq!(receipts[0].event_id, "event-10");
-        assert_eq!(
-            receipts[0].payload_digest,
-            format!("sha256:{:064x}", 10)
-        );
+        assert_eq!(receipts[0].payload_digest, format!("sha256:{:064x}", 10));
         assert_eq!(receipts[0].incident_id, "incident-a");
         assert_eq!(receipts[0].event_sequence, 10);
         assert_eq!(receipts[0].wake_tick, 6);
