@@ -215,8 +215,6 @@ pub struct ContextPacket {
     /// Evaluator-only temporal bounds; never rendered into the model prompt.
     pub audited_at_ms: u64,
     pub maximum_evidence_age_ms: u64,
-    /// Zero-based position in the supplied, preregistered arm order.
-    pub arm_order_position: u8,
     pub arm: ContextArm,
     pub target_object_ref: String,
     pub evidence: ContextPresentation,
@@ -373,6 +371,10 @@ pub struct ContextArmResult {
     pub paired_block_id: String,
     pub attempt_id: u32,
     pub profile: ContextExperimentProfile,
+    /// Frozen per-arm resource limits; exact-equality checked across paired arms.
+    pub budget: ContextBudget,
+    /// Zero-based position in the preregistered counterbalanced arm order.
+    pub arm_order_position: u8,
     pub arm: ContextArm,
     pub status: ArmStatus,
     pub compiler_time_micros: u128,
@@ -420,6 +422,8 @@ pub enum ContextExperimentError {
     DuplicateReasonerSessionId,
     ReasonerSessionMismatch,
     ReasonerManifestMismatch,
+    PairedBudgetMismatch,
+    TokenizerPreflightAvailabilityMismatch,
 }
 
 fn non_empty(value: &str) -> bool {
@@ -1137,6 +1141,7 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
                 paired_block_id: packet.paired_block_id.clone(),
                 attempt_id: packet.attempt_id,
                 profile: packet.profile.clone(),
+                budget,
                 arm_order_position: arm_order_position as u8,
                 arm: *arm,
                 status: ArmStatus::BudgetExceeded,
@@ -1191,6 +1196,7 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
             paired_block_id: packet.paired_block_id.clone(),
             attempt_id: packet.attempt_id,
             profile: packet.profile.clone(),
+            budget,
             arm_order_position: arm_order_position as u8,
             arm: *arm,
             status,
@@ -1462,9 +1468,27 @@ pub fn analyze_paired_context_results(
         {
             return Err(ContextExperimentError::InvalidExperimentProfile);
         }
+        let invoked = result.reasoner_time_micros.is_some();
+        let preflight_rejected = result.context_bytes > result.budget.maximum_context_bytes
+            || result
+                .model_token_preflight
+                .is_some_and(|tokens| tokens > result.budget.maximum_input_tokens);
+        let actual_usage_exceeded = result.usage.as_ref().is_some_and(|usage| {
+            usage.input_tokens > result.budget.maximum_input_tokens
+                || usage.output_tokens > result.budget.maximum_output_tokens
+                || usage.tool_calls > result.budget.maximum_tool_calls
+        });
+        let wall_time_exceeded = result.reasoner_time_micros.is_some_and(|elapsed| {
+            elapsed > u128::from(result.budget.maximum_wall_time_ms) * 1_000
+        });
         if (result.status == ArmStatus::Scored) != result.score.is_some()
-            || result.reasoner_time_micros.is_some() != result.usage.is_some()
-            || result.reasoner_time_micros.is_some() != result.reasoner_session_id.is_some()
+            || invoked != result.usage.is_some()
+            || invoked != result.reasoner_session_id.is_some()
+            || invoked != result.answer.is_some()
+            || (preflight_rejected && invoked)
+            || (actual_usage_exceeded && result.status != ArmStatus::BudgetExceeded)
+            || (wall_time_exceeded && result.status != ArmStatus::BudgetExceeded)
+            || (result.status == ArmStatus::Scored && preflight_rejected)
         {
             return Err(ContextExperimentError::InvalidExperimentProfile);
         }
@@ -1547,6 +1571,15 @@ pub fn analyze_paired_context_results(
                 || result.attempt_id != first.attempt_id
         }) {
             return Err(ContextExperimentError::ManifestMismatch);
+        }
+        if block.values().any(|result| result.budget != first.budget) {
+            return Err(ContextExperimentError::PairedBudgetMismatch);
+        }
+        let exact_preflight_available = first.model_token_preflight.is_some();
+        if block.values().any(|result| {
+            result.model_token_preflight.is_some() != exact_preflight_available
+        }) {
+            return Err(ContextExperimentError::TokenizerPreflightAvailabilityMismatch);
         }
         if key.attempt_id == 0 {
             return Err(ContextExperimentError::InvalidArmOrder);
@@ -2150,6 +2183,7 @@ mod tests {
             paired_block_id: format!("{scenario_id}-attempt-{attempt_id}"),
             attempt_id,
             profile,
+            budget: budget(),
             arm_order_position: order
                 .iter()
                 .position(|candidate| *candidate == arm)
@@ -2944,6 +2978,45 @@ mod tests {
         invalid.profile.counterbalance_slot = 5;
         assert_eq!(
             compile_context_packet(&invalid, ContextArm::RawSourceRecords),
+            Err(ContextExperimentError::InvalidExperimentProfile)
+        );
+    }
+
+    #[test]
+    fn analyzer_rejects_a_budget_change_between_paired_arms() {
+        let mut results: Vec<_> = CONTEXT_COMPILATION_ARMS
+            .into_iter()
+            .map(|arm| synthetic_arm_result(0, 1, arm, true, true))
+            .collect();
+        results[1].budget.maximum_tool_calls += 1;
+        assert_eq!(
+            analyze_paired_context_results(&results, 77),
+            Err(ContextExperimentError::PairedBudgetMismatch)
+        );
+    }
+
+    #[test]
+    fn analyzer_rejects_mixed_exact_tokenizer_preflight_availability() {
+        let mut results: Vec<_> = CONTEXT_COMPILATION_ARMS
+            .into_iter()
+            .map(|arm| synthetic_arm_result(0, 1, arm, true, true))
+            .collect();
+        results[1].model_token_preflight = None;
+        assert_eq!(
+            analyze_paired_context_results(&results, 77),
+            Err(ContextExperimentError::TokenizerPreflightAvailabilityMismatch)
+        );
+    }
+
+    #[test]
+    fn analyzer_rejects_invocation_after_preflight_detected_budget_overrun() {
+        let mut results: Vec<_> = CONTEXT_COMPILATION_ARMS
+            .into_iter()
+            .map(|arm| synthetic_arm_result(0, 1, arm, true, true))
+            .collect();
+        results[1].model_token_preflight = Some(results[1].budget.maximum_input_tokens + 1);
+        assert_eq!(
+            analyze_paired_context_results(&results, 77),
             Err(ContextExperimentError::InvalidExperimentProfile)
         );
     }
