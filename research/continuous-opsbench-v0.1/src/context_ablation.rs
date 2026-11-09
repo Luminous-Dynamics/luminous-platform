@@ -911,6 +911,39 @@ fn score_answer(
             .map(|item| (item.evidence_id.as_str(), item.object_ref.as_str()))
             .collect(),
     };
+    let current_evidence_ids: BTreeSet<&str> = match &packet.evidence {
+        ContextPresentation::Raw(records) => records
+            .iter()
+            .filter(|item| {
+                item.state != EvidenceState::Unknown
+                    && item.observed_at_ms <= packet.audited_at_ms
+                    && packet
+                        .audited_at_ms
+                        .saturating_sub(item.observed_at_ms)
+                        <= packet.maximum_evidence_age_ms
+                    && item
+                        .valid_until_ms
+                        .is_none_or(|valid_until| valid_until > packet.audited_at_ms)
+            })
+            .map(|item| item.evidence_id.as_str())
+            .collect(),
+        ContextPresentation::Normalized(records) => records
+            .iter()
+            .filter(|item| {
+                item.state != EvidenceState::Unknown
+                    && item.observed_at_ms <= packet.audited_at_ms
+                    && packet
+                        .audited_at_ms
+                        .saturating_sub(item.observed_at_ms)
+                        <= packet.maximum_evidence_age_ms
+                    && item
+                        .valid_until_ms
+                        .is_none_or(|valid_until| valid_until > packet.audited_at_ms)
+            })
+            .map(|item| item.evidence_id.as_str())
+            .collect(),
+    };
+
     let mut claimed = BTreeSet::new();
     let mut claim_count = 0_usize;
     let mut supported = BTreeSet::new();
@@ -958,9 +991,10 @@ fn score_answer(
     });
     let root_object_grounded = answer.root_object_ref.as_deref().is_some_and(|root| {
         supported.iter().any(|evidence_id| {
-            object_by_id
-                .get(evidence_id.as_str())
-                .is_some_and(|object_ref| *object_ref == root)
+            current_evidence_ids.contains(evidence_id.as_str())
+                && object_by_id
+                    .get(evidence_id.as_str())
+                    .is_some_and(|object_ref| *object_ref == root)
         }) || packet.relations.iter().any(|relation| {
             relation.state == EvidenceState::Present
                 && relation.from_object == packet.target_object_ref
@@ -971,14 +1005,10 @@ fn score_answer(
                     .saturating_sub(relation.observed_at_ms)
                     <= packet.maximum_evidence_age_ms
                 && supported.contains(relation.evidence_id.as_str())
+                && current_evidence_ids.contains(relation.evidence_id.as_str())
                 && state_by_id.get(relation.evidence_id.as_str())
                     == Some(&EvidenceState::Present)
                 && packet.evidence_ids.contains(&relation.evidence_id)
-                && packet
-                    .temporal
-                    .iter()
-                    .find(|item| item.evidence_id == relation.evidence_id)
-                    .is_none_or(|item| item.freshness == Freshness::Current)
         })
     });
 
@@ -2839,6 +2869,53 @@ mod tests {
         assert!(score.root_cause_correct);
         assert!(score.root_object_visible);
         assert!(score.root_object_grounded);
+    }
+
+    #[test]
+    fn stale_direct_evidence_can_be_cited_but_cannot_ground_a_root() {
+        let mut input = input();
+        let change = input
+            .evidence
+            .iter_mut()
+            .find(|item| item.evidence_id == "ev-change")
+            .unwrap();
+        change.observed_at_ms = 500;
+        let (packet, _) =
+            compile_context_packet(&input, ContextArm::NormalizedRecords).unwrap();
+        let answer = DiagnosisAnswer {
+            root_object_ref: Some("payments-config".into()),
+            supporting_evidence_ids: vec!["ev-change".into()],
+            alternative_object_refs: Vec::new(),
+            abstained: false,
+        };
+        let score = score_answer(&packet, &truth(), &answer);
+        assert!(score.root_object_visible);
+        assert!(score.supported_evidence_precision_ppm > 0);
+        assert!(!score.root_object_grounded);
+    }
+
+    #[test]
+    fn fresh_relation_cannot_be_grounded_by_stale_backing_evidence() {
+        let mut input = input();
+        input.relations[0].to_object = "payments-config".into();
+        input.relations[0].observed_at_ms = 990;
+        let change = input
+            .evidence
+            .iter_mut()
+            .find(|item| item.evidence_id == "ev-change")
+            .unwrap();
+        change.observed_at_ms = 500;
+        let (packet, _) =
+            compile_context_packet(&input, ContextArm::TopologyAndDiffs).unwrap();
+        let answer = DiagnosisAnswer {
+            root_object_ref: Some("payments-config".into()),
+            supporting_evidence_ids: vec!["ev-change".into()],
+            alternative_object_refs: Vec::new(),
+            abstained: false,
+        };
+        let score = score_answer(&packet, &truth(), &answer);
+        assert!(score.root_object_visible);
+        assert!(!score.root_object_grounded);
     }
 
     #[test]
