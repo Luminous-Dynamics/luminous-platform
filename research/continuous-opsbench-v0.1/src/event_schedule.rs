@@ -899,12 +899,12 @@ fn process_event(
         if buffered == event {
             metrics.duplicates_suppressed += 1;
             push_record(
-            records,
-            EventRecordIdentity::from(event),
-            processing_tick,
-            RecordDisposition::DuplicateSuppressed,
-            true,
-        );
+                records,
+                EventRecordIdentity::from(event),
+                processing_tick,
+                RecordDisposition::DuplicateSuppressed,
+                true,
+            );
             return None;
         }
         metrics.identity_collisions += 1;
