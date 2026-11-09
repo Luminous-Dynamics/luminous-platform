@@ -57,10 +57,12 @@ Use the native suite and preserve its official scoring; use Luminous frozen work
 
 Standards and upstream references:
 
-- SPEC CPU 2026: https://www.spec.org/cpu2026/
-- MLPerf Inference v6.1 results: https://mlcommons.org/2026/09/mlperf-inference-v6-1-results/\n- MLPerf Mobile v6.0: https://mlcommons.org/2026/06/mlperf-mobile-v6/\n- MLPerf Tiny v1.4: https://mlcommons.org/2026/07/mlperf-tiny-v1-4-results/\n- MLPerf Power working group: https://mlcommons.org/working-groups/benchmarks/power/
-- MLPerf Client: https://mlcommons.org/benchmarks/client/
-- MLCommons benchmark programme: https://mlcommons.org/
+- SPEC CPU 2026: https://open.spec.org/cpu2026/
+- MLPerf Inference v6.1 official results (16 Sep 2026): https://mlcommons.org/2026/09/mlperf-inference-v6-1-results/
+- MLPerf Inference v6.1 industry analysis (17 Sep 2026): https://mlcommons.org/2026/09/chairs-mlperf-inference-v6-1/
+- MLPerf Client v2.0: https://mlcommons.org/benchmarks/client/
+- MLPerf Mobile v6.0 results: https://mlcommons.org/2026/06/mlperf-mobile-v6/
+- MLPerf Tiny v1.4 results: https://mlcommons.org/2026/07/mlperf-tiny-v1-4-results/
 - OpenXR CTS: https://github.com/KhronosGroup/OpenXR-CTS
 - fio: https://github.com/axboe/fio
 - iperf3: https://github.com/esnet/iperf
