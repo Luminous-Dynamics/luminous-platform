@@ -17,6 +17,31 @@
       "git_blob_sha": "bdb3c26b361cbfcdb7e68425af65f4b0d51434b1",
       "content_sha256": null,
       "capture_status": "git_blob_only"
+    },
+    "cohort_manifest_source": {
+      "repository": "SREGym/SREGym-website",
+      "commit_sha": "c4101aace3578353c96a2d837f60e48c3e95d9c4",
+      "path": "public/data/sregym-0508-problems.csv",
+      "git_blob_sha": "8943b471a38f03238321b3e052a147a7fb8a668c",
+      "content_sha256": null,
+      "capture_status": "git_blob_only",
+      "local_snapshot_path": "sregym-0508-cohort.csv"
+    },
+    "source_reconciliation": {
+      "candidate_repository": "SREGym/SREGym",
+      "candidate_commit_sha": "ce73adf2c9212b4804793cbbabbfbb33eccd0f0f",
+      "candidate_commit_date_utc": "2026-04-24T17:11:27Z",
+      "registry_path": "sregym/conductor/problems/registry.py",
+      "registry_blob_sha": "3ff155517a8e1982cdce44ec69677feee2d0aee6",
+      "registry_id_count": 90,
+      "registry_ids_snapshot_path": "sregym-0508-registry-ids.txt",
+      "tasklist_yml_example_path": "sregym/conductor/tasklist.yml.example",
+      "tasklist_yml_example_blob_sha": "2ad43f241e153cfacff26c62544ca79b930529bb",
+      "tasklist_yml_example_id_count": 86,
+      "tasklist_yml_runtime_policy": "must_be_absent_to_select_all_registered_ids",
+      "cohort_registry_match": "exact_set_match",
+      "execution_revision_attested": false,
+      "interpretation": "The candidate 24-April revision's registered problem IDs exactly equal the published SREGym-0508 90-ID cohort. The checked-in tasklist.yml.example contains 86 IDs and is not the 90-fault cohort. At this revision, absence of the gitignored tasklist.yml makes ProblemRegistry select all 90 registered IDs. This is a source-set match, not proof that this revision was used by every historical leaderboard execution."
     }
   },
   "study_design": {
@@ -49,14 +74,20 @@
   },
   "source_pins": {
     "sregym_repository": "SREGym/SREGym",
-    "sregym_commit_sha": null,
-    "scenario_manifest_path": "not-yet-pinned",
-    "scenario_manifest_blob_sha": null,
+    "sregym_commit_sha": "ce73adf2c9212b4804793cbbabbfbb33eccd0f0f",
+    "scenario_manifest_path": "public/data/sregym-0508-problems.csv",
+    "scenario_manifest_blob_sha": "8943b471a38f03238321b3e052a147a7fb8a668c",
     "scorer_path": null,
     "scorer_blob_sha": null,
     "submodules_digest": null,
     "container_lock_digest": null,
-    "fault_injector_digest": null
+    "fault_injector_digest": null,
+    "scenario_manifest_repository": "SREGym/SREGym-website",
+    "scenario_manifest_commit_sha": "c4101aace3578353c96a2d837f60e48c3e95d9c4",
+    "registry_path": "sregym/conductor/problems/registry.py",
+    "registry_blob_sha": "3ff155517a8e1982cdce44ec69677feee2d0aee6",
+    "tasklist_yml_path": "sregym/conductor/tasklist.yml",
+    "tasklist_yml_must_be_absent": true
   },
   "execution_environment": {
     "cluster_provider": null,
@@ -66,7 +97,9 @@
     "helm_lock_digest": null,
     "runtime_lock_digest": null,
     "reset_protocol_digest": null,
-    "network_profile_digest": null
+    "network_profile_digest": null,
+    "tasklist_override_state": "absent",
+    "tasklist_override_digest": null
   },
   "arms": [
     {
