@@ -79,7 +79,7 @@
             "null"
           ]
         },
-        "inventory_source": {
+        "cohort_observation_source": {
           "type": "object",
           "additionalProperties": false,
           "required": [
@@ -265,7 +265,7 @@
         "same_run_e2e_metric",
         "retry_policy",
         "dropped_run_policy",
-        "native_tool_surface_unchanged"
+        "native_benchmark_harness_unchanged"
       ],
       "properties": {
         "native_scorer_required": {
@@ -303,8 +303,8 @@
         "dropped_run_policy": {
           "const": "retain_all_started_attempts"
         },
-        "native_tool_surface_unchanged": {
-          "type": "boolean"
+        "native_benchmark_harness_unchanged": {
+          "const": true
         }
       }
     },
