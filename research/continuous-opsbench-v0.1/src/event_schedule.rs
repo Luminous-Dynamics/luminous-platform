@@ -444,8 +444,7 @@ fn validate_checkpoint(
                     || *sequence == u64::MAX
                     || !valid_sha256(digest)
             })
-        || checkpoint.gap_started_at_tick.is_some()
-            != checkpoint.gap_deadline_tick.is_some()
+        || checkpoint.gap_started_at_tick.is_some() != checkpoint.gap_deadline_tick.is_some()
         || checkpoint
             .gap_started_at_tick
             .zip(checkpoint.gap_deadline_tick)
@@ -459,8 +458,7 @@ fn validate_checkpoint(
                 || checkpoint.seen_event_ids.contains_key(&event.event_id)
                 || validate_event(event).is_err()
         })
-        || (!checkpoint.buffered_events.is_empty()
-            && checkpoint.gap_started_at_tick.is_none())
+        || (!checkpoint.buffered_events.is_empty() && checkpoint.gap_started_at_tick.is_none())
         || checkpoint
             .observed_watermark_next_sequence
             .is_some_and(|sequence| sequence == 0 || sequence == u64::MAX)
@@ -827,7 +825,10 @@ fn gap_timeout(
     metrics.gap_timeouts += 1;
     push_record(
         records,
-        &format!("gap:{}:{}", checkpoint.source_epoch, checkpoint.next_sequence),
+        &format!(
+            "gap:{}:{}",
+            checkpoint.source_epoch, checkpoint.next_sequence
+        ),
         "",
         checkpoint.next_sequence,
         checkpoint.gap_deadline_tick.unwrap_or(processing_tick),
@@ -1081,9 +1082,7 @@ fn process_event(
                     state.records,
                 ));
             }
-            if let Some(status) =
-                process_event_in_order(state, &buffered_event, processing_tick)
-            {
+            if let Some(status) = process_event_in_order(state, &buffered_event, processing_tick) {
                 return Some(status);
             }
         }
@@ -2136,10 +2135,7 @@ mod tests {
         );
         let result = run_with_gap(
             AttentionStrategy::EventTriggered,
-            &[
-                TimelineRecord::Event(later),
-                TimelineRecord::Event(missing),
-            ],
+            &[TimelineRecord::Event(later), TimelineRecord::Event(missing)],
             10,
             None,
             5,
@@ -2207,7 +2203,11 @@ mod tests {
         assert_eq!(result.checkpoint.next_sequence, 4);
         assert!(result.checkpoint.buffered_events.is_empty());
         assert_eq!(
-            result.wakes.iter().map(|wake| wake.event_ids[0].as_str()).collect::<Vec<_>>(),
+            result
+                .wakes
+                .iter()
+                .map(|wake| wake.event_ids[0].as_str())
+                .collect::<Vec<_>>(),
             vec!["event-1", "event-2", "event-3"]
         );
     }
@@ -2393,10 +2393,7 @@ mod tests {
             8,
         );
         assert_eq!(pending.status, ScheduleStatus::DeliveryGapPending);
-        assert_eq!(
-            pending.checkpoint.observed_watermark_next_sequence,
-            Some(2)
-        );
+        assert_eq!(pending.checkpoint.observed_watermark_next_sequence, Some(2));
 
         let missing = event(
             "event-1",
@@ -2869,10 +2866,7 @@ mod tests {
         assert_eq!(result.status, ScheduleStatus::Quiet);
         assert_eq!(result.metrics.restarts_accepted, 1);
         assert_eq!(result.checkpoint.source_epoch, "epoch-2");
-        assert_eq!(
-            result.checkpoint.observed_watermark_next_sequence,
-            Some(1)
-        );
+        assert_eq!(result.checkpoint.observed_watermark_next_sequence, Some(1));
         assert_eq!(result.checkpoint.gap_deadline_tick, None);
     }
 
@@ -3088,7 +3082,6 @@ pub fn run_from_checkpoint(
         Some(checkpoint),
     )
 }
-
 
 /// Resume a persisted sequence-gap checkpoint under the same explicit bounded
 /// gap policy. A pending checkpoint cannot be resumed through the strict
