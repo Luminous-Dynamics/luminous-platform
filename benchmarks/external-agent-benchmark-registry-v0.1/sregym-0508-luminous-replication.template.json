@@ -63,7 +63,7 @@
   },
   "native_protocol": {
     "native_scorer_required": true,
-    "native_scorer_revision": null,
+    "native_scorer_revision": "ce73adf2c9212b4804793cbbabbfbb33eccd0f0f",
     "native_scorer_digest": null,
     "diagnosis_metric": "native_sregym_diagnosis",
     "mitigation_metric": "native_sregym_mitigation",
@@ -77,15 +77,23 @@
     "diagnosis_scoring_semantics": "per_problem_native_diagnosis_oracle_output",
     "mitigation_scoring_semantics": "per_problem_native_mitigation_state_oracle_output",
     "same_run_e2e_rule": "diagnosis.success == true AND mitigation.success == true in the same scenario_attempt receipt",
-    "missing_stage_policy": "unknown_and_not_credited_as_success"
+    "missing_stage_policy": "unknown_and_not_credited_as_success",
+    "oracle_failure_semantics": {
+      "judge_backend_unavailable": "null_verdict_success_unknown",
+      "judge_checklist_parse_exhausted": "default_all_answers_no_low_confidence",
+      "diagnosis_checkpoint_instability": "warning_only_score_current_expectation",
+      "prometheus_query_failure": "empty_firing_list_can_pass_sustained_silence",
+      "alert_oracle_window": "buffer_30s_poll_10s_for_120s_query_timeout_15s",
+      "generic_mitigation_rollout_timeout": "wait_60s_then_evaluate_current_pod_container_state"
+    }
   },
   "source_pins": {
     "sregym_repository": "SREGym/SREGym",
     "sregym_commit_sha": "ce73adf2c9212b4804793cbbabbfbb33eccd0f0f",
     "scenario_manifest_path": "public/data/sregym-0508-problems.csv",
     "scenario_manifest_blob_sha": "8943b471a38f03238321b3e052a147a7fb8a668c",
-    "scorer_path": null,
-    "scorer_blob_sha": null,
+    "scorer_path": "sregym/conductor/conductor.py",
+    "scorer_blob_sha": "4efcfbaf7219a8e0b55028632b7771684e90f7d6",
     "submodules_digest": null,
     "container_lock_digest": null,
     "fault_injector_digest": null,
@@ -94,7 +102,70 @@
     "registry_path": "sregym/conductor/problems/registry.py",
     "registry_blob_sha": "3ff155517a8e1982cdce44ec69677feee2d0aee6",
     "tasklist_yml_path": "sregym/conductor/tasklist.yml",
-    "tasklist_yml_must_be_absent": true
+    "tasklist_yml_must_be_absent": true,
+    "oracle_contract_snapshot_path": "sregym-0508-oracle-contract.json",
+    "oracle_implementation_files": [
+      {
+        "role": "conductor",
+        "path": "sregym/conductor/conductor.py",
+        "git_blob_sha": "4efcfbaf7219a8e0b55028632b7771684e90f7d6"
+      },
+      {
+        "role": "conductor_api",
+        "path": "sregym/conductor/conductor_api.py",
+        "git_blob_sha": "f87095eb339bd29e2aa3d495f5d8e2171bdc85ed"
+      },
+      {
+        "role": "problem_registry",
+        "path": "sregym/conductor/problems/registry.py",
+        "git_blob_sha": "3ff155517a8e1982cdce44ec69677feee2d0aee6"
+      },
+      {
+        "role": "diagnosis_oracle",
+        "path": "sregym/conductor/oracles/diagnosis_oracle.py",
+        "git_blob_sha": "5482b29493152245904c5349b644eea0961b41f4"
+      },
+      {
+        "role": "llm_judge_oracle",
+        "path": "sregym/conductor/oracles/llm_as_a_judge/llm_as_a_judge_oracle.py",
+        "git_blob_sha": "a6a09cb33ea3fbd6049c63b5637bb5757bca52ed"
+      },
+      {
+        "role": "llm_judge_engine",
+        "path": "sregym/conductor/oracles/llm_as_a_judge/judge.py",
+        "git_blob_sha": "cb50272b2abdf31109af4a4c6af684f5a8d7b6fd"
+      },
+      {
+        "role": "llm_judge_checklist",
+        "path": "sregym/conductor/oracles/llm_as_a_judge/rca_checklists.yaml",
+        "git_blob_sha": "239c43b94c0ba58263c0193b4b3634b30fb6d726"
+      },
+      {
+        "role": "mitigation_oracle",
+        "path": "sregym/conductor/oracles/mitigation.py",
+        "git_blob_sha": "20d4bf9215fd933ca726b88f11bf0cc739e053bb"
+      },
+      {
+        "role": "alert_oracle",
+        "path": "sregym/conductor/oracles/alert_oracle.py",
+        "git_blob_sha": "2439d327b861218eb8041cb3e92ba68fb4321f06"
+      },
+      {
+        "role": "sustained_readiness_oracle",
+        "path": "sregym/conductor/oracles/sustained_readiness.py",
+        "git_blob_sha": "a3bc4f069fbb936fdf6a514a72d74bb6736185bb"
+      },
+      {
+        "role": "kafka_fault_definition",
+        "path": "sregym/conductor/problems/kafka_queue_problems.py",
+        "git_blob_sha": "f0e6fcfd584eb2752c9bcf023860f7219a795fe0"
+      },
+      {
+        "role": "kubelet_fault_definition",
+        "path": "sregym/conductor/problems/kubelet_crash.py",
+        "git_blob_sha": "6f103550aaf3378ae0cfa7109678fc0e33737ec4"
+      }
+    ]
   },
   "execution_environment": {
     "cluster_provider": null,
