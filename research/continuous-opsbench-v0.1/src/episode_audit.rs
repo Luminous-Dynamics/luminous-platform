@@ -1575,9 +1575,12 @@ mod tests {
     #[test]
     fn source_qualified_audit_bridge_rejects_malformed_payload_digest() {
         let mut scheduled = scheduled_policy_decision();
+        scheduled[0].wake.events[0].identity.payload_digest = "sha256:truncated".into();
         scheduled[0].decisions[0].event.payload_digest = "sha256:truncated".into();
+        let mut proposals = probe_proposals();
+        proposals[0].event.payload_digest = "sha256:truncated".into();
         assert_eq!(
-            source_qualified_decisions_to_receipts(&scheduled, &probe_proposals()),
+            source_qualified_decisions_to_receipts(&scheduled, &proposals),
             Err(AuditFailure::WakeRecordMalformed)
         );
     }
@@ -1598,7 +1601,7 @@ mod tests {
         scheduled[0].decisions[0].event.source_epoch = "substituted-epoch".into();
         assert_eq!(
             source_qualified_decisions_to_receipts(&scheduled, &probe_proposals()),
-            Err(AuditFailure::ProbeProposalNotMatched)
+            Err(AuditFailure::OrphanWakeDecision)
         );
     }
 
