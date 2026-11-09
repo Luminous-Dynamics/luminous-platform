@@ -107,6 +107,10 @@ pub struct ContextExperimentProfile {
     pub scorer_digest: Digest,
     pub reasoning_effort: String,
     pub sampling_seed: u64,
+    /// External preregistration seed used to construct the supplied arm order.
+    pub arm_order_seed: u64,
+    /// Position in a five-block counterbalance cycle (0 through 4).
+    pub counterbalance_slot: u8,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -208,6 +212,8 @@ pub struct ContextPacket {
     pub paired_block_id: String,
     pub attempt_id: u32,
     pub profile: ContextExperimentProfile,
+    /// Zero-based position in the supplied, preregistered arm order.
+    pub arm_order_position: u8,
     pub arm: ContextArm,
     pub target_object_ref: String,
     pub evidence: ContextPresentation,
@@ -375,7 +381,9 @@ fn validate_input(input: &ContextExperimentInput) -> Result<(), ContextExperimen
     if !non_empty(&input.paired_block_id) {
         return Err(ContextExperimentError::EmptyPairedBlockId);
     }
-    if !non_empty(&input.profile.reasoning_effort) {
+    if !non_empty(&input.profile.reasoning_effort)
+        || usize::from(input.profile.counterbalance_slot) >= CONTEXT_COMPILATION_ARMS.len()
+    {
         return Err(ContextExperimentError::InvalidExperimentProfile);
     }
     if input.evidence.is_empty() {
@@ -949,7 +957,7 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
 
     let mut results = Vec::with_capacity(arm_order.len());
     let mut session_ids = BTreeSet::new();
-    for arm in arm_order {
+    for (arm_order_position, arm) in arm_order.iter().enumerate() {
         let (packet, compiler_time_micros) = compile_context_packet(input, *arm)?;
         if packet.context_bytes > budget.maximum_context_bytes
             || packet.estimated_input_tokens > budget.maximum_input_tokens
@@ -960,6 +968,7 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
                 paired_block_id: packet.paired_block_id.clone(),
                 attempt_id: packet.attempt_id,
                 profile: packet.profile.clone(),
+                arm_order_position: arm_order_position as u8,
                 arm: *arm,
                 status: ArmStatus::BudgetExceeded,
                 compiler_time_micros,
@@ -1005,6 +1014,7 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
             paired_block_id: packet.paired_block_id.clone(),
             attempt_id: packet.attempt_id,
             profile: packet.profile.clone(),
+            arm_order_position: arm_order_position as u8,
             arm: *arm,
             status,
             compiler_time_micros,
@@ -1105,6 +1115,7 @@ fn same_scenario_profile(
         && left.tool_catalog_digest == right.tool_catalog_digest
         && left.scorer_digest == right.scorer_digest
         && left.reasoning_effort == right.reasoning_effort
+        && left.arm_order_seed == right.arm_order_seed
     // Sampling seeds are allowed to vary across attempts within the same
     // scenario cluster; all other execution conditions remain pinned.
 }
@@ -1341,6 +1352,14 @@ pub fn analyze_paired_context_results(
                 || result.attempt_id != first.attempt_id
         }) {
             return Err(ContextExperimentError::ManifestMismatch);
+        }
+        let order_positions: BTreeSet<_> = block
+            .values()
+            .map(|result| result.arm_order_position)
+            .collect();
+        let expected_positions: BTreeSet<_> = (0..CONTEXT_COMPILATION_ARMS.len() as u8).collect();
+        if order_positions != expected_positions {
+            return Err(ContextExperimentError::InvalidArmOrder);
         }
     }
 
@@ -1724,6 +1743,8 @@ mod tests {
                 scorer_digest: digest(15),
                 reasoning_effort: "medium".into(),
                 sampling_seed: 7,
+                arm_order_seed: 0xA11C_E001,
+                counterbalance_slot: 0,
             },
             target_object_ref: "checkout-api".into(),
             audited_at_ms: 1_000,
@@ -1812,6 +1833,10 @@ mod tests {
             paired_block_id: format!("{scenario_id}-attempt-{attempt_id}"),
             attempt_id,
             profile,
+            arm_order_position: CONTEXT_COMPILATION_ARMS
+                .iter()
+                .position(|candidate| *candidate == arm)
+                .unwrap() as u8,
             arm,
             status: ArmStatus::Scored,
             compiler_time_micros: 10,
@@ -1918,6 +1943,10 @@ mod tests {
             .iter()
             .all(|result| result.status == ArmStatus::Scored));
         assert!(results.iter().all(|result| result.profile == input.profile));
+        assert_eq!(
+            results.iter().map(|result| result.arm_order_position).collect::<BTreeSet<_>>(),
+            (0..5_u8).collect()
+        );
         assert!(results
             .iter()
             .all(|result| result.reasoner_session_id.is_some()));
@@ -2283,6 +2312,19 @@ mod tests {
             .rendered_context
             .contains("bad\\|value\\\\ncontinued"));
         assert!(packet.rendered_context.contains("Some(10000)"));
+    }
+
+    #[test]
+    fn analyzer_rejects_duplicate_or_missing_arm_order_positions() {
+        let mut results = Vec::new();
+        for arm in CONTEXT_COMPILATION_ARMS {
+            results.push(synthetic_arm_result(0, 1, arm, true, true));
+        }
+        results[4].arm_order_position = results[3].arm_order_position;
+        assert_eq!(
+            analyze_paired_context_results(&results, 77),
+            Err(ContextExperimentError::InvalidArmOrder)
+        );
     }
 
     #[test]
