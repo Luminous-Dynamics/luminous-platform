@@ -808,9 +808,9 @@ mod tests {
     fn every_preregistered_scenario_matches_the_independent_evaluator() {
         let fixture = fixture_value();
         let report = evaluate_fixture(&fixture, FIXTURE.as_bytes()).expect("evaluation succeeds");
-        assert_eq!(report.scenario_count, 25);
+        assert_eq!(report.scenario_count, 28);
         assert_eq!(report.failed, 0, "{:#?}", report.cases);
-        assert_eq!(report.passed, 25);
+        assert_eq!(report.passed, 28);
         assert_eq!(report.evidence_class, "synthetic_fixture_evaluation_only");
     }
 

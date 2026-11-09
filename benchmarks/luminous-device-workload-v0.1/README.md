@@ -346,3 +346,6 @@ The expected runtime digest is request-owned: it is taken from the frozen reques
 ### Result-to-request binding hardening
 
 The synthetic result-validation controls now require an executor candidate ID matching the selected peer, request-owned runtime and workload digests, input commitment, expected oracle ID and expected oracle verifier ID. The oracle receipt's input commitment and output digest must match the request and exact output. DWF-001-27 and -28 are negative controls for wrong executor and wrong-output oracle receipts.
+
+
+The latest DWF-001 evaluator corpus is 28 synthetic scenarios. The result-validation subset includes incomplete/complete receipt, invalid signature, request-owned runtime binding, wrong executor identity and wrong-output oracle controls. The fixture result booleans are semantic test values, not cryptographic verification.

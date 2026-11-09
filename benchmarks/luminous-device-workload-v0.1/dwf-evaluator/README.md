@@ -44,3 +44,14 @@ The expected runtime digest is taken from the frozen workload requirements in th
 Result validation now binds the executor receipt to the selected peer, request-owned runtime/workload digests, input commitment, required correctness-oracle ID and required verifier ID. The oracle receipt must bind the exact request input and output digest. DWF-001-27 rejects a result from a peer that was not selected; DWF-001-28 rejects an oracle receipt for a different output.
 
 These verifier/signature booleans and IDs are synthetic fixture assertions only. The evaluator checks that the contract fields exist and agree; it does not cryptographically authenticate the executor or oracle, appraise the device, or run the HDC oracle. That production work is DWF-RESULT-001 #358.
+
+
+### Final fixture coverage in this tranche
+
+The 28-case corpus includes:
+- DWF-001-23: incomplete execution receipt rejection;
+- DWF-001-24: complete receipt positive control;
+- DWF-001-25: invalid executor signature rejection;
+- DWF-001-26: request-owned runtime digest positive control;
+- DWF-001-27: wrong/unselected executor rejection;
+- DWF-001-28: oracle output-commitment mismatch rejection.
