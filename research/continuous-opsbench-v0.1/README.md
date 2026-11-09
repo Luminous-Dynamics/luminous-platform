@@ -238,3 +238,12 @@ Every packet/result is bound to the same paired block, attempt, scenario revisio
 The analyzer reports, per fault family and arm: paired-block count, scored count, budget-exceeded count, correct-root and grounded-root counts, correctness/grounding over **all** paired blocks, conditional correctness/grounding among scored blocks, context bytes, estimated tokens, measured input tokens and reasoner time. Contrasts against raw-source context report all-block deltas alongside conditional deltas only where both arms scored, plus pair coverage and token/time differences. This preserves the distinction between better quality, better coverage and simply dropping hard/over-budget examples.
 
 These are analysis primitives, not observed results. The fixture reasoner is scripted; competitive results require the pinned live model and native benchmark protocol described in #318.
+
+
+### Model-visible context isolation and fresh sessions
+
+The reasoner adapter now receives only the rendered operational evidence text plus an equal per-arm budget. It does not receive the full `ContextPacket` or the evaluator-side scenario ID, paired-block ID, attempt number, arm enum/name, model/prompt/permission/tool/scorer digests, or sampling seed. The rendered context exposes the operational target and evidence; the arm-specific evidence presentation is necessarily visible, but the treatment label and pairing metadata are not serialized into the prompt.
+
+Before each arm, the adapter must create a fresh provider session and return its session ID. The runner rejects empty, reused or mismatched session IDs, and the result row retains the session ID for audit. The paired-results analyzer independently rejects duplicate session IDs across result rows. This is a structural contract, not proof that a remote provider truly erased all hidden conversational state; a live adapter must be tested with sentinel leakage controls and independent conversation isolation verification.
+
+The exact-head test suite also covers the `bool::then_some` eager-evaluation traps found during initial CI: future-dated timestamps must not subtract before their validity check, and empty scored-pair means must produce `None` rather than divide by zero.
