@@ -137,7 +137,15 @@
         "pairing_unit",
         "cluster_unit",
         "arm_order_seed",
-        "preregistered_protocol_digest"
+        "preregistered_protocol_digest",
+        "common_model_snapshot_digest",
+        "common_prompt_digest",
+        "common_permission_profile_digest",
+        "common_reasoning_effort",
+        "common_sampling_policy",
+        "common_context_budget_digest",
+        "common_tool_budget_digest",
+        "capability_equivalence_artifact_digest"
       ],
       "properties": {
         "comparison_mode": {
@@ -175,6 +183,60 @@
           "minimum": 0
         },
         "preregistered_protocol_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "common_model_snapshot_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "common_prompt_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "common_permission_profile_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "common_reasoning_effort": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "common_sampling_policy": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "common_context_budget_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "common_tool_budget_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "capability_equivalence_artifact_digest": {
           "type": [
             "string",
             "null"
