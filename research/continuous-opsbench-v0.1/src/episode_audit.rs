@@ -9,8 +9,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::event_schedule::{EventScheduleResult, RecordDisposition, ScheduleStatus};
 use crate::failure_domains::{
-    audit_observer_independence, ControlDomainProfile, FailureDomainGraph, FailureDomainNode,
-    IndependencePolicy, IndependenceStatus, InventoryState,
+    audit_observer_independence, ControlDomainProfile, FailureDomainGraph, IndependencePolicy,
+    IndependenceStatus,
 };
 use crate::scheduled_attention::{
     ProbeSelectionProposal, ScheduledWakeDecision, SourceQualifiedDisposition,
@@ -1259,11 +1259,12 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
                 report.missing_decisions += 1;
                 report.indeterminate(IndeterminateReason::MissingDecision);
             }
-            (None, _, Some(_)) | (_, None, Some(_)) => {
-                if !impact_independence_indeterminate {
-                    report.fail(AuditFailure::DecisionWithoutCompleteEvidence);
-                }
+            (None, _, Some(_)) | (_, None, Some(_))
+                if !impact_independence_indeterminate =>
+            {
+                report.fail(AuditFailure::DecisionWithoutCompleteEvidence);
             }
+            (None, _, Some(_)) | (_, None, Some(_)) => {}
             _ => {}
         }
     }
@@ -1298,6 +1299,7 @@ mod tests {
         SourceQualifiedEvent, SourceQualifiedEventDecision, SourceQualifiedEventIdentity,
         SourceQualifiedWakeBatch,
     };
+    use crate::failure_domains::{FailureDomainNode, InventoryState};
     use crate::stability::PlantObservation;
     use std::collections::BTreeMap;
 
