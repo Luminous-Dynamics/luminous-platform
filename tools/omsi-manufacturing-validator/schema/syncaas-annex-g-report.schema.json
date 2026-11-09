@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:omsi:syncaas-annex-g-report:0.2",
+  "title": "OMSI ITU-T G.8275 base-edition SyncaaS conformance report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "report_contract",
+    "status",
+    "authority",
+    "input_sha256",
+    "recommendation",
+    "edition",
+    "annex",
+    "window_seconds",
+    "case_count_expected",
+    "case_count_discovered",
+    "case_ids",
+    "discovery_complete",
+    "metadata_valid",
+    "passed_count",
+    "failure_count",
+    "reference_disagreement_count",
+    "profile_groups",
+    "per_case",
+    "claim_ceiling",
+    "non_claims",
+    "profile_baseline",
+    "profile_amendment_status",
+    "profile_specific_annexes",
+    "criterion_source_dataset_member",
+    "criterion_threshold_dataset_member",
+    "default_clockclass_availability_threshold",
+    "clockclass_ordering",
+    "frequency_layer_criterion_status"
+  ],
+  "properties": {
+    "report_contract": {
+      "const": "omsi-syncaas-annex-g-report/0.3"
+    },
+    "status": {
+      "enum": [
+        "passed",
+        "failed"
+      ]
+    },
+    "authority": {
+      "const": "synthetic_base_edition_clockclass_and_annex_g_state_machine_only"
+    },
+    "input_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "recommendation": {
+      "const": "ITU-T G.8275"
+    },
+    "edition": {
+      "const": "01/2026"
+    },
+    "annex": {
+      "const": "G"
+    },
+    "window_seconds": {
+      "const": 10
+    },
+    "case_count_expected": {
+      "const": 14
+    },
+    "case_count_discovered": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "case_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "discovery_complete": {
+      "type": "boolean"
+    },
+    "duplicate_case_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "metadata_valid": {
+      "type": "boolean"
+    },
+    "passed_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "failure_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "reference_disagreement_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "profile_groups": {
+      "type": "object"
+    },
+    "per_case": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "profile",
+          "result",
+          "expected",
+          "expected_match",
+          "passed"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "object"
+          },
+          "result": {
+            "type": "object"
+          },
+          "expected": {
+            "type": "object"
+          },
+          "expected_match": {
+            "type": "boolean"
+          },
+          "passed": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "claim_ceiling": {
+      "type": "string",
+      "minLength": 1
+    },
+    "non_claims": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "profile_baseline": {
+      "const": "02/2026"
+    },
+    "profile_amendment_status": {
+      "const": "BASE_EDITION_ONLY_NOT_AMENDMENT_1_CONFORMANCE"
+    },
+    "profile_specific_annexes": {
+      "const": {
+        "G.8275.1": "M",
+        "G.8275.2": "G"
+      }
+    },
+    "criterion_source_dataset_member": {
+      "const": "parentDS.grandmasterClockQuality.clockClass"
+    },
+    "criterion_threshold_dataset_member": {
+      "const": "defaultDS.clockclassAvailabilityThreshold"
+    },
+    "default_clockclass_availability_threshold": {
+      "const": 6
+    },
+    "clockclass_ordering": {
+      "const": "lower_numeric_value_is_better"
+    },
+    "frequency_layer_criterion_status": {
+      "const": "FURTHER_STUDY_NOT_SCORED"
+    }
+  }
+}

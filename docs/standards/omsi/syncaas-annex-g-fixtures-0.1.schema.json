@@ -1,0 +1,352 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:omsi:syncaas-annex-g-fixtures:0.2",
+  "title": "OMSI ITU-T G.8275 base-edition SyncaaS fixture pack 0.2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "version",
+    "state",
+    "standard",
+    "default_window_seconds",
+    "semantics",
+    "cases"
+  ],
+  "properties": {
+    "contract": {
+      "const": "omsi.syncaas.annex-g-fixture-pack"
+    },
+    "version": {
+      "const": "0.3.0-draft"
+    },
+    "state": {
+      "const": "SYNTHETIC_BASE_EDITION_FIXTURES_EXECUTABLE"
+    },
+    "standard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recommendation",
+        "edition",
+        "annex",
+        "optional",
+        "dataset_name",
+        "record_name",
+        "amendment_2026_08",
+        "notes"
+      ],
+      "properties": {
+        "recommendation": {
+          "const": "ITU-T G.8275"
+        },
+        "edition": {
+          "const": "01/2026"
+        },
+        "annex": {
+          "const": "G"
+        },
+        "optional": {
+          "const": true
+        },
+        "dataset_name": {
+          "const": "ptpServiceAvailabilityPerformanceMetricsDS"
+        },
+        "record_name": {
+          "const": "ptpServiceAvailabilityPerformanceMetricsDataRecord"
+        },
+        "amendment_2026_08": {
+          "const": "NOT_APPLIED"
+        },
+        "notes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "default_window_seconds": {
+      "const": 10
+    },
+    "semantics": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 14,
+      "maxItems": 14,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "dataset",
+          "profile",
+          "criterion",
+          "window_seconds",
+          "expected"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^SVC-[A-Z0-9-]+$"
+          },
+          "dataset": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "supported",
+              "enable"
+            ],
+            "properties": {
+              "supported": {
+                "type": "boolean"
+              },
+              "enable": {
+                "type": "boolean"
+              }
+            }
+          },
+          "profile": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "itu_t_profile",
+              "edition",
+              "profile_annex",
+              "amendment_2026_08",
+              "clock_type"
+            ],
+            "properties": {
+              "itu_t_profile": {
+                "enum": [
+                  "G.8275.1",
+                  "G.8275.2"
+                ]
+              },
+              "edition": {
+                "type": "string",
+                "minLength": 1
+              },
+              "profile_annex": {
+                "enum": [
+                  "M",
+                  "G"
+                ]
+              },
+              "amendment_2026_08": {
+                "const": "NOT_APPLIED"
+              },
+              "clock_type": {
+                "enum": [
+                  "T-BC",
+                  "T-BC-A",
+                  "T-BC-P",
+                  "T-GM"
+                ]
+              }
+            }
+          },
+          "criterion": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source_dataset_member",
+              "threshold_dataset_member",
+              "clockclass_availability_threshold",
+              "classification_source_ref"
+            ],
+            "properties": {
+              "source_dataset_member": {
+                "const": "parentDS.grandmasterClockQuality.clockClass"
+              },
+              "threshold_dataset_member": {
+                "const": "defaultDS.clockclassAvailabilityThreshold"
+              },
+              "clockclass_availability_threshold": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "classification_source_ref": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "window_seconds": {
+            "const": 10
+          },
+          "pm_periods": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "wall_seconds",
+                "maintenance_paused_seconds"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "wall_seconds": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "maintenance_paused_seconds": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "samples": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "sequence",
+                "period_id",
+                "clock_class_values",
+                "maintenance_window",
+                "clockclass_coverage"
+              ],
+              "properties": {
+                "sequence": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "period_id": {
+                  "type": "string"
+                },
+                "maintenance_window": {
+                  "type": "boolean"
+                },
+                "clock_class_values": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 255
+                  }
+                },
+                "clockclass_coverage": {
+                  "enum": [
+                    "COMPLETE",
+                    "PARTIAL",
+                    "UNKNOWN",
+                    "MAINTENANCE_PAUSED"
+                  ]
+                }
+              }
+            }
+          },
+          "records": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "period_id",
+                "index",
+                "measurementValid",
+                "periodComplete",
+                "PMTime",
+                "AS",
+                "UAS"
+              ],
+              "properties": {
+                "period_id": {
+                  "type": "string"
+                },
+                "index": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 65535
+                },
+                "measurementValid": {
+                  "type": "boolean"
+                },
+                "periodComplete": {
+                  "type": "boolean"
+                },
+                "PMTime": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "AS": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4294967295
+                },
+                "UAS": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4294967295
+                }
+              }
+            }
+          },
+          "expected": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "final_state",
+              "reason_codes",
+              "AS_by_period",
+              "UAS_by_period"
+            ],
+            "properties": {
+              "status": {
+                "enum": [
+                  "QUALIFIED",
+                  "NOT_SUPPORTED",
+                  "DISABLED",
+                  "INDETERMINATE",
+                  "COUNTER_MISMATCH",
+                  "INVALID_INPUT",
+                  "NOT_COMPARABLE",
+                  "REFERENCE_DISAGREEMENT"
+                ]
+              },
+              "final_state": {
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "UNKNOWN"
+                ]
+              },
+              "reason_codes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "AS_by_period": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "UAS_by_period": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
