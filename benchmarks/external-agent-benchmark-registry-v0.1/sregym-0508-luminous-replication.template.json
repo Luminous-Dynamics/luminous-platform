@@ -10,7 +10,7 @@
     "attempts_per_scenario": 3,
     "expected_attempt_rows": 270,
     "inventory_revision": "SREGym-0508",
-    "inventory_source": {
+    "cohort_observation_source": {
       "repository": "SREGym/SREGym-website",
       "commit_sha": "c4101aace3578353c96a2d837f60e48c3e95d9c4",
       "path": "lib/leaderboard-data.ts",
@@ -45,7 +45,7 @@
     "same_run_e2e_metric": "native_sregym_same_run_diagnosis_and_mitigation",
     "retry_policy": "no_retry",
     "dropped_run_policy": "retain_all_started_attempts",
-    "native_tool_surface_unchanged": true
+    "native_benchmark_harness_unchanged": true
   },
   "source_pins": {
     "sregym_repository": "SREGym/SREGym",
