@@ -398,7 +398,8 @@
         "diagnosis_scoring_semantics",
         "mitigation_scoring_semantics",
         "same_run_e2e_rule",
-        "missing_stage_policy"
+        "missing_stage_policy",
+        "oracle_failure_semantics"
       ],
       "properties": {
         "native_scorer_required": {
@@ -460,6 +461,38 @@
         },
         "missing_stage_policy": {
           "const": "unknown_and_not_credited_as_success"
+        },
+        "oracle_failure_semantics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "judge_backend_unavailable",
+            "judge_checklist_parse_exhausted",
+            "diagnosis_checkpoint_instability",
+            "prometheus_query_failure",
+            "alert_oracle_window",
+            "generic_mitigation_rollout_timeout"
+          ],
+          "properties": {
+            "judge_backend_unavailable": {
+              "const": "null_verdict_success_unknown"
+            },
+            "judge_checklist_parse_exhausted": {
+              "const": "default_all_answers_no_low_confidence"
+            },
+            "diagnosis_checkpoint_instability": {
+              "const": "warning_only_score_current_expectation"
+            },
+            "prometheus_query_failure": {
+              "const": "empty_firing_list_can_pass_sustained_silence"
+            },
+            "alert_oracle_window": {
+              "const": "buffer_30s_poll_10s_for_120s_query_timeout_15s"
+            },
+            "generic_mitigation_rollout_timeout": {
+              "const": "wait_60s_then_evaluate_current_pod_container_state"
+            }
+          }
         }
       }
     },
@@ -481,7 +514,9 @@
         "registry_path",
         "registry_blob_sha",
         "tasklist_yml_path",
-        "tasklist_yml_must_be_absent"
+        "tasklist_yml_must_be_absent",
+        "oracle_contract_snapshot_path",
+        "oracle_implementation_files"
       ],
       "properties": {
         "sregym_repository": {
@@ -562,6 +597,50 @@
         },
         "tasklist_yml_must_be_absent": {
           "const": true
+        },
+        "oracle_contract_snapshot_path": {
+          "const": "sregym-0508-oracle-contract.json"
+        },
+        "oracle_implementation_files": {
+          "type": "array",
+          "minItems": 12,
+          "maxItems": 12,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "role",
+              "path",
+              "git_blob_sha"
+            ],
+            "properties": {
+              "role": {
+                "enum": [
+                  "conductor",
+                  "conductor_api",
+                  "problem_registry",
+                  "diagnosis_oracle",
+                  "llm_judge_oracle",
+                  "llm_judge_engine",
+                  "llm_judge_checklist",
+                  "mitigation_oracle",
+                  "alert_oracle",
+                  "sustained_readiness_oracle",
+                  "kafka_fault_definition",
+                  "kubelet_fault_definition"
+                ]
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "git_blob_sha": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              }
+            }
+          }
         }
       }
     },
