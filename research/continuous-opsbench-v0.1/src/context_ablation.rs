@@ -1140,8 +1140,10 @@ fn scenario_cluster_deltas(
             .is_some_and(|score| score.root_object_grounded);
 
         let entry = by_scenario.entry(key.scenario_id.clone()).or_default();
-        entry.0 += i128::from(candidate_correct) - i128::from(raw_correct);
-        entry.1 += i128::from(candidate_grounded) - i128::from(raw_grounded);
+        entry.0 += i128::from(u8::from(candidate_correct))
+            - i128::from(u8::from(raw_correct));
+        entry.1 += i128::from(u8::from(candidate_grounded))
+            - i128::from(u8::from(raw_grounded));
         entry.2 += 1;
     }
 
@@ -1179,10 +1181,8 @@ fn next_bootstrap_u64(state: &mut u64) -> u64 {
 
 fn derive_bootstrap_seed(base: u64, family: &str, arm: ContextArm) -> u64 {
     let mut hash = base ^ 0xcbf2_9ce4_8422_2325;
-    for byte in family
-        .bytes()
-        .chain(format!("{arm:?}").bytes())
-    {
+    let arm_name = format!("{arm:?}");
+    for byte in family.bytes().chain(arm_name.bytes()) {
         hash ^= u64::from(byte);
         hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
     }
@@ -1736,6 +1736,54 @@ mod tests {
         }
     }
 
+
+    fn synthetic_arm_result(
+        scenario_index: usize,
+        attempt_id: u32,
+        arm: ContextArm,
+        correct: bool,
+        grounded: bool,
+    ) -> ContextArmResult {
+        let input = input();
+        let scenario_id = format!("fault-{scenario_index:02}");
+        ContextArmResult {
+            scenario_id: scenario_id.clone(),
+            fault_family_id: "queue_dependency".into(),
+            paired_block_id: format!("{scenario_id}-attempt-{attempt_id}"),
+            attempt_id,
+            profile: input.profile,
+            arm,
+            status: ArmStatus::Scored,
+            compiler_time_micros: 10,
+            reasoner_time_micros: Some(100),
+            reasoner_session_id: Some(format!("{scenario_id}-{attempt_id}-{arm:?}")),
+            context_bytes: 512,
+            estimated_input_tokens: 128,
+            usage: Some(ReasonerUsage {
+                input_tokens: 128,
+                output_tokens: 32,
+                tool_calls: 0,
+                reported_cost_microusd: 100,
+            }),
+            answer: Some(DiagnosisAnswer {
+                root_object_ref: Some("payments-config".into()),
+                supporting_evidence_ids: vec!["ev-change".into()],
+                alternative_object_refs: Vec::new(),
+                abstained: false,
+            }),
+            score: Some(ContextScore {
+                root_cause_correct: correct,
+                root_object_visible: true,
+                root_object_grounded: grounded,
+                supported_evidence_precision_ppm: 1_000_000,
+                required_evidence_recall_ppm: if grounded { 1_000_000 } else { 0 },
+                unsupported_evidence_claims: 0,
+                required_evidence_visible: 1,
+                required_evidence_total: 1,
+            }),
+        }
+    }
+
     #[test]
     fn all_five_arms_preserve_the_same_evidence_identity_universe() {
         let input = input();
@@ -1922,6 +1970,64 @@ mod tests {
             .contrasts_vs_raw
             .iter()
             .all(|row| row.paired_blocks == 1 && row.both_scored_blocks == 1));
+        assert!(analysis
+            .contrasts_vs_raw
+            .iter()
+            .all(|row| row.scenario_clusters == 1));
+        assert!(analysis
+            .contrasts_vs_raw
+            .iter()
+            .all(|row| row.correct_rate_delta_cluster_ci95_ppm.is_none()));
+        assert_eq!(analysis.cluster_bootstrap_seed, 0xC0FF_EE01_5EED_2026);
+    }
+
+    #[test]
+    fn clustered_bootstrap_resamples_fault_scenarios_not_repeated_attempts() {
+        let mut results = Vec::new();
+        for scenario_index in 0..20 {
+            for attempt_id in 1..=2 {
+                for arm in CONTEXT_COMPILATION_ARMS {
+                    // The candidate has ten scenario-level wins and ten ties.
+                    let raw_correct = scenario_index % 2 == 0;
+                    let correct = if arm == ContextArm::TemporalAndFreshness {
+                        true
+                    } else {
+                        raw_correct
+                    };
+                    results.push(synthetic_arm_result(
+                        scenario_index,
+                        attempt_id,
+                        arm,
+                        correct,
+                        correct,
+                    ));
+                }
+            }
+        }
+
+        let analysis =
+            analyze_paired_context_results(&results, 0x1234_5678_9abc_def0).unwrap();
+        let temporal = analysis
+            .contrasts_vs_raw
+            .iter()
+            .find(|row| row.arm == ContextArm::TemporalAndFreshness)
+            .unwrap();
+
+        assert_eq!(temporal.paired_blocks, 40);
+        assert_eq!(temporal.scenario_clusters, 20);
+        assert_eq!(temporal.scenario_correct_wins, 10);
+        assert_eq!(temporal.scenario_correct_losses, 0);
+        assert_eq!(temporal.scenario_correct_ties, 10);
+        assert_eq!(
+            temporal.correct_rate_delta_scenario_macro_ppm,
+            Some(500_000)
+        );
+        let (lower, upper) = temporal.correct_rate_delta_cluster_ci95_ppm.unwrap();
+        assert!(lower > 0);
+        assert!(upper >= lower);
+        assert!(upper <= 1_000_000);
+        assert_eq!(analysis.cluster_bootstrap_replicates, 10_000);
+        assert_eq!(analysis.minimum_scenario_clusters_for_ci95, 20);
     }
 
     #[test]
