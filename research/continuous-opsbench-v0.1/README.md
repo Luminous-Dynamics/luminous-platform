@@ -201,3 +201,20 @@ This still remains a policy proposal, not an admission request or collector rece
 ### Source identity carried through the audit receipt
 
 The adapter's wake-decision receipt now retains source ID and payload digest in addition to source epoch, event ID, incident ID, sequence, watch and authority epoch. The admission/request receipt carries the same source ID and payload digest, and the auditor requires exact equality to the wake-decision receipt plus the watch's source ID. This prevents a downstream admission record from matching only by event ID/tick while changing the source or payload identity. The structural auditor validates the digest's SHA-256 encoding but does not authenticate its publisher or re-read the original event bytes; that still belongs to the source-owned signed evidence path.
+
+
+## Paired five-arm context-compilation ablation v0.1
+
+The additive `src/context_ablation.rs` module implements the orthogonal context-compiler factor described in issue #318. It builds five presentations from the same frozen source-evidence universe:
+
+1. raw source records;
+2. normalized canonical records;
+3. normalized records plus topology relations and exact change/diff evidence;
+4. topology plus event-time/observation-time ordering and explicit freshness states;
+5. temporal context plus transparent, deterministic evidence/object ranking and alternative candidates.
+
+All arms preserve the same evidence-ID universe. Unknown, absent and present remain distinct. Ranking is based only on visible evidence, target/dependency relationships, freshness and source diversity; source diversity is not treated as proof of independent failure domains. No evaluator-owned root-cause truth is passed through the `ContextReasoner` interface. The evaluator scores the returned diagnosis afterward using a separate ground-truth object.
+
+The runner uses one reasoner adapter, preregistered arm order and identical per-arm context/token/tool/time budgets. It retains budget-exceeded arms in the denominator rather than dropping them, and records context bytes, estimated input tokens, compiler time, reasoner time, token usage, tool calls, cost, root correctness, support precision/recall and unsupported evidence claims. The byte/4 token estimate is preflight only; the reasoner adapter's actual usage is recorded separately. Arm order is supplied by the experiment harness so scenario blocks can be randomized/counterbalanced externally.
+
+**Claim ceiling:** this is an offline experiment harness with scripted test reasoners. It does not call a live model, provide real tool adapters, establish SREGym results, or prove context-arm superiority. Confirmatory results require pinned model/provider snapshot, prompts, effort, tool permissions, fault/seed blocks, native grader, and paired multi-attempt runs. Native SREGym outcomes and Luminous-specific authority/effect metrics remain separate.
