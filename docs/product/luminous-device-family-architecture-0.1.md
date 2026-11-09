@@ -231,6 +231,9 @@ This Platform document is the **portfolio/product integration contract**. It doe
 
 | Concern | Canonical owner | Platform-family role |
 |---|---|---|
+| HDC retrieval locality and executable host baseline | [Symthaea #7864](https://github.com/Luminous-Dynamics/symthaea/issues/7864) / [executable baseline PR #7866](https://github.com/Luminous-Dynamics/symthaea/pull/7866) | Reuse canonical exact retrieval workload, host CPU baseline, data-movement accounting and receipt semantics; DWF adds only local-vs-peer placement |
+| Rust-native hardware energy measurement | [Symthaea ENG-ENERGY-MEASURE-001 #10460](https://github.com/Luminous-Dynamics/symthaea/issues/10460) | Reuse EnergyMeter/counter semantics and energy receipt; do not create another hardware energy API or derive joules from FLOPs/TDP |
+| Workload memory and storage substrate | [Symthaea #7919](https://github.com/Luminous-Dynamics/symthaea/issues/7919) and [memory resilience #7515](https://github.com/Luminous-Dynamics/symthaea/issues/7515) | Consume capacity/locality and degradation envelopes; do not create a second memory manager |
 | General CPU / RAM / GPU / storage architecture frontier | [Symthaea COMPUTE-ARCH-001 #7905](https://github.com/Luminous-Dynamics/symthaea/issues/7905) | Consume candidate profiles and task-conditioned Pareto evidence |
 | Phone/laptop CPU-GPU/accelerator co-design | [Symthaea SOC-DESIGN-001 #8459](https://github.com/Luminous-Dynamics/symthaea/issues/8459) | Map phone and laptop family constraints onto this shared product taxonomy |
 | Laptop architecture / product co-design | [Symthaea LAPTOP-ARCH-001 #8446](https://github.com/Luminous-Dynamics/symthaea/issues/8446) | Use its laptop archetypes, repairability, service-life and workload gates |
