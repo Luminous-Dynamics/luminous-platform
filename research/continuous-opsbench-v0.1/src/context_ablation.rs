@@ -350,6 +350,11 @@ pub struct ContextArmResult {
     pub arm: ContextArm,
     pub status: ArmStatus,
     pub compiler_time_micros: u128,
+    /// Tokenizer/session setup time, including fresh conversation creation.
+    pub adapter_setup_time_micros: u128,
+    /// End-to-end per-arm elapsed time from compilation start through result.
+    pub total_arm_time_micros: u128,
+    /// Provider call time only; None when rejected before invoking the model.
     pub reasoner_time_micros: Option<u128>,
     /// Provider/harness conversation identity used for this arm; never shared.
     pub reasoner_session_id: Option<String>,
@@ -1088,13 +1093,17 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
     let mut results = Vec::with_capacity(arm_order.len());
     let mut session_ids = BTreeSet::new();
     for (arm_order_position, arm) in arm_order.iter().enumerate() {
+        let arm_started = Instant::now();
         let (packet, compiler_time_micros) = compile_context_packet(input, *arm)?;
+        let adapter_setup_started = Instant::now();
         let model_token_preflight =
             reasoner.count_input_tokens(&packet.profile, &packet.rendered_context);
         if packet.context_bytes > budget.maximum_context_bytes
             || model_token_preflight
                 .is_some_and(|tokens| tokens > budget.maximum_input_tokens)
         {
+            let adapter_setup_time_micros = adapter_setup_started.elapsed().as_micros();
+            let total_arm_time_micros = arm_started.elapsed().as_micros();
             results.push(ContextArmResult {
                 scenario_id: packet.scenario_id.clone(),
                 fault_family_id: input.fault_family_id.clone(),
@@ -1105,6 +1114,8 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
                 arm: *arm,
                 status: ArmStatus::BudgetExceeded,
                 compiler_time_micros,
+                adapter_setup_time_micros,
+                total_arm_time_micros,
                 reasoner_time_micros: None,
                 reasoner_session_id: None,
                 context_bytes: packet.context_bytes,
@@ -1118,6 +1129,7 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
         }
 
         let session_id = reasoner.start_fresh_session(&packet.profile);
+        let adapter_setup_time_micros = adapter_setup_started.elapsed().as_micros();
         if !non_empty(&session_id) {
             return Err(ContextExperimentError::EmptyReasonerSessionId);
         }
@@ -1145,6 +1157,7 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
         };
         let score =
             (status == ArmStatus::Scored).then(|| score_answer(&packet, truth, &response.answer));
+        let total_arm_time_micros = arm_started.elapsed().as_micros();
         results.push(ContextArmResult {
             scenario_id: packet.scenario_id.clone(),
             fault_family_id: input.fault_family_id.clone(),
@@ -1155,6 +1168,8 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
             arm: *arm,
             status,
             compiler_time_micros,
+            adapter_setup_time_micros,
+            total_arm_time_micros,
             reasoner_time_micros: Some(reasoner_time_micros),
             reasoner_session_id: Some(session_id),
             context_bytes: packet.context_bytes,
@@ -2031,6 +2046,8 @@ mod tests {
             arm,
             status: ArmStatus::Scored,
             compiler_time_micros: 10,
+            adapter_setup_time_micros: 5,
+            total_arm_time_micros: 115,
             reasoner_time_micros: Some(100),
             reasoner_session_id: Some(format!("{scenario_id}-{attempt_id}-{arm:?}")),
             context_bytes: 512,
