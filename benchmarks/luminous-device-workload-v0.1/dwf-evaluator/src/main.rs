@@ -1000,8 +1000,8 @@ mod tests {
     #[test]
     fn duplicate_candidate_identity_is_rejected() {
         let mut fixture = fixture_value();
-        fixture["scenarios"][0]["candidates"][1]["candidate_id"] =
-            fixture["scenarios"][0]["candidates"][0]["candidate_id"].clone();
+        let duplicate_id = fixture["scenarios"][0]["candidates"][0]["candidate_id"].clone();
+        fixture["scenarios"][0]["candidates"][1]["candidate_id"] = duplicate_id;
         let error = validate_fixture_contract(&fixture).unwrap_err();
         assert!(error.contains("duplicates candidate_id"), "{error}");
     }
@@ -1009,7 +1009,8 @@ mod tests {
     #[test]
     fn duplicate_scenario_ids_are_rejected() {
         let mut fixture = fixture_value();
-        fixture["scenarios"][1]["id"] = fixture["scenarios"][0]["id"].clone();
+        let duplicate_id = fixture["scenarios"][0]["id"].clone();
+        fixture["scenarios"][1]["id"] = duplicate_id;
         let error = validate_fixture_contract(&fixture).unwrap_err();
         assert!(error.contains("duplicate scenario id"), "{error}");
     }
