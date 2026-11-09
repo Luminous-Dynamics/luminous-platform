@@ -60,3 +60,6 @@ The 28-case corpus includes:
 ## Input contract validation
 
 Before any expected disposition is evaluated, the evaluator validates the fixture envelope: schema version, unique scenario/candidate IDs, exact origin/peer roles, request semantic identity, non-empty ISA, positive minimum memory/deadline/energy ceiling, read-only/no-external-effect constraints, typed policy and transfer-budget fields, network state, and result-phase oracle-verifier identity. This prevents missing requirements from silently becoming unconstrained defaults. The current 28-scenario fixture passes an independent structural cross-check in the authoring environment; the five Rust negative-control tests are still awaiting Cargo execution. Deliberately incomplete execution receipts remain valid *negative-control inputs* and are evaluated as rejected results; they are not rejected as malformed fixture envelopes.
+
+
+The accepted network-state vocabulary includes explicit `disconnected` as well as connected, pre-dispatch partition, post-dispatch partition and reconnected states. A disconnected peer is ineligible before dispatch; the local origin may remain eligible.

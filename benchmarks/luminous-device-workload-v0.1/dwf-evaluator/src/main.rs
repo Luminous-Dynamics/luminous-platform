@@ -839,7 +839,7 @@ fn validate_fixture_contract(fixture: &Value) -> Result<(), String> {
         }
         let network_state = text_at(scenario, &["network", "state"])
             .ok_or_else(|| format!("{label}.network.state is required"))?;
-        if !matches!(network_state, "connected" | "partitioned_before_dispatch" | "partitioned_after_dispatch" | "connected_after_partition") {
+        if !matches!(network_state, "connected" | "disconnected" | "partitioned_before_dispatch" | "partitioned_after_dispatch" | "connected_after_partition") {
             return Err(format!("{label}.network.state has unsupported value {network_state:?}"));
         }
 
@@ -969,6 +969,26 @@ mod tests {
             .iter()
             .find(|scenario| text_at(scenario, &["id"]) == Some(id))
             .expect("scenario exists")
+    }
+
+    #[test]
+    fn disconnected_peer_is_ineligible_while_local_execution_remains_available() {
+        let fixture = fixture_value();
+        let mut scenario = case(&fixture, "DWF-001-01").clone();
+        scenario["network"]["state"] = Value::String("disconnected".to_owned());
+
+        validate_fixture_contract(&json!({
+            "schema_version": "0.1",
+            "scenarios": [scenario.clone()]
+        })).expect("disconnected is a supported network state");
+
+        let (actual, assessments) = evaluate_placement(&scenario);
+        assert_eq!(actual.placement, "LOCAL");
+        assert!(assessments.iter().any(|candidate| {
+            candidate.role == "peer"
+                && !candidate.eligible
+                && candidate.reason_codes.contains(&"REMOTE_UNREACHABLE_BEFORE_DISPATCH".to_owned())
+        }));
     }
 
     #[test]
