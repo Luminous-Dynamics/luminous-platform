@@ -752,22 +752,22 @@ fn process_event_in_order(
         ConditionOutcome::NoMatch => {
             metrics.quiet_events += 1;
             push_record(
-            records,
-            EventRecordIdentity::from(event),
-            processing_tick,
-            RecordDisposition::Quiet,
-            true,
-        );
+                records,
+                EventRecordIdentity::from(event),
+                processing_tick,
+                RecordDisposition::Quiet,
+                true,
+            );
         }
         ConditionOutcome::Indeterminate => {
             metrics.indeterminate_events += 1;
             push_record(
-            records,
-            EventRecordIdentity::from(event),
-            processing_tick,
-            RecordDisposition::IndeterminateCondition,
-            false,
-        );
+                records,
+                EventRecordIdentity::from(event),
+                processing_tick,
+                RecordDisposition::IndeterminateCondition,
+                false,
+            );
             return Some(ScheduleStatus::Indeterminate);
         }
         ConditionOutcome::Match => {
@@ -876,12 +876,12 @@ fn process_event(
         {
             metrics.duplicates_suppressed += 1;
             push_record(
-            records,
-            EventRecordIdentity::from(event),
-            processing_tick,
-            RecordDisposition::DuplicateSuppressed,
-            true,
-        );
+                records,
+                EventRecordIdentity::from(event),
+                processing_tick,
+                RecordDisposition::DuplicateSuppressed,
+                true,
+            );
             return None;
         }
         metrics.identity_collisions += 1;
@@ -949,24 +949,24 @@ fn process_event(
         if !gap_policy.is_buffered() {
             metrics.sequence_gaps += 1;
             push_record(
-            records,
-            EventRecordIdentity::from(event),
-            processing_tick,
-            RecordDisposition::DeliveryGap,
-            false,
-        );
+                records,
+                EventRecordIdentity::from(event),
+                processing_tick,
+                RecordDisposition::DeliveryGap,
+                false,
+            );
             return Some(ScheduleStatus::DeliveryGap);
         }
 
         if checkpoint.buffered_events.len() >= gap_policy.max_buffered_events {
             metrics.gap_buffer_overflows += 1;
             push_record(
-            records,
-            EventRecordIdentity::from(event),
-            processing_tick,
-            RecordDisposition::BudgetExhausted,
-            false,
-        );
+                records,
+                EventRecordIdentity::from(event),
+                processing_tick,
+                RecordDisposition::BudgetExhausted,
+                false,
+            );
             return Some(ScheduleStatus::BudgetExhausted);
         }
 
@@ -1233,17 +1233,17 @@ fn process_watermark(
         if !gap_policy.is_buffered() {
             metrics.sequence_gaps += 1;
             push_record(
-            records,
-            EventRecordIdentity {
-                event_id: &event_id,
-                incident_id: "",
-                sequence: watermark.next_sequence,
-                delivered_tick: watermark.observed_tick,
-            },
-            processing_tick,
-            RecordDisposition::DeliveryGap,
-            false,
-        );
+                records,
+                EventRecordIdentity {
+                    event_id: &event_id,
+                    incident_id: "",
+                    sequence: watermark.next_sequence,
+                    delivered_tick: watermark.observed_tick,
+                },
+                processing_tick,
+                RecordDisposition::DeliveryGap,
+                false,
+            );
             return Some(ScheduleStatus::DeliveryGap);
         }
 
@@ -1296,17 +1296,17 @@ fn process_watermark(
     checkpoint.gap_started_at_tick = None;
     checkpoint.gap_deadline_tick = None;
     push_record(
-            records,
-            EventRecordIdentity {
-                event_id: &event_id,
-                incident_id: "",
-                sequence: watermark.next_sequence,
-                delivered_tick: watermark.observed_tick,
-            },
-            processing_tick,
-            RecordDisposition::WatermarkConfirmed,
-            true,
-        );
+        records,
+        EventRecordIdentity {
+            event_id: &event_id,
+            incident_id: "",
+            sequence: watermark.next_sequence,
+            delivered_tick: watermark.observed_tick,
+        },
+        processing_tick,
+        RecordDisposition::WatermarkConfirmed,
+        true,
+    );
     checkpoint.last_stream_tick = checkpoint.last_stream_tick.max(watermark.observed_tick);
     None
 }
