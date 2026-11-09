@@ -141,6 +141,7 @@ def expect_rejected(name: str, candidate: dict[str, Any], schema: dict[str, Any]
 
 NATIVE_SREGYM_SCHEMA_PATH = ROOT / "native-sregym-replication.schema.json"
 NATIVE_SREGYM_TEMPLATE_PATH = ROOT / "sregym-0508-luminous-replication.template.json"
+NATIVE_SREGYM_ATTEMPT_SCHEMA_PATH = ROOT / "native-sregym-attempt.schema.json"
 SREGYM_0508_COHORT_CSV_PATH = ROOT / "sregym-0508-cohort.csv"
 SREGYM_0508_REGISTRY_IDS_PATH = ROOT / "sregym-0508-registry-ids.txt"
 SREGYM_0508_RECONCILIATION_PATH = ROOT / "sregym-0508-source-reconciliation.json"
@@ -384,13 +385,165 @@ def expect_native_rejected(
     print(f"rejected as expected: native SREGym {name}")
 
 
+def native_attempt_semantic_errors(
+    receipt: dict[str, Any], manifest: dict[str, Any]
+) -> list[str]:
+    errors: list[str] = []
+    diagnosis = receipt["diagnosis"]
+    mitigation = receipt["mitigation"]
+    status = receipt["run_status"]
+
+    expected_e2e = diagnosis["success"] is True and mitigation["success"] is True
+    if receipt["same_run_e2e_success"] is not expected_e2e:
+        errors.append("same_run_e2e_success must equal diagnosis.success AND mitigation.success within this exact receipt")
+    if status != "completed" and receipt["same_run_e2e_success"]:
+        errors.append("non-completed attempt cannot receive same-run E2E credit")
+    if diagnosis["state"] == "scored" and diagnosis["success"] is None:
+        errors.append("scored diagnosis must have a boolean native success result")
+    if diagnosis["state"] != "scored" and diagnosis["success"] is not None:
+        errors.append("unscored diagnosis must preserve success as unknown/null")
+    if mitigation["state"] == "scored" and mitigation["success"] is None:
+        errors.append("scored mitigation must have a boolean native success result")
+    if mitigation["state"] != "scored" and mitigation["success"] is not None:
+        errors.append("unscored mitigation must preserve success as unknown/null")
+
+    if status == "completed":
+        if diagnosis["state"] != "scored" or mitigation["state"] != "scored":
+            errors.append("completed attempt must contain both native diagnosis and mitigation outcomes")
+        if receipt["started_at"] is None or receipt["finished_at"] is None:
+            errors.append("completed attempt requires start and finish timestamps")
+        if receipt["deploy_start_attempts"] < 1:
+            errors.append("completed attempt must record at least one deployment start")
+    elif status == "deploy_failed":
+        if receipt["deploy_start_attempts"] != manifest["native_protocol"]["deployment_start_attempt_limit"]:
+            errors.append("deploy_failed attempt must consume the declared deployment-start attempt limit")
+        if diagnosis["state"] != "not_run" or mitigation["state"] != "not_run":
+            errors.append("deploy_failed attempt cannot claim diagnosis or mitigation execution")
+        if receipt["same_run_e2e_success"]:
+            errors.append("deploy_failed attempt cannot receive E2E credit")
+    elif status == "not_started":
+        if receipt["deploy_start_attempts"] != 0:
+            errors.append("not_started attempt must have zero deployment starts")
+        if receipt["started_at"] is not None or receipt["finished_at"] is not None:
+            errors.append("not_started attempt must not claim execution timestamps")
+        if diagnosis["state"] != "not_run" or mitigation["state"] != "not_run":
+            errors.append("not_started attempt cannot claim native stage execution")
+    else:
+        if receipt["deploy_start_attempts"] < 1:
+            errors.append("started failure/timeout attempt must record a deployment start")
+        if receipt["started_at"] is None or receipt["finished_at"] is None:
+            errors.append("started failure/timeout attempt requires start and finish timestamps")
+
+    if receipt["attempt_index"] > manifest["native_protocol"]["attempts_per_scenario"]:
+        errors.append("attempt index exceeds the preregistered attempts per scenario")
+    if receipt["expected_attempts"] != manifest["native_protocol"]["attempts_per_scenario"]:
+        errors.append("attempt receipt attempts-per-scenario differs from the manifest")
+    return errors
+
+
+def validate_native_attempt_receipts(
+    manifest: dict[str, Any], attempt_schema: dict[str, Any]
+) -> list[str]:
+    accounting = manifest["accounting"]
+    path_value = accounting["attempt_receipts_path"]
+    if manifest["profile_status"] != "executed":
+        if path_value is not None:
+            return ["planning/non-executed manifest must not point at an executed attempt-receipt file"]
+        return []
+    if not path_value:
+        return ["executed manifest requires a JSONL attempt-receipt path"]
+
+    receipt_path = (ROOT / path_value).resolve()
+    if ROOT.resolve() not in receipt_path.parents:
+        return ["attempt-receipt path must remain inside the benchmark registry directory"]
+    try:
+        raw_lines = receipt_path.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        return [f"attempt-receipt file cannot be read: {exc}"]
+
+    validator = Draft202012Validator(attempt_schema, format_checker=FormatChecker())
+    errors: list[str] = []
+    receipts: list[dict[str, Any]] = []
+    receipt_ids: set[str] = set()
+    slots: set[tuple[str, int, str]] = set()
+    expected_ids = {
+        line.strip()
+        for line in SREGYM_0508_REGISTRY_IDS_PATH.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    }
+    expected_arms = {arm["arm_id"] for arm in manifest["arms"]}
+
+    for line_number, line in enumerate(raw_lines, start=1):
+        if not line.strip():
+            errors.append(f"attempt receipts line {line_number}: blank lines are prohibited")
+            continue
+        try:
+            receipt = json.loads(line)
+        except json.JSONDecodeError as exc:
+            errors.append(f"attempt receipts line {line_number}: invalid JSON: {exc}")
+            continue
+        receipts.append(receipt)
+        for error in validator.iter_errors(receipt):
+            path_text = "/".join(str(part) for part in error.absolute_path) or "$"
+            errors.append(f"attempt receipts line {line_number} {path_text}: {error.message}")
+        if not isinstance(receipt, dict):
+            continue
+        errors.extend(
+            f"attempt receipts line {line_number}: {message}"
+            for message in native_attempt_semantic_errors(receipt, manifest)
+        )
+        if receipt.get("manifest_id") != manifest["manifest_id"]:
+            errors.append(f"attempt receipts line {line_number}: manifest ID mismatch")
+        if receipt.get("arm_id") not in expected_arms:
+            errors.append(f"attempt receipts line {line_number}: unknown arm ID")
+        slot = (receipt.get("scenario_id", ""), receipt.get("attempt_index", 0), receipt.get("arm_id", ""))
+        if slot in slots:
+            errors.append(f"attempt receipts line {line_number}: duplicate scenario/attempt/arm slot")
+        slots.add(slot)
+        receipt_id = receipt.get("receipt_id")
+        if receipt_id in receipt_ids:
+            errors.append(f"attempt receipts line {line_number}: duplicate receipt ID")
+        receipt_ids.add(receipt_id)
+        if receipt.get("scenario_id") not in expected_ids:
+            errors.append(f"attempt receipts line {line_number}: scenario is outside the pinned cohort")
+
+    expected_slots = {
+        (scenario_id, attempt_index, arm["arm_id"])
+        for scenario_id in expected_ids
+        for attempt_index in range(1, manifest["native_protocol"]["attempts_per_scenario"] + 1)
+        for arm in manifest["arms"]
+    }
+    missing_slots = expected_slots - slots
+    extra_slots = slots - expected_slots
+    if missing_slots:
+        errors.append(f"attempt receipts: {len(missing_slots)} expected scenario/attempt/arm slots are missing")
+    if extra_slots:
+        errors.append(f"attempt receipts: {len(extra_slots)} unexpected scenario/attempt/arm slots are present")
+    if len(receipts) != accounting["expected_attempt_rows"]:
+        errors.append("attempt receipts: record count differs from the manifest expected denominator")
+    if accounting["completed_attempt_rows"] != len(receipts):
+        errors.append("accounting.completed_attempt_rows must count retained terminal receipt rows, including failed attempts")
+    if accounting["missing_attempt_rows"] != accounting["expected_attempt_rows"] - len(receipts):
+        errors.append("accounting.missing_attempt_rows must equal expected rows minus retained terminal receipts")
+    if accounting["dropped_attempt_rows"] != 0:
+        errors.append("attempt receipts: dropped rows are prohibited")
+    return errors
+
+
 def validate_native_sregym_profile() -> None:
     schema = read_json(NATIVE_SREGYM_SCHEMA_PATH)
+    attempt_schema = read_json(NATIVE_SREGYM_ATTEMPT_SCHEMA_PATH)
+    Draft202012Validator.check_schema(attempt_schema)
     manifest = read_json(NATIVE_SREGYM_TEMPLATE_PATH)
     errors = validate_native_sregym(manifest, schema)
     if errors:
         for error in errors:
             print(f"ERROR: native SREGym manifest: {error}", file=sys.stderr)
+        raise SystemExit(1)
+    attempt_errors = validate_native_attempt_receipts(manifest, attempt_schema)
+    if attempt_errors:
+        for error in attempt_errors:
+            print(f"ERROR: native SREGym attempt receipts: {error}", file=sys.stderr)
         raise SystemExit(1)
     print(
         f"valid native SREGym planning manifest: {manifest['cohort']['cohort_id']} "
