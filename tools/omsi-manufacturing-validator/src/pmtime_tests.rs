@@ -6,8 +6,7 @@ const FIXTURES: &str =
     include_str!("../../../docs/standards/omsi/pmtime-integrity-fixtures-0.1.json");
 const FIXTURE_SCHEMA: &str =
     include_str!("../../../docs/standards/omsi/pmtime-integrity-fixtures-0.1.schema.json");
-const REPORT_SCHEMA: &str =
-    include_str!("../schema/pmtime-integrity-report.schema.json");
+const REPORT_SCHEMA: &str = include_str!("../schema/pmtime-integrity-report.schema.json");
 
 #[test]
 fn frozen_pmtime_pack_executes_all_fourteen_cases() {
@@ -15,7 +14,10 @@ fn frozen_pmtime_pack_executes_all_fourteen_cases() {
     let input_schema: Value = serde_json::from_str(FIXTURE_SCHEMA).expect("fixture schema JSON");
     assert!(draft202012::meta::is_valid(&input_schema));
     let input_validator = draft202012::new(&input_schema).expect("compile fixture schema");
-    assert!(input_validator.is_valid(&document), "fixture schema validation failed");
+    assert!(
+        input_validator.is_valid(&document),
+        "fixture schema validation failed"
+    );
 
     let report = validate_fixture_pack(&document, FIXTURES.as_bytes());
     assert_eq!(report["status"], "passed", "{report:#}");
