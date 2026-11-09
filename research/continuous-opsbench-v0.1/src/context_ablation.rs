@@ -590,8 +590,9 @@ fn render_packet(packet: &ContextPacket) -> String {
     let mut rendered = String::new();
     let _ = writeln!(
         &mut rendered,
-        "scenario={} block={} attempt={} arm={:?} target={} model={} prompt={} permissions={} tools={} scorer={} effort={} seed={}",
+        "scenario={} scenario_revision={} block={} attempt={} arm={:?} target={} model={} prompt={} permissions={} tools={} scorer={} effort={} seed={}",
         escape_field(&packet.scenario_id),
+        digest_hex(&packet.profile.scenario_revision_digest),
         escape_field(&packet.paired_block_id),
         packet.attempt_id,
         packet.arm,
@@ -1154,7 +1155,10 @@ mod tests {
         assert_eq!(reasoner.calls, CONTEXT_COMPILATION_ARMS);
         assert_eq!(results.len(), 5);
         assert!(results.iter().all(|result| result.status == ArmStatus::Scored));
-        assert_eq!(results[0].score.as_ref().unwrap().required_evidence_total, 1);
+        assert!(results.iter().all(|result| result.profile == input.profile));
+        assert!(results.iter().all(|result| result.paired_block_id == "fault-kafka-01-seed-7"));
+        assert!(results.iter().all(|result| result.attempt_id == 1));
+        assert!(results[0].score.as_ref().unwrap().required_evidence_total == 1);
     }
 
     #[test]
@@ -1223,6 +1227,23 @@ mod tests {
             compile_context_packet(&input, ContextArm::RawSourceRecords).unwrap();
         assert!(packet.rendered_context.contains("bad\\|value\\\\ncontinued"));
         assert!(packet.rendered_context.contains("Some(10000)"));
+    }
+
+    #[test]
+    fn experiment_manifest_must_pin_reasoning_effort_and_pairing_block() {
+        let mut bad_profile = input();
+        bad_profile.profile.reasoning_effort.clear();
+        assert_eq!(
+            compile_context_packet(&bad_profile, ContextArm::RawSourceRecords),
+            Err(ContextExperimentError::InvalidExperimentProfile)
+        );
+
+        let mut bad_block = input();
+        bad_block.paired_block_id.clear();
+        assert_eq!(
+            compile_context_packet(&bad_block, ContextArm::RawSourceRecords),
+            Err(ContextExperimentError::EmptyPairedBlockId)
+        );
     }
 
     #[test]
