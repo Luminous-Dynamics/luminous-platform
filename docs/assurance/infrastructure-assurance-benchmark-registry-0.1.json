@@ -209,8 +209,8 @@
       "owner_issue": "https://github.com/Luminous-Dynamics/luminous-platform/issues/345",
       "implementation_branch": "feat/assurance-case-contract-v0.1",
       "maturity": "initial_reference_implementation_pending_exact_head_ci",
-      "current_evidence": "An isolated Rust evaluator models claims, arguments, context, assumptions, evidence, defeaters and rebuttals. It uses strict input/report schemas, exact-byte SHA-256 binding, bounded evidence validity, dependency-admissibility checks, exact-target fresh rebuttals and indexed graph validation. The public suite contains 26 Rust tests plus a 25-ID discovery registry; exact-head CI has not yet run.",
-      "fixture_state": "Public synthetic software conformance: 25 frozen case IDs and 26 tests. Includes argument-level assumption/defeater propagation, fresh/stale rebuttals, shared/unknown dependencies, physical-independence overclaim, invalid graph controls, exact-byte binding and schema checks.",
+      "current_evidence": "An isolated Rust evaluator models claims, arguments, context, assumptions, evidence, defeaters and rebuttals. It uses strict input/report schemas, exact-byte SHA-256 binding, bounded evidence validity, dependency-admissibility checks, exact-target fresh rebuttals and indexed graph validation. The branch currently contains 33 adversarial/property Rust tests plus a 25-ID registry and a scale harness for 10, 100, 1000 and 10000 evidence nodes. Exact-head CI has not yet executed the final branch head.",
+      "fixture_state": "Public synthetic software conformance: 25 frozen case IDs, 33 adversarial/metamorphic tests and a four-point scale harness. Includes argument-level assumption/defeater propagation, fresh/stale rebuttals, shared/unknown dependencies, physical-independence overclaim, inventory incompleteness, invalid graph controls, exact-byte binding and schema checks.",
       "claim_ceiling": "Graph-structure and declared evidence-obligation evaluation for a synthetic case. No proof of evidence truth, signature authentication, organizational independence, premises truth, safety certification or regulatory conformity.",
       "score_families": [
         "argument_integrity",
@@ -222,11 +222,11 @@
         "performance"
       ],
       "next_work": [
-        "Complete exact-head format, compile, 26-test, schema and Clippy gates; repair any failures.",
-        "Add generated/metamorphic assurance graphs and verify invariance under node/edge order permutations.",
-        "Build scale harnesses at 10, 100, 1000 and 10000 nodes with exact p50/p95/p99 latency and peak-memory reports.",
-        "Add independent evaluator-owned blind cases and mutation campaigns; do not treat public tests as blind evaluation.",
-        "Integrate authenticated evidence and monitor/custody receipts through existing owners without introducing another trust root."
+        "Complete exact-head format, compile, 33-test, schema, scale-harness and Clippy gates; repair any failures.",
+        "Record actual p50/p95/p99 and process peak-RSS measurements for 10, 100, 1000 and 10000 evidence nodes.",
+        "Add generated property-based graphs and mutation testing, including orphan/unbound evidence and argument-path defeaters.",
+        "Add independent evaluator-owned blind cases and custody/access-monitor evidence; do not treat public tests as blind evaluation.",
+        "Integrate authenticated source and custody receipts through existing owners without introducing another trust root."
       ]
     }
   ],
