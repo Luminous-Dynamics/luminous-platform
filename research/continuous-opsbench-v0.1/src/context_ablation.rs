@@ -2510,6 +2510,48 @@ mod tests {
     }
 
     #[test]
+    fn over_budget_provider_calls_remain_in_actual_usage_cost_and_time_aggregates() {
+        let tight = ContextBudget {
+            maximum_input_tokens: 100,
+            ..budget()
+        };
+        let results = run_paired_context_ablation(
+            &input(),
+            &truth(),
+            tight,
+            &test_order(),
+            &mut ExactTokenizerReasoner {
+                profile: None,
+                preflight_tokens: None,
+                actual_usage_tokens: 101,
+            },
+        )
+        .unwrap();
+        assert!(results
+            .iter()
+            .all(|row| row.status == ArmStatus::BudgetExceeded));
+        assert!(results.iter().all(|row| row.score.is_none()));
+        assert!(results.iter().all(|row| row.usage.is_some()));
+
+        let analysis = analyze_paired_context_results(&results, 77).unwrap();
+        assert!(analysis.arm_aggregates.iter().all(|aggregate| {
+            aggregate.scored_blocks == 0
+                && aggregate.budget_exceeded_blocks == 1
+                && aggregate.mean_actual_input_tokens_invoked == Some(101)
+                && aggregate.mean_reported_cost_microusd_invoked == Some(1_000)
+                && aggregate.mean_reasoner_time_micros_invoked.is_some()
+                && aggregate.mean_total_arm_time_micros >= aggregate.mean_reasoner_time_micros_invoked.unwrap()
+        }));
+        assert!(analysis.contrasts_vs_raw.iter().all(|contrast| {
+            contrast.both_scored_blocks == 0
+                && contrast.both_invoked_blocks == 1
+                && contrast.mean_actual_tokens_delta_both_invoked == Some(0)
+                && contrast.mean_reported_cost_delta_microusd_both_invoked == Some(0)
+                && contrast.mean_reasoner_time_delta_micros_both_invoked.is_some()
+        }));
+    }
+
+    #[test]
     fn runner_rejects_effective_model_manifest_drift() {
         assert_eq!(
             run_paired_context_ablation(
