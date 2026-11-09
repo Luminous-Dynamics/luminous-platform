@@ -1259,9 +1259,7 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
                 report.missing_decisions += 1;
                 report.indeterminate(IndeterminateReason::MissingDecision);
             }
-            (None, _, Some(_)) | (_, None, Some(_))
-                if !impact_independence_indeterminate =>
-            {
+            (None, _, Some(_)) | (_, None, Some(_)) if !impact_independence_indeterminate => {
                 report.fail(AuditFailure::DecisionWithoutCompleteEvidence);
             }
             (None, _, Some(_)) | (_, None, Some(_)) => {}
@@ -1294,12 +1292,12 @@ mod tests {
         AttentionStrategy, EventCheckpoint, EventRecordResult, EventScheduleMetrics,
         ScheduleStatus, WakeRecord,
     };
+    use crate::failure_domains::{FailureDomainNode, InventoryState};
     use crate::scheduled_attention::{
         ProbeSelectionProposal, ScheduledWakeDecision, SourceQualifiedDisposition,
         SourceQualifiedEvent, SourceQualifiedEventDecision, SourceQualifiedEventIdentity,
         SourceQualifiedWakeBatch,
     };
-    use crate::failure_domains::{FailureDomainNode, InventoryState};
     use crate::stability::PlantObservation;
     use std::collections::BTreeMap;
 
