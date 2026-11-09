@@ -494,9 +494,7 @@ fn audit_impact_failure_domains(
         }
     };
     if observer_profile.subject_id != receipt.impact.observer_control_domain {
-        return FailureDomainOutcome::Failed(
-            AuditFailure::FailureDomainProfileBindingMismatch,
-        );
+        return FailureDomainOutcome::Failed(AuditFailure::FailureDomainProfileBindingMismatch);
     }
 
     let report = audit_observer_independence(
@@ -513,7 +511,7 @@ fn audit_impact_failure_domains(
         }
         IndependenceStatus::Indeterminate => FailureDomainOutcome::Indeterminate(
             IndeterminateReason::ImpactIndependenceUnestablished,
-        )
+        ),
         IndependenceStatus::Invalid => {
             FailureDomainOutcome::Failed(AuditFailure::FailureDomainEvidenceInvalid)
         }
@@ -2096,6 +2094,33 @@ mod tests {
         );
         assert_eq!(stale.status, AuditStatus::Indeterminate);
         assert!(stale
+            .indeterminate_reasons
+            .contains(&IndeterminateReason::ImpactIndependenceUnestablished));
+    }
+
+    #[test]
+    fn stale_observer_inventory_is_indeterminate_at_episode_boundary() {
+        let mut rows = evidence();
+        let mut receipt = impact_receipt();
+        let mut stale = observer_failure_domain_profile();
+        stale.observed_at_tick = 1;
+        receipt.observer_failure_domain_profile = ReceiptState::Present(stale);
+        rows[0].impact = ReceiptState::Present(receipt);
+
+        let report = run(
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &rows,
+            12,
+        );
+        assert_eq!(report.status, AuditStatus::Indeterminate);
+        assert_eq!(report.impacts_verified, 0);
+        assert_eq!(report.decisions_verified, 0);
+        assert!(report
             .indeterminate_reasons
             .contains(&IndeterminateReason::ImpactIndependenceUnestablished));
     }
