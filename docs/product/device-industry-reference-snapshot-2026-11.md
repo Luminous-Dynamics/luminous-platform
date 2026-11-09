@@ -102,6 +102,17 @@ The same logic applies to Hearth and Gateway: qualify standard networking/storag
 | AI acceleration | NVIDIA, AMD, Intel, Qualcomm and mobile SoC vendors | Actual backend execution and useful correct work per joule on Symthaea's own workloads |
 | Device lifecycle / security | OEM firmware, TPM/DICE, enterprise management and update systems | One transparent product-level evidence graph without creating a replacement firmware or security root |
 
+## 7.1 AI retrieval and data-placement software references
+
+The hardware opportunity is partly shaped by mature search and inference infrastructure:
+
+- **FAISS** provides exact binary Hamming search through IndexBinaryFlat, plus IndexBinaryIVF, IndexBinaryHNSW and binary hash families. IndexBinaryFlat is an appropriate optimized exhaustive comparator for a native binary HDC workload; IVF/HNSW/hash candidates must be reported as separate approximate/partitioned tracks with recall and exact-oracle agreement. Source: https://github.com/facebookresearch/faiss/wiki/Binary-Indexes
+- **Milvus** documents binary-vector Hamming/Jaccard metrics with BIN_FLAT and BIN_IVF_FLAT indexes. Exact byte order, dimensions, IDs and tie behavior must be validated before treating a run as comparable. Source: https://milvus.io/docs/index-vector-fields.md
+- **Qdrant** supports binary quantization for dense embedding vectors, including oversampling and rescoring. Its vector representation is produced from float-embedding quantization and has distribution/model-specific accuracy behavior; it is an adjacent compression comparator, not automatically the same semantic task as native BinaryHV. Source: https://qdrant.tech/documentation/manage-data/quantization/
+- **MLPerf Inference v6.1 End-to-End RAG** introduced a benchmark that separates vector database ingestion/build from multi-hop query serving. The benchmark also identifies model placement, co-residency, scheduling, CPU/GPU/NIC/storage interaction and end-to-end system KPIs as optimization levers. It provides a strong methodology reference for Luminous' data-locality experiments, but its RAG models, dataset and scores are not directly comparable to HDC retrieval. Source: https://mlcommons.org/2026/08/endtoend-inference/
+
+**Luminous implication:** a credible advantage must include the full lifecycle and data path: index construction, persistence, updates, query dispatch, network transfer, peer execution, result verification, data residency and energy on both endpoints. A fast Hamming kernel alone is not a distributed hardware advantage. The paired query-to-data experiment is tracked in [Symthaea #11251](https://github.com/Luminous-Dynamics/symthaea/issues/11251).
+
 ## 8. What would count as genuinely better
 
 Luminous should be able to demonstrate all of the following on at least one exact supported profile before claiming differentiated superiority:
