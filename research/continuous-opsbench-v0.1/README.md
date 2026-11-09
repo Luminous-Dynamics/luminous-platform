@@ -292,3 +292,8 @@ Evidence precision now uses every citation occurrence as its denominator. Repeat
 ### Full per-arm cost accounting (including failed/over-budget calls)
 
 The result row now records compiler time, adapter setup time (exact-tokenizer preflight plus fresh-session creation), provider-call time and total arm elapsed time. The aggregate reports compiler/setup/total time separately so context compilation cannot appear free merely because model time fell. It reports exact-tokenizer preflight separately from the byte/4 estimate and actual provider usage. Actual input tokens, reported cost and provider-call time are aggregated over **all invoked calls**, including calls later classified BudgetExceeded; preflight-only rejections have no provider usage and remain distinguishable. Paired quality deltas still use both-scored blocks, while token/cost/provider-time deltas use both-invoked blocks, and end-to-end arm-time deltas include every paired block. This prevents over-budget, expensive calls from disappearing from efficiency comparisons.
+
+
+### Provider setup is now a least-privilege projection
+
+The adapter receives a dedicated `ReasonerSetupProfile`, not the complete evaluator `ContextExperimentProfile`. The projection contains only effective model snapshot, prompt digest, permission profile, tool catalogue, reasoning effort and sampling seed. It deliberately excludes scenario revision, scorer digest, arm-order seed and counterbalance slot. The model prompt remains only the rendered evidence. Invocation attestation is checked against the minimal setup profile returned by the adapter. This narrows both prompt leakage and the trusted adapter API surface; it does not prove a third-party provider's internal state isolation.
