@@ -334,3 +334,6 @@ The fixture also keeps DWF-001-06 isolated: the peer has `data:public` but not `
 ### Result-validation hardening
 
 The evaluator now requires a complete execution receipt: dispatch and completion state, posture freshness, observed backend, exact runtime digest, valid signature, output digest and a passing independent-oracle disposition. DWF-001-23 is a negative control for omitted claims. Missing evidence is never treated as a passing claim.
+
+
+The fixture includes DWF-001-24 as the positive complete-receipt acceptance control and DWF-001-25 as the corresponding invalid-signature rejection control.

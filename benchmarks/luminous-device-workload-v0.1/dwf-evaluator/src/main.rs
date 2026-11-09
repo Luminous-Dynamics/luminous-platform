@@ -742,9 +742,9 @@ mod tests {
     fn every_preregistered_scenario_matches_the_independent_evaluator() {
         let fixture = fixture_value();
         let report = evaluate_fixture(&fixture, FIXTURE.as_bytes()).expect("evaluation succeeds");
-        assert_eq!(report.scenario_count, 23);
+        assert_eq!(report.scenario_count, 25);
         assert_eq!(report.failed, 0, "{:#?}", report.cases);
-        assert_eq!(report.passed, 23);
+        assert_eq!(report.passed, 25);
         assert_eq!(report.evidence_class, "synthetic_fixture_evaluation_only");
     }
 
@@ -803,6 +803,18 @@ mod tests {
         assert_eq!(actual.result, "REJECTED");
         assert!(actual.reason_codes.contains(&"EXECUTION_RECEIPT_INCOMPLETE".to_owned()));
         assert!(actual.reason_codes.contains(&"RESULT_NOT_ACCEPTED".to_owned()));
+    }
+
+    #[test]
+    fn complete_receipt_accepts_only_verified_oracle_result() {
+        let fixture = fixture_value();
+        let (accepted, _) = evaluate_case(case(&fixture, "DWF-001-24"));
+        assert_eq!(accepted.result, "ACCEPTED");
+        assert!(accepted.reason_codes.is_empty());
+
+        let (rejected, _) = evaluate_case(case(&fixture, "DWF-001-25"));
+        assert_eq!(rejected.result, "REJECTED");
+        assert!(rejected.reason_codes.contains(&"RESULT_SIGNATURE_INVALID".to_owned()));
     }
 
     #[test]
