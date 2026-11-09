@@ -1269,6 +1269,14 @@ pub struct ContextArmAggregate {
     pub preflight_unavailable_blocks: usize,
     pub correct_roots: usize,
     pub grounded_roots: usize,
+    /// Mean citation-reference support precision among scored arms.
+    pub mean_supported_evidence_precision_ppm_scored: Option<u128>,
+    /// Mean freshness-qualified citation precision among scored arms.
+    pub mean_fresh_evidence_precision_ppm_scored: Option<u128>,
+    pub mean_required_evidence_recall_ppm_scored: Option<u128>,
+    pub mean_fresh_required_evidence_recall_ppm_scored: Option<u128>,
+    pub total_unsupported_evidence_claims: usize,
+    pub total_stale_or_future_evidence_claims: usize,
     /// Correct/grounded counts divided by every paired block, including budget misses.
     pub correct_rate_all_ppm: u32,
     pub grounded_rate_all_ppm: u32,
@@ -1717,6 +1725,36 @@ pub fn analyze_paired_context_results(
                         .is_some_and(|score| score.root_object_grounded)
                 })
                 .count();
+            let supported_precision_total: u128 = scored
+                .iter()
+                .filter_map(|row| row.score.as_ref())
+                .map(|score| u128::from(score.supported_evidence_precision_ppm))
+                .sum();
+            let fresh_precision_total: u128 = scored
+                .iter()
+                .filter_map(|row| row.score.as_ref())
+                .map(|score| u128::from(score.fresh_evidence_precision_ppm))
+                .sum();
+            let required_recall_total: u128 = scored
+                .iter()
+                .filter_map(|row| row.score.as_ref())
+                .map(|score| u128::from(score.required_evidence_recall_ppm))
+                .sum();
+            let fresh_required_recall_total: u128 = scored
+                .iter()
+                .filter_map(|row| row.score.as_ref())
+                .map(|score| u128::from(score.fresh_required_evidence_recall_ppm))
+                .sum();
+            let total_unsupported_evidence_claims = scored
+                .iter()
+                .filter_map(|row| row.score.as_ref())
+                .map(|score| score.unsupported_evidence_claims)
+                .sum();
+            let total_stale_or_future_evidence_claims = scored
+                .iter()
+                .filter_map(|row| row.score.as_ref())
+                .map(|score| score.stale_or_future_evidence_claims)
+                .sum();
 
             let total_context_bytes: u128 = rows.iter().map(|row| row.context_bytes as u128).sum();
             let total_estimated_tokens: u128 = rows
@@ -1753,6 +1791,24 @@ pub fn analyze_paired_context_results(
                 preflight_unavailable_blocks,
                 correct_roots,
                 grounded_roots,
+                mean_supported_evidence_precision_ppm_scored: mean_u128(
+                    supported_precision_total,
+                    scored.len(),
+                ),
+                mean_fresh_evidence_precision_ppm_scored: mean_u128(
+                    fresh_precision_total,
+                    scored.len(),
+                ),
+                mean_required_evidence_recall_ppm_scored: mean_u128(
+                    required_recall_total,
+                    scored.len(),
+                ),
+                mean_fresh_required_evidence_recall_ppm_scored: mean_u128(
+                    fresh_required_recall_total,
+                    scored.len(),
+                ),
+                total_unsupported_evidence_claims,
+                total_stale_or_future_evidence_claims,
                 correct_rate_all_ppm: rate_ppm(correct_roots, n),
                 grounded_rate_all_ppm: rate_ppm(grounded_roots, n),
                 correct_rate_scored_ppm: (scored.len() > 0)
