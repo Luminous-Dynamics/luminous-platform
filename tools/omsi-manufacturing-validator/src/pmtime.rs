@@ -36,6 +36,8 @@ const REQUIRED_VERIFIER_CHECKS: [&str; 5] = [
     "authority-and-claim-ceiling",
 ];
 
+type PreviousRecord<'a> = (u64, u64, u64, &'a str, &'a str, &'a str, &'a str, &'a str, &'a str, &'a str);
+
 const CLAIM_CEILING: &str = "Synthetic PMTime source/record-time integrity and structural composition of declared Mycelix dependency-verification outputs. It does not authenticate upstream reports, prove absolute physical time accuracy, qualify a PTP implementation, or establish service availability.";
 
 fn sha256_hex(bytes: &[u8]) -> String {
@@ -215,7 +217,7 @@ fn evaluate_case(
     }
 
     let max_uncertainty = number(case, "max_uncertainty_ns").unwrap_or(default_max_uncertainty);
-    let mut previous: Option<(u64, u64, u64, &str, &str, &str, &str, &str, &str, &str)> = None;
+    let mut previous: Option<PreviousRecord<'_>> = None;
     let mut expected_queries: Vec<(u64, Vec<&str>)> = Vec::with_capacity(records.len());
 
     for (index, record) in records.iter().enumerate() {
@@ -342,14 +344,14 @@ fn evaluate_case(
             }
             let valid_from = number(calibration, "valid_from_tai_ns");
             let valid_until = number(calibration, "valid_until_tai_ns");
-            if valid_from.is_none_or(|value| value > period_start)
-                || valid_until.is_none_or(|value| value < period_end)
+            if valid_from.map_or(true, |value| value > period_start)
+                || valid_until.map_or(true, |value| value < period_end)
             {
                 unknown.push(format!("record_{index}_calibration_does_not_cover_period"));
             }
             if !string(calibration, "certificate_sha256").is_some_and(is_sha256)
                 || string(calibration, "traceability_ref")
-                    .is_none_or(|value| value.trim().is_empty())
+                    .map_or(true, |value| value.trim().is_empty())
             {
                 unknown.push(format!("record_{index}_calibration_traceability_missing"));
             }
