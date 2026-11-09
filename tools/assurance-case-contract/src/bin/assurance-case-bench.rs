@@ -145,7 +145,10 @@ fn main() -> Result<(), String> {
         // Warm the allocator and instruction/data paths once; exclude the warm-up sample.
         let warm = evaluate_bytes(&input_bytes);
         if warm.outcome != assurance_case_contract::CaseOutcome::SupportedForDeclaredScope {
-            return Err(format!("scale case {evidence_count} did not verify: {:?}", warm.outcome));
+            return Err(format!(
+                "scale case {evidence_count} did not verify: {:?}",
+                warm.outcome
+            ));
         }
 
         let mut samples = Vec::with_capacity(iterations);
