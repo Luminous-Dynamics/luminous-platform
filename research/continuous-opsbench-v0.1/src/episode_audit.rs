@@ -8,6 +8,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::event_schedule::{EventScheduleResult, RecordDisposition, ScheduleStatus};
+use crate::failure_domains::{
+    audit_observer_independence, ControlDomainProfile, FailureDomainGraph, IndependencePolicy,
+    IndependenceStatus,
+};
 use crate::scheduled_attention::{
     ProbeSelectionProposal, ScheduledWakeDecision, SourceQualifiedDisposition,
 };
@@ -105,6 +109,9 @@ pub struct ImpactReceipt {
     pub event_id: String,
     pub received_at_tick: u64,
     pub impact: ImpactObservation,
+    /// Observer-owned inventory claim. The collector profile is sourced
+    /// independently from the registry snapshot supplied to the auditor.
+    pub observer_failure_domain_profile: ReceiptState<ControlDomainProfile>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -145,7 +152,16 @@ pub struct EpisodeAuditInput<'a> {
     pub wake_decisions: &'a [WakeDecisionReceipt],
     pub requests: &'a [ProbeRequestReceipt],
     pub evidence: &'a [ProbeEvidenceRecord],
+    pub failure_domain_registry: Option<&'a FailureDomainRegistrySnapshot>,
     pub audited_at_tick: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FailureDomainRegistrySnapshot {
+    pub graph: FailureDomainGraph,
+    /// Keyed by the exact collector_control_domain in the probe catalog.
+    pub collector_profiles: BTreeMap<String, ControlDomainProfile>,
+    pub policy: IndependencePolicy,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -166,6 +182,8 @@ pub enum AuditFailure {
     ProbeNotCataloguedReadOnly,
     ProbeProposalNotMatched,
     DuplicateProbeProposal,
+    FailureDomainEvidenceInvalid,
+    FailureDomainProfileBindingMismatch,
     DuplicateReceiptId,
     DuplicateEvidenceRecord,
     EvidenceBindingMismatch,
@@ -187,6 +205,11 @@ pub enum IndeterminateReason {
     UnknownImpact,
     IncompleteImpact,
     ImpactIndependenceUnestablished,
+    MissingFailureDomainRegistry,
+    MissingCollectorFailureDomainProfile,
+    MissingObserverFailureDomainProfile,
+    UnknownObserverFailureDomainProfile,
+    CommonCauseOverlap,
     MissingDecision,
     ProbeProposalNotAdmitted,
     ReceiptAfterDeadline,
@@ -425,6 +448,74 @@ fn impact_binding_matches(
         && impact.measured_at_tick <= receipt.received_at_tick
         && receipt.received_at_tick <= request.deadline_tick
         && receipt.received_at_tick <= audited_at_tick
+}
+
+enum FailureDomainOutcome {
+    NoDeclaredOverlap,
+    Indeterminate(IndeterminateReason),
+    Failed(AuditFailure),
+}
+
+fn audit_impact_failure_domains(
+    registry: Option<&FailureDomainRegistrySnapshot>,
+    entry: &ProbeCatalogEntry,
+    receipt: &ImpactReceipt,
+    audited_at_tick: u64,
+) -> FailureDomainOutcome {
+    let Some(registry) = registry else {
+        return FailureDomainOutcome::Indeterminate(
+            IndeterminateReason::MissingFailureDomainRegistry,
+        );
+    };
+
+    let Some(collector_profile) = registry
+        .collector_profiles
+        .get(&entry.collector_control_domain)
+    else {
+        return FailureDomainOutcome::Indeterminate(
+            IndeterminateReason::MissingCollectorFailureDomainProfile,
+        );
+    };
+    if collector_profile.subject_id != entry.collector_control_domain {
+        return FailureDomainOutcome::Failed(AuditFailure::FailureDomainProfileBindingMismatch);
+    }
+
+    let observer_profile = match &receipt.observer_failure_domain_profile {
+        ReceiptState::Present(profile) => profile,
+        ReceiptState::Missing => {
+            return FailureDomainOutcome::Indeterminate(
+                IndeterminateReason::MissingObserverFailureDomainProfile,
+            );
+        }
+        ReceiptState::Unknown => {
+            return FailureDomainOutcome::Indeterminate(
+                IndeterminateReason::UnknownObserverFailureDomainProfile,
+            );
+        }
+    };
+    if observer_profile.subject_id != receipt.impact.observer_control_domain {
+        return FailureDomainOutcome::Failed(AuditFailure::FailureDomainProfileBindingMismatch);
+    }
+
+    let report = audit_observer_independence(
+        collector_profile,
+        observer_profile,
+        &registry.graph,
+        audited_at_tick,
+        registry.policy,
+    );
+    match report.status {
+        IndependenceStatus::NoDeclaredOverlap => FailureDomainOutcome::NoDeclaredOverlap,
+        IndependenceStatus::SharedDeclaredDependency => {
+            FailureDomainOutcome::Indeterminate(IndeterminateReason::CommonCauseOverlap)
+        }
+        IndependenceStatus::Indeterminate => FailureDomainOutcome::Indeterminate(
+            IndeterminateReason::ImpactIndependenceUnestablished,
+        ),
+        IndependenceStatus::Invalid => {
+            FailureDomainOutcome::Failed(AuditFailure::FailureDomainEvidenceInvalid)
+        }
+    }
 }
 
 fn request_matches_catalog(
@@ -1077,6 +1168,7 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
             }
         };
 
+        let mut impact_independence_indeterminate = false;
         let impact = match &row.impact {
             ReceiptState::Present(receipt) => {
                 if receipt.received_at_tick > request.deadline_tick {
@@ -1102,13 +1194,32 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
                             || receipt.impact.observer_control_domain
                                 == entry.collector_control_domain
                         {
+                            impact_independence_indeterminate = true;
                             report.indeterminate(
                                 IndeterminateReason::ImpactIndependenceUnestablished,
                             );
                             None
                         } else {
-                            report.impacts_verified += 1;
-                            Some(receipt)
+                            match audit_impact_failure_domains(
+                                input.failure_domain_registry,
+                                entry,
+                                receipt,
+                                input.audited_at_tick,
+                            ) {
+                                FailureDomainOutcome::NoDeclaredOverlap => {
+                                    report.impacts_verified += 1;
+                                    Some(receipt)
+                                }
+                                FailureDomainOutcome::Indeterminate(reason) => {
+                                    impact_independence_indeterminate = true;
+                                    report.indeterminate(reason);
+                                    None
+                                }
+                                FailureDomainOutcome::Failed(failure) => {
+                                    report.fail(failure);
+                                    None
+                                }
+                            }
                         }
                     } else {
                         // An impact receipt cannot close the chain if its paired
@@ -1148,9 +1259,10 @@ pub fn audit_episode(input: &EpisodeAuditInput<'_>) -> EpisodeAuditReport {
                 report.missing_decisions += 1;
                 report.indeterminate(IndeterminateReason::MissingDecision);
             }
-            (None, _, Some(_)) | (_, None, Some(_)) => {
+            (None, _, Some(_)) | (_, None, Some(_)) if !impact_independence_indeterminate => {
                 report.fail(AuditFailure::DecisionWithoutCompleteEvidence);
             }
+            (None, _, Some(_)) | (_, None, Some(_)) => {}
             _ => {}
         }
     }
@@ -1180,6 +1292,7 @@ mod tests {
         AttentionStrategy, EventCheckpoint, EventRecordResult, EventScheduleMetrics,
         ScheduleStatus, WakeRecord,
     };
+    use crate::failure_domains::{FailureDomainNode, InventoryState};
     use crate::scheduled_attention::{
         ProbeSelectionProposal, ScheduledWakeDecision, SourceQualifiedDisposition,
         SourceQualifiedEvent, SourceQualifiedEventDecision, SourceQualifiedEventIdentity,
@@ -1358,6 +1471,94 @@ mod tests {
                 io_bytes: 0,
                 complete: true,
             },
+            observer_failure_domain_profile: ReceiptState::Present(
+                observer_failure_domain_profile(),
+            ),
+        }
+    }
+
+    fn failure_domain_profile(subject_id: &str, root: &str, digest: u64) -> ControlDomainProfile {
+        ControlDomainProfile {
+            subject_id: subject_id.into(),
+            profile_digest: format!("sha256:{digest:064x}"),
+            graph_revision: "registry-v1".into(),
+            roots: [root.to_owned()].into_iter().collect(),
+            state: InventoryState::Complete,
+            observed_at_tick: 5,
+            valid_until_tick: 30,
+        }
+    }
+
+    fn observer_failure_domain_profile() -> ControlDomainProfile {
+        failure_domain_profile("observer-domain", "observer-domain", 2)
+    }
+
+    fn failure_domain_registry() -> FailureDomainRegistrySnapshot {
+        let nodes = vec![
+            FailureDomainNode {
+                id: "collector-domain".into(),
+                class: "collector-process".into(),
+                depends_on: ["collector-host", "collector-clock", "collector-idp"]
+                    .into_iter()
+                    .map(str::to_owned)
+                    .collect(),
+            },
+            FailureDomainNode {
+                id: "observer-domain".into(),
+                class: "observer-process".into(),
+                depends_on: ["observer-host", "observer-clock", "observer-idp"]
+                    .into_iter()
+                    .map(str::to_owned)
+                    .collect(),
+            },
+            FailureDomainNode {
+                id: "collector-host".into(),
+                class: "host".into(),
+                depends_on: BTreeSet::new(),
+            },
+            FailureDomainNode {
+                id: "collector-clock".into(),
+                class: "time-source".into(),
+                depends_on: BTreeSet::new(),
+            },
+            FailureDomainNode {
+                id: "collector-idp".into(),
+                class: "identity-provider".into(),
+                depends_on: BTreeSet::new(),
+            },
+            FailureDomainNode {
+                id: "observer-host".into(),
+                class: "host".into(),
+                depends_on: BTreeSet::new(),
+            },
+            FailureDomainNode {
+                id: "observer-clock".into(),
+                class: "time-source".into(),
+                depends_on: BTreeSet::new(),
+            },
+            FailureDomainNode {
+                id: "observer-idp".into(),
+                class: "identity-provider".into(),
+                depends_on: BTreeSet::new(),
+            },
+        ];
+        FailureDomainRegistrySnapshot {
+            graph: FailureDomainGraph {
+                revision: "registry-v1".into(),
+                nodes: nodes
+                    .into_iter()
+                    .map(|node| (node.id.clone(), node))
+                    .collect(),
+            },
+            collector_profiles: [(
+                "collector-domain".into(),
+                failure_domain_profile("collector-domain", "collector-domain", 1),
+            )]
+            .into_iter()
+            .collect(),
+            policy: IndependencePolicy {
+                maximum_inventory_age_ticks: 10,
+            },
         }
     }
 
@@ -1470,6 +1671,32 @@ mod tests {
         evidence: &[ProbeEvidenceRecord],
         audited_at_tick: u64,
     ) -> EpisodeAuditReport {
+        let registry = failure_domain_registry();
+        run_with_failure_domain_registry(
+            watch,
+            authority,
+            catalog,
+            schedule,
+            wake_decisions,
+            requests,
+            evidence,
+            Some(&registry),
+            audited_at_tick,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn run_with_failure_domain_registry(
+        watch: &WatchSpec,
+        authority: &AuthoritySnapshot,
+        catalog: &[ProbeCatalogEntry],
+        schedule: &EventScheduleResult,
+        wake_decisions: &[WakeDecisionReceipt],
+        requests: &[ProbeRequestReceipt],
+        evidence: &[ProbeEvidenceRecord],
+        failure_domain_registry: Option<&FailureDomainRegistrySnapshot>,
+        audited_at_tick: u64,
+    ) -> EpisodeAuditReport {
         audit_episode(&EpisodeAuditInput {
             watch,
             authority,
@@ -1478,6 +1705,7 @@ mod tests {
             wake_decisions,
             requests,
             evidence,
+            failure_domain_registry,
             audited_at_tick,
         })
     }
@@ -1721,6 +1949,228 @@ mod tests {
         assert_eq!(report.impacts_verified, 1);
         assert_eq!(impact_receipt().impact.cpu_milliticks, 0);
         assert_eq!(impact_receipt().impact.io_bytes, 0);
+    }
+
+    #[test]
+    fn impact_receipt_is_not_independent_when_profiles_share_a_declared_host() {
+        let mut registry = failure_domain_registry();
+        registry.graph.nodes.insert(
+            "shared-host".into(),
+            FailureDomainNode {
+                id: "shared-host".into(),
+                class: "physical-host".into(),
+                depends_on: BTreeSet::new(),
+            },
+        );
+        registry
+            .graph
+            .nodes
+            .get_mut("collector-host")
+            .unwrap()
+            .depends_on
+            .insert("shared-host".into());
+        registry
+            .graph
+            .nodes
+            .get_mut("observer-host")
+            .unwrap()
+            .depends_on
+            .insert("shared-host".into());
+
+        let report = run_with_failure_domain_registry(
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &evidence(),
+            Some(&registry),
+            12,
+        );
+        assert_eq!(report.status, AuditStatus::Indeterminate);
+        assert_eq!(report.impacts_verified, 0);
+        assert_eq!(report.decisions_verified, 0);
+        assert!(report
+            .indeterminate_reasons
+            .contains(&IndeterminateReason::CommonCauseOverlap));
+        assert!(!report
+            .failures
+            .contains(&AuditFailure::DecisionWithoutCompleteEvidence));
+    }
+
+    #[test]
+    fn missing_registry_or_collector_profile_never_qualifies_impact() {
+        let no_registry = run_with_failure_domain_registry(
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &evidence(),
+            None,
+            12,
+        );
+        assert_eq!(no_registry.status, AuditStatus::Indeterminate);
+        assert!(no_registry
+            .indeterminate_reasons
+            .contains(&IndeterminateReason::MissingFailureDomainRegistry));
+
+        let mut registry = failure_domain_registry();
+        registry.collector_profiles.clear();
+        let missing_collector = run_with_failure_domain_registry(
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &evidence(),
+            Some(&registry),
+            12,
+        );
+        assert_eq!(missing_collector.status, AuditStatus::Indeterminate);
+        assert!(missing_collector
+            .indeterminate_reasons
+            .contains(&IndeterminateReason::MissingCollectorFailureDomainProfile));
+    }
+
+    #[test]
+    fn missing_unknown_and_stale_observer_inventory_are_indeterminate() {
+        let mut rows = evidence();
+        let mut missing_receipt = impact_receipt();
+        missing_receipt.observer_failure_domain_profile = ReceiptState::Missing;
+        rows[0].impact = ReceiptState::Present(missing_receipt);
+        let missing = run(
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &rows,
+            12,
+        );
+        assert_eq!(missing.status, AuditStatus::Indeterminate);
+        assert!(missing
+            .indeterminate_reasons
+            .contains(&IndeterminateReason::MissingObserverFailureDomainProfile));
+
+        let mut unknown_receipt = impact_receipt();
+        unknown_receipt.observer_failure_domain_profile = ReceiptState::Unknown;
+        rows[0].impact = ReceiptState::Present(unknown_receipt);
+        let unknown = run(
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &rows,
+            12,
+        );
+        assert_eq!(unknown.status, AuditStatus::Indeterminate);
+        assert!(unknown
+            .indeterminate_reasons
+            .contains(&IndeterminateReason::UnknownObserverFailureDomainProfile));
+
+        let mut stale_registry = failure_domain_registry();
+        stale_registry
+            .collector_profiles
+            .get_mut("collector-domain")
+            .unwrap()
+            .observed_at_tick = 1;
+        let stale = run_with_failure_domain_registry(
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &evidence(),
+            Some(&stale_registry),
+            12,
+        );
+        assert_eq!(stale.status, AuditStatus::Indeterminate);
+        assert!(stale
+            .indeterminate_reasons
+            .contains(&IndeterminateReason::ImpactIndependenceUnestablished));
+    }
+
+    #[test]
+    fn stale_observer_inventory_is_indeterminate_at_episode_boundary() {
+        let mut rows = evidence();
+        let mut receipt = impact_receipt();
+        let mut stale = observer_failure_domain_profile();
+        stale.observed_at_tick = 1;
+        receipt.observer_failure_domain_profile = ReceiptState::Present(stale);
+        rows[0].impact = ReceiptState::Present(receipt);
+
+        let report = run(
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &rows,
+            12,
+        );
+        assert_eq!(report.status, AuditStatus::Indeterminate);
+        assert_eq!(report.impacts_verified, 0);
+        assert_eq!(report.decisions_verified, 0);
+        assert!(report
+            .indeterminate_reasons
+            .contains(&IndeterminateReason::ImpactIndependenceUnestablished));
+    }
+
+    #[test]
+    fn invalid_failure_domain_graph_and_profile_substitution_fail_closed() {
+        let mut cyclic_registry = failure_domain_registry();
+        cyclic_registry
+            .graph
+            .nodes
+            .get_mut("collector-host")
+            .unwrap()
+            .depends_on
+            .insert("collector-domain".into());
+        let cyclic = run_with_failure_domain_registry(
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &evidence(),
+            Some(&cyclic_registry),
+            12,
+        );
+        assert_eq!(cyclic.status, AuditStatus::Failed);
+        assert!(cyclic
+            .failures
+            .contains(&AuditFailure::FailureDomainEvidenceInvalid));
+
+        let mut substituted_receipt = evidence();
+        let mut impact = impact_receipt();
+        if let ReceiptState::Present(profile) = &mut impact.observer_failure_domain_profile {
+            profile.subject_id = "other-observer".into();
+        }
+        substituted_receipt[0].impact = ReceiptState::Present(impact);
+        let substituted = run(
+            &watch(),
+            &authority(),
+            &catalog(),
+            &schedule(),
+            &wake_decision(),
+            &request(),
+            &substituted_receipt,
+            12,
+        );
+        assert_eq!(substituted.status, AuditStatus::Failed);
+        assert!(substituted
+            .failures
+            .contains(&AuditFailure::FailureDomainProfileBindingMismatch));
     }
 
     #[test]
