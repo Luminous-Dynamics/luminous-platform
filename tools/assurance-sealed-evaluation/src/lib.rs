@@ -300,8 +300,7 @@ pub fn verify_bundle(
         reveal.candidate_output_bundle_sha256 == order.candidate_output_bundle_sha256,
     );
 
-    let custody_binding_matches = commitment.custody_receipt_sha256
-        == order.custody_receipt_sha256
+    let custody_binding_matches = commitment.custody_receipt_sha256 == order.custody_receipt_sha256
         && commitment
             .custody_receipt_sha256
             .as_deref()
