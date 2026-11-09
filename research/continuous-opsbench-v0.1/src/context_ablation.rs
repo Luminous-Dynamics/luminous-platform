@@ -2737,7 +2737,9 @@ mod tests {
         assert!(results
             .iter()
             .all(|result| result.status == ArmStatus::PreflightUnavailable));
-        assert!(results.iter().all(|result| result.reasoner_session_id.is_none()));
+        assert!(results
+            .iter()
+            .all(|result| result.reasoner_session_id.is_none()));
         assert!(results.iter().all(|result| result.usage.is_none()));
     }
 
