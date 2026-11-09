@@ -909,6 +909,30 @@ mod tests {
         assert_eq!(rows[0].unknown_evidence_count, 1);
         assert_eq!(
             rows[0].status,
+            CandidateCorroborationStatus::Indeterminate
+        );
+
+        let only_absent = vec![SourceEvidence {
+            evidence_id: "ev-absent-only".into(),
+            object_ref: "checkout-api".into(),
+            source_id: "metrics-a".into(),
+            control_domain: "domain-a".into(),
+            availability: EvidenceAvailability::Absent,
+            event_tick: 1,
+            observed_at_tick: 2,
+            valid_until_tick: None,
+        }];
+        let absent_rows = evaluate_evidence_corroboration(
+            &only_absent,
+            &BTreeMap::new(),
+            &graph,
+            5,
+            10,
+            policy(),
+        )
+        .unwrap();
+        assert_eq!(
+            absent_rows[0].status,
             CandidateCorroborationStatus::NoCurrentEvidence
         );
     }
