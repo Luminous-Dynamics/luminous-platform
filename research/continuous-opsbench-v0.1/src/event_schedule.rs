@@ -2188,14 +2188,7 @@ mod tests {
                 Persistence::PersistentCondition,
             )),
         ];
-        let result = run_with_gap(
-            AttentionStrategy::EventTriggered,
-            &timeline,
-            10,
-            None,
-            5,
-            8,
-        );
+        let result = run_with_gap(AttentionStrategy::EventTriggered, &timeline, 10, None, 5, 8);
 
         assert_eq!(result.status, ScheduleStatus::Completed);
         assert_eq!(result.metrics.sequence_gaps, 2);
@@ -2738,14 +2731,7 @@ mod tests {
                 Persistence::PersistentCondition,
             )),
         ];
-        let result = run_with_gap(
-            AttentionStrategy::EventTriggered,
-            &timeline,
-            6,
-            None,
-            5,
-            1,
-        );
+        let result = run_with_gap(AttentionStrategy::EventTriggered, &timeline, 6, None, 5, 1);
         assert_eq!(result.status, ScheduleStatus::BudgetExhausted);
         assert_eq!(result.metrics.gap_buffer_overflows, 1);
         assert_eq!(result.checkpoint.buffered_events.len(), 1);
@@ -2855,14 +2841,7 @@ mod tests {
                 watermark_digest: format!("sha256:{:064x}", 999),
             }),
         ];
-        let result = run_with_gap(
-            AttentionStrategy::EventTriggered,
-            &timeline,
-            8,
-            None,
-            5,
-            8,
-        );
+        let result = run_with_gap(AttentionStrategy::EventTriggered, &timeline, 8, None, 5, 8);
         assert_eq!(result.status, ScheduleStatus::Quiet);
         assert_eq!(result.metrics.restarts_accepted, 1);
         assert_eq!(result.checkpoint.source_epoch, "epoch-2");
