@@ -119,6 +119,12 @@ The placement decision should be based on:
 
 A workload should describe its required capabilities and constraints; a scheduler may select a compatible device. This is a proposed contract, not a claim that a distributed scheduler is already implemented.
 
+The follow-on integration contract is tracked in [DWF-001 #351](https://github.com/Luminous-Dynamics/luminous-platform/issues/351). V0 is deliberately restricted to pure, read-only or advisory computation. System/network/firmware mutation, payments, external messages and safety-critical actions stay outside the workload-placement plane and remain subject to their canonical authority/effect owners.
+
+The work request describes constraints; it does not grant permission. Device capability, peer/session authentication, device posture, local authorization, task correctness and execution completion are separate claims. In particular, Xenia session identity does not prove workload identity or device integrity; Mycelix discovery does not create trust; an authorized lease is not a correctness proof; and a signed result is not proof that the task output is correct.
+
+Placement must first apply fail-closed eligibility constraints (data class, allowed destination, exact runtime/model/backend, current evidence, memory, deadline, energy/thermal bounds). Only eligible devices are compared. Return a transparent Pareto set and reason codes rather than one opaque weighted score; user policy resolves any remaining trade-off or the scheduler abstains. Unknown capability is not a default capability.
+
 **Privacy invariant:** no sensitive input may be offloaded merely because another device is faster. The destination must be authorized for that data class, satisfy the required trust policy, and expose a bounded execution contract. Minimize data movement; prefer derived features or task-local representations when they preserve correctness. Record whether work ran locally, remotely, on which exact device and software revision, and what data crossed the boundary.
 
 **Failure invariant:** when a peer, network, verifier or coordinator disappears, the origin device either continues within its local capability or returns a clear degraded/unavailable result. It must not silently route sensitive work to an untrusted device or claim that an incomplete remote result succeeded.
