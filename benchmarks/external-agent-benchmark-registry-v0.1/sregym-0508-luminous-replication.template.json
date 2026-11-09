@@ -25,7 +25,15 @@
     "pairing_unit": "scenario_attempt",
     "cluster_unit": "scenario",
     "arm_order_seed": null,
-    "preregistered_protocol_digest": null
+    "preregistered_protocol_digest": null,
+    "common_model_snapshot_digest": null,
+    "common_prompt_digest": null,
+    "common_permission_profile_digest": null,
+    "common_reasoning_effort": null,
+    "common_sampling_policy": null,
+    "common_context_budget_digest": null,
+    "common_tool_budget_digest": null,
+    "capability_equivalence_artifact_digest": null
   },
   "native_protocol": {
     "native_scorer_required": true,
