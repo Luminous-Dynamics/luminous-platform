@@ -299,6 +299,14 @@ fn digest_hex(digest: &Digest) -> String {
     output
 }
 
+fn escape_field(value: &str) -> String {
+    value
+        .replace('\\', "\\\\")
+        .replace('|', "\\|")
+        .replace('\n', "\\n")
+        .replace('\r', "\\r")
+}
+
 fn validate_input(input: &ContextExperimentInput) -> Result<(), ContextExperimentError> {
     if !non_empty(&input.scenario_id) {
         return Err(ContextExperimentError::EmptyScenarioId);
@@ -551,7 +559,9 @@ fn render_packet(packet: &ContextPacket) -> String {
     let _ = writeln!(
         &mut rendered,
         "scenario={} arm={:?} target={}",
-        packet.scenario_id, packet.arm, packet.target_object_ref
+        escape_field(&packet.scenario_id),
+        packet.arm,
+        escape_field(&packet.target_object_ref)
     );
 
     match &packet.evidence {
@@ -560,17 +570,18 @@ fn render_packet(packet: &ContextPacket) -> String {
                 let value = item.value.as_deref().unwrap_or("<no-value>");
                 let _ = writeln!(
                     &mut rendered,
-                    "RAW|{}|{}|{}|{}|{:?}|{}|{:?}|{}|{}|{}|{}",
-                    item.evidence_id,
-                    item.source_id,
-                    item.control_domain,
-                    item.object_ref,
+                    "RAW|{}|{}|{}|{}|{:?}|{}|{:?}|{}|{}|{}|{:?}|{}",
+                    escape_field(&item.evidence_id),
+                    escape_field(&item.source_id),
+                    escape_field(&item.control_domain),
+                    escape_field(&item.object_ref),
                     item.object_kind,
-                    item.field_path,
+                    escape_field(&item.field_path),
                     item.state,
-                    value,
+                    escape_field(value),
                     item.event_time_ms,
                     item.observed_at_ms,
+                    item.valid_until_ms,
                     digest_hex(&item.digest)
                 );
             }
@@ -581,14 +592,14 @@ fn render_packet(packet: &ContextPacket) -> String {
                 let _ = writeln!(
                     &mut rendered,
                     "FACT|id={}|source={}|domain={}|object={}|kind={:?}|field={}|state={:?}|value={}|event_ms={}|observed_ms={}|valid_until={:?}|digest={}",
-                    item.evidence_id,
-                    item.source_id,
-                    item.control_domain,
-                    item.object_ref,
+                    escape_field(&item.evidence_id),
+                    escape_field(&item.source_id),
+                    escape_field(&item.control_domain),
+                    escape_field(&item.object_ref),
                     item.object_kind,
-                    item.field_path,
+                    escape_field(&item.field_path),
                     item.state,
-                    value,
+                    escape_field(value),
                     item.event_time_ms,
                     item.observed_at_ms,
                     item.valid_until_ms,
@@ -602,11 +613,11 @@ fn render_packet(packet: &ContextPacket) -> String {
         let _ = writeln!(
             &mut rendered,
             "REL|{}|{}|{:?}|{}|{}|{:?}|{}",
-            relation.relation_id,
-            relation.evidence_id,
+            escape_field(&relation.relation_id),
+            escape_field(&relation.evidence_id),
             relation.relation,
-            relation.from_object,
-            relation.to_object,
+            escape_field(&relation.from_object),
+            escape_field(&relation.to_object),
             relation.state,
             relation.observed_at_ms
         );
@@ -615,9 +626,9 @@ fn render_packet(packet: &ContextPacket) -> String {
         let _ = writeln!(
             &mut rendered,
             "DIFF|{}|{}|{}|{:?}|{}|{}",
-            diff.evidence_id,
-            diff.object_ref,
-            diff.field_path,
+            escape_field(&diff.evidence_id),
+            escape_field(&diff.object_ref),
+            escape_field(&diff.field_path),
             diff.state,
             diff.observed_at_ms,
             digest_hex(&diff.digest)
@@ -627,23 +638,27 @@ fn render_packet(packet: &ContextPacket) -> String {
         let _ = writeln!(
             &mut rendered,
             "TIME|{}|event_ms={}|observed_ms={}|age_ms={:?}|freshness={:?}|source={}|domain={}",
-            item.evidence_id,
+            escape_field(&item.evidence_id),
             item.event_time_ms,
             item.observed_at_ms,
             item.age_ms,
             item.freshness,
-            item.source_id,
-            item.control_domain
+            escape_field(&item.source_id),
+            escape_field(&item.control_domain)
         );
     }
     for candidate in &packet.ranked_candidates {
         let _ = writeln!(
             &mut rendered,
             "CANDIDATE|{}|score={}|reasons={:?}|evidence={:?}",
-            candidate.object_ref,
+            escape_field(&candidate.object_ref),
             candidate.score,
             candidate.reason_codes,
-            candidate.supporting_evidence_ids
+            candidate
+                .supporting_evidence_ids
+                .iter()
+                .map(|id| escape_field(id))
+                .collect::<Vec<_>>()
         );
     }
     rendered
@@ -1076,6 +1091,74 @@ mod tests {
         assert_eq!(results.len(), 5);
         assert!(results.iter().all(|result| result.status == ArmStatus::Scored));
         assert_eq!(results[0].score.as_ref().unwrap().required_evidence_total, 1);
+    }
+
+    #[test]
+    fn stale_future_and_expired_observations_keep_distinct_freshness_states() {
+        let mut input = input();
+        input.evidence.push(ContextEvidence {
+            evidence_id: "ev-stale".into(),
+            source_id: "logs".into(),
+            control_domain: "domain-logs".into(),
+            object_ref: "worker-7".into(),
+            object_kind: EvidenceKind::Log,
+            field_path: "container.restart_count".into(),
+            value: Some("4".into()),
+            state: EvidenceState::Present,
+            event_time_ms: 500,
+            observed_at_ms: 500,
+            valid_until_ms: Some(5_000),
+            digest: digest(6),
+        });
+        input.evidence.push(ContextEvidence {
+            evidence_id: "ev-future".into(),
+            source_id: "clock".into(),
+            control_domain: "domain-clock".into(),
+            object_ref: "worker-7".into(),
+            object_kind: EvidenceKind::Metric,
+            field_path: "clock.skew".into(),
+            value: Some("true".into()),
+            state: EvidenceState::Present,
+            event_time_ms: 1_100,
+            observed_at_ms: 1_100,
+            valid_until_ms: Some(2_000),
+            digest: digest(7),
+        });
+        input.evidence.push(ContextEvidence {
+            evidence_id: "ev-expired".into(),
+            source_id: "config".into(),
+            control_domain: "domain-config".into(),
+            object_ref: "payments-config".into(),
+            object_kind: EvidenceKind::Configuration,
+            field_path: "revision".into(),
+            value: Some("old".into()),
+            state: EvidenceState::Present,
+            event_time_ms: 800,
+            observed_at_ms: 900,
+            valid_until_ms: Some(950),
+            digest: digest(8),
+        });
+
+        let (packet, _) =
+            compile_context_packet(&input, ContextArm::TemporalAndFreshness).unwrap();
+        let states: BTreeMap<_, _> = packet
+            .temporal
+            .iter()
+            .map(|item| (item.evidence_id.as_str(), item.freshness))
+            .collect();
+        assert_eq!(states["ev-stale"], Freshness::Stale);
+        assert_eq!(states["ev-future"], Freshness::FutureDated);
+        assert_eq!(states["ev-expired"], Freshness::Expired);
+    }
+
+    #[test]
+    fn raw_context_encoding_escapes_delimiters_and_preserves_validity_bounds() {
+        let mut input = input();
+        input.evidence[0].value = Some("bad|value\\ncontinued".into());
+        let (packet, _) =
+            compile_context_packet(&input, ContextArm::RawSourceRecords).unwrap();
+        assert!(packet.rendered_context.contains("bad\\\\|value\\\\ncontinued"));
+        assert!(packet.rendered_context.contains("Some(10000)"));
     }
 
     #[test]
