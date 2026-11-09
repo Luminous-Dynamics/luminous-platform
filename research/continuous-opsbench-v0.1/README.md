@@ -212,3 +212,14 @@ Each side supplies a complete, revision-bound profile with one or more roots, a 
 Tests include different process labels on the same host, separate hosts with shared identity/clock dependencies, disjoint declared dependencies, missing/unknown/expired inventories, graph revision mismatch, cycles and unknown edges.
 
 **Claim ceiling:** profiles and graph are supplied structural inputs. This module does not authenticate their publisher, prove inventory completeness, detect undeclared dependencies, establish actual process/organizational independence, or rule out latent common causes. Production use requires independently governed, signed, freshness-qualified inventories and negative-control testing of shared dependencies.
+
+
+## Episode-level common-cause qualification v1
+
+The independent episode auditor now consumes the failure-domain evaluator before crediting a completed impact receipt. The impact receipt carries an observer-owned profile; the collector profile is looked up separately from a registry snapshot keyed by the catalog's exact collector control-domain. Both profiles are checked against the same graph revision and freshness policy before their transitive closures are compared.
+
+A shared declared dependency produces `Indeterminate` and cannot support a decision receipt. Missing registry, missing collector profile, missing/unknown observer profile, stale/future/expired profiles, or incomparable graph revisions also remain `Indeterminate`. A malformed graph or subject/profile substitution is a hard failure. Only `NoDeclaredOverlap` advances this structural check; the name is intentional and does not claim proof of actual independence.
+
+The full episode test fixture now supplies different declared collector/observer host, clock and identity-provider dependencies. Adversarial tests add a shared host, remove the registry/profile, mark observer inventory missing/unknown, age a profile out, inject a graph cycle and substitute the observer subject ID. Each case is checked at the episode-auditor level rather than only in the standalone graph helper.
+
+**Claim ceiling:** this is still a structural evaluator over supplied inventories. It does not authenticate registry/profile publishers, attest that inventories are complete, detect undeclared dependencies, or prove a real observer remains independent under production fault injection. Production qualification still requires independently governed signed inventories, a trust root and failure-injection against each shared dependency.
