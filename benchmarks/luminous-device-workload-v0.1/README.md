@@ -73,6 +73,18 @@ Standards and upstream references:
 
 Do not treat an external benchmark's existence as evidence Luminous has run it. Preserve official score rules and label independent custom measurements separately.
 
+### 2.2 Binary retrieval and end-to-end placement comparators
+
+For exact binary HDC retrieval, include native Hamming baselines where a reproducible deployment is available:
+
+- **FAISS** supports exact IndexBinaryFlat plus IndexBinaryIVF, IndexBinaryHNSW and hash-based binary indexes. IndexBinaryFlat is exhaustive and uses optimized Hamming/popcount paths; this makes it a useful conventional exact CPU comparator. Approximate variants must report recall@k and exact agreement separately. [FAISS binary-index documentation](https://github.com/facebookresearch/faiss/wiki/Binary-Indexes).
+- **Milvus** documents binary vectors with Hamming/Jaccard and BIN_FLAT / BIN_IVF_FLAT index choices. Confirm exact dimension, byte order, tie handling and metric semantics before comparison. [Milvus vector-field index documentation](https://milvus.io/docs/index-vector-fields.md).
+- **Qdrant** binary quantization is an adjacent dense-embedding compression track, not automatically equivalent to native BinaryHV. Quantization distribution, oversampling, rescoring and recall must remain explicit. [Qdrant quantization documentation](https://qdrant.tech/documentation/manage-data/quantization/).
+
+The local-to-peer placement measurement is owned by [Symthaea NEURO-SILICON-003B #11251](https://github.com/Luminous-Dynamics/symthaea/issues/11251), composing local HDC baseline #7866, memory topology #9341 and energy receipts #10460. It compares local search, query-to-data, data-to-compute and replicate-once/query-many. The Platform owns product policy and eligibility, not another query/index implementation.
+
+The closest external end-to-end systems reference is **MLPerf Inference v6.1 End-to-End RAG**, which separately measures vector-database ingestion and multi-hop query serving and identifies model placement, co-residency, scheduling and CPU/GPU/NIC/storage interactions as optimization opportunities. It is a methodology reference, not a directly comparable HDC score. [MLPerf E2E RAG (26 Aug 2026)](https://mlcommons.org/2026/08/endtoend-inference/).
+
 The current named product comparator and market baseline list is maintained in [Device Industry Reference Snapshot 2026-11](../../docs/product/device-industry-reference-snapshot-2026-11.md). It is a dated procurement research input, not a performance result; vendor claims must be independently matched before comparison.
 
 ## 3. Frozen Luminous workload suite
