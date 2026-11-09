@@ -52,7 +52,9 @@
         "attempts_per_scenario",
         "expected_attempt_rows",
         "inventory_revision",
-        "cohort_observation_source"
+        "cohort_observation_source",
+        "cohort_manifest_source",
+        "source_reconciliation"
       ],
       "properties": {
         "cohort_id": {
@@ -123,6 +125,130 @@
                 "git_blob_only",
                 "content_sha256_verified"
               ]
+            }
+          }
+        },
+        "cohort_manifest_source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "repository",
+            "commit_sha",
+            "path",
+            "git_blob_sha",
+            "content_sha256",
+            "capture_status",
+            "local_snapshot_path"
+          ],
+          "properties": {
+            "repository": {
+              "type": "string",
+              "minLength": 1
+            },
+            "commit_sha": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "git_blob_sha": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            "content_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^([a-f0-9]{64})?$"
+            },
+            "capture_status": {
+              "enum": [
+                "metadata_only",
+                "git_blob_only",
+                "content_sha256_verified"
+              ]
+            },
+            "local_snapshot_path": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "source_reconciliation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "candidate_repository",
+            "candidate_commit_sha",
+            "candidate_commit_date_utc",
+            "registry_path",
+            "registry_blob_sha",
+            "registry_id_count",
+            "registry_ids_snapshot_path",
+            "tasklist_yml_example_path",
+            "tasklist_yml_example_blob_sha",
+            "tasklist_yml_example_id_count",
+            "tasklist_yml_runtime_policy",
+            "cohort_registry_match",
+            "execution_revision_attested",
+            "interpretation"
+          ],
+          "properties": {
+            "candidate_repository": {
+              "type": "string",
+              "minLength": 1
+            },
+            "candidate_commit_sha": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            "candidate_commit_date_utc": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "registry_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "registry_blob_sha": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            "registry_id_count": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "registry_ids_snapshot_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "tasklist_yml_example_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "tasklist_yml_example_blob_sha": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            "tasklist_yml_example_id_count": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "tasklist_yml_runtime_policy": {
+              "const": "must_be_absent_to_select_all_registered_ids"
+            },
+            "cohort_registry_match": {
+              "const": "exact_set_match"
+            },
+            "execution_revision_attested": {
+              "type": "boolean"
+            },
+            "interpretation": {
+              "type": "string",
+              "minLength": 1
             }
           }
         }
@@ -320,7 +446,13 @@
         "scorer_blob_sha",
         "submodules_digest",
         "container_lock_digest",
-        "fault_injector_digest"
+        "fault_injector_digest",
+        "scenario_manifest_repository",
+        "scenario_manifest_commit_sha",
+        "registry_path",
+        "registry_blob_sha",
+        "tasklist_yml_path",
+        "tasklist_yml_must_be_absent"
       ],
       "properties": {
         "sregym_repository": {
@@ -378,6 +510,29 @@
             "null"
           ],
           "pattern": "^([a-f0-9]{64})?$"
+        },
+        "scenario_manifest_repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scenario_manifest_commit_sha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "registry_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "registry_blob_sha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "tasklist_yml_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tasklist_yml_must_be_absent": {
+          "const": true
         }
       }
     },
@@ -392,7 +547,9 @@
         "helm_lock_digest",
         "runtime_lock_digest",
         "reset_protocol_digest",
-        "network_profile_digest"
+        "network_profile_digest",
+        "tasklist_override_state",
+        "tasklist_override_digest"
       ],
       "properties": {
         "cluster_provider": {
@@ -457,6 +614,19 @@
           "pattern": "^([a-f0-9]{64})?$"
         },
         "network_profile_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "tasklist_override_state": {
+          "enum": [
+            "absent",
+            "present_pinned"
+          ]
+        },
+        "tasklist_override_digest": {
           "type": [
             "string",
             "null"
@@ -691,6 +861,10 @@
               "scorer_blob_sha": {
                 "type": "string",
                 "pattern": "^[a-f0-9]{40}$"
+              },
+              "scenario_manifest_commit_sha": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
               }
             }
           },
@@ -727,6 +901,9 @@
               "reset_protocol_digest": {
                 "type": "string",
                 "pattern": "^[a-f0-9]{64}$"
+              },
+              "tasklist_override_state": {
+                "const": "absent"
               }
             }
           }
