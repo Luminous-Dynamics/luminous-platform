@@ -297,3 +297,10 @@ The result row now records compiler time, adapter setup time (exact-tokenizer pr
 ### Provider setup is now a least-privilege projection
 
 The adapter receives a dedicated `ReasonerSetupProfile`, not the complete evaluator `ContextExperimentProfile`. The projection contains only effective model snapshot, prompt digest, permission profile, tool catalogue, reasoning effort and sampling seed. It deliberately excludes scenario revision, scorer digest, arm-order seed and counterbalance slot. The model prompt remains only the rendered evidence. Invocation attestation is checked against the minimal setup profile returned by the adapter. This narrows both prompt leakage and the trusted adapter API surface; it does not prove a third-party provider's internal state isolation.
+
+
+### Exact token budget and freshness-qualified citation scoring
+
+The paired-result auditor now stores the exact per-arm `ContextBudget` and rejects a five-arm block if any byte, input-token, output-token, tool-call or wall-time limit differs. The model adapter must provide an exact model-token preflight for the rendered context before a session is created; if it cannot, the arm is retained as `PreflightUnavailable` and no model call occurs. A known byte/4 estimate is diagnostic only and never substitutes for an exact hard token limit. `BudgetExceeded` and `PreflightUnavailable` have separate counts and both remain in the all-block denominator. The analyzer also verifies that exact-tokenizer preflight is available for all five arms or none within a paired block.
+
+Citation scoring now distinguishes source-valid references from fresh/current references. It reports the existing source-valid precision/recall plus fresh-evidence precision and fresh required-evidence recall, alongside stale/expired/future citation counts. Root grounding continues to require current evidence. This prevents a citation to a valid historical or expired receipt from being described as current grounding while preserving the fact that the citation did refer to an actual source record.
