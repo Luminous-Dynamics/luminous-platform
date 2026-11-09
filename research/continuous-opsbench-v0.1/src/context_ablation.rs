@@ -961,9 +961,7 @@ fn score_answer(
             .filter(|item| {
                 item.state != EvidenceState::Unknown
                     && item.observed_at_ms <= packet.audited_at_ms
-                    && packet
-                        .audited_at_ms
-                        .saturating_sub(item.observed_at_ms)
+                    && packet.audited_at_ms.saturating_sub(item.observed_at_ms)
                         <= packet.maximum_evidence_age_ms
                     && item
                         .valid_until_ms
@@ -976,9 +974,7 @@ fn score_answer(
             .filter(|item| {
                 item.state != EvidenceState::Unknown
                     && item.observed_at_ms <= packet.audited_at_ms
-                    && packet
-                        .audited_at_ms
-                        .saturating_sub(item.observed_at_ms)
+                    && packet.audited_at_ms.saturating_sub(item.observed_at_ms)
                         <= packet.maximum_evidence_age_ms
                     && item
                         .valid_until_ms
@@ -1040,8 +1036,8 @@ fn score_answer(
     let recall = if truth.required_evidence_ids.is_empty() {
         0
     } else {
-        ((required_supported.len() as u64 * 1_000_000)
-            / truth.required_evidence_ids.len() as u64) as u32
+        ((required_supported.len() as u64 * 1_000_000) / truth.required_evidence_ids.len() as u64)
+            as u32
     };
     let fresh_recall = if truth.required_evidence_ids.is_empty() {
         0
@@ -1068,14 +1064,11 @@ fn score_answer(
                 && relation.from_object == packet.target_object_ref
                 && relation.to_object == root
                 && relation.observed_at_ms <= packet.audited_at_ms
-                && packet
-                    .audited_at_ms
-                    .saturating_sub(relation.observed_at_ms)
+                && packet.audited_at_ms.saturating_sub(relation.observed_at_ms)
                     <= packet.maximum_evidence_age_ms
                 && supported.contains(relation.evidence_id.as_str())
                 && current_evidence_ids.contains(relation.evidence_id.as_str())
-                && state_by_id.get(relation.evidence_id.as_str())
-                    == Some(&EvidenceState::Present)
+                && state_by_id.get(relation.evidence_id.as_str()) == Some(&EvidenceState::Present)
                 && packet.evidence_ids.contains(&relation.evidence_id)
         })
     });
@@ -1166,8 +1159,7 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
         let model_token_preflight =
             reasoner.count_input_tokens(&reasoner_profile, &packet.rendered_context);
         let preflight_status = if packet.context_bytes > budget.maximum_context_bytes
-            || model_token_preflight
-                .is_some_and(|tokens| tokens > budget.maximum_input_tokens)
+            || model_token_preflight.is_some_and(|tokens| tokens > budget.maximum_input_tokens)
         {
             Some(ArmStatus::BudgetExceeded)
         } else if model_token_preflight.is_none() {
@@ -1523,14 +1515,13 @@ pub fn analyze_paired_context_results(
             return Err(ContextExperimentError::InvalidExperimentProfile);
         }
         let invoked = result.reasoner_time_micros.is_some();
-        let byte_or_token_budget_exceeded =
-            result.context_bytes > result.budget.maximum_context_bytes
-                || result
-                    .model_token_preflight
-                    .is_some_and(|tokens| tokens > result.budget.maximum_input_tokens);
-        let preflight_unavailable =
-            result.context_bytes <= result.budget.maximum_context_bytes
-                && result.model_token_preflight.is_none();
+        let byte_or_token_budget_exceeded = result.context_bytes
+            > result.budget.maximum_context_bytes
+            || result
+                .model_token_preflight
+                .is_some_and(|tokens| tokens > result.budget.maximum_input_tokens);
+        let preflight_unavailable = result.context_bytes <= result.budget.maximum_context_bytes
+            && result.model_token_preflight.is_none();
         let actual_usage_exceeded = result.usage.as_ref().is_some_and(|usage| {
             usage.input_tokens > result.budget.maximum_input_tokens
                 || usage.output_tokens > result.budget.maximum_output_tokens
@@ -1638,9 +1629,10 @@ pub fn analyze_paired_context_results(
             return Err(ContextExperimentError::PairedBudgetMismatch);
         }
         let exact_preflight_available = first.model_token_preflight.is_some();
-        if block.values().any(|result| {
-            result.model_token_preflight.is_some() != exact_preflight_available
-        }) {
+        if block
+            .values()
+            .any(|result| result.model_token_preflight.is_some() != exact_preflight_available)
+        {
             return Err(ContextExperimentError::TokenizerPreflightAvailabilityMismatch);
         }
         if key.attempt_id == 0 {
@@ -2257,7 +2249,9 @@ mod tests {
             ReasonerResponse {
                 session_id: session_id.to_owned(),
                 invocation_manifest: ReasonerInvocationManifest::from(
-                    self.active_profile.as_ref().expect("session profile is initialized"),
+                    self.active_profile
+                        .as_ref()
+                        .expect("session profile is initialized"),
                 ),
                 answer: DiagnosisAnswer {
                     root_object_ref: Some("payments-config".into()),
@@ -2323,11 +2317,8 @@ mod tests {
         profile.sampling_seed = u64::from(attempt_id);
         profile.counterbalance_slot =
             ((scenario_index + attempt_id.saturating_sub(1) as usize) % 5) as u8;
-        let order = counterbalanced_arm_order(
-            profile.arm_order_seed,
-            profile.counterbalance_slot,
-        )
-        .unwrap();
+        let order =
+            counterbalanced_arm_order(profile.arm_order_seed, profile.counterbalance_slot).unwrap();
         ContextArmResult {
             scenario_id: scenario_id.clone(),
             fault_family_id: "queue_dependency".into(),
@@ -2514,7 +2505,10 @@ mod tests {
         let setup = ReasonerSetupProfile::from(&profile);
         assert_eq!(setup.model_snapshot_digest, profile.model_snapshot_digest);
         assert_eq!(setup.prompt_digest, profile.prompt_digest);
-        assert_eq!(setup.permission_profile_digest, profile.permission_profile_digest);
+        assert_eq!(
+            setup.permission_profile_digest,
+            profile.permission_profile_digest
+        );
         assert_eq!(setup.tool_catalog_digest, profile.tool_catalog_digest);
         assert_eq!(setup.reasoning_effort, profile.reasoning_effort);
         assert_eq!(setup.sampling_seed, profile.sampling_seed);
@@ -2612,7 +2606,9 @@ mod tests {
             _budget: ContextBudget,
         ) -> ReasonerResponse {
             let mut manifest = ReasonerInvocationManifest::from(
-                self.profile.as_ref().expect("session profile is initialized"),
+                self.profile
+                    .as_ref()
+                    .expect("session profile is initialized"),
             );
             manifest.model_snapshot_digest = Digest::from_byte(99);
             ReasonerResponse {
@@ -2700,9 +2696,15 @@ mod tests {
             },
         )
         .unwrap();
-        assert!(results.iter().all(|result| result.estimated_input_tokens > 100));
-        assert!(results.iter().all(|result| result.model_token_preflight == Some(100)));
-        assert!(results.iter().all(|result| result.status == ArmStatus::Scored));
+        assert!(results
+            .iter()
+            .all(|result| result.estimated_input_tokens > 100));
+        assert!(results
+            .iter()
+            .all(|result| result.model_token_preflight == Some(100)));
+        assert!(results
+            .iter()
+            .all(|result| result.status == ArmStatus::Scored));
     }
 
     #[test]
@@ -2723,7 +2725,9 @@ mod tests {
             },
         )
         .unwrap();
-        assert!(results.iter().all(|result| result.status == ArmStatus::Scored));
+        assert!(results
+            .iter()
+            .all(|result| result.status == ArmStatus::Scored));
     }
 
     #[test]
@@ -2744,9 +2748,15 @@ mod tests {
             },
         )
         .unwrap();
-        assert!(results.iter().all(|result| result.status == ArmStatus::BudgetExceeded));
-        assert!(results.iter().all(|result| result.model_token_preflight == Some(101)));
-        assert!(results.iter().all(|result| result.reasoner_session_id.is_none()));
+        assert!(results
+            .iter()
+            .all(|result| result.status == ArmStatus::BudgetExceeded));
+        assert!(results
+            .iter()
+            .all(|result| result.model_token_preflight == Some(101)));
+        assert!(results
+            .iter()
+            .all(|result| result.reasoner_session_id.is_none()));
         assert!(results.iter().all(|result| result.usage.is_none()));
     }
 
@@ -2768,11 +2778,20 @@ mod tests {
             },
         )
         .unwrap();
-        assert!(results.iter().all(|result| result.status == ArmStatus::BudgetExceeded));
-        assert!(results.iter().all(|result| result.model_token_preflight.is_none()));
-        assert!(results.iter().all(|result| result.reasoner_session_id.is_some()));
+        assert!(results
+            .iter()
+            .all(|result| result.status == ArmStatus::BudgetExceeded));
+        assert!(results
+            .iter()
+            .all(|result| result.model_token_preflight.is_none()));
+        assert!(results
+            .iter()
+            .all(|result| result.reasoner_session_id.is_some()));
         assert!(results.iter().all(|result| {
-            result.usage.as_ref().is_some_and(|usage| usage.input_tokens == 101)
+            result
+                .usage
+                .as_ref()
+                .is_some_and(|usage| usage.input_tokens == 101)
         }));
         assert!(results.iter().all(|result| result.score.is_none()));
     }
@@ -2808,14 +2827,17 @@ mod tests {
                 && aggregate.mean_actual_input_tokens_invoked == Some(101)
                 && aggregate.mean_reported_cost_microusd_invoked == Some(1_000)
                 && aggregate.mean_reasoner_time_micros_invoked.is_some()
-                && aggregate.mean_total_arm_time_micros >= aggregate.mean_reasoner_time_micros_invoked.unwrap()
+                && aggregate.mean_total_arm_time_micros
+                    >= aggregate.mean_reasoner_time_micros_invoked.unwrap()
         }));
         assert!(analysis.contrasts_vs_raw.iter().all(|contrast| {
             contrast.both_scored_blocks == 0
                 && contrast.both_invoked_blocks == 1
                 && contrast.mean_actual_tokens_delta_both_invoked == Some(0)
                 && contrast.mean_reported_cost_delta_microusd_both_invoked == Some(0)
-                && contrast.mean_reasoner_time_delta_micros_both_invoked.is_some()
+                && contrast
+                    .mean_reasoner_time_delta_micros_both_invoked
+                    .is_some()
         }));
     }
 
@@ -3070,8 +3092,12 @@ mod tests {
         .unwrap();
 
         assert_eq!(results.len(), 5);
-        assert!(results.iter().all(|row| row.status == ArmStatus::PreflightUnavailable));
-        assert!(results.iter().all(|row| row.model_token_preflight.is_none()));
+        assert!(results
+            .iter()
+            .all(|row| row.status == ArmStatus::PreflightUnavailable));
+        assert!(results
+            .iter()
+            .all(|row| row.model_token_preflight.is_none()));
         assert!(results.iter().all(|row| row.reasoner_session_id.is_none()));
         assert!(results.iter().all(|row| row.usage.is_none()));
         assert!(results.iter().all(|row| row.answer.is_none()));
@@ -3299,8 +3325,9 @@ mod tests {
 
     #[test]
     fn duplicate_citations_reduce_support_precision_and_count_as_unsupported() {
-        let packet =
-            compile_context_packet(&input(), ContextArm::NormalizedRecords).unwrap().0;
+        let packet = compile_context_packet(&input(), ContextArm::NormalizedRecords)
+            .unwrap()
+            .0;
         let answer = DiagnosisAnswer {
             root_object_ref: Some("payments-config".into()),
             supporting_evidence_ids: vec!["ev-change".into(), "ev-change".into()],
@@ -3317,8 +3344,9 @@ mod tests {
     fn topology_relation_can_make_a_root_object_visible_without_direct_record() {
         let mut input = input();
         input.relations[0].to_object = "database-9".into();
-        let packet =
-            compile_context_packet(&input, ContextArm::TopologyAndDiffs).unwrap().0;
+        let packet = compile_context_packet(&input, ContextArm::TopologyAndDiffs)
+            .unwrap()
+            .0;
         let truth = ContextGroundTruth {
             correct_root_object_ref: "database-9".into(),
             required_evidence_ids: ["ev-change".to_owned()].into_iter().collect(),
@@ -3344,8 +3372,7 @@ mod tests {
             .find(|item| item.evidence_id == "ev-change")
             .unwrap();
         change.observed_at_ms = 500;
-        let (packet, _) =
-            compile_context_packet(&input, ContextArm::NormalizedRecords).unwrap();
+        let (packet, _) = compile_context_packet(&input, ContextArm::NormalizedRecords).unwrap();
         let answer = DiagnosisAnswer {
             root_object_ref: Some("payments-config".into()),
             supporting_evidence_ids: vec!["ev-change".into()],
@@ -3369,8 +3396,7 @@ mod tests {
             .find(|item| item.evidence_id == "ev-change")
             .unwrap();
         change.observed_at_ms = 500;
-        let (packet, _) =
-            compile_context_packet(&input, ContextArm::TopologyAndDiffs).unwrap();
+        let (packet, _) = compile_context_packet(&input, ContextArm::TopologyAndDiffs).unwrap();
         let answer = DiagnosisAnswer {
             root_object_ref: Some("payments-config".into()),
             supporting_evidence_ids: vec!["ev-change".into()],
@@ -3417,7 +3443,9 @@ mod tests {
             .iter()
             .find(|candidate| candidate.object_ref == "payments-config")
             .unwrap();
-        assert!(!payments.reason_codes.contains(&CandidateReason::DependencyOfTarget));
+        assert!(!payments
+            .reason_codes
+            .contains(&CandidateReason::DependencyOfTarget));
 
         input.relations[0].observed_at_ms = 1_100;
         let (future, _) = compile_context_packet(&input, ContextArm::RankedCausalEvidence).unwrap();
@@ -3426,7 +3454,9 @@ mod tests {
             .iter()
             .find(|candidate| candidate.object_ref == "payments-config")
             .unwrap();
-        assert!(!payments.reason_codes.contains(&CandidateReason::DependencyOfTarget));
+        assert!(!payments
+            .reason_codes
+            .contains(&CandidateReason::DependencyOfTarget));
     }
 
     #[test]
