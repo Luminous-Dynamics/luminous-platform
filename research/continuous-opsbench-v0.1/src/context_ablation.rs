@@ -1679,12 +1679,33 @@ pub fn analyze_paired_context_results(
             let mut candidate_correct_both = 0usize;
             let mut raw_grounded_both = 0usize;
             let mut candidate_grounded_both = 0usize;
+            let mut both_invoked_blocks = 0usize;
             let mut actual_token_delta = 0i128;
-            let mut actual_token_pairs = 0usize;
+            let mut reported_cost_delta = 0i128;
+            let mut actual_usage_pairs = 0usize;
             let mut time_delta = 0i128;
             let mut time_pairs = 0usize;
+            let mut total_arm_time_delta = 0i128;
 
             for (raw, candidate) in raw_rows.iter().zip(candidate_rows.iter()) {
+                total_arm_time_delta +=
+                    candidate.total_arm_time_micros as i128 - raw.total_arm_time_micros as i128;
+
+                if let (Some(raw_usage), Some(candidate_usage)) = (&raw.usage, &candidate.usage) {
+                    both_invoked_blocks += 1;
+                    actual_token_delta +=
+                        candidate_usage.input_tokens as i128 - raw_usage.input_tokens as i128;
+                    reported_cost_delta += candidate_usage.reported_cost_microusd as i128
+                        - raw_usage.reported_cost_microusd as i128;
+                    actual_usage_pairs += 1;
+                }
+                if let (Some(raw_time), Some(candidate_time)) =
+                    (raw.reasoner_time_micros, candidate.reasoner_time_micros)
+                {
+                    time_delta += candidate_time as i128 - raw_time as i128;
+                    time_pairs += 1;
+                }
+
                 if raw.status == ArmStatus::Scored && candidate.status == ArmStatus::Scored {
                     both_scored += 1;
                     let raw_score = raw.score.as_ref().expect("scored rows have a score");
@@ -1694,19 +1715,6 @@ pub fn analyze_paired_context_results(
                     candidate_correct_both += usize::from(candidate_score.root_cause_correct);
                     raw_grounded_both += usize::from(raw_score.root_object_grounded);
                     candidate_grounded_both += usize::from(candidate_score.root_object_grounded);
-
-                    if let (Some(raw_usage), Some(candidate_usage)) = (&raw.usage, &candidate.usage)
-                    {
-                        actual_token_delta +=
-                            candidate_usage.input_tokens as i128 - raw_usage.input_tokens as i128;
-                        actual_token_pairs += 1;
-                    }
-                    if let (Some(raw_time), Some(candidate_time)) =
-                        (raw.reasoner_time_micros, candidate.reasoner_time_micros)
-                    {
-                        time_delta += candidate_time as i128 - raw_time as i128;
-                        time_pairs += 1;
-                    }
                 }
             }
 
@@ -1809,6 +1817,7 @@ pub fn analyze_paired_context_results(
                     stratum_seed ^ 0xa5a5_5a5a_d3c1_b2e7,
                 ),
                 both_scored_blocks: both_scored,
+                both_invoked_blocks,
                 candidate_budget_exceeded_blocks: candidate_rows
                     .iter()
                     .filter(|row| row.status == ArmStatus::BudgetExceeded)
@@ -1832,11 +1841,16 @@ pub fn analyze_paired_context_results(
                 mean_estimated_tokens_delta: (candidate_token_total as i128
                     - raw_token_total as i128)
                     / n as i128,
-                mean_actual_tokens_delta_both_scored: mean_i128(
+                mean_actual_tokens_delta_both_invoked: mean_i128(
                     actual_token_delta,
-                    actual_token_pairs,
+                    actual_usage_pairs,
                 ),
-                mean_reasoner_time_delta_micros_both_scored: mean_i128(time_delta, time_pairs),
+                mean_reported_cost_delta_microusd_both_invoked: mean_i128(
+                    reported_cost_delta,
+                    actual_usage_pairs,
+                ),
+                mean_reasoner_time_delta_micros_both_invoked: mean_i128(time_delta, time_pairs),
+                mean_total_arm_time_delta_micros_all: total_arm_time_delta / n as i128,
             });
         }
     }
