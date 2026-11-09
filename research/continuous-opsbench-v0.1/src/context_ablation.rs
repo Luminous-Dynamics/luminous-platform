@@ -336,6 +336,7 @@ pub enum ContextExperimentError {
     GroundTruthEvidenceMissing,
     InvalidArmOrder,
     DuplicateScenarioAttempt,
+    DuplicateScenarioSamplingSeed,
     EmptyReasonerSessionId,
     DuplicateReasonerSessionId,
     ReasonerSessionMismatch,
@@ -1300,6 +1301,8 @@ pub fn analyze_paired_context_results(
         (String, String),
         &ContextExperimentProfile,
     > = BTreeMap::new();
+    let mut scenario_sampling_seeds: BTreeMap<(String, String), BTreeSet<u64>> =
+        BTreeMap::new();
     for (key, block) in &blocks {
         let first = block
             .get(&ContextArm::RawSourceRecords)
@@ -1311,7 +1314,14 @@ pub fn analyze_paired_context_results(
                 return Err(ContextExperimentError::ManifestMismatch);
             }
         } else {
-            scenario_profiles.insert(scenario_key, &first.profile);
+            scenario_profiles.insert(scenario_key.clone(), &first.profile);
+        }
+        if !scenario_sampling_seeds
+            .entry(scenario_key)
+            .or_default()
+            .insert(first.profile.sampling_seed)
+        {
+            return Err(ContextExperimentError::DuplicateScenarioSamplingSeed);
         }
     }
 
@@ -2133,6 +2143,13 @@ mod tests {
             }
         }
         assert!(analyze_paired_context_results(&results, 77).is_ok());
+
+        let mut repeated_seed = results.clone();
+        repeated_seed[5].profile.sampling_seed = repeated_seed[0].profile.sampling_seed;
+        assert_eq!(
+            analyze_paired_context_results(&repeated_seed, 77),
+            Err(ContextExperimentError::DuplicateScenarioSamplingSeed)
+        );
 
         let mut mismatched = results.clone();
         mismatched[5].profile.prompt_digest = Digest::from_byte(99);
