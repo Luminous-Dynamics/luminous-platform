@@ -1246,7 +1246,7 @@ pub fn analyze_paired_context_results(
     let mut blocks: BTreeMap<ContextBlockKey, BTreeMap<ContextArm, &ContextArmResult>> =
         BTreeMap::new();
     let mut reasoner_session_ids = BTreeSet::new();
-    let mut scenario_attempts = BTreeSet::new();
+    let mut scenario_attempts: BTreeMap<(String, String, u32), String> = BTreeMap::new();
 
     for result in results {
         if !non_empty(&result.scenario_id)
@@ -1270,12 +1270,19 @@ pub fn analyze_paired_context_results(
                 return Err(ContextExperimentError::DuplicateReasonerSessionId);
             }
         }
-        if !scenario_attempts.insert((
+        let attempt_key = (
             result.fault_family_id.clone(),
             result.scenario_id.clone(),
             result.attempt_id,
-        )) {
-            return Err(ContextExperimentError::DuplicateScenarioAttempt);
+        );
+        match scenario_attempts.get(&attempt_key) {
+            Some(existing_block) if existing_block != &result.paired_block_id => {
+                return Err(ContextExperimentError::DuplicateScenarioAttempt);
+            }
+            Some(_) => {}
+            None => {
+                scenario_attempts.insert(attempt_key, result.paired_block_id.clone());
+            }
         }
         let key = ContextBlockKey {
             fault_family_id: result.fault_family_id.clone(),
