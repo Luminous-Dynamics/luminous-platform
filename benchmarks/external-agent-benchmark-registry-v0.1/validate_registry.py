@@ -7,6 +7,8 @@ and cross-field constraints that a JSON Schema cannot conveniently express.
 from __future__ import annotations
 
 import copy
+import csv
+import hashlib
 import json
 import sys
 from datetime import date
@@ -139,6 +141,93 @@ def expect_rejected(name: str, candidate: dict[str, Any], schema: dict[str, Any]
 
 NATIVE_SREGYM_SCHEMA_PATH = ROOT / "native-sregym-replication.schema.json"
 NATIVE_SREGYM_TEMPLATE_PATH = ROOT / "sregym-0508-luminous-replication.template.json"
+SREGYM_0508_COHORT_CSV_PATH = ROOT / "sregym-0508-cohort.csv"
+SREGYM_0508_REGISTRY_IDS_PATH = ROOT / "sregym-0508-registry-ids.txt"
+SREGYM_0508_RECONCILIATION_PATH = ROOT / "sregym-0508-source-reconciliation.json"
+
+
+def native_sregym_source_errors(manifest: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    cohort = manifest["cohort"]
+    source = cohort["cohort_manifest_source"]
+    reconciliation = cohort["source_reconciliation"]
+
+    try:
+        csv_bytes = SREGYM_0508_COHORT_CSV_PATH.read_bytes()
+        csv_text = csv_bytes.decode("utf-8")
+        rows = list(csv.DictReader(csv_text.splitlines()))
+        registry_ids = [
+            line.strip()
+            for line in SREGYM_0508_REGISTRY_IDS_PATH.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        source_record = read_json(SREGYM_0508_RECONCILIATION_PATH)
+    except (OSError, UnicodeDecodeError, csv.Error) as exc:
+        return [f"source snapshots: cannot load exact SREGym-0508 cohort/registry inputs: {exc}"]
+
+    git_blob = hashlib.sha1(
+        b"blob " + str(len(csv_bytes)).encode("ascii") + b"\\0" + csv_bytes
+    ).hexdigest()
+    if git_blob != source["git_blob_sha"]:
+        errors.append("cohort_manifest_source: archived CSV bytes do not match the upstream Git blob SHA")
+    if source["repository"] != source_record["cohort"]["repository"] \
+        or source["commit_sha"] != source_record["cohort"]["commit_sha"] \
+        or source["path"] != source_record["cohort"]["manifest_path"] \
+        or source["git_blob_sha"] != source_record["cohort"]["manifest_git_blob_sha"]:
+        errors.append("cohort_manifest_source: manifest source differs from the captured reconciliation record")
+
+    ids = [row.get("problem_id", "") for row in rows]
+    categories = {row.get("category", "") for row in rows}
+    if len(rows) != 90 or len(set(ids)) != 90 or any(not item for item in ids):
+        errors.append("cohort manifest: expected exactly 90 unique non-empty problem IDs")
+    if "category" not in rows[0] if rows else True:
+        errors.append("cohort manifest: expected problem_id,category CSV columns")
+    if not categories.issubset({"Ported", "Similar Failures", "New Failures"}):
+        errors.append("cohort manifest: unknown cohort category")
+    if len(registry_ids) != 90 or len(set(registry_ids)) != 90:
+        errors.append("registry ID snapshot: expected 90 unique registered problem IDs")
+    if set(ids) != set(registry_ids):
+        errors.append("source reconciliation: candidate registry IDs do not exactly match the official cohort CSV")
+
+    candidate = source_record["candidate_source"]
+    expected_reconciliation = {
+        "candidate_repository": candidate["repository"],
+        "candidate_commit_sha": candidate["commit_sha"],
+        "candidate_commit_date_utc": candidate["commit_date_utc"],
+        "registry_path": candidate["registry_path"],
+        "registry_blob_sha": candidate["registry_git_blob_sha"],
+        "registry_id_count": candidate["registered_problem_count"],
+        "registry_ids_snapshot_path": candidate["derived_registry_ids_snapshot"],
+        "tasklist_yml_example_path": candidate["tasklist_yml_example_path"],
+        "tasklist_yml_example_blob_sha": candidate["tasklist_yml_example_blob_sha"],
+        "tasklist_yml_example_id_count": candidate["tasklist_yml_example_id_count"],
+        "tasklist_yml_runtime_policy": candidate["runtime_selection"],
+        "cohort_registry_match": "exact_set_match",
+        "execution_revision_attested": False,
+    }
+    for key, expected in expected_reconciliation.items():
+        if reconciliation.get(key) != expected:
+            errors.append(f"source reconciliation: {key} does not match the archived source record")
+
+    pins = manifest["source_pins"]
+    if pins["sregym_commit_sha"] != candidate["commit_sha"]:
+        errors.append("source_pins: selected SREGym commit differs from the exact-90 registry candidate")
+    if pins["registry_path"] != candidate["registry_path"] or pins["registry_blob_sha"] != candidate["registry_git_blob_sha"]:
+        errors.append("source_pins: selected registry file does not match the candidate source")
+    if pins["scenario_manifest_repository"] != source["repository"] \
+        or pins["scenario_manifest_commit_sha"] != source["commit_sha"] \
+        or pins["scenario_manifest_path"] != source["path"] \
+        or pins["scenario_manifest_blob_sha"] != source["git_blob_sha"]:
+        errors.append("source_pins: scenario manifest does not match the exact archived upstream cohort CSV")
+    if pins["tasklist_yml_must_be_absent"] is not True:
+        errors.append("source_pins: tasklist.yml must be absent to select all 90 registered IDs on this revision")
+    if manifest["execution_environment"]["tasklist_override_state"] != "absent" \
+        or manifest["execution_environment"]["tasklist_override_digest"] is not None:
+        errors.append("execution_environment: the ignored tasklist.yml override must be absent for the full 90-ID default selection")
+    if reconciliation["execution_revision_attested"]:
+        errors.append("source reconciliation: candidate revision is a proven cohort match, not an attested historical leaderboard execution revision")
+
+    return errors
 
 
 def native_sregym_semantic_errors(manifest: dict[str, Any]) -> list[str]:
@@ -284,7 +373,7 @@ def validate_native_sregym(manifest: dict[str, Any], schema: dict[str, Any]) -> 
     ]
     if errors:
         return errors
-    return native_sregym_semantic_errors(manifest)
+    return native_sregym_semantic_errors(manifest) + native_sregym_source_errors(manifest)
 
 
 def expect_native_rejected(
@@ -326,6 +415,16 @@ def validate_native_sregym_profile() -> None:
     dropped_rows = copy.deepcopy(manifest)
     dropped_rows["accounting"]["dropped_attempt_rows"] = 1
     expect_native_rejected("dropped attempts not represented as missing", dropped_rows, schema)
+
+    wrong_registry_candidate = copy.deepcopy(manifest)
+    wrong_registry_candidate["source_pins"]["sregym_commit_sha"] = "2f5fd1c73f5f1f9b2702d15cdc79bb25dfa774a9"
+    expect_native_rejected("later 91-ID registry substituted for exact 90-ID candidate", wrong_registry_candidate, schema)
+
+    tasklist_override = copy.deepcopy(manifest)
+    tasklist_override["execution_environment"]["tasklist_override_state"] = "present_pinned"
+    tasklist_override["execution_environment"]["tasklist_override_digest"] = "c" * 64
+    expect_native_rejected("86-ID example task list used as the full 90-ID cohort", tasklist_override, schema)
+
 
     falsely_ready = copy.deepcopy(manifest)
     falsely_ready["profile_status"] = "ready_to_run"
