@@ -145,7 +145,8 @@
         "common_sampling_policy",
         "common_context_budget_digest",
         "common_tool_budget_digest",
-        "capability_equivalence_artifact_digest"
+        "capability_equivalence_artifact_digest",
+        "common_agent_scaffold_digest"
       ],
       "properties": {
         "comparison_mode": {
@@ -237,6 +238,13 @@
           "pattern": "^([a-f0-9]{64})?$"
         },
         "capability_equivalence_artifact_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "common_agent_scaffold_digest": {
           "type": [
             "string",
             "null"
