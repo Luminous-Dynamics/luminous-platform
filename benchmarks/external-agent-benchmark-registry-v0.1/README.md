@@ -121,3 +121,20 @@ The Python file is validation glue only. The benchmark/runtime code remains Rust
 - Symthaea [#11030](https://github.com/Luminous-Dynamics/symthaea/issues/11030): harness evolution, retention and safe adaptation.
 
 **Claim ceiling:** this registry improves provenance and prevents category errors. It does not independently reproduce the published scores or establish that Luminous is better than an external system.
+
+
+## Native SREGym replication profile
+
+The separate native-run manifest contract for issue [#238](https://github.com/Luminous-Dynamics/luminous-platform/issues/238) lives alongside (but does not replace) the external evidence registry:
+
+- `native-sregym-replication.schema.json`: strict Draft 2020-12 profile for one native study or a matched tool-surface ablation.
+- `sregym-0508-luminous-replication.template.json`: planning-only full-cohort template.
+- `validate_registry.py`: validates the template and negative controls as part of the existing registry workflow.
+
+The template pins the reported SREGym-0508 cohort as **90 scenarios × 3 attempts = 270 expected attempt rows**. SREGym-Lite-1004 is a separate 17-scenario cohort; the validator rejects a Lite/full substitution. The captured leaderboard observation is recorded separately from the true scenario inventory: official SREGym-website commit `c4101aace3578353c96a2d837f60e48c3e95d9c4` and Git blob `bdb3c26b361cbfcdb7e68425af65f4b0d51434b1` identify the leaderboard-data source only. That Git blob SHA-1 is not a SHA-256 of the scenario inventory or native scorer. The template therefore leaves the SREGym source commit, actual scenario-manifest blob, scorer revision/digest, submodule/container/fault-injector pins, cluster environment, model and tool configuration unresolved and stays `planning_only`.
+
+The profile separates `native_replication` from `matched_tool_surface_ablation`. A matched ablation requires one native reference arm, multiple arms under a common pinned model/agent/prompt/permission/effort/sampling configuration, and a capability-equivalence artifact; the tool-surface digest is intentionally allowed to differ. A native replication uses one candidate arm. Both modes require the native benchmark harness/task/scorer to remain unchanged. Luminous-only authorization, impact, observer and sustained-recovery controls are separate supplemental metrics and cannot modify native SREGym scoring.
+
+`ready_to_run` is rejected until the exact SREGym repository commit, scenario inventory, scorer, submodules, images, cluster/runtime/reset/fault-injector configuration, every model/agent/prompt/permission/tool identity, budgets and preregistered protocol digest are pinned. `executed` additionally requires every expected attempt row to have a retained terminal record plus exact receipt/result artifact digests. Dropped attempt rows are prohibited; timeouts and failures are retained as outcomes, not silently omitted. A missing run remains visible in the expected denominator.
+
+The existing registry workflow validates the new schema/template and rejects negative controls for cohort substitution, denominator changes, native-gate contamination, dropped attempts, false readiness and incomplete execution. These checks validate the profile contract only. They do not run SREGym, verify external scorer bytes or claim a Luminous benchmark score.
