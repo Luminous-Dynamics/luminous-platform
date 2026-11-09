@@ -1269,7 +1269,11 @@ pub fn analyze_paired_context_results(
                 .count();
             let candidate_correct_all = candidate_rows
                 .iter()
-                .filter(|row| row.score.as_ref().is_some_and(|score| score.root_cause_correct))
+                .filter(|row| {
+                    row.score
+                        .as_ref()
+                        .is_some_and(|score| score.root_cause_correct)
+                })
                 .count();
             let raw_grounded_all = raw_rows
                 .iter()
@@ -1281,7 +1285,11 @@ pub fn analyze_paired_context_results(
                 .count();
             let candidate_grounded_all = candidate_rows
                 .iter()
-                .filter(|row| row.score.as_ref().is_some_and(|score| score.root_object_grounded))
+                .filter(|row| {
+                    row.score
+                        .as_ref()
+                        .is_some_and(|score| score.root_object_grounded)
+                })
                 .count();
 
             let raw_token_total: u128 = raw_rows
