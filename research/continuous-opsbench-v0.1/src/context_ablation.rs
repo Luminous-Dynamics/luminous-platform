@@ -1545,14 +1545,6 @@ pub fn analyze_paired_context_results(
         {
             return Err(ContextExperimentError::InvalidExperimentProfile);
         }
-        if let Some(session_id) = &result.reasoner_session_id {
-            if !non_empty(session_id) {
-                return Err(ContextExperimentError::EmptyReasonerSessionId);
-            }
-            if !reasoner_session_ids.insert(session_id.as_str()) {
-                return Err(ContextExperimentError::DuplicateReasonerSessionId);
-            }
-        }
         let attempt_key = (
             result.fault_family_id.clone(),
             result.scenario_id.clone(),
@@ -1576,6 +1568,19 @@ pub fn analyze_paired_context_results(
         let block = blocks.entry(key).or_default();
         if block.insert(result.arm, result).is_some() {
             return Err(ContextExperimentError::DuplicateArmResult);
+        }
+    }
+
+    for block in blocks.values() {
+        for result in block.values() {
+            if let Some(session_id) = &result.reasoner_session_id {
+                if !non_empty(session_id) {
+                    return Err(ContextExperimentError::EmptyReasonerSessionId);
+                }
+                if !reasoner_session_ids.insert(session_id.as_str()) {
+                    return Err(ContextExperimentError::DuplicateReasonerSessionId);
+                }
+            }
         }
     }
 
@@ -2534,10 +2539,13 @@ mod tests {
         }
     }
 
-    struct ReusedSessionReasoner;
+    struct ReusedSessionReasoner {
+        profile: Option<ReasonerSetupProfile>,
+    }
 
     impl ContextReasoner for ReusedSessionReasoner {
-        fn start_fresh_session(&mut self, _profile: &ReasonerSetupProfile) -> String {
+        fn start_fresh_session(&mut self, profile: &ReasonerSetupProfile) -> String {
+            self.profile = Some(profile.clone());
             "reused-session".into()
         }
 
@@ -2557,14 +2565,9 @@ mod tests {
         ) -> ReasonerResponse {
             ReasonerResponse {
                 session_id: session_id.into(),
-                invocation_manifest: ReasonerInvocationManifest {
-                    model_snapshot_digest: Digest::from_byte(1),
-                    prompt_digest: Digest::from_byte(1),
-                    permission_profile_digest: Digest::from_byte(1),
-                    tool_catalog_digest: Digest::from_byte(1),
-                    reasoning_effort: "medium".into(),
-                    sampling_seed: 7,
-                },
+                invocation_manifest: ReasonerInvocationManifest::from(
+                    self.profile.as_ref().expect("session profile is initialized"),
+                ),
                 answer: DiagnosisAnswer {
                     root_object_ref: None,
                     supporting_evidence_ids: Vec::new(),
@@ -2733,7 +2736,9 @@ mod tests {
         .unwrap();
         assert!(results
             .iter()
-            .all(|result| result.status == ArmStatus::Scored));
+            .all(|result| result.status == ArmStatus::PreflightUnavailable));
+        assert!(results.iter().all(|result| result.reasoner_session_id.is_none()));
+        assert!(results.iter().all(|result| result.usage.is_none()));
     }
 
     #[test]
@@ -2768,7 +2773,7 @@ mod tests {
     }
 
     #[test]
-    fn unavailable_tokenizer_is_checked_against_actual_usage_after_call() {
+    fn exact_tokenizer_preflight_still_checks_provider_reported_actual_usage() {
         let tight = ContextBudget {
             maximum_input_tokens: 100,
             ..budget()
@@ -2780,7 +2785,7 @@ mod tests {
             &test_order(),
             &mut ExactTokenizerReasoner {
                 profile: None,
-                preflight_tokens: None,
+                preflight_tokens: Some(100),
                 actual_usage_tokens: 101,
                 next_session: 0,
             },
@@ -2817,7 +2822,7 @@ mod tests {
             &test_order(),
             &mut ExactTokenizerReasoner {
                 profile: None,
-                preflight_tokens: None,
+                preflight_tokens: Some(100),
                 actual_usage_tokens: 101,
                 next_session: 0,
             },
@@ -2872,7 +2877,7 @@ mod tests {
                 &truth(),
                 budget(),
                 &test_order(),
-                &mut ReusedSessionReasoner,
+                &mut ReusedSessionReasoner { profile: None },
             ),
             Err(ContextExperimentError::DuplicateReasonerSessionId)
         );
@@ -3422,6 +3427,12 @@ mod tests {
         let mut input = input();
         input.relations[0].to_object = "payments-config".into();
         input.relations[0].observed_at_ms = 500;
+        input
+            .evidence
+            .iter_mut()
+            .find(|item| item.evidence_id == "ev-change")
+            .unwrap()
+            .object_ref = "change-record".into();
         let (stale_packet, _) =
             compile_context_packet(&input, ContextArm::TopologyAndDiffs).unwrap();
         let answer = DiagnosisAnswer {
