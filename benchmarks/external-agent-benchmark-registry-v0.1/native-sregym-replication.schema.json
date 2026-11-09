@@ -391,7 +391,14 @@
         "same_run_e2e_metric",
         "retry_policy",
         "dropped_run_policy",
-        "native_benchmark_harness_unchanged"
+        "native_benchmark_harness_unchanged",
+        "attempts_per_scenario",
+        "deployment_start_attempt_limit",
+        "additional_end_to_end_retries",
+        "diagnosis_scoring_semantics",
+        "mitigation_scoring_semantics",
+        "same_run_e2e_rule",
+        "missing_stage_policy"
       ],
       "properties": {
         "native_scorer_required": {
@@ -421,16 +428,38 @@
         },
         "retry_policy": {
           "enum": [
-            "no_retry",
+            "no_additional_end_to_end_retry",
             "predeclared_retry_budget",
             "native_default"
-          ]
+          ],
+          "const": "no_additional_end_to_end_retry"
         },
         "dropped_run_policy": {
           "const": "retain_all_started_attempts"
         },
         "native_benchmark_harness_unchanged": {
           "const": true
+        },
+        "attempts_per_scenario": {
+          "const": 3
+        },
+        "deployment_start_attempt_limit": {
+          "const": 3
+        },
+        "additional_end_to_end_retries": {
+          "const": 0
+        },
+        "diagnosis_scoring_semantics": {
+          "const": "per_problem_native_diagnosis_oracle_output"
+        },
+        "mitigation_scoring_semantics": {
+          "const": "per_problem_native_mitigation_state_oracle_output"
+        },
+        "same_run_e2e_rule": {
+          "const": "diagnosis.success == true AND mitigation.success == true in the same scenario_attempt receipt"
+        },
+        "missing_stage_policy": {
+          "const": "unknown_and_not_credited_as_success"
         }
       }
     },
@@ -743,7 +772,8 @@
         "retried_attempt_rows",
         "dropped_attempt_rows",
         "attempt_receipt_bundle_digest",
-        "result_artifact_digest"
+        "result_artifact_digest",
+        "attempt_receipts_path"
       ],
       "properties": {
         "expected_attempt_rows": {
@@ -783,6 +813,13 @@
             "null"
           ],
           "pattern": "^([a-f0-9]{64})?$"
+        },
+        "attempt_receipts_path": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
         }
       }
     },
@@ -932,8 +969,15 @@
               "result_artifact_digest": {
                 "type": "string",
                 "pattern": "^[a-f0-9]{64}$"
+              },
+              "attempt_receipts_path": {
+                "type": "string",
+                "minLength": 1
               }
-            }
+            },
+            "required": [
+              "attempt_receipts_path"
+            ]
           }
         }
       }
