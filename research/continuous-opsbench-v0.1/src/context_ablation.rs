@@ -241,16 +241,28 @@ pub struct ReasonerUsage {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ReasonerResponse {
+    /// Provider/harness session identifier used for this single arm invocation.
+    pub session_id: String,
     pub answer: DiagnosisAnswer,
     pub usage: ReasonerUsage,
 }
 
 pub trait ContextReasoner {
-    /// The reasoner receives only the compiled packet and equal per-arm budgets.
-    /// It receives no evaluator-owned truth, expected root, or required evidence IDs.
-    /// The adapter must use a fresh conversation/session per call while keeping
-    /// the packet's model, prompt, reasoning-effort and seed manifest unchanged.
-    fn diagnose(&mut self, packet: &ContextPacket, budget: ContextBudget) -> ReasonerResponse;
+    /// Create a genuinely fresh provider conversation for this arm. The adapter
+    /// receives the frozen setup manifest, but must not expose experiment labels
+    /// or pairing metadata to the model prompt.
+    fn start_fresh_session(&mut self, profile: &ContextExperimentProfile) -> String;
+
+    /// The model receives only the rendered evidence text and equal budgets.
+    /// It receives no evaluator truth, expected root, arm label, scenario/block
+    /// IDs, attempt, scorer digest, or required-evidence list. The adapter must
+    /// return the exact fresh session ID and never reuse it across arms.
+    fn diagnose(
+        &mut self,
+        session_id: &str,
+        rendered_context: &str,
+        budget: ContextBudget,
+    ) -> ReasonerResponse;
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -316,6 +328,9 @@ pub enum ContextExperimentError {
     InvalidGroundTruth,
     GroundTruthEvidenceMissing,
     InvalidArmOrder,
+    EmptyReasonerSessionId,
+    DuplicateReasonerSessionId,
+    ReasonerSessionMismatch,
 }
 
 fn non_empty(value: &str) -> bool {
@@ -602,22 +617,13 @@ fn ranked_candidates(
 
 fn render_packet(packet: &ContextPacket) -> String {
     let mut rendered = String::new();
+    // Only operationally relevant target scope is model-visible. Scenario,
+    // arm, attempt, model, prompt, permission, tool, scorer and seed metadata
+    // remain evaluator-side and are never serialized into the reasoner prompt.
     let _ = writeln!(
         &mut rendered,
-        "scenario={} scenario_revision={} block={} attempt={} arm={:?} target={} model={} prompt={} permissions={} tools={} scorer={} effort={} seed={}",
-        escape_field(&packet.scenario_id),
-        digest_hex(&packet.profile.scenario_revision_digest),
-        escape_field(&packet.paired_block_id),
-        packet.attempt_id,
-        packet.arm,
-        escape_field(&packet.target_object_ref),
-        digest_hex(&packet.profile.model_snapshot_digest),
-        digest_hex(&packet.profile.prompt_digest),
-        digest_hex(&packet.profile.permission_profile_digest),
-        digest_hex(&packet.profile.tool_catalog_digest),
-        digest_hex(&packet.profile.scorer_digest),
-        escape_field(&packet.profile.reasoning_effort),
-        packet.profile.sampling_seed
+        "TARGET|{}",
+        escape_field(&packet.target_object_ref)
     );
 
     match &packet.evidence {
@@ -933,6 +939,7 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
     validate_arm_order(arm_order)?;
 
     let mut results = Vec::with_capacity(arm_order.len());
+    let mut session_ids = BTreeSet::new();
     for arm in arm_order {
         let (packet, compiler_time_micros) = compile_context_packet(input, *arm)?;
         if packet.context_bytes > budget.maximum_context_bytes
@@ -957,9 +964,20 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
             continue;
         }
 
+        let session_id = reasoner.start_fresh_session(&packet.profile);
+        if !non_empty(&session_id) {
+            return Err(ContextExperimentError::EmptyReasonerSessionId);
+        }
+        if !session_ids.insert(session_id.clone()) {
+            return Err(ContextExperimentError::DuplicateReasonerSessionId);
+        }
+
         let started = Instant::now();
-        let response = reasoner.diagnose(&packet, budget);
+        let response = reasoner.diagnose(&session_id, &packet.rendered_context, budget);
         let reasoner_time_micros = started.elapsed().as_micros();
+        if response.session_id != session_id {
+            return Err(ContextExperimentError::ReasonerSessionMismatch);
+        }
         let budget_exceeded = response.usage.input_tokens > budget.maximum_input_tokens
             || response.usage.output_tokens > budget.maximum_output_tokens
             || response.usage.tool_calls > budget.maximum_tool_calls
@@ -1470,51 +1488,34 @@ mod tests {
     }
 
     struct ScriptedReasoner {
-        calls: Vec<ContextArm>,
+        calls: Vec<String>,
+        next_session: u32,
     }
 
     impl ContextReasoner for ScriptedReasoner {
-        fn diagnose(&mut self, packet: &ContextPacket, _budget: ContextBudget) -> ReasonerResponse {
-            self.calls.push(packet.arm);
-            let selected = packet
-                .ranked_candidates
-                .first()
-                .map(|candidate| candidate.object_ref.clone())
-                .or_else(|| match &packet.evidence {
-                    ContextPresentation::Raw(records) => {
-                        records.first().map(|item| item.object_ref.clone())
-                    }
-                    ContextPresentation::Normalized(records) => {
-                        records.first().map(|item| item.object_ref.clone())
-                    }
-                });
-            let supporting_evidence_ids = match &packet.evidence {
-                ContextPresentation::Raw(records) => records
-                    .iter()
-                    .filter(|item| selected.as_deref() == Some(item.object_ref.as_str()))
-                    .map(|item| item.evidence_id.clone())
-                    .collect(),
-                ContextPresentation::Normalized(records) => records
-                    .iter()
-                    .filter(|item| selected.as_deref() == Some(item.object_ref.as_str()))
-                    .map(|item| item.evidence_id.clone())
-                    .collect(),
-            };
+        fn start_fresh_session(&mut self, _profile: &ContextExperimentProfile) -> String {
+            self.next_session += 1;
+            format!("fresh-session-{}", self.next_session)
+        }
+
+        fn diagnose(
+            &mut self,
+            session_id: &str,
+            rendered_context: &str,
+            _budget: ContextBudget,
+        ) -> ReasonerResponse {
+            self.calls.push(session_id.to_owned());
+            assert!(rendered_context.contains("TARGET|checkout-api"));
             ReasonerResponse {
+                session_id: session_id.to_owned(),
                 answer: DiagnosisAnswer {
-                    root_object_ref: selected,
-                    supporting_evidence_ids,
-                    alternative_object_refs: packet
-                        .ranked_candidates
-                        .iter()
-                        .skip(1)
-                        .take(2)
-                        .map(|candidate| candidate.object_ref.clone())
-                        .collect(),
+                    root_object_ref: Some("payments-config".into()),
+                    supporting_evidence_ids: vec!["ev-change".into()],
+                    alternative_object_refs: vec!["worker-7".into()],
                     abstained: false,
                 },
                 usage: ReasonerUsage {
-                    input_tokens: packet.estimated_input_tokens,
+                    input_tokens: (rendered_context.len().div_ceil(4)) as u64,
                     output_tokens: 32,
                     tool_calls: 0,
                     reported_cost_microusd: 1_000,
@@ -1585,7 +1586,10 @@ mod tests {
     #[test]
     fn paired_runner_uses_same_reasoner_and_scores_only_after_response() {
         let input = input();
-        let mut reasoner = ScriptedReasoner { calls: Vec::new() };
+        let mut reasoner = ScriptedReasoner {
+            calls: Vec::new(),
+            next_session: 0,
+        };
         let results = run_paired_context_ablation(
             &input,
             &truth(),
@@ -1605,6 +1609,69 @@ mod tests {
             .all(|result| result.paired_block_id == "fault-kafka-01-seed-7"));
         assert!(results.iter().all(|result| result.attempt_id == 1));
         assert!(results[0].score.as_ref().unwrap().required_evidence_total == 1);
+    }
+
+    #[test]
+    fn model_visible_context_excludes_arm_and_evaluator_pairing_metadata() {
+        let input = input();
+        for arm in CONTEXT_COMPILATION_ARMS {
+            let (packet, _) = compile_context_packet(&input, arm).unwrap();
+            assert!(!packet.rendered_context.contains("scenario-1"));
+            assert!(!packet.rendered_context.contains("fault-kafka-01-seed-7"));
+            assert!(!packet.rendered_context.contains("attempt=1"));
+            assert!(!packet.rendered_context.contains("RawSourceRecords"));
+            assert!(!packet.rendered_context.contains("RankedCausalEvidence"));
+            assert!(!packet.rendered_context.contains("model="));
+            assert!(!packet.rendered_context.contains("prompt="));
+            assert!(!packet.rendered_context.contains("scorer="));
+            assert!(!packet.rendered_context.contains("seed=7"));
+            assert!(packet.rendered_context.contains("TARGET|checkout-api"));
+        }
+    }
+
+    struct ReusedSessionReasoner;
+
+    impl ContextReasoner for ReusedSessionReasoner {
+        fn start_fresh_session(&mut self, _profile: &ContextExperimentProfile) -> String {
+            "reused-session".into()
+        }
+
+        fn diagnose(
+            &mut self,
+            session_id: &str,
+            _rendered_context: &str,
+            _budget: ContextBudget,
+        ) -> ReasonerResponse {
+            ReasonerResponse {
+                session_id: session_id.into(),
+                answer: DiagnosisAnswer {
+                    root_object_ref: None,
+                    supporting_evidence_ids: Vec::new(),
+                    alternative_object_refs: Vec::new(),
+                    abstained: true,
+                },
+                usage: ReasonerUsage {
+                    input_tokens: 1,
+                    output_tokens: 1,
+                    tool_calls: 0,
+                    reported_cost_microusd: 0,
+                },
+            }
+        }
+    }
+
+    #[test]
+    fn runner_rejects_reuse_of_a_reasoner_conversation_across_arms() {
+        assert_eq!(
+            run_paired_context_ablation(
+                &input(),
+                &truth(),
+                budget(),
+                &CONTEXT_COMPILATION_ARMS,
+                &mut ReusedSessionReasoner,
+            ),
+            Err(ContextExperimentError::DuplicateReasonerSessionId)
+        );
     }
 
     #[test]
@@ -1681,7 +1748,10 @@ mod tests {
             &truth(),
             tight,
             &CONTEXT_COMPILATION_ARMS,
-            &mut ScriptedReasoner { calls: Vec::new() },
+            &mut ScriptedReasoner {
+                calls: Vec::new(),
+                next_session: 0,
+            },
         )
         .unwrap();
         let analysis = analyze_paired_context_results(&results).unwrap();
