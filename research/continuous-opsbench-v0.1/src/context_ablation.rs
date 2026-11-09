@@ -1944,7 +1944,10 @@ mod tests {
             .all(|result| result.status == ArmStatus::Scored));
         assert!(results.iter().all(|result| result.profile == input.profile));
         assert_eq!(
-            results.iter().map(|result| result.arm_order_position).collect::<BTreeSet<_>>(),
+            results
+                .iter()
+                .map(|result| result.arm_order_position)
+                .collect::<BTreeSet<_>>(),
             (0..5_u8).collect()
         );
         assert!(results
