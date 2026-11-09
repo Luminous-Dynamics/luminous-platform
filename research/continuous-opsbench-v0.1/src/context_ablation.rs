@@ -251,9 +251,36 @@ pub struct ReasonerUsage {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ReasonerInvocationManifest {
+    /// Effective provider/model revision, not merely the requested alias.
+    pub model_snapshot_digest: Digest,
+    /// Digest of the exact system/developer prompt template used by the adapter.
+    pub prompt_digest: Digest,
+    pub permission_profile_digest: Digest,
+    pub tool_catalog_digest: Digest,
+    pub reasoning_effort: String,
+    pub sampling_seed: u64,
+}
+
+impl From<&ContextExperimentProfile> for ReasonerInvocationManifest {
+    fn from(profile: &ContextExperimentProfile) -> Self {
+        Self {
+            model_snapshot_digest: profile.model_snapshot_digest.clone(),
+            prompt_digest: profile.prompt_digest.clone(),
+            permission_profile_digest: profile.permission_profile_digest.clone(),
+            tool_catalog_digest: profile.tool_catalog_digest.clone(),
+            reasoning_effort: profile.reasoning_effort.clone(),
+            sampling_seed: profile.sampling_seed,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ReasonerResponse {
     /// Provider/harness session identifier used for this single arm invocation.
     pub session_id: String,
+    /// Adapter-reported effective configuration observed for this request.
+    pub invocation_manifest: ReasonerInvocationManifest,
     pub answer: DiagnosisAnswer,
     pub usage: ReasonerUsage,
 }
@@ -346,6 +373,7 @@ pub enum ContextExperimentError {
     EmptyReasonerSessionId,
     DuplicateReasonerSessionId,
     ReasonerSessionMismatch,
+    ReasonerManifestMismatch,
 }
 
 fn non_empty(value: &str) -> bool {
@@ -1028,6 +1056,9 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
         let reasoner_time_micros = started.elapsed().as_micros();
         if response.session_id != session_id {
             return Err(ContextExperimentError::ReasonerSessionMismatch);
+        }
+        if response.invocation_manifest != ReasonerInvocationManifest::from(&packet.profile) {
+            return Err(ContextExperimentError::ReasonerManifestMismatch);
         }
         let budget_exceeded = response.usage.input_tokens > budget.maximum_input_tokens
             || response.usage.output_tokens > budget.maximum_output_tokens
@@ -1828,11 +1859,13 @@ mod tests {
     struct ScriptedReasoner {
         calls: Vec<String>,
         next_session: u32,
+        active_profile: Option<ContextExperimentProfile>,
     }
 
     impl ContextReasoner for ScriptedReasoner {
-        fn start_fresh_session(&mut self, _profile: &ContextExperimentProfile) -> String {
+        fn start_fresh_session(&mut self, profile: &ContextExperimentProfile) -> String {
             self.next_session += 1;
+            self.active_profile = Some(profile.clone());
             format!("fresh-session-{}", self.next_session)
         }
 
@@ -1846,6 +1879,9 @@ mod tests {
             assert!(rendered_context.contains("TARGET|checkout-api"));
             ReasonerResponse {
                 session_id: session_id.to_owned(),
+                invocation_manifest: ReasonerInvocationManifest::from(
+                    self.active_profile.as_ref().expect("session profile is initialized"),
+                ),
                 answer: DiagnosisAnswer {
                     root_object_ref: Some("payments-config".into()),
                     supporting_evidence_ids: vec!["ev-change".into()],
@@ -1986,6 +2022,7 @@ mod tests {
         let mut reasoner = ScriptedReasoner {
             calls: Vec::new(),
             next_session: 0,
+            active_profile: None,
         };
         let results =
             run_paired_context_ablation(&input, &truth(), budget(), &test_order(), &mut reasoner)
@@ -2054,6 +2091,7 @@ mod tests {
                 &mut ScriptedReasoner {
                     calls: Vec::new(),
                     next_session: 0,
+                    active_profile: None,
                 },
             ),
             Err(ContextExperimentError::InvalidArmOrder)
@@ -2093,6 +2131,14 @@ mod tests {
         ) -> ReasonerResponse {
             ReasonerResponse {
                 session_id: session_id.into(),
+                invocation_manifest: ReasonerInvocationManifest {
+                    model_snapshot_digest: Digest::from_byte(1),
+                    prompt_digest: Digest::from_byte(1),
+                    permission_profile_digest: Digest::from_byte(1),
+                    tool_catalog_digest: Digest::from_byte(1),
+                    reasoning_effort: "medium".into(),
+                    sampling_seed: 7,
+                },
                 answer: DiagnosisAnswer {
                     root_object_ref: None,
                     supporting_evidence_ids: Vec::new(),
@@ -2107,6 +2153,59 @@ mod tests {
                 },
             }
         }
+    }
+
+    struct DriftedManifestReasoner {
+        profile: Option<ContextExperimentProfile>,
+    }
+
+    impl ContextReasoner for DriftedManifestReasoner {
+        fn start_fresh_session(&mut self, profile: &ContextExperimentProfile) -> String {
+            self.profile = Some(profile.clone());
+            "manifest-drift-session".into()
+        }
+
+        fn diagnose(
+            &mut self,
+            session_id: &str,
+            _rendered_context: &str,
+            _budget: ContextBudget,
+        ) -> ReasonerResponse {
+            let mut manifest = ReasonerInvocationManifest::from(
+                self.profile.as_ref().expect("session profile is initialized"),
+            );
+            manifest.model_snapshot_digest = Digest::from_byte(99);
+            ReasonerResponse {
+                session_id: session_id.into(),
+                invocation_manifest: manifest,
+                answer: DiagnosisAnswer {
+                    root_object_ref: None,
+                    supporting_evidence_ids: Vec::new(),
+                    alternative_object_refs: Vec::new(),
+                    abstained: true,
+                },
+                usage: ReasonerUsage {
+                    input_tokens: 1,
+                    output_tokens: 1,
+                    tool_calls: 0,
+                    reported_cost_microusd: 0,
+                },
+            }
+        }
+    }
+
+    #[test]
+    fn runner_rejects_effective_model_manifest_drift() {
+        assert_eq!(
+            run_paired_context_ablation(
+                &input(),
+                &truth(),
+                budget(),
+                &test_order(),
+                &mut DriftedManifestReasoner { profile: None },
+            ),
+            Err(ContextExperimentError::ReasonerManifestMismatch)
+        );
     }
 
     #[test]
@@ -2129,6 +2228,7 @@ mod tests {
         let mut reasoner = ScriptedReasoner {
             calls: Vec::new(),
             next_session: 0,
+            active_profile: None,
         };
         let results =
             run_paired_context_ablation(&input, &truth(), budget(), &test_order(), &mut reasoner)
@@ -2214,6 +2314,7 @@ mod tests {
         let mut reasoner = ScriptedReasoner {
             calls: Vec::new(),
             next_session: 0,
+            active_profile: None,
         };
         let results =
             run_paired_context_ablation(&input, &truth(), budget(), &test_order(), &mut reasoner)
@@ -2502,6 +2603,7 @@ mod tests {
                 &mut ScriptedReasoner {
                     calls: Vec::new(),
                     next_session: 0,
+                    active_profile: None,
                 },
             ),
             Err(ContextExperimentError::GroundTruthEvidenceMissing)
@@ -2545,6 +2647,7 @@ mod tests {
                 &mut ScriptedReasoner {
                     calls: Vec::new(),
                     next_session: 0,
+                    active_profile: None,
                 },
             ),
             Err(ContextExperimentError::InvalidArmOrder)
@@ -2561,6 +2664,7 @@ mod tests {
                 &mut ScriptedReasoner {
                     calls: Vec::new(),
                     next_session: 0,
+                    active_profile: None,
                 },
             ),
             Err(ContextExperimentError::DuplicateEvidenceId)
