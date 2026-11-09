@@ -253,8 +253,11 @@ pub struct ReasonerUsage {
     pub reported_cost_microusd: u64,
 }
 
+/// Minimal provider configuration visible to the reasoner adapter. This
+/// deliberately excludes evaluator-only scenario, scorer and counterbalance
+/// metadata so it cannot accidentally become prompt or provider state.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ReasonerInvocationManifest {
+pub struct ReasonerSetupProfile {
     /// Effective provider/model revision, not merely the requested alias.
     pub model_snapshot_digest: Digest,
     /// Digest of the exact system/developer prompt template used by the adapter.
@@ -265,8 +268,31 @@ pub struct ReasonerInvocationManifest {
     pub sampling_seed: u64,
 }
 
-impl From<&ContextExperimentProfile> for ReasonerInvocationManifest {
+impl From<&ContextExperimentProfile> for ReasonerSetupProfile {
     fn from(profile: &ContextExperimentProfile) -> Self {
+        Self {
+            model_snapshot_digest: profile.model_snapshot_digest.clone(),
+            prompt_digest: profile.prompt_digest.clone(),
+            permission_profile_digest: profile.permission_profile_digest.clone(),
+            tool_catalog_digest: profile.tool_catalog_digest.clone(),
+            reasoning_effort: profile.reasoning_effort.clone(),
+            sampling_seed: profile.sampling_seed,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ReasonerInvocationManifest {
+    pub model_snapshot_digest: Digest,
+    pub prompt_digest: Digest,
+    pub permission_profile_digest: Digest,
+    pub tool_catalog_digest: Digest,
+    pub reasoning_effort: String,
+    pub sampling_seed: u64,
+}
+
+impl From<&ReasonerSetupProfile> for ReasonerInvocationManifest {
+    fn from(profile: &ReasonerSetupProfile) -> Self {
         Self {
             model_snapshot_digest: profile.model_snapshot_digest.clone(),
             prompt_digest: profile.prompt_digest.clone(),
@@ -292,7 +318,7 @@ pub trait ContextReasoner {
     /// Create a genuinely fresh provider conversation for this arm. The adapter
     /// receives the frozen setup manifest, but must not expose experiment labels
     /// or pairing metadata to the model prompt.
-    fn start_fresh_session(&mut self, profile: &ContextExperimentProfile) -> String;
+    fn start_fresh_session(&mut self, profile: &ReasonerSetupProfile) -> String;
 
     /// The model receives only the rendered evidence text and equal budgets.
     /// It receives no evaluator truth, expected root, arm label, scenario/block
@@ -303,7 +329,7 @@ pub trait ContextReasoner {
     /// unavailable; actual provider usage is still checked after invocation.
     fn count_input_tokens(
         &mut self,
-        profile: &ContextExperimentProfile,
+        profile: &ReasonerSetupProfile,
         rendered_context: &str,
     ) -> Option<u64>;
 
@@ -1096,8 +1122,9 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
         let arm_started = Instant::now();
         let (packet, compiler_time_micros) = compile_context_packet(input, *arm)?;
         let adapter_setup_started = Instant::now();
+        let reasoner_profile = ReasonerSetupProfile::from(&packet.profile);
         let model_token_preflight =
-            reasoner.count_input_tokens(&packet.profile, &packet.rendered_context);
+            reasoner.count_input_tokens(&reasoner_profile, &packet.rendered_context);
         if packet.context_bytes > budget.maximum_context_bytes
             || model_token_preflight
                 .is_some_and(|tokens| tokens > budget.maximum_input_tokens)
@@ -1128,7 +1155,7 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
             continue;
         }
 
-        let session_id = reasoner.start_fresh_session(&packet.profile);
+        let session_id = reasoner.start_fresh_session(&reasoner_profile);
         let adapter_setup_time_micros = adapter_setup_started.elapsed().as_micros();
         if !non_empty(&session_id) {
             return Err(ContextExperimentError::EmptyReasonerSessionId);
@@ -1143,7 +1170,7 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
         if response.session_id != session_id {
             return Err(ContextExperimentError::ReasonerSessionMismatch);
         }
-        if response.invocation_manifest != ReasonerInvocationManifest::from(&packet.profile) {
+        if response.invocation_manifest != ReasonerInvocationManifest::from(&reasoner_profile) {
             return Err(ContextExperimentError::ReasonerManifestMismatch);
         }
         let budget_exceeded = response.usage.input_tokens > budget.maximum_input_tokens
@@ -2314,7 +2341,7 @@ mod tests {
     struct ReusedSessionReasoner;
 
     impl ContextReasoner for ReusedSessionReasoner {
-        fn start_fresh_session(&mut self, _profile: &ContextExperimentProfile) -> String {
+        fn start_fresh_session(&mut self, _profile: &ReasonerSetupProfile) -> String {
             "reused-session".into()
         }
 
