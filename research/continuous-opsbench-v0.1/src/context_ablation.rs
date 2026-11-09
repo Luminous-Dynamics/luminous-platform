@@ -1412,7 +1412,7 @@ pub fn analyze_paired_context_results(
         }
     }
 
-    for block in blocks.values() {
+    for (key, block) in &blocks {
         if block.len() != CONTEXT_COMPILATION_ARMS.len()
             || CONTEXT_COMPILATION_ARMS
                 .iter()
