@@ -301,6 +301,8 @@ pub struct ContextArmResult {
     pub status: ArmStatus,
     pub compiler_time_micros: u128,
     pub reasoner_time_micros: Option<u128>,
+    /// Provider/harness conversation identity used for this arm; never shared.
+    pub reasoner_session_id: Option<String>,
     pub context_bytes: usize,
     pub estimated_input_tokens: u64,
     pub usage: Option<ReasonerUsage>,
@@ -955,6 +957,7 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
                 status: ArmStatus::BudgetExceeded,
                 compiler_time_micros,
                 reasoner_time_micros: None,
+                reasoner_session_id: None,
                 context_bytes: packet.context_bytes,
                 estimated_input_tokens: packet.estimated_input_tokens,
                 usage: None,
@@ -999,6 +1002,7 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
             status,
             compiler_time_micros,
             reasoner_time_micros: Some(reasoner_time_micros),
+            reasoner_session_id: Some(session_id),
             context_bytes: packet.context_bytes,
             estimated_input_tokens: packet.estimated_input_tokens,
             usage: Some(response.usage),
@@ -1092,6 +1096,7 @@ pub fn analyze_paired_context_results(
 
     let mut blocks: BTreeMap<ContextBlockKey, BTreeMap<ContextArm, &ContextArmResult>> =
         BTreeMap::new();
+    let mut reasoner_session_ids = BTreeSet::new();
 
     for result in results {
         if !non_empty(&result.scenario_id)
@@ -1101,8 +1106,19 @@ pub fn analyze_paired_context_results(
         {
             return Err(ContextExperimentError::InvalidExperimentProfile);
         }
-        if (result.status == ArmStatus::Scored) != result.score.is_some() {
+        if (result.status == ArmStatus::Scored) != result.score.is_some()
+            || result.reasoner_time_micros.is_some() != result.usage.is_some()
+            || result.reasoner_time_micros.is_some() != result.reasoner_session_id.is_some()
+        {
             return Err(ContextExperimentError::InvalidExperimentProfile);
+        }
+        if let Some(session_id) = &result.reasoner_session_id {
+            if !non_empty(session_id) {
+                return Err(ContextExperimentError::EmptyReasonerSessionId);
+            }
+            if !reasoner_session_ids.insert(session_id.as_str()) {
+                return Err(ContextExperimentError::DuplicateReasonerSessionId);
+            }
         }
         let key = ContextBlockKey {
             fault_family_id: result.fault_family_id.clone(),
@@ -1608,6 +1624,17 @@ mod tests {
             .iter()
             .all(|result| result.status == ArmStatus::Scored));
         assert!(results.iter().all(|result| result.profile == input.profile));
+        assert!(results
+            .iter()
+            .all(|result| result.reasoner_session_id.is_some()));
+        assert_eq!(
+            results
+                .iter()
+                .filter_map(|result| result.reasoner_session_id.as_deref())
+                .collect::<BTreeSet<_>>()
+                .len(),
+            5
+        );
         assert!(results
             .iter()
             .all(|result| result.paired_block_id == "fault-kafka-01-seed-7"));
