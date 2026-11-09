@@ -11,6 +11,8 @@ const INPUT_SCHEMA: &str =
     include_str!("../../../docs/assurance/assurance-case/assurance-case-input-0.1.schema.json");
 const REPORT_SCHEMA: &str = include_str!("../schema/assurance-case-report-0.1.schema.json");
 
+// Test-only convenience builder: one mutually exclusive optional payload per node kind.
+#[allow(clippy::too_many_arguments)]
 fn node(
     id: &str,
     kind: NodeKind,
