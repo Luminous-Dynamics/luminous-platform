@@ -93,8 +93,23 @@ pub struct ContextRelation {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ContextExperimentProfile {
+    pub scenario_revision_digest: Digest,
+    pub model_snapshot_digest: Digest,
+    pub prompt_digest: Digest,
+    pub permission_profile_digest: Digest,
+    pub tool_catalog_digest: Digest,
+    pub scorer_digest: Digest,
+    pub reasoning_effort: String,
+    pub sampling_seed: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ContextExperimentInput {
     pub scenario_id: String,
+    pub paired_block_id: String,
+    pub attempt_id: u32,
+    pub profile: ContextExperimentProfile,
     pub target_object_ref: String,
     pub audited_at_ms: u64,
     pub maximum_evidence_age_ms: u64,
@@ -183,6 +198,9 @@ pub enum ContextPresentation {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ContextPacket {
     pub scenario_id: String,
+    pub paired_block_id: String,
+    pub attempt_id: u32,
+    pub profile: ContextExperimentProfile,
     pub arm: ContextArm,
     pub target_object_ref: String,
     pub evidence: ContextPresentation,
@@ -228,6 +246,8 @@ pub struct ReasonerResponse {
 pub trait ContextReasoner {
     /// The reasoner receives only the compiled packet and equal per-arm budgets.
     /// It receives no evaluator-owned truth, expected root, or required evidence IDs.
+    /// The adapter must use a fresh conversation/session per call while keeping
+    /// the packet's model, prompt, reasoning-effort and seed manifest unchanged.
     fn diagnose(
         &mut self,
         packet: &ContextPacket,
@@ -260,6 +280,10 @@ pub struct ContextScore {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ContextArmResult {
+    pub scenario_id: String,
+    pub paired_block_id: String,
+    pub attempt_id: u32,
+    pub profile: ContextExperimentProfile,
     pub arm: ContextArm,
     pub status: ArmStatus,
     pub compiler_time_micros: u128,
@@ -275,6 +299,8 @@ pub struct ContextArmResult {
 pub enum ContextExperimentError {
     EmptyScenarioId,
     EmptyTargetObject,
+    EmptyPairedBlockId,
+    InvalidExperimentProfile,
     EmptyEvidence,
     DuplicateEvidenceId,
     InvalidEvidenceRecord,
@@ -313,6 +339,12 @@ fn validate_input(input: &ContextExperimentInput) -> Result<(), ContextExperimen
     }
     if !non_empty(&input.target_object_ref) {
         return Err(ContextExperimentError::EmptyTargetObject);
+    }
+    if !non_empty(&input.paired_block_id) {
+        return Err(ContextExperimentError::EmptyPairedBlockId);
+    }
+    if !non_empty(&input.profile.reasoning_effort) {
+        return Err(ContextExperimentError::InvalidExperimentProfile);
     }
     if input.evidence.is_empty() {
         return Err(ContextExperimentError::EmptyEvidence);
@@ -558,10 +590,19 @@ fn render_packet(packet: &ContextPacket) -> String {
     let mut rendered = String::new();
     let _ = writeln!(
         &mut rendered,
-        "scenario={} arm={:?} target={}",
+        "scenario={} block={} attempt={} arm={:?} target={} model={} prompt={} permissions={} tools={} scorer={} effort={} seed={}",
         escape_field(&packet.scenario_id),
+        escape_field(&packet.paired_block_id),
+        packet.attempt_id,
         packet.arm,
-        escape_field(&packet.target_object_ref)
+        escape_field(&packet.target_object_ref),
+        digest_hex(&packet.profile.model_snapshot_digest),
+        digest_hex(&packet.profile.prompt_digest),
+        digest_hex(&packet.profile.permission_profile_digest),
+        digest_hex(&packet.profile.tool_catalog_digest),
+        digest_hex(&packet.profile.scorer_digest),
+        escape_field(&packet.profile.reasoning_effort),
+        packet.profile.sampling_seed
     );
 
     match &packet.evidence {
@@ -678,6 +719,9 @@ pub fn compile_context_packet(
         .collect();
     let mut packet = ContextPacket {
         scenario_id: input.scenario_id.clone(),
+        paired_block_id: input.paired_block_id.clone(),
+        attempt_id: input.attempt_id,
+        profile: input.profile.clone(),
         arm,
         target_object_ref: input.target_object_ref.clone(),
         evidence: if arm == ContextArm::RawSourceRecords {
@@ -851,6 +895,10 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
             || packet.estimated_input_tokens > budget.maximum_input_tokens
         {
             results.push(ContextArmResult {
+                scenario_id: packet.scenario_id.clone(),
+                paired_block_id: packet.paired_block_id.clone(),
+                attempt_id: packet.attempt_id,
+                profile: packet.profile.clone(),
                 arm: *arm,
                 status: ArmStatus::BudgetExceeded,
                 compiler_time_micros,
@@ -879,6 +927,10 @@ pub fn run_paired_context_ablation<R: ContextReasoner>(
         let score = (status == ArmStatus::Scored)
             .then(|| score_answer(&packet, truth, &response.answer));
         results.push(ContextArmResult {
+            scenario_id: packet.scenario_id.clone(),
+            paired_block_id: packet.paired_block_id.clone(),
+            attempt_id: packet.attempt_id,
+            profile: packet.profile.clone(),
             arm: *arm,
             status,
             compiler_time_micros,
@@ -941,6 +993,18 @@ mod tests {
         ];
         ContextExperimentInput {
             scenario_id: "scenario-1".into(),
+            paired_block_id: "fault-kafka-01-seed-7".into(),
+            attempt_id: 1,
+            profile: ContextExperimentProfile {
+                scenario_revision_digest: digest(10),
+                model_snapshot_digest: digest(11),
+                prompt_digest: digest(12),
+                permission_profile_digest: digest(13),
+                tool_catalog_digest: digest(14),
+                scorer_digest: digest(15),
+                reasoning_effort: "medium".into(),
+                sampling_seed: 7,
+            },
             target_object_ref: "checkout-api".into(),
             audited_at_ms: 1_000,
             maximum_evidence_age_ms: 100,
