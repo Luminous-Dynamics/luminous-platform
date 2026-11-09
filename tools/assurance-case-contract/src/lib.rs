@@ -144,6 +144,7 @@ pub struct DefeaterSpec {
     pub applicable: bool,
     pub critical: bool,
     pub description: String,
+    pub raised_at: i64,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -390,6 +391,7 @@ fn validate_structure(input: &AssuranceCaseInput) -> Vec<String> {
                     }
                     if spec.required_evidence_ids.is_empty()
                         && spec.required_subclaim_ids.is_empty()
+                        && spec.required_argument_ids.is_empty()
                     {
                         errors.push(format!("claim_{}_has_no_evidence_or_subclaim_obligation", node.id));
                     }
@@ -465,10 +467,28 @@ fn validate_structure(input: &AssuranceCaseInput) -> Vec<String> {
                 }
             }
             NodeKind::Assumption => {
+                let assumption = node.assumption.as_ref().expect("kind data validated");
                 if !input.edges.iter().any(|edge| {
                     edge.kind == EdgeKind::Assumes && edge.from == node.id
                 }) {
                     errors.push(format!("assumption_{}_not_attached", node.id));
+                }
+                if matches!(
+                    assumption.status,
+                    AssumptionStatus::Supported | AssumptionStatus::Bounded | AssumptionStatus::Refuted
+                ) && assumption.evidence_ids.is_empty()
+                {
+                    errors.push(format!("assumption_{}_evidence_required", node.id));
+                }
+                if !unique_ids(&assumption.evidence_ids) {
+                    errors.push(format!("assumption_{}_evidence_ids_invalid", node.id));
+                }
+                for evidence_id in &assumption.evidence_ids {
+                    if !has_node_kind(&nodes, evidence_id, NodeKind::Evidence)
+                        || !has_edge(&input.edges, EdgeKind::Supports, evidence_id, &node.id)
+                    {
+                        errors.push(format!("assumption_{}_evidence_unbound", node.id));
+                    }
                 }
             }
             NodeKind::Evidence => {
@@ -479,6 +499,13 @@ fn validate_structure(input: &AssuranceCaseInput) -> Vec<String> {
                 }
             }
             NodeKind::Defeater => {
+                let defeater = node.defeater.as_ref().expect("kind data validated");
+                if defeater.description.trim().is_empty() {
+                    errors.push(format!("defeater_{}_description_empty", node.id));
+                }
+                if defeater.raised_at > input.as_of {
+                    errors.push(format!("defeater_{}_raised_after_case_as_of", node.id));
+                }
                 if !input.edges.iter().any(|edge| {
                     edge.kind == EdgeKind::Defeats && edge.from == node.id
                 }) {
@@ -486,14 +513,25 @@ fn validate_structure(input: &AssuranceCaseInput) -> Vec<String> {
                 }
             }
             NodeKind::Rebuttal => {
-                let rebuttal = node.rebuttal.as_ref();
+                let rebuttal = node.rebuttal.as_ref().expect("kind data validated");
                 let matching = input.edges.iter().any(|edge| {
                     edge.kind == EdgeKind::Rebuts
                         && edge.from == node.id
-                        && rebuttal.is_some_and(|spec| spec.target_defeater_id == edge.to)
+                        && edge.to == rebuttal.target_defeater_id
                 });
-                if !matching {
+                if !matching
+                    || !has_node_kind(&nodes, &rebuttal.target_defeater_id, NodeKind::Defeater)
+                    || rebuttal.evidence_ids.is_empty()
+                    || !unique_ids(&rebuttal.evidence_ids)
+                {
                     errors.push(format!("rebuttal_{}_target_binding_invalid", node.id));
+                }
+                for evidence_id in &rebuttal.evidence_ids {
+                    if !has_node_kind(&nodes, evidence_id, NodeKind::Evidence)
+                        || !has_edge(&input.edges, EdgeKind::Supports, evidence_id, &node.id)
+                    {
+                        errors.push(format!("rebuttal_{}_evidence_unbound", node.id));
+                    }
                 }
             }
         }
@@ -604,168 +642,44 @@ fn evaluate_claim(
     }
 
     for argument_id in &spec.required_argument_ids {
-        let argument_evidence_ids: Vec<&str> = input.edges
-            .iter()
-            .filter(|edge| edge.kind == EdgeKind::Supports && edge.to == *argument_id)
-            .map(|edge| edge.from.as_str())
-            .filter(|source| by_id.get(source).is_some_and(|n| n.kind == NodeKind::Evidence))
-            .collect();
-        let mut argument_outcome = ClaimOutcome::Supported;
-        for evidence_id in argument_evidence_ids {
-            let ev = by_id.get(evidence_id).expect("edge endpoint validated");
-            let evidence = ev.evidence.as_ref().expect("evidence data validated");
-            let (outcome, mut why) = evaluate_evidence(
-                evidence,
-                &input.decision_scope,
-                input.as_of,
-                spec.dependency_requirement,
-            );
-            argument_outcome = combine(argument_outcome, outcome);
-            reasons.append(&mut why);
-        }
-
-        for edge in input.edges.iter().filter(|edge| {
-            edge.kind == EdgeKind::Assumes && edge.to == *argument_id
-        }) {
-            let assumption_node = by_id.get(edge.from.as_str()).expect("edge endpoint validated");
-            let assumption = assumption_node.assumption.as_ref().expect("assumption data validated");
-            match assumption.status {
-                AssumptionStatus::Open => {
-                    unresolved_assumptions.insert(assumption_node.id.clone());
-                    argument_outcome = combine(argument_outcome, ClaimOutcome::Indeterminate);
-                    reasons.push(format!("assumption_{}_open", assumption_node.id));
-                }
-                AssumptionStatus::Refuted => {
-                    unresolved_assumptions.insert(assumption_node.id.clone());
-                    argument_outcome = combine(
-                        argument_outcome,
-                        if assumption.critical {
-                            ClaimOutcome::Defeated
-                        } else {
-                            ClaimOutcome::Indeterminate
-                        },
-                    );
-                    reasons.push(format!("assumption_{}_refuted", assumption_node.id));
-                }
-                AssumptionStatus::Supported | AssumptionStatus::Bounded => {
-                    if assumption.evidence_ids.is_empty() {
-                        argument_outcome = combine(argument_outcome, ClaimOutcome::Indeterminate);
-                        unresolved_assumptions.insert(assumption_node.id.clone());
-                        reasons.push(format!("assumption_{}_has_no_support_evidence", assumption_node.id));
-                    }
-                    for evidence_id in &assumption.evidence_ids {
-                        if !has_edge(&input.edges, EdgeKind::Supports, evidence_id, &assumption_node.id) {
-                            argument_outcome = combine(argument_outcome, ClaimOutcome::Indeterminate);
-                            unresolved_assumptions.insert(assumption_node.id.clone());
-                            reasons.push(format!("assumption_{}_evidence_unbound", assumption_node.id));
-                            continue;
-                        }
-                        let evidence_node = by_id.get(evidence_id.as_str()).expect("structure validated");
-                        let evidence = evidence_node.evidence.as_ref().expect("evidence data validated");
-                        let (outcome, mut why) = evaluate_evidence(
-                            evidence,
-                            &input.decision_scope,
-                            input.as_of,
-                            DependencyRequirement::None,
-                        );
-                        argument_outcome = combine(argument_outcome, outcome);
-                        reasons.append(&mut why);
-                    }
-                }
-            }
-        }
-
-        for edge in input.edges.iter().filter(|edge| {
-            edge.kind == EdgeKind::Defeats && edge.to == *argument_id
-        }) {
-            let defeater_node = by_id.get(edge.from.as_str()).expect("edge endpoint validated");
-            let defeater = defeater_node.defeater.as_ref().expect("defeater data validated");
-            if defeater.applicable && !rebuttal_closes(&defeater_node.id, input, by_id) {
-                open_defeaters.insert(defeater_node.id.clone());
-                argument_outcome = combine(
-                    argument_outcome,
-                    if defeater.critical {
-                        ClaimOutcome::Defeated
-                    } else {
-                        ClaimOutcome::Indeterminate
-                    },
-                );
-                reasons.push(format!("defeater_{}_open", defeater_node.id));
-            }
-        }
+        let (argument_outcome, mut argument_reasons) = evaluate_argument(
+            argument_id,
+            input,
+            by_id,
+            spec.dependency_requirement,
+            open_defeaters,
+            unresolved_assumptions,
+        );
         outcomes.push(argument_outcome);
+        reasons.append(&mut argument_reasons);
     }
 
     for edge in input.edges.iter().filter(|edge| {
         edge.kind == EdgeKind::Assumes && edge.to == claim_id
     }) {
         let assumption_node = by_id.get(edge.from.as_str()).expect("edge endpoint validated");
-        let assumption = assumption_node.assumption.as_ref().expect("assumption data validated");
-        match assumption.status {
-            AssumptionStatus::Open => {
-                unresolved_assumptions.insert(assumption_node.id.clone());
-                outcomes.push(ClaimOutcome::Indeterminate);
-                reasons.push(format!("assumption_{}_open", assumption_node.id));
-            }
-            AssumptionStatus::Refuted => {
-                unresolved_assumptions.insert(assumption_node.id.clone());
-                outcomes.push(if assumption.critical {
-                    ClaimOutcome::Defeated
-                } else {
-                    ClaimOutcome::Indeterminate
-                });
-                reasons.push(format!("assumption_{}_refuted", assumption_node.id));
-            }
-            AssumptionStatus::Supported | AssumptionStatus::Bounded => {
-                if assumption.evidence_ids.is_empty() {
-                    outcomes.push(ClaimOutcome::Indeterminate);
-                    unresolved_assumptions.insert(assumption_node.id.clone());
-                    reasons.push(format!("assumption_{}_has_no_support_evidence", assumption_node.id));
-                }
-                for evidence_id in &assumption.evidence_ids {
-                    if !has_edge(&input.edges, EdgeKind::Supports, evidence_id, &assumption_node.id) {
-                        outcomes.push(ClaimOutcome::Indeterminate);
-                        unresolved_assumptions.insert(assumption_node.id.clone());
-                        reasons.push(format!("assumption_{}_evidence_unbound", assumption_node.id));
-                        continue;
-                    }
-                    let evidence_node = by_id.get(evidence_id.as_str()).expect("structure validated");
-                    let evidence = evidence_node.evidence.as_ref().expect("evidence data validated");
-                    let (outcome, mut why) = evaluate_evidence(
-                        evidence,
-                        &input.decision_scope,
-                        input.as_of,
-                        DependencyRequirement::None,
-                    );
-                    outcomes.push(outcome);
-                    reasons.append(&mut why);
-                }
-            }
-        }
+        let (outcome, mut why) = evaluate_assumption(
+            assumption_node,
+            input,
+            by_id,
+            unresolved_assumptions,
+        );
+        outcomes.push(outcome);
+        reasons.append(&mut why);
     }
 
     for edge in input.edges.iter().filter(|edge| {
         edge.kind == EdgeKind::Defeats && edge.to == claim_id
     }) {
         let defeater_node = by_id.get(edge.from.as_str()).expect("edge endpoint validated");
-        let defeater = defeater_node.defeater.as_ref().expect("defeater data validated");
-        if !defeater.applicable {
-            continue;
-        }
-        if rebuttal_closes(
-            &defeater_node.id,
+        let (outcome, mut why) = evaluate_defeater(
+            defeater_node,
             input,
             by_id,
-        ) {
-            continue;
-        }
-        open_defeaters.insert(defeater_node.id.clone());
-        outcomes.push(if defeater.critical {
-            ClaimOutcome::Defeated
-        } else {
-            ClaimOutcome::Indeterminate
-        });
-        reasons.push(format!("defeater_{}_open", defeater_node.id));
+            open_defeaters,
+        );
+        outcomes.push(outcome);
+        reasons.append(&mut why);
     }
 
     visiting.remove(claim_id);
@@ -779,39 +693,193 @@ fn evaluate_claim(
     outcome
 }
 
+fn evaluate_argument(
+    argument_id: &str,
+    input: &AssuranceCaseInput,
+    by_id: &BTreeMap<&str, &CaseNode>,
+    dependency_requirement: DependencyRequirement,
+    open_defeaters: &mut BTreeSet<String>,
+    unresolved_assumptions: &mut BTreeSet<String>,
+) -> (ClaimOutcome, Vec<String>) {
+    let mut outcome = ClaimOutcome::Supported;
+    let mut reasons = Vec::new();
+
+    for edge in input.edges.iter().filter(|edge| {
+        edge.kind == EdgeKind::Supports && edge.to == argument_id
+    }) {
+        let evidence_node = by_id.get(edge.from.as_str()).expect("edge endpoint validated");
+        if evidence_node.kind != NodeKind::Evidence {
+            continue;
+        }
+        let evidence = evidence_node.evidence.as_ref().expect("evidence data validated");
+        let (evidence_outcome, mut why) = evaluate_evidence(
+            evidence,
+            &input.decision_scope,
+            input.as_of,
+            dependency_requirement,
+        );
+        outcome = combine(outcome, evidence_outcome);
+        reasons.append(&mut why);
+    }
+
+    for edge in input.edges.iter().filter(|edge| {
+        edge.kind == EdgeKind::Assumes && edge.to == argument_id
+    }) {
+        let assumption_node = by_id.get(edge.from.as_str()).expect("edge endpoint validated");
+        let (assumption_outcome, mut why) = evaluate_assumption(
+            assumption_node,
+            input,
+            by_id,
+            unresolved_assumptions,
+        );
+        outcome = combine(outcome, assumption_outcome);
+        reasons.append(&mut why);
+    }
+
+    for edge in input.edges.iter().filter(|edge| {
+        edge.kind == EdgeKind::Defeats && edge.to == argument_id
+    }) {
+        let defeater_node = by_id.get(edge.from.as_str()).expect("edge endpoint validated");
+        let (defeater_outcome, mut why) = evaluate_defeater(
+            defeater_node,
+            input,
+            by_id,
+            open_defeaters,
+        );
+        outcome = combine(outcome, defeater_outcome);
+        reasons.append(&mut why);
+    }
+
+    (outcome, reasons)
+}
+
+fn evaluate_assumption(
+    assumption_node: &CaseNode,
+    input: &AssuranceCaseInput,
+    by_id: &BTreeMap<&str, &CaseNode>,
+    unresolved_assumptions: &mut BTreeSet<String>,
+) -> (ClaimOutcome, Vec<String>) {
+    let assumption = assumption_node.assumption.as_ref().expect("assumption data validated");
+    let mut outcome = ClaimOutcome::Supported;
+    let mut reasons = Vec::new();
+
+    match assumption.status {
+        AssumptionStatus::Open => {
+            unresolved_assumptions.insert(assumption_node.id.clone());
+            reasons.push(format!("assumption_{}_open", assumption_node.id));
+            return (ClaimOutcome::Indeterminate, reasons);
+        }
+        AssumptionStatus::Refuted => {
+            unresolved_assumptions.insert(assumption_node.id.clone());
+            reasons.push(format!("assumption_{}_refuted", assumption_node.id));
+            return (
+                if assumption.critical {
+                    ClaimOutcome::Defeated
+                } else {
+                    ClaimOutcome::Indeterminate
+                },
+                reasons,
+            );
+        }
+        AssumptionStatus::Supported | AssumptionStatus::Bounded => {}
+    }
+
+    if assumption.evidence_ids.is_empty() {
+        unresolved_assumptions.insert(assumption_node.id.clone());
+        return (
+            ClaimOutcome::Indeterminate,
+            vec![format!("assumption_{}_has_no_support_evidence", assumption_node.id)],
+        );
+    }
+
+    for evidence_id in &assumption.evidence_ids {
+        // Structural validation establishes the type and edge before evaluation.
+        let evidence_node = by_id.get(evidence_id.as_str()).expect("assumption evidence validated");
+        let evidence = evidence_node.evidence.as_ref().expect("assumption evidence type validated");
+        let (evidence_outcome, mut why) = evaluate_evidence(
+            evidence,
+            &input.decision_scope,
+            input.as_of,
+            DependencyRequirement::None,
+        );
+        outcome = combine(outcome, evidence_outcome);
+        reasons.append(&mut why);
+    }
+
+    if outcome != ClaimOutcome::Supported {
+        unresolved_assumptions.insert(assumption_node.id.clone());
+        reasons.push(format!("assumption_{}_support_not_established", assumption_node.id));
+    }
+    (outcome, reasons)
+}
+
+fn evaluate_defeater(
+    defeater_node: &CaseNode,
+    input: &AssuranceCaseInput,
+    by_id: &BTreeMap<&str, &CaseNode>,
+    open_defeaters: &mut BTreeSet<String>,
+) -> (ClaimOutcome, Vec<String>) {
+    let defeater = defeater_node.defeater.as_ref().expect("defeater data validated");
+    if !defeater.applicable || rebuttal_closes(&defeater_node.id, input, by_id) {
+        return (ClaimOutcome::Supported, Vec::new());
+    }
+
+    open_defeaters.insert(defeater_node.id.clone());
+    let outcome = if defeater.critical {
+        ClaimOutcome::Defeated
+    } else {
+        ClaimOutcome::Indeterminate
+    };
+    (
+        outcome,
+        vec![format!("defeater_{}_open", defeater_node.id)],
+    )
+}
+
 fn rebuttal_closes(
     defeater_id: &str,
     input: &AssuranceCaseInput,
     by_id: &BTreeMap<&str, &CaseNode>,
 ) -> bool {
+    let Some(defeater_node) = by_id.get(defeater_id) else {
+        return false;
+    };
+    let Some(defeater) = defeater_node.defeater.as_ref() else {
+        return false;
+    };
+
     for edge in input.edges.iter().filter(|edge| {
         edge.kind == EdgeKind::Rebuts && edge.to == defeater_id
     }) {
-        let Some(node) = by_id.get(edge.from.as_str()) else {
+        let Some(rebuttal_node) = by_id.get(edge.from.as_str()) else {
             continue;
         };
-        let Some(spec) = node.rebuttal.as_ref() else {
+        let Some(spec) = rebuttal_node.rebuttal.as_ref() else {
             continue;
         };
         if spec.target_defeater_id != defeater_id || spec.evidence_ids.is_empty() {
             continue;
         }
-        let all_valid = spec.evidence_ids.iter().all(|evidence_id| {
-            has_edge(&input.edges, EdgeKind::Supports, evidence_id, &node.id)
-                && by_id
-                    .get(evidence_id.as_str())
-                    .and_then(|evidence_node| evidence_node.evidence.as_ref())
-                    .is_some_and(|evidence| {
-                        evaluate_evidence(
+
+        let all_valid_and_fresh = spec.evidence_ids.iter().all(|evidence_id| {
+            if !has_edge(&input.edges, EdgeKind::Supports, evidence_id, &rebuttal_node.id) {
+                return false;
+            }
+            by_id
+                .get(evidence_id.as_str())
+                .and_then(|evidence_node| evidence_node.evidence.as_ref())
+                .is_some_and(|evidence| {
+                    evidence.observed_at >= defeater.raised_at
+                        && evaluate_evidence(
                             evidence,
                             &input.decision_scope,
                             input.as_of,
                             DependencyRequirement::None,
                         )
                         .0 == ClaimOutcome::Supported
-                    })
+                })
         });
-        if all_valid {
+        if all_valid_and_fresh {
             return true;
         }
     }
@@ -897,22 +965,6 @@ fn combine(left: ClaimOutcome, right: ClaimOutcome) -> ClaimOutcome {
     }
 }
 
-fn edge_types_valid(kind: EdgeKind, from: NodeKind, to: NodeKind) -> bool {
-    match kind {
-        EdgeKind::DecomposesInto => from == NodeKind::Claim && to == NodeKind::Claim,
-        EdgeKind::Supports => matches!(from, NodeKind::Evidence | NodeKind::Argument | NodeKind::Claim)
-            && matches!(to, NodeKind::Claim | NodeKind::Argument | NodeKind::Assumption | NodeKind::Rebuttal),
-        EdgeKind::Contextualizes => from == NodeKind::Context
-            && matches!(to, NodeKind::Claim | NodeKind::Argument | NodeKind::Evidence),
-        EdgeKind::Assumes => from == NodeKind::Assumption
-            && matches!(to, NodeKind::Claim | NodeKind::Argument),
-        EdgeKind::Defeats => from == NodeKind::Defeater
-            && matches!(to, NodeKind::Claim | NodeKind::Argument),
-        EdgeKind::Rebuts => from == NodeKind::Rebuttal && to == NodeKind::Defeater,
-        EdgeKind::DependsOn => matches!(from, NodeKind::Claim | NodeKind::Argument | NodeKind::Evidence)
-            && matches!(to, NodeKind::Claim | NodeKind::Evidence),
-    }
-}
 
 fn reachable_claim_ids(root: &str, edges: &[CaseEdge]) -> BTreeSet<String> {
     let mut seen = BTreeSet::new();
