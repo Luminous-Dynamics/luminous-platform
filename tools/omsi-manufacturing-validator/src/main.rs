@@ -1,10 +1,14 @@
 mod adapter;
 mod benchmark;
+mod pmtime;
 mod pnt;
 mod provenance;
 mod replay;
 mod schema_coverage;
 mod syncaas;
+
+#[cfg(test)]
+mod pmtime_tests;
 
 use adapter::{apply_adapter_map, audit_adapter_map, verify_transform_vectors};
 use omsi_manufacturing_validator::{evaluate_input_value, validate_vector_document};
@@ -30,6 +34,22 @@ fn main() -> ExitCode {
 fn run() -> Result<u8, String> {
     let args: Vec<String> = env::args().collect();
     match args.get(1).map(String::as_str) {
+        Some("validate-pmtime-fixtures") if args.len() == 3 => {
+            let source = read_bytes_bounded(&args[2], MAX_ADAPTER_INPUT_BYTES)?;
+            let document: Value = serde_json::from_slice(&source)
+                .map_err(|error| format!("invalid PMTime fixture JSON in {}: {error}", args[2]))?;
+            let report = pmtime::validate_fixture_pack(&document, &source);
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&report)
+                    .map_err(|error| format!("failed to serialize PMTime integrity report: {error}"))?
+            );
+            if report.get("status").and_then(Value::as_str) == Some("passed") {
+                Ok(0)
+            } else {
+                Ok(1)
+            }
+        }
         Some("validate-syncaas") if args.len() == 3 => {
             let source = read_bytes_bounded(&args[2], MAX_ADAPTER_INPUT_BYTES)?;
             let document: Value = serde_json::from_slice(&source)
@@ -289,7 +309,7 @@ fn run() -> Result<u8, String> {
             }
         }
         _ => Err(
-            "usage: omsi-manufacturing-validator validate-syncaas <syncaas-fixtures.json>\n       omsi-manufacturing-validator validate-pnt-fixtures <pnt-fixtures.json>\n       omsi-manufacturing-validator validate-vectors <vectors.json>\n       omsi-manufacturing-validator evaluate-input <input.json | ->\n       omsi-manufacturing-validator create-envelope <input.json | ->\n       omsi-manufacturing-validator verify-envelope <envelope.json> <input.json | ->\n       omsi-manufacturing-validator benchmark-vectors <vectors.json> [iterations_per_case]\n       omsi-manufacturing-validator audit-adapter-map <adapter-map.json> <source-record.json>\n       omsi-manufacturing-validator apply-adapter-map <adapter-map.json> <source-record.json>\n       omsi-manufacturing-validator verify-transform-vectors <TRANSFORM-VECTORS.json>\n       omsi-manufacturing-validator create-provenance-manifest <source-record.json> <source-schema.json> <adapter-map.json> <schema-coverage-report.json> <projection-report.json> <semantic-input.json> <semantic-report.json> <replay-envelope.json>\n       omsi-manufacturing-validator audit-adapter-schema-coverage <adapter-map.json> <source-schema.json> <source-record.json>\n       omsi-manufacturing-validator verify-provenance-manifest <manifest.json> <source-record.json> <source-schema.json> <adapter-map.json> <schema-coverage-report.json> <projection-report.json> <semantic-input.json> <semantic-report.json> <replay-envelope.json>".into(),
+            "usage: omsi-manufacturing-validator validate-pmtime-fixtures <pmtime-fixtures.json>\\n       validate-syncaas <syncaas-fixtures.json>\n       omsi-manufacturing-validator validate-pnt-fixtures <pnt-fixtures.json>\n       omsi-manufacturing-validator validate-vectors <vectors.json>\n       omsi-manufacturing-validator evaluate-input <input.json | ->\n       omsi-manufacturing-validator create-envelope <input.json | ->\n       omsi-manufacturing-validator verify-envelope <envelope.json> <input.json | ->\n       omsi-manufacturing-validator benchmark-vectors <vectors.json> [iterations_per_case]\n       omsi-manufacturing-validator audit-adapter-map <adapter-map.json> <source-record.json>\n       omsi-manufacturing-validator apply-adapter-map <adapter-map.json> <source-record.json>\n       omsi-manufacturing-validator verify-transform-vectors <TRANSFORM-VECTORS.json>\n       omsi-manufacturing-validator create-provenance-manifest <source-record.json> <source-schema.json> <adapter-map.json> <schema-coverage-report.json> <projection-report.json> <semantic-input.json> <semantic-report.json> <replay-envelope.json>\n       omsi-manufacturing-validator audit-adapter-schema-coverage <adapter-map.json> <source-schema.json> <source-record.json>\n       omsi-manufacturing-validator verify-provenance-manifest <manifest.json> <source-record.json> <source-schema.json> <adapter-map.json> <schema-coverage-report.json> <projection-report.json> <semantic-input.json> <semantic-report.json> <replay-envelope.json>".into(),
         ),
     }
 }

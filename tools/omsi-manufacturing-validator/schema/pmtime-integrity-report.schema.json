@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:omsi:pmtime-integrity-report:0.1",
+  "title": "OMSI PMTime integrity report 0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "report_contract",
+    "status",
+    "authority",
+    "input_sha256",
+    "standard",
+    "required_dependency_domains",
+    "case_count_expected",
+    "case_count_discovered",
+    "case_ids",
+    "discovery_complete",
+    "metadata_valid",
+    "passed_count",
+    "failure_count",
+    "per_case",
+    "claim_ceiling",
+    "non_claims"
+  ],
+  "properties": {
+    "report_contract": {
+      "const": "omsi-pmtime-integrity-report/0.1"
+    },
+    "status": {
+      "enum": [
+        "passed",
+        "failed"
+      ]
+    },
+    "authority": {
+      "const": "synthetic_pmtime_record_integrity_and_declared_dependency_binding_only"
+    },
+    "input_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "standard": {
+      "type": "object"
+    },
+    "required_dependency_domains": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "case_count_expected": {
+      "const": 20
+    },
+    "case_count_discovered": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "case_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "discovery_complete": {
+      "type": "boolean"
+    },
+    "metadata_valid": {
+      "type": "boolean"
+    },
+    "passed_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "failure_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "per_case": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "expected",
+          "actual",
+          "passed",
+          "reason_codes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "expected": {
+            "type": "string"
+          },
+          "actual": {
+            "type": "string"
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "reason_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "claim_ceiling": {
+      "type": "string",
+      "minLength": 1
+    },
+    "non_claims": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
