@@ -335,6 +335,7 @@ pub enum ContextExperimentError {
     InvalidGroundTruth,
     GroundTruthEvidenceMissing,
     InvalidArmOrder,
+    DuplicateScenarioAttempt,
     EmptyReasonerSessionId,
     DuplicateReasonerSessionId,
     ReasonerSessionMismatch,
@@ -1092,6 +1093,21 @@ struct ContextBlockKey {
     attempt_id: u32,
 }
 
+fn same_scenario_profile(
+    left: &ContextExperimentProfile,
+    right: &ContextExperimentProfile,
+) -> bool {
+    left.scenario_revision_digest == right.scenario_revision_digest
+        && left.model_snapshot_digest == right.model_snapshot_digest
+        && left.prompt_digest == right.prompt_digest
+        && left.permission_profile_digest == right.permission_profile_digest
+        && left.tool_catalog_digest == right.tool_catalog_digest
+        && left.scorer_digest == right.scorer_digest
+        && left.reasoning_effort == right.reasoning_effort
+    // Sampling seeds are allowed to vary across attempts within the same
+    // scenario cluster; all other execution conditions remain pinned.
+}
+
 fn rate_ppm(numerator: usize, denominator: usize) -> u32 {
     if denominator == 0 {
         0
@@ -1230,6 +1246,7 @@ pub fn analyze_paired_context_results(
     let mut blocks: BTreeMap<ContextBlockKey, BTreeMap<ContextArm, &ContextArmResult>> =
         BTreeMap::new();
     let mut reasoner_session_ids = BTreeSet::new();
+    let mut scenario_attempts = BTreeSet::new();
 
     for result in results {
         if !non_empty(&result.scenario_id)
@@ -1253,6 +1270,13 @@ pub fn analyze_paired_context_results(
                 return Err(ContextExperimentError::DuplicateReasonerSessionId);
             }
         }
+        if !scenario_attempts.insert((
+            result.fault_family_id.clone(),
+            result.scenario_id.clone(),
+            result.attempt_id,
+        )) {
+            return Err(ContextExperimentError::DuplicateScenarioAttempt);
+        }
         let key = ContextBlockKey {
             fault_family_id: result.fault_family_id.clone(),
             scenario_id: result.scenario_id.clone(),
@@ -1262,6 +1286,25 @@ pub fn analyze_paired_context_results(
         let block = blocks.entry(key).or_default();
         if block.insert(result.arm, result).is_some() {
             return Err(ContextExperimentError::DuplicateArmResult);
+        }
+    }
+
+    let mut scenario_profiles: BTreeMap<
+        (String, String),
+        &ContextExperimentProfile,
+    > = BTreeMap::new();
+    for (key, block) in &blocks {
+        let first = block
+            .get(&ContextArm::RawSourceRecords)
+            .copied()
+            .ok_or(ContextExperimentError::IncompletePairedBlock)?;
+        let scenario_key = (key.fault_family_id.clone(), key.scenario_id.clone());
+        if let Some(reference) = scenario_profiles.get(&scenario_key) {
+            if !same_scenario_profile(reference, &first.profile) {
+                return Err(ContextExperimentError::ManifestMismatch);
+            }
+        } else {
+            scenario_profiles.insert(scenario_key, &first.profile);
         }
     }
 
@@ -2063,6 +2106,49 @@ mod tests {
         assert_eq!(
             analyze_paired_context_results(&mismatched, 0xC0FF_EE01_5EED_2026),
             Err(ContextExperimentError::ManifestMismatch)
+        );
+    }
+
+    #[test]
+    fn same_scenario_attempts_may_vary_sampling_seed_but_not_model_manifest() {
+        let mut results = Vec::new();
+        for attempt_id in 1..=2 {
+            for arm in CONTEXT_COMPILATION_ARMS {
+                let mut row = synthetic_arm_result(
+                    0,
+                    attempt_id,
+                    arm,
+                    true,
+                    true,
+                );
+                row.profile.sampling_seed = 100 + u64::from(attempt_id);
+                results.push(row);
+            }
+        }
+        assert!(analyze_paired_context_results(&results, 77).is_ok());
+
+        let mut mismatched = results.clone();
+        mismatched[5].profile.prompt_digest = Digest::from_byte(99);
+        assert_eq!(
+            analyze_paired_context_results(&mismatched, 77),
+            Err(ContextExperimentError::ManifestMismatch)
+        );
+    }
+
+    #[test]
+    fn duplicate_attempt_id_cannot_inflate_one_scenario_cluster() {
+        let mut results = Vec::new();
+        for block_copy in 0..2 {
+            for arm in CONTEXT_COMPILATION_ARMS {
+                let mut row = synthetic_arm_result(0, 1, arm, true, true);
+                row.paired_block_id = format!("duplicate-attempt-{block_copy}");
+                row.reasoner_session_id = Some(format!("session-{block_copy}-{arm:?}"));
+                results.push(row);
+            }
+        }
+        assert_eq!(
+            analyze_paired_context_results(&results, 77),
+            Err(ContextExperimentError::DuplicateScenarioAttempt)
         );
     }
 
