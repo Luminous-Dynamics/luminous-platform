@@ -141,7 +141,46 @@ uses multiobjective particle-swarm optimization plus TPS to balance ZVS range, r
 and reactive power, with peak efficiency above 95.9%. The next Luminous DAB optimizer should optimize
 this vector rather than simply maximizing efficiency.
 
-## 5. Explicit limitations and next work
+## 5. Resistive periodic RL model (implemented)
+
+The separate `dab_sps_resistive` module implements the same four SPS bridge-voltage segments with
+a lumped series resistance:
+
+`L di/dt + R_eq i = v1(t) - v2(t)`
+
+For each constant-voltage segment the exact solution is:
+
+`i(t) = I_inf + (i_start - I_inf) exp(-t/tau)`
+
+`tau = L/R_eq`, `I_inf = (v1-v2)/R_eq`.
+
+The four segment maps are composed into one-period affine recurrence
+`i(T) = A*i(0) + B`. For positive R, the steady-state initial current is solved from
+`i(0)=B/(1-A)`; for R=0, the lossless anti-periodic closed form is used. The current and current
+squared integrals are evaluated analytically within each segment. This avoids assuming zero mean
+current when a resistive branch creates a nonzero periodic offset.
+
+The result includes:
+- Periodic initial/final current and periodicity residual.
+- RMS and peak inductor current.
+- Average primary and secondary bridge-port powers.
+- Series-resistor loss `Irms²*R_eq`.
+- Energy-balance residual `P1 - P2 - Irms²*R_eq`.
+
+The port-power fields use the defined inductor-current reference and bridge square-wave polarities;
+their signed values reverse with the phase command. They should not be interpreted as meter
+readings until the current and voltage probe orientation of a physical setup is mapped to the same
+convention.
+
+For a 100 V / 100 V referred, 20 µH, 50 kHz, 15° lossless fixture the model reproduces 381.944 W
+and 4.049 A RMS. With a 50 mΩ lumped series resistance at 45° it closes the energy balance within
+floating-point tolerance in the analytical fixture.
+
+This is a one-branch RL model. It does not include nonlinear switching-device conduction, dead time,
+Coss, reverse recovery, transformer winding/core loss, magnetizing branch, stray capacitance,
+thermal coupling, control saturation or EMI. It is not a converter-level switching simulation.
+
+## 6. Explicit limitations and next work
 
 - No lossy periodicity solver is implemented.
 - No EPS/TPS current equations are implemented.
