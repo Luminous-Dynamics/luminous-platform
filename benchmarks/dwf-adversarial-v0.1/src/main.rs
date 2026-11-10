@@ -177,7 +177,7 @@ impl Model {
                     }
                 }
                 for (id, item) in &self.attempts {
-                    if item.dispatched {
+                    if item.dispatched && !self.accepted.contains(id) {
                         self.uncertain.insert(*id);
                     }
                 }
@@ -542,6 +542,7 @@ fn main_result() -> Result<(), Box<dyn Error>> {
     let mut max_events = 19_usize;
     let mut replay: Option<String> = None;
     let mut output: Option<String> = None;
+    let mut emit_schedule = false;
     let mut args = env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -549,13 +550,21 @@ fn main_result() -> Result<(), Box<dyn Error>> {
             "--schedules" => schedules = args.next().ok_or("--schedules needs a value")?.parse()?,
             "--max-events" => max_events = args.next().ok_or("--max-events needs a value")?.parse()?,
             "--replay" => replay = Some(args.next().ok_or("--replay needs a file")?),
+            "--emit-schedule" => emit_schedule = true,
             "--out" => output = Some(args.next().ok_or("--out needs a file")?),
             "--help" | "-h" => {
-                println!("dwf-adversarial [--seed N] [--schedules N] [--max-events N] [--replay events.json] [--out report.json]");
+                println!("dwf-adversarial [--seed N] [--schedules N] [--max-events N] [--emit-schedule] [--replay events.json] [--out report.json]");
                 return Ok(());
             }
             other => return Err(format!("unknown argument: {other}").into()),
         }
+    }
+
+    if emit_schedule {
+        let events = generate(seed, max_events);
+        let json = serde_json::to_string_pretty(&events)?;
+        if let Some(path) = output.as_deref() { fs::write(path, json)?; } else { println!("{json}"); }
+        return Ok(());
     }
 
     let json = if let Some(path) = replay {
