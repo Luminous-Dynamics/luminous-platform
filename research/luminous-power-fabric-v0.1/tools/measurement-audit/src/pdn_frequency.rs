@@ -267,11 +267,12 @@ pub fn audit_pdn_frequency_response(
         ));
     }
     let allocated_ac_ripple_budget_rms_v = allocated_ripple_square_sum.sqrt();
-    let budget_tolerance = 1.0e-12
+    let budget_tolerance = 64.0
+        * f64::EPSILON
         * input
             .available_ac_ripple_budget_rms_v
             .max(allocated_ac_ripple_budget_rms_v)
-            .max(1.0);
+            .max(f64::MIN_POSITIVE);
     let ripple_budget_within_limit = allocated_ac_ripple_budget_rms_v
         <= input.available_ac_ripple_budget_rms_v + budget_tolerance;
 
