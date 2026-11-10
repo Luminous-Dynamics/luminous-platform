@@ -67,7 +67,9 @@ pub fn evaluate_dc_rail_path(
         || input.load_voltage_v <= 0.0
         || input.loop_resistance_ohm < 0.0
         || input.maximum_voltage_drop_fraction <= 0.0
+        || input.maximum_voltage_drop_fraction >= 1.0
         || input.maximum_conduction_loss_fraction <= 0.0
+        || input.maximum_conduction_loss_fraction >= 1.0
     {
         return Err(AuditError(
             "DC rail-path power, voltage and limits must be positive; loop resistance must be non-negative"
@@ -108,6 +110,8 @@ pub fn evaluate_dc_rail_path(
         || source_input_power_w <= 0.0
         || path_efficiency_percent <= 0.0
         || path_efficiency_percent > 100.0
+        || maximum_loop_resistance_for_voltage_drop_ohm <= 0.0
+        || maximum_loop_resistance_for_conduction_loss_ohm <= 0.0
     {
         return Err(AuditError(
             "derived DC rail-path result is non-finite or outside its physical domain".to_string(),
@@ -185,6 +189,17 @@ mod tests {
         assert!(!report.within_declared_drop_limit);
         assert!(!report.within_declared_loss_limit);
         assert!(report.conductor_loss_w > 0.0);
+    }
+
+    #[test]
+    fn rejects_fraction_limits_outside_open_unit_interval() {
+        let mut too_high = input(50.0, 1.0e-3);
+        too_high.maximum_voltage_drop_fraction = 1.0;
+        let mut zero_loss = input(50.0, 1.0e-3);
+        zero_loss.maximum_conduction_loss_fraction = 0.0;
+
+        assert!(evaluate_dc_rail_path(too_high).is_err());
+        assert!(evaluate_dc_rail_path(zero_loss).is_err());
     }
 
     #[test]
