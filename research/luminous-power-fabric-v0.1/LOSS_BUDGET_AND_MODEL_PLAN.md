@@ -80,6 +80,13 @@ Using secondary voltage and leakage inductance both referred to the primary side
 The sign of φ follows the declared power direction: positive Port A→Port B, negative Port B→Port A.
 The API uses a referred secondary voltage directly to avoid a hidden transformer-ratio convention.
 
+The companion `leakage_inductance_for_power_and_phase` helper performs the inverse design-space
+calculation for a chosen transfer and phase-shift magnitude. At 48 V / 48 V referred, 100 kHz and
+500 W, an ideal 45° target gives 4.32 µH. This is only a starting equation: the actual transformer
+leakage, added series inductance, turns ratio and voltage-gain map must be derived from the selected
+physical design.
+
+
 ### Screening arithmetic for a 48 V, 100 kHz design
 
 With equal 48 V referred ports:
