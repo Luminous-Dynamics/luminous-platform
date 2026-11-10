@@ -496,6 +496,9 @@ fn relative_change(candidate: Option<f64>, baseline: Option<f64>) -> Option<f64>
 }
 
 fn pareto_dominates(left: &FleetCapacityCandidateResult, right: &FleetCapacityCandidateResult) -> bool {
+    if left.capacity_scaled.overhead_evidence != right.capacity_scaled.overhead_evidence {
+        return false;
+    }
     let (Some(left_energy), Some(right_energy), Some(left_power), Some(right_power)) = (
         left.capacity_scaled.total_system_energy_per_work_unit_j,
         right.capacity_scaled.total_system_energy_per_work_unit_j,
@@ -936,6 +939,8 @@ mod tests {
         assert!(result.total_system_power_w.is_none());
         assert!(result.total_system_energy_per_work_unit_j.is_none());
         assert!(!report.candidates[0].pareto_frontier_member);
+        assert!(!report.candidates[0].total_system_overhead_evidence_comparable);
+        assert!(report.candidates[0].capacity_scaled_total_system_power_change_fraction.is_none());
     }
 
     #[test]
