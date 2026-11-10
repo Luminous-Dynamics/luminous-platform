@@ -542,6 +542,7 @@ mod tests {
         let result = &report.candidate_results[0];
 
         assert!((result.power_shed_fraction - 0.05).abs() < 1.0e-12);
+        assert!((result.effective_energy_saved_j / 60.0 - 50.0).abs() < 1.0e-12);
         assert!((result.useful_work_retention_fraction - 1.0).abs() < 1.0e-12);
         assert!(result.meets_service_contract);
         assert!(result.meets_power_shed_gate);
