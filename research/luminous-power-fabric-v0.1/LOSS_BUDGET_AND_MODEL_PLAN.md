@@ -274,6 +274,33 @@ impedance from bridge angles, classify the paper's operating states, or infer ZV
 impedance alone. Those mappings are exactly where convention errors can invalidate a seemingly
 reasonable simulation.
 
+### Physical CLLC mapping and composite PNNN low-frequency screen (implemented)
+
+The Rust crate now exposes `map_cllc_tank_reactances`, which maps physical `Lr1, Cr1, Lr2, Cr2,
+Lm, n, fs` into the paper's signed `X1/X2/X3` reactances and reports both resonant frequencies and
+both magnetizing ratios. It does not silently impose symmetry.
+
+`classify_cllc_operating_state` classifies the signs of `Im(Y1)`, `Im(Y2)`, `Im(Y3)` and
+`Xeq` into the paper's 16 P/N states. Near-zero values remain unknown. The selected low-frequency
+boost target is PNNN:
+
+`Im(Y1)>0, Im(Y2)<0, Im(Y3)<0, Xeq<0`.
+
+`screen_cllc_pnnn_low_frequency_boost_state` composes the physical tank map, VF-TPS secondary
+impedance, T-network, PNNN state and Eq. (10) frequency window. It also checks the paper's symmetry
+assumption by comparing `fr1/fr2` and `k1/k2` using a caller-supplied relative tolerance.
+
+A pass means only:
+1. The declared tank satisfies the equal-resonant-frequency and equal-magnetizing-ratio assumptions
+   to the declared tolerance.
+2. The T-network signs classify as PNNN.
+3. The actual switching frequency lies strictly inside the paper's low-frequency boost interval
+   after controller limits are intersected.
+
+It does **not** establish the FHA gain requirement, the constant-power ZVS boundary, unity-gain ZVS,
+maximum-gain capability, Coss/dead-time commutation, thermal feasibility or power delivery. Those
+remain separate checks.
+
 ### Required state-constrained extension
 
 Huang et al. (IEICE Electronics Express, online 30 October 2026, DOI 10.1587/elex.23.20260463)
