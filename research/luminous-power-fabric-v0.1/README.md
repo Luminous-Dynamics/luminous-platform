@@ -178,6 +178,10 @@ impedance from caller-supplied signed branch reactances and secondary complex lo
 Mapping actual CLLC components and secondary modulation into those inputs, then checking paper-state
 constraints and ZVS, remains engineering work. See the model plan for the exact claim boundary.
 
+The T-network module also screens the published low-frequency boost-mode frequency interval
+and intersects it with controller limits. Other CLLC state, ZVS and maximum-gain constraints remain
+separate unimplemented work.
+
 ## Current limitations
 
 This package is a research specification. No hardware, PCB, firmware, converter model, benchmark
