@@ -123,6 +123,114 @@ pub fn evaluate_cllc_fha_gain(input: ClLcFhaInput) -> Result<ClLcFhaResult, Audi
     })
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ClLcSampledTrend {
+    Increasing,
+    Decreasing,
+    NonDecreasing,
+    NonIncreasing,
+    Flat,
+    NonMonotonic,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ClLcGainPoint {
+    pub normalized_frequency: f64,
+    pub normalized_voltage_gain: f64,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ClLcFhaCurveResult {
+    pub direction: ClLcDirection,
+    pub magnetizing_to_resonant_inductance_ratio: f64,
+    pub quality_factor: f64,
+    pub points: Vec<ClLcGainPoint>,
+    /// Classification applies only to the supplied discrete frequency samples.
+    /// It is not a proof of continuous-band monotonicity.
+    pub sampled_trend: ClLcSampledTrend,
+}
+
+impl ClLcFhaCurveResult {
+    pub const fn claim_ceiling(&self) -> &'static str {
+        "DISCRETE_CLLC_FHA_GAIN_SCAN_ONLY_NOT_CONTINUOUS_MONOTONICITY_OR_ZVS_PROOF"
+    }
+}
+
+/// Evaluate the FHA gain over a strictly increasing list of normalized frequencies.
+///
+/// This is useful for *screening* gain branches and identifying sampled turning
+/// points. A finite grid cannot prove that the continuous gain curve is monotonic,
+/// and gain monotonicity alone does not prove inductive input impedance or ZVS.
+pub fn scan_cllc_fha_gain_curve(
+    magnetizing_to_resonant_inductance_ratio: f64,
+    quality_factor: f64,
+    direction: ClLcDirection,
+    normalized_frequencies: &[f64],
+) -> Result<ClLcFhaCurveResult, AuditError> {
+    if normalized_frequencies.len() < 2 {
+        return Err(AuditError(
+            "CLLC gain scan requires at least two normalized-frequency samples".to_string(),
+        ));
+    }
+
+    let mut points = Vec::with_capacity(normalized_frequencies.len());
+    for (index, &frequency) in normalized_frequencies.iter().enumerate() {
+        if index > 0 && frequency <= normalized_frequencies[index - 1] {
+            return Err(AuditError(
+                "CLLC gain scan frequencies must be strictly increasing".to_string(),
+            ));
+        }
+        let evaluated = evaluate_cllc_fha_gain(ClLcFhaInput {
+            magnetizing_to_resonant_inductance_ratio,
+            quality_factor,
+            normalized_frequency: frequency,
+            direction,
+        })?;
+        points.push(ClLcGainPoint {
+            normalized_frequency: frequency,
+            normalized_voltage_gain: evaluated.normalized_voltage_gain,
+        });
+    }
+
+    let mut non_decreasing = true;
+    let mut non_increasing = true;
+    for pair in points.windows(2) {
+        if pair[1].normalized_voltage_gain < pair[0].normalized_voltage_gain {
+            non_decreasing = false;
+        }
+        if pair[1].normalized_voltage_gain > pair[0].normalized_voltage_gain {
+            non_increasing = false;
+        }
+    }
+
+    let sampled_trend = match (non_decreasing, non_increasing) {
+        (true, true) => ClLcSampledTrend::Flat,
+        (true, false) => {
+            if points.windows(2).all(|p| p[1].normalized_voltage_gain > p[0].normalized_voltage_gain) {
+                ClLcSampledTrend::Increasing
+            } else {
+                ClLcSampledTrend::NonDecreasing
+            }
+        }
+        (false, true) => {
+            if points.windows(2).all(|p| p[1].normalized_voltage_gain < p[0].normalized_voltage_gain) {
+                ClLcSampledTrend::Decreasing
+            } else {
+                ClLcSampledTrend::NonIncreasing
+            }
+        }
+        (false, false) => ClLcSampledTrend::NonMonotonic,
+    };
+
+    Ok(ClLcFhaCurveResult {
+        direction,
+        magnetizing_to_resonant_inductance_ratio,
+        quality_factor,
+        points,
+        sampled_trend,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::{evaluate_cllc_fha_gain, ClLcDirection, ClLcFhaInput};
@@ -181,6 +289,52 @@ mod tests {
         assert_eq!(discharge.direction, ClLcDirection::Discharging);
         assert_ne!(charge.quality_factor, discharge.quality_factor);
         assert_ne!(charge.normalized_voltage_gain, discharge.normalized_voltage_gain);
+    }
+
+    #[test]
+    fn scans_a_sampled_gain_branch_and_classifies_trend() {
+        let result = super::scan_cllc_fha_gain_curve(
+            3.51,
+            0.3,
+            ClLcDirection::Charging,
+            &[1.0, 1.1, 1.2, 1.4, 1.6],
+        )
+        .unwrap();
+        assert_eq!(result.points.len(), 5);
+        assert_eq!(result.sampled_trend, super::ClLcSampledTrend::Decreasing);
+        assert_eq!(
+            result.claim_ceiling(),
+            "DISCRETE_CLLC_FHA_GAIN_SCAN_ONLY_NOT_CONTINUOUS_MONOTONICITY_OR_ZVS_PROOF"
+        );
+    }
+
+    #[test]
+    fn rejects_unsorted_or_duplicate_gain_scan_frequencies() {
+        assert!(super::scan_cllc_fha_gain_curve(
+            3.51,
+            0.3,
+            ClLcDirection::Charging,
+            &[0.8, 1.0, 0.9],
+        )
+        .is_err());
+        assert!(super::scan_cllc_fha_gain_curve(
+            3.51,
+            0.3,
+            ClLcDirection::Charging,
+            &[0.8, 0.8],
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn rejects_short_gain_scan() {
+        assert!(super::scan_cllc_fha_gain_curve(
+            3.51,
+            0.3,
+            ClLcDirection::Charging,
+            &[1.0],
+        )
+        .is_err());
     }
 
     #[test]
