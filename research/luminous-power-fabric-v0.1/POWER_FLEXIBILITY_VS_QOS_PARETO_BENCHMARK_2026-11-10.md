@@ -29,7 +29,7 @@ Freeze the following before comparing a control action:
 
 Baseline and candidate must use the same workload contract, request mix, quality contract, physical boundary, exact time window and initial stored energy. This first version rejects a mismatched scenario rather than attempting to resample or normalize away the mismatch.
 
-Candidate power can be modified, but the service contract cannot silently change.
+Candidate power can be modified, but the service contract cannot silently change. Mean PCC power is derived from the integrated PCC energy divided by the exact measurement duration; it is not accepted as a second independent input that could conflict with the energy integral.
 
 ## 3. Required metrics
 
