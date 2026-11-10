@@ -232,7 +232,10 @@ establish actual ZVS. See [LOSS_BUDGET_AND_MODEL_PLAN.md](./LOSS_BUDGET_AND_MODE
 
 ## Current limitations
 
-This package is a research specification. No hardware, PCB, firmware, converter model, benchmark
-runner, thermal design or safety certification is claimed to exist. The first implementation work
-is requirements, evidence tooling and a validated model; hardware energization remains gated by
-specialist review and a controlled laboratory.
+This package contains analytical screening models and offline data-audit tools; it does **not**
+contain a validated non-ideal switching model, a fabricated PCB, a power-stage prototype, calibrated
+physical measurements, HIL correlation, production tooling or safety certification. The DAB and
+CLLC models remain bounded by their documented ideal/FHA/equation assumptions. No result is a
+physical ZVS guarantee or permission to energize hardware. High-voltage and grid-connected product
+families remain architecture/research tracks only. Hardware energization remains gated on qualified
+engineering review, fault/energy analysis, suitable laboratory containment and a reviewed procedure.
