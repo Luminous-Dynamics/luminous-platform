@@ -1,0 +1,314 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/dataset-registry-v0.1.schema.json",
+  "title": "Luminous Power Fabric Dataset Registry v0.1",
+  "description": "Dataset provenance, licence and sampling metadata. Validation does not download, inspect, hash or authorize use of dataset binaries.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "registry_id", "retrieval_date_utc", "entries"],
+  "properties": {
+    "schema_version": {
+      "const": "luminous-dataset-registry-v0.1"
+    },
+    "registry_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "retrieval_date_utc": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/entry"
+      }
+    }
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dataset_id",
+        "title",
+        "source_url",
+        "publisher",
+        "retrieval_date_utc",
+        "availability",
+        "evidence_class",
+        "physical_boundary",
+        "access_method",
+        "notes",
+        "supported_uses",
+        "license",
+        "citation",
+        "required_notices",
+        "access_granted"
+      ],
+      "properties": {
+        "dataset_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "doi": {
+          "type": ["string", "null"]
+        },
+        "source_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "publisher": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": ["string", "null"]
+        },
+        "retrieval_date_utc": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "availability": {
+          "enum": ["PUBLIC_AVAILABLE", "ACCESS_CONTROLLED", "PENDING_RELEASE", "PLANNED"]
+        },
+        "evidence_class": {
+          "enum": [
+            "PHYSICAL_MEASUREMENT",
+            "MODELLED_FACILITY",
+            "PREPRINT_DESCRIBED_UNVERIFIED",
+            "PLANNED_RESEARCH"
+          ]
+        },
+        "physical_boundary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "file_format": {
+          "type": ["string", "null"]
+        },
+        "size_bytes": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "file_count": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "access_method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "maximum_sample_interval_ns": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "sensor_bandwidth_hz": {
+          "type": ["number", "null"],
+          "exclusiveMinimum": 0
+        },
+        "anti_alias_filter_verified": {
+          "type": ["boolean", "null"]
+        },
+        "fast_claim_bandwidth_hz": {
+          "type": ["number", "null"],
+          "exclusiveMinimum": 0
+        },
+        "supported_uses": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "ENERGY_ACCOUNTING",
+              "SLOW_WORKLOAD_DYNAMICS",
+              "FACILITY_LOAD_MODELLING",
+              "POWER_FLEXIBILITY_AND_QOS",
+              "FAST_ELECTRICAL_TRANSIENT"
+            ]
+          }
+        },
+        "license": {
+          "$ref": "#/$defs/license"
+        },
+        "citation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "required_notices": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "access_granted": {
+          "type": "boolean"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "availability": {
+                "enum": ["PENDING_RELEASE", "PLANNED"]
+              }
+            },
+            "required": ["availability"]
+          },
+          "then": {
+            "properties": {
+              "access_granted": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "supported_uses": {
+                "contains": {
+                  "const": "FAST_ELECTRICAL_TRANSIENT"
+                }
+              }
+            },
+            "required": ["supported_uses"]
+          },
+          "then": {
+            "required": [
+              "maximum_sample_interval_ns",
+              "sensor_bandwidth_hz",
+              "anti_alias_filter_verified",
+              "fast_claim_bandwidth_hz"
+            ],
+            "properties": {
+              "evidence_class": {
+                "const": "PHYSICAL_MEASUREMENT"
+              },
+              "anti_alias_filter_verified": {
+                "const": true
+              },
+              "sensor_bandwidth_hz": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "fast_claim_bandwidth_hz": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "license": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "license_id",
+        "license_url",
+        "verification_source_url",
+        "verified",
+        "commercial_use_allowed",
+        "derivatives_allowed",
+        "redistribution_allowed",
+        "attribution_required",
+        "no_endorsement_required"
+      ],
+      "properties": {
+        "license_id": {
+          "type": ["string", "null"]
+        },
+        "license_url": {
+          "type": ["string", "null"],
+          "format": "uri"
+        },
+        "verification_source_url": {
+          "type": ["string", "null"],
+          "format": "uri"
+        },
+        "verified": {
+          "type": "boolean"
+        },
+        "commercial_use_allowed": {
+          "type": ["boolean", "null"]
+        },
+        "derivatives_allowed": {
+          "type": ["boolean", "null"]
+        },
+        "redistribution_allowed": {
+          "type": ["boolean", "null"]
+        },
+        "attribution_required": {
+          "type": "boolean"
+        },
+        "no_endorsement_required": {
+          "type": "boolean"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "verified": {
+                "const": true
+              }
+            },
+            "required": ["verified"]
+          },
+          "then": {
+            "properties": {
+              "license_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "license_url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "verification_source_url": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "verified": {
+                "const": false
+              }
+            },
+            "required": ["verified"]
+          },
+          "then": {
+            "properties": {
+              "commercial_use_allowed": {
+                "const": null
+              },
+              "derivatives_allowed": {
+                "const": null
+              },
+              "redistribution_allowed": {
+                "const": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
