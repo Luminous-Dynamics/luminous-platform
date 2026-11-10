@@ -260,10 +260,10 @@ correlation assessment.
 | PF-029 | Reproduce the 500 W fixed-frequency LLC / bridge-leg-voltage-control topology paper | Symthaea + Symtropy | Source-linked topology, loss tree, control degrees of freedom and matched test conditions |
 | PF-030 | Map 800 VDC rack/sidecar architecture, voltage interfaces and protection coordination requirements | Symthaea + Sol-Atlas + Symtropy | Requirements and standards routing matrix; no high-voltage bench work |
 | PF-031 | Define a modular high-voltage DC/DC building-block contract and interoperability tests | Product architecture | Versioned electrical, mechanical, thermal, protection, service and evidence interfaces |
-| PF-032 | Build whole-facility energy accounting across AC/DC conversion stages, cooling, storage and distribution | Symtropy | Explicit mission profile and matched energy-flow model; no efficiency claim before validation |
-| PF-029 | Compare lossless DAB SPS model to resistive periodic RL solver as Req→0 | Rust tooling + Symtropy | Reference vectors for power, RMS current, periodicity and energy-balance residual |
-| PF-030 | Extend resistive DAB model to mission-profile sweeps over voltage ratio, phase and Req | Symtropy | Full maps with infeasible / high-stress points retained |
-| PF-031 | Add DAB switch-level Coss / dead-time commutation and device thermal models | Symtropy + power-electronics review | Device-specific datasheet-backed parameters and measured waveform correlation plan |
+| PF-037 | Build whole-facility energy accounting across AC/DC conversion stages, cooling, storage and distribution | Symtropy | Explicit mission profile and matched energy-flow model; no efficiency claim before validation |
+| PF-038 | Compare lossless DAB SPS model to resistive periodic RL solver as Req→0 | Rust tooling + Symtropy | Reference vectors for power, RMS current, periodicity and energy-balance residual |
+| PF-039 | Extend resistive DAB model to mission-profile sweeps over voltage ratio, phase and Req | Symtropy | Full maps with infeasible / high-stress points retained |
+| PF-040 | Add DAB switch-level Coss / dead-time commutation and device thermal models | Symtropy + power-electronics review | Device-specific datasheet-backed parameters and measured waveform correlation plan |
 | PF-034 | Freeze a representative DAB mission profile and candidate parameter grid | Symthaea + engineering review | Immutable point IDs, weights, voltage referral, power direction and environmental assumptions |
 | PF-035 | Run deterministic RL-SPS DAB candidate sweep and Pareto filter | Rust tooling + Symtropy | Every point retained with failures; weighted efficiency, delivery, current, analytic ZVS and thermal margins |
 | PF-036 | Validate mission-sweep direction, weighting, loss accounting and Pareto behavior against independent arithmetic | Rust tooling + reviewer | Forward/reverse power-boundary checks, energy balance, dominant/ non-dominant fixtures |
