@@ -9,6 +9,7 @@
 | Reference | Publicly reported capability | Correct use in comparison | Limitation |
 |---|---|---|---|
 | IEEE Open Journal of Power Electronics, 3 Jun 2026, DOI 10.1109/OJPEL.2026.3699737 | Three experimentally validated DC/DC PEBB topologies for modular SST; 98.55% reported peak efficiency | Literature anchor for modular isolated DC/DC topology research | Not a matched 48 V / 500 W product; operating point, boundaries and topology differ |
+| IEEE Access, 23 Apr 2026, DOI 10.1109/ACCESS.2026.3686835 | Experimentally validated 25 kW dual DAB–CLLC architecture; 200–1000 V operating range; 98.37% peak charging / 97.82% peak discharging; reconfigurable series/parallel module arrangement | Research anchor for range-adaptive, composable PEBBs | EV charging power/voltage class; not a matched 48 V / 500 W benchmark |
 | ABB SACE Infinitus | Up to 2,500 A / 1,250 V DC; interruption down to 25 μs; IEC 60947-2 certified; combines solid-state interruption and electromechanical isolation | Commercial benchmark for mature solid-state DC protection | Different product, power class, thermal/cooling design and application; do not compare its interruption time to a converter |
 | ESIG, Sep 2025, Testing the Performance of Grid-Forming Resources | Methods and metrics for voltage-source behavior of grid-forming resources | Future microgrid AC interface test-plan basis | Not a converter efficiency benchmark; tailor to system and grid conditions |
 | National Laboratory of the Rockies PHIL | 1.08 MVA and 7 MVA grid simulators described for power hardware-in-the-loop | Future system-level hardware validation ambition | Facility capability is not a pass criterion for a 500 W DC/DC unit |
@@ -17,6 +18,13 @@
 A vendor's published maximum, a research-paper peak, and a measured Luminous result are different
 evidence classes. Record the original boundary and never imply apples-to-apples equivalence without
 matched conditions.
+
+
+A second 2026 paper shows that modular reconfiguration can be more important than simply selecting
+one resonant or bridge topology: its 25 kW dual DAB–CLLC design changes module series/parallel
+arrangement to accommodate a 200–1000 V battery-side range. Treat this as a later architecture
+research direction. PEBB-LV-01 has a narrow 36–60 V port envelope and should not inherit unnecessary
+reconfiguration complexity.
 
 ## 2. PEBB-LV-01 proposed target matrix
 
