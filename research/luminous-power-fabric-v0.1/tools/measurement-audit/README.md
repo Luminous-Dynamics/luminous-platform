@@ -134,6 +134,20 @@ A PNNN/window pass is only this paper-specific operating-state screen. It does n
 constant-power or unity-gain ZVS boundaries, maximum gain, device commutation energy, losses, thermal
 limits or hardware safety.
 
+## DAB mission profile and Pareto sweep
+
+The crate exposes `dab_mission_sweep::evaluate_dab_design_candidate` and
+`evaluate_dab_design_set`. It evaluates every frozen, weighted operating point using the ideal SPS
+phase screen, lossless exact-current formulas and resistive periodic RL model. It records delivered
+power at the correct receiving port in both directions, efficiency, loss, current, FHA error,
+analytic ZVS-polarity coverage and a one-node thermal estimate. Infeasible points are retained with
+explicit failure reasons.
+
+A Pareto frontier is returned only among candidates feasible at every declared mission point. It
+keeps mission efficiency, power-delivery ratio, analytic ZVS-polarity coverage, peak current and
+thermal margin as separate objectives. This is not a product optimizer: the models remain lumped,
+idealized and uncorrelated with real hardware.
+
 ## Explicit limitations
 
 - The CLI direction is supplied as an argument; it is not yet bound to or cross-checked against the
