@@ -7,7 +7,7 @@
     "benchmark_id": "SCB-HDC-001",
     "title": "Exact BinaryHV retrieval",
     "revision": "0.1.0",
-    "protocol_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    "protocol_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
   },
   "evidence_class": "modelled",
   "result_unit": "independently_accepted_correct_result",
