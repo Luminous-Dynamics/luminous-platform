@@ -12,6 +12,8 @@
 | IEEE Access, 23 Apr 2026, DOI 10.1109/ACCESS.2026.3686835 | Experimentally validated 25 kW dual DAB–CLLC architecture; 200–1000 V operating range; 98.37% peak charging / 97.82% peak discharging; reconfigurable series/parallel module arrangement | Research anchor for range-adaptive, composable PEBBs | EV charging power/voltage class; not a matched 48 V / 500 W benchmark |
 | ELSİS BIDIR Module (official product page / datasheet) | 500 W bidirectional low-voltage buck-boost; 9–60 V input; 3.3–48 V adjustable output; vendor states >97% efficiency and >97% at full rated load | Closest functional commercial 500 W bidirectional low-voltage baseline | Public spec does not state galvanic isolation or fully define efficiency test conditions; vendor result, not independent lab result |
 | MPS MPC10106-54-0500 (Q4 2024 brochure) | 500 W continuous, 40–60 V input, 8:1 non-isolated LLC, 2,634 W/in³ stated density and 97.8% peak efficiency | 48 V data-centre density / point-of-load conversion reference | Not bidirectional or isolated; fixed-ratio low-voltage output |
+| MPS MPC10106-B-54-0500 (2025 brochure) | 500 W-class, 40–60 V input, 8:1 non-isolated LLC, 3,019 W/in³ and 97.65% peak efficiency | Newer 48 V data-centre power-density reference | Different SKU / brochure from the 2024 module; not bidirectional or isolated |
+| Wang et al., 500 W bidirectional CLLC (June 2026) | ZVS prototype; 97.6% peak forward-transfer efficiency; FHA and soft-switching-constrained resonant design | Same-rated-power laboratory topology benchmark | Abstract does not establish a matched reverse-flow or full-envelope efficiency map; not a direct PEBB-LV-01 result |
 | Vicor V48A48C500 family | 500 W, 48 V output, 36–75 V input, 3 kV isolation, 89.7% typical efficiency at nominal input / 75% load / 25 °C per family data | Adjacent isolated-module reference | Not bidirectional; verify exact SKU and revision; not matched to PEBB-LV-01 |
 | ABB SACE Infinitus | Up to 2,500 A / 1,250 V DC; interruption down to 25 μs; IEC 60947-2 certified; combines solid-state interruption and electromechanical isolation | Commercial benchmark for mature solid-state DC protection | Different product, power class, thermal/cooling design and application; do not compare its interruption time to a converter |
 | ESIG, Sep 2025, Testing the Performance of Grid-Forming Resources | Methods and metrics for voltage-source behavior of grid-forming resources | Future microgrid AC interface test-plan basis | Not a converter efficiency benchmark; tailor to system and grid conditions |
@@ -30,6 +32,17 @@ research direction. PEBB-LV-01 has a narrow 36–60 V port envelope and should n
 reconfiguration complexity.
 
 **Target-setting correction:** ≥97% is a functional Rev-A target, not a claim to beat the industry.
+The June 2026 500 W bidirectional CLLC study reports 97.6% peak forward-transfer efficiency. ELSİS
+advertises >97% at full rated load current for its 500 W bidirectional buck-boost module, while the
+ELSİS datasheet's cover says >95% and its detailed features say >97% at full rated load current.
+MPS's newer 2025 brochure reports 97.65% peak for a separate 500 W non-isolated 48 V LLC module.
+These figures have different boundaries and directions; none is a matched independent comparison.
+See [INDUSTRY_BASELINE.md](./INDUSTRY_BASELINE.md).
+
+The first competitive target should therefore be ≥98.0% at explicitly matched nominal operating
+points **in both directions**, with a separately reported complete efficiency surface. This is a
+proposed stretch objective, not a guaranteed result. Keep ≥97% as the functional gate until the
+non-ideal model, full paper test conditions and uncertainty budget are reconciled.
 ELSİS advertises >97% at full rated load for a 500 W bidirectional buck-boost module, and MPS
 advertises 97.8% peak for a different 500 W non-isolated 48 V LLC stage. These are not matched to
 our isolated DAB/CLLC target, but they show that headline efficiency alone is insufficient. The
@@ -57,6 +70,19 @@ guarantees. Revisit them after the topology model and first lab data.
 | Repair | Document one replaceable module boundary | Replace power stage / controller / fan independently where feasible | Verify post-repair requalification in a versioned test plan |
 | Reliability | Build a mission-profile model and fault tree | Screen power/thermal cycling on a documented sample | Independent lifetime correlation; no lifetime extrapolation without validated models |
 | Evidence | Preserve test input and output bytes | Calibration, uncertainty, firmware, BOM and test conditions bound to every run | Independent offline verifier and external reproducibility |
+
+### 500 W loss-budget comparison
+
+At 500 W output, the loss equivalents are:
+- 97.0%: 15.464 W maximum total loss.
+- 97.6%: 12.295 W maximum total loss.
+- 98.0%: 10.204 W maximum total loss.
+- 98.5%: 7.614 W maximum total loss.
+
+This turns the 98% objective into an explicit approximately 2.09 W reduction from the loss equivalent
+of a 97.6% result. These are arithmetic allowances, not model outputs. The new
+[loss-budget engine and topology plan](./LOSS_BUDGET_AND_MODEL_PLAN.md) preserves term provenance and
+uncertainty rather than inventing component loss values.
 
 ### Efficiency targets and why they are deliberately staged
 
