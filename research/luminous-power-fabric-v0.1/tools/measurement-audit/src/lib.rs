@@ -1,6 +1,7 @@
 use std::io::BufRead;
 
 pub mod loss_budget;
+pub mod energy_chain;
 pub mod dab_sps;
 pub mod dab_sps_physics;
 pub mod dab_sps_resistive;
