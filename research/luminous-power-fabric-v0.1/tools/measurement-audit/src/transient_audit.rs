@@ -59,6 +59,10 @@ pub struct RailTransientAudit {
     pub maximum_overshoot_v: f64,
     pub maximum_undershoot_percent: f64,
     pub maximum_overshoot_percent: f64,
+    pub maximum_allowed_voltage_deviation_v: f64,
+    /// First-order scalar budget = allowed voltage deviation / declared current step.
+    /// This is not a frequency-dependent measured PDN impedance.
+    pub first_order_target_impedance_budget_ohm: f64,
     pub rail_voltage_within_tolerance_at_end: bool,
     /// First in-band sample after the step that remains in-band through the
     /// evaluation end, with at least the declared dwell observed.
@@ -244,6 +248,15 @@ pub fn audit_rail_transient(
         100.0 * maximum_undershoot_v / event.nominal_rail_voltage_v;
     let maximum_overshoot_percent =
         100.0 * maximum_overshoot_v / event.nominal_rail_voltage_v;
+    let maximum_allowed_voltage_deviation_v =
+        event.nominal_rail_voltage_v * event.voltage_tolerance_fraction;
+    if target_load_step_delta_a.abs() <= f64::EPSILON {
+        return Err(AuditError(
+            "transient event must declare a non-zero target current step".to_string(),
+        ));
+    }
+    let first_order_target_impedance_budget_ohm =
+        maximum_allowed_voltage_deviation_v / target_load_step_delta_a.abs();
     let lower_voltage_limit =
         event.nominal_rail_voltage_v * (1.0 - event.voltage_tolerance_fraction);
     let upper_voltage_limit =
@@ -290,6 +303,8 @@ pub fn audit_rail_transient(
         maximum_overshoot_v,
         maximum_undershoot_percent,
         maximum_overshoot_percent,
+        maximum_allowed_voltage_deviation_v,
+        first_order_target_impedance_budget_ohm,
         maximum_rail_deviation_percent,
     ];
     if derived.iter().any(|value| !value.is_finite())
@@ -321,6 +336,8 @@ pub fn audit_rail_transient(
         maximum_overshoot_v,
         maximum_undershoot_percent,
         maximum_overshoot_percent,
+        maximum_allowed_voltage_deviation_v,
+        first_order_target_impedance_budget_ohm,
         rail_voltage_within_tolerance_at_end: last.rail_voltage_v >= lower_voltage_limit
             && last.rail_voltage_v <= upper_voltage_limit,
         settling_time_ns,
@@ -395,6 +412,7 @@ mod tests {
         assert!((report.measured_load_step_delta_a - 320.0).abs() < 1.0e-9);
         assert!((report.maximum_upward_load_slew_a_per_us - 800.0).abs() < 1.0e-9);
         assert!((report.maximum_undershoot_v - 0.03).abs() < 1.0e-9);
+        assert!((report.first_order_target_impedance_budget_ohm - 56.25e-6).abs() < 1.0e-10);
         assert_eq!(report.settling_time_ns, Some(300));
         assert!(report.post_step_current_within_tolerance);
     }
