@@ -46,8 +46,12 @@ pub struct EnergyLoadSegment {
 pub struct EnergyChainScenario {
     pub id: String,
     pub name: String,
+    /// Three-letter ISO 4217 currency code for the tariff, e.g. ZAR or USD.
+    pub currency_code: String,
     pub electricity_price_per_kwh: f64,
+    pub electricity_price_reference: String,
     pub grid_carbon_kg_per_kwh: f64,
+    pub grid_carbon_reference: String,
     pub stages: Vec<EnergyStage>,
     pub segments: Vec<EnergyLoadSegment>,
 }
@@ -95,6 +99,11 @@ pub struct EnergyChainReport {
     pub facility_input_energy_kwh: f64,
     pub total_chain_loss_energy_kwh: f64,
     pub annual_end_to_end_efficiency_percent: f64,
+    pub currency_code: String,
+    pub electricity_price_per_kwh: f64,
+    pub electricity_price_reference: String,
+    pub grid_carbon_kg_per_kwh: f64,
+    pub grid_carbon_reference: String,
     pub annual_electricity_cost: f64,
     pub annual_grid_emissions_kg: f64,
     pub stages: Vec<EnergyStageEnergy>,
@@ -168,6 +177,22 @@ pub fn evaluate_energy_chain(
     require_nonblank(&scenario.id, "scenario.id")?;
     require_nonblank(&scenario.name, "scenario.name")?;
 
+    require_nonblank(&scenario.currency_code, "scenario.currency_code")?;
+    if scenario.currency_code.len() != 3
+        || !scenario.currency_code.bytes().all(|b| b.is_ascii_uppercase())
+    {
+        return Err(AuditError(
+            "currency_code must be a three-letter uppercase ISO 4217 code".to_string(),
+        ));
+    }
+    require_nonblank(
+        &scenario.electricity_price_reference,
+        "scenario.electricity_price_reference",
+    )?;
+    require_nonblank(
+        &scenario.grid_carbon_reference,
+        "scenario.grid_carbon_reference",
+    )?;
     if !scenario.electricity_price_per_kwh.is_finite()
         || scenario.electricity_price_per_kwh < 0.0
     {
@@ -427,6 +452,11 @@ pub fn evaluate_energy_chain(
         facility_input_energy_kwh: total_input_energy_kwh,
         total_chain_loss_energy_kwh,
         annual_end_to_end_efficiency_percent: annual_efficiency,
+        currency_code: scenario.currency_code.clone(),
+        electricity_price_per_kwh: scenario.electricity_price_per_kwh,
+        electricity_price_reference: scenario.electricity_price_reference.clone(),
+        grid_carbon_kg_per_kwh: scenario.grid_carbon_kg_per_kwh,
+        grid_carbon_reference: scenario.grid_carbon_reference.clone(),
         annual_electricity_cost,
         annual_grid_emissions_kg,
         stages: stage_totals,
@@ -464,8 +494,11 @@ mod tests {
         EnergyChainScenario {
             id: "synthetic-chain-1".to_string(),
             name: "Synthetic two-stage DC conversion chain".to_string(),
+            currency_code: "ZAR".to_string(),
             electricity_price_per_kwh: 0.20,
+            electricity_price_reference: "synthetic:tariff".to_string(),
             grid_carbon_kg_per_kwh: 0.70,
+            grid_carbon_reference: "synthetic:grid-carbon".to_string(),
             stages: vec![
                 stage("dcx", "800V-to-50V DCX"),
                 stage("bus", "50V-to-load converter"),
@@ -609,6 +642,28 @@ mod tests {
 
         let mut s = scenario();
         s.segments.push(s.segments[0].clone());
+        assert!(evaluate_energy_chain(&s).is_err());
+    }
+
+    #[test]
+    fn rejects_missing_tariff_and_carbon_provenance() {
+        let mut s = scenario();
+        s.electricity_price_reference.clear();
+        assert!(evaluate_energy_chain(&s).is_err());
+
+        let mut s = scenario();
+        s.grid_carbon_reference.clear();
+        assert!(evaluate_energy_chain(&s).is_err());
+    }
+
+    #[test]
+    fn rejects_invalid_currency_code() {
+        let mut s = scenario();
+        s.currency_code = "usd".to_string();
+        assert!(evaluate_energy_chain(&s).is_err());
+
+        let mut s = scenario();
+        s.currency_code = "US".to_string();
         assert!(evaluate_energy_chain(&s).is_err());
     }
 
