@@ -52,14 +52,24 @@ pub struct EnergyChainScenario {
     pub segments: Vec<EnergyLoadSegment>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EnergyEvidenceReference {
+    pub kind: EnergyEvidenceKind,
+    pub reference: String,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct EnergyStageEnergy {
     pub stage_id: String,
     pub stage_name: String,
+    pub boundary: String,
     pub input_energy_kwh: f64,
     pub output_energy_kwh: f64,
     /// Includes conversion loss and the stage's input-side standby / auxiliary draw.
     pub total_energy_loss_kwh: f64,
+    /// Original evidence references are retained in both segment and annual summaries.
+    pub efficiency_evidence: Vec<EnergyEvidenceReference>,
+    pub standby_evidence: Vec<EnergyEvidenceReference>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -72,7 +82,7 @@ pub struct EnergySegmentReport {
     pub delivered_energy_kwh: f64,
     pub facility_input_energy_kwh: f64,
     pub chain_loss_energy_kwh: f64,
-    pub end_to_end_efficiency_percent: f64,
+    pub end_to_end_efficiency_percent: Option<f64>,
     pub stages: Vec<EnergyStageEnergy>,
 }
 
@@ -142,6 +152,11 @@ fn validate_stage_point(
 /// efficiencies must already include the stated stage boundary; do not add
 /// separately measured parasitics again if they are already within that boundary.
 ///
+/// The load segments must cover exactly 8,760 hours so standby / idle intervals cannot
+/// silently disappear from an annual cost calculation. A zero-load segment is allowed;
+/// give it explicit stage standby inputs if the equipment remains energized. A fully
+/// de-energized interval has zero input/output and an undefined segment efficiency.
+///
 /// This tool does not model voltage regulation, harmonics, power factor, cable
 /// impedance, busbar I²R loss, dynamic load transients, storage dispatch, cooling
 /// plant outside the declared stages, availability, degradation or uncertainty
@@ -200,9 +215,9 @@ pub fn evaluate_energy_chain(
                 segment.name
             )));
         }
-        if !segment.delivered_load_power_w.is_finite() || segment.delivered_load_power_w <= 0.0 {
+        if !segment.delivered_load_power_w.is_finite() || segment.delivered_load_power_w < 0.0 {
             return Err(AuditError(format!(
-                "segment {:?}: delivered load power must be positive and finite",
+                "segment {:?}: delivered load power must be non-negative and finite",
                 segment.name
             )));
         }
@@ -233,6 +248,12 @@ pub fn evaluate_energy_chain(
         }
     }
 
+    if (total_hours - 8_760.0).abs() > 1e-6 {
+        return Err(AuditError(format!(
+            "load profile must cover exactly 8,760 hours; found {total_hours:.6}. Include explicit idle / standby segments rather than omitting them."
+        )));
+    }
+
     let stage_count = scenario.stages.len();
     let mut total_delivered_energy_kwh = 0.0_f64;
     let mut total_input_energy_kwh = 0.0_f64;
@@ -242,9 +263,12 @@ pub fn evaluate_energy_chain(
         .map(|stage| EnergyStageEnergy {
             stage_id: stage.id.clone(),
             stage_name: stage.name.clone(),
+            boundary: stage.boundary.clone(),
             input_energy_kwh: 0.0,
             output_energy_kwh: 0.0,
             total_energy_loss_kwh: 0.0,
+            efficiency_evidence: Vec::new(),
+            standby_evidence: Vec::new(),
         })
         .collect();
     let mut segment_reports = Vec::with_capacity(scenario.segments.len());
@@ -261,11 +285,11 @@ pub fn evaluate_energy_chain(
                 output_power_w / point.efficiency_fraction + point.standby_input_power_w;
 
             if !input_power_w.is_finite()
-                || input_power_w <= output_power_w
-                || input_power_w <= 0.0
+                || input_power_w < output_power_w
+                || (output_power_w > 0.0 && input_power_w <= 0.0)
             {
                 return Err(AuditError(format!(
-                    "segment {:?}, stage {:?}: derived input power must be finite and greater than output power",
+                    "segment {:?}, stage {:?}: derived input power must be finite and not below output power",
                     segment.name, scenario.stages[index].name
                 )));
             }
@@ -279,21 +303,24 @@ pub fn evaluate_energy_chain(
         let delivered_energy_kwh = segment.delivered_load_power_w * hours / 1_000.0;
         let facility_input_energy_kwh = downstream_power_w * hours / 1_000.0;
         let chain_loss_energy_kwh = facility_input_energy_kwh - delivered_energy_kwh;
-        let end_to_end_efficiency_percent =
-            100.0 * delivered_energy_kwh / facility_input_energy_kwh;
+        let end_to_end_efficiency_percent = if facility_input_energy_kwh > 0.0 {
+            Some(100.0 * delivered_energy_kwh / facility_input_energy_kwh)
+        } else {
+            None
+        };
 
         if [
             delivered_energy_kwh,
             facility_input_energy_kwh,
             chain_loss_energy_kwh,
-            end_to_end_efficiency_percent,
         ]
         .iter()
         .any(|value| !value.is_finite())
-            || delivered_energy_kwh <= 0.0
-            || facility_input_energy_kwh <= delivered_energy_kwh
-            || chain_loss_energy_kwh <= 0.0
-            || !(0.0..100.0).contains(&end_to_end_efficiency_percent)
+            || delivered_energy_kwh < 0.0
+            || facility_input_energy_kwh < delivered_energy_kwh
+            || chain_loss_energy_kwh < -1e-10
+            || end_to_end_efficiency_percent
+                .is_some_and(|value| !value.is_finite() || !(0.0..=100.0).contains(&value))
         {
             return Err(AuditError(format!(
                 "segment {:?}: derived energy balance is invalid",
@@ -309,6 +336,14 @@ pub fn evaluate_energy_chain(
             stage_totals[index].input_energy_kwh += input_energy;
             stage_totals[index].output_energy_kwh += output_energy;
             stage_totals[index].total_energy_loss_kwh += loss_energy;
+            stage_totals[index].efficiency_evidence.push(EnergyEvidenceReference {
+                kind: segment.stage_operating_points[index].efficiency_evidence,
+                reference: segment.stage_operating_points[index].efficiency_reference.clone(),
+            });
+            stage_totals[index].standby_evidence.push(EnergyEvidenceReference {
+                kind: segment.stage_operating_points[index].standby_evidence,
+                reference: segment.stage_operating_points[index].standby_reference.clone(),
+            });
         }
 
         segment_reports.push(EnergySegmentReport {
@@ -328,12 +363,21 @@ pub fn evaluate_energy_chain(
                 .map(|(index, stage)| EnergyStageEnergy {
                     stage_id: stage.id.clone(),
                     stage_name: stage.name.clone(),
+                    boundary: stage.boundary.clone(),
                     input_energy_kwh: per_stage_input_power_w[index] * hours / 1_000.0,
                     output_energy_kwh: per_stage_output_power_w[index] * hours / 1_000.0,
                     total_energy_loss_kwh: (per_stage_input_power_w[index]
                         - per_stage_output_power_w[index])
                         * hours
                         / 1_000.0,
+                    efficiency_evidence: vec![EnergyEvidenceReference {
+                        kind: segment.stage_operating_points[index].efficiency_evidence,
+                        reference: segment.stage_operating_points[index].efficiency_reference.clone(),
+                    }],
+                    standby_evidence: vec![EnergyEvidenceReference {
+                        kind: segment.stage_operating_points[index].standby_evidence,
+                        reference: segment.stage_operating_points[index].standby_reference.clone(),
+                    }],
                 })
                 .collect(),
         });
@@ -344,7 +388,8 @@ pub fn evaluate_energy_chain(
 
     if !total_delivered_energy_kwh.is_finite()
         || !total_input_energy_kwh.is_finite()
-        || total_input_energy_kwh <= total_delivered_energy_kwh
+        || total_input_energy_kwh <= 0.0
+        || total_input_energy_kwh + 1e-10 < total_delivered_energy_kwh
     {
         return Err(AuditError(
             "annual energy aggregation is invalid or overflowed".to_string(),
@@ -484,8 +529,8 @@ mod tests {
 
         let report = evaluate_energy_chain(&s).unwrap();
         assert_eq!(report.segments.len(), 2);
-        assert!(report.segments[0].end_to_end_efficiency_percent
-            < report.segments[1].end_to_end_efficiency_percent);
+        assert!(report.segments[0].end_to_end_efficiency_percent.unwrap()
+            < report.segments[1].end_to_end_efficiency_percent.unwrap());
         assert!((report.total_hours_per_year - 8_760.0).abs() < 1e-9);
     }
 
@@ -516,6 +561,36 @@ mod tests {
     fn rejects_missing_standby_provenance() {
         let mut s = scenario();
         s.segments[0].stage_operating_points[0].standby_reference.clear();
+        assert!(evaluate_energy_chain(&s).is_err());
+    }
+
+    #[test]
+    fn accepts_explicit_zero_load_standby_interval() {
+        let mut s = scenario();
+        s.segments[0].hours_per_year = 8_000.0;
+        s.segments[0].delivered_load_power_w = 1_000.0;
+        s.segments.push(EnergyLoadSegment {
+            id: "idle".to_string(),
+            name: "Energized idle".to_string(),
+            hours_per_year: 760.0,
+            delivered_load_power_w: 0.0,
+            stage_operating_points: vec![
+                point(0.95, 4.0, "synthetic:dcx:idle"),
+                point(0.90, 1.0, "synthetic:bus:idle"),
+            ],
+        });
+
+        let report = evaluate_energy_chain(&s).unwrap();
+        let idle = report.segments.iter().find(|segment| segment.segment_id == "idle").unwrap();
+        assert_eq!(idle.delivered_energy_kwh, 0.0);
+        assert!(idle.facility_input_energy_kwh > 0.0);
+        assert_eq!(idle.end_to_end_efficiency_percent, Some(0.0));
+    }
+
+    #[test]
+    fn rejects_incomplete_annual_hours() {
+        let mut s = scenario();
+        s.segments[0].hours_per_year = 8_000.0;
         assert!(evaluate_energy_chain(&s).is_err());
     }
 
