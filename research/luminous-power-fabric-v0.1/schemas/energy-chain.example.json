@@ -1,0 +1,56 @@
+{
+  "schema_version": "0.1",
+  "record_class": "synthetic_fixture",
+  "id": "PF-SYNTHETIC-800V-FACILITY-CHAIN-0001",
+  "name": "Illustrative 800V-to-50V-to-IT load conversion chain",
+  "currency_code": "ZAR",
+  "electricity_price_per_kwh": 0.2,
+  "electricity_price_reference": "synthetic:tariff-only-for-schema-fixture",
+  "grid_carbon_kg_per_kwh": 0.7,
+  "grid_carbon_reference": "synthetic:grid-carbon-only-for-schema-fixture",
+  "stages": [
+    {
+      "id": "dcx-800-50",
+      "name": "800V-to-50V isolated DCX",
+      "boundary": "800V DC facility bus -> 50V DC bus"
+    },
+    {
+      "id": "dc-dc-load",
+      "name": "50V-to-load converter",
+      "boundary": "50V bus -> final IT/electronic load"
+    }
+  ],
+  "segments": [
+    {
+      "id": "full-load",
+      "name": "Illustrative 1kW full load",
+      "hours_per_year": 8760,
+      "delivered_load_power_w": 1000,
+      "stage_operating_points": [
+        {
+          "efficiency_fraction": 0.98,
+          "standby_input_power_w": 5,
+          "efficiency_evidence": "assumption",
+          "efficiency_reference": "synthetic:assumed-dcx-efficiency",
+          "standby_evidence": "assumption",
+          "standby_reference": "synthetic:assumed-dcx-standby"
+        },
+        {
+          "efficiency_fraction": 0.97,
+          "standby_input_power_w": 2,
+          "efficiency_evidence": "assumption",
+          "efficiency_reference": "synthetic:assumed-load-converter-efficiency",
+          "standby_evidence": "assumption",
+          "standby_reference": "synthetic:assumed-load-converter-standby"
+        }
+      ]
+    }
+  ],
+  "claim_ceiling": "PARAMETERIZED_CONVERSION_CHAIN_ENERGY_ACCOUNTING_ONLY_NOT_SITE_MEASUREMENT_OR_EFFICIENCY_CLAIM",
+  "limitations": [
+    "Every numeric input is invented solely to demonstrate the schema.",
+    "This is not an OCP reference design, data-centre model, utility study, product claim or site measurement.",
+    "The annual profile is one constant-load segment; real comparisons require measured or properly sourced load-dependent efficiency and standby maps for every stage.",
+    "Cooling, storage, busbars, protection, availability, dynamic load and emissions-factor time variation are not represented unless explicitly added."
+  ]
+}
