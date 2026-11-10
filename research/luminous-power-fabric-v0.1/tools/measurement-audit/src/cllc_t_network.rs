@@ -99,6 +99,241 @@ pub fn screen_cllc_low_frequency_boost_window(
     })
 }
 
+/// Physical resonant-tank parameters using the paper's primary-to-secondary
+/// turns-ratio convention n:1. Secondary series quantities are referred using n²
+/// in the reactance mapping in Eq. (6).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ClLcTankParameters {
+    pub switching_frequency_hz: f64,
+    pub primary_resonant_inductance_h: f64,
+    pub primary_resonant_capacitance_f: f64,
+    pub secondary_resonant_inductance_h: f64,
+    pub secondary_resonant_capacitance_f: f64,
+    pub magnetizing_inductance_h: f64,
+    pub turns_ratio_primary_to_secondary: f64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ClLcTankReactances {
+    pub x1_primary_series_ohm: f64,
+    pub x2_secondary_referred_series_ohm: f64,
+    pub x3_magnetizing_ohm: f64,
+    pub primary_series_resonant_frequency_hz: f64,
+    pub secondary_series_resonant_frequency_hz: f64,
+    pub primary_magnetizing_ratio_k1: f64,
+    pub secondary_referred_magnetizing_ratio_k2: f64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReactanceSign {
+    Inductive,
+    Capacitive,
+    NearZero,
+}
+
+impl ReactanceSign {
+    fn state_letter(self) -> Option<char> {
+        match self {
+            Self::Inductive => Some('P'),
+            Self::Capacitive => Some('N'),
+            Self::NearZero => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ClLcOperatingState {
+    /// Order is Im(Y1), Im(Y2), Im(Y3), Xeq, following the cited paper.
+    pub y1_sign: ReactanceSign,
+    pub y2_sign: ReactanceSign,
+    pub y3_sign: ReactanceSign,
+    pub xeq_sign: ReactanceSign,
+    /// None when any term is within its explicitly declared zero tolerance.
+    pub state_code: Option<String>,
+    pub is_pnnn: bool,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ClLcVfTpsTankEvaluation {
+    pub reactances: ClLcTankReactances,
+    pub secondary_equivalent_impedance: ComplexValue,
+    pub network: ClLcTNetworkResult,
+    pub operating_state: ClLcOperatingState,
+}
+
+fn classify_sign(value: f64, zero_tolerance: f64) -> ReactanceSign {
+    if value > zero_tolerance {
+        ReactanceSign::Inductive
+    } else if value < -zero_tolerance {
+        ReactanceSign::Capacitive
+    } else {
+        ReactanceSign::NearZero
+    }
+}
+
+/// Map a physical CLLC resonant tank to the paper's signed T-network reactances.
+///
+/// X1 = omega*Lr1 - 1/(omega*Cr1)
+/// X2 = omega*n²*Lr2 - 1/(omega*n²*Cr2)
+/// X3 = omega*Lm
+///
+/// Also returns fr1, fr2, k1=Lm/Lr1 and k2=Lm/(n²*Lr2). The paper's
+/// low-frequency state-window derivation assumes fr1=fr2 and k1=k2; this
+/// function reports both values rather than silently forcing symmetry.
+pub fn map_cllc_tank_reactances(
+    tank: ClLcTankParameters,
+) -> Result<ClLcTankReactances, AuditError> {
+    let values = [
+        tank.switching_frequency_hz,
+        tank.primary_resonant_inductance_h,
+        tank.primary_resonant_capacitance_f,
+        tank.secondary_resonant_inductance_h,
+        tank.secondary_resonant_capacitance_f,
+        tank.magnetizing_inductance_h,
+        tank.turns_ratio_primary_to_secondary,
+    ];
+    if values.iter().any(|value| !value.is_finite() || *value <= 0.0) {
+        return Err(AuditError(
+            "CLLC frequency, L/C values, magnetizing inductance and turns ratio must be positive and finite"
+                .to_string(),
+        ));
+    }
+
+    let omega = 2.0 * std::f64::consts::PI * tank.switching_frequency_hz;
+    let n2 = tank.turns_ratio_primary_to_secondary.powi(2);
+    let x1 = omega * tank.primary_resonant_inductance_h
+        - 1.0 / (omega * tank.primary_resonant_capacitance_f);
+    let x2 = omega * n2 * tank.secondary_resonant_inductance_h
+        - 1.0 / (omega * n2 * tank.secondary_resonant_capacitance_f);
+    let x3 = omega * tank.magnetizing_inductance_h;
+
+    let fr1 = 1.0
+        / (2.0
+            * std::f64::consts::PI
+            * (tank.primary_resonant_inductance_h * tank.primary_resonant_capacitance_f).sqrt());
+    let fr2 = 1.0
+        / (2.0
+            * std::f64::consts::PI
+            * (tank.secondary_resonant_inductance_h * tank.secondary_resonant_capacitance_f).sqrt());
+    let k1 = tank.magnetizing_inductance_h / tank.primary_resonant_inductance_h;
+    let k2 = tank.magnetizing_inductance_h
+        / (n2 * tank.secondary_resonant_inductance_h);
+
+    let output = [x1, x2, x3, fr1, fr2, k1, k2];
+    if output.iter().any(|value| !value.is_finite()) {
+        return Err(AuditError(
+            "CLLC physical-tank mapping produced non-finite reactances or ratios".to_string(),
+        ));
+    }
+
+    Ok(ClLcTankReactances {
+        x1_primary_series_ohm: x1,
+        x2_secondary_referred_series_ohm: x2,
+        x3_magnetizing_ohm: x3,
+        primary_series_resonant_frequency_hz: fr1,
+        secondary_series_resonant_frequency_hz: fr2,
+        primary_magnetizing_ratio_k1: k1,
+        secondary_referred_magnetizing_ratio_k2: k2,
+    })
+}
+
+/// Classify the sixteen sign states defined by the cited CLLC T-network paper.
+///
+/// P means positive/inductive; N means negative/capacitive. The order is
+/// Im(Y1), Im(Y2), Im(Y3), Xeq. Near-zero values are not forced into P or N.
+pub fn classify_cllc_operating_state(
+    network: &ClLcTNetworkResult,
+    secondary_equivalent_reactance_ohm: f64,
+    admittance_zero_tolerance_s: f64,
+    reactance_zero_tolerance_ohm: f64,
+) -> Result<ClLcOperatingState, AuditError> {
+    if !secondary_equivalent_reactance_ohm.is_finite()
+        || !admittance_zero_tolerance_s.is_finite()
+        || admittance_zero_tolerance_s < 0.0
+        || !reactance_zero_tolerance_ohm.is_finite()
+        || reactance_zero_tolerance_ohm < 0.0
+    {
+        return Err(AuditError(
+            "CLLC state classifier requires finite Xeq and non-negative finite zero tolerances"
+                .to_string(),
+        ));
+    }
+
+    let y1_sign = classify_sign(network.y1_s.im, admittance_zero_tolerance_s);
+    let y2_sign = classify_sign(network.y2_s.im, admittance_zero_tolerance_s);
+    let y3_sign = classify_sign(network.y3_s.im, admittance_zero_tolerance_s);
+    let xeq_sign = classify_sign(
+        secondary_equivalent_reactance_ohm,
+        reactance_zero_tolerance_ohm,
+    );
+
+    let code = [
+        y1_sign.state_letter(),
+        y2_sign.state_letter(),
+        y3_sign.state_letter(),
+        xeq_sign.state_letter(),
+    ];
+    let state_code = if code.iter().all(Option::is_some) {
+        Some(code.iter().map(|value| value.unwrap()).collect())
+    } else {
+        None
+    };
+
+    Ok(ClLcOperatingState {
+        y1_sign,
+        y2_sign,
+        y3_sign,
+        xeq_sign,
+        is_pnnn: state_code.as_deref() == Some("PNNN"),
+        state_code,
+    })
+}
+
+/// Evaluate the physical tank mapping, paper-specific VF-TPS secondary bridge
+/// equivalent and generic T-network; then classify the resulting sign state.
+///
+/// PNNN is the paper's selected low-frequency boost target state. A PNNN
+/// classification is necessary for that state definition but is not by itself
+/// proof of ZVS: the selected frequency window, gain, power trajectory,
+/// commutation energy/Coss/dead time, RMS/peak current and thermal constraints
+/// remain separate requirements.
+pub fn evaluate_cllc_vftps_physical_tank(
+    tank: ClLcTankParameters,
+    secondary_dc_load_ohm: f64,
+    secondary_bridge_phase_shift_rad: f64,
+    secondary_ac_voltage_current_phase_rad: f64,
+    admittance_zero_tolerance_s: f64,
+    reactance_zero_tolerance_ohm: f64,
+) -> Result<ClLcVfTpsTankEvaluation, AuditError> {
+    let reactances = map_cllc_tank_reactances(tank)?;
+    let secondary_equivalent_impedance = secondary_vftps_equivalent_impedance(
+        secondary_dc_load_ohm,
+        tank.turns_ratio_primary_to_secondary,
+        secondary_bridge_phase_shift_rad,
+        secondary_ac_voltage_current_phase_rad,
+    )?;
+    let network = evaluate_cllc_t_network(ClLcTNetworkInput {
+        x1_ohm: reactances.x1_primary_series_ohm,
+        x2_ohm: reactances.x2_secondary_referred_series_ohm,
+        x3_ohm: reactances.x3_magnetizing_ohm,
+        secondary_equivalent_resistance_ohm: secondary_equivalent_impedance.re,
+        secondary_equivalent_reactance_ohm: secondary_equivalent_impedance.im,
+    })?;
+    let operating_state = classify_cllc_operating_state(
+        &network,
+        secondary_equivalent_impedance.im,
+        admittance_zero_tolerance_s,
+        reactance_zero_tolerance_ohm,
+    )?;
+
+    Ok(ClLcVfTpsTankEvaluation {
+        reactances,
+        secondary_equivalent_impedance,
+        network,
+        operating_state,
+    })
+}
+
 /// Minimal complex number type for the small-signal FHA impedance network.
 /// Re = real part, Im = imaginary part, with the documented exp(+j omega t)
 /// phasor convention for this generic evaluator.
@@ -476,6 +711,77 @@ mod tests {
         input.magnetizing_to_resonant_inductance_ratio = 3.0;
         input.controller_minimum_frequency_hz = 100_000.0;
         assert!(super::screen_cllc_low_frequency_boost_window(input).is_err());
+    }
+
+    #[test]
+    fn maps_physical_cllc_tank_to_paper_reactances() {
+        let tank = super::ClLcTankParameters {
+            switching_frequency_hz: 90_000.0,
+            primary_resonant_inductance_h: 10e-6,
+            primary_resonant_capacitance_f: 1.0 / (
+                (2.0 * std::f64::consts::PI * 115_000.0).powi(2) * 10e-6
+            ),
+            secondary_resonant_inductance_h: 10e-6,
+            secondary_resonant_capacitance_f: 1.0 / (
+                (2.0 * std::f64::consts::PI * 115_000.0).powi(2) * 10e-6
+            ),
+            magnetizing_inductance_h: 30e-6,
+            turns_ratio_primary_to_secondary: 1.0,
+        };
+        let result = super::map_cllc_tank_reactances(tank).unwrap();
+        assert!(result.x1_primary_series_ohm < 0.0);
+        assert!(result.x2_secondary_referred_series_ohm < 0.0);
+        assert!(result.x3_magnetizing_ohm > 0.0);
+        assert!((result.primary_series_resonant_frequency_hz - 115_000.0).abs() < 1e-6);
+        assert!((result.secondary_series_resonant_frequency_hz - 115_000.0).abs() < 1e-6);
+        assert!((result.primary_magnetizing_ratio_k1 - 3.0).abs() < 1e-12);
+        assert!((result.secondary_referred_magnetizing_ratio_k2 - 3.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn classifies_pnnn_from_the_paper_sign_convention() {
+        let result = super::evaluate_cllc_t_network(example()).unwrap();
+        let state = super::classify_cllc_operating_state(&result, -1.0, 0.0, 0.0).unwrap();
+        assert_eq!(state.state_code.as_deref(), Some("PNNN"));
+        assert!(state.is_pnnn);
+    }
+
+    #[test]
+    fn near_zero_signs_are_unknown_not_forced_positive_or_negative() {
+        let result = super::evaluate_cllc_t_network(example()).unwrap();
+        let state = super::classify_cllc_operating_state(
+            &result,
+            -1.0,
+            0.2,
+            0.0,
+        )
+        .unwrap();
+        assert_eq!(state.state_code, None);
+        assert!(!state.is_pnnn);
+        assert_eq!(state.y2_sign, super::ReactanceSign::NearZero);
+    }
+
+    #[test]
+    fn composes_physical_tank_vftps_impedance_and_state() {
+        let fr = 115_000.0;
+        let l = 10e-6;
+        let c = 1.0 / ((2.0 * std::f64::consts::PI * fr).powi(2) * l);
+        let tank = super::ClLcTankParameters {
+            switching_frequency_hz: 90_000.0,
+            primary_resonant_inductance_h: l,
+            primary_resonant_capacitance_f: c,
+            secondary_resonant_inductance_h: l,
+            secondary_resonant_capacitance_f: c,
+            magnetizing_inductance_h: 30e-6,
+            turns_ratio_primary_to_secondary: 1.0,
+        };
+        let result = super::evaluate_cllc_vftps_physical_tank(
+            tank, 10.0, 0.2, -0.1, 1e-12, 1e-12
+        )
+        .unwrap();
+        assert!(result.reactances.x1_primary_series_ohm < 0.0);
+        assert!(result.operating_state.is_pnnn);
+        assert_eq!(result.operating_state.state_code.as_deref(), Some("PNNN"));
     }
 
     #[test]
