@@ -141,6 +141,11 @@ DAB–CLLC building blocks, low-voltage GaN-versus-silicon trade-offs, CLLC cont
 repair-first modular power architecture. It updates the research direction without freezing a
 topology for PEBB-LV-01.
 
+## Industry comparison
+
+See [INDUSTRY_BASELINE.md](./INDUSTRY_BASELINE.md) for current 500 W commercial comparators and
+the matched head-to-head plan. In particular, 97% efficiency is not by itself a SOTA claim.
+
 ## Current limitations
 
 This package is a research specification. No hardware, PCB, firmware, converter model, benchmark
