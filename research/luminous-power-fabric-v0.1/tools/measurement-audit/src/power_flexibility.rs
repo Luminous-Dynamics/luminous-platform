@@ -194,10 +194,6 @@ pub struct PowerFlexibilitySweepReport {
     pub claim_ceiling: &'static str,
 }
 
-fn near_equal(left: f64, right: f64) -> bool {
-    (left - right).abs() <= 1.0e-9 * left.abs().max(right.abs()).max(1.0)
-}
-
 fn validate_matched_runs(
     baseline: &FlexibilityRun,
     candidate: &FlexibilityRun,
