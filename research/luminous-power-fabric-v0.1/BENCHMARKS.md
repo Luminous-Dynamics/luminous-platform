@@ -86,6 +86,29 @@ are not a 48 V / 500 W match. Use it as a design-method reference, not an effici
 Both papers reinforce the importance of a state-constrained feasibility region rather than selecting
 a tank from gain alone.
 
+### Full-profile and multi-objective research frontiers
+
+- A 7.3 kW CLLLC-RDAB prototype reports 97.1–97.8% over its entire 200–500 V charging profile at
+  400 V input / 100 kHz, with nearly identical reverse efficiency. This raises the benchmark beyond
+  a peak point: evaluate efficiency weighted by the actual mission profile and report forward /
+  reverse symmetry. It is not a 500 W low-voltage match.
+- A 1 kW DAB study reports >95.9% peak efficiency while optimizing ZVS range, rating utilization and
+  reactive power using MOPSO + TPS. We should add these as distinct Pareto metrics, not only peak
+  efficiency.
+- A 2026 physics-informed SPS DAB study shows FHA error reaches ~7.9% at 15° and 27.3% at 90° in its
+  baseline. Our DAB model should report approximation error and switch to exact piecewise current /
+  power evaluation where FHA exceeds the declared error budget.
+
+For PEBB-LV-01, proposed next-stage research targets (not guarantees):
+- ≥97.5% mission-weighted full-map system efficiency in each direction once the topology and
+  measurement boundary are fixed; ≥98.0% at selected nominal points as a stretch objective.
+- 100% of the declared operating map must satisfy hard voltage/current/thermal/insulation constraints.
+- Report ZVS-polarity coverage separately from verified device-level ZVS coverage; no percentage is
+  allowed to imply measured commutation unless switch waveforms support it.
+- Publish RMS and peak current, reactive VA, rating utilization, auxiliary power and uncertainty at
+  every map point.
+- Compare loss-per-kWh and lifetime service cost, not just peak efficiency.
+
 ### 500 W loss-budget comparison
 
 At 500 W output, the loss equivalents are:
