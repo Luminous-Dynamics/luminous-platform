@@ -334,6 +334,111 @@ pub fn evaluate_cllc_vftps_physical_tank(
     })
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ClLcPaperStateScreenInput {
+    pub tank: ClLcTankParameters,
+    pub secondary_dc_load_ohm: f64,
+    pub secondary_bridge_phase_shift_rad: f64,
+    pub secondary_ac_voltage_current_phase_rad: f64,
+    pub controller_minimum_frequency_hz: f64,
+    pub controller_maximum_frequency_hz: f64,
+    /// Relative tolerance used to compare fr1/fr2 and k1/k2.
+    pub symmetry_relative_tolerance: f64,
+    pub admittance_zero_tolerance_s: f64,
+    pub reactance_zero_tolerance_ohm: f64,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ClLcPaperStateScreenResult {
+    pub physical_tank: ClLcVfTpsTankEvaluation,
+    pub low_frequency_boost_window: ClLcLowFrequencyBoostWindowResult,
+    pub resonant_frequencies_symmetric: bool,
+    pub magnetizing_ratios_symmetric: bool,
+    pub symmetry_assumption_valid: bool,
+    pub actual_frequency_in_window: bool,
+    pub passes_declared_pnnn_boost_screen: bool,
+}
+
+fn relative_difference(a: f64, b: f64) -> f64 {
+    (a - b).abs() / a.abs().max(b.abs()).max(f64::MIN_POSITIVE)
+}
+
+/// Compose physical tank mapping, VF-TPS secondary impedance, T-network state,
+/// and the paper's low-frequency boost frequency window.
+///
+/// A pass means only that (i) the declared tank satisfies the paper's symmetry
+/// assumption within the caller's tolerance, (ii) its computed Y1/Y2/Y3/Xeq
+/// signs classify as PNNN, and (iii) the actual switching frequency lies inside
+/// the paper's open low-frequency boost window after intersecting the controller
+/// range. It does NOT include FHA voltage-gain limits, the paper's constant-power
+/// ZVS boundary, unity-gain ZVS, maximum-gain, Coss/dead-time commutation, current
+/// stress or thermal constraints.
+pub fn screen_cllc_pnnn_low_frequency_boost_state(
+    input: ClLcPaperStateScreenInput,
+) -> Result<ClLcPaperStateScreenResult, AuditError> {
+    if !input.symmetry_relative_tolerance.is_finite()
+        || input.symmetry_relative_tolerance < 0.0
+        || input.symmetry_relative_tolerance >= 1.0
+    {
+        return Err(AuditError(
+            "CLLC symmetry relative tolerance must be finite and in [0, 1)".to_string(),
+        ));
+    }
+
+    let physical_tank = evaluate_cllc_vftps_physical_tank(
+        input.tank,
+        input.secondary_dc_load_ohm,
+        input.secondary_bridge_phase_shift_rad,
+        input.secondary_ac_voltage_current_phase_rad,
+        input.admittance_zero_tolerance_s,
+        input.reactance_zero_tolerance_ohm,
+    )?;
+    let reactances = physical_tank.reactances;
+
+    let resonant_frequencies_symmetric = relative_difference(
+        reactances.primary_series_resonant_frequency_hz,
+        reactances.secondary_series_resonant_frequency_hz,
+    ) <= input.symmetry_relative_tolerance;
+    let magnetizing_ratios_symmetric = relative_difference(
+        reactances.primary_magnetizing_ratio_k1,
+        reactances.secondary_referred_magnetizing_ratio_k2,
+    ) <= input.symmetry_relative_tolerance;
+    let symmetry_assumption_valid =
+        resonant_frequencies_symmetric && magnetizing_ratios_symmetric;
+
+    let low_frequency_boost_window = screen_cllc_low_frequency_boost_window(
+        ClLcLowFrequencyBoostWindowInput {
+            primary_series_resonant_frequency_hz:
+                reactances.primary_series_resonant_frequency_hz,
+            secondary_series_resonant_frequency_hz:
+                reactances.secondary_series_resonant_frequency_hz,
+            magnetizing_to_resonant_inductance_ratio:
+                reactances.primary_magnetizing_ratio_k1,
+            controller_minimum_frequency_hz: input.controller_minimum_frequency_hz,
+            controller_maximum_frequency_hz: input.controller_maximum_frequency_hz,
+        },
+    )?;
+    let actual_frequency_in_window = low_frequency_boost_window.feasible
+        && input.tank.switching_frequency_hz
+            > low_frequency_boost_window.effective_lower_bound_hz
+        && input.tank.switching_frequency_hz
+            < low_frequency_boost_window.effective_upper_bound_hz;
+
+    let passes_declared_pnnn_boost_screen = symmetry_assumption_valid
+        && physical_tank.operating_state.is_pnnn
+        && actual_frequency_in_window;
+
+    Ok(ClLcPaperStateScreenResult {
+        physical_tank,
+        low_frequency_boost_window,
+        resonant_frequencies_symmetric,
+        magnetizing_ratios_symmetric,
+        symmetry_assumption_valid,
+        actual_frequency_in_window,
+        passes_declared_pnnn_boost_screen,
+    })
+}
+
 /// Minimal complex number type for the small-signal FHA impedance network.
 /// Re = real part, Im = imaginary part, with the documented exp(+j omega t)
 /// phasor convention for this generic evaluator.
@@ -783,6 +888,106 @@ mod tests {
         assert!(result.reactances.x1_primary_series_ohm < 0.0);
         assert!(result.operating_state.is_pnnn);
         assert_eq!(result.operating_state.state_code.as_deref(), Some("PNNN"));
+    }
+
+    #[test]
+    fn composite_pnnn_low_frequency_boost_screen_passes_synthetic_reference() {
+        let fr = 115_000.0;
+        let l = 10e-6;
+        let c = 1.0 / ((2.0 * std::f64::consts::PI * fr).powi(2) * l);
+        let result = super::screen_cllc_pnnn_low_frequency_boost_state(
+            super::ClLcPaperStateScreenInput {
+                tank: super::ClLcTankParameters {
+                    switching_frequency_hz: 90_000.0,
+                    primary_resonant_inductance_h: l,
+                    primary_resonant_capacitance_f: c,
+                    secondary_resonant_inductance_h: l,
+                    secondary_resonant_capacitance_f: c,
+                    magnetizing_inductance_h: 30e-6,
+                    turns_ratio_primary_to_secondary: 1.0,
+                },
+                secondary_dc_load_ohm: 10.0,
+                secondary_bridge_phase_shift_rad: 0.2,
+                secondary_ac_voltage_current_phase_rad: -0.1,
+                controller_minimum_frequency_hz: 50_000.0,
+                controller_maximum_frequency_hz: 120_000.0,
+                symmetry_relative_tolerance: 1e-9,
+                admittance_zero_tolerance_s: 1e-12,
+                reactance_zero_tolerance_ohm: 1e-12,
+            },
+        )
+        .unwrap();
+
+        assert!(result.symmetry_assumption_valid);
+        assert!(result.actual_frequency_in_window);
+        assert!(result.physical_tank.operating_state.is_pnnn);
+        assert!(result.passes_declared_pnnn_boost_screen);
+    }
+
+    #[test]
+    fn composite_pnnn_screen_rejects_frequency_outside_window() {
+        let fr = 115_000.0;
+        let l = 10e-6;
+        let c = 1.0 / ((2.0 * std::f64::consts::PI * fr).powi(2) * l);
+        let result = super::screen_cllc_pnnn_low_frequency_boost_state(
+            super::ClLcPaperStateScreenInput {
+                tank: super::ClLcTankParameters {
+                    switching_frequency_hz: 115_000.0,
+                    primary_resonant_inductance_h: l,
+                    primary_resonant_capacitance_f: c,
+                    secondary_resonant_inductance_h: l,
+                    secondary_resonant_capacitance_f: c,
+                    magnetizing_inductance_h: 30e-6,
+                    turns_ratio_primary_to_secondary: 1.0,
+                },
+                secondary_dc_load_ohm: 10.0,
+                secondary_bridge_phase_shift_rad: 0.2,
+                secondary_ac_voltage_current_phase_rad: -0.1,
+                controller_minimum_frequency_hz: 50_000.0,
+                controller_maximum_frequency_hz: 120_000.0,
+                symmetry_relative_tolerance: 1e-9,
+                admittance_zero_tolerance_s: 1e-12,
+                reactance_zero_tolerance_ohm: 1e-12,
+            },
+        )
+        .unwrap();
+
+        assert!(!result.actual_frequency_in_window);
+        assert!(!result.passes_declared_pnnn_boost_screen);
+    }
+
+    #[test]
+    fn composite_pnnn_screen_rejects_asymmetric_tank_assumption() {
+        let fr = 115_000.0;
+        let l = 10e-6;
+        let c = 1.0 / ((2.0 * std::f64::consts::PI * fr).powi(2) * l);
+        let result = super::screen_cllc_pnnn_low_frequency_boost_state(
+            super::ClLcPaperStateScreenInput {
+                tank: super::ClLcTankParameters {
+                    switching_frequency_hz: 90_000.0,
+                    primary_resonant_inductance_h: l,
+                    primary_resonant_capacitance_f: c,
+                    secondary_resonant_inductance_h: 20e-6,
+                    secondary_resonant_capacitance_f: c / 2.0,
+                    magnetizing_inductance_h: 30e-6,
+                    turns_ratio_primary_to_secondary: 1.0,
+                },
+                secondary_dc_load_ohm: 10.0,
+                secondary_bridge_phase_shift_rad: 0.2,
+                secondary_ac_voltage_current_phase_rad: -0.1,
+                controller_minimum_frequency_hz: 50_000.0,
+                controller_maximum_frequency_hz: 120_000.0,
+                symmetry_relative_tolerance: 1e-6,
+                admittance_zero_tolerance_s: 1e-12,
+                reactance_zero_tolerance_ohm: 1e-12,
+            },
+        )
+        .unwrap();
+
+        assert!(!result.resonant_frequencies_symmetric);
+        assert!(result.magnetizing_ratios_symmetric);
+        assert!(!result.symmetry_assumption_valid);
+        assert!(!result.passes_declared_pnnn_boost_screen);
     }
 
     #[test]
