@@ -160,6 +160,37 @@ pub fn secondary_vftps_equivalent_impedance(
     Ok(result)
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ClLcVfTpsTNetworkInput {
+    pub x1_ohm: f64,
+    pub x2_ohm: f64,
+    pub x3_ohm: f64,
+    pub secondary_dc_load_ohm: f64,
+    pub turns_ratio_primary_to_secondary: f64,
+    pub secondary_bridge_phase_shift_rad: f64,
+    pub secondary_ac_voltage_current_phase_rad: f64,
+}
+
+/// Convenience composition of the paper-specific VF-TPS secondary impedance
+/// calculation with the generic T-network phasor evaluator.
+pub fn evaluate_cllc_vftps_t_network(
+    input: ClLcVfTpsTNetworkInput,
+) -> Result<ClLcTNetworkResult, AuditError> {
+    let zac = secondary_vftps_equivalent_impedance(
+        input.secondary_dc_load_ohm,
+        input.turns_ratio_primary_to_secondary,
+        input.secondary_bridge_phase_shift_rad,
+        input.secondary_ac_voltage_current_phase_rad,
+    )?;
+    evaluate_cllc_t_network(ClLcTNetworkInput {
+        x1_ohm: input.x1_ohm,
+        x2_ohm: input.x2_ohm,
+        x3_ohm: input.x3_ohm,
+        secondary_equivalent_resistance_ohm: zac.re,
+        secondary_equivalent_reactance_ohm: zac.im,
+    })
+}
+
 /// Evaluate the generic T-type impedance network used in the 2026 CLLC design paper.
 ///
 /// With Z1=jX1, Z2=jX2 and Z3=jX3:
@@ -303,6 +334,22 @@ mod tests {
             0.1,
         )
         .is_err());
+    }
+
+    #[test]
+    fn composes_vftps_impedance_and_t_network_evaluation() {
+        let input = super::ClLcVfTpsTNetworkInput {
+            x1_ohm: -2.0,
+            x2_ohm: -3.0,
+            x3_ohm: 10.0,
+            secondary_dc_load_ohm: 10.0,
+            turns_ratio_primary_to_secondary: 1.8,
+            secondary_bridge_phase_shift_rad: 0.2,
+            secondary_ac_voltage_current_phase_rad: 0.1,
+        };
+        let result = super::evaluate_cllc_vftps_t_network(input).unwrap();
+        assert!(result.primary_input_impedance_ohm.re.is_finite());
+        assert!(result.primary_input_impedance_ohm.im.is_finite());
     }
 
     #[test]
