@@ -284,6 +284,26 @@ transient or installation qualification.
 
 See [GRID_TO_CHIP_BENCHMARKS_2026-11-10.md](../../GRID_TO_CHIP_BENCHMARKS_2026-11-10.md).
 
+## Grid-to-chip time-aligned workload trace contract
+
+The research branch adds `schemas/grid-to-chip-trace-v0.1.schema.json` and a deliberately synthetic
+example. The contract binds one architecture and workload identity to source/load boundaries, a
+clock domain, nominal sample interval, synchronization uncertainty, channel evidence kind,
+measurement uncertainty, and time-stamped samples across idle / steady / burst / transition /
+recovery states.
+
+The trace carries source-bus voltage/current and processor-rail voltage/current so a future auditor
+can integrate the entire declared boundary using synchronized samples. Physical-measurement channels
+require a calibration reference and measurement bandwidth in the schema. The example is explicitly
+marked `SYNTHETIC_EXAMPLE`; it is not a measurement or product claim.
+
+JSON parsing of the schema and example and basic example invariants (unique channel IDs and
+strictly increasing timestamps) were checked. A JSON Schema validator and a runtime trace auditor
+have not yet been run or implemented. Schema validation alone cannot prove timestamp monotonicity,
+clock synchronization, calibration authenticity, or measurement bandwidth sufficiency.
+
+See [GRID_TO_CHIP_BENCHMARKS_2026-11-10.md](../../GRID_TO_CHIP_BENCHMARKS_2026-11-10.md).
+
 ## Explicit limitations
 
 - The CLI direction is supplied as an argument; it is not yet bound to or cross-checked against the
