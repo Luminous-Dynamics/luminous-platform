@@ -87,7 +87,7 @@ These are deterministic source-level tests, not executed Rust test results. They
 A test-only state machine now models the read-only request lifecycle across authorization, dispatch, execution, indeterminate completion, receipt persistence, independent oracle verification and acceptance. It is deliberately not a production workflow runtime.
 
 The model exercises:
-- authorization revocation before dispatch;
+- authorization revocation before dispatch, with monotonically increasing owner epochs; stale grants and delayed revocation messages cannot roll authority state backwards, and a strictly newer grant is required to restore dispatch;
 - partitions, lost acknowledgements and reconnects that remain INDETERMINATE;
 - acceptance only after the current attempt has a durable receipt and a passing oracle verdict;
 - duplicate-safe retry gating, with retries blocked after revocation;
