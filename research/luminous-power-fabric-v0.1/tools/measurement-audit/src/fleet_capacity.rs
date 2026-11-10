@@ -241,6 +241,7 @@ pub struct FleetScenarioResult {
     pub required_capacity_units_per_s: f64,
     pub available_capacity_units_per_s: f64,
     pub capacity_feasible: bool,
+    pub useful_work_feasible: bool,
     pub qos_feasible: bool,
     pub service_feasible: bool,
     pub is_capacity_scaled_model: bool,
@@ -318,6 +319,7 @@ fn scenario_result(
     installed_gpu_count: u64,
     required_gpu_count: u64,
     capacity_feasible: bool,
+    useful_work_feasible: bool,
     qos_ok: bool,
     completed_work_units: Option<f64>,
     is_capacity_scaled_model: bool,
@@ -326,7 +328,7 @@ fn scenario_result(
     let offered_work = point.offered_work_units();
     let required_capacity = point.required_capacity_units_per_s();
     let available_capacity = installed_gpu_count as f64 * point.per_gpu_goodput_units_per_s;
-    let service_feasible = capacity_feasible && qos_ok;
+    let service_feasible = capacity_feasible && useful_work_feasible && qos_ok;
 
     let gpu_board_power_w = point.board_power_w_for_gpu_count(installed_gpu_count);
     let gpu_board_energy_j = gpu_board_power_w * duration;
@@ -366,11 +368,8 @@ fn scenario_result(
         ));
     }
 
-    let accepted_work = completed_work_units.filter(|work| {
-        service_feasible
-            && work.is_finite()
-            && *work >= offered_work * (1.0 - 1.0e-9)
-    });
+    let accepted_work =
+        completed_work_units.filter(|work| service_feasible && work.is_finite() && *work > 0.0);
     let gpu_board_energy_per_work_unit_j =
         accepted_work.map(|work| storage_adjusted_gpu_board_energy_j / work);
     let total_system_energy_per_work_unit_j = accepted_work.and_then(|work| {
@@ -391,6 +390,7 @@ fn scenario_result(
         required_capacity_units_per_s: required_capacity,
         available_capacity_units_per_s: available_capacity,
         capacity_feasible,
+        useful_work_feasible,
         qos_feasible: qos_ok,
         service_feasible,
         is_capacity_scaled_model,
@@ -525,6 +525,7 @@ pub fn evaluate_fleet_capacity_sweep(
         baseline_required_count,
         true,
         true,
+        true,
         Some(baseline.completed_work_units),
         false,
     )?;
@@ -532,6 +533,7 @@ pub fn evaluate_fleet_capacity_sweep(
         &baseline,
         baseline_required_count,
         baseline_required_count,
+        true,
         true,
         true,
         Some(baseline.offered_work_units()),
@@ -583,7 +585,8 @@ pub fn evaluate_fleet_capacity_sweep(
                 candidate.required_capacity_units_per_s(),
                 candidate.per_gpu_goodput_units_per_s,
             )?,
-            fixed_capacity_ok && fixed_work_ok,
+            fixed_capacity_ok,
+            fixed_work_ok,
             qos_ok,
             Some(candidate.completed_work_units),
             false,
@@ -597,6 +600,7 @@ pub fn evaluate_fleet_capacity_sweep(
             candidate,
             scaled_gpu_count,
             scaled_gpu_count,
+            true,
             true,
             qos_ok,
             Some(candidate.offered_work_units()),
@@ -862,6 +866,22 @@ mod tests {
         let mut changed_soc = point("soc", Some("cap"), 10.0, 380.0, 4_800.0);
         changed_soc.initial_stored_energy_j += 1.0;
         assert!(evaluate_fleet_capacity_sweep(baseline, vec![changed_soc], gate()).is_err());
+    }
+
+    #[test]
+    fn allowed_useful_work_loss_is_reported_and_energy_is_normalized_to_actual_work() {
+        let baseline = point("baseline", None, 10.0, 400.0, 4_800.0);
+        let mut candidate = point("small-work-loss", Some("cap"), 10.0, 380.0, 4_776.0);
+        // A 0.5% loss is within the declared 1% gate.
+        let report = evaluate_fleet_capacity_sweep(baseline, vec![candidate], gate()).unwrap();
+        let result = &report.candidates[0].fixed_fleet;
+
+        assert!(result.capacity_feasible);
+        assert!(result.useful_work_feasible);
+        assert!(result.qos_feasible);
+        assert!(result.service_feasible);
+        assert_eq!(result.completed_work_units, Some(4_776.0));
+        assert!(result.gpu_board_energy_per_work_unit_j.is_some());
     }
 
     #[test]
