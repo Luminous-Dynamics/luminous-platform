@@ -243,9 +243,11 @@ Luminous result or a matched bidirectional benchmark.
 
 A read-only Rust conversion-chain auditor now evaluates end-to-end input energy, delivered energy,
 conversion losses, standby draw, annual electricity cost and grid emissions across a complete
-8,760-hour piecewise load profile. It keeps source provenance for each stage efficiency, standby,
-tariff and emissions factor. This enables fairer AC/DC / 48V / 800V architecture comparisons than
-adding peak-efficiency percentages. It does not replace a site model or measured energy study.
+8,760-hour piecewise load profile. A matched comparison helper rejects scenarios with different
+delivered energy, hours, tariff/currency or grid-carbon intensity before calculating energy, cost and
+emissions savings. It keeps source provenance for each stage efficiency, standby, tariff and
+emissions factor. This enables fairer AC/DC, 48 V and 800 V architecture comparisons than adding
+separate peak-efficiency percentages. It does not replace a site model or measured energy study.
 
 ## Current limitations
 
