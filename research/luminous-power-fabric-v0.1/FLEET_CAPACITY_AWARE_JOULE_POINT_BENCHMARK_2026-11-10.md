@@ -70,7 +70,7 @@ N(P_{\mathrm{GPU}}+P_{\mathrm{support/GPU}})
 +P_{\mathrm{fixed}}
 \]
 
-This prevents the evaluator from silently assuming that CPU, memory, network, cooling, power conversion, or fixed facility overhead is zero. The fixed overhead is supplied explicitly for the scenario; it is not automatically scaled with GPU count.
+This prevents the evaluator from silently assuming that CPU, memory, network, cooling, power conversion, or fixed facility overhead is zero. The fixed overhead is supplied separately for the fixed-fleet and capacity-scaled scenarios; the evaluator does not reuse one value or automatically scale it with GPU count.
 
 For the total-system boundary:
 
@@ -126,11 +126,14 @@ The new Rust module \`tools/measurement-audit/src/fleet_capacity.rs\` provides:
 - separate GPU-board and total-system power/energy;
 - storage correction at the total-system boundary;
 - optional sourced capex;
+- baseline-relative per-GPU power/goodput, integer GPU-count delta, scaled GPU-board power, total-system power and energy-per-work changes.
+
+Total-system deltas and Pareto comparisons are suppressed when the relevant overhead evidence classes are not comparable. The output preserves the measured/modelled/unknown overhead status.
 - a candidate Pareto frontier over capacity-scaled total-system energy/work, total power, GPU count and comparable capex.
 
 Unknown overhead blocks a total-system comparison rather than being treated as zero. Unknown capex is excluded from the cost dimension rather than being assigned a zero value.
 
-Eleven tests are authored for the 1.25x GPU-count effect of a 20% goodput decline, fixed-fleet infeasibility versus capacity-scaled feasibility, GPU versus total-system power, unknown overhead, storage depletion, QoS/SLO regression, unknown/supplied capex, matched-contract rejection, and baseline/overhead validation. **Tests have not been executed.**
+Twelve tests are authored for the 1.25x GPU-count effect of a 20% goodput decline, fixed-fleet infeasibility versus capacity-scaled feasibility, GPU versus total-system power, unknown overhead, storage depletion, QoS/SLO regression, unknown/supplied capex, matched-contract rejection, and baseline/overhead validation. **Tests have not been executed.**
 
 ## 6. Industry comparison and next improvements
 
