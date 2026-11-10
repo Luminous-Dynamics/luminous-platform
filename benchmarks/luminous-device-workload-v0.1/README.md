@@ -314,3 +314,38 @@ Have a second run/operator repeat the frozen set with the same exact source and 
 ## 10. Claim ceiling
 
 This protocol and its target values do not establish any result. No better-than-SOTA, lower-TCO, ruggedness, privacy, performance-per-watt, safety or hardware-support claim is permitted until the specific target, benchmark rules, sample size, exact equipment and independent evidence support it.
+
+
+## 10. Independent DWF-001 evaluator
+
+The standalone Rust evaluator is in [dwf-evaluator](dwf-evaluator/README.md). It evaluates the synthetic placement, pre-dispatch, result-validation, reconciliation and recovery scenarios without introducing a scheduler or a repository-wide Cargo workspace. Run its tests and CLI using the commands in that directory. Its JSON report binds results to the exact fixture SHA-256 and compares every case to its preregistered expected disposition.
+
+**Fixture hardening in evaluator v0.1:**
+- DWF-001-19 now abstains when both local and remote candidates exceed the declared hard energy budget; a candidate that violates a hard requirement is not “eligible” merely because it is local.
+- DWF-001-21 verifies that private derived HDC query representations do not inherit a public classification. Peer execution requires an explicit data-class scope such as `data:private`; derived vectors, features and result metadata do not become anonymous by transformation alone.
+
+The evaluator is an independent implementation of expected fixture dispositions, not an independent authority that proves those expectations, and not a production scheduler. Fixture values remain synthetic. Rust compilation, unit tests and CI must be run on the exact branch head before any implementation or assurance claim is made.
+
+
+The fixture includes DWF-001-22: peer placement abstains when the transfer ceiling is unknown. Missing is not unlimited.
+
+The fixture also keeps DWF-001-06 isolated: the peer has `data:public` but not `compute:execute:read-only`, so the scenario tests only the missing execution scope.
+
+### Result-validation hardening
+
+The evaluator now requires a complete execution receipt: dispatch and completion state, posture freshness, observed backend, exact runtime digest, valid signature, output digest and a passing independent-oracle disposition. DWF-001-23 is a negative control for omitted claims. Missing evidence is never treated as a passing claim.
+
+
+The fixture includes DWF-001-24 as the positive complete-receipt acceptance control and DWF-001-25 as the corresponding invalid-signature rejection control.
+
+### Runtime requirement binding
+
+The expected runtime digest is request-owned: it is taken from the frozen request's workload requirements and compared with the runtime digest in the execution receipt. A peer receipt may not supply its own expected value. DWF-001-26 is the positive control for this invariant.
+
+
+### Result-to-request binding hardening
+
+The synthetic result-validation controls now require an executor candidate ID matching the selected peer, request-owned runtime and workload digests, input commitment, expected oracle ID and expected oracle verifier ID. The oracle receipt's input commitment and output digest must match the request and exact output. DWF-001-27 and -28 are negative controls for wrong executor and wrong-output oracle receipts.
+
+
+The latest DWF-001 evaluator corpus is 28 synthetic scenarios. The result-validation subset includes incomplete/complete receipt, invalid signature, request-owned runtime binding, wrong executor identity and wrong-output oracle controls. The fixture result booleans are semantic test values, not cryptographic verification.
