@@ -1571,6 +1571,42 @@ mod tests {
     }
 
     #[test]
+    fn authority_epochs_reject_stale_grants_and_delayed_revocations() {
+        let mut state = LifecycleState::new(true);
+        assert!(state.apply(LifecycleEvent::Grant { epoch: 10 }));
+        assert!(state.apply(LifecycleEvent::Revoke { epoch: 11 }));
+        assert!(state.revoked);
+
+        // A delayed old grant cannot restore authority.
+        assert!(!state.apply(LifecycleEvent::Grant { epoch: 10 }));
+        // A delayed, older revocation cannot alter the current authority epoch.
+        assert!(!state.apply(LifecycleEvent::Revoke { epoch: 9 }));
+        assert_eq!(state.authority_epoch, 11);
+        assert!(state.revoked);
+        assert_eq!(state.phase, LifecyclePhase::Blocked);
+
+        // Only a newer explicit owner grant restores permission.
+        assert!(state.apply(LifecycleEvent::Grant { epoch: 12 }));
+        assert_eq!(state.authority_epoch, 12);
+        assert!(!state.revoked);
+        assert_eq!(state.phase, LifecyclePhase::Authorized);
+
+        // A request carrying the previous epoch remains invalid.
+        assert!(!state.apply(LifecycleEvent::Dispatch {
+            attempt_id: 2,
+            grant_epoch: 11,
+        }));
+        assert_eq!(state.attempts_started, 0);
+
+        assert!(state.apply(LifecycleEvent::Dispatch {
+            attempt_id: 2,
+            grant_epoch: 12,
+        }));
+        assert_eq!(state.attempts_started, 1);
+        assert_eq!(state.phase, LifecyclePhase::Dispatched);
+    }
+
+    #[test]
     fn revocation_before_dispatch_blocks_the_old_grant() {
         let mut state = LifecycleState::new(true);
         assert!(state.apply(LifecycleEvent::Grant { epoch: 7 }));
