@@ -72,6 +72,7 @@ pub struct DatasetRegistryEntry {
     pub size_bytes: Option<u64>,
     pub file_count: Option<u64>,
     pub access_method: String,
+    pub notes: Vec<String>,
     /// Largest observed/declared timestamp interval. None means unknown.
     pub maximum_sample_interval_ns: Option<u64>,
     /// Analog sensor/measurement-chain bandwidth. None means unknown.
@@ -330,6 +331,7 @@ mod tests {
             size_bytes: None,
             file_count: None,
             access_method: "public URL".to_string(),
+            notes: Vec::new(),
             maximum_sample_interval_ns: Some(20_000_000),
             sensor_bandwidth_hz: None,
             anti_alias_filter_verified: None,
