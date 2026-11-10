@@ -149,6 +149,12 @@ pub fn evaluate_loss_budget(budget: &LossBudget) -> Result<LossReport, AuditErro
             "loss or uncertainty aggregation overflowed".to_string(),
         ));
     }
+    if total_loss_w <= 0.0 {
+        return Err(AuditError(
+            "total loss must be positive; an idealized zero-loss budget cannot represent a physical converter"
+                .to_string(),
+        ));
+    }
 
     let input_power_w = budget.output_power_w + total_loss_w;
     if !input_power_w.is_finite() || input_power_w <= 0.0 {
@@ -167,6 +173,11 @@ pub fn evaluate_loss_budget(budget: &LossBudget) -> Result<LossReport, AuditErro
     let max_loss_for_target_w =
         budget.output_power_w * (1.0 / budget.target_efficiency - 1.0);
     let target_loss_headroom_w = max_loss_for_target_w - total_loss_w;
+    if !max_loss_for_target_w.is_finite() || !target_loss_headroom_w.is_finite() {
+        return Err(AuditError(
+            "target loss allowance or headroom is not finite".to_string(),
+        ));
+    }
 
     let contributions = budget
         .terms
@@ -284,6 +295,16 @@ mod tests {
             output_power_w: 500.0,
             target_efficiency: 0.98,
             terms: vec![],
+        });
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn rejects_zero_loss_idealization() {
+        let result = evaluate_loss_budget(&LossBudget {
+            output_power_w: 500.0,
+            target_efficiency: 0.98,
+            terms: vec![term("ideal switch", 0.0, 0.0)],
         });
         assert!(result.is_err());
     }
