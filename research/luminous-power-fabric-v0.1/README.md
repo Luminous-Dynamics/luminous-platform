@@ -146,6 +146,13 @@ topology for PEBB-LV-01.
 See [INDUSTRY_BASELINE.md](./INDUSTRY_BASELINE.md) for current 500 W commercial comparators and
 the matched head-to-head plan. In particular, 97% efficiency is not by itself a SOTA claim.
 
+## Loss engineering and topology research
+
+The next modelling increment is documented in [LOSS_BUDGET_AND_MODEL_PLAN.md](./LOSS_BUDGET_AND_MODEL_PLAN.md).
+It introduces a provenance-aware Rust loss-accounting engine and specifies the inputs required before
+DAB/CLLC topology losses can be calculated. The June 2026 500 W CLLC paper's 97.6% peak forward result
+is now included as a same-power literature anchor, but not yet a matched benchmark.
+
 ## Current limitations
 
 This package is a research specification. No hardware, PCB, firmware, converter model, benchmark
