@@ -192,6 +192,18 @@ where `k_L = L_m / L_rp`, `omega_n = omega_s / omega_r1`, and Q is specific to t
 charging or discharging equivalent AC load. The symmetric expression has the same functional form
 in each direction, but charging and discharging do not generally have the same Q.
 
+The direction-specific Q values must be derived from the actual equivalent DC loads and referred tank:
+- Charging equivalent AC load: `R_eq,ch = 8 N² R_bat / π²`.
+- Discharging equivalent AC load: `R_eq,dis = 8 R_dc / (π² N²)`.
+- `Q_ch = sqrt(L_rp / C_rp) / R_eq,ch`.
+- `Q_dis = sqrt(L_rs / C_rs) / R_eq,dis`.
+- For the symmetric referred tank, `L_rp = N² L_rs` and `C_rp = C_rs / N²`.
+
+These definitions follow Tao et al.'s Eqs. (3)–(5). The caller to the Rust evaluator supplies the
+correct Q for the selected direction and load point; the function does not derive battery/DC load
+models or infer Q from a nominal power command. A wrong Q can produce a plausible-looking but
+invalid gain curve.
+
 At resonance (`omega_n = 1`), the ideal FHA normalized gain is unity, independent of Q and k_L.
 For the *illustrative equation inputs* `k_L=3.51`, `Q=0.3`, the formula returns approximately
 1.14194 at `omega_n=0.8` and 0.90007 at `omega_n=1.2`. These are formula test vectors, not a
