@@ -234,6 +234,17 @@ Using the paper's two-port current convention
 - `Yin,1 = Y1 + Y2²/(Y3 - Yeq)`
 - `Zin,1 = 1/Yin,1`
 
+The paper's variable-frequency triple-phase-shift (VF-TPS) example also has a specific
+secondary bridge equivalent (Eq. 1):
+
+`Zac,eq = [8 * Rload * cos²(theta2) * cos²(phi2) / (n² * pi²)] * exp(j * phi2)`
+
+The separate `secondary_vftps_equivalent_impedance` helper implements this expression, and
+`evaluate_cllc_vftps_t_network` composes it with the T network. This exact bridge equivalent is
+modulation-specific: theta2 is the secondary bridge phase shift and phi2 is the fundamental
+secondary AC voltage/current phase difference. It must not be reused for SPS, EPS or another
+TPS convention without a fresh derivation.
+
 This module is a generic small-signal phasor network kernel. The caller must supply branch
 reactances using a reviewed circuit orientation, sign and turns-ratio convention. It intentionally
 does **not** map a selected CLLC schematic to X1/X2/X3, derive the phase-modulated secondary
@@ -247,16 +258,19 @@ Huang et al. (IEICE Electronics Express, online 30 October 2026, DOI 10.1587/ele
 propose mapping a bidirectional CLLC tank to a T-type impedance network and including the secondary
 active bridge as a complex AC impedance. Their design region adds internal-state constraints linked
 to a designated low-frequency boost mode and resonant-inductance ratio to the FHA gain requirement.
-Their 2 kW prototype verifies forward/reverse ZVS for their own configuration.
+Their 2 kW prototype verifies forward/reverse ZVS for their own configuration and reports 95.7% maximum forward efficiency (95.2% at rated forward load) and 95.4% reverse. Its 150–300 V input / 75–167 V output configuration is not a 48 V / 500 W efficiency comparator.
 
-This motivates the next implementation sequence:
-1. Re-derive the T-network equivalent from the paper's exact circuit and sign conventions.
-2. Implement complex input-impedance evaluation per direction.
-3. Add the stated low-frequency resonant-state constraint and feasible-region classification.
-4. Include the direction-specific equivalent load impedance, magnetizing branch and tank asymmetry.
-5. Add Coss / dead-time charge and energy conditions before classifying ZVS feasibility.
-6. Sweep device, resonant component and transformer tolerances.
-7. Cross-check selected points against a time-domain switching model.
+The generic complex T network and the paper-specific VF-TPS secondary equivalent are now implemented.
+The next sequence is:
+1. Independently review the exact circuit, current orientation and turns-ratio referral against the
+   paper before mapping physical CLLC components into signed X1/X2/X3.
+2. Derive and implement the paper's state inequalities and admissible switching-frequency region.
+3. Evaluate the selected low-frequency boost mode over voltage/load/frequency points in both
+   directions; keep state classification separate from the FHA gain trend.
+4. Add constant-power ZVS, unity-gain ZVS and maximum-gain constraints before selecting k and Lr1.
+5. Add device Coss/dead-time energy, peak/RMS current and thermal constraints.
+6. Sweep device, resonant component, transformer and digital PFM timing tolerances.
+7. Cross-check selected points against a time-domain switching model and then independent bench data.
 
 Do not approximate missing circuit states as “inductive” or infer ZVS from FHA gain alone. Until
 these steps exist, the Rust CLLC functions remain **FHA gain screening only**.
