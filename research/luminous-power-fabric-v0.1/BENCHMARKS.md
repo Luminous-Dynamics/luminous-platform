@@ -71,6 +71,18 @@ guarantees. Revisit them after the topology model and first lab data.
 | Reliability | Build a mission-profile model and fault tree | Screen power/thermal cycling on a documented sample | Independent lifetime correlation; no lifetime extrapolation without validated models |
 | Evidence | Preserve test input and output bytes | Calibration, uncertainty, firmware, BOM and test conditions bound to every run | Independent offline verifier and external reproducibility |
 
+### Higher-power bidirectional CLLC research anchors
+
+The October 2026 4.8 kW PV-storage CLLC prototype reports 97.45% peak charging and 96.66% peak
+discharging efficiency. It demonstrates that forward/reverse efficiency must be reported separately,
+and that PFM timing resolution, gain monotonicity, inductive input impedance, Coss/dead-time commutation
+and thermal design belong in the same design review. Its 40–60 V battery side, 360–540 V DC bus,
+9:1 transformer and high-frequency controller are not a direct match to the 48 V / 500 W PEBB.
+
+A separate 2 kW T-type impedance-network CLLC study validates forward/reverse ZVS for its design.
+Use it as a design-method reference, not as an efficiency comparator. Both papers reinforce the
+importance of a state-constrained feasibility region rather than selecting a tank from gain alone.
+
 ### 500 W loss-budget comparison
 
 At 500 W output, the loss equivalents are:
