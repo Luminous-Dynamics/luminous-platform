@@ -255,6 +255,10 @@ correlation assessment.
 | PF-026 | Validate the paper-specific VF-TPS secondary AC impedance and T-network composition against independent hand calculations | Rust tooling + power-electronics review | Eq. (1) reference vectors, port conventions and no claim of complete state/ZVS feasibility |
 | PF-027 | Apply paper Eq. (10) low-frequency boost-mode window to the actual tank and controller range | Rust tooling + Symtropy | Resonant-frequency, inductance-ratio and controller-window intersection with infeasible points retained |
 | PF-028 | Derive the paper's constant-power and unity-gain ZVS limits and maximum-gain region for PEBB-specific parameters | Symtropy + power-electronics review | Independently checked equations, directions, load trajectory and model uncertainty before implementation |
+| PF-029 | Compare lossless DAB SPS model to resistive periodic RL solver as Req→0 | Rust tooling + Symtropy | Reference vectors for power, RMS current, periodicity and energy-balance residual |
+| PF-030 | Extend resistive DAB model to mission-profile sweeps over voltage ratio, phase and Req | Symtropy | Full maps with infeasible / high-stress points retained |
+| PF-031 | Add DAB switch-level Coss / dead-time commutation and device thermal models | Symtropy + power-electronics review | Device-specific datasheet-backed parameters and measured waveform correlation plan |
+
 | PF-022 | Add Coss/dead-time commutation-energy and PFM timing-resolution constraints | Symtropy + embedded-control review | Declared device, gate-drive and controller clock parameters; no physical safety claims |
 | PF-023 | Correlate CLLC FHA and state-constrained model against independent time-domain switching runs | Symtropy | Held-out operating points, residuals and model-validity report
 
