@@ -303,6 +303,14 @@ pub struct FleetCapacityCandidateResult {
     pub control_action_id: String,
     pub per_gpu_power_change_fraction: f64,
     pub per_gpu_goodput_change_fraction: f64,
+    pub fixed_fleet_total_system_power_change_fraction: Option<f64>,
+    pub fixed_fleet_system_energy_per_work_change_fraction: Option<f64>,
+    pub capacity_scaled_gpu_count_delta: i64,
+    pub capacity_scaled_gpu_board_power_change_fraction: f64,
+    pub capacity_scaled_total_system_power_change_fraction: Option<f64>,
+    pub capacity_scaled_system_energy_per_work_change_fraction: Option<f64>,
+    pub capacity_scaled_capex_change_fraction: Option<f64>,
+    pub total_system_overhead_evidence_comparable: bool,
     pub fixed_fleet: FleetScenarioResult,
     pub capacity_scaled: FleetScenarioResult,
     pub pareto_frontier_member: bool,
@@ -476,6 +484,17 @@ fn validate_matched_points(
     Ok(())
 }
 
+fn relative_change(candidate: Option<f64>, baseline: Option<f64>) -> Option<f64> {
+    let (Some(candidate), Some(baseline)) = (candidate, baseline) else {
+        return None;
+    };
+    if !candidate.is_finite() || !baseline.is_finite() || baseline <= 0.0 {
+        return None;
+    }
+    let change = candidate / baseline - 1.0;
+    change.is_finite().then_some(change)
+}
+
 fn pareto_dominates(left: &FleetCapacityCandidateResult, right: &FleetCapacityCandidateResult) -> bool {
     let (Some(left_energy), Some(right_energy), Some(left_power), Some(right_power)) = (
         left.capacity_scaled.total_system_energy_per_work_unit_j,
@@ -644,15 +663,88 @@ pub fn evaluate_fleet_capacity_sweep(
             true,
         )?;
 
+        let total_system_overhead_evidence_comparable =
+            baseline.overhead_evidence == candidate.overhead_evidence;
+        let fixed_fleet_total_system_power_change_fraction =
+            if total_system_overhead_evidence_comparable {
+                relative_change(
+                    fixed_fleet.total_system_power_w,
+                    baseline_fixed.total_system_power_w,
+                )
+            } else {
+                None
+            };
+        let fixed_fleet_system_energy_per_work_change_fraction =
+            if total_system_overhead_evidence_comparable {
+                relative_change(
+                    fixed_fleet.total_system_energy_per_work_unit_j,
+                    baseline_fixed.total_system_energy_per_work_unit_j,
+                )
+            } else {
+                None
+            };
+        let capacity_scaled_total_system_power_change_fraction =
+            if total_system_overhead_evidence_comparable {
+                relative_change(
+                    capacity_scaled.total_system_power_w,
+                    baseline_scaled.total_system_power_w,
+                )
+            } else {
+                None
+            };
+        let capacity_scaled_system_energy_per_work_change_fraction =
+            if total_system_overhead_evidence_comparable {
+                relative_change(
+                    capacity_scaled.total_system_energy_per_work_unit_j,
+                    baseline_scaled.total_system_energy_per_work_unit_j,
+                )
+            } else {
+                None
+            };
+        let capacity_scaled_capex_change_fraction = if baseline.capex_currency
+            == candidate.capex_currency
+        {
+            relative_change(
+                capacity_scaled.installed_gpu_capex,
+                baseline_scaled.installed_gpu_capex,
+            )
+        } else {
+            None
+        };
+        let gpu_count_delta =
+            candidate.capacity_scaled.installed_gpu_count as i128
+                - baseline_scaled.installed_gpu_count as i128;
+        let capacity_scaled_gpu_count_delta = i64::try_from(gpu_count_delta).map_err(|_| {
+            AuditError("capacity-scaled GPU count delta exceeds the supported range".to_string())
+        })?;
+        let capacity_scaled_gpu_board_power_change_fraction =
+            capacity_scaled.gpu_board_power_w / baseline_scaled.gpu_board_power_w - 1.0;
+        let per_gpu_power_change_fraction =
+            candidate.per_gpu_board_power_w / baseline.per_gpu_board_power_w - 1.0;
+        let per_gpu_goodput_change_fraction =
+            candidate.per_gpu_goodput_units_per_s / baseline.per_gpu_goodput_units_per_s - 1.0;
+        let changes = [
+            per_gpu_power_change_fraction,
+            per_gpu_goodput_change_fraction,
+            capacity_scaled_gpu_board_power_change_fraction,
+        ];
+        if changes.iter().any(|value| !value.is_finite()) {
+            return Err(AuditError("fleet relative-change metric is non-finite".to_string()));
+        }
+
         results.push(FleetCapacityCandidateResult {
             run_id: candidate.run_id.clone(),
             control_action_id: action.clone(),
-            per_gpu_power_change_fraction: candidate.per_gpu_board_power_w
-                / baseline.per_gpu_board_power_w
-                - 1.0,
-            per_gpu_goodput_change_fraction: candidate.per_gpu_goodput_units_per_s
-                / baseline.per_gpu_goodput_units_per_s
-                - 1.0,
+            per_gpu_power_change_fraction,
+            per_gpu_goodput_change_fraction,
+            fixed_fleet_total_system_power_change_fraction,
+            fixed_fleet_system_energy_per_work_change_fraction,
+            capacity_scaled_gpu_count_delta,
+            capacity_scaled_gpu_board_power_change_fraction,
+            capacity_scaled_total_system_power_change_fraction,
+            capacity_scaled_system_energy_per_work_change_fraction,
+            capacity_scaled_capex_change_fraction,
+            total_system_overhead_evidence_comparable,
             fixed_fleet,
             capacity_scaled,
             pareto_frontier_member: false,
@@ -801,6 +893,12 @@ mod tests {
         let result = &report.candidates[0];
 
         assert!((result.per_gpu_power_change_fraction + 0.5).abs() < 1.0e-12);
+        assert!((result.capacity_scaled_gpu_board_power_change_fraction + 0.375).abs() < 1.0e-12);
+        assert_eq!(result.capacity_scaled_gpu_count_delta, 2);
+        assert!((result.capacity_scaled_total_system_power_change_fraction.unwrap()
+            - (3000.0 / 4100.0 - 1.0)).abs() < 1.0e-12);
+        assert!((result.capacity_scaled_system_energy_per_work_change_fraction.unwrap()
+            - (3000.0 / 4100.0 - 1.0)).abs() < 1.0e-12);
         assert!((result.capacity_scaled.total_system_power_w.unwrap() - 3000.0).abs() < 1.0e-9);
         assert!((report.baseline_capacity_scaled.total_system_power_w.unwrap() - 4100.0).abs() < 1.0e-9);
         assert!(result.capacity_scaled.total_system_power_w.unwrap()
