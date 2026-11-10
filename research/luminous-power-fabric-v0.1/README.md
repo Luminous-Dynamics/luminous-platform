@@ -154,6 +154,15 @@ phase-shift / inductance screen, and specifies the inputs required before non-id
 losses can be calculated. The June 2026 500 W CLLC paper's 97.6% peak forward result is now included
 as a same-power literature anchor, but not yet a matched benchmark.
 
+## New CLLC research: gain plus internal-state feasibility
+
+The October 2026 research adds a state-constrained T-type impedance-network method for bidirectional
+CLLC design. Our Rust library now implements the first, limited layer: symmetric FHA gain evaluation
+and a discrete sampled gain-curve scan. It does **not** yet implement the T-network, impedance angle,
+internal-state constraints, Coss/dead-time commutation or ZVS feasibility. See
+[PARADIGM_SHIFT_RESEARCH.md](./PARADIGM_SHIFT_RESEARCH.md) and
+[LOSS_BUDGET_AND_MODEL_PLAN.md](./LOSS_BUDGET_AND_MODEL_PLAN.md).
+
 ## Current limitations
 
 This package is a research specification. No hardware, PCB, firmware, converter model, benchmark
