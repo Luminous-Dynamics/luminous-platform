@@ -100,6 +100,66 @@ impl ClLcTNetworkResult {
     }
 }
 
+/// Derive the secondary equivalent AC impedance for the specific VF-TPS
+/// modulation representation in Huang et al. (IEICE Electronics Express 2026),
+/// Eq. (1):
+///
+/// Zac,eq = [8*Rload*cos²(theta2)*cos²(phi2)/(n²*pi²)] * exp(j*phi2)
+///
+/// theta2 is the secondary-bridge phase-shift angle, phi2 is the phase
+/// difference between the secondary AC-port voltage and current fundamentals,
+/// and n is the transformer's primary-to-secondary turns ratio as defined by
+/// that paper. This formula is modulation- and convention-specific; do not
+/// reuse it for another bridge modulation without re-deriving the equivalent.
+pub fn secondary_vftps_equivalent_impedance(
+    secondary_dc_load_ohm: f64,
+    turns_ratio_primary_to_secondary: f64,
+    secondary_bridge_phase_shift_rad: f64,
+    secondary_ac_voltage_current_phase_rad: f64,
+) -> Result<ComplexValue, AuditError> {
+    let values = [
+        secondary_dc_load_ohm,
+        turns_ratio_primary_to_secondary,
+        secondary_bridge_phase_shift_rad,
+        secondary_ac_voltage_current_phase_rad,
+    ];
+    if values.iter().any(|value| !value.is_finite()) {
+        return Err(AuditError(
+            "VF-TPS equivalent-impedance inputs must be finite".to_string(),
+        ));
+    }
+    if secondary_dc_load_ohm <= 0.0 || turns_ratio_primary_to_secondary <= 0.0 {
+        return Err(AuditError(
+            "VF-TPS load resistance and turns ratio must be positive".to_string(),
+        ));
+    }
+
+    let cos_theta = secondary_bridge_phase_shift_rad.cos();
+    let cos_phi = secondary_ac_voltage_current_phase_rad.cos();
+    let magnitude = 8.0
+        * secondary_dc_load_ohm
+        * cos_theta.powi(2)
+        * cos_phi.powi(2)
+        / (turns_ratio_primary_to_secondary.powi(2) * std::f64::consts::PI.powi(2));
+
+    if !magnitude.is_finite() || magnitude <= 0.0 {
+        return Err(AuditError(
+            "VF-TPS equivalent impedance magnitude must be positive and finite".to_string(),
+        ));
+    }
+
+    let result = ComplexValue::new(
+        magnitude * secondary_ac_voltage_current_phase_rad.cos(),
+        magnitude * secondary_ac_voltage_current_phase_rad.sin(),
+    );
+    if !result.is_finite() {
+        return Err(AuditError(
+            "VF-TPS equivalent impedance is not finite".to_string(),
+        ));
+    }
+    Ok(result)
+}
+
 /// Evaluate the generic T-type impedance network used in the 2026 CLLC design paper.
 ///
 /// With Z1=jX1, Z2=jX2 and Z3=jX3:
@@ -212,6 +272,37 @@ mod tests {
             secondary_equivalent_resistance_ohm: 10.0,
             secondary_equivalent_reactance_ohm: -1.0,
         }
+    }
+
+    #[test]
+    fn computes_secondary_vftps_equivalent_impedance() {
+        let z = super::secondary_vftps_equivalent_impedance(
+            10.0,
+            1.8,
+            0.2,
+            0.1,
+        )
+        .unwrap();
+        assert!((z.re - 2.3671789275).abs() < 1e-9);
+        assert!((z.im - 0.2375101215).abs() < 1e-9);
+    }
+
+    #[test]
+    fn zero_phase_difference_produces_real_secondary_impedance() {
+        let z = super::secondary_vftps_equivalent_impedance(10.0, 1.8, 0.0, 0.0).unwrap();
+        assert!(z.re > 0.0);
+        assert!(z.im.abs() < 1e-12);
+    }
+
+    #[test]
+    fn rejects_zero_modulation_equivalent_impedance() {
+        assert!(super::secondary_vftps_equivalent_impedance(
+            10.0,
+            1.8,
+            std::f64::consts::PI / 2.0,
+            0.1,
+        )
+        .is_err());
     }
 
     #[test]
