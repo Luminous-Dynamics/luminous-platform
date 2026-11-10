@@ -45,6 +45,33 @@ Do not merge these into one "industry SOTA" number. In particular:
 - An unregulated/fixed-ratio DCX is not a regulated isolated converter and is not a bidirectional storage converter.
 - The EPC article describes regulation options but does not establish that every presented variant retains the reported fixed-ratio efficiency.
 
+
+## 2A. Direct processor-rail conversion is a separate competitive frontier
+
+The EPC programme now describes three distinct 800 VDC output domains: 50 V, 12.5 V and 6.25 V. These should not be treated as variants of one identical product. They have very different output-current, distribution, interconnect and thermal constraints.
+
+| Output rail | Reported architecture / operating point | Reported performance | Interpretation |
+|---|---|---|---|
+| 50 V | 800 V to 50 V, up to 11 kW / 220 A; eight-cell ISOP details reported in the 8 Nov article | 98.0% full load; 98.5% peak in detailed report | High-current intermediate bus; candidate for distributed rack distribution and downstream PoL |
+| 12.5 V | 800 V to 12.5 V, 6 kW, eight ISOP LLC cells, 64:1 overall ratio, up to 480 A, less than 5,000 mm² and 8 mm thickness | Greater than 98% peak and 97% full load in 8 Nov report | Direct high-current processor intermediate rail; much more demanding output interconnect |
+| 6.25 V | 800 V to 6.25 V, 6 kW, eight cells, 128:1 overall ratio, up to 960 A | Greater than 98% peak and 97% full load in 8 Nov report | Very high-current near-load rail; every milliohm and current-extraction detail matters |
+
+The official EPC technical article also describes a 6 kW ISOP stage from 800 V to 6 V followed by a 5 MHz GaN buck stage to 0.9 V at 11 A. That is an important architecture example, but it is a staged demonstration and must not be misrepresented as a single 800 V-to-0.9 V converter.
+
+**Source discrepancy to preserve:** EPC's September 15 white-paper announcement reports 98.6% peak for its 800 V-to-50 V result and 98.2% peak for the 800 V-to-12.5 V EPC91123. The September 24 detailed EPC-presentation article reports 98.5% peak / 98% at 220 A for the 50 V EPC91134, and 98.1% peak / approximately 97% at full load for the 12.5 V EPC91123. The November 8 EPC-authored EEPower article reports 98.5% peak / 98% full load for 50 V, and greater than 98% peak / 97% full load for both 12.5 V and 6.25 V. These may reflect different revisions, operating points or reporting precision. Keep each source's numbers attached to its source; obtain the original test data before selecting a single benchmark value.
+
+Sources:
+- EPC, [GaN-Based Power Delivery in AI Data Centers: High-Density Power Conversion Architectures from 800VDC to Point-of-Load](https://www.semiconductor-today.com/news_items/2026/sep/epc-150926.shtml), 15 September 2026 (announcement summary).
+- EPC / All About Circuits, [How Low-Voltage GaN FETs Are Enabling Multi-kW 800 V Isolated Converters](https://www.allaboutcircuits.com/industry-articles/how-low-voltage-gan-fets-are-enabling-multi-kw-800-v-isolated-converters/), 24 September 2026 (detailed EPC presentation report).
+- Michael de Rooij / EPC, [800 VDC to the AI Server: A Modular GaN Route To Low-Voltage Rails](https://eepower.com/technical-articles/800-vdc-to-the-ai-server-a-modular-gan-route-to-low-voltage-rails/), 8 November 2026 (detailed 50 V / 12.5 V / 6.25 V architecture article).
+- EPC, [From 800 V to the Processor Core: Demonstrating EPC GaN Performance](https://epc-co.com/epc/design-support/technical-publications/articles/artmid/9702/articleid/3372), 30 September 2026 (800 V-to-6 V ISOP and 0.9 V follow-on stage).
+
+**Luminous experiment:** compare two full power trees at identical delivered processor-rail profiles:
+1. 800 VDC → 50 V bus → downstream 12.5 V / 6.25 V / sub-1 V regulation.
+2. 800 VDC → direct 12.5 V or 6.25 V ISOP → downstream point-of-load regulation.
+
+Account for complete conversion losses, busbar/copper, output capacitor loss, current extraction, cooling, transient droop, redundancy, protection and serviceability. A direct rail wins only if the entire system wins; fewer stages do not automatically mean lower total energy or better availability.
+
 ## 3. Architecture opportunity: treat the DCX as a cell-composition and regulation-placement problem
 
 The most interesting lesson is not simply "use GaN at 1.1 MHz." The ISOP architecture divides the high-voltage input among series-connected cells and combines their outputs in parallel. The EPC example reports integrated magnetics across pairs of cells and current sharing between magnetically coupled sections.
