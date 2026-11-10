@@ -344,6 +344,7 @@ and clock-synchronization budget.
 
 The auditor reports:
 - Pre-step and post-step average load current and the measured current-step amplitude.
+- A first-order scalar target-impedance budget derived from allowed voltage deviation divided by declared current-step amplitude; this is not a measured or frequency-dependent impedance curve.
 - Post-step current error against the declared target.
 - Maximum sampled upward and downward current slew (A/µs).
 - Minimum / maximum post-step rail voltage, undershoot, overshoot and maximum deviation.
