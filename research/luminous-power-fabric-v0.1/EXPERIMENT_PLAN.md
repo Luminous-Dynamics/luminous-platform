@@ -249,7 +249,9 @@ correlation assessment.
 | PF-018 | Bind DAB/CLLC model loss terms into the provenance-aware loss-budget record | Rust tooling + Symtropy | Exact model revision, term-source and uncertainty-preserving budget records |
 | PF-019 | Implement symmetric CLLC FHA gain and direction-specific Q evaluator | Rust measurement-audit crate | Equation-derived reference vectors and invalid-domain tests; no ZVS claim |
 | PF-020 | Add sampled gain-curve and turning-point screening | Rust measurement-audit crate | Ordered frequency-grid inputs, sampled trend and explicit non-proof claim ceiling |
-| PF-021 | Re-derive and prototype T-type CLLC impedance/state constraints | Symtropy + power-electronics review | Source-equation review, circuit/sign convention, direction-specific complex impedance and fixtures |
+| PF-021 | Implement generic T-network FHA phasor equations | Rust measurement-audit crate | Y-parameter and input-impedance reference vectors; generic network only |
+| PF-024 | Map actual CLLC schematic and secondary modulation to T-network signed reactances/complex impedance | Symtropy + power-electronics review | Reviewed circuit orientation, turns-ratio referral, modulation angles and port-current sign conventions |
+| PF-025 | Classify the paper's intended CLLC operation state over voltage/load/frequency points | Symtropy | Re-derived Y-parameter / Xeq sign constraints and independent hand-calculated fixtures |
 | PF-022 | Add Coss/dead-time commutation-energy and PFM timing-resolution constraints | Symtropy + embedded-control review | Declared device, gate-drive and controller clock parameters; no physical safety claims |
 | PF-023 | Correlate CLLC FHA and state-constrained model against independent time-domain switching runs | Symtropy | Held-out operating points, residuals and model-validity report
 
