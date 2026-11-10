@@ -210,6 +210,37 @@ For the *illustrative equation inputs* `k_L=3.51`, `Q=0.3`, the formula returns 
 PEBB-LV-01 tank prediction. The sampled scan can flag a turning point, but cannot prove continuous
 monotonicity between sampled frequencies.
 
+### Generic T-network phasor evaluator (implemented)
+
+The Rust crate now exposes `cllc_t_network::evaluate_cllc_t_network`. It accepts the signed branch
+reactances `X1/X2/X3` and a secondary equivalent complex impedance `Zac = Req + jXeq`, and
+calculates the T-network admittance parameters, secondary-to-primary voltage phasor ratio, and
+primary input admittance / impedance.
+
+With `D = X1*X2 + X1*X3 + X2*X3` and branch impedances `Zi = jXi`, the implemented paper
+relationships are:
+
+`Y1 = -j*(X2 + X3)/D`
+
+`Y2 =  j*X3/D`
+
+`Y3 = -j*(X1 + X3)/D`
+
+Using the paper's two-port current convention
+`I1 = Y1*U1 + Y2*U2`,
+`I2 = -Y2*U1 + Y3*U2 = Yeq*U2`:
+- `Yeq = 1/Zac`
+- `U2/U1 = Y2/(Y3 - Yeq)`
+- `Yin,1 = Y1 + Y2²/(Y3 - Yeq)`
+- `Zin,1 = 1/Yin,1`
+
+This module is a generic small-signal phasor network kernel. The caller must supply branch
+reactances using a reviewed circuit orientation, sign and turns-ratio convention. It intentionally
+does **not** map a selected CLLC schematic to X1/X2/X3, derive the phase-modulated secondary
+impedance from bridge angles, classify the paper's operating states, or infer ZVS from the input
+impedance alone. Those mappings are exactly where convention errors can invalidate a seemingly
+reasonable simulation.
+
 ### Required state-constrained extension
 
 Huang et al. (IEICE Electronics Express, online 30 October 2026, DOI 10.1587/elex.23.20260463)
