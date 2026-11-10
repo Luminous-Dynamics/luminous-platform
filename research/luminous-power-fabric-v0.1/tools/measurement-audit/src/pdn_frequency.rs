@@ -261,6 +261,11 @@ pub fn audit_pdn_frequency_response(
         targets.push(target);
     }
 
+    if !allocated_ripple_square_sum.is_finite() {
+        return Err(AuditError(
+            "allocated AC ripple budget overflowed during RSS aggregation".to_string(),
+        ));
+    }
     let allocated_ac_ripple_budget_rms_v = allocated_ripple_square_sum.sqrt();
     let budget_tolerance = 1.0e-12
         * input
@@ -318,6 +323,11 @@ pub fn audit_pdn_frequency_response(
         let adjacent_max = left.max(right);
         if center > left && center > right && adjacent_max > 0.0 {
             let peak_ratio = center / adjacent_max;
+            if !peak_ratio.is_finite() {
+                return Err(AuditError(format!(
+                    "local peak ratio at index {index} is non-finite"
+                )));
+            }
             points[index].local_peak_ratio = Some(peak_ratio);
             points[index].anti_resonance_candidate =
                 peak_ratio >= input.minimum_local_peak_ratio;
