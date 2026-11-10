@@ -208,6 +208,15 @@ Safety and physical limits are hard constraints. They cannot be traded against e
 A candidate only dominates another when it is no worse on the reported critical dimensions and
 strictly better on at least one, with uncertainty and model validity shown.
 
+### New CLLC study references and design rule
+
+Add the October 2026 2 kW T-type impedance-network CLLC paper to the literature reproduction set.
+Its key lesson is that FHA gain and input-impedance phase alone may omit internal resonant-state and
+secondary modulation-reactance constraints. Reproduce its exact equivalent network before coding a
+T-network evaluator. Add the 4.8 kW October 2026 PFM/HRPWM study as a separate design-reference case:
+frequency quantization, register update synchronization, Coss and dead-time must be part of any
+future digital-control feasibility model. Neither result is a direct 500 W design recommendation.
+
 ### Model-correlation protocol
 
 The loss budget should be generated from the upstream topology model and carry a source for each
@@ -238,6 +247,11 @@ correlation assessment.
 | PF-016 | Extend DAB SPS from ideal transfer to signed current-waveform / RMS / peak-current and ZVS-boundary screening | Symtropy | Source-derived equations, domain checks and validation fixtures; no ZVS claim until hardware-correlated |
 | PF-017 | Implement a CLLC FHA gain / resonant-tank / soft-switching constraint evaluator | Symtropy | Published-equation derivation, input tolerances and boundary fixtures |
 | PF-018 | Bind DAB/CLLC model loss terms into the provenance-aware loss-budget record | Rust tooling + Symtropy | Exact model revision, term-source and uncertainty-preserving budget records |
+| PF-019 | Implement symmetric CLLC FHA gain and direction-specific Q evaluator | Rust measurement-audit crate | Equation-derived reference vectors and invalid-domain tests; no ZVS claim |
+| PF-020 | Add sampled gain-curve and turning-point screening | Rust measurement-audit crate | Ordered frequency-grid inputs, sampled trend and explicit non-proof claim ceiling |
+| PF-021 | Re-derive and prototype T-type CLLC impedance/state constraints | Symtropy + power-electronics review | Source-equation review, circuit/sign convention, direction-specific complex impedance and fixtures |
+| PF-022 | Add Coss/dead-time commutation-energy and PFM timing-resolution constraints | Symtropy + embedded-control review | Declared device, gate-drive and controller clock parameters; no physical safety claims |
+| PF-023 | Correlate CLLC FHA and state-constrained model against independent time-domain switching runs | Symtropy | Held-out operating points, residuals and model-validity report
 
 The first code increments are the read-only capture auditor, provenance-aware loss-budget engine,
 and ideal DAB SPS power-transfer screen. They are all offline/read-only engineering tools, not a
