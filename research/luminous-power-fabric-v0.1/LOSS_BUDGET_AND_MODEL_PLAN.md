@@ -224,7 +224,7 @@ relationships are:
 
 `Y2 =  j*X3/D`
 
-`Y3 = -j*(X1 + X3)/D`
+`Y3 =  j*(X1 + X3)/D`
 
 Using the paper's two-port current convention
 `I1 = Y1*U1 + Y2*U2`,
@@ -237,7 +237,7 @@ Using the paper's two-port current convention
 The paper's variable-frequency triple-phase-shift (VF-TPS) example also has a specific
 secondary bridge equivalent (Eq. 1):
 
-`Zac,eq = [8 * Rload * cos²(theta2) * cos²(phi2) / (n² * pi²)] * exp(j * phi2)`
+`Zac,eq = [8 * Rload * cos²(theta2) * cos(phi2) / (n² * pi²)] * exp(j * phi2)`
 
 The separate `secondary_vftps_equivalent_impedance` helper implements this expression, and
 `evaluate_cllc_vftps_t_network` composes it with the T network. This exact bridge equivalent is
@@ -255,6 +255,17 @@ frequency. It reports an empty intersection as infeasible rather than forcing a 
 a specific state-window screen under the paper's symmetric inductance-ratio assumption; it does not
 evaluate the remaining constant-power ZVS, unity-gain ZVS or maximum-gain constraints and does not
 prove ZVS.
+
+The CLLC mapper applies the paper's Eq. (6) with the secondary resonant branch referred
+to the primary side: `X1 = ωLr1 - 1/(ωCr1)`, `X2 = ωn²Lr2 - 1/(ωn²Cr2)`,
+and `X3 = ωLm`. It reports both `k1=Lm/Lr1` and `k2=Lm/(n²Lr2)` rather than
+silently forcing the paper's symmetry assumption.
+
+The state classifier labels `Im(Y1)`, `Im(Y2)`, `Im(Y3)` and `Xeq` independently as
+inductive (P), capacitive (N), or near-zero/unknown. In the paper's notation, the selected
+low-frequency boost target is PNNN: `Im(Y1)>0`, `Im(Y2)<0`, `Im(Y3)<0`, and `Xeq<0`.
+A PNNN label is a topology-state classification—not proof that device commutation energy is enough
+for ZVS or that the complete converter meets the required power, gain or thermal envelope.
 
 This module is a generic small-signal phasor network kernel. The caller must supply branch
 reactances using a reviewed circuit orientation, sign and turns-ratio convention. It intentionally
