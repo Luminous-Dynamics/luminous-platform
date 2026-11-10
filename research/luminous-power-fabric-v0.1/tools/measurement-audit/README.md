@@ -148,6 +148,21 @@ keeps mission efficiency, power-delivery ratio, analytic ZVS-polarity coverage, 
 thermal margin as separate objectives. This is not a product optimizer: the models remain lumped,
 idealized and uncorrelated with real hardware.
 
+## CLLC parameter-design constraint evaluator
+
+The crate exposes `cllc_design::evaluate_cllc_parameter_design`. It calculates the paper-derived
+symmetry precondition, low-frequency boost window, constant-power quality factor, critical-Q
+boundary, constant-power inductance limit, unity-gain ZVS inductance limit and maximum-gain boundary
+from Eq. (10), (12)–(16), (17)–(18), (20), and (22)–(24).
+
+It rejects inputs that violate the symmetric resonant-frequency / magnetizing-ratio assumptions
+instead of forcing them into the paper's model. Passing the resulting screen is **not** a physical
+ZVS or hardware qualification: device Coss, dead-time, current waveforms, parasitics, thermal limits
+and time-domain switching still need separate analysis and measurement.
+
+See [LOSS_BUDGET_AND_MODEL_PLAN.md](../../LOSS_BUDGET_AND_MODEL_PLAN.md) for equations and the
+synthetic arithmetic fixture.
+
 ## Explicit limitations
 
 - The CLI direction is supplied as an argument; it is not yet bound to or cross-checked against the
