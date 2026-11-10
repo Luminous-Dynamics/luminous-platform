@@ -377,7 +377,7 @@ pub fn validate_evidence_graph(manifests: &[EvidenceManifest]) -> Result<(), Aud
                 })?;
                 *degree -= 1;
                 if *degree == 0 {
-                    ready.push_back(child);
+                    ready.push_back(*child);
                 }
             }
         }
