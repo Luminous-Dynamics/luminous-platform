@@ -336,10 +336,13 @@ fn placement_disposition(placement: &str, selected: Vec<String>, reasons: Vec<St
 
 fn evaluate_placement(scenario: &Value) -> (Disposition, Vec<CandidateAssessment>) {
     let candidates = scenario["candidates"].as_array().cloned().unwrap_or_default();
-    let assessments: Vec<CandidateAssessment> = candidates
+    let mut assessments: Vec<CandidateAssessment> = candidates
         .iter()
         .map(|candidate| assess_candidate(scenario, candidate))
         .collect();
+    // Canonical candidate order makes the report stable under fixture-array
+    // permutations. Candidate order is not an execution preference.
+    assessments.sort_by(|a, b| a.candidate_id.cmp(&b.candidate_id));
 
     let local_only = bool_at(&scenario["request"]["policy"], &["local_only"]) == Some(true);
     let local = assessments.iter().find(|candidate| candidate.role == "origin");
@@ -1202,6 +1205,112 @@ mod tests {
         let (rejected, _) = evaluate_case(case(&fixture, "DWF-001-25"));
         assert_eq!(rejected.result, "REJECTED");
         assert!(rejected.reason_codes.contains(&"RESULT_SIGNATURE_INVALID".to_owned()));
+    }
+
+
+    fn mutate_peer(scenario: &mut Value, mutate: impl FnOnce(&mut Value)) {
+        let candidates = scenario["candidates"]
+            .as_array_mut()
+            .expect("candidate array");
+        let peer = candidates
+            .iter_mut()
+            .find(|candidate| text_at(candidate, &["role"]) == Some("peer"))
+            .expect("peer candidate");
+        mutate(peer);
+    }
+
+    #[test]
+    fn hard_eligibility_is_monotone_under_single_field_policy_tightening() {
+        let fixture = fixture_value();
+        let baseline = case(&fixture, "DWF-001-01").clone();
+        let baseline_peer = baseline["candidates"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|candidate| text_at(candidate, &["role"]) == Some("peer"))
+            .unwrap();
+        assert!(assess_candidate(&baseline, baseline_peer).eligible);
+
+        let mutations: Vec<(&str, Box<dyn Fn(&mut Value)>)> = vec![
+            ("local_only", Box::new(|s| s["request"]["policy"]["local_only"] = Value::Bool(true))),
+            ("destination_not_permitted", Box::new(|s| s["request"]["policy"]["permitted_destinations"] = serde_json::json!([]))),
+            ("private_data_class", Box::new(|s| s["request"]["input"]["data_classification"] = Value::String("private".to_owned()))),
+            ("missing_data_scope", Box::new(|s| mutate_peer(s, |p| p["session"]["scopes"] = serde_json::json!(["compute:execute:read-only"])))),
+            ("revoked_session", Box::new(|s| mutate_peer(s, |p| p["session"]["status"] = Value::String("revoked".to_owned())))),
+            ("missing_compute_scope", Box::new(|s| mutate_peer(s, |p| p["session"]["scopes"] = serde_json::json!(["data:public"])))),
+            ("expired_lease", Box::new(|s| mutate_peer(s, |p| p["authorization"]["local_lease"] = Value::String("expired".to_owned())))),
+            ("denied_local_policy", Box::new(|s| mutate_peer(s, |p| p["authorization"]["local_policy"] = Value::String("deny".to_owned())))),
+            ("denied_destination_policy", Box::new(|s| mutate_peer(s, |p| p["authorization"]["destination_policy"] = Value::String("denied".to_owned())))),
+            ("stale_posture", Box::new(|s| mutate_peer(s, |p| p["evidence"]["posture_status"] = Value::String("stale".to_owned())))),
+            ("unknown_device_profile", Box::new(|s| mutate_peer(s, |p| p["evidence"]["device_profile_status"] = Value::String("unknown".to_owned())))),
+            ("unsupported_isa", Box::new(|s| mutate_peer(s, |p| p["device"]["isa"] = Value::String("riscv64".to_owned())))),
+            ("insufficient_memory", Box::new(|s| mutate_peer(s, |p| p["device"]["memory_mib"] = serde_json::json!(1)))),
+            ("runtime_digest_mismatch", Box::new(|s| mutate_peer(s, |p| p["runtime"]["runtime_digest"] = Value::String("runtime:other".to_owned())))),
+            ("workload_digest_mismatch", Box::new(|s| mutate_peer(s, |p| p["runtime"]["workload_digest"] = Value::String("workload:other".to_owned())))),
+            ("required_backend_missing", Box::new(|s| mutate_peer(s, |p| p["runtime"]["backend_support_claims"] = serde_json::json!([])))),
+            ("deadline_exceeded", Box::new(|s| mutate_peer(s, |p| p["resources"]["latency_ms"] = serde_json::json!(9999)))),
+            ("energy_budget_exceeded", Box::new(|s| mutate_peer(s, |p| p["resources"]["joules_per_accepted_task"] = serde_json::json!(9999)))),
+            ("transfer_budget_exceeded", Box::new(|s| s["request"]["policy"]["maximum_transfer_bytes"] = serde_json::json!(1))),
+            ("transfer_budget_unknown", Box::new(|s| s["request"]["policy"]["maximum_transfer_bytes"] = Value::Null)),
+            ("network_disconnected", Box::new(|s| s["network"]["state"] = Value::String("disconnected".to_owned()))),
+            ("non_read_only_workload", Box::new(|s| s["request"]["workload"]["operation_class"] = Value::String("stateful".to_owned()))),
+            ("external_effects", Box::new(|s| s["request"]["replay"]["external_effects"] = Value::Bool(true))),
+        ];
+
+        for (name, mutate) in mutations {
+            let mut scenario = baseline.clone();
+            mutate(&mut scenario);
+            let candidates = scenario["candidates"].as_array().unwrap();
+            let peer = candidates
+                .iter()
+                .find(|candidate| text_at(candidate, &["role"]) == Some("peer"))
+                .unwrap();
+            let assessment = assess_candidate(&scenario, peer);
+            assert!(
+                !assessment.eligible,
+                "hard constraint mutation {name} unexpectedly left peer eligible: {:?}",
+                assessment.reason_codes
+            );
+        }
+    }
+
+    #[test]
+    fn privacy_rejection_cannot_be_compensated_by_arbitrarily_better_performance() {
+        let fixture = fixture_value();
+        let mut scenario = case(&fixture, "DWF-001-01").clone();
+        mutate_peer(&mut scenario, |peer| {
+            peer["session"]["scopes"] = serde_json::json!(["compute:execute:read-only"]);
+            peer["resources"]["latency_ms"] = serde_json::json!(0.001);
+            peer["resources"]["joules_per_accepted_task"] = serde_json::json!(0.000001);
+            peer["resources"]["thermal_headroom_c"] = serde_json::json!(1000.0);
+        });
+
+        let (actual, assessments) = evaluate_placement(&scenario);
+        assert_eq!(actual.placement, "LOCAL");
+        assert_eq!(actual.selected, vec!["origin-book".to_owned()]);
+        assert!(assessments.iter().any(|candidate| {
+            candidate.role == "peer"
+                && !candidate.eligible
+                && candidate.reason_codes.contains(&"REMOTE_DATA_SCOPE_MISSING".to_owned())
+        }));
+    }
+
+    #[test]
+    fn candidate_array_permutation_does_not_change_the_selected_frontier() {
+        let fixture = fixture_value();
+        let original = case(&fixture, "DWF-001-20").clone();
+        let mut permuted = original.clone();
+        permuted["candidates"].as_array_mut().unwrap().reverse();
+
+        let (a, assessments_a) = evaluate_placement(&original);
+        let (b, assessments_b) = evaluate_placement(&permuted);
+        assert_eq!(a.placement, "PARETO_SET");
+        assert_eq!(a.placement, b.placement);
+        assert_eq!(a.selected, b.selected);
+        assert_eq!(
+            assessments_a.iter().map(|item| item.candidate_id.as_str()).collect::<Vec<_>>(),
+            assessments_b.iter().map(|item| item.candidate_id.as_str()).collect::<Vec<_>>()
+        );
     }
 
     #[test]
