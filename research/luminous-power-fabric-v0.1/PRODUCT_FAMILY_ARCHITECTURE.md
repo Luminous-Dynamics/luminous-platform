@@ -25,7 +25,7 @@ all voltage classes.
 |---|---|---|---|
 | PF-LV | PEBB-LV-01 | 36–60 V-class, isolated, bidirectional, 500 W laboratory DC/DC building block | First design and measurement programme |
 | PF-48 | 48 V power conversion module | Data-centre / telecom / industrial 48 V buses; fixed-ratio, regulated or bidirectional variants | Product discovery and benchmark study |
-| PF-HVDC | 400–800 VDC to 48 V conversion building block | Facility sidecar, rack power shelf, high-density compute | Research and partner architecture; separate high-voltage qualification |
+| PF-HVDC | 400–800 VDC to 48/50 V intermediate bus; separately researched 12.5 V and 6.25 V direct processor-rail branches | Facility sidecar, rack power shelf, high-density compute | Research and partner architecture; separate high-voltage qualification for each rail and power-stage family |
 | PF-ENERGY | Multiport storage / source / load interface | DC microgrids, storage emulator, PV and distributed generation | System simulation and HIL research |
 | PF-GRID | Grid-connected bidirectional converter / grid-forming inverter | Commercial microgrids, storage, ancillary services | Grid-code and standards mapping before hardware product design |
 | PF-PROTECT | DC breaker, hybrid breaker, pre-charge, isolation and sectionalizer | DC buses, module branches and rack distribution | Dedicated fault-energy and protection programme |
@@ -37,6 +37,27 @@ The specific literature-reproduction and qualification work for an 800 V-to-50 V
 DCX is tracked separately in [PF-HVDC-6KW_RESEARCH_PLAN.md](./PF-HVDC-6KW_RESEARCH_PLAN.md).
 Do not treat those LLC/DCX prototypes as bidirectional storage converters. A future bidirectional
 800 V product requires a separate power-stage architecture, protection review and qualification.
+
+### PF-HVDC adjacent processor-rail research
+
+The 800 VDC programme should not assume the 50 V intermediate bus is always the optimal destination.
+EPC's 2026 ISOP work reports distinct 800 V-to-12.5 V and 800 V-to-6.25 V architectures at 6 kW,
+with output currents up to 480 A and 960 A respectively. These are separate rail boundaries with
+very different current extraction, PCB / busbar, capacitor, thermal and service requirements. They
+are research comparators, not Luminous product specifications.
+
+Compare complete power trees at identical delivered processor-rail load profiles:
+
+- 800 VDC → 50 V distribution → 12.5 V / 6.25 V / sub-1 V point-of-load stages.
+- 800 VDC → direct 12.5 V or 6.25 V conversion → point-of-load stages.
+
+The lower-stage count does not by itself prove lower system energy. Include full-chain conversion,
+copper and connector losses, capacitor RMS current, cooling, transient response, redundancy,
+protection, fault containment and service cost. Do not transfer a 12.5 V / 6.25 V rating or a
+reported efficiency figure to the 50 V product family.
+
+See [HVDC_BENCHMARK_UPDATE_2026-11-10.md](./HVDC_BENCHMARK_UPDATE_2026-11-10.md) for reported
+source values and the discrepancies that must be resolved from the original test data.
 
 ## 3. Why 800 VDC is a distinct strategic opportunity
 

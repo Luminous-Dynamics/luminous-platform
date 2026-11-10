@@ -101,11 +101,11 @@ count and uncertainty.
 **Published references:**
 - APEC 2026 6 kW 800 V-to-50 V LLC: 98.75% peak, 2,070 W/in³.
 - CPSS 2026 800 V-to-50 V ISOP LLC: 98.1% full load, peak >98.4%.
+- EPC91134 11 kW 800 V-to-50 V ISOP LLC: 98.0% at 220 A and 98.5% peak under forced-air cooling; approximately 4,800 mm² footprint (436 mm²/kW), as reported from the EPC presentation.
 
-**Proposed internal stretch objective (not an achieved result):** at matched and fully documented
-conditions, aim for at least 98.2% at full load and 98.8% peak. A better-than-baseline claim requires
-the difference to exceed combined expanded measurement uncertainty and independent reproduction.
-If a matched baseline cannot be reproduced, report "not comparable" rather than an SOTA ranking.
+See [HVDC benchmark update, 10 November 2026](./HVDC_BENCHMARK_UPDATE_2026-11-10.md) for boundaries and source caveats. The EPC footprint metric must not be compared directly with APEC's volumetric W/in³.
+
+**Revised proposed internal stretch objective (not an achieved result or frozen requirement):** at matched and fully documented conditions, aim for at least 98.5% at full load and 99.0% peak. First reproduce the selected 6 kW and 11 kW references and extract their full curves, cooling and measurement uncertainty. A better-than-baseline claim requires the difference to exceed combined expanded measurement uncertainty and independent reproduction. If a matched baseline cannot be reproduced, report "not comparable" rather than an SOTA ranking.
 
 ### Power density
 

@@ -190,6 +190,48 @@ provenance-bearing stages or separate validated models. It is an architecture-co
 site measurement, data-centre guarantee or OCP compliance test. See the synthetic
 [energy-chain example](../../schemas/energy-chain.example.json).
 
+## ISOP output-parallel current-sharing screen
+
+The crate exposes `isop_sharing::evaluate_isop_output_sharing` for a static, linear Thevenin/droop
+approximation of output-parallel cells. Each cell supplies a no-load voltage setpoint and an effective
+positive output resistance. The solver returns the common bus voltage and signed per-cell current:
+
+```
+I_i = (E_i - V_bus) / R_i
+V_bus = (sum(E_i / R_i) - I_load) / sum(1 / R_i)
+```
+
+It reports current-share deviation, peak-to-peak current spread, current-balance residual and any
+cell whose modeled current is negative (backfeed into that cell). At zero load it reports circulating
+current in amperes and leaves relative share deviation undefined.
+
+This is an algebraic steady-state screen only. It does not model the input-series voltage split,
+closed-loop interaction, negative incremental impedance, switching ripple, load transients,
+current limiting, cell dropout, fault propagation or protection. The positive output resistance is
+a declared static droop approximation, not a measured dynamic impedance. A backfeed flag is a
+review trigger, not evidence that a unidirectional cell can safely absorb reverse power.
+
+## DC fault-energy and discharge screens
+
+The crate exposes `dc_protection::evaluate_dc_fault_energy` to keep selected DC fault-boundary
+energy terms separate: capacitor energy (0.5 C V²), cable magnetic energy (0.5 L I²), and a
+rectangular source-contribution bound (V I t). The sum may over-count overlapping energy paths and
+is not a fault-current waveform.
+
+`dc_protection::screen_dc_link_discharge` evaluates a first-order constant-R / constant-C
+discharge screen. It reports energy to dissipate, maximum initial current and resistor power,
+worst-case time to a caller-declared residual-voltage threshold, and numeric margins against
+caller-supplied limits. It rejects partial source bounds, invalid domains, non-finite values and
+positive inputs that underflow to zero.
+
+These functions do not calculate arc-flash incident energy, breaker/fuse coordination, selectivity,
+interrupting capacity, safe discharge, touch voltage, insulation coordination or service authorization.
+Resistor pulse ratings must be evaluated against the actual pulse curve and applicable derating.
+They are not protection relays or hardware controls.
+
+See [DC_PROTECTION_ENGINEERING.md](../../DC_PROTECTION_ENGINEERING.md) and
+[HVDC_BENCHMARK_UPDATE_2026-11-10.md](../../HVDC_BENCHMARK_UPDATE_2026-11-10.md).
+
 ## Explicit limitations
 
 - The CLI direction is supplied as an argument; it is not yet bound to or cross-checked against the
