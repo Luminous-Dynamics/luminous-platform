@@ -968,7 +968,7 @@ mod tests {
                     primary_resonant_inductance_h: l,
                     primary_resonant_capacitance_f: c,
                     secondary_resonant_inductance_h: 20e-6,
-                    secondary_resonant_capacitance_f: c / 2.0,
+                    secondary_resonant_capacitance_f: c / 4.0,
                     magnetizing_inductance_h: 30e-6,
                     turns_ratio_primary_to_secondary: 1.0,
                 },
@@ -985,7 +985,7 @@ mod tests {
         .unwrap();
 
         assert!(!result.resonant_frequencies_symmetric);
-        assert!(result.magnetizing_ratios_symmetric);
+        assert!(!result.magnetizing_ratios_symmetric);
         assert!(!result.symmetry_assumption_valid);
         assert!(!result.passes_declared_pnnn_boost_screen);
     }
