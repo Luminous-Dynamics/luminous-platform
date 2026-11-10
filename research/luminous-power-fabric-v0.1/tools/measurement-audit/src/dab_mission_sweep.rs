@@ -279,11 +279,27 @@ pub fn evaluate_dab_design_candidate(
         let junction_temperature = point.ambient_temperature_c
             + total_loss * candidate.junction_to_ambient_thermal_resistance_k_per_w;
         let thermal_margin = candidate.junction_temperature_limit_c - junction_temperature;
-        let signed_delivered_power = resistive.destination_port_power_w;
+        // For A_TO_B, port A supplies and port B receives. For B_TO_A,
+        // port B supplies and port A receives. Keep the delivered power sign
+        // tied to the requested direction while measuring the receiving port.
+        let requested_direction = point.requested_signed_power_w.signum();
+        let (delivered_magnitude_w, converter_input_port_power_w) =
+            if requested_direction > 0.0 {
+                (
+                    resistive.destination_port_power_w.abs(),
+                    resistive.source_port_power_w.abs(),
+                )
+            } else {
+                (
+                    resistive.source_port_power_w.abs(),
+                    resistive.destination_port_power_w.abs(),
+                )
+            };
+        let signed_delivered_power = requested_direction * delivered_magnitude_w;
         let delivery_ratio =
-            signed_delivered_power.abs() / point.requested_signed_power_w.abs();
+            delivered_magnitude_w / point.requested_signed_power_w.abs();
         let modelled_input_power =
-            resistive.source_port_power_w.abs() + switching_loss;
+            converter_input_port_power_w + switching_loss;
         let modelled_efficiency = if modelled_input_power > 0.0 {
             100.0 * signed_delivered_power.abs() / modelled_input_power
         } else {
@@ -535,6 +551,8 @@ mod tests {
         assert!(result.summary.full_mission_feasible);
         assert_eq!(result.summary.modelled_point_count, 2);
         assert!(result.summary.modelled_mission_efficiency_percent.unwrap() < 100.0);
+        assert!(result.point_results[1].modelled_efficiency_percent.unwrap() < 100.0);
+        assert!(result.point_results[1].signed_delivered_power_w.unwrap() < 0.0);
         assert!(result.summary.weighted_analytic_zvs_polarity_coverage_percent > 99.9);
         assert!(result.point_results.iter().all(|point| point.failures.is_empty()));
     }
