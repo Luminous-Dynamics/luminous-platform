@@ -1778,6 +1778,49 @@ mod tests {
     }
 
     #[test]
+    fn revocation_in_every_fault_order_blocks_new_attempts() {
+        let mut fault_events = vec![
+            LifecycleEvent::NetworkPartition,
+            LifecycleEvent::Reconnect,
+            LifecycleEvent::LostAcknowledgement,
+            LifecycleEvent::OriginRestart,
+            LifecycleEvent::Revoke { epoch: 17 },
+        ];
+        let mut schedules = Vec::new();
+        permute_events(&mut fault_events, 0, &mut schedules);
+        assert_eq!(schedules.len(), 120);
+
+        for (index, schedule) in schedules.iter().enumerate() {
+            let mut state = LifecycleState::new(true);
+            assert!(state.apply(LifecycleEvent::Grant { epoch: 17 }));
+            assert!(state.apply(LifecycleEvent::Dispatch {
+                attempt_id: 1,
+                grant_epoch: 17,
+            }));
+            assert!(state.apply(LifecycleEvent::PeerStarted { attempt_id: 1 }));
+
+            for event in schedule {
+                assert!(state.apply(*event), "schedule {index} rejected {event:?}");
+            }
+            assert!(state.revoked, "schedule {index} lost observed revocation");
+            assert!(!state.apply(LifecycleEvent::Retry { attempt_id: 2 }));
+            assert_eq!(state.attempts_started, 1);
+            assert_ne!(state.phase, LifecyclePhase::Accepted);
+
+            // A task dispatched before revocation may be reconciled, but
+            // revocation cannot authorize a new attempt or imply completion.
+            assert!(state.apply(LifecycleEvent::PeerCompleted { attempt_id: 1 }));
+            assert!(state.apply(LifecycleEvent::ReceiptPersisted { attempt_id: 1 }));
+            assert!(state.apply(LifecycleEvent::OracleVerified {
+                attempt_id: 1,
+                passed: true,
+            }));
+            assert_eq!(state.phase, LifecyclePhase::Accepted);
+            assert_eq!(state.attempts_started, 1);
+        }
+    }
+
+    #[test]
     fn identical_event_schedule_replays_to_identical_state() {
         let schedule = [
             LifecycleEvent::Grant { epoch: 13 },
