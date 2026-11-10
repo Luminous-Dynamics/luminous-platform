@@ -226,7 +226,11 @@
       "notes": [
         "20 inference models are reported across four GPU platforms.",
         "Board power-limit sweeps and graphics-clock/DVFS sweeps are included.",
-        "A high-rate power-cap actuation trace is described, but the actual sample interval, sensor bandwidth and anti-alias response have not been verified; it is not registered as fast-transient evidence."
+        "A high-rate power-cap actuation trace is described, but the actual sample interval, sensor bandwidth and anti-alias response have not been verified; it is not registered as fast-transient evidence.",
+        "NLM catalogue describes the headline artifact data/elf_master.csv with 2,636 settled operating-point rows; the companion data/elf_master_dictionary.md documents columns.",
+        "The sweep collections contain 6,488 measured windows, typically two to three consecutive two-second windows per operating point.",
+        "The first window after a power-cap change contains a settling pause in NVML's trailing power average; the paper's analysis discards it for settled comparisons, while the source files retain all windows.",
+        "The separate high-rate power-cap actuation trace remains unprofiled: exact sample interval, analog sensor bandwidth, timestamp jitter and anti-alias response are unknown. It is not eligible for fast transient claims."
       ],
       "maximum_sample_interval_ns": null,
       "timestamp_jitter_verified": null,
