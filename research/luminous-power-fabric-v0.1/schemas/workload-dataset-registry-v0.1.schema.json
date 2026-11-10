@@ -1,0 +1,279 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/workload-dataset-registry-v0.1.schema.json",
+  "title": "Luminous Workload Dataset Registry v0.1",
+  "description": "Dataset identity, provenance, licence policy, sampling scope and retrieval state. Registry validation does not authenticate publisher or establish legal rights.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "dataset_id",
+    "title",
+    "publisher",
+    "doi",
+    "source_uri",
+    "citation",
+    "resource_version",
+    "source_kind",
+    "license",
+    "assets",
+    "subsets"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous-workload-dataset-registry-v0.1"
+    },
+    "dataset_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "publisher": {
+      "type": "string",
+      "minLength": 1
+    },
+    "doi": {
+      "type": "string",
+      "pattern": "^10\\.[0-9]{4,9}/[^\\s]+$"
+    },
+    "source_uri": {
+      "type": "string",
+      "format": "uri"
+    },
+    "citation": {
+      "type": "string",
+      "minLength": 1
+    },
+    "resource_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "catalogue_last_updated": {
+      "type": ["string", "null"],
+      "format": "date"
+    },
+    "source_kind": {
+      "type": "string",
+      "enum": ["MEASURED", "MODELLED", "MIXED"]
+    },
+    "license": {
+      "$ref": "#/$defs/license"
+    },
+    "assets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/asset"
+      }
+    },
+    "subsets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/subset"
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "$defs": {
+    "policyStatus": {
+      "type": "string",
+      "enum": [
+        "ALLOWED",
+        "ALLOWED_WITH_CONDITIONS",
+        "PROHIBITED_WITHOUT_PERMISSION",
+        "REVIEW_REQUIRED"
+      ]
+    },
+    "license": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "license_name",
+        "license_uri",
+        "commercial_use",
+        "redistribution",
+        "derivatives",
+        "notice_required",
+        "attribution_required",
+        "endorsement_restricted",
+        "terms_summary"
+      ],
+      "properties": {
+        "license_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "license_uri": {
+          "type": "string",
+          "format": "uri"
+        },
+        "commercial_use": {
+          "$ref": "#/$defs/policyStatus"
+        },
+        "redistribution": {
+          "$ref": "#/$defs/policyStatus"
+        },
+        "derivatives": {
+          "$ref": "#/$defs/policyStatus"
+        },
+        "notice_required": {
+          "type": "boolean"
+        },
+        "attribution_required": {
+          "type": "boolean"
+        },
+        "endorsement_restricted": {
+          "type": "boolean"
+        },
+        "terms_summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "separate_permission_reference": {
+          "type": ["string", "null"]
+        },
+        "legal_review_reference": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "asset_id",
+        "file_name",
+        "size_display",
+        "retrieval_status",
+        "format_inspection",
+        "raw_sha256"
+      ],
+      "properties": {
+        "asset_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "file_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "size_display": {
+          "type": "string",
+          "minLength": 1
+        },
+        "retrieval_status": {
+          "type": "string",
+          "enum": ["NOT_RETRIEVED", "RETRIEVED"]
+        },
+        "format_inspection": {
+          "type": "string",
+          "enum": [
+            "NOT_INSPECTED",
+            "METADATA_INSPECTED",
+            "SAMPLES_INSPECTED",
+            "FULLY_PROFILED"
+          ]
+        },
+        "raw_sha256": {
+          "type": ["string", "null"],
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "publisher_asset_version": {
+          "type": ["string", "null"]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "retrieval_status": {
+                "const": "RETRIEVED"
+              }
+            },
+            "required": ["retrieval_status"]
+          },
+          "then": {
+            "properties": {
+              "raw_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "retrieval_status": {
+                "const": "NOT_RETRIEVED"
+              }
+            },
+            "required": ["retrieval_status"]
+          },
+          "then": {
+            "properties": {
+              "raw_sha256": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "subset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subset_id",
+        "description",
+        "evidence_kind",
+        "sample_rate_hz",
+        "measurement_boundary",
+        "claim_limitations"
+      ],
+      "properties": {
+        "subset_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_kind": {
+          "type": "string",
+          "enum": ["PHYSICAL_MEASUREMENT", "SIMULATION", "SYNTHETIC_EXAMPLE", "UNKNOWN"]
+        },
+        "sample_rate_hz": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        },
+        "measurement_boundary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claim_limitations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}
