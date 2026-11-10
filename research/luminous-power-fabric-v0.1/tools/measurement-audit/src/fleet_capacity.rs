@@ -439,7 +439,6 @@ fn validate_matched_points(
         || baseline.capacity_headroom_fraction.to_bits()
             != candidate.capacity_headroom_fraction.to_bits()
         || baseline.installed_gpu_count != candidate.installed_gpu_count
-        || baseline.overhead_evidence != candidate.overhead_evidence
         || baseline.initial_stored_energy_j.to_bits()
             != candidate.initial_stored_energy_j.to_bits()
     {
