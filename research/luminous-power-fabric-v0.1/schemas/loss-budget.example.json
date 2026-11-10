@@ -7,7 +7,6 @@
     "direction": "A_TO_B",
     "port_a_voltage_v": 48,
     "port_b_voltage_v": 48,
-    "output_power_w": 500,
     "load_fraction": 1,
     "switching_frequency_hz": null,
     "ambient_c": 25,
