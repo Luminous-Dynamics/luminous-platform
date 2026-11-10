@@ -163,6 +163,13 @@ internal-state constraints, Coss/dead-time commutation or ZVS feasibility. See
 [PARADIGM_SHIFT_RESEARCH.md](./PARADIGM_SHIFT_RESEARCH.md) and
 [LOSS_BUDGET_AND_MODEL_PLAN.md](./LOSS_BUDGET_AND_MODEL_PLAN.md).
 
+## CLLC FHA screening implementation
+
+The Rust crate also evaluates the symmetric CLLC first-harmonic-approximation gain equation and
+scans discrete normalized-frequency points. Charging and discharging use direction-specific
+equivalent quality factors. This is the first layer only; the October 2026 T-type impedance-network
+method motivates the next internal-state, impedance-angle and ZVS feasibility layer.
+
 ## Current limitations
 
 This package is a research specification. No hardware, PCB, firmware, converter model, benchmark
