@@ -38,6 +38,9 @@ pub struct FleetOperatingPoint {
     /// Fixed facility/rack overhead for this operating point, when known.
     /// The evaluator never scales this value automatically with GPU count.
     pub fixed_fleet_overhead_power_w: Option<f64>,
+    /// Fixed overhead at the capacity-scaled GPU count. This is supplied
+    /// separately; the evaluator never assumes fixed overhead is invariant.
+    pub fixed_capacity_scaled_overhead_power_w: Option<f64>,
     pub overhead_evidence: FleetOverheadEvidence,
     pub initial_stored_energy_j: f64,
     pub final_stored_energy_j: f64,
@@ -140,6 +143,7 @@ impl FleetOperatingPoint {
             FleetOverheadEvidence::Unknown => {
                 if self.per_gpu_support_power_w.is_some()
                     || self.fixed_fleet_overhead_power_w.is_some()
+                    || self.fixed_capacity_scaled_overhead_power_w.is_some()
                 {
                     return Err(AuditError(
                         "unknown overhead evidence cannot supply numeric overhead values"
@@ -202,9 +206,17 @@ impl FleetOperatingPoint {
         Ok(())
     }
 
-    fn total_power_w_for_gpu_count(&self, gpu_count: u64) -> Option<f64> {
+    fn total_power_w_for_gpu_count(
+        &self,
+        gpu_count: u64,
+        is_capacity_scaled_model: bool,
+    ) -> Option<f64> {
         let support = self.per_gpu_support_power_w?;
-        let fixed = self.fixed_fleet_overhead_power_w?;
+        let fixed = if is_capacity_scaled_model {
+            self.fixed_capacity_scaled_overhead_power_w?
+        } else {
+            self.fixed_fleet_overhead_power_w?
+        };
         let total = gpu_count as f64
             * (self.per_gpu_board_power_w + support)
             + fixed;
@@ -359,11 +371,16 @@ fn scenario_result(
         ));
     }
 
-    let total_system_power_w = point.total_power_w_for_gpu_count(installed_gpu_count);
+    let total_system_power_w =
+        point.total_power_w_for_gpu_count(installed_gpu_count, is_capacity_scaled_model);
     let support_overhead_power_w = point
         .per_gpu_support_power_w
         .map(|per_gpu| per_gpu * installed_gpu_count as f64);
-    let fixed_fleet_overhead_power_w = point.fixed_fleet_overhead_power_w;
+    let fixed_fleet_overhead_power_w = if is_capacity_scaled_model {
+        point.fixed_capacity_scaled_overhead_power_w
+    } else {
+        point.fixed_fleet_overhead_power_w
+    };
     let total_system_energy_j = total_system_power_w.map(|power| power * duration);
     let storage_adjusted_total_system_energy_j = total_system_energy_j.map(|energy| {
         energy - (point.final_stored_energy_j - point.initial_stored_energy_j)
@@ -705,6 +722,7 @@ mod tests {
             per_gpu_board_power_w: per_gpu_power,
             per_gpu_support_power_w: Some(50.0),
             fixed_fleet_overhead_power_w: Some(500.0),
+            fixed_capacity_scaled_overhead_power_w: Some(500.0),
             overhead_evidence: FleetOverheadEvidence::Measured,
             initial_stored_energy_j: 10_000.0,
             final_stored_energy_j: 10_000.0,
@@ -786,6 +804,7 @@ mod tests {
         let mut candidate = point("unknown-overhead", Some("cap"), 10.0, 380.0, 4_800.0);
         candidate.per_gpu_support_power_w = None;
         candidate.fixed_fleet_overhead_power_w = None;
+        candidate.fixed_capacity_scaled_overhead_power_w = None;
         candidate.overhead_evidence = FleetOverheadEvidence::Unknown;
 
         let report =
