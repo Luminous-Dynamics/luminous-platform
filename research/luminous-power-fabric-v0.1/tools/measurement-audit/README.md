@@ -91,6 +91,12 @@ The caller must supply the correct signed reactances and transformer referral co
 exact schematic. It does not calculate secondary modulation impedance from TPS/PFM command variables,
 classify PNNN/other paper states, evaluate device Coss/dead-time, or qualify ZVS/ZCS.
 
+For Huang et al.'s specific variable-frequency triple-phase-shift (VF-TPS) method, the crate also
+provides `secondary_vftps_equivalent_impedance` and `evaluate_cllc_vftps_t_network`. These use the
+paper's secondary bridge / load equivalent complex impedance formula and compose it with the generic
+T-network calculation. Do not apply that equivalent to SPS, EPS or other TPS controllers without
+re-deriving the modulation-dependent impedance.
+
 ## Explicit limitations
 
 - The CLI direction is supplied as an argument; it is not yet bound to or cross-checked against the
