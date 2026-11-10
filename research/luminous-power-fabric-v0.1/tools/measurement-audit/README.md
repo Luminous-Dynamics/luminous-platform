@@ -102,6 +102,12 @@ paper's selected low-frequency boost-mode interval and intersects it with contro
 limits. It does not classify all topology states or evaluate the paper's separate constant-power
 ZVS, unity-gain ZVS and maximum-gain constraints.
 
+The T-network module now also maps a declared physical tank (`Lr1, Cr1, Lr2, Cr2, Lm, n, fs`)
+to the paper's signed reactances, reports both resonant frequencies and both magnetizing ratios, and
+classifies the sixteen P/N impedance states. Near-zero values return an unknown state instead of
+being forced positive or negative. PNNN is the paper's selected low-frequency boost state, but is
+not a standalone ZVS proof or design qualification.
+
 ## Explicit limitations
 
 - The CLI direction is supplied as an argument; it is not yet bound to or cross-checked against the
