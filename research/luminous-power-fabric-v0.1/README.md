@@ -230,6 +230,15 @@ constraints—symmetry, constant-power Q, unity-gain bound, boost-frequency wind
 boundary. This rejects some poor parameter candidates before switching simulation; it does not
 establish actual ZVS. See [LOSS_BUDGET_AND_MODEL_PLAN.md](./LOSS_BUDGET_AND_MODEL_PLAN.md).
 
+## PF-HVDC-6K: separate 800 VDC to 50 V research track
+
+The 800 VDC data-centre opportunity now has a dedicated research plan:
+[PF-HVDC-6KW_RESEARCH_PLAN.md](./PF-HVDC-6KW_RESEARCH_PLAN.md). It is deliberately separate from
+the 500 W bidirectional PEBB-LV-01. Current research comparators include a 6 kW 800 V/50 V GaN LLC
+prototype reporting 98.75% peak and 2,070 W/in³, and a separate ISOP LLC paper reporting 98.1%
+full-load and >98.4% peak. These are different unidirectional research designs; neither is a
+Luminous result or a matched bidirectional benchmark.
+
 ## Current limitations
 
 This package contains analytical screening models and offline data-audit tools; it does **not**
