@@ -235,6 +235,48 @@ pub fn validate_evidence_manifest(manifest: &EvidenceManifest) -> Result<(), Aud
                 ));
             }
         }
+        EvidenceKind::Hil => {
+            let measurement = manifest.measurement_context.as_ref().ok_or_else(|| {
+                AuditError("HIL evidence requires measurement_context".to_string())
+            })?;
+            require_nonblank(
+                &measurement.procedure_revision,
+                "measurement_context.procedure_revision",
+            )?;
+            require_nonblank(
+                &measurement.calibration_reference,
+                "measurement_context.calibration_reference",
+            )?;
+            require_nonblank(
+                &measurement.reference_plane_id,
+                "measurement_context.reference_plane_id",
+            )?;
+            require_nonblank(
+                &measurement.clock_domain_id,
+                "measurement_context.clock_domain_id",
+            )?;
+            if measurement.instrument_ids.is_empty()
+                || measurement.instrument_ids.iter().any(|instrument| instrument.trim().is_empty())
+                || !measurement.instrument_bandwidth_hz.is_finite()
+                || measurement.instrument_bandwidth_hz <= 0.0
+                || measurement.clock_sync_uncertainty_ns
+                    > measurement.maximum_allowed_clock_sync_uncertainty_ns
+            {
+                return Err(AuditError("HIL measurement context is invalid".to_string()));
+            }
+            let simulation = manifest.simulation_context.as_ref().ok_or_else(|| {
+                AuditError("HIL evidence requires simulation_context".to_string())
+            })?;
+            require_nonblank(&simulation.model_id, "simulation_context.model_id")?;
+            require_nonblank(&simulation.model_revision, "simulation_context.model_revision")?;
+            require_nonblank(&simulation.solver_id, "simulation_context.solver_id")?;
+            require_nonblank(&simulation.solver_version, "simulation_context.solver_version")?;
+            if !is_sha256_hex(&simulation.parameter_set_sha256)
+                || !is_sha256_hex(&simulation.boundary_conditions_sha256)
+            {
+                return Err(AuditError("HIL simulation digests must be SHA-256 hex".to_string()));
+            }
+        }
         EvidenceKind::IndependentLabTest | EvidenceKind::Certification => {
             let attestation = manifest.external_attestation.as_ref().ok_or_else(|| {
                 AuditError(
@@ -255,8 +297,7 @@ pub fn validate_evidence_manifest(manifest: &EvidenceManifest) -> Result<(), Aud
         EvidenceKind::Synthetic
         | EvidenceKind::Assumption
         | EvidenceKind::VendorReported
-        | EvidenceKind::Analytical
-        | EvidenceKind::Hil => {}
+        | EvidenceKind::Analytical => {}
     }
 
     Ok(())
@@ -331,7 +372,7 @@ pub fn validate_evidence_graph(manifests: &[EvidenceManifest]) -> Result<(), Aud
         processed += 1;
         if let Some(children) = dependents.get(evidence_id) {
             for child in children {
-                let degree = indegree.get_mut(child).ok_or_else(|| {
+                let degree = indegree.get_mut(*child).ok_or_else(|| {
                     AuditError("evidence graph indegree entry is missing".to_string())
                 })?;
                 *degree -= 1;
@@ -562,6 +603,16 @@ mod tests {
         left.dependencies = vec!["right".to_string()];
         right.dependencies = vec!["left".to_string()];
         assert!(validate_evidence_graph(&[left, right]).is_err());
+    }
+
+    #[test]
+    fn hardware_in_loop_evidence_requires_both_measurement_and_simulation_contexts() {
+        let mut value = physical_manifest("hil-context");
+        value.evidence_kind = EvidenceKind::Hil;
+        assert!(validate_evidence_manifest(&value).is_err());
+
+        value.simulation_context = Some(simulated_manifest("sim-source").simulation_context.unwrap());
+        assert!(validate_evidence_manifest(&value).is_ok());
     }
 
     #[test]
