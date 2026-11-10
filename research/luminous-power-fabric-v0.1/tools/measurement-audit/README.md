@@ -122,6 +122,18 @@ The resistive solver checks periodic current closure and energy balance. It is a
 RL model, not a semiconductor switching or magnetic model. Both modules are read-only calculation
 tools; neither commands hardware nor establishes a real-device ZVS condition.
 
+## CLLC physical tank and PNNN screen
+
+The crate exposes `map_cllc_tank_reactances`, `classify_cllc_operating_state`, and
+`screen_cllc_pnnn_low_frequency_boost_state`. Together these map the physical resonant tank to the
+paper's T-network, classify all sixteen P/N sign states, check equal-`fr` / equal-`k` symmetry within
+a declared tolerance and evaluate the actual switching frequency against the controller-intersected
+low-frequency boost window.
+
+A PNNN/window pass is only this paper-specific operating-state screen. It does not test FHA gain,
+constant-power or unity-gain ZVS boundaries, maximum gain, device commutation energy, losses, thermal
+limits or hardware safety.
+
 ## Explicit limitations
 
 - The CLI direction is supplied as an argument; it is not yet bound to or cross-checked against the
