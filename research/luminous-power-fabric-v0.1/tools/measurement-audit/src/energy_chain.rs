@@ -639,7 +639,11 @@ mod tests {
         candidate_scenario.id = "synthetic-candidate".to_string();
         candidate_scenario.name = "Synthetic higher-efficiency candidate".to_string();
         candidate_scenario.segments[0].stage_operating_points[0].efficiency_fraction = 0.99;
+        candidate_scenario.segments[0].stage_operating_points[0].efficiency_reference =
+            "synthetic:candidate-dcx:99%".to_string();
         candidate_scenario.segments[0].stage_operating_points[1].efficiency_fraction = 0.985;
+        candidate_scenario.segments[0].stage_operating_points[1].efficiency_reference =
+            "synthetic:candidate-load-converter:98.5%".to_string();
         let candidate = evaluate_energy_chain(&candidate_scenario).unwrap();
 
         let comparison = super::compare_energy_chain_reports(&baseline, &candidate).unwrap();
