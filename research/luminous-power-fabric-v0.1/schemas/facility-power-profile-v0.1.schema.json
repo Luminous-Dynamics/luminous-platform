@@ -1,0 +1,271 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/facility-power-profile-v0.1.schema.json",
+  "title": "Luminous Facility Power Profile v0.1",
+  "description": "Time-aligned active load power behind a declared facility or PCC boundary, plus an ideal constant-import storage sizing scenario. Schema validation does not prove calibration, timestamp monotonicity, or grid suitability.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "capture_kind",
+    "boundary",
+    "clock",
+    "load_power_channel",
+    "storage_scenario",
+    "samples"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "facility-power-profile-v0.1"
+    },
+    "profile_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "capture_kind": {
+      "type": "string",
+      "enum": ["PHYSICAL_MEASUREMENT", "SIMULATED", "VENDOR_REPORTED", "SYNTHETIC_EXAMPLE"]
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["boundary_id", "description", "measurement_side"],
+      "properties": {
+        "boundary_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "measurement_side": {
+          "type": "string",
+          "enum": ["FACILITY_LOAD", "POINT_OF_COMMON_COUPLING", "DATA_HALL_BUS", "RACK_BUS"]
+        },
+        "nominal_voltage_v": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "system_type": {
+          "type": "string",
+          "enum": ["AC_THREE_PHASE", "AC_SINGLE_PHASE", "DC", "UNKNOWN"]
+        },
+        "power_sign_convention": {
+          "const": "POSITIVE_CONSUMPTION"
+        }
+      }
+    },
+    "clock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "clock_domain_id",
+        "timestamp_unit",
+        "nominal_sample_interval_ns",
+        "maximum_allowed_sample_gap_ns",
+        "synchronization_uncertainty_ns"
+      ],
+      "properties": {
+        "clock_domain_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timestamp_unit": {
+          "const": "ns"
+        },
+        "nominal_sample_interval_ns": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maximum_allowed_sample_gap_ns": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "synchronization_uncertainty_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "clock_source": {
+          "type": "string",
+          "enum": ["DAQ_MASTER", "PTP", "GNSS", "INSTRUMENT_LOCAL", "SIMULATOR", "UNKNOWN"]
+        },
+        "timestamp_semantics": {
+          "type": "string",
+          "enum": ["SAMPLE_INSTANT", "WINDOW_START", "WINDOW_CENTER", "WINDOW_END"]
+        }
+      }
+    },
+    "load_power_channel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "channel_id",
+        "quantity",
+        "unit",
+        "boundary_id",
+        "evidence_kind",
+        "source_reference",
+        "standard_uncertainty"
+      ],
+      "properties": {
+        "channel_id": {
+          "const": "load_active_power_w"
+        },
+        "quantity": {
+          "const": "ACTIVE_POWER"
+        },
+        "unit": {
+          "const": "W"
+        },
+        "boundary_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_kind": {
+          "type": "string",
+          "enum": ["PHYSICAL_MEASUREMENT", "SIMULATION", "VENDOR_SPECIFICATION", "ASSUMPTION"]
+        },
+        "source_reference": {
+          "type": "string",
+          "minLength": 1
+        },
+        "standard_uncertainty": {
+          "type": "number",
+          "minimum": 0
+        },
+        "calibration_reference": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bandwidth_hz": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "evidence_kind": {
+                "const": "PHYSICAL_MEASUREMENT"
+              }
+            }
+          },
+          "then": {
+            "required": ["calibration_reference", "bandwidth_hz"]
+          }
+        }
+      ]
+    },
+    "storage_scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "grid_import_target_w",
+        "charge_efficiency_fraction",
+        "discharge_efficiency_fraction",
+        "available_usable_energy_capacity_j",
+        "initial_stored_energy_j",
+        "maximum_charge_power_w",
+        "maximum_discharge_power_w"
+      ],
+      "properties": {
+        "grid_import_target_w": {
+          "type": "number",
+          "minimum": 0
+        },
+        "charge_efficiency_fraction": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        },
+        "discharge_efficiency_fraction": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        },
+        "available_usable_energy_capacity_j": {
+          "type": "number",
+          "minimum": 0
+        },
+        "initial_stored_energy_j": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maximum_charge_power_w": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maximum_discharge_power_w": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "capture_metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "raw_artifact_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "procedure_revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "instrument_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "calibration_record_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "model_revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "samples": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "$ref": "#/$defs/sample"
+      }
+    }
+  },
+  "$defs": {
+    "sample": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["timestamp_ns", "load_power_w", "quality"],
+      "properties": {
+        "timestamp_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "load_power_w": {
+          "type": "number",
+          "minimum": 0
+        },
+        "quality": {
+          "type": "string",
+          "enum": ["VALID", "SATURATED", "DROPPED", "CLOCK_UNCERTAIN", "MISSING_CALIBRATION", "UNKNOWN"]
+        }
+      }
+    }
+  }
+}
