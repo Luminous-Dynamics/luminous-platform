@@ -216,7 +216,7 @@ efficiency, RMS currents, hot-spot temperatures and waveform metrics. Do not cal
 and claim validation on the same single run: reserve independent operating points / units for
 correlation assessment.
 
-## First 10 tasks that can start immediately
+## First implementation tasks that can start immediately
 
 | ID | Task | Primary system | Required evidence |
 |---|---|---|---|
@@ -235,9 +235,13 @@ correlation assessment.
 | PF-013 | Reproduce a published DAB SPS/EPS loss model and its assumptions | Symtropy | Equations, parameter set, model revision and independent reproduction notes |
 | PF-014 | Build matched non-ideal DAB/CLLC operating-point maps | Symtropy | Full 90-point-per-candidate map with infeasible points retained |
 | PF-015 | Create the Pareto analysis and sensitivity report | Symthaea + Symtropy | Separate efficiency, stress, thermal, volume, cost and model-uncertainty surfaces |
+| PF-016 | Extend DAB SPS from ideal transfer to signed current-waveform / RMS / peak-current and ZVS-boundary screening | Symtropy | Source-derived equations, domain checks and validation fixtures; no ZVS claim until hardware-correlated |
+| PF-017 | Implement a CLLC FHA gain / resonant-tank / soft-switching constraint evaluator | Symtropy | Published-equation derivation, input tolerances and boundary fixtures |
+| PF-018 | Bind DAB/CLLC model loss terms into the provenance-aware loss-budget record | Rust tooling + Symtropy | Exact model revision, term-source and uncertainty-preserving budget records |
 
-The first code increment should be the offline measurement auditor, not an autonomous hardware-control
-agent. It will consume read-only measurement records and fail closed on missing/ambiguous data.
+The first code increments are the read-only capture auditor, provenance-aware loss-budget engine,
+and ideal DAB SPS power-transfer screen. They are all offline/read-only engineering tools, not a
+converter controller, protection relay or authorization to energize hardware.
 
 ## Claim ceiling
 
