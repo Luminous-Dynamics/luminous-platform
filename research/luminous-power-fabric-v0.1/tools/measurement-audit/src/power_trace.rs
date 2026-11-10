@@ -270,8 +270,12 @@ pub fn audit_grid_to_chip_trace(
         }
     }
 
-    let first = trace.samples.first().expect("sample count validated");
-    let last = trace.samples.last().expect("sample count validated");
+    let first = trace.samples.first().ok_or_else(|| {
+        AuditError("grid-to-chip trace lost its first sample during audit".to_string())
+    })?;
+    let last = trace.samples.last().ok_or_else(|| {
+        AuditError("grid-to-chip trace lost its final sample during audit".to_string())
+    })?;
     let total_duration_ns = last.timestamp_ns - first.timestamp_ns;
     let duration_s = total_duration_ns as f64 / 1_000_000_000.0;
     if !duration_s.is_finite()
@@ -306,11 +310,6 @@ pub fn audit_grid_to_chip_trace(
         ));
     }
 
-    let nonnegative_loss_j = if conversion_chain_loss_j < 0.0 {
-        0.0
-    } else {
-        conversion_chain_loss_j
-    };
     let storage_adjusted_efficiency_percent =
         100.0 * delivered_energy_j / effective_energy_available_j;
     let raw_boundary_output_to_input_ratio_percent =
@@ -359,7 +358,7 @@ pub fn audit_grid_to_chip_trace(
         delivered_processor_energy_j: delivered_energy_j,
         stored_energy_change_j,
         effective_energy_available_j,
-        conversion_chain_loss_j: nonnegative_loss_j,
+        conversion_chain_loss_j,
         storage_adjusted_efficiency_percent,
         raw_boundary_output_to_input_ratio_percent,
         maximum_source_input_power_w: maximum_source_power_w,
@@ -523,8 +522,8 @@ mod tests {
     #[test]
     fn rejects_energy_balance_that_requires_negative_conversion_loss() {
         let mut t = trace(vec![
-            sample(0, 1200.0, WorkloadState::Steady),
-            sample(1_000_000_000, 1200.0, WorkloadState::Steady),
+            sample(0, 1300.0, WorkloadState::Steady),
+            sample(1_000_000_000, 1300.0, WorkloadState::Steady),
         ]);
         t.metadata.initial_stored_energy_j = 100.0;
         t.metadata.final_stored_energy_j = 0.0;
