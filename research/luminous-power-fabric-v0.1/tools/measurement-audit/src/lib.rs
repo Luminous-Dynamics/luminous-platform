@@ -253,6 +253,9 @@ mod tests {
         let capture = format!("{HEADER}0,48,10,48,-9.6,30\n1,48,10,48,-9.6,30\n");
         let report = audit_csv(capture.as_bytes(), Direction::AToB).unwrap();
         assert_eq!(report.sample_count, 2);
+        assert!((report.duration_s - 1.0).abs() < 1e-9);
+        assert!((report.average_input_power_w - 480.0).abs() < 1e-9);
+        assert!((report.average_output_power_w - 460.8).abs() < 1e-9);
         assert!((report.input_energy_j - 480.0).abs() < 1e-9);
         assert!((report.output_energy_j - 460.8).abs() < 1e-9);
         assert!((report.efficiency_percent - 96.0).abs() < 1e-9);
