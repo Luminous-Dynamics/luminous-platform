@@ -450,4 +450,4 @@ Physical-measurement records require calibration, instrument IDs/bandwidth, refe
 
 This module does not parse JSON, open/hash artifact files, verify signatures, authenticate issuers, validate calibration certificates or qualify equipment. It intentionally does not implement cryptography. See [EVIDENCE_MANIFEST_AND_REQUALIFICATION_GRAPH_2026-11-10.md](../../EVIDENCE_MANIFEST_AND_REQUALIFICATION_GRAPH_2026-11-10.md) and [evidence-manifest-v0.1.schema.json](../../schemas/evidence-manifest-v0.1.schema.json).
 
-**Validation:** eight Rust unit tests are authored but not executed. JSON Schema validation, compilation, formatting and Clippy are not claimed.
+**Validation:** nine Rust unit tests are authored but not executed. JSON Schema validation, compilation, formatting and Clippy are not claimed.
