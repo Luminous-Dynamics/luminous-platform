@@ -16,11 +16,12 @@ A standalone deterministic model-level schedule generator for Platform issue #36
 
 With a Rust 2024 toolchain and Cargo dependencies available:
 
-    cargo test --locked
+    cargo test
     cargo run --release -- --seed 350 --schedules 1000 --max-events 19 --out report.json
 
-Replay an exact event array saved from a report:
+Export one exact event array and replay it byte-for-byte:
 
+    cargo run --release -- --seed 350 --max-events 19 --emit-schedule --out events.json
     cargo run --release -- --replay events.json
 
 Default run: 1,000 schedules, seed 350, maximum 19 events per schedule. Exit status is 0 with no detected invariant violation, 2 if a violation is found, and 1 for invocation or input errors.
