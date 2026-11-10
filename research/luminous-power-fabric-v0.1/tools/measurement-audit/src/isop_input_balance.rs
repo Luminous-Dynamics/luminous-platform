@@ -293,8 +293,14 @@ pub fn evaluate_isop_input_voltage_balance(
         input_power_balance_residual_w,
     ];
     if !finite(&derived)
-        || derived.iter().any(|value| *value < 0.0 && value != &voltage_residual_v && value != &input_power_balance_residual_w)
+        || active_cell_input_voltage_sum_v <= 0.0
+        || input_series_current_a <= 0.0
+        || equal_active_voltage_v <= 0.0
+        || maximum_absolute_deviation_v < 0.0
+        || maximum_absolute_deviation_percent < 0.0
+        || total_output_power_w < 0.0
         || total_input_power_w <= 0.0
+        || total_bypass_loss_w < 0.0
         || total_chain_efficiency_percent < 0.0
         || total_chain_efficiency_percent > 100.0
     {
@@ -338,8 +344,8 @@ mod tests {
             efficiency_fraction: 0.98,
             no_load_input_power_w: 0.0,
             bypass_drop_voltage_v: 0.0,
-            minimum_input_voltage_v: 90.0,
-            maximum_input_voltage_v: 110.0,
+            minimum_input_voltage_v: 180.0,
+            maximum_input_voltage_v: 220.0,
         }
     }
 
@@ -453,19 +459,19 @@ mod tests {
     }
 
     #[test]
-    fn rejects_nonfinite_and_underflowed_power_inputs() {
+    fn rejects_nonfinite_and_overflowed_power_inputs() {
         let nonfinite = evaluate_isop_input_voltage_balance(IsopInputBalanceInput {
             total_input_bus_voltage_v: 800.0,
             cells: vec![active("a", f64::INFINITY)],
         });
-        let mut tiny = active("tiny", f64::MIN_POSITIVE);
-        tiny.efficiency_fraction = 1.0;
-        let underflow = evaluate_isop_input_voltage_balance(IsopInputBalanceInput {
-            total_input_bus_voltage_v: f64::MAX,
-            cells: vec![tiny],
+        let mut overflow_cell = active("overflow", f64::MAX);
+        overflow_cell.efficiency_fraction = 0.1;
+        let overflow = evaluate_isop_input_voltage_balance(IsopInputBalanceInput {
+            total_input_bus_voltage_v: 800.0,
+            cells: vec![overflow_cell],
         });
 
         assert!(nonfinite.is_err());
-        assert!(underflow.is_err());
+        assert!(overflow.is_err());
     }
 }
