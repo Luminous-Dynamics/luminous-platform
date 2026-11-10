@@ -48,7 +48,7 @@ These verifier/signature booleans and IDs are synthetic fixture assertions only.
 
 ### Final fixture coverage in this tranche
 
-The 28-case corpus includes:
+The 30-case corpus includes:
 - DWF-001-23: incomplete execution receipt rejection;
 - DWF-001-24: complete receipt positive control;
 - DWF-001-25: invalid executor signature rejection;
@@ -59,7 +59,7 @@ The 28-case corpus includes:
 
 ## Input contract validation
 
-Before any expected disposition is evaluated, the evaluator validates the fixture envelope: schema version, unique scenario/candidate IDs, exact origin/peer roles, request semantic identity, non-empty ISA, positive minimum memory/deadline/energy ceiling, read-only/no-external-effect constraints, typed policy and transfer-budget fields, network state, and result-phase oracle-verifier identity. This prevents missing requirements from silently becoming unconstrained defaults. The current 28-scenario fixture passes an independent structural cross-check in the authoring environment; the five Rust negative-control tests are still awaiting Cargo execution. Deliberately incomplete execution receipts remain valid *negative-control inputs* and are evaluated as rejected results; they are not rejected as malformed fixture envelopes.
+Before any expected disposition is evaluated, the evaluator validates the fixture envelope: schema version, unique scenario/candidate IDs, exact origin/peer roles, request semantic identity, non-empty ISA, positive minimum memory/deadline/energy ceiling, read-only/no-external-effect constraints, typed policy and transfer-budget fields, network state, and result-phase oracle-verifier identity. This prevents missing requirements from silently becoming unconstrained defaults. The current 30-scenario fixture has an independent structural cross-check from the authoring environment. The 23 Rust source tests include a deterministic single-field hard-gate tightening matrix, a non-compensatory privacy/performance control, and candidate-order permutation checks. All 23 tests still require Cargo execution. Deliberately incomplete execution receipts remain valid *negative-control inputs* and are evaluated as rejected results; they are not rejected as malformed fixture envelopes.
 
 
 The accepted network-state vocabulary includes explicit `disconnected` as well as connected, pre-dispatch partition, post-dispatch partition and reconnected states. A disconnected peer is ineligible before dispatch; the local origin may remain eligible.
@@ -71,3 +71,12 @@ The result receipt must now bind to the selected peer's device-profile digest, p
 
 
 The 30-case corpus also binds result receipts to the exact selected peer device-profile digest, posture digest and board revision. The incomplete-receipt negative control includes missing device/posture claims as explicit rejection reasons.
+
+
+### Adversarial and metamorphic test coverage
+
+The evaluator's table-driven hard-eligibility test starts from an eligible peer and applies one constraint-tightening mutation at a time. Mutations cover local-only policy, destination allowlists, source data classification, peer session scopes and revocation, lease expiry, local/destination policy denial, stale posture, unknown device profile, ISA and memory mismatch, runtime/workload digest mismatch, backend mismatch, deadline and energy overruns, missing/exceeded transfer budgets, disconnection, non-read-only workload class and external effects. Every mutated peer must become ineligible.
+
+A separate non-compensatory test gives a data-scope-denied peer unrealistically favorable latency, energy and thermal values and verifies that the privacy gate still wins. Candidate assessments are sorted by stable candidate ID, and the permutation test verifies that reversing candidate input order does not change the selected Pareto frontier or assessment ordering.
+
+These are deterministic source-level tests, not executed Rust test results. They do not replace property-based fuzzing, cryptographic receipt verification, independent review or physical qualification.
