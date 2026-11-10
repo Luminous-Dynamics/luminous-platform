@@ -1,0 +1,76 @@
+{
+  "schema_version": "0.1",
+  "record_class": "synthetic_fixture",
+  "run_id": "PF-LV01-SYNTHETIC-EXAMPLE-0001",
+  "created_at": "2026-11-10T00:00:00Z",
+  "device": {
+    "device_id": "SYNTHETIC-NO-HARDWARE",
+    "hardware_revision": "NOT_BUILT",
+    "pcb_revision": "NOT_BUILT",
+    "bom_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "firmware_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "power_stage_lot": null,
+    "notes": "Schema example only; no hardware exists and no measurement was performed."
+  },
+  "test": {
+    "procedure_id": "PF-LV01-STEADY-STATE",
+    "procedure_revision": "0.1-DRAFT",
+    "direction": "A_TO_B",
+    "mode": "steady_state",
+    "port_a_nominal_v": 48,
+    "port_b_nominal_v": 48,
+    "rated_power_w": 500,
+    "load_fraction": 0.5,
+    "switching_frequency_hz": null,
+    "control_configuration_sha256": null,
+    "steady_state_window_s": 10,
+    "acceptance_profile_id": "PF-LV01-REV-A-PROPOSED"
+  },
+  "environment": {
+    "ambient_c": 25,
+    "cooling_mode": "unknown",
+    "airflow_m_per_s": null,
+    "orientation": "not_applicable_synthetic",
+    "relative_humidity_percent": null
+  },
+  "instruments": [
+    {
+      "instrument_id": "SYNTHETIC-GENERATOR",
+      "role": "synthetic_generator",
+      "manufacturer": "Luminous Dynamics example",
+      "model": "fixture-only",
+      "serial_number": "NONE",
+      "calibration_state": "not_applicable",
+      "calibration_certificate_uri": null,
+      "calibration_valid_until": null,
+      "uncertainty_value": 0,
+      "uncertainty_unit": "not_applicable",
+      "bandwidth_hz": null,
+      "measurement_range": "synthetic values only"
+    }
+  ],
+  "raw_data": {
+    "uri": "urn:luminous:power-fabric:synthetic:example-only",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "media_type": "text/csv",
+    "row_count": 2,
+    "header": "time_s,port_a_voltage_v,port_a_current_a,port_b_voltage_v,port_b_current_a,case_temp_c",
+    "timebase_description": "synthetic example; not physical capture"
+  },
+  "analysis": {
+    "tool_name": "not-implemented",
+    "tool_revision": "not-implemented",
+    "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "configuration_sha256": null
+  },
+  "evidence": {
+    "status": "synthetic_not_evidence",
+    "claim_ceiling": "synthetic_only",
+    "reviewer_id": null,
+    "reviewed_at": null,
+    "limitations": [
+      "This is a schema fixture, not a bench run.",
+      "No prototype, instrument, calibration or physical data exists."
+    ]
+  }
+}
