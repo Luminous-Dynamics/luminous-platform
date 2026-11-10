@@ -62,7 +62,7 @@
           "minLength": 1
         },
         "protocol_commit": {
-          "$ref": "#/$defs/sha"
+          "$ref": "#/$defs/git_commit"
         }
       }
     },
@@ -148,7 +148,7 @@
           "minimum": 0
         },
         "corpus_generator_commit": {
-          "$ref": "#/$defs/sha"
+          "$ref": "#/$defs/git_commit"
         }
       }
     },
@@ -452,7 +452,7 @@
           "minLength": 1
         },
         "review_commit": {
-          "$ref": "#/$defs/sha"
+          "$ref": "#/$defs/git_commit"
         },
         "review_artifact": {
           "$ref": "#/$defs/sha"
@@ -751,6 +751,10 @@
           "type": "string"
         }
       }
+    },
+    "git_commit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
     }
   }
 }
