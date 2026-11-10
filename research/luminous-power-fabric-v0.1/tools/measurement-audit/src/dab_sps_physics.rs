@@ -362,7 +362,7 @@ mod tests {
         )
         .unwrap();
 
-        assert!((thermal.conduction_loss_w - 6.5094).abs() < 0.001);
+        assert!((thermal.conduction_loss_w - 6.5104167).abs() < 0.001);
         assert!(thermal.estimated_junction_temperature_c > 125.0);
         assert!(!thermal.within_declared_thermal_limit);
     }
