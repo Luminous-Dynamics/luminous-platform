@@ -7,6 +7,7 @@ pub mod interleaved_ripple;
 pub mod dc_rail_path;
 pub mod power_trace;
 pub mod transient_audit;
+pub mod storage_buffer;
 pub mod loss_budget;
 pub mod energy_chain;
 pub mod dab_sps;
