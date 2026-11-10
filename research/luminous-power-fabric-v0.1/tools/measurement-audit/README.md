@@ -179,6 +179,11 @@ a caller-supplied carbon-intensity factor. It retains separate source references
 standby, tariff and emissions input. It supports an explicit idle segment with zero delivered load
 and nonzero equipment standby draw; unrepresented annual hours are rejected.
 
+`energy_chain::compare_energy_chain_reports` compares baseline and candidate reports only when
+annual hours, useful delivered energy, tariff/currency and grid-carbon intensity match. It returns
+positive savings when the candidate needs less source energy, costs less or emits less. This prevents
+comparing different load profiles or tariffs as though they were a technology improvement.
+
 The tool does not infer or interpolate efficiency maps, does not automatically add busbar/cable,
 cooling/storage/availability losses, and does not propagate uncertainty. Add these as separate,
 provenance-bearing stages or separate validated models. It is an architecture-comparison aid, not a
