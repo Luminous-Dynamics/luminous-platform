@@ -97,6 +97,11 @@ paper's secondary bridge / load equivalent complex impedance formula and compose
 T-network calculation. Do not apply that equivalent to SPS, EPS or other TPS controllers without
 re-deriving the modulation-dependent impedance.
 
+The T-network module also exposes `screen_cllc_low_frequency_boost_window`, which screens the
+paper's selected low-frequency boost-mode interval and intersects it with controller frequency
+limits. It does not classify all topology states or evaluate the paper's separate constant-power
+ZVS, unity-gain ZVS and maximum-gain constraints.
+
 ## Explicit limitations
 
 - The CLI direction is supplied as an argument; it is not yet bound to or cross-checked against the
