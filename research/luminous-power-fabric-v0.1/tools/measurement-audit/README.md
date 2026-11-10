@@ -440,3 +440,14 @@ The library exposes sampling_adequacy::audit_sampling_adequacy for a timestamp v
 This is a sampling/bandwidth metadata screen. It does not validate a physical sensor, calibration, probe loading or actual analog-filter response. The 50 Hz AI workload trace fixtures deliberately fail when used to support a sub-microsecond VRM transient claim.
 
 **Validation:** eight Rust tests are authored but not executed. No workload dataset adapter, archive parsing, field measurement, physical test or certification is claimed. See [MULTIRESOLUTION_AI_WORKLOAD_TRACE_AND_SAMPLING_ADEQUACY_2026-11-10.md](../../MULTIRESOLUTION_AI_WORKLOAD_TRACE_AND_SAMPLING_ADEQUACY_2026-11-10.md).
+
+
+## Configuration-bound evidence manifests and requalification
+
+The library exposes evidence_manifest::validate_evidence_manifest for typed, evidence-class-aware metadata checks; compare_computed_artifact_digest for comparing an externally calculated SHA-256 value against a declared digest; validate_evidence_graph for dependency-reference/cycle checks; and requalification_closure for finding the transitive evidence set affected by a configuration revision change.
+
+Physical-measurement records require calibration, instrument IDs/bandwidth, reference plane, procedure and clock metadata. Simulation records require model, solver, parameter-set and boundary-condition identity. Independent-lab and certification records require an explicit external attestation reference.
+
+This module does not parse JSON, open/hash artifact files, verify signatures, authenticate issuers, validate calibration certificates or qualify equipment. It intentionally does not implement cryptography. See [EVIDENCE_MANIFEST_AND_REQUALIFICATION_GRAPH_2026-11-10.md](../../EVIDENCE_MANIFEST_AND_REQUALIFICATION_GRAPH_2026-11-10.md) and [evidence-manifest-v0.1.schema.json](../../schemas/evidence-manifest-v0.1.schema.json).
+
+**Validation:** eight Rust unit tests are authored but not executed. JSON Schema validation, compilation, formatting and Clippy are not claimed.
