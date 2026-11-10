@@ -335,7 +335,65 @@ timing and jitter must be included in the model and measurement contract. Their 
 frequency range and 4.8 kW component values are not transferable to our 500 W design without
 re-derivation.
 
-## 8. Model-to-bench correlation gate
+## 8. Paper-derived CLLC parameter-design constraints (implemented)
+
+The Rust crate adds `cllc_design::evaluate_cllc_parameter_design`, translating the full paper's
+analytical parameter-design equations into a fail-closed screening result.
+
+### Symmetry precondition
+
+The paper's normalized FHA gain and parameter-feasible region assume:
+- `fr1 ≈ fr2`, where `fr1 = 1/(2π√(Lr1*Cr1))` and `fr2 = 1/(2π√(Lr2*Cr2))`.
+- `k1 ≈ k2`, where `k1 = Lm/Lr1` and `k2 = Lm/(n²*Lr2)`.
+
+The evaluator reports an error if either symmetry precondition is outside the caller's declared
+relative tolerance. It does not silently force an asymmetric tank into equations derived for a
+symmetric tank. A separate future model should generalize the equations for deliberately asymmetric
+CLLC designs.
+
+### Implemented constraints
+
+- **Eq. (10), low-frequency boost state:** `max(fr1/√(1+k), fr2/√(1+2k)) < fs < min(fr1, fr2)`.
+  The interval is intersected with the controller's permitted minimum / maximum frequency.
+- **Eq. (12), constant-maximum-power trajectory:** `Q_CMP = π³*Lr1*fr1*Pout / [4*(M*Udc1)²]`.
+- **Eq. (13), FHA phase-boundary function:** `Q_b(fn,k) = fn / √((1-fn²)*((2k+1)*fn² - 1))`, for
+  `1/√(2k+1) < fn < 1`.
+- **Eq. (15), critical quality factor:** `Q_max = 1/(√(2k+1) - 1)`.
+- **Eq. (16), conservative constant-power ZVS inductance bound:** `Lr1 ≤ 4*Qmax*Udc1²/(π³*fr1*Pout)`.
+  The paper applies the unity-gain boundary as the conservative case for this limit.
+- **Eq. (17)–(18), effective normalized frequency window:** the state lower bound is
+  `max(1/√(1+k), 1/√(1+2k))` and the upper bound is 1, further intersected with controller limits.
+- **Eq. (20), maximum-gain boundary:** solves
+  `A²*M⁴ - M² + (C*B)² = 0` at the lower admissible normalized frequency, with
+  `A = 1 + 1/k - 1/(k*fn²)`,
+  `B = ((2k+1)*fn - (2k+2)/fn + 1/fn³)/k`, and
+  `C = π³*fr1*Pout*Lr1/(4*Udc1²)`.
+  The larger real positive root gives the analytically available maximum-gain boundary.
+- **Eq. (22), unity-gain boundary Q:** `Q_boundary = √(k+1)/(k*M)`.
+- **Eq. (23), unity-gain ZVS inductance bound:** `Lr1 ≤ 4*Udc1²*√(k+1)/(π³*Pout*k*fr1)`.
+- **Eq. (24), combined feasible region:** intersection of the constant-power ZVS, unity-gain ZVS and
+  maximum-gain / frequency constraints.
+
+The evaluator reports each separate pass/fail dimension and the overall analytical screen. Its
+output must not be called a ZVS pass. The paper derives soft-switching regions under FHA and its
+modulation model; the equations do not resolve device Coss, gate dead-time, parasitic inductance,
+nonlinear capacitance, transformer leakage / losses or actual switching transients.
+
+### Synthetic arithmetic fixture
+
+For an invented symmetric test vector with `Lr1=Lr2=10 µH`, `fr1=fr2=115 kHz`, `Lm=30 µH`,
+`n=1`, `Pout=2 kW`, `Udc1=300 V`, `M=1` and a 75–150 kHz controller window, the equations
+produce:
+- `k=3` and `Qmax≈0.607625`.
+- `Q_CMP≈0.198096`.
+- State/controller lower frequency `75 kHz` and normalized lower frequency `≈0.652174`.
+- Constant-power and unity-gain inductance limits of approximately 30.67 µH and 33.65 µH.
+- Maximum-gain boundary of approximately 1.79872.
+
+These numbers are hand-calculated equation fixtures, not a PEBB-LV-01 prediction, parameter
+recommendation, simulation or measured converter result.
+
+## 9. Model-to-bench correlation gate
 
 A 2025 IEEE DAB loss-model study reported experimental/model loss deviations below 5 W across its tested 80–180 kHz range and SPS/EPS scenarios. This is a useful published example of the kind of model-correlation metric we should report, not a universal tolerance. Its voltage, power and hardware conditions are not a PEBB-LV-01 match.
 
@@ -350,7 +408,7 @@ For our future prototype, preregister:
 
 Target model-loss error only after the instrument uncertainty and physical test design are defined. A numerical target such as ±5 W would be meaningless if the total measurement uncertainty is itself several watts.
 
-## 9. Recommended next experiment sequence
+## 10. Recommended next experiment sequence
 
 1. Reproduce the 500 W CLLC paper's own operating point from its full paper and supplement before using its 97.6% result as a matched comparator.
 2. Reproduce a DAB SPS/EPS loss benchmark from published equations and parameter tables.
@@ -360,6 +418,6 @@ Target model-loss error only after the instrument uncertainty and physical test 
 6. Sweep resonant components, turns ratio, switching frequency and semiconductor choice under hard ZVS/current/thermal constraints.
 7. Only after independent review, select a prototype topology and create its controlled schematic/BOM package.
 
-## 10. Explicit claim ceiling
+## 11. Explicit claim ceiling
 
 The Rust module is a loss-budget arithmetic and provenance layer. It is not a converter solver, a DAB or CLLC model, a waveform simulator, an optimizer, a thermal model, a safety function or a physical qualification tool. The current test cases are authored but not run in this environment. No Luminous loss values or topology ranking have been produced.
