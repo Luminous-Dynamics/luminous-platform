@@ -352,7 +352,8 @@ fn candidate_result(
 
 fn dominates(left: &FlexibilityCandidateResult, right: &FlexibilityCandidateResult) -> bool {
     // Maximize power shed, work retention and ramp reduction. Minimize p99
-    // latency/TTFT cost, energy-per-work regression and rebound fraction.
+    // latency/TTFT, energy/work penalty, response latency, overshoot,
+    // recovery settling and rebound energy.
     let mut no_worse = left.power_shed_fraction >= right.power_shed_fraction
         && left.useful_work_retention_fraction >= right.useful_work_retention_fraction
         && left.p99_latency_increase_fraction <= right.p99_latency_increase_fraction
