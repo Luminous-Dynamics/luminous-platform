@@ -196,6 +196,13 @@ bidirectional efficiency and full-envelope feasibility—not a single peak numbe
 [INDUSTRY_BASELINE.md](./INDUSTRY_BASELINE.md) and
 [BENCHMARKS.md](./BENCHMARKS.md).
 
+## DAB physics implementation
+
+The Rust tools now include the literature-derived lossless SPS piecewise power/RMS-current model,
+FHA-error and analytic ZVS-polarity screens, a parameterized one-node thermal estimate, and a
+separate periodic resistive RL solver with energy-balance closure. The research boundary and
+equations are documented in [DAB_SPS_PHYSICS_MODEL.md](./DAB_SPS_PHYSICS_MODEL.md).
+
 ## Current limitations
 
 This package is a research specification. No hardware, PCB, firmware, converter model, benchmark
