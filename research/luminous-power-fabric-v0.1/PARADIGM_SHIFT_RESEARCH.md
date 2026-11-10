@@ -113,8 +113,7 @@ curves and inductive-impedance constraints: they may omit the resonant tank's in
 and reactance introduced by secondary-side modulation. It maps the CLLC tank to a T-type impedance
 network, represents the secondary active bridge as a complex AC impedance, turns a designated
 low-frequency boost state into switching-frequency and resonant-inductance-ratio constraints, and
-combines those with FHA gain feasibility. A 2 kW prototype validates forward and reverse ZVS
-measurements.
+combines those with FHA gain feasibility. A 2 kW prototype validates forward and reverse ZVS measurements and reports 95.7% maximum forward efficiency (95.2% at rated forward load) and 95.4% reverse efficiency; its 150–300 V input / 75–167 V output, 115 kHz resonance and 75–150 kHz switching are not comparable to PEBB-LV-01.
 
 This suggests a major improvement in our CLLC research process:
 
