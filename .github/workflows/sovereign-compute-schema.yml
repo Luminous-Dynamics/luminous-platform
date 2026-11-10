@@ -23,4 +23,27 @@ jobs:
       - name: Install pinned validator
         run: python -m pip install --disable-pip-version-check jsonschema==4.26.0
       - name: Validate modelled example against JSON Schema 2020-12
-        run: python -m jsonschema -i benchmarks/sovereign-compute-v0.1/example-modelled-run.json benchmarks/sovereign-compute-v0.1/benchmark-run.schema.json
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator, FormatChecker
+
+          schema_path = Path("benchmarks/sovereign-compute-v0.1/benchmark-run.schema.json")
+          example_path = Path("benchmarks/sovereign-compute-v0.1/example-modelled-run.json")
+          schema = json.loads(schema_path.read_text(encoding="utf-8"))
+          instance = json.loads(example_path.read_text(encoding="utf-8"))
+
+          Draft202012Validator.check_schema(schema)
+          validator = Draft202012Validator(schema, format_checker=FormatChecker())
+          errors = sorted(
+              validator.iter_errors(instance),
+              key=lambda error: tuple(str(part) for part in error.absolute_path),
+          )
+          if errors:
+              for error in errors:
+                  location = "/".join(str(part) for part in error.absolute_path) or "<root>"
+                  print(f"{location}: {error.message}")
+              raise SystemExit(f"manifest validation failed with {len(errors)} error(s)")
+          print("valid: example-modelled-run.json conforms to Draft 2020-12 schema") 
+          PY
