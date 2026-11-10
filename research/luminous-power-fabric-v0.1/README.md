@@ -170,6 +170,14 @@ scans discrete normalized-frequency points. Charging and discharging use directi
 equivalent quality factors. This is the first layer only; the October 2026 T-type impedance-network
 method motivates the next internal-state, impedance-angle and ZVS feasibility layer.
 
+## CLLC internal-state modelling increment
+
+Beyond the FHA gain screen, the Rust tooling now includes a generic complex T-network phasor
+evaluator. It calculates Y parameters, secondary/primary voltage phasor ratio and primary input
+impedance from caller-supplied signed branch reactances and secondary complex load impedance.
+Mapping actual CLLC components and secondary modulation into those inputs, then checking paper-state
+constraints and ZVS, remains engineering work. See the model plan for the exact claim boundary.
+
 ## Current limitations
 
 This package is a research specification. No hardware, PCB, firmware, converter model, benchmark
