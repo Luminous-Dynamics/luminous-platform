@@ -51,7 +51,6 @@
         "direction",
         "port_a_voltage_v",
         "port_b_voltage_v",
-        "output_power_w",
         "load_fraction",
         "ambient_c",
         "cooling_mode"
@@ -68,10 +67,6 @@
           "exclusiveMinimum": 0
         },
         "port_b_voltage_v": {
-          "type": "number",
-          "exclusiveMinimum": 0
-        },
-        "output_power_w": {
           "type": "number",
           "exclusiveMinimum": 0
         },
@@ -157,7 +152,7 @@
           }
         },
         "validated_against_hardware": {
-          "const": false
+          "type": "boolean"
         }
       }
     },
