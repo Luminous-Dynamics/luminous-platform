@@ -348,6 +348,7 @@ mod tests {
 
         let mut p = input();
         p.controller_minimum_frequency_hz = 160_000.0;
+        p.controller_maximum_frequency_hz = 180_000.0;
         assert!(evaluate_cllc_parameter_design(p).is_ok_and(|r| !r.frequency_constraint_passes));
     }
 }
