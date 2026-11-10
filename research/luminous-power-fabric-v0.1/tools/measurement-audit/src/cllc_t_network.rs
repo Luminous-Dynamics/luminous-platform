@@ -470,10 +470,11 @@ pub fn secondary_vftps_equivalent_impedance(
 
     let cos_theta = secondary_bridge_phase_shift_rad.cos();
     let cos_phi = secondary_ac_voltage_current_phase_rad.cos();
+    // Huang et al. Eq. (1): cos²(theta2) * cos(phi2), not cos²(phi2).
     let magnitude = 8.0
         * secondary_dc_load_ohm
         * cos_theta.powi(2)
-        * cos_phi.powi(2)
+        * cos_phi
         / (turns_ratio_primary_to_secondary.powi(2) * std::f64::consts::PI.powi(2));
 
     if !magnitude.is_finite() || magnitude <= 0.0 {
@@ -793,8 +794,8 @@ mod tests {
             0.1,
         )
         .unwrap();
-        assert!((z.re - 2.3671789275).abs() < 1e-9);
-        assert!((z.im - 0.2375101215).abs() < 1e-9);
+        assert!((z.re - 2.3790643397).abs() < 1e-9);
+        assert!((z.im - 0.2387026404).abs() < 1e-9);
     }
 
     #[test]
