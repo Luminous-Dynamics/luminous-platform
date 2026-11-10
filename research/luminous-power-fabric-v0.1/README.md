@@ -210,6 +210,14 @@ boost-state screen. It rejects a tank that violates the paper's equal-resonant-f
 assumptions or falls outside the controller-intersected switching-frequency window. This is still
 only one design constraint, not a complete ZVS or gain qualification.
 
+## DAB mission-profile design-space sweep
+
+The Rust engineering tools now evaluate frozen, weighted DAB mission points with direction-correct
+power accounting, resistive periodic current, analytic ZVS-polarity and thermal screens, and a
+multiobjective Pareto filter. Candidate comparisons retain every infeasible point rather than
+silently pruning it. Results are only model-based screening, not measured performance or a design
+approval. See [DAB_SPS_PHYSICS_MODEL.md](./DAB_SPS_PHYSICS_MODEL.md).
+
 ## Current limitations
 
 This package is a research specification. No hardware, PCB, firmware, converter model, benchmark
