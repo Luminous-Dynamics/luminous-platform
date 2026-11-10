@@ -108,6 +108,20 @@ classifies the sixteen P/N impedance states. Near-zero values return an unknown 
 being forced positive or negative. PNNN is the paper's selected low-frequency boost state, but is
 not a standalone ZVS proof or design qualification.
 
+## DAB SPS exact-current and resistive-periodic screens
+
+The crate now exposes:
+- `dab_sps_physics::evaluate_dab_sps_physics` for the published lossless piecewise SPS power,
+  RMS/peak current, FHA error and analytic switching-current-polarity boundary.
+- `dab_sps_physics::screen_dab_sps_lumped_thermal` for a declared one-node thermal estimate using
+  user-supplied equivalent resistance, hard-switching loss, residual ZVS factor and thermal path.
+- `dab_sps_resistive::evaluate_dab_sps_resistive` for exact four-segment RL current integration
+  and one-period steady-state periodicity with a lumped nonzero series resistance.
+
+The resistive solver checks periodic current closure and energy balance. It is a bridge-square-wave
+RL model, not a semiconductor switching or magnetic model. Both modules are read-only calculation
+tools; neither commands hardware nor establishes a real-device ZVS condition.
+
 ## Explicit limitations
 
 - The CLI direction is supplied as an argument; it is not yet bound to or cross-checked against the
