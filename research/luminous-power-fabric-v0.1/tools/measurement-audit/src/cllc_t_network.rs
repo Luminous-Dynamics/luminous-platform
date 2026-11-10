@@ -203,8 +203,10 @@ pub fn map_cllc_tank_reactances(
     let n2 = tank.turns_ratio_primary_to_secondary.powi(2);
     let x1 = omega * tank.primary_resonant_inductance_h
         - 1.0 / (omega * tank.primary_resonant_capacitance_f);
+    // Refer secondary-side components to the primary: Lr2' = n²*Lr2
+    // and Cr2' = Cr2/n², matching Fig. 2 / Eq. (6) of the cited paper.
     let x2 = omega * n2 * tank.secondary_resonant_inductance_h
-        - 1.0 / (omega * n2 * tank.secondary_resonant_capacitance_f);
+        - n2 / (omega * tank.secondary_resonant_capacitance_f);
     let x3 = omega * tank.magnetizing_inductance_h;
 
     let fr1 = 1.0
@@ -842,6 +844,32 @@ mod tests {
         assert!((result.secondary_series_resonant_frequency_hz - 115_000.0).abs() < 1e-6);
         assert!((result.primary_magnetizing_ratio_k1 - 3.0).abs() < 1e-12);
         assert!((result.secondary_referred_magnetizing_ratio_k2 - 3.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn refers_secondary_capacitance_with_inverse_turns_ratio_squared() {
+        let tank = super::ClLcTankParameters {
+            switching_frequency_hz: 90_000.0,
+            primary_resonant_inductance_h: 10e-6,
+            primary_resonant_capacitance_f: 1.0 / (
+                (2.0 * std::f64::consts::PI * 115_000.0).powi(2) * 10e-6
+            ),
+            secondary_resonant_inductance_h: 10e-6,
+            secondary_resonant_capacitance_f: 1.0 / (
+                (2.0 * std::f64::consts::PI * 115_000.0).powi(2) * 10e-6
+            ),
+            magnetizing_inductance_h: 30e-6,
+            turns_ratio_primary_to_secondary: 1.8,
+        };
+        let result = super::map_cllc_tank_reactances(tank).unwrap();
+        let omega = 2.0 * std::f64::consts::PI * tank.switching_frequency_hz;
+        let n2 = tank.turns_ratio_primary_to_secondary.powi(2);
+        let expected = omega * n2 * tank.secondary_resonant_inductance_h
+            - n2 / (omega * tank.secondary_resonant_capacitance_f);
+        let incorrect = omega * n2 * tank.secondary_resonant_inductance_h
+            - 1.0 / (omega * n2 * tank.secondary_resonant_capacitance_f);
+        assert!((result.x2_secondary_referred_series_ohm - expected).abs() < 1e-12);
+        assert!((result.x2_secondary_referred_series_ohm - incorrect).abs() > 1.0);
     }
 
     #[test]
