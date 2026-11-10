@@ -116,6 +116,58 @@ pub fn screen_dab_sps(point: DabSpsOperatingPoint) -> Result<DabSpsScreeningResu
     Ok(result)
 }
 
+/// Calculate the ideal primary-referred leakage inductance that would transfer
+/// the requested power at a selected SPS phase-shift magnitude.
+///
+/// This is a design-space equation only. The resulting inductance must still be
+/// evaluated for current stress, ZVS, voltage-ratio range, tolerance, losses and
+/// thermal limits in the non-ideal model.
+pub fn leakage_inductance_for_power_and_phase(
+    port_a_voltage_v: f64,
+    port_b_voltage_referred_to_a_v: f64,
+    switching_frequency_hz: f64,
+    requested_power_w: f64,
+    target_phase_shift_rad: f64,
+) -> Result<f64, AuditError> {
+    let positive_inputs = [
+        port_a_voltage_v,
+        port_b_voltage_referred_to_a_v,
+        switching_frequency_hz,
+        requested_power_w,
+        target_phase_shift_rad,
+    ];
+    if positive_inputs
+        .iter()
+        .any(|value| !value.is_finite() || *value <= 0.0)
+    {
+        return Err(AuditError(
+            "DAB design inputs and target phase shift must be positive and finite".to_string(),
+        ));
+    }
+    if target_phase_shift_rad > std::f64::consts::PI / 2.0 {
+        return Err(AuditError(
+            "ideal SPS target phase magnitude must not exceed pi/2".to_string(),
+        ));
+    }
+
+    let inductance_h = port_a_voltage_v
+        * port_b_voltage_referred_to_a_v
+        * target_phase_shift_rad
+        * (std::f64::consts::PI - target_phase_shift_rad)
+        / (2.0
+            * std::f64::consts::PI.powi(2)
+            * switching_frequency_hz
+            * requested_power_w);
+
+    if !inductance_h.is_finite() || inductance_h <= 0.0 {
+        return Err(AuditError(
+            "derived DAB inductance is not positive and finite".to_string(),
+        ));
+    }
+
+    Ok(inductance_h)
+}
+
 #[cfg(test)]
 mod tests {
     use super::{screen_dab_sps, DabSpsOperatingPoint};
@@ -156,6 +208,36 @@ mod tests {
         let result = screen_dab_sps(point(-562.5)).unwrap();
         assert!((result.signed_phase_shift_rad + std::f64::consts::PI / 4.0).abs() < 1e-9);
         assert!((result.ideal_signed_transferred_power_w + 562.5).abs() < 1e-9);
+    }
+
+    #[test]
+    fn calculates_inductance_for_target_power_and_phase() {
+        let inductance = super::leakage_inductance_for_power_and_phase(
+            48.0,
+            48.0,
+            100_000.0,
+            500.0,
+            std::f64::consts::PI / 4.0,
+        )
+        .unwrap();
+        assert!((inductance - 4.32e-6).abs() < 1e-12);
+
+        let mut p = point(500.0);
+        p.leakage_inductance_referred_to_a_h = inductance;
+        let result = screen_dab_sps(p).unwrap();
+        assert!((result.signed_phase_shift_rad - std::f64::consts::PI / 4.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn rejects_target_phase_above_sps_maximum() {
+        let result = super::leakage_inductance_for_power_and_phase(
+            48.0,
+            48.0,
+            100_000.0,
+            500.0,
+            std::f64::consts::PI,
+        );
+        assert!(result.is_err());
     }
 
     #[test]
