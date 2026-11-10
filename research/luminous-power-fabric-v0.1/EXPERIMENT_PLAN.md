@@ -253,6 +253,8 @@ correlation assessment.
 | PF-024 | Map actual CLLC schematic and secondary modulation to T-network signed reactances/complex impedance | Symtropy + power-electronics review | Reviewed circuit orientation, turns-ratio referral, modulation angles and port-current sign conventions |
 | PF-025 | Classify the paper's intended CLLC operation state over voltage/load/frequency points | Symtropy | Re-derived Y-parameter / Xeq sign constraints and independent hand-calculated fixtures |
 | PF-026 | Validate the paper-specific VF-TPS secondary AC impedance and T-network composition against independent hand calculations | Rust tooling + power-electronics review | Eq. (1) reference vectors, port conventions and no claim of complete state/ZVS feasibility |
+| PF-027 | Apply paper Eq. (10) low-frequency boost-mode window to the actual tank and controller range | Rust tooling + Symtropy | Resonant-frequency, inductance-ratio and controller-window intersection with infeasible points retained |
+| PF-028 | Derive the paper's constant-power and unity-gain ZVS limits and maximum-gain region for PEBB-specific parameters | Symtropy + power-electronics review | Independently checked equations, directions, load trajectory and model uncertainty before implementation |
 | PF-022 | Add Coss/dead-time commutation-energy and PFM timing-resolution constraints | Symtropy + embedded-control review | Declared device, gate-drive and controller clock parameters; no physical safety claims |
 | PF-023 | Correlate CLLC FHA and state-constrained model against independent time-domain switching runs | Symtropy | Held-out operating points, residuals and model-validity report
 
