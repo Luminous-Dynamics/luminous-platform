@@ -80,6 +80,17 @@ impedance, inductive/ZVS feasibility, resonant currents, Coss/dead-time commutat
 performance or continuous-band monotonicity. See
 [LOSS_BUDGET_AND_MODEL_PLAN.md](../../LOSS_BUDGET_AND_MODEL_PLAN.md).
 
+## Generic CLLC T-network phasor evaluator
+
+The crate exposes `cllc_t_network::evaluate_cllc_t_network`. It takes three signed branch reactances
+and the secondary bridge/load complex impedance and evaluates the two-port Y parameters, the
+secondary-to-primary voltage phasor ratio and primary input impedance.
+
+This is a generic FHA T-network calculation, not yet a complete CLLC state/soft-switching evaluator.
+The caller must supply the correct signed reactances and transformer referral convention for the
+exact schematic. It does not calculate secondary modulation impedance from TPS/PFM command variables,
+classify PNNN/other paper states, evaluate device Coss/dead-time, or qualify ZVS/ZCS.
+
 ## Explicit limitations
 
 - The CLI direction is supplied as an argument; it is not yet bound to or cross-checked against the
