@@ -438,7 +438,7 @@ impl ClLcTNetworkResult {
 /// modulation representation in Huang et al. (IEICE Electronics Express 2026),
 /// Eq. (1):
 ///
-/// Zac,eq = [8*Rload*cos²(theta2)*cos²(phi2)/(n²*pi²)] * exp(j*phi2)
+/// Zac,eq = [8*Rload*cos²(theta2)*cos(phi2)/(n²*pi²)] * exp(j*phi2)
 ///
 /// theta2 is the secondary-bridge phase-shift angle, phi2 is the phase
 /// difference between the secondary AC-port voltage and current fundamentals,
@@ -532,7 +532,7 @@ pub fn evaluate_cllc_vftps_t_network(
 /// D = X1*X2 + X1*X3 + X2*X3
 /// Y1 = -j*(X2+X3)/D
 /// Y2 =  j*X3/D
-/// Y3 = -j*(X1+X3)/D
+/// Y3 =  j*(X1+X3)/D
 ///
 /// The paper's port relation is:
 /// I1 = Y1*U1 + Y2*U2
