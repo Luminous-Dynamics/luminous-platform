@@ -61,6 +61,19 @@ Candidate configurations to model on a common boundary:
 
 For every option, evaluate efficiency map, current sharing, cell input-voltage balance, output ripple, transient response, regulation range, thermal distribution, fault isolation, degraded operation, service procedure and total system losses. The power fabric must treat module insertion/removal and series/parallel reconfiguration as separately designed and qualified operations, not a software-only runtime convenience.
 
+### Offline engineering increment: static output-current sharing
+
+The Rust library now includes `isop_sharing.rs`, a linear Thevenin/droop screen for output-parallel cells:
+
+```
+I_i = (E_i - V_bus) / R_i
+V_bus = (sum(E_i / R_i) - I_load) / sum(1 / R_i)
+```
+
+It reports cell currents and DC output powers, bus voltage, maximum share deviation, peak-to-peak current spread, current-balance residual and cells for which the model predicts reverse current/backfeed. Seven unit tests are authored for equal sharing, resistance mismatch, setpoint mismatch at zero load, conservation, input validation and underflow.
+
+The model's important use is to expose current-sharing stress and backfeed sensitivity before attempting a high-fidelity multi-cell simulation. It assumes linear positive-slope output characteristics. It does **not** model input-series voltage balance, control-loop interaction, negative incremental impedance, switching ripple, transient load steps, current limiting, cell dropout, protection coordination or fault dynamics. A predicted backfeed current is a review flag, not proof that a particular converter can absorb reverse energy.
+
 ## 4. Target ladder — provisional, not a product specification
 
 ### PF-HVDC-6K, 800 V to 50 V
