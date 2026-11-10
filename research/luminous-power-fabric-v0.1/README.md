@@ -149,9 +149,10 @@ the matched head-to-head plan. In particular, 97% efficiency is not by itself a 
 ## Loss engineering and topology research
 
 The next modelling increment is documented in [LOSS_BUDGET_AND_MODEL_PLAN.md](./LOSS_BUDGET_AND_MODEL_PLAN.md).
-It introduces a provenance-aware Rust loss-accounting engine and specifies the inputs required before
-DAB/CLLC topology losses can be calculated. The June 2026 500 W CLLC paper's 97.6% peak forward result
-is now included as a same-power literature anchor, but not yet a matched benchmark.
+It introduces a provenance-aware Rust loss-accounting engine, an ideal DAB SPS power-transfer /
+phase-shift / inductance screen, and specifies the inputs required before non-ideal DAB/CLLC topology
+losses can be calculated. The June 2026 500 W CLLC paper's 97.6% peak forward result is now included
+as a same-power literature anchor, but not yet a matched benchmark.
 
 ## Current limitations
 
