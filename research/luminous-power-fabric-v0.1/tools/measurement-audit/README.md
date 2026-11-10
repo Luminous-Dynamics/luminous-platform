@@ -422,3 +422,12 @@ The library exposes compute_power_benchmark:
 The multi-site v0.1 calculation is zero-lag only. It does not estimate lagged correlation, spectral coherence, grid frequency response or network stability. The trace audit is read-only and does not control workload, converter, storage or protection systems.
 
 **Validation:** tests are authored but not executed. No Rust compilation, formatting, Clippy, schema validation, EMT, HIL/PHIL, physical measurement or certification is claimed. See [COMPUTE_PRESERVING_GRID_TO_CHIP_BENCHMARK_2026-11-10.md](../../COMPUTE_PRESERVING_GRID_TO_CHIP_BENCHMARK_2026-11-10.md).
+
+
+## Frequency-dependent PDN target and impedance audit
+
+The library exposes pdn_frequency::audit_pdn_frequency_response for an explicit frequency-grid comparison between processor current-ripple RMS bins and supplied complex self-impedance points. It derives Z_target(f) from a per-bin voltage-ripple allocation, verifies the RSS allocation against the available AC ripple budget, applies a caller-declared conservative uncertainty bound to impedance magnitude, reports the worst frequency/ratio and flags sampled local impedance peaks as anti-resonance candidates.
+
+The caller must provide a valid, orthogonal/non-overlapping RMS spectral decomposition and impedance data at the same reference plane. The frequency vectors must match exactly; v0.1 does not interpolate, extrapolate, smooth, de-embed or parse S-parameters. Evidence class, calibration-reference presence, instrument bandwidth, configuration and de-embedding state remain explicit. A numerical screen is not loop-stability, package or product qualification.
+
+**Validation:** eight new Rust tests are authored but not executed. No compile, format, Clippy, field solver, Touchstone parser, de-embedding, physical measurement or certification is claimed. See [PDN_FREQUENCY_DOMAIN_TARGET_AND_ANTIRESONANCE_2026-11-10.md](../../PDN_FREQUENCY_DOMAIN_TARGET_AND_ANTIRESONANCE_2026-11-10.md).
