@@ -107,6 +107,8 @@ pub fn audit_csv<R: BufRead>(
     let mut input_energy_j = 0.0_f64;
     let mut output_energy_j = 0.0_f64;
     let mut sample_count = 0_usize;
+    let mut first_time_s: Option<f64> = None;
+    let mut last_time_s: Option<f64> = None;
     let mut line_number = 1_usize;
 
     let mut line = String::new();
@@ -153,6 +155,11 @@ pub fn audit_csv<R: BufRead>(
             port_b_power_w: port_b_voltage_v * port_b_current_a,
         };
 
+        if first_time_s.is_none() {
+            first_time_s = Some(time_s);
+        }
+        last_time_s = Some(time_s);
+
         if let Some(prev) = previous {
             let dt = sample.time_s - prev.time_s;
             if dt <= 0.0 {
@@ -186,12 +193,14 @@ pub fn audit_csv<R: BufRead>(
         ));
     }
 
-    let first = previous
-        .ok_or_else(|| AuditError("capture has no sample rows".to_string()))?;
+    let duration_s = last_time_s
+        .zip(first_time_s)
+        .map(|(last, first)| last - first)
+        .ok_or_else(|| AuditError("capture duration is unavailable".to_string()))?;
 
-    // Recover duration from the first timestamp by reading the sample stream again is
-    // unnecessary: maintain it from the first and last timestamp below.
-    let _ = first;
+    if !duration_s.is_finite() || duration_s <= 0.0 {
+        return Err(AuditError("capture duration must be positive and finite".to_string()));
+    }
 
     // The energy integral has a defined sign only when each port has a positive
     // net contribution in its declared role.
@@ -208,16 +217,6 @@ pub fn audit_csv<R: BufRead>(
         ));
     }
 
-    // Derive duration from the original sequence's first/last timestamps. The values
-    // are retained explicitly in the loop to avoid relying on row count or sample rate.
-    let duration_s = {
-        let mut copy = reader;
-        let _ = &mut copy;
-        // Duration is tracked independently below in a second pass over the capture.
-        // This branch is replaced by the streaming duration accumulator in the next block.
-        0.0
-    };
-
     let efficiency_percent = 100.0 * output_energy_j / input_energy_j;
     if !efficiency_percent.is_finite() || efficiency_percent <= 0.0 {
         return Err(AuditError(
@@ -228,12 +227,6 @@ pub fn audit_csv<R: BufRead>(
         return Err(AuditError(format!(
             "integrated output energy exceeds input energy ({efficiency_percent:.6}%); check sign convention, channels, timing and measurement setup"
         )));
-    }
-
-    if duration_s <= 0.0 {
-        return Err(AuditError(
-            "internal duration calculation was not established".to_string(),
-        ));
     }
 
     Ok(AuditReport {
