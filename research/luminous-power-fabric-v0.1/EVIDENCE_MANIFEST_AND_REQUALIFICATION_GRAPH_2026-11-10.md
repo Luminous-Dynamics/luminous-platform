@@ -73,7 +73,7 @@ The Rust module tools/measurement-audit/src/evidence_manifest.rs provides:
 - validate_evidence_graph for references and cycle checks;
 - requalification_closure for revision-change invalidation.
 
-Eight Rust unit tests are authored for physical measurement metadata, missing calibration, digest matching/mismatch, digest syntax, duplicate configuration items, simulation and attestation requirements, transitive requalification and graph errors. **Tests have not been executed.** JSON Schema validation, serde/JSON parsing, raw-byte hashing, signature verification and key revocation are not implemented or claimed.
+Nine Rust unit tests are authored for physical measurement metadata, missing calibration, digest matching/mismatch, digest syntax, duplicate configuration items, simulation and attestation requirements, transitive requalification and graph errors. **Tests have not been executed.** JSON Schema validation, serde/JSON parsing, raw-byte hashing, signature verification and key revocation are not implemented or claimed.
 
 ## 6. Next increments
 
