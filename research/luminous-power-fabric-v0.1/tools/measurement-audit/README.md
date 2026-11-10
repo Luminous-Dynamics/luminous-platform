@@ -469,3 +469,14 @@ Fast transient eligibility requires physical measurement evidence, known sample 
 The registry example separates the NLR measured workload traces from its model-generated facility profiles, splits the Elsayed node and single-machine sampling paths, and records ELF, ORNL Frontier, LLM-PowerTrace and Argonne's planned flexibility corpus with their respective release and licence states.
 
 **Validation:** eleven Rust tests are authored but not executed. The registry JSON and schema are present; JSON parsing is not JSON Schema validation. No dataset archive was downloaded or parsed, and no source-specific adapter is claimed. See [DATASET_REGISTRY_AND_POWER_FLEXIBILITY_BENCHMARK_2026-11-10.md](../../DATASET_REGISTRY_AND_POWER_FLEXIBILITY_BENCHMARK_2026-11-10.md).
+
+
+## QoS-constrained power-flexibility Pareto audit
+
+The library exposes power_flexibility::evaluate_power_flexibility_sweep for offline comparison of a frozen baseline with controlled power-cap/DVFS/workload operating points. Every candidate must match the baseline workload contract, request mix, quality contract, PCC boundary, time window and initial stored energy. PCC energy is corrected for the initial/final stored-energy change.
+
+The result reports power shed, useful-work retention, P99 latency/TTFT changes, SLO violation fraction, energy per work change, P99 ramp reduction and recovery rebound. Service-contract and minimum-power-shed gates are evaluated separately. The Pareto frontier contains only non-dominated candidates that pass the declared useful-work, QoS, energy/work, sustained-duration and rebound constraints.
+
+This is a read-only analysis function. It does not send GPU power-cap, DVFS, request admission, workload scheduling, storage or grid-dispatch commands. It assumes the input measurements have already passed the upstream measurement contract; the evidence IDs are references, not independently authenticated by this module.
+
+**Validation:** eleven Rust tests are authored but not executed. No Rust compilation, format, Clippy, live GPU experiment, workload control, PCC measurement, EMT/HIL/PHIL or grid-service qualification is claimed. See [POWER_FLEXIBILITY_VS_QOS_PARETO_BENCHMARK_2026-11-10.md](../../POWER_FLEXIBILITY_VS_QOS_PARETO_BENCHMARK_2026-11-10.md).
