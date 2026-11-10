@@ -56,6 +56,17 @@ The code does not promote datasheet/model/simulation inputs to measurement evide
 See [LOSS_BUDGET_AND_MODEL_PLAN.md](../../LOSS_BUDGET_AND_MODEL_PLAN.md) for equations, categories,
 anti-double-counting rules and the DAB/CLLC model-to-bench plan.
 
+## Ideal DAB SPS screen
+
+The library also exposes `dab_sps::screen_dab_sps` and
+`dab_sps::leakage_inductance_for_power_and_phase`. These functions implement the ideal steady-state
+SPS power-transfer equation using a secondary voltage and leakage inductance already referred to
+the primary side. Positive signed power is A-to-B; negative is B-to-A. The result is a mathematical
+power/phase/inductance screen only, not a loss, RMS-current, ZVS, controller, thermal or safety model.
+
+The equations and reference conditions are documented in
+[LOSS_BUDGET_AND_MODEL_PLAN.md](../../LOSS_BUDGET_AND_MODEL_PLAN.md).
+
 ## Explicit limitations
 
 - The CLI direction is supplied as an argument; it is not yet bound to or cross-checked against the
