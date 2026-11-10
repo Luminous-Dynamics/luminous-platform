@@ -464,7 +464,7 @@ Use decisions are fail-closed:
 - explicit CC BY-NC-ND restrictions deny commercial use and derivative creation;
 - public CC BY datasets permit declared use only with the recorded attribution/notices.
 
-Fast transient eligibility requires physical measurement evidence, known sample interval, sensor bandwidth, verified anti-alias filter and a declared signal bandwidth within both conservative Nyquist and sensor limits. A phrase such as "high-rate trace" does not qualify a dataset.
+Fast transient eligibility requires physical measurement evidence, known sample interval, verified timestamp-jitter and clock synchronization, verified sensor bandwidth, verified anti-alias filter and a declared signal bandwidth within both max-gap-derived Nyquist and sensor limits. The max-gap-derived Nyquist value is a uniform-equivalent metadata screen, not a general theorem for arbitrary nonuniform sampling. A phrase such as "high-rate trace" does not qualify a dataset.
 
 The registry example separates the NLR measured workload traces from its model-generated facility profiles, splits the Elsayed node and single-machine sampling paths, and records ELF, ORNL Frontier, LLM-PowerTrace and Argonne's planned flexibility corpus with their respective release and licence states.
 
