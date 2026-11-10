@@ -25,7 +25,10 @@
         "The exact README, columns, units, time basis, instrument bandwidth and anti-alias response have not yet been inspected."
       ],
       "maximum_sample_interval_ns": 200000000,
+      "timestamp_jitter_verified": null,
+      "clock_sync_verified": null,
       "sensor_bandwidth_hz": null,
+      "sensor_bandwidth_verified": null,
       "anti_alias_filter_verified": null,
       "fast_claim_bandwidth_hz": null,
       "supported_uses": [
@@ -73,7 +76,10 @@
         "Exact model identity, assumptions, facilities, scaling and time interval must be extracted from the archive README and associated metadata before use."
       ],
       "maximum_sample_interval_ns": null,
+      "timestamp_jitter_verified": null,
+      "clock_sync_verified": null,
       "sensor_bandwidth_hz": null,
+      "sensor_bandwidth_verified": null,
       "anti_alias_filter_verified": null,
       "fast_claim_bandwidth_hz": null,
       "supported_uses": [
@@ -122,7 +128,10 @@
         "Instrument analogue bandwidth and anti-alias response are not specified by the paper."
       ],
       "maximum_sample_interval_ns": 20000000,
+      "timestamp_jitter_verified": null,
+      "clock_sync_verified": null,
       "sensor_bandwidth_hz": null,
+      "sensor_bandwidth_verified": null,
       "anti_alias_filter_verified": null,
       "fast_claim_bandwidth_hz": null,
       "supported_uses": [
@@ -170,7 +179,10 @@
         "Instrument analogue bandwidth and anti-alias response are not specified by the paper."
       ],
       "maximum_sample_interval_ns": 100000000,
+      "timestamp_jitter_verified": null,
+      "clock_sync_verified": null,
       "sensor_bandwidth_hz": null,
+      "sensor_bandwidth_verified": null,
       "anti_alias_filter_verified": null,
       "fast_claim_bandwidth_hz": null,
       "supported_uses": [
@@ -217,7 +229,10 @@
         "A high-rate power-cap actuation trace is described, but the actual sample interval, sensor bandwidth and anti-alias response have not been verified; it is not registered as fast-transient evidence."
       ],
       "maximum_sample_interval_ns": null,
+      "timestamp_jitter_verified": null,
+      "clock_sync_verified": null,
       "sensor_bandwidth_hz": null,
+      "sensor_bandwidth_verified": null,
       "anti_alias_filter_verified": null,
       "fast_claim_bandwidth_hz": null,
       "supported_uses": [
@@ -264,7 +279,10 @@
         "Sampling interval and sensor bandwidth are not stated in the reviewed dataset catalogue."
       ],
       "maximum_sample_interval_ns": null,
+      "timestamp_jitter_verified": null,
+      "clock_sync_verified": null,
       "sensor_bandwidth_hz": null,
+      "sensor_bandwidth_verified": null,
       "anti_alias_filter_verified": null,
       "fast_claim_bandwidth_hz": null,
       "supported_uses": [
@@ -311,7 +329,10 @@
         "Dataset access, complete release status and dataset licence must be rechecked before use."
       ],
       "maximum_sample_interval_ns": 100000000,
+      "timestamp_jitter_verified": null,
+      "clock_sync_verified": null,
       "sensor_bandwidth_hz": null,
+      "sensor_bandwidth_verified": null,
       "anti_alias_filter_verified": null,
       "fast_claim_bandwidth_hz": null,
       "supported_uses": [
@@ -358,7 +379,10 @@
         "Keep as a watchlist item, not a usable dataset."
       ],
       "maximum_sample_interval_ns": null,
+      "timestamp_jitter_verified": null,
+      "clock_sync_verified": null,
       "sensor_bandwidth_hz": null,
+      "sensor_bandwidth_verified": null,
       "anti_alias_filter_verified": null,
       "fast_claim_bandwidth_hz": null,
       "supported_uses": [
