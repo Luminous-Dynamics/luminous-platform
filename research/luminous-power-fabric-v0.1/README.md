@@ -225,6 +225,11 @@ conversion, microgrid interfaces, DC protection and later SST systems. Shared co
 do not imply common hardware or identical qualification. See
 [PRODUCT_FAMILY_ARCHITECTURE.md](./PRODUCT_FAMILY_ARCHITECTURE.md).
 
+The Rust research tooling now also evaluates the October 2026 paper's analytical CLLC parameter
+constraints—symmetry, constant-power Q, unity-gain bound, boost-frequency window and maximum-gain
+boundary. This rejects some poor parameter candidates before switching simulation; it does not
+establish actual ZVS. See [LOSS_BUDGET_AND_MODEL_PLAN.md](./LOSS_BUDGET_AND_MODEL_PLAN.md).
+
 ## Current limitations
 
 This package is a research specification. No hardware, PCB, firmware, converter model, benchmark
