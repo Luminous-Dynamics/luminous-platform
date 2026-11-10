@@ -42,3 +42,10 @@ corpus, not a complete standards review.
 - ESIG / NLR grid-forming work applies to later AC/microgrid stages, not the first DC/DC demonstrator.
 - Standards must be purchased/read in full and applicability confirmed by a qualified compliance specialist. Abstracts, catalog pages and search-result snippets do not establish conformity.
 - Recheck standard editions, local utility requirements and product-scope exclusions before any design freeze or certification plan.
+
+## Additional topology and semiconductor research
+
+17. **IEEE Access**, “Design and Experimental Validation of a 25-kW Dual DAB–CLLC Bidirectional DC/DC Converter With an Ultrawide 200–1000 V Operating Range,” published 23 April 2026, pp. 63626–63642, DOI [10.1109/ACCESS.2026.3686835](https://doi.org/10.1109/ACCESS.2026.3686835). Reports 25 kW, 200–1000 V and peak efficiencies of 98.37% charging / 97.82% discharging. The series/parallel reconfigurable module arrangement is an architectural reference; this is not a matched 48 V / 500 W benchmark.
+18. **IEEE APEC 2025**, “Switching Performance Comparison of Low-Voltage GaN and Si Devices,” DOI [10.1109/APEC48143.2025.10977390](https://doi.org/10.1109/APEC48143.2025.10977390). Reports lower switching and gate-driver losses for GaN in the tested configuration, alongside sensitivity to dead-time and dynamic RDS(on) behavior at 1 MHz. Treat the quantitative findings as configuration-specific, not universal device multipliers.
+19. Sun et al., **Tsinghua University / Chinese Journal of Electrical Engineering**, “Review of Analysis Methods and Control Technologies for CLLC Resonant Converters,” 11(2), pp. 1–16, published 30 June 2025, DOI [10.23919/CJEE.2025.000131](https://doi.org/10.23919/CJEE.2025.000131). Reviews CLLC analysis and control, including soft start, synchronous rectification, dynamic control, bidirectional switching and wide voltage gain.
+
