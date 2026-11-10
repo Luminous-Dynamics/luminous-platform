@@ -156,11 +156,20 @@ impl FleetOperatingPoint {
                     AuditError("declared overhead evidence requires per-GPU support power".to_string())
                 })?;
                 let fixed = self.fixed_fleet_overhead_power_w.ok_or_else(|| {
-                    AuditError("declared overhead evidence requires fixed fleet overhead".to_string())
+                    AuditError("declared overhead evidence requires fixed-fleet overhead".to_string())
                 })?;
-                if !support.is_finite() || support < 0.0 || !fixed.is_finite() || fixed < 0.0 {
+                let scaled_fixed = self.fixed_capacity_scaled_overhead_power_w.ok_or_else(|| {
+                    AuditError("declared overhead evidence requires capacity-scaled fixed overhead".to_string())
+                })?;
+                if !support.is_finite()
+                    || support < 0.0
+                    || !fixed.is_finite()
+                    || fixed < 0.0
+                    || !scaled_fixed.is_finite()
+                    || scaled_fixed < 0.0
+                {
                     return Err(AuditError(
-                        "support and fixed overhead power must be finite and non-negative"
+                        "per-GPU support and both fixed-overhead values must be finite and non-negative"
                             .to_string(),
                     ));
                 }
