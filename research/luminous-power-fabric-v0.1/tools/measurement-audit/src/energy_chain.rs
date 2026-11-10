@@ -1,5 +1,19 @@
 use crate::AuditError;
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct EnergyChainComparison {
+    pub baseline_scenario_id: String,
+    pub candidate_scenario_id: String,
+    /// Positive values mean the candidate uses less source energy than the baseline.
+    pub annual_input_energy_saved_kwh: f64,
+    pub annual_input_energy_reduction_percent: f64,
+    /// Positive values mean candidate annual electricity cost / emissions are lower.
+    pub annual_electricity_cost_saved: f64,
+    pub annual_grid_emissions_avoided_kg: f64,
+    pub baseline_annual_efficiency_percent: f64,
+    pub candidate_annual_efficiency_percent: f64,
+}
+
 /// Provenance class for an operating-point efficiency or standby-power value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EnergyEvidenceKind {
@@ -144,6 +158,90 @@ fn validate_stage_point(
     require_nonblank(&point.efficiency_reference, "efficiency_reference")?;
     require_nonblank(&point.standby_reference, "standby_reference")?;
     Ok(())
+}
+
+/// Compare two energy-chain reports under the same annual delivered-load profile,
+/// tariff and grid-emissions factor. The reports may use different stage counts and
+/// boundaries; their delivered output and accounting context must be equivalent.
+pub fn compare_energy_chain_reports(
+    baseline: &EnergyChainReport,
+    candidate: &EnergyChainReport,
+) -> Result<EnergyChainComparison, AuditError> {
+    let same = |a: f64, b: f64| {
+        (a - b).abs() <= 1e-9 * a.abs().max(b.abs()).max(1.0)
+    };
+
+    if !same(baseline.total_hours_per_year, candidate.total_hours_per_year) {
+        return Err(AuditError(
+            "energy-chain comparison requires equal annual profile hours".to_string(),
+        ));
+    }
+    if !same(baseline.delivered_energy_kwh, candidate.delivered_energy_kwh) {
+        return Err(AuditError(
+            "energy-chain comparison requires equal delivered load energy".to_string(),
+        ));
+    }
+    if baseline.currency_code != candidate.currency_code
+        || !same(
+            baseline.electricity_price_per_kwh,
+            candidate.electricity_price_per_kwh,
+        )
+    {
+        return Err(AuditError(
+            "energy-chain comparison requires the same currency and electricity tariff".to_string(),
+        ));
+    }
+    if !same(
+        baseline.grid_carbon_kg_per_kwh,
+        candidate.grid_carbon_kg_per_kwh,
+    ) {
+        return Err(AuditError(
+            "energy-chain comparison requires the same grid carbon intensity".to_string(),
+        ));
+    }
+    if !baseline.facility_input_energy_kwh.is_finite()
+        || !candidate.facility_input_energy_kwh.is_finite()
+        || baseline.facility_input_energy_kwh <= 0.0
+        || candidate.facility_input_energy_kwh <= 0.0
+    {
+        return Err(AuditError(
+            "energy-chain comparison requires positive finite input energy".to_string(),
+        ));
+    }
+
+    let annual_input_energy_saved_kwh =
+        baseline.facility_input_energy_kwh - candidate.facility_input_energy_kwh;
+    let annual_input_energy_reduction_percent =
+        100.0 * annual_input_energy_saved_kwh / baseline.facility_input_energy_kwh;
+    let annual_electricity_cost_saved =
+        baseline.annual_electricity_cost - candidate.annual_electricity_cost;
+    let annual_grid_emissions_avoided_kg =
+        baseline.annual_grid_emissions_kg - candidate.annual_grid_emissions_kg;
+
+    if [
+        annual_input_energy_saved_kwh,
+        annual_input_energy_reduction_percent,
+        annual_electricity_cost_saved,
+        annual_grid_emissions_avoided_kg,
+    ]
+    .iter()
+    .any(|value| !value.is_finite())
+    {
+        return Err(AuditError(
+            "energy-chain comparison result is non-finite".to_string(),
+        ));
+    }
+
+    Ok(EnergyChainComparison {
+        baseline_scenario_id: baseline.scenario_id.clone(),
+        candidate_scenario_id: candidate.scenario_id.clone(),
+        annual_input_energy_saved_kwh,
+        annual_input_energy_reduction_percent,
+        annual_electricity_cost_saved,
+        annual_grid_emissions_avoided_kg,
+        baseline_annual_efficiency_percent: baseline.annual_end_to_end_efficiency_percent,
+        candidate_annual_efficiency_percent: candidate.annual_end_to_end_efficiency_percent,
+    })
 }
 
 /// Evaluate a serial chain of conversion stages over a piecewise-constant annual load profile.
@@ -532,6 +630,48 @@ mod tests {
         assert!((report.annual_electricity_cost - expected_input_kwh * 0.20).abs() < 1e-9);
         assert!((report.annual_grid_emissions_kg - expected_input_kwh * 0.70).abs() < 1e-9);
         assert!(report.annual_end_to_end_efficiency_percent < 97.0);
+    }
+
+    #[test]
+    fn compares_candidate_against_baseline_with_matched_annual_context() {
+        let baseline = evaluate_energy_chain(&scenario()).unwrap();
+        let mut candidate_scenario = scenario();
+        candidate_scenario.id = "synthetic-candidate".to_string();
+        candidate_scenario.name = "Synthetic higher-efficiency candidate".to_string();
+        candidate_scenario.segments[0].stage_operating_points[0].efficiency_fraction = 0.99;
+        candidate_scenario.segments[0].stage_operating_points[1].efficiency_fraction = 0.985;
+        let candidate = evaluate_energy_chain(&candidate_scenario).unwrap();
+
+        let comparison = super::compare_energy_chain_reports(&baseline, &candidate).unwrap();
+        assert!(comparison.annual_input_energy_saved_kwh > 0.0);
+        assert!(comparison.annual_electricity_cost_saved > 0.0);
+        assert!(comparison.annual_grid_emissions_avoided_kg > 0.0);
+        assert!(comparison.candidate_annual_efficiency_percent
+            > comparison.baseline_annual_efficiency_percent);
+    }
+
+    #[test]
+    fn rejects_comparison_with_different_delivered_energy() {
+        let baseline = evaluate_energy_chain(&scenario()).unwrap();
+        let mut different = scenario();
+        different.segments[0].delivered_load_power_w = 900.0;
+        let candidate = evaluate_energy_chain(&different).unwrap();
+        assert!(super::compare_energy_chain_reports(&baseline, &candidate).is_err());
+    }
+
+    #[test]
+    fn rejects_comparison_with_different_tariff_or_carbon_context() {
+        let baseline = evaluate_energy_chain(&scenario()).unwrap();
+
+        let mut different_tariff = scenario();
+        different_tariff.electricity_price_per_kwh = 0.25;
+        let candidate = evaluate_energy_chain(&different_tariff).unwrap();
+        assert!(super::compare_energy_chain_reports(&baseline, &candidate).is_err());
+
+        let mut different_carbon = scenario();
+        different_carbon.grid_carbon_kg_per_kwh = 0.65;
+        let candidate = evaluate_energy_chain(&different_carbon).unwrap();
+        assert!(super::compare_energy_chain_reports(&baseline, &candidate).is_err());
     }
 
     #[test]
