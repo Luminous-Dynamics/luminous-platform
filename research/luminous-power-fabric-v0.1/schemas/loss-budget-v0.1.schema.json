@@ -1,0 +1,284 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/loss-budget-v0.1.schema.json",
+  "title": "Luminous Power Fabric loss-budget record",
+  "description": "Provenance-bearing loss accounting record. Does not itself solve a converter, validate a model, verify a measurement, or qualify hardware.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_class",
+    "run_id",
+    "topology",
+    "operating_point",
+    "model",
+    "budget",
+    "terms",
+    "claim_ceiling"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "record_class": {
+      "enum": [
+        "synthetic_fixture",
+        "analytical_model",
+        "switching_simulation",
+        "physical_measurement"
+      ]
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "topology": {
+      "enum": [
+        "DAB_SPS",
+        "DAB_EPS",
+        "DAB_TPS",
+        "CLLC_FHA",
+        "CLLC_SWITCHING",
+        "FOUR_SWITCH_REFERENCE",
+        "NOT_SELECTED"
+      ]
+    },
+    "operating_point": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "direction",
+        "port_a_voltage_v",
+        "port_b_voltage_v",
+        "output_power_w",
+        "load_fraction",
+        "ambient_c",
+        "cooling_mode"
+      ],
+      "properties": {
+        "direction": {
+          "enum": [
+            "A_TO_B",
+            "B_TO_A"
+          ]
+        },
+        "port_a_voltage_v": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "port_b_voltage_v": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "output_power_w": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "load_fraction": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1.5
+        },
+        "switching_frequency_hz": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "ambient_c": {
+          "type": "number",
+          "minimum": -40,
+          "maximum": 125
+        },
+        "cooling_mode": {
+          "enum": [
+            "passive",
+            "forced_air",
+            "liquid",
+            "unknown"
+          ]
+        },
+        "modulation": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 128
+        },
+        "thermal_state": {
+          "enum": [
+            "cold_start",
+            "steady_state",
+            "modelled_equilibrium",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model_name",
+        "model_revision",
+        "source_sha256",
+        "solver",
+        "assumptions"
+      ],
+      "properties": {
+        "model_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_sha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        "solver": {
+          "type": "string",
+          "minLength": 1
+        },
+        "solver_revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "validated_against_hardware": {
+          "const": false
+        }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "output_power_w",
+        "target_efficiency"
+      ],
+      "properties": {
+        "output_power_w": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "target_efficiency": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "exclusiveMaximum": 1
+        }
+      }
+    },
+    "terms": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "category",
+          "watts",
+          "standard_uncertainty_w",
+          "evidence",
+          "reference"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "category": {
+            "enum": [
+              "semiconductor_conduction",
+              "semiconductor_switching",
+              "gate_drive",
+              "magnetic_copper",
+              "magnetic_core",
+              "capacitor",
+              "interconnect",
+              "snubber",
+              "cooling_and_auxiliary",
+              "control_and_sensing",
+              "other"
+            ]
+          },
+          "watts": {
+            "type": "number",
+            "minimum": 0
+          },
+          "standard_uncertainty_w": {
+            "type": "number",
+            "minimum": 0
+          },
+          "evidence": {
+            "enum": [
+              "datasheet_at_declared_operating_point",
+              "analytical_model",
+              "switching_simulation",
+              "physical_measurement",
+              "assumption"
+            ]
+          },
+          "reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "claim_ceiling": {
+      "const": "PARAMETERIZED_LOSS_ACCOUNTING_ONLY_NOT_TOPOLOGY_MODEL_OR_QUALIFICATION"
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "record_class": {
+            "const": "synthetic_fixture"
+          }
+        },
+        "required": [
+          "record_class"
+        ]
+      },
+      "then": {
+        "properties": {
+          "terms": {
+            "items": {
+              "properties": {
+                "evidence": {
+                  "enum": [
+                    "assumption",
+                    "analytical_model"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
