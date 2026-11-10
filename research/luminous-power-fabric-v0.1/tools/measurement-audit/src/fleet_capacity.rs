@@ -837,6 +837,7 @@ mod tests {
         let mut candidate = point("unknown-cost", Some("cap"), 10.0, 380.0, 4_800.0);
         candidate.capex_per_gpu = None;
         candidate.capex_currency = None;
+        candidate.capex_source_reference = None;
 
         let report =
             evaluate_fleet_capacity_sweep(baseline, vec![candidate], gate()).unwrap();
