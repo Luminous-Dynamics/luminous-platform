@@ -301,28 +301,61 @@ It does **not** establish the FHA gain requirement, the constant-power ZVS bound
 maximum-gain capability, Coss/dead-time commutation, thermal feasibility or power delivery. Those
 remain separate checks.
 
-### Required state-constrained extension
+### Physical CLLC mapping and state screen (implemented)
 
-Huang et al. (IEICE Electronics Express, online 30 October 2026, DOI 10.1587/elex.23.20260463)
-propose mapping a bidirectional CLLC tank to a T-type impedance network and including the secondary
-active bridge as a complex AC impedance. Their design region adds internal-state constraints linked
-to a designated low-frequency boost mode and resonant-inductance ratio to the FHA gain requirement.
-Their 2 kW prototype verifies forward/reverse ZVS for their own configuration and reports 95.7% maximum forward efficiency (95.2% at rated forward load) and 95.4% reverse. Its 150–300 V input / 75–167 V output configuration is not a 48 V / 500 W efficiency comparator.
+The Rust tooling now maps the physical resonant tank into the paper's T-network using the
+primary-referred secondary components shown in Fig. 2 / Eq. (6):
+- `X1 = ω Lr1 - 1/(ω Cr1)`.
+- `X2 = ω n² Lr2 - n²/(ω Cr2)`, because `Lr2' = n² Lr2` and `Cr2' = Cr2/n²`.
+- `X3 = ω Lm`.
 
-The generic complex T network and the paper-specific VF-TPS secondary equivalent are now implemented.
-The next sequence is:
-1. Independently review the exact circuit, current orientation and turns-ratio referral against the
-   paper before mapping physical CLLC components into signed X1/X2/X3.
-2. Derive and implement the paper's state inequalities and admissible switching-frequency region.
-3. Evaluate the selected low-frequency boost mode over voltage/load/frequency points in both
-   directions; keep state classification separate from the FHA gain trend.
-4. Add constant-power ZVS, unity-gain ZVS and maximum-gain constraints before selecting k and Lr1.
-5. Add device Coss/dead-time energy, peak/RMS current and thermal constraints.
-6. Sweep device, resonant component, transformer and digital PFM timing tolerances.
-7. Cross-check selected points against a time-domain switching model and then independent bench data.
+It reports `fr1`, `fr2`, `k1=Lm/Lr1` and `k2=Lm/(n² Lr2)` rather than silently forcing symmetry.
+A non-unity turns-ratio regression test was added after reviewing the figure: the previous capacitor
+referral was inverted and has been corrected.
 
-Do not approximate missing circuit states as “inductive” or infer ZVS from FHA gain alone. Until
-these steps exist, the Rust CLLC functions remain **FHA gain screening only**.
+The code now composes:
+1. The physical L/C/n reactance mapping.
+2. The paper-specific VF-TPS secondary bridge equivalent AC impedance.
+3. Generic complex T-network Y-parameters and primary input impedance.
+4. P/N sign classification for `Im(Y1)`, `Im(Y2)`, `Im(Y3)` and `Xeq`, with near-zero values left unknown.
+5. The selected PNNN low-frequency boost state check.
+6. The Eq. (10) low-frequency boost switching-frequency interval, intersected with controller limits.
+
+A pass of the composite PNNN screen means only that the declared symmetric-tank assumptions, the
+paper's four sign conditions, and the selected frequency interval are satisfied at that operating
+point. It does **not** itself prove ZVS, ZCS, delivered gain or safe operation.
+
+### Analytical CLLC design constraints (implemented)
+
+`cllc_design::evaluate_cllc_parameter_design` additionally evaluates the paper's symmetric-tank
+analytical constraints: the constant-maximum-power Q trajectory, critical-Q phase boundary, primary
+constant-power ZVS limit, unity-gain primary ZVS limit and maximum-boost-gain quadratic. These are
+FHA / paper-derived design-region tests, not device-level switching proof. The evaluator fails closed
+when its `fr1≈fr2` or `k1≈k2` preconditions are not met.
+
+The paper's 2 kW prototype reports 95.7% maximum forward efficiency, 95.2% at rated forward load and
+95.4% reverse, with forward/reverse soft-switching waveforms. Its 150–300 V input and 75–167 V output
+are not a matched 48 V / 500 W efficiency comparison.
+
+### Remaining CLLC engineering gates
+
+1. Independently review the non-unity turns-ratio component referral against the exact physical
+   transformer, leakage, magnetizing and resonant schematic.
+2. Derive load- and direction-specific equivalent Q from the intended DC load and modulation.
+3. Add explicit FHA gain target coverage to the combined design-region result; do not infer gain
+   satisfaction from state classification.
+4. Derive and validate the paper's full forward/reverse operating trajectory and identify where its
+   symmetric assumptions stop applying.
+5. Add device-specific nonlinear Coss / dead-time charge and energy checks for each commutation.
+6. Calculate resonant and magnetizing peak/RMS current, capacitor ripple, transformer flux and winding
+   loss, then couple to an electrothermal model.
+7. Include PFM timer resolution, period-update synchronization, gate dead time and jitter.
+8. Validate against a time-domain switching model, then held-out hardware waveforms and independent
+   bench measurements.
+
+A software pass on the paper's analytical region must be labelled
+`PAPER_ANALYTICAL_CONSTRAINTS_PASS_NOT_PHYSICAL_ZVS`. Neither FHA gain nor a PNNN state alone is
+a physical ZVS, ZCS, thermal or safety claim.
 
 ### Controller timing and frequency quantization
 
