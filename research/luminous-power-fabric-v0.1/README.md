@@ -203,6 +203,13 @@ FHA-error and analytic ZVS-polarity screens, a parameterized one-node thermal es
 separate periodic resistive RL solver with energy-balance closure. The research boundary and
 equations are documented in [DAB_SPS_PHYSICS_MODEL.md](./DAB_SPS_PHYSICS_MODEL.md).
 
+## CLLC PNNN operating-state screen
+
+The physical tank mapper, VF-TPS bridge equivalent and T-network now compose into a PNNN low-frequency
+boost-state screen. It rejects a tank that violates the paper's equal-resonant-frequency / equal-`k`
+assumptions or falls outside the controller-intersected switching-frequency window. This is still
+only one design constraint, not a complete ZVS or gain qualification.
+
 ## Current limitations
 
 This package is a research specification. No hardware, PCB, firmware, converter model, benchmark
