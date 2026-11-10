@@ -65,7 +65,45 @@ The tool rejects empty budgets, zero-total-loss idealizations, negative/non-fini
 
 This table is not a ready-made DAB/CLLC formula set. Current waveforms, RMS values, switching events, magnetic flux and resonant currents must come from an upstream topology model and later be correlated with measurements.
 
-## 3. Avoid double-counting
+## 3. Ideal DAB SPS transfer screening model (implemented)
+
+The Rust library now exposes `dab_sps::screen_dab_sps`. It inverts the ideal single-phase-shift
+power-transfer equation for a requested signed transfer, and reports the ideal maximum transfer,
+phase shift and requested-power utilization.
+
+Using secondary voltage and leakage inductance both referred to the primary side:
+
+`P = Va × Vb_ref × φ × (π - |φ|) / (2π² × fs × L)`
+
+`|P|max = Va × Vb_ref / (8 × fs × L)`, at `|φ| = π/2`.
+
+The sign of φ follows the declared power direction: positive Port A→Port B, negative Port B→Port A.
+The API uses a referred secondary voltage directly to avoid a hidden transformer-ratio convention.
+
+### Screening arithmetic for a 48 V, 100 kHz design
+
+With equal 48 V referred ports:
+- At 10 µH, the ideal SPS maximum is 288 W; a 500 W request is infeasible before losses.
+- At 5.76 µH, the ideal SPS maximum is exactly 500 W; that leaves no phase-shift headroom at rated power.
+- At 3.84 µH, the ideal SPS maximum is 750 W; 500 W requires about 38.05° phase shift in this ideal model.
+
+These are ideal equation results, not a proposed magnetic design. They do not include tolerance,
+winding loss, magnetizing current, semiconductor limits, current stress, dead-time, ZVS or temperature.
+Maximum theoretical power at 90° is not a sensible design target by itself.
+
+The 2026 DAB HIL paper by Nkembi et al. uses a 100 kHz, 10 µH, 1:1 example and studies equal-voltage
+10/20/30 V conditions plus 30-to-42 V. Its abstract and discussion emphasize SPS ZVS degradation,
+circulating current and stress away from unity conversion ratio / at light load. Those conditions
+are a valuable reference for the model and control studies, but its 10 µH setting must not be copied
+as a 500 W / 48 V design. The actual paper reports the equation and explicit limitations in its
+operating-principle section.
+
+**Claim ceiling:** this function is ideal steady-state SPS power-transfer screening only. It does not
+derive device RMS/peak current, prove ZVS, model losses, establish stable control, evaluate EPS/TPS,
+or approve energization. The model is suitable for early infeasibility screening, not topology
+qualification.
+
+## 4. Avoid double-counting
 
 This is one of the major ways analytical converter models produce unrealistic efficiency.
 
@@ -78,7 +116,7 @@ This is one of the major ways analytical converter models produce unrealistic ef
 
 Every loss term must declare exactly which physical boundary it belongs to.
 
-## 4. Model hierarchy: do not skip fidelity levels
+## 5. Model hierarchy: do not skip fidelity levels
 
 1. **Analytical screening:** fundamental-harmonic approximations for CLLC gain and resonant design; DAB single-phase / extended-phase-shift power-flow and current-stress equations. Explicitly record their assumptions.
 2. **Non-ideal switching model:** real semiconductor conduction/switching behavior, transformer and inductor parasitics, ESR, dead time, gate drive, snubbers, interconnect and control implementation.
@@ -89,7 +127,7 @@ Every loss term must declare exactly which physical boundary it belongs to.
 
 A model cannot be promoted merely because its numerical solver converges. It must preserve energy accounting, satisfy physical bounds and eventually match a declared hardware revision.
 
-## 5. Topology-specific modelling tasks
+## 6. Topology-specific modelling tasks
 
 ### DAB
 
@@ -126,7 +164,7 @@ Use a Pareto surface rather than a weighted scalar score. At minimum retain sepa
 
 A candidate that improves peak efficiency but loses ZVS at cold start, has poor reverse operation or materially worsens thermal cycling should not win by a scalar average.
 
-## 6. Model-to-bench correlation gate
+## 7. Model-to-bench correlation gate
 
 A 2025 IEEE DAB loss-model study reported experimental/model loss deviations below 5 W across its tested 80–180 kHz range and SPS/EPS scenarios. This is a useful published example of the kind of model-correlation metric we should report, not a universal tolerance. Its voltage, power and hardware conditions are not a PEBB-LV-01 match.
 
@@ -141,7 +179,7 @@ For our future prototype, preregister:
 
 Target model-loss error only after the instrument uncertainty and physical test design are defined. A numerical target such as ±5 W would be meaningless if the total measurement uncertainty is itself several watts.
 
-## 7. Recommended next experiment sequence
+## 8. Recommended next experiment sequence
 
 1. Reproduce the 500 W CLLC paper's own operating point from its full paper and supplement before using its 97.6% result as a matched comparator.
 2. Reproduce a DAB SPS/EPS loss benchmark from published equations and parameter tables.
@@ -151,6 +189,6 @@ Target model-loss error only after the instrument uncertainty and physical test 
 6. Sweep resonant components, turns ratio, switching frequency and semiconductor choice under hard ZVS/current/thermal constraints.
 7. Only after independent review, select a prototype topology and create its controlled schematic/BOM package.
 
-## 8. Explicit claim ceiling
+## 9. Explicit claim ceiling
 
 The Rust module is a loss-budget arithmetic and provenance layer. It is not a converter solver, a DAB or CLLC model, a waveform simulator, an optimizer, a thermal model, a safety function or a physical qualification tool. The current test cases are authored but not run in this environment. No Luminous loss values or topology ranking have been produced.
