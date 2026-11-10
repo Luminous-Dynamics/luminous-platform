@@ -1,5 +1,104 @@
 use crate::AuditError;
 
+/// Frequency-window inputs for the selected low-frequency boost mode in
+/// Huang et al.'s T-network CLLC design method (their Eq. 10).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ClLcLowFrequencyBoostWindowInput {
+    pub primary_series_resonant_frequency_hz: f64,
+    pub secondary_series_resonant_frequency_hz: f64,
+    /// k = Lm/Lr1 = Lm/(n²*Lr2), under the paper's symmetric ratio assumption.
+    pub magnetizing_to_resonant_inductance_ratio: f64,
+    /// The controller's declared operating-frequency limits.
+    pub controller_minimum_frequency_hz: f64,
+    pub controller_maximum_frequency_hz: f64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ClLcLowFrequencyBoostWindowResult {
+    pub topology_lower_bound_hz: f64,
+    pub topology_upper_bound_hz: f64,
+    pub effective_lower_bound_hz: f64,
+    pub effective_upper_bound_hz: f64,
+    /// True only when the intersection is a non-empty open interval.
+    pub feasible: bool,
+}
+
+impl ClLcLowFrequencyBoostWindowResult {
+    pub const fn claim_ceiling(&self) -> &'static str {
+        "PAPER_SPECIFIC_CLLC_LOW_FREQUENCY_BOOST_WINDOW_ONLY_NOT_ZVS_OR_FULL_DESIGN_QUALIFICATION"
+    }
+}
+
+/// Screen the paper's selected low-frequency boost-mode switching window:
+///
+/// max(fr1/sqrt(1+k), fr2/sqrt(1+2k)) < fs < min(fr1, fr2)
+///
+/// The result is intersected with the caller's controller frequency window.
+/// This is one paper-specific topology-state constraint. It does not evaluate
+/// complex bridge modulation impedance, Y-parameter state signs, constant-power
+/// ZVS boundaries, unity-gain ZVS, maximum gain, device Coss/dead time, currents,
+/// losses, or reverse-mode feasibility.
+pub fn screen_cllc_low_frequency_boost_window(
+    input: ClLcLowFrequencyBoostWindowInput,
+) -> Result<ClLcLowFrequencyBoostWindowResult, AuditError> {
+    let values = [
+        input.primary_series_resonant_frequency_hz,
+        input.secondary_series_resonant_frequency_hz,
+        input.magnetizing_to_resonant_inductance_ratio,
+        input.controller_minimum_frequency_hz,
+        input.controller_maximum_frequency_hz,
+    ];
+    if values.iter().any(|value| !value.is_finite() || *value <= 0.0) {
+        return Err(AuditError(
+            "CLLC boost-window frequencies and inductance ratio must be positive and finite"
+                .to_string(),
+        ));
+    }
+    if input.controller_minimum_frequency_hz >= input.controller_maximum_frequency_hz {
+        return Err(AuditError(
+            "controller minimum frequency must be below its maximum frequency".to_string(),
+        ));
+    }
+
+    let fr1 = input.primary_series_resonant_frequency_hz;
+    let fr2 = input.secondary_series_resonant_frequency_hz;
+    let k = input.magnetizing_to_resonant_inductance_ratio;
+
+    let lower_primary = fr1 / (1.0 + k).sqrt();
+    let lower_secondary = fr2 / (1.0 + 2.0 * k).sqrt();
+    let topology_lower_bound_hz = lower_primary.max(lower_secondary);
+    let topology_upper_bound_hz = fr1.min(fr2);
+
+    let effective_lower_bound_hz =
+        topology_lower_bound_hz.max(input.controller_minimum_frequency_hz);
+    let effective_upper_bound_hz =
+        topology_upper_bound_hz.min(input.controller_maximum_frequency_hz);
+
+    if [
+        lower_primary,
+        lower_secondary,
+        topology_lower_bound_hz,
+        topology_upper_bound_hz,
+        effective_lower_bound_hz,
+        effective_upper_bound_hz,
+    ]
+    .iter()
+    .any(|value| !value.is_finite())
+    {
+        return Err(AuditError(
+            "CLLC boost-window calculation produced a non-finite bound".to_string(),
+        ));
+    }
+
+    Ok(ClLcLowFrequencyBoostWindowResult {
+        topology_lower_bound_hz,
+        topology_upper_bound_hz,
+        effective_lower_bound_hz,
+        effective_upper_bound_hz,
+        feasible: effective_lower_bound_hz < effective_upper_bound_hz,
+    })
+}
+
 /// Minimal complex number type for the small-signal FHA impedance network.
 /// Re = real part, Im = imaginary part, with the documented exp(+j omega t)
 /// phasor convention for this generic evaluator.
@@ -303,6 +402,77 @@ mod tests {
             secondary_equivalent_resistance_ohm: 10.0,
             secondary_equivalent_reactance_ohm: -1.0,
         }
+    }
+
+    #[test]
+    fn computes_paper_low_frequency_boost_window() {
+        let result = super::screen_cllc_low_frequency_boost_window(
+            super::ClLcLowFrequencyBoostWindowInput {
+                primary_series_resonant_frequency_hz: 115_000.0,
+                secondary_series_resonant_frequency_hz: 100_000.0,
+                magnetizing_to_resonant_inductance_ratio: 3.0,
+                controller_minimum_frequency_hz: 50_000.0,
+                controller_maximum_frequency_hz: 125_000.0,
+            },
+        )
+        .unwrap();
+
+        assert!((result.topology_lower_bound_hz - 57_500.0).abs() < 1e-9);
+        assert!((result.topology_upper_bound_hz - 100_000.0).abs() < 1e-9);
+        assert!((result.effective_lower_bound_hz - 57_500.0).abs() < 1e-9);
+        assert!(result.feasible);
+    }
+
+    #[test]
+    fn intersects_topology_window_with_controller_limits() {
+        let result = super::screen_cllc_low_frequency_boost_window(
+            super::ClLcLowFrequencyBoostWindowInput {
+                primary_series_resonant_frequency_hz: 115_000.0,
+                secondary_series_resonant_frequency_hz: 100_000.0,
+                magnetizing_to_resonant_inductance_ratio: 3.0,
+                controller_minimum_frequency_hz: 70_000.0,
+                controller_maximum_frequency_hz: 90_000.0,
+            },
+        )
+        .unwrap();
+
+        assert!((result.effective_lower_bound_hz - 70_000.0).abs() < 1e-9);
+        assert!((result.effective_upper_bound_hz - 90_000.0).abs() < 1e-9);
+        assert!(result.feasible);
+    }
+
+    #[test]
+    fn rejects_empty_frequency_window() {
+        let result = super::screen_cllc_low_frequency_boost_window(
+            super::ClLcLowFrequencyBoostWindowInput {
+                primary_series_resonant_frequency_hz: 115_000.0,
+                secondary_series_resonant_frequency_hz: 100_000.0,
+                magnetizing_to_resonant_inductance_ratio: 3.0,
+                controller_minimum_frequency_hz: 105_000.0,
+                controller_maximum_frequency_hz: 120_000.0,
+            },
+        )
+        .unwrap();
+
+        assert!(!result.feasible);
+        assert!(result.effective_lower_bound_hz >= result.effective_upper_bound_hz);
+    }
+
+    #[test]
+    fn rejects_invalid_boost_window_inputs() {
+        let mut input = super::ClLcLowFrequencyBoostWindowInput {
+            primary_series_resonant_frequency_hz: 115_000.0,
+            secondary_series_resonant_frequency_hz: 100_000.0,
+            magnetizing_to_resonant_inductance_ratio: 3.0,
+            controller_minimum_frequency_hz: 70_000.0,
+            controller_maximum_frequency_hz: 90_000.0,
+        };
+        input.magnetizing_to_resonant_inductance_ratio = 0.0;
+        assert!(super::screen_cllc_low_frequency_boost_window(input).is_err());
+
+        input.magnetizing_to_resonant_inductance_ratio = 3.0;
+        input.controller_minimum_frequency_hz = 100_000.0;
+        assert!(super::screen_cllc_low_frequency_boost_window(input).is_err());
     }
 
     #[test]
