@@ -20,6 +20,12 @@ pub struct FlexibilityRun {
     pub p99_time_to_first_token_ms: f64,
     pub slo_violation_fraction: f64,
     pub p99_absolute_ramp_w_per_s: f64,
+    /// Time from action onset until the declared power target is first reached.
+    pub response_latency_ms: f64,
+    /// Maximum fractional excursion beyond the target during the response.
+    pub power_overshoot_fraction: f64,
+    /// Time to return inside the declared recovery band after action release.
+    pub recovery_settling_ms: Option<f64>,
     /// Additional active energy measured during a separately declared
     /// recovery window after the flexibility action has been released.
     pub recovery_rebound_energy_j: Option<f64>,
@@ -67,6 +73,8 @@ impl FlexibilityRun {
             self.p99_time_to_first_token_ms,
             self.slo_violation_fraction,
             self.p99_absolute_ramp_w_per_s,
+            self.response_latency_ms,
+            self.power_overshoot_fraction,
             self.sustained_action_duration_s,
         ];
         if values.iter().any(|value| !value.is_finite())
@@ -79,12 +87,22 @@ impl FlexibilityRun {
             || self.p99_time_to_first_token_ms <= 0.0
             || !(0.0..=1.0).contains(&self.slo_violation_fraction)
             || self.p99_absolute_ramp_w_per_s < 0.0
+            || self.response_latency_ms < 0.0
+            || self.power_overshoot_fraction < 0.0
             || self.sustained_action_duration_s < 0.0
         {
             return Err(AuditError(format!(
                 "flexibility run {:?} contains non-finite or out-of-domain measurements",
                 self.run_id
             )));
+        }
+        if self
+            .recovery_settling_ms
+            .is_some_and(|settling| !settling.is_finite() || settling < 0.0)
+        {
+            return Err(AuditError(
+                "recovery settling time must be finite and non-negative when present".to_string(),
+            ));
         }
         if let Some(rebound) = self.recovery_rebound_energy_j {
             if !rebound.is_finite() || rebound < 0.0 {
@@ -136,6 +154,9 @@ pub struct FlexibilityGate {
     pub maximum_slo_violation_fraction: f64,
     pub maximum_energy_per_work_regression_fraction: f64,
     pub maximum_rebound_energy_fraction: f64,
+    pub maximum_response_latency_ms: f64,
+    pub maximum_power_overshoot_fraction: f64,
+    pub maximum_recovery_settling_ms: f64,
     pub minimum_sustained_action_duration_s: f64,
 }
 
@@ -149,8 +170,13 @@ impl FlexibilityGate {
             self.maximum_slo_violation_fraction,
             self.maximum_energy_per_work_regression_fraction,
             self.maximum_rebound_energy_fraction,
+            self.maximum_power_overshoot_fraction,
         ];
         if fractions.iter().any(|value| !value.is_finite() || *value < 0.0 || *value >= 1.0)
+            || !self.maximum_response_latency_ms.is_finite()
+            || self.maximum_response_latency_ms <= 0.0
+            || !self.maximum_recovery_settling_ms.is_finite()
+            || self.maximum_recovery_settling_ms <= 0.0
             || !self.minimum_sustained_action_duration_s.is_finite()
             || self.minimum_sustained_action_duration_s <= 0.0
         {
@@ -174,6 +200,9 @@ pub struct FlexibilityCandidateResult {
     pub slo_violation_fraction: f64,
     pub energy_per_work_change_fraction: f64,
     pub p99_ramp_reduction_fraction: Option<f64>,
+    pub response_latency_ms: f64,
+    pub power_overshoot_fraction: f64,
+    pub recovery_settling_ms: Option<f64>,
     pub effective_energy_saved_j: f64,
     pub rebound_energy_fraction: Option<f64>,
     pub sustained_action_duration_s: f64,
@@ -268,9 +297,12 @@ fn candidate_result(
         p99_ttft_increase_fraction,
         energy_per_work_change_fraction,
         effective_energy_saved_j,
+        candidate.response_latency_ms,
+        candidate.power_overshoot_fraction,
     ];
     if derived.iter().any(|value| !value.is_finite())
         || p99_ramp_reduction_fraction.is_some_and(|value| !value.is_finite())
+        || candidate.recovery_settling_ms.is_some_and(|value| !value.is_finite())
         || rebound_energy_fraction.is_some_and(|value| !value.is_finite())
     {
         return Err(AuditError(
@@ -286,6 +318,11 @@ fn candidate_result(
         && energy_per_work_change_fraction
             <= gate.maximum_energy_per_work_regression_fraction
         && candidate.sustained_action_duration_s >= gate.minimum_sustained_action_duration_s
+        && candidate.response_latency_ms <= gate.maximum_response_latency_ms
+        && candidate.power_overshoot_fraction <= gate.maximum_power_overshoot_fraction
+        && candidate
+            .recovery_settling_ms
+            .is_some_and(|settling| settling <= gate.maximum_recovery_settling_ms)
         && rebound_energy_fraction
             .is_some_and(|fraction| fraction <= gate.maximum_rebound_energy_fraction);
 
@@ -301,6 +338,9 @@ fn candidate_result(
         slo_violation_fraction: candidate.slo_violation_fraction,
         energy_per_work_change_fraction,
         p99_ramp_reduction_fraction,
+        response_latency_ms: candidate.response_latency_ms,
+        power_overshoot_fraction: candidate.power_overshoot_fraction,
+        recovery_settling_ms: candidate.recovery_settling_ms,
         effective_energy_saved_j,
         rebound_energy_fraction,
         sustained_action_duration_s: candidate.sustained_action_duration_s,
@@ -317,13 +357,17 @@ fn dominates(left: &FlexibilityCandidateResult, right: &FlexibilityCandidateResu
         && left.useful_work_retention_fraction >= right.useful_work_retention_fraction
         && left.p99_latency_increase_fraction <= right.p99_latency_increase_fraction
         && left.p99_ttft_increase_fraction <= right.p99_ttft_increase_fraction
-        && left.energy_per_work_change_fraction <= right.energy_per_work_change_fraction;
+        && left.energy_per_work_change_fraction <= right.energy_per_work_change_fraction
+        && left.response_latency_ms <= right.response_latency_ms
+        && left.power_overshoot_fraction <= right.power_overshoot_fraction;
 
     let mut strictly_better = left.power_shed_fraction > right.power_shed_fraction
         || left.useful_work_retention_fraction > right.useful_work_retention_fraction
         || left.p99_latency_increase_fraction < right.p99_latency_increase_fraction
         || left.p99_ttft_increase_fraction < right.p99_ttft_increase_fraction
-        || left.energy_per_work_change_fraction < right.energy_per_work_change_fraction;
+        || left.energy_per_work_change_fraction < right.energy_per_work_change_fraction
+        || left.response_latency_ms < right.response_latency_ms
+        || left.power_overshoot_fraction < right.power_overshoot_fraction;
 
     match (
         left.p99_ramp_reduction_fraction,
@@ -337,6 +381,14 @@ fn dominates(left: &FlexibilityCandidateResult, right: &FlexibilityCandidateResu
         _ => no_worse = false,
     }
     match (left.rebound_energy_fraction, right.rebound_energy_fraction) {
+        (Some(a), Some(b)) => {
+            no_worse &= a <= b;
+            strictly_better |= a < b;
+        }
+        (None, None) => {}
+        _ => no_worse = false,
+    }
+    match (left.recovery_settling_ms, right.recovery_settling_ms) {
         (Some(a), Some(b)) => {
             no_worse &= a <= b;
             strictly_better |= a < b;
@@ -450,6 +502,9 @@ mod tests {
             p99_time_to_first_token_ms: 150.0,
             slo_violation_fraction: 0.001,
             p99_absolute_ramp_w_per_s: 1000.0,
+            response_latency_ms: if action.is_some() { 100.0 } else { 0.0 },
+            power_overshoot_fraction: 0.0,
+            recovery_settling_ms: Some(100.0),
             recovery_rebound_energy_j: Some(0.0),
             sustained_action_duration_s: if action.is_some() { 60.0 } else { 0.0 },
             control_action_id: action.map(str::to_string),
@@ -466,6 +521,9 @@ mod tests {
             maximum_slo_violation_fraction: 0.01,
             maximum_energy_per_work_regression_fraction: 0.0,
             maximum_rebound_energy_fraction: 0.10,
+            maximum_response_latency_ms: 1000.0,
+            maximum_power_overshoot_fraction: 0.02,
+            maximum_recovery_settling_ms: 5000.0,
             minimum_sustained_action_duration_s: 60.0,
         }
     }
@@ -633,6 +691,28 @@ mod tests {
             evaluate_power_flexibility_sweep(baseline, vec![candidate], gate()).unwrap();
         assert!(!report.candidate_results[0].meets_power_shed_gate);
         assert!(report.pareto_frontier_run_ids.is_empty());
+    }
+
+    #[test]
+    fn excessive_response_latency_overshoot_or_recovery_settling_fails() {
+        let baseline = run("baseline", None, 1000.0, 600.0);
+        let mut delayed = run("delayed", Some("cap-delay"), 900.0, 600.0);
+        delayed.response_latency_ms = 1200.0;
+        let report =
+            evaluate_power_flexibility_sweep(baseline.clone(), vec![delayed], gate()).unwrap();
+        assert!(!report.candidate_results[0].meets_service_contract);
+
+        let mut overshoot = run("overshoot", Some("cap-overshoot"), 900.0, 600.0);
+        overshoot.power_overshoot_fraction = 0.03;
+        let report =
+            evaluate_power_flexibility_sweep(baseline.clone(), vec![overshoot], gate()).unwrap();
+        assert!(!report.candidate_results[0].meets_service_contract);
+
+        let mut slow_recovery = run("slow-recovery", Some("cap-recovery"), 900.0, 600.0);
+        slow_recovery.recovery_settling_ms = Some(6000.0);
+        let report =
+            evaluate_power_flexibility_sweep(baseline, vec![slow_recovery], gate()).unwrap();
+        assert!(!report.candidate_results[0].meets_service_contract);
     }
 
     #[test]
