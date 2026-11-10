@@ -218,6 +218,13 @@ multiobjective Pareto filter. Candidate comparisons retain every infeasible poin
 silently pruning it. Results are only model-based screening, not measured performance or a design
 approval. See [DAB_SPS_PHYSICS_MODEL.md](./DAB_SPS_PHYSICS_MODEL.md).
 
+## Multi-family product architecture
+
+The programme now separates low-voltage PEBBs, 48 V power conversion, 400–800 VDC facility/rack
+conversion, microgrid interfaces, DC protection and later SST systems. Shared contracts and evidence
+do not imply common hardware or identical qualification. See
+[PRODUCT_FAMILY_ARCHITECTURE.md](./PRODUCT_FAMILY_ARCHITECTURE.md).
+
 ## Current limitations
 
 This package is a research specification. No hardware, PCB, firmware, converter model, benchmark
