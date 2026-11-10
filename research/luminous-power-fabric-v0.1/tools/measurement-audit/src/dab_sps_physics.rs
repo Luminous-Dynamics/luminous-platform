@@ -319,8 +319,8 @@ mod tests {
 
     #[test]
     fn computes_voltage_ratio_dependent_zvs_polarity_boundary() {
-        let k070 = evaluate_dab_sps_physics(baseline(27.0, 0.70)).unwrap();
-        let k085 = evaluate_dab_sps_physics(baseline(13.5, 0.85)).unwrap();
+        let k070 = evaluate_dab_sps_physics(baseline(28.0, 0.70)).unwrap();
+        let k085 = evaluate_dab_sps_physics(baseline(14.0, 0.85)).unwrap();
         let k100 = evaluate_dab_sps_physics(baseline(1.0, 1.0)).unwrap();
 
         assert!((k070.minimum_zvs_phase_shift_rad.to_degrees() - 27.0).abs() < 1e-12);
