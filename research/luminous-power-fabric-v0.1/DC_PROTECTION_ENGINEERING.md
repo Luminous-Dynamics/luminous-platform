@@ -70,6 +70,8 @@ E_dissipated   = 0.5 * C_max * (V_initial,max^2 - V_threshold^2)
 
 The code reports the calculated time, current, initial resistor power, energy to dissipate, and numeric margins against user-supplied limits. Resistance bounds are expected to already include declared tolerance and temperature effects.
 
+**Competitive benchmark update:** a separate 11 kW EPC ISOP 800 V-to-50 V architecture is now recorded in [HVDC_BENCHMARK_UPDATE_2026-11-10.md](./HVDC_BENCHMARK_UPDATE_2026-11-10.md). The 98.0% at 220 A / 98.5% peak figures are from an EPC presentation reported by an industry article; they are not a Luminous measurement or independent product qualification.
+
 **The two numeric booleans are not a safety verdict.** A resistor pulse-energy rating must be interpreted against its actual pulse-duration, repetition, initial-temperature and mounting derating curves. The RC model omits voltage-dependent capacitance, parasitic inductance, switching, contactor sequencing, leakage, parallel discharge paths, failed-open/failed-short behavior and source re-energization.
 
 ### 3.3 Deliberate non-goals
@@ -139,7 +141,7 @@ A solid-state interrupter is not automatically superior to a hybrid interrupter.
 
 - **500 W bidirectional branch:** retain DAB, conventional CLLC and the fixed-frequency LLC with actively controlled bridge-leg voltage as distinct candidates. The May 2026 500 W paper reports 96.8% forward and 97.0% reverse peak efficiency on a 40–60 V / 400 V prototype. It is a topology reference, not a matched PEBB-LV-01 baseline.
 - **CLLC state-constrained design:** the October 30, 2026 T-network letter explicitly includes secondary active-bridge equivalent reactance in its T-network state constraints; its prototype reports 95.7% maximum forward, 95.2% rated-forward and 95.4% reverse efficiency. Its test prototype is 2 kW, 150–300 V input and 75–167 V output. The method is valuable; its efficiency is not a 500 W competitor benchmark.
-- **6 kW 800 V-to-50 V branch:** reproduce the APEC GaN LLC DCX (98.75% reported peak, 2,070 W/in^3) and the distinct ISOP LLC / matrix-magnetics work (98.1% full load, peak above 98.4%) as separate designs. Compare only after extracting voltage, power, cooling, measurement boundary, density definition and full efficiency curve from each source.
+- **800 V-to-50 V DCX branch:** reproduce the APEC 6 kW GaN LLC DCX (98.75% reported peak, 2,070 W/in^3), the CPSS ISOP LLC / matrix-magnetics design (98.1% full load, peak above 98.4%), and EPC's 11 kW ISOP LLC presentation (98.0% at 220 A, 98.5% peak under forced air; approx. 436 mm^2/kW). Their power levels, cooling and density boundaries differ. See [HVDC benchmark update](./HVDC_BENCHMARK_UPDATE_2026-11-10.md); do not rank them as a matched head-to-head.
 
 The CLLC paper's critical lesson is that an FHA gain curve alone is not enough. The feasible parameter region must satisfy the selected T-network branch-admittance state, the secondary equivalent-reactance sign, frequency window, constant-power ZVS, unity-gain ZVS and maximum-gain constraints together. The paper's prototype shows ZVS waveforms at the tested light, medium and full-load points; that is not a universal ZVS guarantee outside its demonstrated envelope.
 
