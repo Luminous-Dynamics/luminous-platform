@@ -163,6 +163,28 @@ and time-domain switching still need separate analysis and measurement.
 See [LOSS_BUDGET_AND_MODEL_PLAN.md](../../LOSS_BUDGET_AND_MODEL_PLAN.md) for equations and the
 synthetic arithmetic fixture.
 
+## End-to-end conversion-chain energy auditor
+
+The crate exposes `energy_chain::evaluate_energy_chain` for serial facility/source-to-load
+conversion chains. A scenario supplies ordered stages, a complete 8,760-hour piecewise load profile,
+and the exact per-stage efficiency / input-side standby value for each operating segment.
+
+The evaluator works backwards from delivered load power:
+
+`P_stage,in = P_stage,out / eta_stage + P_stage,standby,input`
+
+It then reports facility input energy, delivered load energy, total chain losses, stage-by-stage
+energy balances, annual cost in an explicit three-letter currency, and annual grid emissions using
+a caller-supplied carbon-intensity factor. It retains separate source references for every efficiency,
+standby, tariff and emissions input. It supports an explicit idle segment with zero delivered load
+and nonzero equipment standby draw; unrepresented annual hours are rejected.
+
+The tool does not infer or interpolate efficiency maps, does not automatically add busbar/cable,
+cooling/storage/availability losses, and does not propagate uncertainty. Add these as separate,
+provenance-bearing stages or separate validated models. It is an architecture-comparison aid, not a
+site measurement, data-centre guarantee or OCP compliance test. See the synthetic
+[energy-chain example](../../schemas/energy-chain.example.json).
+
 ## Explicit limitations
 
 - The CLI direction is supplied as an argument; it is not yet bound to or cross-checked against the
