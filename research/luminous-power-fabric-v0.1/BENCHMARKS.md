@@ -51,7 +51,44 @@ competitive gate is a direct, uncertainty-aware comparison against the closest a
 with isolation, direction, thermal and service requirements held explicit. See
 [INDUSTRY_BASELINE.md](./INDUSTRY_BASELINE.md).
 
-## 2. PEBB-LV-01 proposed target matrix
+## 2. Separate benchmark family: PF-HVDC-6K (800 V to 50 V)
+
+These comparators belong to a distinct, unidirectional, isolated DCX family and must not be mixed
+with the 500 W bidirectional PEBB-LV-01 results.
+
+| Reference | Power | Efficiency | Power density | Evidence / caveat |
+|---|---:|---:|---:|---|
+| Prakash & Li, APEC 2026 800 V / 50 V GaN LLC | 6 kW | 98.75% peak | 2,070 W/in³ | Academic conference prototype; full-load value and test boundary must be extracted from paper |
+| CPSS TPEA 2026 800 V-to-50 V ISOP LLC | 6 kW-class | 98.1% full load; peak >98.4% | Not used until exact package boundary extracted | Research prototype; different topology / measurement boundary |
+| ST APEC 2026 800 V-to-50 V DCX | 12 kW | ≥98% full-load target | Presentation indicates high-density, liquid-cooled design | Manufacturer presentation and design target, not independent certification or a field-tested product |
+| OCP LVDC distribution v1.1.0 | System-level | No single converter efficiency claim | No universal numeric target | Architecture, interoperability, control/monitoring, EMC, startup/hot-swap and ESS workstream |
+
+### PF-HVDC-6K competitive objectives
+
+1. **Reproduce first:** retrieve the full Prakash–Li and CPSS papers, extract voltage envelope, topology,
+   turns ratio, switching frequency, cooling, power-density boundary, instrumentation and full load map.
+   Treat missing fields as unknown.
+2. **Benchmark the whole module:** compare input-to-output efficiency at 10%, 25%, 50%, 75%, 100% load
+   and light-load standby. Count fan/pump, controller and gate-drive consumption.
+3. **Set the stretch after matching:** an internal research objective is ≥98.2% full-load and ≥98.8%
+   peak under a matched 800 V-to-50 V, 6 kW boundary, with the improvement exceeding combined expanded
+   measurement uncertainty. These are proposed stretch objectives, not predicted or achieved results.
+4. **Power density:** use ≥2,070 W/in³ as a published prototype reference only after confirming that
+   volume and cooling boundary. Report bare-board, converter assembly and serviceable enclosure
+   separately; do not compare bare-board density with a packaged rack shelf.
+5. **Thermal and reliability:** measure hot spots, coolant/fan parasitics, thermal gradients, switching
+   and load cycling, magnetics temperature, insulation stress and connector/busbar heating.
+6. **Protection and system behavior:** characterize DC fault-energy containment, pre-charge/discharge,
+   current sharing, module isolation, restart sequencing and hot-swap only in a qualified facility and
+   only with separate reviewed procedures.
+7. **Interoperability:** validate the module against an OCP-aligned system contract, including
+   protection interface, startup/hold-up, monitoring/control, EMC and grounding/polarity assumptions.
+
+A peak-efficiency value alone does not win this product family. The competitive result is the Pareto
+surface of full-load/light-load efficiency, packaged density, thermal margin, protection, availability,
+service time, evidence quality and lifecycle cost.
+
+## 3. PEBB-LV-01 proposed target matrix
 
 All values below are **proposed engineering targets**, not measured results, standards limits or
 guarantees. Revisit them after the topology model and first lab data.
