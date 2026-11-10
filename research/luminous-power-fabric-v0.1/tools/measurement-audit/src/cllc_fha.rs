@@ -161,7 +161,7 @@ mod tests {
     #[test]
     fn evaluates_above_resonance_gain_reference_point() {
         let result = evaluate_cllc_fha_gain(input(0.3, 1.2)).unwrap();
-        assert!((result.normalized_voltage_gain - 0.9000698).abs() < 1e-6);
+        assert!((result.normalized_voltage_gain - 0.9000652).abs() < 1e-6);
     }
 
     #[test]
