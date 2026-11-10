@@ -1,0 +1,15 @@
+[package]
+name = "power-fabric-measurement-audit"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Read-only structural and energy-consistency auditor for Luminous Power Fabric CSV captures"
+license = "AGPL-3.0-or-later"
+
+[lib]
+name = "power_fabric_measurement_audit"
+path = "src/lib.rs"
+
+[[bin]]
+name = "power-fabric-audit"
+path = "src/main.rs"
