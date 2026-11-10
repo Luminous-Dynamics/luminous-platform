@@ -364,6 +364,28 @@ not a universal CPU/GPU rail requirement and not a Luminous result.
 This screen is not a control-loop stability analysis, impedance scan, full-bandwidth power-integrity
 qualification, VRM vendor comparison, or processor compliance test.
 
+## Constant-import storage buffer sizing screen
+
+The crate exposes `storage_buffer::size_constant_import_buffer` for an ideal buffer that holds
+facility import at a declared constant target against a time-series load profile.
+
+The model treats positive `load_power - grid_import_target` as storage discharge and negative
+values as charging surplus. It integrates linearly interpolated load power over each sample
+interval and splits intervals at exact crossings of the grid-import target, so charge and discharge
+energy in the same interval are not incorrectly cancelled.
+
+It reports load / grid energy, storage charge-input and discharge-delivered energy, charge /
+discharge conversion loss, minimum required usable energy capacity, minimum initial stored energy,
+terminal state, actual min/max state, peak charge/discharge power, sample gaps and limit statuses.
+
+The model assumes instantaneous power tracking, fixed round-trip directions / efficiencies and
+no SOC, voltage, current, temperature, aging, ramp, inverter, grid-forming or communications
+dynamics. It is an ideal sizing lower bound, not a battery dispatch controller or grid-interactive
+system qualification. Capacitors, EDLC, batteries and grid-forming storage operate at different
+timescales; do not infer that one technology satisfies every layer.
+
+See [multi-timescale storage research](../../MULTI_TIMESCALE_STORAGE_AND_GRID_DYNAMICS_2026-11-10.md).
+
 ## Explicit limitations
 
 - The CLI direction is supplied as an argument; it is not yet bound to or cross-checked against the
