@@ -270,7 +270,7 @@ correlation assessment.
 
 
 | PF-022 | Add Coss/dead-time commutation-energy and PFM timing-resolution constraints | Symtropy + embedded-control review | Declared device, gate-drive and controller clock parameters; no physical safety claims |
-| PF-023 | Correlate CLLC FHA and state-constrained model against independent time-domain switching runs | Symtropy | Held-out operating points, residuals and model-validity report
+| PF-023 | Correlate CLLC FHA and state-constrained model against independent time-domain switching runs | Symtropy | Held-out operating points, residuals and model-validity report |
 
 The first code increments are the read-only capture auditor, provenance-aware loss-budget engine,
 and ideal DAB SPS power-transfer screen. They are all offline/read-only engineering tools, not a
