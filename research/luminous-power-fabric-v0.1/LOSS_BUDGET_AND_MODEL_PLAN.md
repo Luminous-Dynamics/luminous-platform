@@ -245,6 +245,17 @@ modulation-specific: theta2 is the secondary bridge phase shift and phi2 is the 
 secondary AC voltage/current phase difference. It must not be reused for SPS, EPS or another
 TPS convention without a fresh derivation.
 
+The crate also implements `screen_cllc_low_frequency_boost_window`, a screening function for
+the paper's selected low-frequency boost state (Eq. 10):
+
+`max(fr1/sqrt(1+k), fr2/sqrt(1+2k)) < fs < min(fr1, fr2)`
+
+It intersects the paper-derived open interval with the controller's declared min/max switching
+frequency. It reports an empty intersection as infeasible rather than forcing a frequency. This is
+a specific state-window screen under the paper's symmetric inductance-ratio assumption; it does not
+evaluate the remaining constant-power ZVS, unity-gain ZVS or maximum-gain constraints and does not
+prove ZVS.
+
 This module is a generic small-signal phasor network kernel. The caller must supply branch
 reactances using a reviewed circuit orientation, sign and turns-ratio convention. It intentionally
 does **not** map a selected CLLC schematic to X1/X2/X3, derive the phase-modulated secondary
