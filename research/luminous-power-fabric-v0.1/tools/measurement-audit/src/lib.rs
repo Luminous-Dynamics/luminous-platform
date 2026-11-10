@@ -4,6 +4,7 @@ pub mod loss_budget;
 pub mod dab_sps;
 pub mod dab_sps_physics;
 pub mod dab_sps_resistive;
+pub mod dab_mission_sweep;
 pub mod cllc_fha;
 pub mod cllc_t_network;
 
