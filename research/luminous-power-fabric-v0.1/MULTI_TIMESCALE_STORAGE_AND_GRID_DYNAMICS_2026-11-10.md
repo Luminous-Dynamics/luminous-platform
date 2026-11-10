@@ -71,6 +71,8 @@ dE_storage/dt = eta_charge * P_charge
 
 The integrator linearly interpolates between adjacent load samples. When a sample interval crosses the grid-import target, it splits the interval at the exact crossing. This preserves charge and discharge energy separately rather than allowing opposite-sign contributions to cancel before efficiency is applied.
 
+The facility-profile interchange draft is `schemas/facility-power-profile-v0.1.schema.json`, with a synthetic sample in `schemas/facility-power-profile.example.json`. The files parse as JSON and the synthetic example has strictly increasing timestamps, valid sample flags and gaps within its declared bound. JSON Schema validation and a runtime JSON parser have not been executed or implemented.
+
 The result reports:
 - Load and target grid-import energy.
 - Charge input and discharge delivered energy.
