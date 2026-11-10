@@ -409,3 +409,16 @@ See [multi-timescale storage research](../../MULTI_TIMESCALE_STORAGE_AND_GRID_DY
 Every accepted output must be combined with the exact manifest, raw-file digest, calibration
 evidence, analysis build identity, test-procedure revision and independent review before it can
 support a declared bench claim.
+
+
+## Compute-preserving grid-to-chip benchmark
+
+The library exposes compute_power_benchmark:
+
+- audit_compute_power_trace integrates PCC active energy and useful-work rate on a time-aligned trace. It corrects input energy for initial/final stored-energy change, and reports time-weighted RMS power fluctuation, RMS tracking error against a declared reference, peak deviation and up/down ramp.
+- compare_compute_power_traces requires the same workload, boundary, work unit, PCC reference, initial stored energy, sample count and exact timestamps. It reports useful-work retention separately from energy-per-work and PCC power-shaping metrics. A smoother trace is not an unqualified improvement if it misses the useful-work budget.
+- audit_multisite_load_correlation requires synchronous valid site traces with identical timestamp vectors. It reports time-weighted site variance/covariance and compares aggregate variability against the zero-covariance independent reference.
+
+The multi-site v0.1 calculation is zero-lag only. It does not estimate lagged correlation, spectral coherence, grid frequency response or network stability. The trace audit is read-only and does not control workload, converter, storage or protection systems.
+
+**Validation:** tests are authored but not executed. No Rust compilation, formatting, Clippy, schema validation, EMT, HIL/PHIL, physical measurement or certification is claimed. See [COMPUTE_PRESERVING_GRID_TO_CHIP_BENCHMARK_2026-11-10.md](../../COMPUTE_PRESERVING_GRID_TO_CHIP_BENCHMARK_2026-11-10.md).
