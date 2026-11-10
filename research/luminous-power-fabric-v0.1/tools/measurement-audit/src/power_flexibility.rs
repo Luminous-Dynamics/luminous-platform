@@ -14,7 +14,6 @@ pub struct FlexibilityRun {
     pub initial_stored_energy_j: f64,
     pub final_stored_energy_j: f64,
     pub pcc_energy_j: f64,
-    pub mean_pcc_active_power_w: f64,
     pub useful_work_units: f64,
     pub p99_latency_ms: f64,
     pub p99_time_to_first_token_ms: f64,
@@ -67,7 +66,6 @@ impl FlexibilityRun {
             self.initial_stored_energy_j,
             self.final_stored_energy_j,
             self.pcc_energy_j,
-            self.mean_pcc_active_power_w,
             self.useful_work_units,
             self.p99_latency_ms,
             self.p99_time_to_first_token_ms,
@@ -81,7 +79,6 @@ impl FlexibilityRun {
             || self.initial_stored_energy_j < 0.0
             || self.final_stored_energy_j < 0.0
             || self.pcc_energy_j <= 0.0
-            || self.mean_pcc_active_power_w <= 0.0
             || self.useful_work_units <= 0.0
             || self.p99_latency_ms <= 0.0
             || self.p99_time_to_first_token_ms <= 0.0
@@ -133,6 +130,13 @@ impl FlexibilityRun {
 
     pub fn duration_s(&self) -> f64 {
         (self.window_end_ns - self.window_start_ns) as f64 / 1_000_000_000.0
+    }
+
+    /// Derive mean active power from the integrated PCC energy and exact
+    /// measurement duration. Do not accept a second independent mean-power
+    /// input that could disagree with the energy record.
+    pub fn mean_pcc_power_w(&self) -> f64 {
+        self.pcc_energy_j / self.duration_s()
     }
 
     /// Energy corrected for the initial/final stored-energy change.
@@ -262,7 +266,7 @@ fn candidate_result(
         })?;
 
     let power_shed_fraction =
-        1.0 - candidate.mean_pcc_active_power_w / baseline.mean_pcc_active_power_w;
+        1.0 - candidate.mean_pcc_power_w() / baseline.mean_pcc_power_w();
     let useful_work_retention_fraction =
         candidate.useful_work_units / baseline.useful_work_units;
     let p99_latency_increase_fraction =
@@ -497,7 +501,6 @@ mod tests {
             initial_stored_energy_j: 100_000.0,
             final_stored_energy_j: 100_000.0,
             pcc_energy_j: mean_power * 60.0,
-            mean_pcc_active_power_w: mean_power,
             useful_work_units: useful_work,
             p99_latency_ms: 1000.0,
             p99_time_to_first_token_ms: 150.0,
