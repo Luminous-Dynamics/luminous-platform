@@ -25,7 +25,7 @@ all voltage classes.
 |---|---|---|---|
 | PF-LV | PEBB-LV-01 | 36–60 V-class, isolated, bidirectional, 500 W laboratory DC/DC building block | First design and measurement programme |
 | PF-48 | 48 V power conversion module | Data-centre / telecom / industrial 48 V buses; fixed-ratio, regulated or bidirectional variants | Product discovery and benchmark study |
-| PF-HVDC | 400–800 VDC to 48/50 V intermediate bus; separately researched 12.5 V and 6.25 V direct processor-rail branches | Facility sidecar, rack power shelf, high-density compute | Research and partner architecture; separate high-voltage qualification for each rail and power-stage family |
+| PF-HVDC | 400–800 VDC to 48/50 V intermediate bus; separate 12/12.5 V and 6/6.25 V direct processor-rail branches | Facility sidecar, rack power shelf, compute tray and accelerator power | Research and partner architecture; separate high-voltage qualification for each rail and power-stage family |
 | PF-ENERGY | Multiport storage / source / load interface | DC microgrids, storage emulator, PV and distributed generation | System simulation and HIL research |
 | PF-GRID | Grid-connected bidirectional converter / grid-forming inverter | Commercial microgrids, storage, ancillary services | Grid-code and standards mapping before hardware product design |
 | PF-PROTECT | DC breaker, hybrid breaker, pre-charge, isolation and sectionalizer | DC buses, module branches and rack distribution | Dedicated fault-energy and protection programme |
@@ -58,6 +58,24 @@ reported efficiency figure to the 50 V product family.
 
 See [HVDC_BENCHMARK_UPDATE_2026-11-10.md](./HVDC_BENCHMARK_UPDATE_2026-11-10.md) for reported
 source values and the discrepancies that must be resolved from the original test data.
+
+### Grid-to-chip rail placement
+
+A 6 V path is now a first-class research candidate alongside 50 V, 12.5 V and 6.25 V. TI's
+March 2026 announcement describes 800 V-to-6 V isolated conversion followed by 6 V-to-sub-1 V
+multiphase buck conversion, reporting 97.6% peak and over 2,000 W/in³ for the 800 V-to-6 V stage.
+This is a vendor reference design and is not a matched comparison to EPC's 6.25 V demonstration.
+
+The architecture choice must be made on the complete grid-to-chip power tree. At 6 kW, 50 V needs
+120 A, 12.5 V needs 480 A, 6.25 V needs 960 A and 6 V needs 1,000 A. Lower rails can reduce downstream
+conversion and improve PoL density, but increase current extraction, connector, capacitor and
+thermal demands. Their loop resistances cannot be assumed equal.
+
+Compare at identical processor-rail power and time-aligned load traces. Include every stage,
+conductor, cooling, standby and storage loss, and assess transient response, hold-up, protection,
+availability and serviceability. See
+[GRID_TO_CHIP_BENCHMARKS_2026-11-10.md](./GRID_TO_CHIP_BENCHMARKS_2026-11-10.md).
+
 
 ## 3. Why 800 VDC is a distinct strategic opportunity
 
