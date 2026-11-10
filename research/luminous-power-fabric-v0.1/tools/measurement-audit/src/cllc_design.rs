@@ -118,6 +118,12 @@ pub fn evaluate_cllc_parameter_design(
             "controller minimum frequency must be below controller maximum frequency".to_string(),
         ));
     }
+    if input.required_voltage_gain < 1.0 {
+        return Err(AuditError(
+            "this paper-derived parameter region is for low-frequency boost operation and requires voltage gain M >= 1"
+                .to_string(),
+        ));
+    }
 
     let fr1 = 1.0
         / (2.0 * std::f64::consts::PI
@@ -333,6 +339,13 @@ mod tests {
     fn rejects_asymmetry_outside_paper_assumptions() {
         let mut p = input();
         p.secondary_resonant_capacitance_f *= 1.2;
+        assert!(evaluate_cllc_parameter_design(p).is_err());
+    }
+
+    #[test]
+    fn rejects_sub_unity_gain_outside_low_frequency_boost_domain() {
+        let mut p = input();
+        p.required_voltage_gain = 0.99;
         assert!(evaluate_cllc_parameter_design(p).is_err());
     }
 
