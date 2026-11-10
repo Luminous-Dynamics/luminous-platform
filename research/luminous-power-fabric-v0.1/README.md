@@ -187,6 +187,15 @@ reactances, evaluates the paper-specific VF-TPS bridge impedance and classifies 
 P/N sign states. It can identify the selected PNNN low-frequency boost state; PNNN is not by itself
 a ZVS or safety qualification.
 
+## Updated competitive strategy
+
+A 7.3 kW CLLLC-RDAB paper now provides a full-profile 97.1–97.8% efficiency reference with nearly
+symmetric reverse efficiency. A 1 kW DAB paper reinforces multi-objective design across ZVS range,
+rating utilization and reactive power. Therefore the programme will target mission-weighted
+bidirectional efficiency and full-envelope feasibility—not a single peak number. See
+[INDUSTRY_BASELINE.md](./INDUSTRY_BASELINE.md) and
+[BENCHMARKS.md](./BENCHMARKS.md).
+
 ## Current limitations
 
 This package is a research specification. No hardware, PCB, firmware, converter model, benchmark
