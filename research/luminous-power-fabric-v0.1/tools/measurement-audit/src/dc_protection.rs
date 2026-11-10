@@ -123,9 +123,20 @@ pub fn evaluate_dc_fault_energy(
         source_energy_upper_bound_j,
         conservative_accounting_sum_j,
     ];
-    if !all_finite(&derived) || derived.iter().any(|value| *value < 0.0) {
+    let cable_energy_underflow =
+        cable_terms_present && cable_magnetic_energy_j == 0.0;
+    let source_energy_underflow =
+        source_terms_present && source_energy_upper_bound_j == 0.0;
+    if !all_finite(&derived)
+        || derived.iter().any(|value| *value < 0.0)
+        || dc_link_capacitor_energy_j == 0.0
+        || cable_energy_underflow
+        || source_energy_underflow
+        || conservative_accounting_sum_j == 0.0
+    {
         return Err(AuditError(
-            "derived DC fault-energy result is non-finite or negative".to_string(),
+            "derived DC fault-energy result is non-finite, negative, or underflowed to zero"
+                .to_string(),
         ));
     }
 
@@ -242,11 +253,15 @@ pub fn screen_dc_link_discharge(
     ];
     if !all_finite(&derived)
         || log_voltage_ratio <= 0.0
+        || initial_stored_energy_j <= 0.0
         || energy_to_dissipate_j <= 0.0
+        || maximum_initial_discharge_current_a <= 0.0
+        || maximum_initial_resistor_power_w <= 0.0
+        || worst_case_time_to_threshold_s <= 0.0
         || maximum_resistance_for_time_target_ohm <= 0.0
     {
         return Err(AuditError(
-            "derived discharge-screen result is non-finite or outside its physical domain"
+            "derived discharge-screen result is non-finite, underflowed, or outside its physical domain"
                 .to_string(),
         ));
     }
@@ -381,6 +396,61 @@ mod tests {
         assert!(report.worst_case_time_to_threshold_s > 120.0);
         assert!(report.pulse_energy_rating_margin_j < 0.0);
         assert!(report.claim_ceiling().contains("NOT_SERVICE_AUTHORIZATION"));
+    }
+
+    #[test]
+    fn energy_ledger_rejects_positive_terms_that_underflow_to_zero() {
+        let result = evaluate_dc_fault_energy(DcFaultEnergyInput {
+            dc_link_capacitance_max_f: f64::MIN_POSITIVE,
+            dc_link_voltage_max_v: f64::MIN_POSITIVE,
+            cable_inductance_max_h: 0.0,
+            cable_current_max_a: 0.0,
+            source_voltage_max_v: 0.0,
+            source_current_limit_max_a: 0.0,
+            source_contribution_duration_max_s: 0.0,
+        });
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn discharge_screen_rejects_positive_values_that_underflow_derived_energy() {
+        let result = screen_dc_link_discharge(DcLinkDischargeInput {
+            capacitance_max_f: f64::MIN_POSITIVE,
+            initial_voltage_max_v: f64::MIN_POSITIVE,
+            residual_voltage_threshold_v: f64::MIN_POSITIVE / 2.0,
+            resistance_min_ohm: 1.0,
+            resistance_max_ohm: 1.0,
+            discharge_time_target_s: 1.0,
+            resistor_pulse_energy_rating_j: 1.0,
+        });
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn discharge_time_increases_with_capacitance_and_resistance() {
+        let fast = screen_dc_link_discharge(DcLinkDischargeInput {
+            capacitance_max_f: 1.0e-3,
+            initial_voltage_max_v: 800.0,
+            residual_voltage_threshold_v: 60.0,
+            resistance_min_ohm: 100_000.0,
+            resistance_max_ohm: 100_000.0,
+            discharge_time_target_s: 300.0,
+            resistor_pulse_energy_rating_j: 350.0,
+        }).unwrap();
+        let slow = screen_dc_link_discharge(DcLinkDischargeInput {
+            capacitance_max_f: 2.0e-3,
+            initial_voltage_max_v: 800.0,
+            residual_voltage_threshold_v: 60.0,
+            resistance_min_ohm: 100_000.0,
+            resistance_max_ohm: 120_000.0,
+            discharge_time_target_s: 600.0,
+            resistor_pulse_energy_rating_j: 700.0,
+        }).unwrap();
+
+        assert!(slow.worst_case_time_to_threshold_s > fast.worst_case_time_to_threshold_s);
+        assert!(slow.initial_stored_energy_j > fast.initial_stored_energy_j);
     }
 
     #[test]
