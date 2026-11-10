@@ -157,6 +157,65 @@ partner with a suitably equipped laboratory rather than attempt utility-scale fa
 - Warranty reserve, service model, spare parts and product liability review.
 - Pilot deployment only after certifications/permissions and site engineering are complete.
 
+## New topology-screening experiment package
+
+### Literature reproduction before comparison
+
+**CLLC-500W-2026:** obtain and examine the full article, supplement and any available raw data for
+Wang et al. (DOI 10.1016/j.epsr.2026.112834). Extract exact primary/secondary nominal voltages,
+gain range, rated-power boundary, switching-frequency range, forward/reverse test coverage, cooling,
+instrumentation, efficiency measurement method, uncertainty and the operating point that produced
+97.6%. Until these conditions are captured, only cite the reported peak forward result as literature
+context.
+
+**DAB-loss-2025:** reproduce the equation chain and parameter set from Wu et al. (DOI
+10.1109/ICIEA65512.2025.11148703) if the full paper can be obtained. Its reported <5 W model/experiment
+deviation is specific to that test setup; do not adopt it as our acceptance limit without matching
+measurement uncertainty, power and hardware scale.
+
+### Proposed common comparison matrix
+
+For each non-ideal DAB and CLLC candidate, use the same nominal 500 W output boundary and run:
+
+- Port A voltage: 36 V, 48 V and 60 V.
+- Port B voltage: 36 V, 48 V and 60 V.
+- Load fractions: 10%, 25%, 50%, 75% and 100%.
+- Direction: A→B and B→A, recorded as separate runs.
+- Thermal state: cold-start and declared steady-state equilibrium.
+- Control: DAB SPS and at least one EPS/TPS variant; CLLC FHA-designed tank followed by time-domain
+  verification and the proposed variable-frequency controller.
+- Repeats: three independent model runs for deterministic software checks; physical sample counts
+  must be set separately after model correlation and lab review.
+
+This creates 90 voltage/load/direction operating points per candidate before modulation variants and
+repeats. Invalid or infeasible points remain in the record with a reason; they are not quietly dropped
+from the declared envelope. Points that exceed the declared current/thermal/semiconductor limit are
+not energized; model-only infeasibility is preserved as a design rejection.
+
+### Optimization objective
+
+Use constrained multi-objective optimization, not a single weighted efficiency objective:
+- Minimize integrated mission-profile conversion loss.
+- Minimize peak/RMS semiconductor and magnetic current stress.
+- Maximize ZVS/ZCS coverage and commutation margin.
+- Respect junction, core, capacitor, connector, insulation and thermal limits.
+- Minimize magnetics volume, total module mass and auxiliary consumption.
+- Minimize BOM cost and single-source risk.
+- Preserve reverse-transfer capability and bounded direction reversal.
+- Preserve serviceability and independent fault containment.
+
+Safety and physical limits are hard constraints. They cannot be traded against efficiency or cost.
+A candidate only dominates another when it is no worse on the reported critical dimensions and
+strictly better on at least one, with uncertainty and model validity shown.
+
+### Model-correlation protocol
+
+The loss budget should be generated from the upstream topology model and carry a source for each
+term. Compare prediction to measurement separately for input power, output power, total loss,
+efficiency, RMS currents, hot-spot temperatures and waveform metrics. Do not calibrate the model
+and claim validation on the same single run: reserve independent operating points / units for
+correlation assessment.
+
 ## First 10 tasks that can start immediately
 
 | ID | Task | Primary system | Required evidence |
@@ -171,6 +230,11 @@ partner with a suitably equipped laboratory rather than attempt utility-scale fa
 | PF-008 | Create physical packaging and replaceable-module envelope | Sol-Atlas | Revisioned geometry/BOM |
 | PF-009 | Create fault tree, FMEA and safe-state transition table | Symtropy + independent reviewer | Reviewed safety case draft |
 | PF-010 | Establish model-to-bench correlation protocol | Symtropy | Preregistered correlation plan |
+| PF-011 | Complete the read-only loss-budget library and run its Rust tests | Rust measurement-audit crate | Exact-head test and lint receipts; unexecuted state remains explicit |
+| PF-012 | Extract the full 500 W CLLC paper's voltage, power, direction and measurement conditions | Symthaea literature work | Source-linked comparator record; unknown fields remain unknown |
+| PF-013 | Reproduce a published DAB SPS/EPS loss model and its assumptions | Symtropy | Equations, parameter set, model revision and independent reproduction notes |
+| PF-014 | Build matched non-ideal DAB/CLLC operating-point maps | Symtropy | Full 90-point-per-candidate map with infeasible points retained |
+| PF-015 | Create the Pareto analysis and sensitivity report | Symthaea + Symtropy | Separate efficiency, stress, thermal, volume, cost and model-uncertainty surfaces |
 
 The first code increment should be the offline measurement auditor, not an autonomous hardware-control
 agent. It will consume read-only measurement records and fail closed on missing/ambiguous data.
