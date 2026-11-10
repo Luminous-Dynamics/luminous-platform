@@ -79,9 +79,12 @@ and that PFM timing resolution, gain monotonicity, inductive input impedance, Co
 and thermal design belong in the same design review. Its 40–60 V battery side, 360–540 V DC bus,
 9:1 transformer and high-frequency controller are not a direct match to the 48 V / 500 W PEBB.
 
-A separate 2 kW T-type impedance-network CLLC study validates forward/reverse ZVS for its design.
-Use it as a design-method reference, not as an efficiency comparator. Both papers reinforce the
-importance of a state-constrained feasibility region rather than selecting a tank from gain alone.
+A separate 2 kW T-type impedance-network CLLC study validates forward/reverse ZVS for its design
+and reports 95.7% maximum forward efficiency (95.2% at rated forward load) and 95.4% reverse
+efficiency. Its 150–300 V input, 75–167 V output, 115 kHz resonance and 75–150 kHz switching range
+are not a 48 V / 500 W match. Use it as a design-method reference, not an efficiency SOTA claim.
+Both papers reinforce the importance of a state-constrained feasibility region rather than selecting
+a tank from gain alone.
 
 ### 500 W loss-budget comparison
 
