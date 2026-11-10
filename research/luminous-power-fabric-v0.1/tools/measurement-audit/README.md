@@ -384,6 +384,11 @@ dynamics. It is an ideal sizing lower bound, not a battery dispatch controller o
 system qualification. Capacitors, EDLC, batteries and grid-forming storage operate at different
 timescales; do not infer that one technology satisfies every layer.
 
+The interchange draft is `schemas/facility-power-profile-v0.1.schema.json`, with a synthetic
+example in `schemas/facility-power-profile.example.json`. Both JSON files were parsed and basic
+example invariants (strict timestamp order, sample quality and maximum gap) were checked. JSON
+Schema validation and a runtime JSON parser have not been run or implemented.
+
 See [multi-timescale storage research](../../MULTI_TIMESCALE_STORAGE_AND_GRID_DYNAMICS_2026-11-10.md).
 
 ## Explicit limitations
