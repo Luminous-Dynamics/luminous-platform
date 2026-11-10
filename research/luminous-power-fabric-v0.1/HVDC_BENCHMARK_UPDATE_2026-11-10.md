@@ -51,6 +51,11 @@ The most interesting lesson is not simply "use GaN at 1.1 MHz." The ISOP archite
 
 This suggests a new research experiment: compare *where regulation is placed* rather than assuming every cell must be fully regulated.
 
+
+A second architectural lever is **phase interleaving**. The EPC presentation article reports, for a separate 6 kW 800 V-to-12.5 V ISOP example, peak capacitor-current ripple falling from approximately 754 A (single phase) to 155 A (two phases) and 36 A (four phases), with indicated output capacitance falling from 387 µF to 39 µF and 4.5 µF respectively. These are presentation-reported figures for the 12.5 V design, not measurements from EPC91134's 800 V-to-50 V design and not a generic scaling law.
+
+This deserves a dedicated ripple model. It should include phase count and spacing, switching frequency, duty / resonant waveform, timing skew, per-phase current mismatch, capacitor ESR/ESL and physical interconnect. The objective is not just lower nominal ripple: verify capacitor RMS current, peak current, thermal loss, EMI, transient droop and tolerance to a missing / mis-phased cell. Do not copy the 12.5 V capacitance figure into a 50 V product.
+
 Candidate configurations to model on a common boundary:
 
 1. **Fixed-ratio DCX cells:** maximum-efficiency baseline for a known, bounded bus and load.
