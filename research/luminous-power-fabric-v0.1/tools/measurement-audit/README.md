@@ -42,6 +42,20 @@ non-positive net input/output energy and apparent efficiency above 100%. It does
 outliers, fill missing data, infer the declared run direction from the data, or silently repair
 measurements.
 
+## Loss-budget library
+
+The library also exposes `loss_budget::evaluate_loss_budget`. It accepts explicit loss terms with
+category, watts, standard uncertainty, evidence kind and provenance reference. It returns total loss,
+derived efficiency, target loss headroom, term shares, RSS standard uncertainty and a conservative
+linear uncertainty bound.
+
+This is accounting over supplied values, **not** an electrical topology solver. The upstream model
+must still derive waveforms, RMS currents, switching energies, magnetic losses and thermal states.
+The code does not promote datasheet/model/simulation inputs to measurement evidence.
+
+See [LOSS_BUDGET_AND_MODEL_PLAN.md](../../LOSS_BUDGET_AND_MODEL_PLAN.md) for equations, categories,
+anti-double-counting rules and the DAB/CLLC model-to-bench plan.
+
 ## Explicit limitations
 
 - The CLI direction is supplied as an argument; it is not yet bound to or cross-checked against the
