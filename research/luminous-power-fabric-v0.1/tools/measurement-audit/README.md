@@ -334,6 +334,36 @@ sample invariants checked, but JSON Schema validation and calibration authentici
 unperformed. The trace auditor does not model switching dynamics, converter control loops, thermal
 response, capacitor ESR/ESL, protection or workload scheduling.
 
+## Processor-rail transient auditor
+
+The crate exposes `transient_audit::audit_rail_transient` for a declared load-step event at a
+processor rail. The caller supplies exact sample timestamps for a pre-step baseline window, step
+start, steady-state current window and evaluation end, plus the declared rail target, voltage
+tolerance band, expected post-step current, current tolerance, settling dwell, sample-gap limit
+and clock-synchronization budget.
+
+The auditor reports:
+- Pre-step and post-step average load current and the measured current-step amplitude.
+- A first-order scalar target-impedance budget derived from allowed voltage deviation divided by declared current-step amplitude; this is not a measured or frequency-dependent impedance curve.
+- Post-step current error against the declared target.
+- Maximum sampled upward and downward current slew (A/µs).
+- Minimum / maximum post-step rail voltage, undershoot, overshoot and maximum deviation.
+- Settling time only where the rail enters the declared band and remains there through the
+  evaluation end for at least the declared dwell.
+- Maximum sample gap and clock-synchronization budget status.
+
+No interpolation or filtering is performed. Slew is the largest adjacent-sample difference, not
+an estimate of an unobserved edge between samples. A settling result is therefore specific to
+the declared sample bandwidth, timing, tolerance and dwell.
+
+The November 2026 industry reference discussed in
+[VRM transient and vertical power benchmarks](../../VRM_TRANSIENT_AND_VERTICAL_POWER_BENCHMARKS_2026-11-10.md)
+is a 40 A to 360 A load step at 800 A/µs on a 16-phase regulator. This is a published example,
+not a universal CPU/GPU rail requirement and not a Luminous result.
+
+This screen is not a control-loop stability analysis, impedance scan, full-bandwidth power-integrity
+qualification, VRM vendor comparison, or processor compliance test.
+
 ## Explicit limitations
 
 - The CLI direction is supplied as an argument; it is not yet bound to or cross-checked against the
