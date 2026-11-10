@@ -74,6 +74,7 @@ struct Model {
     generation: u64,
     attempts: BTreeMap<u64, Attempt>,
     uncertain: BTreeSet<u64>,
+    accepted: BTreeSet<u64>,
 }
 
 impl Default for Model {
@@ -85,6 +86,7 @@ impl Default for Model {
             generation: 0,
             attempts: BTreeMap::new(),
             uncertain: BTreeSet::new(),
+            accepted: BTreeSet::new(),
         }
     }
 }
@@ -135,7 +137,7 @@ impl Model {
             Event::Partition => {
                 self.connected = false;
                 for (id, item) in &self.attempts {
-                    if item.dispatched {
+                    if item.dispatched && !self.accepted.contains(id) {
                         self.uncertain.insert(*id);
                     }
                 }
@@ -208,7 +210,7 @@ impl Model {
             }
             Event::Retry { attempt, source, grant_epoch, duplicate_safe } => {
                 self.authority(*grant_epoch)?;
-                if !self.connected || !duplicate_safe || !self.uncertain.contains(source) {
+                if !self.connected || !duplicate_safe || !self.uncertain.contains(source) || self.accepted.contains(source) {
                     return Err("retry_not_safe_or_not_authorized");
                 }
                 if !self.attempts.contains_key(source) || self.attempts.contains_key(attempt) {
@@ -225,6 +227,7 @@ impl Model {
                     && item.reconciled_generation != Some(self.generation) {
                     return Err("acceptance_without_post_restart_reconciliation");
                 }
+                self.accepted.insert(*attempt);
                 self.uncertain.remove(attempt);
             }
         }
@@ -260,6 +263,7 @@ fn independent_check(events: &[Event], outcomes: &[Outcome]) -> Vec<Violation> {
     let mut oracle_pass: BTreeMap<u64, u64> = BTreeMap::new();
     let mut oracle_fail = BTreeSet::new();
     let mut uncertain = BTreeSet::new();
+    let mut accepted_attempts = BTreeSet::new();
 
     for (index, (event, outcome)) in events.iter().zip(outcomes).enumerate() {
         if outcome.index != index {
@@ -298,7 +302,7 @@ fn independent_check(events: &[Event], outcomes: &[Outcome]) -> Vec<Violation> {
             }
             Event::Partition => {
                 online = false;
-                uncertain.extend(dispatches.iter().copied());
+                uncertain.extend(dispatches.iter().filter(|id| !accepted_attempts.contains(id)).copied());
             }
             Event::Reconnect => { online = true; }
             Event::LostAck { attempt } => {
@@ -342,7 +346,7 @@ fn independent_check(events: &[Event], outcomes: &[Outcome]) -> Vec<Violation> {
                 }
                 if !online { report("retry_partition", "retry accepted during partition"); }
                 if !duplicate_safe { report("retry_idempotency", "retry accepted without duplicate-safe contract"); }
-                if !uncertain.contains(source) || !dispatches.contains(source) {
+                if !uncertain.contains(source) || !dispatches.contains(source) || accepted_attempts.contains(source) {
                     report("retry_source", "retry source is not a dispatched uncertain attempt");
                 }
                 if !dispatches.insert(*attempt) { report("attempt_uniqueness", "retry attempt id reused"); }
@@ -353,6 +357,7 @@ fn independent_check(events: &[Event], outcomes: &[Outcome]) -> Vec<Violation> {
                     || oracle_pass.get(attempt) != Some(&generation) || oracle_fail.contains(attempt) {
                     report("acceptance_evidence", "acceptance lacks dispatch, durable receipt, fresh reconciliation or current passing oracle");
                 }
+                accepted_attempts.insert(*attempt);
                 uncertain.remove(attempt);
             }
         }
@@ -694,7 +699,7 @@ mod tests {
     }
 
     #[test]
-    fn 500_seeded_schedules_preserve_model_oracle_invariants() {
+    fn five_hundred_seeded_schedules_preserve_model_oracle_invariants() {
         for seed in 0..500_u64 {
             let result = run_schedule(generate(seed, 19)).unwrap();
             assert!(result.violations.is_empty(), "seed {seed}: {:?}", result.violations);
