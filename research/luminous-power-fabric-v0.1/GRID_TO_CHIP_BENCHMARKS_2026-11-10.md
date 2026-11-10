@@ -180,8 +180,9 @@ The Rust measurement-audit library now adds:
 - `isop_input_balance`: static input-series voltage allocation from declared per-cell output power, efficiency and quiescent draw; explicit bypass-cell model and voltage-limit results.
 - `interleaved_ripple`: harmonic phasor superposition with actual phase offsets and per-phase harmonic amplitudes; returns harmonic peak/RMS residuals and an aggregate RMS screen.
 - `dc_rail_path`: steady constant-power load and two-wire loop-resistance calculation for current, voltage drop, I²R loss and resistance budgets.
+- `power_trace`: typed in-memory time-aligned trace auditor using irregular-sample trapezoidal integration, workload-state durations, rail-voltage deviation, sample-gap / clock-budget visibility and initial/final stored-energy correction.
 
-The modules are analytical screens only. They do not model closed-loop dynamics, switch waveforms, parasitics, capacitor ESR/ESL, thermal behavior, arc flash, protection selectivity or hardware.
+The first three are static analytical screens. The trace auditor is boundary energy accounting over supplied samples. None models closed-loop dynamics, switch waveforms, parasitics, capacitor ESR/ESL, electrothermal transients, arc flash, protection selectivity or hardware.
 
 ## 9. Validation status and next gates
 

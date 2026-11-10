@@ -304,6 +304,36 @@ clock synchronization, calibration authenticity, or measurement bandwidth suffic
 
 See [GRID_TO_CHIP_BENCHMARKS_2026-11-10.md](../../GRID_TO_CHIP_BENCHMARKS_2026-11-10.md).
 
+## Time-aligned grid-to-chip trace auditor
+
+The crate exposes `power_trace::audit_grid_to_chip_trace` over a typed in-memory trace. It
+integrates source-bus input power and processor-rail delivered power with the trapezoidal rule over
+strictly increasing timestamps, including irregular sample intervals. It reports total input and
+processor energy, maximum sample gap, interval deviation, workload-state durations, source/load
+peak power and processor-rail voltage excursion.
+
+The initial/final stored-energy values are mandatory metadata. The auditor computes:
+
+```
+delta_E_stored = E_stored,final - E_stored,initial
+E_available    = E_source - delta_E_stored
+E_loss         = E_available - E_processor
+eta_adjusted   = E_processor / E_available
+```
+
+A depleted hold-up store can produce a raw processor-energy / source-energy ratio above 100%.
+That raw ratio is reported separately; the storage-adjusted efficiency is the comparison value.
+The auditor rejects negative energy balance beyond a small numerical tolerance, non-monotonic
+timestamps, invalid-quality samples, non-finite / wrong-sign values and sample gaps beyond the
+declared limit. It never inserts missing samples or interpolates gaps. A synchronization-budget or
+processor-rail tolerance violation remains visible in the report rather than being hidden.
+
+This is **typed in-memory analysis**, not yet a JSON ingestion parser. The JSON interchange draft is
+`schemas/grid-to-chip-trace-v0.1.schema.json`; its schema / example have been JSON-parsed and basic
+sample invariants checked, but JSON Schema validation and calibration authenticity checks remain
+unperformed. The trace auditor does not model switching dynamics, converter control loops, thermal
+response, capacitor ESR/ESL, protection or workload scheduling.
+
 ## Explicit limitations
 
 - The CLI direction is supplied as an argument; it is not yet bound to or cross-checked against the
