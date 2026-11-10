@@ -19,6 +19,8 @@
 
 Sources and detailed caveats are listed in [SOURCES.md](./SOURCES.md).
 
+| **Lee et al., 7.3 kW CLLLC-RDAB** | 400 V input, 200–500 V output, 100 kHz fixed frequency; TPS optimized for ZVS and RMS current; 97.1–97.8% measured efficiency across the full charging profile and nearly identical reverse efficiency | Strong experimental benchmark for full-profile efficiency and bidirectional symmetry | 7.3 kW EV-charging prototype, not a matched 500 W / 36–60 V product; application profile and isolation/cooling boundaries differ |
+
 ## 2. Literature result at the exact 500 W power class
 
 Wang et al. report a 500 W bidirectional CLLC laboratory prototype with ZVS and peak forward
