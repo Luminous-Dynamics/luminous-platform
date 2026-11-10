@@ -182,6 +182,11 @@ The T-network module also screens the published low-frequency boost-mode frequen
 and intersects it with controller limits. Other CLLC state, ZVS and maximum-gain constraints remain
 separate unimplemented work.
 
+The CLLC T-network layer now maps physical resonant L/C/magnetizing parameters into signed
+reactances, evaluates the paper-specific VF-TPS bridge impedance and classifies all sixteen
+P/N sign states. It can identify the selected PNNN low-frequency boost state; PNNN is not by itself
+a ZVS or safety qualification.
+
 ## Current limitations
 
 This package is a research specification. No hardware, PCB, firmware, converter model, benchmark
