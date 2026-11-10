@@ -12,6 +12,7 @@ pub mod compute_power_benchmark;
 pub mod pdn_frequency;
 pub mod sampling_adequacy;
 pub mod evidence_manifest;
+pub mod dataset_registry;
 pub mod loss_budget;
 pub mod energy_chain;
 pub mod dab_sps;
