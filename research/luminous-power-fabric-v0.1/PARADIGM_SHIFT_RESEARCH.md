@@ -102,6 +102,68 @@ This is the basis for competing with industry: identify a measurable system-leve
 - Design a mechanical/service envelope that can later accept standardized PEBB variants.
 - Do not claim 25 kW research-paper performance is a 48 V / 500 W target or direct competitor result.
 
+## 8. New CLLC paradigm: constrain the internal state, not just the gain curve
+
+A particularly useful advance appeared on 30 October 2026 in *IEICE Electronics Express*: Huang et al.,
+“Design methodology for a bidirectional CLLC resonant converter based on T-type impedance-network
+constraints” (DOI 10.1587/elex.23.20260463).
+
+The paper identifies a gap in conventional design workflows that rely primarily on FHA voltage-gain
+curves and inductive-impedance constraints: they may omit the resonant tank's internal operating state
+and reactance introduced by secondary-side modulation. It maps the CLLC tank to a T-type impedance
+network, represents the secondary active bridge as a complex AC impedance, turns a designated
+low-frequency boost state into switching-frequency and resonant-inductance-ratio constraints, and
+combines those with FHA gain feasibility. A 2 kW prototype validates forward and reverse ZVS
+measurements.
+
+This suggests a major improvement in our CLLC research process:
+
+1. Use FHA as a fast **gain-feasibility screen**, not as the complete design model.
+2. Calculate direction-specific equivalent load impedance / quality factor for charging and
+   discharging; do not reuse one Q and claim bidirectional coverage.
+3. Map the resonant tank to a T-network or equivalent state model and include secondary modulation
+   impedance.
+4. Constrain internal resonant state, input impedance angle and commutation energy at every required
+   operating point.
+5. Verify dead-time and device Coss commutation explicitly; a positive inductive impedance alone is
+   not enough if available energy is insufficient.
+6. Check gain monotonicity over the selected operating-frequency range and reject a tank that has
+   an uncontrolled peak/turning point inside the commanded range.
+7. Validate the equation-derived design with time-domain switching simulation and eventually measured
+   forward and reverse waveforms.
+
+This changes the optimizer from “find an LC tank with enough gain” to “find a physically admissible
+tank whose gain, internal state, impedance, commutation and stress remain feasible across the mission
+envelope.”
+
+### Controller timing becomes part of the plant model
+
+A second October 2026 *Electronics* paper by Tao et al. reports a 4.8 kW bidirectional CLLC PV-storage
+prototype with 97.45% peak charging efficiency and 96.66% peak discharging efficiency. It combines
+FHA tank design, gain monotonicity, inductive input impedance and sufficient magnetizing energy for
+Coss commutation with high-resolution PFM using a DSP's HRPWM facilities. Its operating envelope,
+power class, turns ratio and cooling are not a match for PEBB-LV-01, but the design lesson is important:
+frequency-command quantization, register-update synchronization and dead-time are electrical
+performance constraints, not mere firmware implementation details.
+
+For Luminous this means:
+- Include achievable switching-frequency resolution and update jitter in the controller specification.
+- Bind controller clock tree, PWM resolution, update synchronization and firmware build to every
+  model/bench run.
+- Quantify gain error caused by frequency quantization at each operating point.
+- Check the effect of a frequency update during a current/voltage transient.
+- Never let a high-resolution PWM feature substitute for hardware overcurrent / overvoltage / thermal
+  interlocks.
+
+### What not to overclaim
+
+The T-type paper's 2 kW forward/reverse ZVS result validates that paper's prototype and design method.
+The 4.8 kW PV-storage paper's efficiency results validate its own system and measurement boundary.
+Neither proves that our proposed 500 W design is feasible or better. Our immediate software layer
+implements only the symmetric FHA gain equation and a discrete gain-curve scan; it does not yet
+implement T-network internal-state constraints, impedance-angle calculation, Coss/dead-time energy,
+or continuous monotonicity proofs.
+
 ## Sources
 
 - IEEE Access, “Design and Experimental Validation of a 25-kW Dual DAB–CLLC Bidirectional DC/DC Converter With an Ultrawide 200–1000 V Operating Range,” published 23 April 2026, DOI [10.1109/ACCESS.2026.3686835](https://doi.org/10.1109/ACCESS.2026.3686835).
