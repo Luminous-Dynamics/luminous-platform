@@ -251,7 +251,6 @@ pub struct FleetScenarioResult {
     pub fixed_fleet_overhead_power_w: Option<f64>,
     pub total_system_power_w: Option<f64>,
     pub gpu_board_energy_j: f64,
-    pub storage_adjusted_gpu_board_energy_j: f64,
     pub total_system_energy_j: Option<f64>,
     pub storage_adjusted_total_system_energy_j: Option<f64>,
     pub gpu_board_energy_per_work_unit_j: Option<f64>,
@@ -332,16 +331,9 @@ fn scenario_result(
 
     let gpu_board_power_w = point.board_power_w_for_gpu_count(installed_gpu_count);
     let gpu_board_energy_j = gpu_board_power_w * duration;
-    let storage_adjusted_gpu_board_energy_j = FleetOperatingPoint::effective_energy(
-        gpu_board_power_w,
-        duration,
-        point.initial_stored_energy_j,
-        point.final_stored_energy_j,
-    );
     if !gpu_board_power_w.is_finite()
         || !gpu_board_energy_j.is_finite()
-        || !storage_adjusted_gpu_board_energy_j.is_finite()
-        || storage_adjusted_gpu_board_energy_j <= 0.0
+        || gpu_board_energy_j <= 0.0
         || !available_capacity.is_finite()
     {
         return Err(AuditError(
@@ -371,7 +363,7 @@ fn scenario_result(
     let accepted_work =
         completed_work_units.filter(|work| service_feasible && work.is_finite() && *work > 0.0);
     let gpu_board_energy_per_work_unit_j =
-        accepted_work.map(|work| storage_adjusted_gpu_board_energy_j / work);
+        accepted_work.map(|work| gpu_board_energy_j / work);
     let total_system_energy_per_work_unit_j = accepted_work.and_then(|work| {
         storage_adjusted_total_system_energy_j.map(|energy| energy / work)
     });
@@ -400,7 +392,6 @@ fn scenario_result(
         fixed_fleet_overhead_power_w,
         total_system_power_w,
         gpu_board_energy_j,
-        storage_adjusted_gpu_board_energy_j,
         total_system_energy_j,
         storage_adjusted_total_system_energy_j,
         gpu_board_energy_per_work_unit_j,
@@ -429,6 +420,7 @@ fn validate_matched_points(
         || baseline.capacity_headroom_fraction.to_bits()
             != candidate.capacity_headroom_fraction.to_bits()
         || baseline.installed_gpu_count != candidate.installed_gpu_count
+        || baseline.overhead_evidence != candidate.overhead_evidence
         || baseline.initial_stored_energy_j.to_bits()
             != candidate.initial_stored_energy_j.to_bits()
     {
@@ -793,7 +785,7 @@ mod tests {
             evaluate_fleet_capacity_sweep(baseline, vec![candidate], gate()).unwrap();
         let result = &report.candidates[0].capacity_scaled;
 
-        assert!(result.storage_adjusted_gpu_board_energy_j > result.gpu_board_energy_j);
+        assert!(result.gpu_board_energy_j > 0.0);
         assert!(result.storage_adjusted_total_system_energy_j.unwrap()
             > result.total_system_energy_j.unwrap());
     }
@@ -826,7 +818,9 @@ mod tests {
             evaluate_fleet_capacity_sweep(baseline, vec![candidate], gate()).unwrap();
 
         assert!(report.candidates[0].capacity_scaled.installed_gpu_capex.is_none());
-        assert!(!report.candidates[0].pareto_frontier_member);
+        // The energy/power frontier remains available; capital is reported
+        // as unknown and is not used as a hidden zero-cost objective.
+        assert!(report.candidates[0].pareto_frontier_member);
     }
 
     #[test]
@@ -871,7 +865,7 @@ mod tests {
     #[test]
     fn allowed_useful_work_loss_is_reported_and_energy_is_normalized_to_actual_work() {
         let baseline = point("baseline", None, 10.0, 400.0, 4_800.0);
-        let mut candidate = point("small-work-loss", Some("cap"), 10.0, 380.0, 4_776.0);
+        let candidate = point("small-work-loss", Some("cap"), 10.0, 380.0, 4_776.0);
         // A 0.5% loss is within the declared 1% gate.
         let report = evaluate_fleet_capacity_sweep(baseline, vec![candidate], gate()).unwrap();
         let result = &report.candidates[0].fixed_fleet;
@@ -886,7 +880,7 @@ mod tests {
 
     #[test]
     fn rejects_unmet_baseline_and_invalid_overhead_metadata() {
-        let mut unmet_baseline = point("baseline", None, 10.0, 400.0, 100.0);
+        let unmet_baseline = point("baseline", None, 10.0, 400.0, 100.0);
         assert!(evaluate_fleet_capacity_sweep(
             unmet_baseline.clone(),
             vec![point("candidate", Some("cap"), 10.0, 380.0, 4_800.0)],
