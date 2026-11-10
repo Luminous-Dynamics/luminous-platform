@@ -90,12 +90,12 @@ A candidate that is dominated on every objective is discarded from the frontier.
 The new Rust module tools/measurement-audit/src/power_flexibility.rs adds:
 - evaluate_power_flexibility_sweep: compares one baseline against a set of controlled candidates.
 - FlexibilityGate: caller-declared work, QoS, energy, rebound, duration and power-shed criteria.
-- Per-candidate metrics for power shed, useful-work retention, P99 latency/TTFT, SLO, energy per work, P99 ramp, energy saved and rebound.
+- Per-candidate metrics for power shed, useful-work retention, P99 latency/TTFT, SLO, energy per work, P99 ramp, response latency, power overshoot, recovery settling, energy saved and rebound.
 - A Pareto-frontier extraction that includes only candidates meeting the service and power-flexibility gates.
 
 The evaluator requires a measurement-contract-valid flag and evidence ID for each run, but it does not authenticate those evidence references. Input traces/measurements must first pass the existing measurement and evidence workflows.
 
-Eleven synthetic unit tests cover a successful 5% shed, a lower-power/lower-work negative control, latency and TTFT failures, storage depletion, rebound excess, Pareto dominance, workload/boundary/time/SOC mismatch, unknown rebound, invalid measurement contracts, duplicate runs and invalid gate values.
+Twelve synthetic unit tests cover a successful 5% shed, a lower-power/lower-work negative control, latency and TTFT failures, storage depletion, rebound excess, Pareto dominance, workload/boundary/time/SOC mismatch, unknown rebound, invalid measurement contracts, duplicate runs and invalid gate values.
 
 **Tests are authored but not executed.** There is no claim of Rust compilation, formatting, Clippy, live GPU control, physical PCC measurement, HIL/PHIL, EMT, demand-response participation or utility qualification.
 
