@@ -32,6 +32,8 @@ These are arithmetic conversions of percentages into allowable watts, not predic
 Moving from 97.6% to 98.0% at 500 W means reducing the permitted loss budget by about 2.09 W, or roughly 17% of the 97.6%-equivalent loss. That is a meaningful engineering challenge, not an automatic consequence of changing topology.
 
 ## 2. Loss-budget accounting engine
+Machine-readable interchange uses [loss-budget-v0.1.schema.json](./schemas/loss-budget-v0.1.schema.json) and the explicitly synthetic [loss-budget.example.json](./schemas/loss-budget.example.json). The `budget.output_power_w` field is the single canonical output-power value; do not duplicate it in the operating-point object.
+
 
 The new Rust `loss_budget` module is a read-only accounting layer. It accepts explicit loss terms with category, watts, uncertainty, evidence kind and provenance reference. It calculates:
 - Total converter loss.
