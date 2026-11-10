@@ -43,10 +43,14 @@ pub struct FleetOperatingPoint {
     pub final_stored_energy_j: f64,
     pub p99_latency_ms: f64,
     pub p99_time_to_first_token_ms: f64,
+    pub p99_latency_slo_ms: f64,
+    pub p99_ttft_slo_ms: f64,
     pub slo_violation_fraction: f64,
+    pub maximum_slo_violation_fraction: f64,
     /// Optional verified cost per installed GPU in one declared currency.
     pub capex_per_gpu: Option<f64>,
     pub capex_currency: Option<String>,
+    pub capex_source_reference: Option<String>,
     /// None for the unmodified baseline; non-blank for controlled candidates.
     pub control_action_id: Option<String>,
     pub measurement_contract_valid: bool,
@@ -106,7 +110,10 @@ impl FleetOperatingPoint {
             self.final_stored_energy_j,
             self.p99_latency_ms,
             self.p99_time_to_first_token_ms,
+            self.p99_latency_slo_ms,
+            self.p99_ttft_slo_ms,
             self.slo_violation_fraction,
+            self.maximum_slo_violation_fraction,
         ];
         if values.iter().any(|value| !value.is_finite())
             || self.offered_work_rate_per_s <= 0.0
@@ -118,7 +125,10 @@ impl FleetOperatingPoint {
             || self.final_stored_energy_j < 0.0
             || self.p99_latency_ms <= 0.0
             || self.p99_time_to_first_token_ms <= 0.0
+            || self.p99_latency_slo_ms <= 0.0
+            || self.p99_ttft_slo_ms <= 0.0
             || !(0.0..=1.0).contains(&self.slo_violation_fraction)
+            || !(0.0..=1.0).contains(&self.maximum_slo_violation_fraction)
         {
             return Err(AuditError(format!(
                 "fleet operating point {:?} contains non-finite or out-of-domain measurements",
@@ -153,16 +163,21 @@ impl FleetOperatingPoint {
             }
         }
 
-        match (self.capex_per_gpu, self.capex_currency.as_ref()) {
-            (Some(cost), Some(currency))
+        match (
+            self.capex_per_gpu,
+            self.capex_currency.as_ref(),
+            self.capex_source_reference.as_ref(),
+        ) {
+            (Some(cost), Some(currency), Some(source))
                 if cost.is_finite()
                     && cost > 0.0
                     && currency.len() == 3
-                    && currency.bytes().all(|byte| byte.is_ascii_uppercase()) => {}
-            (None, None) => {}
+                    && currency.bytes().all(|byte| byte.is_ascii_uppercase())
+                    && !source.trim().is_empty() => {}
+            (None, None, None) => {}
             _ => {
                 return Err(AuditError(
-                    "GPU capex must be either fully absent or a positive amount with a three-letter currency"
+                    "GPU capex must be absent or include a positive amount, three-letter currency and source reference"
                         .to_string(),
                 ));
             }
@@ -257,6 +272,7 @@ pub struct FleetScenarioResult {
     pub total_system_energy_per_work_unit_j: Option<f64>,
     pub installed_gpu_capex: Option<f64>,
     pub capex_currency: Option<String>,
+    pub capex_source_reference: Option<String>,
     pub overhead_evidence: FleetOverheadEvidence,
 }
 
@@ -310,7 +326,10 @@ fn qos_feasible(
         && candidate.p99_time_to_first_token_ms
             <= baseline.p99_time_to_first_token_ms
                 * (1.0 + gate.maximum_p99_ttft_increase_fraction)
-        && candidate.slo_violation_fraction <= gate.maximum_slo_violation_fraction
+        && candidate.p99_latency_ms <= candidate.p99_latency_slo_ms
+        && candidate.p99_time_to_first_token_ms <= candidate.p99_ttft_slo_ms
+        && candidate.slo_violation_fraction
+            <= candidate.maximum_slo_violation_fraction.min(gate.maximum_slo_violation_fraction)
 }
 
 fn scenario_result(
@@ -324,7 +343,6 @@ fn scenario_result(
     is_capacity_scaled_model: bool,
 ) -> Result<FleetScenarioResult, AuditError> {
     let duration = point.duration_s();
-    let offered_work = point.offered_work_units();
     let required_capacity = point.required_capacity_units_per_s();
     let available_capacity = installed_gpu_count as f64 * point.per_gpu_goodput_units_per_s;
     let service_feasible = capacity_feasible && useful_work_feasible && qos_ok;
@@ -398,6 +416,7 @@ fn scenario_result(
         total_system_energy_per_work_unit_j,
         installed_gpu_capex,
         capex_currency: point.capex_currency.clone(),
+        capex_source_reference: point.capex_source_reference.clone(),
         overhead_evidence: point.overhead_evidence,
     })
 }
@@ -497,9 +516,10 @@ pub fn evaluate_fleet_capacity_sweep(
     )?;
     let baseline_fixed_capacity = baseline.installed_gpu_count as f64
         * baseline.per_gpu_goodput_units_per_s;
-    let baseline_fixed_qos = baseline.p99_latency_ms > 0.0
-        && baseline.p99_time_to_first_token_ms > 0.0
-        && baseline.slo_violation_fraction <= gate.maximum_slo_violation_fraction;
+    let baseline_fixed_qos = baseline.p99_latency_ms <= baseline.p99_latency_slo_ms
+        && baseline.p99_time_to_first_token_ms <= baseline.p99_ttft_slo_ms
+        && baseline.slo_violation_fraction
+            <= baseline.maximum_slo_violation_fraction.min(gate.maximum_slo_violation_fraction);
     let baseline_fixed_feasible = baseline_fixed_capacity
         >= baseline.required_capacity_units_per_s()
         && baseline.completed_work_units
@@ -691,9 +711,13 @@ mod tests {
             final_stored_energy_j: 10_000.0,
             p99_latency_ms: 1000.0,
             p99_time_to_first_token_ms: 150.0,
+            p99_latency_slo_ms: 1050.0,
+            p99_ttft_slo_ms: 160.0,
             slo_violation_fraction: 0.001,
+            maximum_slo_violation_fraction: 0.01,
             capex_per_gpu: Some(20_000.0),
             capex_currency: Some("USD".to_string()),
+            capex_source_reference: Some("synthetic-fixture-cost-basis".to_string()),
             control_action_id: action.map(str::to_string),
             measurement_contract_valid: true,
         }
