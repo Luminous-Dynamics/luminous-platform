@@ -808,6 +808,20 @@ mod tests {
     }
 
     #[test]
+    fn capacity_scaled_scenario_uses_its_own_fixed_overhead() {
+        let baseline = point("baseline", None, 10.0, 400.0, 4_800.0);
+        let mut candidate = point("capped", Some("cap"), 8.0, 200.0, 3_840.0);
+        candidate.fixed_capacity_scaled_overhead_power_w = Some(700.0);
+
+        let report =
+            evaluate_fleet_capacity_sweep(baseline, vec![candidate], gate()).unwrap();
+        let result = &report.candidates[0];
+
+        assert!((result.fixed_fleet.total_system_power_w.unwrap() - 2500.0).abs() < 1.0e-9);
+        assert!((result.capacity_scaled.total_system_power_w.unwrap() - 3200.0).abs() < 1.0e-9);
+    }
+
+    #[test]
     fn unknown_overhead_blocks_total_system_claim_but_preserves_gpu_board_result() {
         let baseline = point("baseline", None, 10.0, 400.0, 4_800.0);
         let mut candidate = point("unknown-overhead", Some("cap"), 10.0, 380.0, 4_800.0);
