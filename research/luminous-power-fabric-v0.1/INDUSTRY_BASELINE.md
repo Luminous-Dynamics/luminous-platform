@@ -45,7 +45,22 @@ Therefore:
 - Do not turn the above 97% figures into an apples-to-apples ranking. Their topology, voltage ratio, efficiency boundary, cooling and test conditions differ.
 - A result that matches efficiency while adding galvanic isolation, replaceability and independent safety controls may still be a meaningful product improvement, but it must disclose the cost, volume and thermal trade-offs.
 
-## 4. The right head-to-head programme
+## 4. Higher-power CLLC research context
+
+Two October 2026 publications further raise the modelling bar:
+- Tao et al. report a 4.8 kW bidirectional CLLC PV-storage prototype at 97.45% peak charging and
+  96.66% peak discharging efficiency. Their design ties FHA gain and gain monotonicity to inductive
+  input impedance, magnetizing energy, Coss/dead-time commutation, electrothermal cooling and
+  high-resolution PFM timing.
+- Huang et al. report a 2 kW CLLC design using T-type impedance-network state constraints, with
+  forward and reverse ZVS measurements on their prototype.
+
+These are research comparators, not direct 500 W product matches. Their major implication is
+methodological: a topology should only be selected from the intersection of gain, internal tank
+state, impedance, commutation, current/thermal stress and achievable digital-control timing.
+A nominal FHA gain curve alone is an insufficient design acceptance test.
+
+## 5. The right head-to-head programme
 
 ### A. Establish three reference configurations
 
@@ -80,7 +95,7 @@ A competitor can be better in one dimension and worse in another. Do not collaps
 
 If a vendor does not disclose enough data to match a condition, keep its published figure as context and state **not comparable**.
 
-## 5. Product-strategy consequence
+## 6. Product-strategy consequence
 
 We should not position PEBB-LV-01 as a generic 500 W brick that wins solely on efficiency. The strongest potential position is:
 
@@ -88,7 +103,7 @@ We should not position PEBB-LV-01 as a generic 500 W brick that wins solely on e
 
 The value proposition is the combination of isolation, two-way power flow, replaceable building blocks, predictable service and reproducible qualification. Efficiency must be competitive, not the only differentiation.
 
-## 6. Open evidence gaps
+## 7. Open evidence gaps
 
 - Confirm ELSİS BIDIR module isolation status, exact control envelope and whether >97% is a typical, peak or full-load guarantee across the full range.
 - Obtain the exact MPS and Vicor datasheets and test conditions for any chosen head-to-head.
