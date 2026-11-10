@@ -1213,6 +1213,218 @@ mod tests {
     }
 
 
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum LifecyclePhase {
+        Requested,
+        Authorized,
+        Dispatched,
+        Executing,
+        Indeterminate,
+        Receipted,
+        Accepted,
+        Rejected,
+        Blocked,
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum LifecycleEvent {
+        Grant { epoch: u64 },
+        Revoke { epoch: u64 },
+        Dispatch { attempt_id: u64, grant_epoch: u64 },
+        PeerStarted { attempt_id: u64 },
+        NetworkPartition,
+        Reconnect,
+        LostAcknowledgement,
+        PeerCompleted { attempt_id: u64 },
+        OriginRestart,
+        ReceiptPersisted { attempt_id: u64 },
+        OracleVerified { attempt_id: u64, passed: bool },
+        Retry { attempt_id: u64 },
+    }
+
+    /// Test-only reference state machine. It is an invariant oracle for the
+    /// read-only execution contract, not a production workflow runtime.
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    struct LifecycleState {
+        phase: LifecyclePhase,
+        connected: bool,
+        authority_epoch: u64,
+        grant_epoch: Option<u64>,
+        revoked: bool,
+        duplicate_safe: bool,
+        attempt_id: Option<u64>,
+        attempts_started: u64,
+        completion_observed: bool,
+    }
+
+    impl LifecycleState {
+        fn new(duplicate_safe: bool) -> Self {
+            Self {
+                phase: LifecyclePhase::Requested,
+                connected: true,
+                authority_epoch: 0,
+                grant_epoch: None,
+                revoked: false,
+                duplicate_safe,
+                attempt_id: None,
+                attempts_started: 0,
+                completion_observed: false,
+            }
+        }
+
+        fn apply(&mut self, event: LifecycleEvent) -> bool {
+            match event {
+                LifecycleEvent::Grant { epoch } => {
+                    if epoch <= self.authority_epoch
+                        || !matches!(
+                            self.phase,
+                            LifecyclePhase::Requested
+                                | LifecyclePhase::Blocked
+                                | LifecyclePhase::Indeterminate
+                        )
+                    {
+                        return false;
+                    }
+                    self.authority_epoch = epoch;
+                    self.grant_epoch = Some(epoch);
+                    self.revoked = false;
+                    if self.phase != LifecyclePhase::Indeterminate {
+                        self.phase = LifecyclePhase::Authorized;
+                    }
+                    true
+                }
+                LifecycleEvent::Revoke { epoch } => {
+                    if epoch < self.authority_epoch {
+                        return false;
+                    }
+                    self.authority_epoch = epoch;
+                    self.revoked = true;
+                    if self.phase == LifecyclePhase::Authorized {
+                        self.phase = LifecyclePhase::Blocked;
+                    }
+                    true
+                }
+                LifecycleEvent::Dispatch {
+                    attempt_id,
+                    grant_epoch,
+                } => {
+                    if self.phase != LifecyclePhase::Authorized
+                        || !self.connected
+                        || self.revoked
+                        || self.grant_epoch != Some(grant_epoch)
+                        || attempt_id == 0
+                    {
+                        return false;
+                    }
+                    self.attempt_id = Some(attempt_id);
+                    self.attempts_started += 1;
+                    self.completion_observed = false;
+                    self.phase = LifecyclePhase::Dispatched;
+                    true
+                }
+                LifecycleEvent::PeerStarted { attempt_id } => {
+                    if self.phase != LifecyclePhase::Dispatched
+                        || self.attempt_id != Some(attempt_id)
+                    {
+                        return false;
+                    }
+                    self.phase = LifecyclePhase::Executing;
+                    true
+                }
+                LifecycleEvent::NetworkPartition => {
+                    self.connected = false;
+                    if matches!(
+                        self.phase,
+                        LifecyclePhase::Dispatched | LifecyclePhase::Executing
+                    ) {
+                        self.phase = LifecyclePhase::Indeterminate;
+                    }
+                    true
+                }
+                LifecycleEvent::Reconnect => {
+                    self.connected = true;
+                    // Reconnection restores communication, not proof of
+                    // remote completion or permission to accept a result.
+                    true
+                }
+                LifecycleEvent::LostAcknowledgement => {
+                    if matches!(
+                        self.phase,
+                        LifecyclePhase::Dispatched | LifecyclePhase::Executing
+                    ) {
+                        self.phase = LifecyclePhase::Indeterminate;
+                    }
+                    true
+                }
+                LifecycleEvent::PeerCompleted { attempt_id } => {
+                    if self.attempt_id != Some(attempt_id)
+                        || !matches!(
+                            self.phase,
+                            LifecyclePhase::Dispatched
+                                | LifecyclePhase::Executing
+                                | LifecyclePhase::Indeterminate
+                        )
+                    {
+                        return false;
+                    }
+                    self.completion_observed = true;
+                    // Completion alone is not durable receipt evidence.
+                    self.phase = LifecyclePhase::Indeterminate;
+                    true
+                }
+                LifecycleEvent::OriginRestart => {
+                    if matches!(
+                        self.phase,
+                        LifecyclePhase::Dispatched | LifecyclePhase::Executing
+                    ) {
+                        self.phase = LifecyclePhase::Indeterminate;
+                    }
+                    true
+                }
+                LifecycleEvent::ReceiptPersisted { attempt_id } => {
+                    if self.attempt_id != Some(attempt_id)
+                        || !self.completion_observed
+                        || self.phase != LifecyclePhase::Indeterminate
+                    {
+                        return false;
+                    }
+                    self.phase = LifecyclePhase::Receipted;
+                    true
+                }
+                LifecycleEvent::OracleVerified { attempt_id, passed } => {
+                    if self.attempt_id != Some(attempt_id)
+                        || self.phase != LifecyclePhase::Receipted
+                    {
+                        return false;
+                    }
+                    self.phase = if passed {
+                        LifecyclePhase::Accepted
+                    } else {
+                        LifecyclePhase::Rejected
+                    };
+                    true
+                }
+                LifecycleEvent::Retry { attempt_id } => {
+                    if self.phase != LifecyclePhase::Indeterminate
+                        || !self.duplicate_safe
+                        || self.revoked
+                        || !self.connected
+                        || self.grant_epoch != Some(self.authority_epoch)
+                        || attempt_id == 0
+                        || self.attempt_id.is_none_or(|previous| attempt_id <= previous)
+                    {
+                        return false;
+                    }
+                    self.attempt_id = Some(attempt_id);
+                    self.attempts_started += 1;
+                    self.completion_observed = false;
+                    self.phase = LifecyclePhase::Dispatched;
+                    true
+                }
+            }
+        }
+    }
+
     fn mutate_peer(scenario: &mut Value, mutate: impl FnOnce(&mut Value)) {
         let candidates = scenario["candidates"]
             .as_array_mut()
@@ -1337,6 +1549,215 @@ mod tests {
             serde_json::to_value(original.cases).expect("serialize original case reports"),
             serde_json::to_value(reordered.cases).expect("serialize reordered case reports")
         );
+    }
+
+    #[test]
+    fn revocation_before_dispatch_blocks_the_old_grant() {
+        let mut state = LifecycleState::new(true);
+        assert!(state.apply(LifecycleEvent::Grant { epoch: 7 }));
+        assert!(state.apply(LifecycleEvent::Revoke { epoch: 7 }));
+        assert_eq!(state.phase, LifecyclePhase::Blocked);
+        assert!(!state.apply(LifecycleEvent::Dispatch {
+            attempt_id: 1,
+            grant_epoch: 7,
+        }));
+        assert_eq!(state.attempts_started, 0);
+    }
+
+    #[test]
+    fn partition_lost_ack_and_reconnect_never_imply_success() {
+        let mut state = LifecycleState::new(true);
+        assert!(state.apply(LifecycleEvent::Grant { epoch: 1 }));
+        assert!(state.apply(LifecycleEvent::Dispatch {
+            attempt_id: 1,
+            grant_epoch: 1,
+        }));
+        assert!(state.apply(LifecycleEvent::PeerStarted { attempt_id: 1 }));
+        assert!(state.apply(LifecycleEvent::NetworkPartition));
+        assert!(state.apply(LifecycleEvent::LostAcknowledgement));
+        assert!(state.apply(LifecycleEvent::Reconnect));
+
+        assert_eq!(state.phase, LifecyclePhase::Indeterminate);
+        assert!(!state.apply(LifecycleEvent::OracleVerified {
+            attempt_id: 1,
+            passed: true,
+        }));
+        assert_eq!(state.phase, LifecyclePhase::Indeterminate);
+    }
+
+    #[test]
+    fn acceptance_requires_current_attempt_durable_receipt_and_passing_oracle() {
+        let mut state = LifecycleState::new(false);
+        assert!(state.apply(LifecycleEvent::Grant { epoch: 2 }));
+        assert!(state.apply(LifecycleEvent::Dispatch {
+            attempt_id: 9,
+            grant_epoch: 2,
+        }));
+        assert!(state.apply(LifecycleEvent::PeerStarted { attempt_id: 9 }));
+        assert!(state.apply(LifecycleEvent::PeerCompleted { attempt_id: 9 }));
+        assert_eq!(state.phase, LifecyclePhase::Indeterminate);
+
+        // A passing oracle cannot compensate for a receipt that is not durable.
+        assert!(!state.apply(LifecycleEvent::OracleVerified {
+            attempt_id: 9,
+            passed: true,
+        }));
+        assert!(state.apply(LifecycleEvent::ReceiptPersisted { attempt_id: 9 }));
+        assert!(state.apply(LifecycleEvent::OracleVerified {
+            attempt_id: 9,
+            passed: true,
+        }));
+        assert_eq!(state.phase, LifecyclePhase::Accepted);
+    }
+
+    #[test]
+    fn retries_require_declared_duplicate_safety_and_current_authority() {
+        let mut unsafe_state = LifecycleState::new(false);
+        assert!(unsafe_state.apply(LifecycleEvent::Grant { epoch: 3 }));
+        assert!(unsafe_state.apply(LifecycleEvent::Dispatch {
+            attempt_id: 1,
+            grant_epoch: 3,
+        }));
+        assert!(unsafe_state.apply(LifecycleEvent::LostAcknowledgement));
+        assert!(unsafe_state.apply(LifecycleEvent::Reconnect));
+        assert!(!unsafe_state.apply(LifecycleEvent::Retry { attempt_id: 2 }));
+        assert_eq!(unsafe_state.attempts_started, 1);
+
+        let mut revoked_state = LifecycleState::new(true);
+        assert!(revoked_state.apply(LifecycleEvent::Grant { epoch: 4 }));
+        assert!(revoked_state.apply(LifecycleEvent::Dispatch {
+            attempt_id: 1,
+            grant_epoch: 4,
+        }));
+        assert!(revoked_state.apply(LifecycleEvent::LostAcknowledgement));
+        assert!(revoked_state.apply(LifecycleEvent::Reconnect));
+        assert!(revoked_state.apply(LifecycleEvent::Revoke { epoch: 4 }));
+        assert!(!revoked_state.apply(LifecycleEvent::Retry { attempt_id: 2 }));
+        assert_eq!(revoked_state.attempts_started, 1);
+    }
+
+    #[test]
+    fn late_receipt_from_prior_attempt_cannot_complete_a_retry() {
+        let mut state = LifecycleState::new(true);
+        assert!(state.apply(LifecycleEvent::Grant { epoch: 5 }));
+        assert!(state.apply(LifecycleEvent::Dispatch {
+            attempt_id: 1,
+            grant_epoch: 5,
+        }));
+        assert!(state.apply(LifecycleEvent::PeerStarted { attempt_id: 1 }));
+        assert!(state.apply(LifecycleEvent::NetworkPartition));
+        assert!(state.apply(LifecycleEvent::LostAcknowledgement));
+        assert!(state.apply(LifecycleEvent::Reconnect));
+        assert!(state.apply(LifecycleEvent::Retry { attempt_id: 2 }));
+        assert_eq!(state.attempts_started, 2);
+        assert_eq!(state.attempt_id, Some(2));
+
+        // Attempt 1's delayed receipt/oracle cannot satisfy attempt 2.
+        assert!(!state.apply(LifecycleEvent::PeerCompleted { attempt_id: 1 }));
+        assert!(!state.apply(LifecycleEvent::ReceiptPersisted { attempt_id: 1 }));
+        assert!(!state.apply(LifecycleEvent::OracleVerified {
+            attempt_id: 1,
+            passed: true,
+        }));
+        assert_eq!(state.phase, LifecyclePhase::Dispatched);
+
+        assert!(state.apply(LifecycleEvent::PeerCompleted { attempt_id: 2 }));
+        assert!(state.apply(LifecycleEvent::ReceiptPersisted { attempt_id: 2 }));
+        assert!(state.apply(LifecycleEvent::OracleVerified {
+            attempt_id: 2,
+            passed: true,
+        }));
+        assert_eq!(state.phase, LifecyclePhase::Accepted);
+        assert_eq!(state.attempts_started, 2);
+    }
+
+    fn permute_events(
+        events: &mut Vec<LifecycleEvent>,
+        start: usize,
+        output: &mut Vec<Vec<LifecycleEvent>>,
+    ) {
+        if start == events.len() {
+            output.push(events.clone());
+            return;
+        }
+        for index in start..events.len() {
+            events.swap(start, index);
+            permute_events(events, start + 1, output);
+            events.swap(start, index);
+        }
+    }
+
+    #[test]
+    fn all_fault_event_orders_preserve_indeterminate_until_receipt_and_oracle() {
+        let mut fault_events = vec![
+            LifecycleEvent::NetworkPartition,
+            LifecycleEvent::Reconnect,
+            LifecycleEvent::LostAcknowledgement,
+            LifecycleEvent::OriginRestart,
+        ];
+        let mut schedules = Vec::new();
+        permute_events(&mut fault_events, 0, &mut schedules);
+        assert_eq!(schedules.len(), 24);
+
+        for (index, schedule) in schedules.iter().enumerate() {
+            let mut state = LifecycleState::new(true);
+            assert!(state.apply(LifecycleEvent::Grant { epoch: 11 }));
+            assert!(state.apply(LifecycleEvent::Dispatch {
+                attempt_id: 1,
+                grant_epoch: 11,
+            }));
+            assert!(state.apply(LifecycleEvent::PeerStarted { attempt_id: 1 }));
+
+            for event in schedule {
+                assert!(state.apply(*event), "schedule {index} rejected {event:?}");
+            }
+            assert_ne!(
+                state.phase,
+                LifecyclePhase::Accepted,
+                "fault schedule {index} falsely accepted work"
+            );
+
+            assert!(state.apply(LifecycleEvent::PeerCompleted { attempt_id: 1 }));
+            assert_eq!(state.phase, LifecyclePhase::Indeterminate);
+            assert!(state.apply(LifecycleEvent::ReceiptPersisted { attempt_id: 1 }));
+            assert_eq!(state.phase, LifecyclePhase::Receipted);
+            assert!(state.apply(LifecycleEvent::OracleVerified {
+                attempt_id: 1,
+                passed: true,
+            }));
+            assert_eq!(state.phase, LifecyclePhase::Accepted);
+        }
+    }
+
+    #[test]
+    fn identical_event_schedule_replays_to_identical_state() {
+        let schedule = [
+            LifecycleEvent::Grant { epoch: 13 },
+            LifecycleEvent::Dispatch {
+                attempt_id: 4,
+                grant_epoch: 13,
+            },
+            LifecycleEvent::PeerStarted { attempt_id: 4 },
+            LifecycleEvent::NetworkPartition,
+            LifecycleEvent::LostAcknowledgement,
+            LifecycleEvent::Reconnect,
+            LifecycleEvent::PeerCompleted { attempt_id: 4 },
+            LifecycleEvent::ReceiptPersisted { attempt_id: 4 },
+            LifecycleEvent::OracleVerified {
+                attempt_id: 4,
+                passed: true,
+            },
+        ];
+
+        let mut first = LifecycleState::new(false);
+        let mut second = LifecycleState::new(false);
+        for event in schedule {
+            assert!(first.apply(event));
+            assert!(second.apply(event));
+        }
+        assert_eq!(first, second);
+        assert_eq!(first.phase, LifecyclePhase::Accepted);
+        assert_eq!(first.attempts_started, 1);
     }
 
     #[test]
