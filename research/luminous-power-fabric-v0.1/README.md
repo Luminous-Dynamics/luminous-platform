@@ -239,6 +239,14 @@ prototype reporting 98.75% peak and 2,070 W/in³, and a separate ISOP LLC paper 
 full-load and >98.4% peak. These are different unidirectional research designs; neither is a
 Luminous result or a matched bidirectional benchmark.
 
+## Whole-chain energy accounting implementation
+
+A read-only Rust conversion-chain auditor now evaluates end-to-end input energy, delivered energy,
+conversion losses, standby draw, annual electricity cost and grid emissions across a complete
+8,760-hour piecewise load profile. It keeps source provenance for each stage efficiency, standby,
+tariff and emissions factor. This enables fairer AC/DC / 48V / 800V architecture comparisons than
+adding peak-efficiency percentages. It does not replace a site model or measured energy study.
+
 ## Current limitations
 
 This package contains analytical screening models and offline data-audit tools; it does **not**
