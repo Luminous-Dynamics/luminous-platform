@@ -134,6 +134,13 @@ protection and safe-state boundaries are documented; candidate components have d
 lifecycle/supplier status; measurement uncertainty is planned; and the phase-0 no-grid/no-mains
 boundary is reflected in the lab procedure.
 
+## Further topology research
+
+See [PARADIGM_SHIFT_RESEARCH.md](./PARADIGM_SHIFT_RESEARCH.md) for current literature on reconfigurable
+DAB–CLLC building blocks, low-voltage GaN-versus-silicon trade-offs, CLLC control strategies and
+repair-first modular power architecture. It updates the research direction without freezing a
+topology for PEBB-LV-01.
+
 ## Current limitations
 
 This package is a research specification. No hardware, PCB, firmware, converter model, benchmark
