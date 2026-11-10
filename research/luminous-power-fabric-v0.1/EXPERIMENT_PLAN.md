@@ -280,7 +280,7 @@ converter controller, protection relay or authorization to energize hardware.
 | PF-042 | Reproduce the CPSS 800 V-to-50 V ISOP LLC architecture and cell-sharing assumptions | Symtropy | Cell model, turns-ratio / transformer mapping, voltage/current sharing and test boundary |
 | PF-043 | Build matched 800 VDC 6 kW LLC / ISOP non-ideal loss and electrothermal comparisons | Symtropy | Full-load maps, component losses, thermal parasitics and model uncertainty; no physical claims |
 | PF-044 | Model 800 VDC protection / pre-charge / discharge / selective cell isolation / startup interfaces | Symtropy + power-electronics review | Fault-energy model, safe-state contracts and OCP v1.1.0 traceability; no high-voltage test |
-| PF-045 | Create read-only end-to-end conversion-chain energy auditor for architecture comparisons | Rust tooling | Per-segment load-hours and stage-boundary energy balance with source provenance |
+| PF-045 | Implement read-only end-to-end conversion-chain energy auditor for architecture comparisons | Rust measurement-audit crate | Complete 8,760-hour load profile, stage-boundary energy balance, idle/standby, source provenance, annual cost and emissions; 14 tests authored, not run |
 | PF-046 | Map OCP LVDC v1.1.0 requirements for protection, startup, hold-up, control/monitoring and EMC | Symthaea + Sol-Atlas | Requirement-to-interface matrix; distinguish OCP published work from unresolved workstream detail |
 | PF-047 | Prepare specialist 800 V laboratory / independent test partner brief | Product architecture | Equipment ratings, procedures, calibration, containment, competence and evidence expectations |
 
