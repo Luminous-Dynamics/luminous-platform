@@ -473,7 +473,7 @@ The registry example separates the NLR measured workload traces from its model-g
 
 ## QoS-constrained power-flexibility Pareto audit
 
-The library exposes power_flexibility::evaluate_power_flexibility_sweep for offline comparison of a frozen baseline with controlled power-cap/DVFS/workload operating points. Every candidate must match the baseline workload contract, request mix, quality contract, PCC boundary, time window and initial stored energy. PCC energy is corrected for the initial/final stored-energy change.
+The library exposes power_flexibility::evaluate_power_flexibility_sweep for offline comparison of a frozen baseline with controlled power-cap/DVFS/workload operating points. Every candidate must match the baseline workload contract, request mix, quality contract, PCC boundary, time window and initial stored energy. Mean PCC power is derived from integrated PCC energy over the exact window, avoiding a second inconsistent mean-power input. PCC energy is corrected for the initial/final stored-energy change.
 
 The result reports power shed, useful-work retention, P99 latency/TTFT changes, SLO violation fraction, energy per work change, P99 ramp, response latency to target, power overshoot, recovery settling and recovery rebound. Service-contract and minimum-power-shed gates are evaluated separately. The Pareto frontier contains only non-dominated candidates that pass the declared useful-work, QoS, energy/work, sustained-duration and rebound constraints.
 
