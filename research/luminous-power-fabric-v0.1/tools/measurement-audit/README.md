@@ -67,6 +67,19 @@ power/phase/inductance screen only, not a loss, RMS-current, ZVS, controller, th
 The equations and reference conditions are documented in
 [LOSS_BUDGET_AND_MODEL_PLAN.md](../../LOSS_BUDGET_AND_MODEL_PLAN.md).
 
+## Symmetric CLLC FHA gain screen
+
+The crate exposes `cllc_fha::evaluate_cllc_fha_gain` for the ideal symmetric CLLC FHA normalized
+gain formula using k_L, normalized switching frequency and a direction-specific Q. The Q value for
+charging and discharging generally differs because the equivalent AC load resistance differs.
+`cllc_fha::scan_cllc_fha_gain_curve` evaluates a strictly increasing discrete frequency grid and
+classifies the **sampled** trend.
+
+These are FHA gain screens only. They do not calculate T-network internal states, complex input
+impedance, inductive/ZVS feasibility, resonant currents, Coss/dead-time commutation, losses, thermal
+performance or continuous-band monotonicity. See
+[LOSS_BUDGET_AND_MODEL_PLAN.md](../../LOSS_BUDGET_AND_MODEL_PLAN.md).
+
 ## Explicit limitations
 
 - The CLI direction is supplied as an argument; it is not yet bound to or cross-checked against the
