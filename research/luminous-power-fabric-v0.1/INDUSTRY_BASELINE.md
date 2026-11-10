@@ -60,6 +60,11 @@ methodological: a topology should only be selected from the intersection of gain
 state, impedance, commutation, current/thermal stress and achievable digital-control timing.
 A nominal FHA gain curve alone is an insufficient design acceptance test.
 
+The full T-type paper reports 95.7% maximum forward efficiency, 95.2% forward efficiency at
+rated load, and 95.4% reverse efficiency for its own 2 kW prototype. It demonstrates forward/reverse
+ZVS and a state-constrained design method, not a 97–98% efficiency record. The operating range is
+150–300 V input and 75–167 V output, with 115 kHz resonance and 75–150 kHz switching.
+
 ## 5. The right head-to-head programme
 
 ### A. Establish three reference configurations
