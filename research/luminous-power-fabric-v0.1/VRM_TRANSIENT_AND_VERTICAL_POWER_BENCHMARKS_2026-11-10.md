@@ -44,6 +44,7 @@ It calculates:
 - Maximum sample gap and synchronization-budget status.
 
 The code rejects invalid quality, duplicate/out-of-order timestamps, absent exact event boundaries, non-finite values and sample gaps above the declared limit. It does not resample, interpolate, filter or infer an unobserved edge.
+It also derives a first-order scalar target-impedance budget as allowed rail-voltage deviation divided by the declared current step. For a 0.90 V rail, ±2% tolerance and 320 A step, the result is 56.25 µΩ. This assumes the entire ±2% band is available for this event; real product budgets must reserve margin for DC load-line, ripple, measurement uncertainty and other disturbances. This scalar is not a frequency-dependent target-impedance curve and does not replace measured impedance.
 
 ### Synthetic reference fixture
 
