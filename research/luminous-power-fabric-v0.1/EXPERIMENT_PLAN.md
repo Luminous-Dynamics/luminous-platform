@@ -260,6 +260,10 @@ correlation assessment.
 | PF-029 | Compare lossless DAB SPS model to resistive periodic RL solver as Req→0 | Rust tooling + Symtropy | Reference vectors for power, RMS current, periodicity and energy-balance residual |
 | PF-030 | Extend resistive DAB model to mission-profile sweeps over voltage ratio, phase and Req | Symtropy | Full maps with infeasible / high-stress points retained |
 | PF-031 | Add DAB switch-level Coss / dead-time commutation and device thermal models | Symtropy + power-electronics review | Device-specific datasheet-backed parameters and measured waveform correlation plan |
+| PF-034 | Freeze a representative DAB mission profile and candidate parameter grid | Symthaea + engineering review | Immutable point IDs, weights, voltage referral, power direction and environmental assumptions |
+| PF-035 | Run deterministic RL-SPS DAB candidate sweep and Pareto filter | Rust tooling + Symtropy | Every point retained with failures; weighted efficiency, delivery, current, analytic ZVS and thermal margins |
+| PF-036 | Validate mission-sweep direction, weighting, loss accounting and Pareto behavior against independent arithmetic | Rust tooling + reviewer | Forward/reverse power-boundary checks, energy balance, dominant/ non-dominant fixtures |
+
 
 | PF-022 | Add Coss/dead-time commutation-energy and PFM timing-resolution constraints | Symtropy + embedded-control review | Declared device, gate-drive and controller clock parameters; no physical safety claims |
 | PF-023 | Correlate CLLC FHA and state-constrained model against independent time-domain switching runs | Symtropy | Held-out operating points, residuals and model-validity report
