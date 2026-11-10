@@ -10,6 +10,9 @@
 |---|---|---|---|
 | IEEE Open Journal of Power Electronics, 3 Jun 2026, DOI 10.1109/OJPEL.2026.3699737 | Three experimentally validated DC/DC PEBB topologies for modular SST; 98.55% reported peak efficiency | Literature anchor for modular isolated DC/DC topology research | Not a matched 48 V / 500 W product; operating point, boundaries and topology differ |
 | IEEE Access, 23 Apr 2026, DOI 10.1109/ACCESS.2026.3686835 | Experimentally validated 25 kW dual DAB–CLLC architecture; 200–1000 V operating range; 98.37% peak charging / 97.82% peak discharging; reconfigurable series/parallel module arrangement | Research anchor for range-adaptive, composable PEBBs | EV charging power/voltage class; not a matched 48 V / 500 W benchmark |
+| ELSİS BIDIR Module (official product page / datasheet) | 500 W bidirectional low-voltage buck-boost; 9–60 V input; 3.3–48 V adjustable output; vendor states >97% efficiency and >97% at full rated load | Closest functional commercial 500 W bidirectional low-voltage baseline | Public spec does not state galvanic isolation or fully define efficiency test conditions; vendor result, not independent lab result |
+| MPS MPC10106-54-0500 (Q4 2024 brochure) | 500 W continuous, 40–60 V input, 8:1 non-isolated LLC, 2,634 W/in³ stated density and 97.8% peak efficiency | 48 V data-centre density / point-of-load conversion reference | Not bidirectional or isolated; fixed-ratio low-voltage output |
+| Vicor V48A48C500 family | 500 W, 48 V output, 36–75 V input, 3 kV isolation, 89.7% typical efficiency at nominal input / 75% load / 25 °C per family data | Adjacent isolated-module reference | Not bidirectional; verify exact SKU and revision; not matched to PEBB-LV-01 |
 | ABB SACE Infinitus | Up to 2,500 A / 1,250 V DC; interruption down to 25 μs; IEC 60947-2 certified; combines solid-state interruption and electromechanical isolation | Commercial benchmark for mature solid-state DC protection | Different product, power class, thermal/cooling design and application; do not compare its interruption time to a converter |
 | ESIG, Sep 2025, Testing the Performance of Grid-Forming Resources | Methods and metrics for voltage-source behavior of grid-forming resources | Future microgrid AC interface test-plan basis | Not a converter efficiency benchmark; tailor to system and grid conditions |
 | National Laboratory of the Rockies PHIL | 1.08 MVA and 7 MVA grid simulators described for power hardware-in-the-loop | Future system-level hardware validation ambition | Facility capability is not a pass criterion for a 500 W DC/DC unit |
@@ -25,6 +28,14 @@ one resonant or bridge topology: its 25 kW dual DAB–CLLC design changes module
 arrangement to accommodate a 200–1000 V battery-side range. Treat this as a later architecture
 research direction. PEBB-LV-01 has a narrow 36–60 V port envelope and should not inherit unnecessary
 reconfiguration complexity.
+
+**Target-setting correction:** ≥97% is a functional Rev-A target, not a claim to beat the industry.
+ELSİS advertises >97% at full rated load for a 500 W bidirectional buck-boost module, and MPS
+advertises 97.8% peak for a different 500 W non-isolated 48 V LLC stage. These are not matched to
+our isolated DAB/CLLC target, but they show that headline efficiency alone is insufficient. The
+competitive gate is a direct, uncertainty-aware comparison against the closest available baseline,
+with isolation, direction, thermal and service requirements held explicit. See
+[INDUSTRY_BASELINE.md](./INDUSTRY_BASELINE.md).
 
 ## 2. PEBB-LV-01 proposed target matrix
 
