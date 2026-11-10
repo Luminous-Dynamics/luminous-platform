@@ -42,6 +42,13 @@
         "physical_boundary",
         "access_method",
         "notes",
+        "maximum_sample_interval_ns",
+        "timestamp_jitter_verified",
+        "clock_sync_verified",
+        "sensor_bandwidth_hz",
+        "sensor_bandwidth_verified",
+        "anti_alias_filter_verified",
+        "fast_claim_bandwidth_hz",
         "supported_uses",
         "license",
         "citation",
@@ -116,9 +123,18 @@
           "type": ["integer", "null"],
           "minimum": 1
         },
+        "timestamp_jitter_verified": {
+          "type": ["boolean", "null"]
+        },
+        "clock_sync_verified": {
+          "type": ["boolean", "null"]
+        },
         "sensor_bandwidth_hz": {
           "type": ["number", "null"],
           "exclusiveMinimum": 0
+        },
+        "sensor_bandwidth_verified": {
+          "type": ["boolean", "null"]
         },
         "anti_alias_filter_verified": {
           "type": ["boolean", "null"]
@@ -190,12 +206,24 @@
             "required": [
               "maximum_sample_interval_ns",
               "sensor_bandwidth_hz",
+              "timestamp_jitter_verified",
+              "clock_sync_verified",
+              "sensor_bandwidth_verified",
               "anti_alias_filter_verified",
               "fast_claim_bandwidth_hz"
             ],
             "properties": {
               "evidence_class": {
                 "const": "PHYSICAL_MEASUREMENT"
+              },
+              "timestamp_jitter_verified": {
+                "const": true
+              },
+              "clock_sync_verified": {
+                "const": true
+              },
+              "sensor_bandwidth_verified": {
+                "const": true
               },
               "anti_alias_filter_verified": {
                 "const": true
