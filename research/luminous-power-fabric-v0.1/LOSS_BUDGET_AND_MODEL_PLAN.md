@@ -171,7 +171,65 @@ Use a Pareto surface rather than a weighted scalar score. At minimum retain sepa
 
 A candidate that improves peak efficiency but loses ZVS at cold start, has poor reverse operation or materially worsens thermal cycling should not win by a scalar average.
 
-## 7. Model-to-bench correlation gate
+## 7. CLLC FHA gain screening and the next state-constraint layer
+
+The Rust crate now exposes:
+- `cllc_fha::evaluate_cllc_fha_gain` — symmetric CLLC FHA normalized gain for a declared
+  magnetizing/resonant inductance ratio, direction-specific equivalent quality factor and normalized
+  switching frequency.
+- `cllc_fha::scan_cllc_fha_gain_curve` — evaluates a strictly increasing list of normalized
+  frequencies and classifies the **sampled** gain trend.
+
+For a symmetric tank, the 2026 Tao et al. FHA expression is:
+
+`M = 1 / sqrt(A² + B²)`
+
+`A = 1 + 1/k_L - 1/(k_L * omega_n²)`
+
+`B = (Q/k_L) * ((2k_L+1)omega_n - (2k_L+2)/omega_n + 1/omega_n³)`
+
+where `k_L = L_m / L_rp`, `omega_n = omega_s / omega_r1`, and Q is specific to the
+charging or discharging equivalent AC load. The symmetric expression has the same functional form
+in each direction, but charging and discharging do not generally have the same Q.
+
+At resonance (`omega_n = 1`), the ideal FHA normalized gain is unity, independent of Q and k_L.
+For the *illustrative equation inputs* `k_L=3.51`, `Q=0.3`, the formula returns approximately
+1.14194 at `omega_n=0.8` and 0.90007 at `omega_n=1.2`. These are formula test vectors, not a
+PEBB-LV-01 tank prediction. The sampled scan can flag a turning point, but cannot prove continuous
+monotonicity between sampled frequencies.
+
+### Required state-constrained extension
+
+Huang et al. (IEICE Electronics Express, online 30 October 2026, DOI 10.1587/elex.23.20260463)
+propose mapping a bidirectional CLLC tank to a T-type impedance network and including the secondary
+active bridge as a complex AC impedance. Their design region adds internal-state constraints linked
+to a designated low-frequency boost mode and resonant-inductance ratio to the FHA gain requirement.
+Their 2 kW prototype verifies forward/reverse ZVS for their own configuration.
+
+This motivates the next implementation sequence:
+1. Re-derive the T-network equivalent from the paper's exact circuit and sign conventions.
+2. Implement complex input-impedance evaluation per direction.
+3. Add the stated low-frequency resonant-state constraint and feasible-region classification.
+4. Include the direction-specific equivalent load impedance, magnetizing branch and tank asymmetry.
+5. Add Coss / dead-time charge and energy conditions before classifying ZVS feasibility.
+6. Sweep device, resonant component and transformer tolerances.
+7. Cross-check selected points against a time-domain switching model.
+
+Do not approximate missing circuit states as “inductive” or infer ZVS from FHA gain alone. Until
+these steps exist, the Rust CLLC functions remain **FHA gain screening only**.
+
+### Controller timing and frequency quantization
+
+Tao et al. (Electronics 2026, 15(21), 4918, DOI 10.3390/electronics15214918) report a 4.8 kW
+bidirectional CLLC prototype combining PFM, FHA gain constraints, monotonicity and dead-time
+commutation design with high-resolution PWM. The study describes how ordinary timer counts create
+coarse frequency steps at high switching frequency and uses synchronized high-resolution period
+updates. This is a strong design lesson for later hardware: achievable PFM resolution, command-update
+timing and jitter must be included in the model and measurement contract. Their specific DSP,
+frequency range and 4.8 kW component values are not transferable to our 500 W design without
+re-derivation.
+
+## 8. Model-to-bench correlation gate
 
 A 2025 IEEE DAB loss-model study reported experimental/model loss deviations below 5 W across its tested 80–180 kHz range and SPS/EPS scenarios. This is a useful published example of the kind of model-correlation metric we should report, not a universal tolerance. Its voltage, power and hardware conditions are not a PEBB-LV-01 match.
 
@@ -186,7 +244,7 @@ For our future prototype, preregister:
 
 Target model-loss error only after the instrument uncertainty and physical test design are defined. A numerical target such as ±5 W would be meaningless if the total measurement uncertainty is itself several watts.
 
-## 8. Recommended next experiment sequence
+## 9. Recommended next experiment sequence
 
 1. Reproduce the 500 W CLLC paper's own operating point from its full paper and supplement before using its 97.6% result as a matched comparator.
 2. Reproduce a DAB SPS/EPS loss benchmark from published equations and parameter tables.
@@ -196,6 +254,6 @@ Target model-loss error only after the instrument uncertainty and physical test 
 6. Sweep resonant components, turns ratio, switching frequency and semiconductor choice under hard ZVS/current/thermal constraints.
 7. Only after independent review, select a prototype topology and create its controlled schematic/BOM package.
 
-## 9. Explicit claim ceiling
+## 10. Explicit claim ceiling
 
 The Rust module is a loss-budget arithmetic and provenance layer. It is not a converter solver, a DAB or CLLC model, a waveform simulator, an optimizer, a thermal model, a safety function or a physical qualification tool. The current test cases are authored but not run in this environment. No Luminous loss values or topology ranking have been produced.
