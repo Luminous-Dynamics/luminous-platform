@@ -180,7 +180,39 @@ This is a one-branch RL model. It does not include nonlinear switching-device co
 Coss, reverse recovery, transformer winding/core loss, magnetizing branch, stray capacitance,
 thermal coupling, control saturation or EMI. It is not a converter-level switching simulation.
 
-## 6. Explicit limitations and next work
+## 6. Deterministic mission-profile sweep (implemented)
+
+The Rust crate now exposes `dab_mission_sweep::evaluate_dab_design_candidate` and
+`evaluate_dab_design_set`. The caller freezes a list of operating points with unique IDs, voltage
+pair, signed power demand, ambient temperature, point-specific hard-switching loss and mission
+weight. Candidate parameters declare series inductance, switching frequency, lumped resistance,
+maximum phase shift, optional peak-current limit, required analytic ZVS-polarity coverage, residual
+switching-loss fraction, one-node thermal path and minimum power-delivery ratio.
+
+For each point the sweep:
+1. Screens the ideal SPS transfer feasibility and derives the phase shift.
+2. Evaluates the lossless current / RMS / FHA-error / analytic polarity screen.
+3. Evaluates the periodic resistive RL waveform and energy balance.
+4. Calculates direction-correct receiving-port power, delivery ratio and modelled efficiency.
+5. Applies phase, power-delivery, analytic ZVS-polarity, peak-current and lumped thermal gates.
+6. Retains the point and all failure reasons, including model-infeasible or unmodelled points.
+
+The reverse-flow boundary is explicit: for A→B the receiving output is Port B and the input is Port A;
+for B→A the receiving output is Port A and the input is Port B. The signed delivered power follows the
+requested direction while efficiency uses the magnitude at the receiving port divided by the active
+input-port magnitude plus the caller-supplied switching-loss term.
+
+The design-set helper filters to candidates that satisfy every declared point, then calculates a
+Pareto frontier over mission efficiency, energy-delivery ratio, analytic ZVS-polarity coverage,
+maximum peak current and minimum one-node thermal margin. These axes are separate and visible.
+The current screen does not yet include component cost, power density, reactive VA, EMI, reliability,
+service time or manufacturing yield; add them only when defensible models/evidence are available.
+
+The mission profile is deliberately input data, not inferred from typical usage. The same frozen
+points and weights must be used for every candidate. Unknown or invalid points may not be dropped
+from the denominator or reweighted after results are seen.
+
+## 7. Explicit limitations and next work
 
 - No lossy periodicity solver is implemented.
 - No EPS/TPS current equations are implemented.
