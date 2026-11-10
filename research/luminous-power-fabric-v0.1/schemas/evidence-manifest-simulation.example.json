@@ -1,0 +1,32 @@
+{
+  "schema_version": "luminous-evidence-manifest-v0.1",
+  "evidence_id": "example-pdn-simulation-001",
+  "evidence_kind": "SIMULATION",
+  "source_reference": "documentation-example-only",
+  "created_at_utc": "2026-11-10T00:00:00Z",
+  "artifact_path": "artifacts/example-pdn-simulation.json",
+  "artifact_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "configuration_id": "example-accelerator-config-001",
+  "configuration_revisions": [
+    {
+      "item_id": "package-interposer",
+      "revision": "example-rev-a",
+      "role": "package-power-delivery"
+    },
+    {
+      "item_id": "vrm-board",
+      "revision": "example-board-rev-1",
+      "role": "board-regulator"
+    }
+  ],
+  "claim_ceiling": "DOCUMENTATION_FIXTURE_ONLY_NOT_ENGINEERING_EVIDENCE",
+  "dependencies": [],
+  "simulation_context": {
+    "model_id": "example-pdn-model",
+    "model_revision": "example-source-revision",
+    "solver_id": "example-em-solver",
+    "solver_version": "0.0-example",
+    "parameter_set_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "boundary_conditions_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  }
+}
