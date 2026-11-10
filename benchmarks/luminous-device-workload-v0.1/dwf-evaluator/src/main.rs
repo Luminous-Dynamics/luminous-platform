@@ -963,6 +963,11 @@ fn evaluate_fixture(fixture: &Value, fixture_bytes: &[u8]) -> Result<EvaluationR
         });
     }
 
+    // Fixture order is editorial, not semantic. Canonicalize reports by
+    // stable scenario identity so harmless input permutations cannot reorder
+    // the evaluator's output records.
+    cases.sort_by(|a, b| a.scenario_id.cmp(&b.scenario_id));
+
     let passed = cases.iter().filter(|case| case.matches_expected).count();
     let failed = cases.len().saturating_sub(passed);
     let fixture_sha256 = format!("{:x}", Sha256::digest(fixture_bytes));
@@ -1310,6 +1315,27 @@ mod tests {
         assert_eq!(
             assessments_a.iter().map(|item| item.candidate_id.as_str()).collect::<Vec<_>>(),
             assessments_b.iter().map(|item| item.candidate_id.as_str()).collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn scenario_array_permutation_preserves_canonical_case_reports() {
+        let fixture = fixture_value();
+        let mut permuted = fixture.clone();
+        permuted["scenarios"].as_array_mut().unwrap().reverse();
+
+        let original_bytes = serde_json::to_vec(&fixture).expect("serialize original fixture");
+        let permuted_bytes = serde_json::to_vec(&permuted).expect("serialize permuted fixture");
+        let original = evaluate_fixture(&fixture, &original_bytes).expect("original evaluation");
+        let reordered = evaluate_fixture(&permuted, &permuted_bytes).expect("permuted evaluation");
+
+        // Exact fixture identity remains bound to the supplied bytes, so a
+        // reordered fixture must have a different digest even though its
+        // semantic per-case report is unchanged.
+        assert_ne!(original.fixture_sha256, reordered.fixture_sha256);
+        assert_eq!(
+            serde_json::to_value(original.cases).expect("serialize original case reports"),
+            serde_json::to_value(reordered.cases).expect("serialize reordered case reports")
         );
     }
 
