@@ -75,8 +75,14 @@ pub struct DatasetRegistryEntry {
     pub notes: Vec<String>,
     /// Largest observed/declared timestamp interval. None means unknown.
     pub maximum_sample_interval_ns: Option<u64>,
+    /// True only when timestamp interval jitter has been measured and checked.
+    pub timestamp_jitter_verified: Option<bool>,
+    /// True only when clock synchronization uncertainty has been checked.
+    pub clock_sync_verified: Option<bool>,
     /// Analog sensor/measurement-chain bandwidth. None means unknown.
     pub sensor_bandwidth_hz: Option<f64>,
+    /// True only when sensor bandwidth is verified for the relevant channel.
+    pub sensor_bandwidth_verified: Option<bool>,
     /// True only when filter response/metadata is verified for this dataset.
     pub anti_alias_filter_verified: Option<bool>,
     /// Highest signal bandwidth this dataset is registered to support.
@@ -120,6 +126,13 @@ impl DatasetRegistryEntry {
         };
 
         self.evidence_class == DatasetEvidenceClass::PhysicalMeasurement
+            && self
+                .timestamp_jitter_verified
+                .is_some_and(|verified| verified)
+            && self.clock_sync_verified.is_some_and(|verified| verified)
+            && self
+                .sensor_bandwidth_verified
+                .is_some_and(|verified| verified)
             && self
                 .anti_alias_filter_verified
                 .is_some_and(|verified| verified)
@@ -333,7 +346,10 @@ mod tests {
             access_method: "public URL".to_string(),
             notes: Vec::new(),
             maximum_sample_interval_ns: Some(20_000_000),
+            timestamp_jitter_verified: None,
+            clock_sync_verified: None,
             sensor_bandwidth_hz: None,
+            sensor_bandwidth_verified: None,
             anti_alias_filter_verified: None,
             fast_claim_bandwidth_hz: None,
             supported_uses: vec![
@@ -436,6 +452,9 @@ mod tests {
         let mut value = entry("fast-valid");
         value.maximum_sample_interval_ns = Some(10);
         value.sensor_bandwidth_hz = Some(100_000_000.0);
+        value.timestamp_jitter_verified = Some(true);
+        value.clock_sync_verified = Some(true);
+        value.sensor_bandwidth_verified = Some(true);
         value.anti_alias_filter_verified = Some(true);
         value.fast_claim_bandwidth_hz = Some(10_000_000.0);
         value.supported_uses.push(DatasetAnalysisUse::FastElectricalTransient);
