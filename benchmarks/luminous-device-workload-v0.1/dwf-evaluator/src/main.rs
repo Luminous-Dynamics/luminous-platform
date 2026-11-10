@@ -1238,6 +1238,7 @@ mod tests {
         PeerCompleted { attempt_id: u64 },
         OriginRestart,
         ReceiptPersisted { attempt_id: u64 },
+        DurableReceiptReconciled { attempt_id: u64 },
         OracleVerified { attempt_id: u64, passed: bool },
         Retry { attempt_id: u64 },
     }
@@ -1375,9 +1376,15 @@ mod tests {
                 LifecycleEvent::OriginRestart => {
                     if matches!(
                         self.phase,
-                        LifecyclePhase::Dispatched | LifecyclePhase::Executing
+                        LifecyclePhase::Dispatched
+                            | LifecyclePhase::Executing
+                            | LifecyclePhase::Indeterminate
                     ) {
                         self.phase = LifecyclePhase::Indeterminate;
+                        // A completion observation held only in origin memory
+                        // does not survive a crash. A durable receipt must be
+                        // fetched and reconciled again after restart.
+                        self.completion_observed = false;
                     }
                     true
                 }
@@ -1388,6 +1395,18 @@ mod tests {
                     {
                         return false;
                     }
+                    self.phase = LifecyclePhase::Receipted;
+                    true
+                }
+                LifecycleEvent::DurableReceiptReconciled { attempt_id } => {
+                    if self.attempt_id != Some(attempt_id)
+                        || self.phase != LifecyclePhase::Indeterminate
+                    {
+                        return false;
+                    }
+                    // This event means the exact attempt's durable receipt
+                    // was fetched during recovery and persisted by the origin.
+                    self.completion_observed = true;
                     self.phase = LifecyclePhase::Receipted;
                     true
                 }
@@ -1605,6 +1624,35 @@ mod tests {
         assert!(state.apply(LifecycleEvent::ReceiptPersisted { attempt_id: 9 }));
         assert!(state.apply(LifecycleEvent::OracleVerified {
             attempt_id: 9,
+            passed: true,
+        }));
+        assert_eq!(state.phase, LifecyclePhase::Accepted);
+    }
+
+    #[test]
+    fn origin_restart_discards_volatile_completion_until_receipt_reconciliation() {
+        let mut state = LifecycleState::new(false);
+        assert!(state.apply(LifecycleEvent::Grant { epoch: 6 }));
+        assert!(state.apply(LifecycleEvent::Dispatch {
+            attempt_id: 3,
+            grant_epoch: 6,
+        }));
+        assert!(state.apply(LifecycleEvent::PeerStarted { attempt_id: 3 }));
+        assert!(state.apply(LifecycleEvent::PeerCompleted { attempt_id: 3 }));
+        assert!(state.completion_observed);
+
+        assert!(state.apply(LifecycleEvent::OriginRestart));
+        assert_eq!(state.phase, LifecyclePhase::Indeterminate);
+        assert!(!state.completion_observed);
+        assert!(!state.apply(LifecycleEvent::ReceiptPersisted { attempt_id: 3 }));
+        assert_eq!(state.phase, LifecyclePhase::Indeterminate);
+
+        // Recovery can progress only after the same attempt's durable receipt
+        // is explicitly reconciled; correctness is still checked separately.
+        assert!(state.apply(LifecycleEvent::DurableReceiptReconciled { attempt_id: 3 }));
+        assert_eq!(state.phase, LifecyclePhase::Receipted);
+        assert!(state.apply(LifecycleEvent::OracleVerified {
+            attempt_id: 3,
             passed: true,
         }));
         assert_eq!(state.phase, LifecyclePhase::Accepted);
