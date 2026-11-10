@@ -21,6 +21,8 @@ Sources and detailed caveats are listed in [SOURCES.md](./SOURCES.md).
 
 | **Lee et al., 7.3 kW CLLLC-RDAB** | 400 V input, 200–500 V output, 100 kHz fixed frequency; TPS optimized for ZVS and RMS current; 97.1–97.8% measured efficiency across the full charging profile and nearly identical reverse efficiency | Strong experimental benchmark for full-profile efficiency and bidirectional symmetry | 7.3 kW EV-charging prototype, not a matched 500 W / 36–60 V product; application profile and isolation/cooling boundaries differ |
 
+| **Yang et al., fixed-frequency LLC with bridge-leg voltage control (May 2026)** | 500 W experimental prototype; 40–60 V low-voltage side and 400 V high-voltage side; peak efficiency 96.8% forward / 97.0% reverse; ZVS reported | Same-power bidirectional resonant-converter alternative to DAB / CLLC; fixed-frequency power stage with an auxiliary bidirectional buck-boost bridge-leg-voltage control stage | Different topology and voltage ratio; not demonstrated as a 36–60 V / 36–60 V module; full paper conditions and measurement boundaries need extraction; do not assume matched galvanic-isolation rating without full design review |
+
 ## 2. Literature result at the exact 500 W power class
 
 Wang et al. report a 500 W bidirectional CLLC laboratory prototype with ZVS and peak forward
