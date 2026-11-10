@@ -347,7 +347,10 @@ pub fn evaluate_cllc_t_network(
 
     let y1 = ComplexValue::new(0.0, -(x2 + x3) / determinant);
     let y2 = ComplexValue::new(0.0, x3 / determinant);
-    let y3 = ComplexValue::new(0.0, -(x1 + x3) / determinant);
+    // The paper defines the secondary port current as outward from the
+    // two-port network, giving Y3 = -(Z1 + Z3) / (Z1Z2 + Z1Z3 + Z2Z3)
+    // = +j(X1 + X3)/D under its signed reactance convention.
+    let y3 = ComplexValue::new(0.0, (x1 + x3) / determinant);
     let zac = ComplexValue::new(
         input.secondary_equivalent_resistance_ohm,
         input.secondary_equivalent_reactance_ohm,
@@ -528,18 +531,18 @@ mod tests {
         assert!((result.determinant_reactance_squared_ohm2 + 44.0).abs() < 1e-12);
         assert!((result.y1_s.im - 7.0 / 44.0).abs() < 1e-12);
         assert!((result.y2_s.im + 10.0 / 44.0).abs() < 1e-12);
-        assert!((result.y3_s.im - 8.0 / 44.0).abs() < 1e-12);
+        assert!((result.y3_s.im + 8.0 / 44.0).abs() < 1e-12);
     }
 
     #[test]
     fn computes_secondary_voltage_and_primary_input_phasors() {
         let result = evaluate_cllc_t_network(example()).unwrap();
-        assert!((result.secondary_voltage_to_primary_voltage.re + 0.9927234927).abs() < 1e-9);
-        assert!((result.secondary_voltage_to_primary_voltage.im - 0.5717255717).abs() < 1e-9);
-        assert!((result.primary_input_admittance_s.re - 0.1299376299).abs() < 1e-9);
-        assert!((result.primary_input_admittance_s.im - 0.3847098847).abs() < 1e-9);
-        assert!((result.primary_input_impedance_ohm.re - 0.7880477257).abs() < 1e-9);
-        assert!((result.primary_input_impedance_ohm.im + 2.3331943938).abs() < 1e-9);
+        assert!((result.secondary_voltage_to_primary_voltage.re - 0.9358523726).abs() < 1e-9);
+        assert!((result.secondary_voltage_to_primary_voltage.im - 0.4833040422).abs() < 1e-9);
+        assert!((result.primary_input_admittance_s.re - 0.1098418278).abs() < 1e-9);
+        assert!((result.primary_input_admittance_s.im + 0.0536028120).abs() < 1e-9);
+        assert!((result.primary_input_impedance_ohm.re - 7.3529411765).abs() < 1e-9);
+        assert!((result.primary_input_impedance_ohm.im - 3.5882352941).abs() < 1e-9);
     }
 
     #[test]
