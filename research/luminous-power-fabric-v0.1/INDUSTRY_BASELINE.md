@@ -9,15 +9,30 @@
 
 | Product / reference | Vendor- or paper-reported specification | What it is useful to benchmark | Why it is not a fully matched competitor |
 |---|---|---|---|
-| **ELSİS BIDIR Module** | 500 W bidirectional buck-boost; input 9–60 V DC; adjustable output 3.3–48 V DC; vendor advertises >97% efficiency and >97% at full rated load current; 1/8-brick, 25.90 × 61.72 mm, 66.2 g, I²C interface | Closest functional 500 W bidirectional low-voltage commercial benchmark; compactness, control interface, output range, full-load efficiency and protection feature baseline | Public specification describes buck-boost and does not state galvanic isolation; vendor efficiency claim is not an independent matched laboratory measurement |
+| **Wang et al., bidirectional CLLC prototype (Electric Power Systems Research, Jun 2026)** | A 500 W laboratory prototype using FHA-based resonant design; reported ZVS and 97.6% peak forward-transfer efficiency | Closest same-rated-power research prototype for isolated bidirectional CLLC topology research | Abstract reports peak forward efficiency, not matched reverse-direction or full 36–60 V map; detailed operating-point conditions must be extracted from full paper before direct comparison |
+| **ELSİS BIDIR Module** | 500 W bidirectional buck-boost; 9–60 V DC input; adjustable 3.3–48 V output; official product page states >97% and datasheet feature list states >97% at full rated load current; 1/8-brick, 25.90 × 61.72 mm, 66.2 g, I²C interface | Closest functional 500 W bidirectional low-voltage commercial benchmark; compactness, control interface, output range, full-load efficiency and protection feature baseline | Datasheet cover summarizes efficiency as >95%, while its feature list says >97% at full rated load current; request conditions/curves from vendor. Public specification does not state galvanic isolation; vendor claims are not independent matched measurements |
 | **MPS MPC10106-54-0500** | 500 W continuous; 40–60 V input; 8:1 output ratio; non-isolated LLC; 2,634 W/in³ stated power density; 97.8% peak efficiency in the vendor's Q4 2024 48 V data-centre brochure | High-density 48 V power conversion, fixed-ratio module packaging, semiconductor/thermal integration and data-centre architecture | Not bidirectional, not isolated, and converts 48 V class to a low-voltage point-of-load bus; reported peak is not a full-map result |
+| **MPS MPC10106-B-54-0500** | 500 W-class, 40–60 V input, 8:1 fixed-ratio non-isolated LLC; 3,019 W/in³ and 97.65% peak in MPS's 2025 brochure | Newer data-centre power-density and fixed-ratio module reference | Not bidirectional or isolated; SKU and brochure revision differ from the 2024 MPC10106-54-0500; not a matched benchmark |
 | **Vicor V48A48M500 family** | 500 W isolated module; 36–75 V input; 48 V output; 3 kV isolation; reported 89.7% typical efficiency in the distributor listing / associated family datasheet | Adjacent commercial isolation benchmark, packaging, input range and insulation interface | Not bidirectional; product generation and test boundary differ; use the official datasheet and exact SKU before any comparison |
 | **IEEE Access 25 kW dual DAB–CLLC** | Experimentally validated 25 kW dual-module system over 200–1000 V; 98.37% peak charging and 97.82% peak discharging; series/parallel battery-side reconfiguration | Research frontier for wide-range, reconfigurable modular conversion | 25 kW EV charging application, voltage range, cooling and system boundary differ sharply from PEBB-LV-01 |
 | **IEEE SST DC/DC PEBB study** | Experimental comparisons of three modular SST DC/DC topologies; 98.55% reported peak efficiency | Research anchor for isolated modular building blocks and SST applications | SST building-block configuration and operating conditions are not a matched 48 V / 500 W product |
 
 Sources and detailed caveats are listed in [SOURCES.md](./SOURCES.md).
 
-## 2. What this says about our targets
+## 2. Literature result at the exact 500 W power class
+
+Wang et al. report a 500 W bidirectional CLLC laboratory prototype with ZVS and peak forward
+efficiency of 97.6% (Electric Power Systems Research, June 2026, DOI 10.1016/j.epsr.2026.112834).
+The authors use fundamental harmonic approximation for resonant gain and derive soft-switching
+conditions as pre-design constraints. This is a more relevant same-rated-power research anchor than
+the 25 kW SST papers.
+
+The paper's abstract does not provide enough information to claim an apples-to-apples comparison
+against PEBB-LV-01: exact tested voltage ratio, reverse-direction efficiency, cooling, boundary and
+measurement uncertainty still need to be extracted. Treat 97.6% as a **reported peak forward result**,
+not a full-envelope bidirectional benchmark.
+
+## 3. What this says about our targets
 
 The initial **97% Rev-A target is not enough to claim superiority**. ELSİS advertises more than 97% at full rated load for a 500 W bidirectional low-voltage buck-boost module. That product's public specification does not establish isolation, and its efficiency is a vendor claim rather than an independently reproduced measurement, but it is close enough to invalidate any casual "97% beats industry" statement.
 
