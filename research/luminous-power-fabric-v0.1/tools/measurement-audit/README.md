@@ -479,4 +479,13 @@ The result reports power shed, useful-work retention, P99 latency/TTFT changes, 
 
 This is a read-only analysis function. It does not send GPU power-cap, DVFS, request admission, workload scheduling, storage or grid-dispatch commands. It assumes the input measurements have already passed the upstream measurement contract; the evidence IDs are references, not independently authenticated by this module.
 
-**Validation:** eleven Rust tests are authored but not executed. No Rust compilation, format, Clippy, live GPU experiment, workload control, PCC measurement, EMT/HIL/PHIL or grid-service qualification is claimed. See [POWER_FLEXIBILITY_VS_QOS_PARETO_BENCHMARK_2026-11-10.md](../../POWER_FLEXIBILITY_VS_QOS_PARETO_BENCHMARK_2026-11-10.md).
+**Validation:** twelve Rust tests are authored but not executed. No Rust compilation, format, Clippy, live GPU experiment, workload control, PCC measurement, EMT/HIL/PHIL or grid-service qualification is claimed. See [POWER_FLEXIBILITY_VS_QOS_PARETO_BENCHMARK_2026-11-10.md](../../POWER_FLEXIBILITY_VS_QOS_PARETO_BENCHMARK_2026-11-10.md).
+
+
+## Fleet-capacity-aware Joule Point audit
+
+The library exposes fleet_capacity::evaluate_fleet_capacity_sweep to compare fixed-fleet and capacity-scaled scenarios from matched per-GPU operating points. Capacity-scaled GPU count is rounded up to an integer using offered goodput plus declared headroom. It reports GPU-board power separately from total-system power; total-system calculations require explicit per-GPU support plus separate fixed-fleet and capacity-scaled fixed overhead with measured/modelled evidence.
+
+The evaluator separates capacity feasibility, completed-useful-work feasibility and QoS feasibility. Storage correction applies to the declared total-system energy boundary, not to GPU-board component energy. Optional capex requires a currency and cost-source reference; unknown cost remains unknown. Capacity-scaled goodput is a linear projection, not measured multi-GPU performance.
+
+**Validation:** eleven Rust tests are authored but not executed. No compilation, formatting, Clippy, multi-GPU physical experiment, fleet scheduler or grid qualification is claimed. See [FLEET_CAPACITY_AWARE_JOULE_POINT_BENCHMARK_2026-11-10.md](../../FLEET_CAPACITY_AWARE_JOULE_POINT_BENCHMARK_2026-11-10.md).
