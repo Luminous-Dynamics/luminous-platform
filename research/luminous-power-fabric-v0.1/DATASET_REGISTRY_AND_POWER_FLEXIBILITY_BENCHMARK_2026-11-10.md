@@ -50,11 +50,12 @@ Nyquist is only a necessary sampling bound. It does not establish sensor bandwid
 
 The new Rust registry refuses a fast-transient use declaration unless the entry is a physical measurement and has:
 - a known maximum sample interval;
-- a known positive sensor bandwidth;
+- verified timestamp-jitter and clock-synchronization evidence;
+- a known positive sensor bandwidth that is itself verified for the relevant channel;
 - verified anti-alias filter evidence;
-- a declared fast-claim bandwidth within both conservative Nyquist and sensor bandwidth.
+- a declared fast-claim bandwidth within both the max-gap-derived Nyquist screen and sensor bandwidth.
 
-Unknown metadata is never substituted with a plausible default.
+The max-gap-derived Nyquist value is a conservative uniform-equivalent metadata screen, not a general reconstruction theorem for arbitrary nonuniform or jittered sampling. Actual waveform claims still require the sampling-adequacy analysis, instrument response and procedure. Unknown metadata is never substituted with a plausible default.
 
 ## 4. v0.1 implementation
 
