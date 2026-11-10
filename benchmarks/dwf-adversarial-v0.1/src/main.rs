@@ -597,6 +597,14 @@ fn main() {
 mod tests {
     use super::*;
 
+    fn all_accepted(events: &[Event]) -> Vec<Outcome> {
+        events.iter().enumerate().map(|(index, _)| Outcome {
+            index,
+            accepted: true,
+            reason: None,
+        }).collect()
+    }
+
     fn positive() -> Vec<Event> {
         vec![
             Event::Grant { epoch: 1 },
@@ -747,6 +755,80 @@ mod tests {
         assert!(!result.outcomes[8].accepted);
         assert!(!result.outcomes[9].accepted);
         assert!(result.violations.is_empty());
+    }
+
+
+    #[test]
+    fn independent_checker_detects_forged_stale_authority_dispatch() {
+        let events = vec![
+            Event::Grant { epoch: 4 },
+            Event::Revoke { epoch: 5 },
+            Event::Dispatch { attempt: 1, grant_epoch: 4 },
+        ];
+        let violations = independent_check(&events, &all_accepted(&events));
+        assert!(violations.iter().any(|v| v.invariant == "dispatch_authority"));
+    }
+
+    #[test]
+    fn independent_checker_detects_dispatch_during_partition() {
+        let events = vec![
+            Event::Grant { epoch: 1 },
+            Event::Partition,
+            Event::Dispatch { attempt: 1, grant_epoch: 1 },
+        ];
+        let violations = independent_check(&events, &all_accepted(&events));
+        assert!(violations.iter().any(|v| v.invariant == "dispatch_partition"));
+    }
+
+    #[test]
+    fn independent_checker_detects_duplicate_durable_receipt() {
+        let events = vec![
+            Event::Grant { epoch: 1 },
+            Event::Dispatch { attempt: 1, grant_epoch: 1 },
+            Event::Start { attempt: 1 },
+            Event::Complete { attempt: 1 },
+            Event::Persist { attempt: 1 },
+            Event::Persist { attempt: 1 },
+        ];
+        let violations = independent_check(&events, &all_accepted(&events));
+        assert!(violations.iter().any(|v| v.invariant == "receipt_durability"));
+    }
+
+    #[test]
+    fn independent_checker_detects_retry_without_duplicate_safe_contract() {
+        let events = vec![
+            Event::Grant { epoch: 1 },
+            Event::Dispatch { attempt: 1, grant_epoch: 1 },
+            Event::Partition,
+            Event::Reconnect,
+            Event::Retry { attempt: 2, source: 1, grant_epoch: 1, duplicate_safe: false },
+        ];
+        let violations = independent_check(&events, &all_accepted(&events));
+        assert!(violations.iter().any(|v| v.invariant == "retry_idempotency"));
+    }
+
+    #[test]
+    fn independent_checker_detects_acceptance_with_stale_oracle_after_restart() {
+        let events = vec![
+            Event::Grant { epoch: 1 },
+            Event::Dispatch { attempt: 1, grant_epoch: 1 },
+            Event::Start { attempt: 1 },
+            Event::Complete { attempt: 1 },
+            Event::Persist { attempt: 1 },
+            Event::OraclePass { attempt: 1 },
+            Event::Restart,
+            Event::Accept { attempt: 1 },
+        ];
+        let violations = independent_check(&events, &all_accepted(&events));
+        assert!(violations.iter().any(|v| v.invariant == "acceptance_evidence"));
+    }
+
+    #[test]
+    fn independent_checker_detects_duplicate_acceptance() {
+        let mut events = positive();
+        events.push(Event::Accept { attempt: 1 });
+        let violations = independent_check(&events, &all_accepted(&events));
+        assert!(violations.iter().any(|v| v.invariant == "duplicate_acceptance"));
     }
 
     #[test]
