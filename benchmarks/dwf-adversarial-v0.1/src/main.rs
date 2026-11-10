@@ -219,6 +219,7 @@ impl Model {
                 self.attempts.insert(*attempt, Attempt { dispatched: true, ..Attempt::default() });
             }
             Event::Accept { attempt } => {
+                if self.accepted.contains(attempt) { return Err("attempt_already_accepted"); }
                 let item = self.attempts.get(attempt).ok_or("unknown_attempt")?;
                 if !item.durable || item.oracle_failed || item.oracle_generation != Some(self.generation) {
                     return Err("acceptance_without_current_oracle_and_durable_receipt");
@@ -352,6 +353,7 @@ fn independent_check(events: &[Event], outcomes: &[Outcome]) -> Vec<Violation> {
                 if !dispatches.insert(*attempt) { report("attempt_uniqueness", "retry attempt id reused"); }
             }
             Event::Accept { attempt } => {
+                if accepted_attempts.contains(attempt) { report("duplicate_acceptance", "attempt accepted more than once"); }
                 let reconcile_ok = !needs_reconcile.contains(attempt) || reconciled.get(attempt) == Some(&generation);
                 if !dispatches.contains(attempt) || !durable.contains(attempt) || !reconcile_ok
                     || oracle_pass.get(attempt) != Some(&generation) || oracle_fail.contains(attempt) {
@@ -731,6 +733,19 @@ mod tests {
             Event::Dispatch { attempt: 1, grant_epoch: 1 },
         ]).unwrap();
         assert!(!result.outcomes[2].accepted);
+        assert!(result.violations.is_empty());
+    }
+
+
+    #[test]
+    fn accepted_attempt_cannot_be_retried_or_accepted_twice() {
+        let mut events = positive();
+        events.push(Event::Partition);
+        events.push(Event::Retry { attempt: 2, source: 1, grant_epoch: 1, duplicate_safe: true });
+        events.push(Event::Accept { attempt: 1 });
+        let result = run_schedule(events).unwrap();
+        assert!(!result.outcomes[8].accepted);
+        assert!(!result.outcomes[9].accepted);
         assert!(result.violations.is_empty());
     }
 
