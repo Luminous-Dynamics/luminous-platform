@@ -232,6 +232,58 @@ They are not protection relays or hardware controls.
 See [DC_PROTECTION_ENGINEERING.md](../../DC_PROTECTION_ENGINEERING.md) and
 [HVDC_BENCHMARK_UPDATE_2026-11-10.md](../../HVDC_BENCHMARK_UPDATE_2026-11-10.md).
 
+## ISOP input-series voltage-allocation screen
+
+The crate exposes `isop_input_balance::evaluate_isop_input_voltage_balance` for a static
+energy-balance allocation of input voltage in an input-series string.
+
+All active cells share the same input current. For each active cell:
+
+```
+P_in,i = P_out,i / eta_i + P_quiescent,i
+V_in,i = P_in,i / I_series
+```
+
+The function solves the common series current so active-cell input-voltage drops plus explicitly
+declared bypass drops sum to the total bus voltage. It preserves per-cell input voltage, power,
+limits, chain efficiency and conservation residuals. Bypassed cells must be explicitly marked and
+must declare zero output power; their bypass drop is a caller-supplied parameter.
+
+A voltage-limit violation is returned as a visible false status rather than clipping the calculated
+voltage. A bypassed-cell result assumes an external, separately qualified bypass path; the code
+does not design or validate that path.
+
+This is a static allocation screen, not a cell-voltage balancing controller, stability model, or
+protection study. It assumes per-cell output powers are already known and feasible. It does not
+model control-loop coupling, input capacitance dynamics, constant-power instability, switching
+ripple, input source impedance, transients, or physical fault behavior.
+
+## Phase-interleaved ripple harmonic screen
+
+The crate exposes `interleaved_ripple::evaluate_interleaved_ripple`. It accepts phase offsets and
+per-phase peak ripple-current amplitudes for declared switching harmonics. For harmonic h, it sums
+the phase phasors using h times the fundamental phase offset. It reports the combined peak and RMS
+amplitude for each harmonic, total RMS by root-sum-square and a conservative sum-of-harmonic peak
+envelope.
+
+The screen represents ideal cancellation and first-order sensitivity to phase timing and amplitude
+mismatch. It does not reconstruct actual switch waveforms or model dead time, PWM / resonant
+modulation, parasitic ringing, ESR / ESL, capacitor thermal stress, EMI or layout. Do not treat its
+RMS result as a capacitor rating or qualification result.
+
+## DC rail conductor-loss screen
+
+The crate exposes `dc_rail_path::evaluate_dc_rail_path` for steady two-wire resistive distribution
+losses at a constant-power load. It returns current, source voltage, conductor drop, I²R loss,
+path efficiency and maximum loop-resistance budgets for declared voltage-drop and loss limits.
+
+Use a separate measured or justified loop resistance for each rail architecture. The demonstration
+that 6 kW corresponds to 120 A at 50 V, 480 A at 12.5 V and 960 A at 6.25 V does not imply equal
+conductor geometry or equal loop resistance. This is a DC resistive screen, not a thermal, EMI,
+transient or installation qualification.
+
+See [GRID_TO_CHIP_BENCHMARKS_2026-11-10.md](../../GRID_TO_CHIP_BENCHMARKS_2026-11-10.md).
+
 ## Explicit limitations
 
 - The CLI direction is supplied as an argument; it is not yet bound to or cross-checked against the
