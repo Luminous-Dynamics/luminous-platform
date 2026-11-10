@@ -69,7 +69,49 @@ rated load, and 95.4% reverse efficiency for its own 2 kW prototype. It demonstr
 ZVS and a state-constrained design method, not a 97–98% efficiency record. The operating range is
 150–300 V input and 75–167 V output, with 115 kHz resonance and 75–150 kHz switching.
 
-## 4. The right head-to-head programme
+## 5. The 800 VDC data-centre benchmark frontier
+
+The high-voltage DC product family has a substantially higher performance bar than the 500 W
+low-voltage programme. Three 2026 references must now be treated as first-class engineering
+comparators:
+
+| Reference | Published result | Correct comparison role | Qualification caveat |
+|---|---|---|---|
+| Prakash & Li, APEC 2026, 6 kW 800 V / 50 V GaN LLC | 98.75% peak efficiency; 2,070 W/in³; prototype | Closest power-density / peak-efficiency research benchmark for an 800 V-to-50 V isolated resonant DCX | Conference paper describes an unregulated, unidirectional LLC DCX; not a bidirectional battery converter and not a matched full-load efficiency map |
+| CPSS TPEA, March 2026, 800 V-to-50 V ISOP LLC | 98.1% full-load efficiency; peak >98.4%; separate 800 V-to-12 V prototype reports 97% at 6 kW and 98.2% peak | Strong full-load 800 V-to-50 V research reference; useful for stacked input-series/output-parallel and matrix-transformer architectures | Different research prototype and measurement boundary from APEC paper; obtain full paper / exact test conditions before direct comparison |
+| ST APEC 2026, 12 kW 800 V-to-50 V DCX presentation | Vendor technical presentation describes 12 kW, 16:1, 1 MHz GaN stages and a ≥98% full-load target, liquid-cooled | Commercial semiconductor ecosystem / architecture reference and a useful 12 kW scaling target | Manufacturer presentation; its stated 98% is a target, not independent certification or a published field result |
+| OCP LVDC distribution project | Public white paper v1.1.0 (Sep 2026); scope ≤1,500 VDC and coordination of MV-to-LVDC, ESS, rack interface, startup/hot-swap, hold-up, control/monitoring and EMC work | System-architecture and interoperability requirements source | OCP is coordinating an ecosystem and separate workstreams; the web page does not publish every component's final detailed specification |
+| ABB SACE Infinitus SSCB | Manufacturer reports up to 2,500 A / 1,250 V DC, bidirectional interruption, <25 μs isolation and IEC 60947-2 certification | Mature DC protection reference for fault interruption plus mechanical isolation | Exact values depend on performance variant; this is protection equipment, not a converter |
+
+**Important correction to our ambition:** 98% efficiency is not a meaningful "better than SOTA" claim for a
+new 800 V-to-50 V DCX. Published 2026 research already reports >98% full-load and up to 98.75% peak
+in this class. A serious Luminous research target would be to reproduce a matched baseline first,
+then pursue a measurable improvement in *full operating-envelope efficiency, power density, thermal
+margin, fault containment, serviceability or lifecycle cost*. A lower peak value may be preferable
+if it delivers a much stronger reliability / service / fault envelope.
+
+### Proposed PF-HVDC product wedge
+
+Do not combine this with PEBB-LV-01. Create a distinct **PF-HVDC-6K** research track:
+- Unidirectional, galvanically isolated 800 V nominal to 50 V DCX, 6 kW laboratory-class target.
+- Input envelope and transient range must be derived from the OCP/facility requirement; do not assume
+  800 V nominal means a safe working range or one grounding architecture.
+- Candidate topologies: half-bridge LLC / DCX, stacked ISOP LLC, modular matrix-transformer LLC.
+- Candidate semiconductor systems: 650/700 V GaN and/or silicon technologies as demonstrated by
+  source designs, with device derating and topology-specific switching constraints.
+- Compare single-stage high-frequency conversion against modular multi-cell / interleaved structures.
+- Measure efficiency from full-load to light-load including cooling and auxiliary power; report
+  full enclosure kW/L and kW/kg.
+- Treat isolation, common-mode dv/dt, EMI, insulation aging, DC fault energy, pre-charge, discharge,
+  current sharing, hot-swap and selective protection as design gates.
+- Use a qualified 800 V laboratory / partner; no high-voltage prototype is authorized by this
+  research plan or by PEBB-LV-01's low-voltage safety procedure.
+
+The strongest differentiator may be an **evidence-bearing modular DCX shelf** with replaceable cells,
+measured load-sharing, selective fault containment, auditable commissioning and rapid requalification,
+rather than chasing another isolated peak-efficiency record.
+
+## 6. The right head-to-head programme
 
 ### A. Establish three reference configurations
 
@@ -104,7 +146,7 @@ A competitor can be better in one dimension and worse in another. Do not collaps
 
 If a vendor does not disclose enough data to match a condition, keep its published figure as context and state **not comparable**.
 
-## 5. Product-strategy consequence
+## 7. Product-strategy consequence
 
 We should not position PEBB-LV-01 as a generic 500 W brick that wins solely on efficiency. The strongest potential position is:
 
@@ -112,7 +154,7 @@ We should not position PEBB-LV-01 as a generic 500 W brick that wins solely on e
 
 The value proposition is the combination of isolation, two-way power flow, replaceable building blocks, predictable service and reproducible qualification. Efficiency must be competitive, not the only differentiation.
 
-## 6. Open evidence gaps
+## 8. Open evidence gaps
 
 - Confirm ELSİS BIDIR module isolation status, exact control envelope and whether >97% is a typical, peak or full-load guarantee across the full range.
 - Obtain the exact MPS and Vicor datasheets and test conditions for any chosen head-to-head.
