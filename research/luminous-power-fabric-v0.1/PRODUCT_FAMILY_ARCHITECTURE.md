@@ -31,6 +31,13 @@ all voltage classes.
 | PF-PROTECT | DC breaker, hybrid breaker, pre-charge, isolation and sectionalizer | DC buses, module branches and rack distribution | Dedicated fault-energy and protection programme |
 | PF-SST | Medium-voltage AC to LVDC solid-state transformer | Data hall and utility / campus DC supply | Long-term R&D; consortium and accredited-lab partnership |
 
+### PF-HVDC-6K engineering entry point
+
+The specific literature-reproduction and qualification work for an 800 V-to-50 V, 6 kW unidirectional
+DCX is tracked separately in [PF-HVDC-6KW_RESEARCH_PLAN.md](./PF-HVDC-6KW_RESEARCH_PLAN.md).
+Do not treat those LLC/DCX prototypes as bidirectional storage converters. A future bidirectional
+800 V product requires a separate power-stage architecture, protection review and qualification.
+
 ## 3. Why 800 VDC is a distinct strategic opportunity
 
 The Open Compute Project's Power Distribution sub-project defines its LVDC scope as systems up to
