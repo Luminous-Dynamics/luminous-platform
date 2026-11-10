@@ -451,3 +451,21 @@ Physical-measurement records require calibration, instrument IDs/bandwidth, refe
 This module does not parse JSON, open/hash artifact files, verify signatures, authenticate issuers, validate calibration certificates or qualify equipment. It intentionally does not implement cryptography. See [EVIDENCE_MANIFEST_AND_REQUALIFICATION_GRAPH_2026-11-10.md](../../EVIDENCE_MANIFEST_AND_REQUALIFICATION_GRAPH_2026-11-10.md) and [evidence-manifest-v0.1.schema.json](../../schemas/evidence-manifest-v0.1.schema.json).
 
 **Validation:** nine Rust unit tests are authored but not executed. JSON Schema validation, compilation, formatting and Clippy are not claimed.
+
+
+## License-aware AI workload dataset registry
+
+The library exposes dataset_registry::validate_dataset_registry and DatasetRegistryEntry::decide_use. Registry entries carry source/version/availability/evidence class, physical boundary, file metadata, sample interval, sensor bandwidth, anti-alias verification, supported analysis uses and explicit dataset licence permissions. A permission is not inferred from the existence of a download link.
+
+Use decisions are fail-closed:
+- unverified licence permissions return Unknown;
+- pending/planned datasets return Unavailable;
+- access-controlled datasets require a separate access grant;
+- explicit CC BY-NC-ND restrictions deny commercial use and derivative creation;
+- public CC BY datasets permit declared use only with the recorded attribution/notices.
+
+Fast transient eligibility requires physical measurement evidence, known sample interval, sensor bandwidth, verified anti-alias filter and a declared signal bandwidth within both conservative Nyquist and sensor limits. A phrase such as "high-rate trace" does not qualify a dataset.
+
+The registry example separates the NLR measured workload traces from its model-generated facility profiles, splits the Elsayed node and single-machine sampling paths, and records ELF, ORNL Frontier, LLM-PowerTrace and Argonne's planned flexibility corpus with their respective release and licence states.
+
+**Validation:** eleven Rust tests are authored but not executed. The registry JSON and schema are present; JSON parsing is not JSON Schema validation. No dataset archive was downloaded or parsed, and no source-specific adapter is claimed. See [DATASET_REGISTRY_AND_POWER_FLEXIBILITY_BENCHMARK_2026-11-10.md](../../DATASET_REGISTRY_AND_POWER_FLEXIBILITY_BENCHMARK_2026-11-10.md).
