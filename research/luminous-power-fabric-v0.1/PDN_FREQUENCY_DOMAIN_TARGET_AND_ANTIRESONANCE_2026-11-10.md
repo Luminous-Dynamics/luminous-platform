@@ -111,7 +111,7 @@ The new Rust module at tools/measurement-audit/src/pdn_frequency.rs provides:
 
 The implementation requires exact, strictly increasing frequency-grid equality between the target spectrum and impedance scan. It deliberately does not interpolate, extrapolate, smooth, import Touchstone/S-parameters, calculate de-embedding, solve field equations, evaluate VRM loop stability or reconstruct time-domain responses.
 
-Eight unit tests are authored for target derivation, ripple-budget overflow, frequency exceedance, local-peak detection, uncertainty bounds, frequency-grid mismatch, ordering, physical evidence metadata and non-finite/out-of-band inputs. **They have not been executed.**
+Nine unit tests are authored for target derivation, ripple-budget overflow, frequency exceedance, local-peak detection, uncertainty bounds, frequency-grid mismatch, ordering, physical evidence metadata and non-finite/out-of-band inputs. **They have not been executed.**
 
 ## 8. Next research increments
 
