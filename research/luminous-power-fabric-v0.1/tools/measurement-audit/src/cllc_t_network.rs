@@ -753,7 +753,7 @@ mod tests {
         let state = super::classify_cllc_operating_state(
             &result,
             -1.0,
-            0.2,
+            0.3,
             0.0,
         )
         .unwrap();
