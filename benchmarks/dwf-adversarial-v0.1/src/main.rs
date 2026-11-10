@@ -324,7 +324,7 @@ fn independent_check(events: &[Event], outcomes: &[Outcome]) -> Vec<Violation> {
                 generation += 1;
                 needs_reconcile.extend(durable.iter().copied());
                 oracle_pass.clear();
-                uncertain.extend(dispatches.iter().copied());
+                uncertain.extend(dispatches.iter().filter(|id| !accepted_attempts.contains(id)).copied());
             }
             Event::Reconcile { attempt } => {
                 if !durable.contains(attempt) { report("reconciliation_binding", "no durable receipt to reconcile"); }
@@ -829,6 +829,21 @@ mod tests {
         events.push(Event::Accept { attempt: 1 });
         let violations = independent_check(&events, &all_accepted(&events));
         assert!(violations.iter().any(|v| v.invariant == "duplicate_acceptance"));
+    }
+
+
+    #[test]
+    fn accepted_attempt_stays_out_of_uncertain_set_after_partition_and_restart() {
+        let mut events = positive();
+        events.push(Event::Partition);
+        events.push(Event::Restart);
+        let result = run_schedule(events).unwrap();
+        assert!(result.violations.is_empty());
+        let mut model = Model::default();
+        for event in &result.events {
+            model.apply(event).unwrap();
+        }
+        assert!(!model.uncertain.contains(&1));
     }
 
     #[test]
