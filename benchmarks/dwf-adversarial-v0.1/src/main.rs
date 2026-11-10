@@ -303,7 +303,7 @@ fn independent_check(events: &[Event], outcomes: &[Outcome]) -> Vec<Violation> {
             }
             Event::Partition => {
                 online = false;
-                uncertain.extend(dispatches.iter().filter(|id| !accepted_attempts.contains(id)).copied());
+                uncertain.extend(dispatches.iter().filter(|id| !accepted_attempts.contains(*id)).copied());
             }
             Event::Reconnect => { online = true; }
             Event::LostAck { attempt } => {
@@ -324,7 +324,7 @@ fn independent_check(events: &[Event], outcomes: &[Outcome]) -> Vec<Violation> {
                 generation += 1;
                 needs_reconcile.extend(durable.iter().copied());
                 oracle_pass.clear();
-                uncertain.extend(dispatches.iter().filter(|id| !accepted_attempts.contains(id)).copied());
+                uncertain.extend(dispatches.iter().filter(|id| !accepted_attempts.contains(*id)).copied());
             }
             Event::Reconcile { attempt } => {
                 if !durable.contains(attempt) { report("reconciliation_binding", "no durable receipt to reconcile"); }
