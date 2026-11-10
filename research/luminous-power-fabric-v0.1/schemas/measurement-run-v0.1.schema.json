@@ -146,7 +146,7 @@
             "string",
             "null"
           ],
-          "pattern": "^([a-fA-F0-9]{64})?$"
+          "pattern": "^[a-fA-F0-9]{64}$"
         },
         "steady_state_window_s": {
           "type": [
@@ -352,7 +352,7 @@
             "string",
             "null"
           ],
-          "pattern": "^([a-fA-F0-9]{64})?$"
+          "pattern": "^[a-fA-F0-9]{64}$"
         }
       }
     },
