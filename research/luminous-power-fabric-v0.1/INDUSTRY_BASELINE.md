@@ -45,7 +45,7 @@ Therefore:
 - Do not turn the above 97% figures into an apples-to-apples ranking. Their topology, voltage ratio, efficiency boundary, cooling and test conditions differ.
 - A result that matches efficiency while adding galvanic isolation, replaceability and independent safety controls may still be a meaningful product improvement, but it must disclose the cost, volume and thermal trade-offs.
 
-## 3. The right head-to-head programme
+## 4. The right head-to-head programme
 
 ### A. Establish three reference configurations
 
@@ -80,7 +80,7 @@ A competitor can be better in one dimension and worse in another. Do not collaps
 
 If a vendor does not disclose enough data to match a condition, keep its published figure as context and state **not comparable**.
 
-## 4. Product-strategy consequence
+## 5. Product-strategy consequence
 
 We should not position PEBB-LV-01 as a generic 500 W brick that wins solely on efficiency. The strongest potential position is:
 
@@ -88,7 +88,7 @@ We should not position PEBB-LV-01 as a generic 500 W brick that wins solely on e
 
 The value proposition is the combination of isolation, two-way power flow, replaceable building blocks, predictable service and reproducible qualification. Efficiency must be competitive, not the only differentiation.
 
-## 5. Open evidence gaps
+## 6. Open evidence gaps
 
 - Confirm ELSİS BIDIR module isolation status, exact control envelope and whether >97% is a typical, peak or full-load guarantee across the full range.
 - Obtain the exact MPS and Vicor datasheets and test conditions for any chosen head-to-head.
