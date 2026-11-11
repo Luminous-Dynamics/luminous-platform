@@ -1873,6 +1873,8 @@ fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditErr
                     || residual.source_sample_timestamps_ns != scenario.source_sample_timestamps_ns
                     || residual.model_contract != scenarios.contract.model_contract
                     || residual.operating_regime_id != scenarios.contract.operating_regime_id
+                    || residual.clock_id != scenarios.contract.clock_id
+                    || residual.time_origin_id != scenarios.contract.time_origin_id
                     || residual.origin_id == scenarios.forecast_origin_id
                     || residual.origin_timestamp_ns.checked_add(duration_ns) != Some(residual.target_window_end_ns)
                     || residual.target_window_end_ns > scenarios.forecast_origin_timestamp_ns
