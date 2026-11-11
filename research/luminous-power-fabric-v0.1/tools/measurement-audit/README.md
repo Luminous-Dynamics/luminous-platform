@@ -501,3 +501,13 @@ Each report retains the frozen service contract, baseline and event evidence IDs
 See [GRID_INTERACTIVE_COMPUTE_RESOURCE_QUALIFICATION_2026-11-11.md](../../GRID_INTERACTIVE_COMPUTE_RESOURCE_QUALIFICATION_2026-11-11.md) for the attribution equations, literature comparison, test targets and limitations.
 
 **Validation:** nineteen synthetic Rust tests are authored but not executed. No compilation, formatting, Clippy, live dispatch, site measurement, grid participation, market capacity accreditation or certification is claimed.
+
+## Deterministic workload replay and counterfactual flexibility
+
+The library exposes workload_replay::evaluate_workload_replay. It compares the same normalized jobs under a full-capacity baseline and a time-varying dispatch admission-capacity profile. Each job declares CPU milli-core, GPU unit and memory-MiB demand, release/latest-start/completion timestamps, a non-preemptive runtime, a useful-work count, and source evidence. The replay contract preserves dataset version/evidence, a use-authorization reference, normalization revision, scheduling-policy revision and work unit.
+
+The v0.1 policy is deterministic strict priority: non-deferrable before deferrable, then earliest latest start, completion deadline, release time and stable job ID. It is no-backfill, non-preemptive, event-driven, and dispatch windows constrain new admissions only. Ordered release, ready and completion sets plus incremental resource accounting avoid full-workload scans at each event.
+
+Outputs include per-job baseline/candidate schedules, completion and miss counts by deferrability class, useful-work retention, delay percentiles, recovery tail, and GPU resource-time during the same dispatch windows. The GPU admission restriction integral is a resource-unit-time quantity. Neither it nor GPU resource-time is watts, joules or grid capacity. The module does not parse source trace files, resolve DAG dependencies, model per-job fragments or infer power.
+
+Seventeen synthetic Rust tests are authored but not executed, including deterministic replay, deadline cliffs, in-flight continuity, multi-resource capacity, dispatch recovery, provenance fail-closed checks, overflow and a 10,000-job fixture.
