@@ -1150,6 +1150,15 @@ pub fn evaluate_scenario_tournament(
             previous_episode_end = Some(episode.window_end_ns);
 
             let paired = ensure_episode_reports_paired(&episode.evaluations, &contract)?;
+            if paired.iter().any(|report| {
+                report.forecast_origin_timestamp_ns < episode.window_start_ns
+                    || report.forecast_origin_timestamp_ns >= episode.window_end_ns
+            }) {
+                return Err(AuditError(
+                    "paired forecast origin timestamp falls outside the preregistered episode window"
+                        .to_string(),
+                ));
+            }
             let baseline = &paired[0];
             if !forecast_ids.insert(baseline.forecast_id.as_str())
                 || !measurement_run_ids.insert(baseline.measurement_run_id.as_str())
@@ -1653,21 +1662,28 @@ mod tests {
     fn clusters(count: usize, saving: bool) -> Vec<ScenarioTournamentCluster> {
         (0..count)
             .map(|cluster_index| {
-                let cluster_start = cluster_index as u64 * 100;
+                let cluster_start = 100_000 + cluster_index as u64 * 100_000;
                 let episodes = (0..2)
                     .map(|episode_index| {
                         let index = cluster_index * 2 + episode_index;
+                        let window_start_ns = cluster_start + 1 + episode_index as u64 * 10;
+                        let window_end_ns = window_start_ns + 10;
+                        let forecast_origin_timestamp_ns = window_start_ns + 5;
+                        let mut evaluations = [
+                            report(index, ScenarioGeneratorKind::IndependentQuantileSampling, saving),
+                            report(index, ScenarioGeneratorKind::GaussianCopula, saving),
+                            report(index, ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap, saving),
+                            report(index, ScenarioGeneratorKind::SchaakeShuffle, saving),
+                        ].to_vec();
+                        for evaluation in &mut evaluations {
+                            evaluation.forecast_origin_timestamp_ns = forecast_origin_timestamp_ns;
+                        }
                         ScenarioTournamentEpisode {
                             episode_id: format!("episode-{index:03}"),
                             episode_evidence_id: format!("episode-evidence-{index:03}"),
-                            window_start_ns: cluster_start + 1 + episode_index as u64 * 10,
-                            window_end_ns: cluster_start + 11 + episode_index as u64 * 10,
-                            evaluations: [
-                                report(index, ScenarioGeneratorKind::IndependentQuantileSampling, saving),
-                                report(index, ScenarioGeneratorKind::GaussianCopula, saving),
-                                report(index, ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap, saving),
-                                report(index, ScenarioGeneratorKind::SchaakeShuffle, saving),
-                            ].to_vec(),
+                            window_start_ns,
+                            window_end_ns,
+                            evaluations,
                         }
                     })
                     .collect();
@@ -1833,6 +1849,17 @@ mod tests {
     fn rejects_tampered_cost_or_shortfall_fields() {
         let mut input = clusters(4, true);
         input[0].episodes[0].evaluations[1].realized_reserve_cost_ratio_units = 0.0;
+        assert!(evaluate_scenario_tournament(contract(), input).is_err());
+    }
+
+    #[test]
+    fn rejects_forecast_origin_outside_preregistered_episode_window() {
+        let mut input = clusters(4, true);
+        input[0].episodes[0].evaluations[0].forecast_origin_timestamp_ns =
+            input[0].episodes[0].window_end_ns;
+        for report in &mut input[0].episodes[0].evaluations {
+            report.forecast_origin_timestamp_ns = input[0].episodes[0].window_end_ns;
+        }
         assert!(evaluate_scenario_tournament(contract(), input).is_err());
     }
 
