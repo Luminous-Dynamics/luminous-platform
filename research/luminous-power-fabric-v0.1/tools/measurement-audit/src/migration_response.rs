@@ -104,6 +104,7 @@ pub struct MigrationTrial {
     pub workload_contract_id: String,
     pub data_artifact_id: String,
     pub data_version: String,
+    pub work_unit: String,
     pub data_bytes: u128,
     pub data_access_mode: MigrationDataAccessMode,
     pub evidence_class: MigrationEvidenceClass,
@@ -132,11 +133,11 @@ pub struct MigrationTrial {
     pub destination_work_started_ns: Option<u64>,
     pub first_useful_work_accepted_ns: Option<u64>,
     pub accepted_useful_work_units: u64,
-    pub accepted_work_evidence_id: Option<String>,
+    pub accepted_work_evidence_id: String,
     pub output_quality_accepted: bool,
-    pub output_quality_evidence_id: Option<String>,
+    pub output_quality_evidence_id: String,
     pub service_slo_met: bool,
-    pub service_slo_evidence_id: Option<String>,
+    pub service_slo_evidence_id: String,
     pub authority_authorized: bool,
     pub authority_evidence_id: String,
     pub residency_permitted: bool,
@@ -187,6 +188,10 @@ pub struct MigrationStratumSummary {
     pub p50_source_response_latency_ns: Option<u64>,
     pub p95_source_response_latency_ns: Option<u64>,
     pub p99_source_response_latency_ns: Option<u64>,
+    pub observed_destination_stabilization_count: usize,
+    pub p50_destination_stabilization_latency_ns: Option<u64>,
+    pub p95_destination_stabilization_latency_ns: Option<u64>,
+    pub p99_destination_stabilization_latency_ns: Option<u64>,
     pub useful_work_preserved_count: usize,
     pub service_eligible_count: usize,
     pub total_data_bytes: u128,
@@ -262,6 +267,10 @@ fn evaluate_trial(
         (trial.workload_contract_id.as_str(), "workload_contract_id"),
         (trial.data_artifact_id.as_str(), "data_artifact_id"),
         (trial.data_version.as_str(), "data_version"),
+        (trial.work_unit.as_str(), "work_unit"),
+        (trial.accepted_work_evidence_id.as_str(), "accepted_work_evidence_id"),
+        (trial.output_quality_evidence_id.as_str(), "output_quality_evidence_id"),
+        (trial.service_slo_evidence_id.as_str(), "service_slo_evidence_id"),
         (trial.source_site_id.as_str(), "source_site_id"),
         (trial.destination_site_id.as_str(), "destination_site_id"),
         (trial.source_region_id.as_str(), "source_region_id"),
@@ -291,6 +300,7 @@ fn evaluate_trial(
         || trial.workload_contract_id != contract.workload_contract_id
         || trial.data_artifact_id != contract.data_artifact_id
         || trial.data_version != contract.data_version
+        || trial.work_unit != contract.work_unit
         || trial.source_site_id != contract.source_site_id
         || trial.destination_site_id != contract.destination_site_id
         || trial.source_region_id != contract.source_region_id
@@ -348,32 +358,28 @@ fn evaluate_trial(
             ));
         }
     }
-    if trial.accepted_useful_work_units > 0 {
-        let started = trial.destination_work_started_ns.ok_or_else(|| {
-            AuditError("accepted work requires a destination work-start timestamp".to_string())
-        })?;
-        let accepted = trial.first_useful_work_accepted_ns.ok_or_else(|| {
-            AuditError("accepted work requires a first-acceptance timestamp".to_string())
-        })?;
-        if accepted < started {
+    match (trial.accepted_useful_work_units, trial.first_useful_work_accepted_ns) {
+        (0, Some(_)) => {
             return Err(AuditError(
-                "first accepted useful work cannot precede destination work start".to_string(),
+                "first useful-work acceptance timestamp is present but accepted work is zero".to_string(),
             ));
         }
-        let accepted_ref = trial.accepted_work_evidence_id.as_deref().unwrap_or("");
-        required_ref(accepted_ref, "accepted_work_evidence_id")?;
-    }
-    if trial.output_quality_accepted {
-        required_ref(
-            trial.output_quality_evidence_id.as_deref().unwrap_or(""),
-            "output_quality_evidence_id",
-        )?;
-    }
-    if trial.service_slo_met {
-        required_ref(
-            trial.service_slo_evidence_id.as_deref().unwrap_or(""),
-            "service_slo_evidence_id",
-        )?;
+        (0, None) => {}
+        (_, Some(accepted)) => {
+            let started = trial.destination_work_started_ns.ok_or_else(|| {
+                AuditError("accepted work requires a destination work-start timestamp".to_string())
+            })?;
+            if accepted < started {
+                return Err(AuditError(
+                    "first accepted useful work cannot precede destination work start".to_string(),
+                ));
+            }
+        }
+        (_, None) => {
+            return Err(AuditError(
+                "accepted work requires a first-acceptance timestamp".to_string(),
+            ));
+        }
     }
 
     let source_latency = nonnegative_latency(
@@ -497,6 +503,9 @@ pub fn evaluate_migration_response_trials(
         let observed_latencies: Vec<u64> = results.iter()
             .filter_map(|result| result.source_response_latency_ns)
             .collect();
+        let observed_destination_latencies: Vec<u64> = results.iter()
+            .filter_map(|result| result.destination_power_stabilization_latency_ns)
+            .collect();
         let useful_work_preserved_count = results.iter()
             .filter(|result| result.useful_work_preserved)
             .count();
@@ -518,6 +527,10 @@ pub fn evaluate_migration_response_trials(
             p50_source_response_latency_ns: nearest_rank(&observed_latencies, 50, 100),
             p95_source_response_latency_ns: nearest_rank(&observed_latencies, 95, 100),
             p99_source_response_latency_ns: nearest_rank(&observed_latencies, 99, 100),
+            observed_destination_stabilization_count: observed_destination_latencies.len(),
+            p50_destination_stabilization_latency_ns: nearest_rank(&observed_destination_latencies, 50, 100),
+            p95_destination_stabilization_latency_ns: nearest_rank(&observed_destination_latencies, 95, 100),
+            p99_destination_stabilization_latency_ns: nearest_rank(&observed_destination_latencies, 99, 100),
             useful_work_preserved_count,
             service_eligible_count,
             total_data_bytes,
@@ -583,6 +596,7 @@ mod tests {
             workload_contract_id: "inference-work-v1".to_string(),
             data_artifact_id: "model-artifact-v4".to_string(),
             data_version: "sha256:model-v4".to_string(),
+            work_unit: "accepted-request".to_string(),
             data_bytes: 10_000,
             data_access_mode: access,
             evidence_class: MigrationEvidenceClass::Measured,
@@ -609,11 +623,11 @@ mod tests {
             destination_work_started_ns: Some(command + 100),
             first_useful_work_accepted_ns: Some(command + 200),
             accepted_useful_work_units: 10,
-            accepted_work_evidence_id: Some(format!("accepted-work-{id}")),
+            accepted_work_evidence_id: format!("accepted-work-{id}"),
             output_quality_accepted: true,
-            output_quality_evidence_id: Some(format!("quality-{id}")),
+            output_quality_evidence_id: format!("quality-{id}"),
             service_slo_met: true,
-            service_slo_evidence_id: Some(format!("slo-{id}")),
+            service_slo_evidence_id: format!("slo-{id}"),
             authority_authorized: true,
             authority_evidence_id: format!("authority-{id}"),
             residency_permitted: true,
@@ -674,6 +688,7 @@ mod tests {
         let result = &report.trial_results[0];
         assert_eq!(result.source_response_latency_ns, Some(1_000_000_000));
         assert_eq!(result.destination_power_stabilization_latency_ns, Some(1_500_000_000));
+        assert_eq!(report.strata[0].p95_destination_stabilization_latency_ns, Some(1_500_000_000));
     }
 
     #[test]
@@ -768,6 +783,22 @@ mod tests {
         assert_eq!(first.trial_results[0].trial_id, "cold");
         assert_eq!(first.trial_results[1].trial_id, "warm");
         assert_eq!(first.strata.len(), 2);
+    }
+
+    #[test]
+    fn negative_outcomes_still_require_quality_and_slo_evidence() {
+        let mut failed = trial("failed", MigrationDataAccessMode::RemoteReadOnly, 10_000);
+        failed.output_quality_accepted = false;
+        failed.output_quality_evidence_id.clear();
+        assert!(evaluate_migration_response_trials(contract(), &[failed]).is_err());
+    }
+
+    #[test]
+    fn zero_accepted_work_cannot_claim_an_acceptance_timestamp() {
+        let mut inconsistent = trial("zero-work", MigrationDataAccessMode::RemoteReadOnly, 10_000);
+        inconsistent.accepted_useful_work_units = 0;
+        inconsistent.first_useful_work_accepted_ns = Some(10_200);
+        assert!(evaluate_migration_response_trials(contract(), &[inconsistent]).is_err());
     }
 
     #[test]
