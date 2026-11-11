@@ -559,14 +559,14 @@ See TEMPORAL_SCENARIOS_AND_HORIZON_RESERVE_BENCHMARK_2026-11-11.md for the 6 Nov
 Validation: 34 synthetic Rust tests are authored but not executed. No compiler, Cargo test, formatting, Clippy, runtime benchmark, dataset download or physical measurement is claimed.
 
 
-**Gaussian-copula arm:** a rank-normal residual dependence estimator, frozen correlation shrinkage, deterministic Cholesky sampling and current-marginal quantile mapping are now implemented. It requires at least max(30, horizon_steps + 1) non-overlapping residual blocks, records raw residual vectors, recomputable rank scores, exact per-residual model/regime/clock/time-origin contracts, correlation/regularization/factor evidence and rejects constant dimensions. Thirty-two synthetic tests are authored but not executed. This completes the four method arms structurally; no paper reproduction is claimed.
+**Gaussian-copula arm:** a rank-normal residual dependence estimator, frozen correlation shrinkage, deterministic Cholesky sampling and current-marginal quantile mapping are now implemented. It requires at least max(30, horizon_steps + 1) non-overlapping residual blocks, records raw residual vectors, recomputable rank scores, exact per-residual model/regime/clock/time-origin contracts, correlation/regularization/factor evidence and rejects constant dimensions. Thirty-six synthetic tests are authored but not executed. This completes the four method arms structurally; no paper reproduction is claimed.
 
 
 ## Paired, cluster-aware scenario decision tournament
 
 The new \`scenario_tournament\` module compares the four scenario generators from #407/#409 on exact paired episodes. Each episode must have one report per method and all four must use the same forecast origin, full model contract, physical measurement run, measured-sample evidence, horizon, scenario count and reserve/shortfall cost ratio. Forecast origin timestamps must lie inside their preregistered episode windows. Bootstrap/Schaake residual rows are compared field-for-field with the Gaussian arm's shared 200-row historical pool. Bootstrap/Schaake residual rows are compared field-for-field with the Gaussian arm's common 200-row historical pool, so a shared pool ID cannot conceal different residual data.
 
-The independent-marginal generator is the negative-control baseline. Gaussian copula, empirical residual bootstrap and Schaake shuffle are compared against that same episode-level baseline. The evaluator checks each method's reserve/shortfall arithmetic and freezes the exact generator ID and revision across the experiment.
+The independent-marginal generator is the negative-control baseline. Gaussian copula, empirical residual bootstrap and Schaake shuffle are compared against that same episode-level baseline. The evaluator checks each method's reserve/shortfall arithmetic and freezes the exact generator ID and revision across the experiment. The paired forecast timestamp must lie inside the preregistered episode window, and bootstrap/Schaake rows are checked against the same full historical residual pool retained by the Gaussian arm.
 
 Episodes are grouped into fixed-exposure clusters. All episodes inside one cluster may be dependent; the cluster mean cost is one statistical unit. A candidate cluster succeeds only if it achieves the preregistered relative cost saving. The tournament computes an exact one-sided Clopper–Pearson lower confidence bound over independent clusters, not episode rows.
 
@@ -576,4 +576,4 @@ The initial target is at least 7.4% lower normalized reserve cost than independe
 
 See [SCENARIO_DECISION_TOURNAMENT_2026-11-11.md](../../SCENARIO_DECISION_TOURNAMENT_2026-11-11.md).
 
-**Validation:** sixteen synthetic Rust tests are authored but not executed. No compile, Cargo test, formatting, Clippy, runtime benchmark, physical measurement, grid-service qualification or accreditation is claimed.
+**Validation:** twenty-one synthetic Rust tests are authored but not executed. No compile, Cargo test, formatting, Clippy, runtime benchmark, physical measurement, grid-service qualification or accreditation is claimed.
