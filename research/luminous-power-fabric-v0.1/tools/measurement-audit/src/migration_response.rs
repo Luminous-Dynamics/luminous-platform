@@ -120,7 +120,9 @@ pub struct MigrationTrial {
     pub common_time_origin_id: String,
     pub clock_alignment_method_id: String,
     pub clock_alignment_evidence_id: String,
-    pub clock_alignment_uncertainty_ns: u64,
+    /// Conservative uncertainty bounds for the source and destination clocks.
+    pub source_clock_alignment_uncertainty_ns: u64,
+    pub destination_clock_alignment_uncertainty_ns: u64,
     /// All event timestamps below are already mapped to the declared common clock.
     /// Pre-launch readiness timestamps may legitimately precede command_issued_ns.
     pub command_issued_ns: u64,
@@ -172,11 +174,35 @@ pub struct MigrationTrialResult {
     pub service_eligible: bool,
     pub accepted_useful_work_units: u64,
     pub data_bytes: u128,
+    pub command_issued_ns: u64,
+    pub data_ready_ns: Option<u64>,
+    pub runtime_ready_ns: Option<u64>,
+    pub destination_capacity_reserved_ns: Option<u64>,
+    pub destination_work_started_ns: Option<u64>,
+    pub first_useful_work_accepted_ns: Option<u64>,
+    pub source_power_reduction_stable_ns: Option<u64>,
+    pub destination_power_increase_stable_ns: Option<u64>,
+    pub accepted_work_evidence_id: String,
+    pub output_quality_accepted: bool,
+    pub output_quality_evidence_id: String,
+    pub service_slo_met: bool,
+    pub service_slo_evidence_id: String,
+    pub authority_authorized: bool,
+    pub authority_evidence_id: String,
+    pub residency_permitted: bool,
+    pub residency_evidence_id: String,
+    pub data_freshness_verified: bool,
+    pub data_freshness_evidence_id: String,
+    pub data_path_evidence_id: String,
+    pub clock_alignment_evidence_id: String,
     pub source_power_trace_evidence_id: String,
+    pub source_pcc_measurement_reference: String,
     pub destination_power_trace_evidence_id: String,
+    pub destination_pcc_measurement_reference: String,
+    pub rollback_or_timeout_evidence_id: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct MigrationStratumSummary {
     pub data_access_mode: MigrationDataAccessMode,
     pub prelaunch_state: PrelaunchState,
@@ -197,7 +223,7 @@ pub struct MigrationStratumSummary {
     pub total_data_bytes: u128,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct MigrationResponseReport {
     pub contract: MigrationResponseContract,
     pub evidence_class: MigrationEvidenceClass,
@@ -320,9 +346,12 @@ fn evaluate_trial(
             trial.trial_id
         )));
     }
-    if trial.clock_alignment_uncertainty_ns > contract.maximum_clock_alignment_uncertainty_ns {
+    let relative_clock_uncertainty = trial.source_clock_alignment_uncertainty_ns
+        .checked_add(trial.destination_clock_alignment_uncertainty_ns)
+        .ok_or_else(|| AuditError("relative clock-alignment uncertainty overflowed".to_string()))?;
+    if relative_clock_uncertainty > contract.maximum_clock_alignment_uncertainty_ns {
         return Err(AuditError(format!(
-            "migration trial {:?} clock-alignment uncertainty exceeds the contract limit",
+            "migration trial {:?} conservative pairwise clock-alignment uncertainty exceeds the contract limit",
             trial.trial_id
         )));
     }
@@ -436,8 +465,32 @@ fn evaluate_trial(
         service_eligible,
         accepted_useful_work_units: trial.accepted_useful_work_units,
         data_bytes: trial.data_bytes,
+        command_issued_ns: trial.command_issued_ns,
+        data_ready_ns: trial.data_ready_ns,
+        runtime_ready_ns: trial.runtime_ready_ns,
+        destination_capacity_reserved_ns: trial.destination_capacity_reserved_ns,
+        destination_work_started_ns: trial.destination_work_started_ns,
+        first_useful_work_accepted_ns: trial.first_useful_work_accepted_ns,
+        source_power_reduction_stable_ns: trial.source_power_reduction_stable_ns,
+        destination_power_increase_stable_ns: trial.destination_power_increase_stable_ns,
+        accepted_work_evidence_id: trial.accepted_work_evidence_id.clone(),
+        output_quality_accepted: trial.output_quality_accepted,
+        output_quality_evidence_id: trial.output_quality_evidence_id.clone(),
+        service_slo_met: trial.service_slo_met,
+        service_slo_evidence_id: trial.service_slo_evidence_id.clone(),
+        authority_authorized: trial.authority_authorized,
+        authority_evidence_id: trial.authority_evidence_id.clone(),
+        residency_permitted: trial.residency_permitted,
+        residency_evidence_id: trial.residency_evidence_id.clone(),
+        data_freshness_verified: trial.data_freshness_verified,
+        data_freshness_evidence_id: trial.data_freshness_evidence_id.clone(),
+        data_path_evidence_id: trial.data_path_evidence_id.clone(),
+        clock_alignment_evidence_id: trial.clock_alignment_evidence_id.clone(),
         source_power_trace_evidence_id: trial.source_power_trace_evidence_id.clone(),
+        source_pcc_measurement_reference: trial.source_pcc_measurement_reference.clone(),
         destination_power_trace_evidence_id: trial.destination_power_trace_evidence_id.clone(),
+        destination_pcc_measurement_reference: trial.destination_pcc_measurement_reference.clone(),
+        rollback_or_timeout_evidence_id: trial.rollback_or_timeout_evidence_id.clone(),
     })
 }
 
@@ -612,7 +665,8 @@ mod tests {
             common_time_origin_id: "epoch-utc-ns".to_string(),
             clock_alignment_method_id: "ptp-cross-site-v1".to_string(),
             clock_alignment_evidence_id: format!("clock-align-{id}"),
-            clock_alignment_uncertainty_ns: 100,
+            source_clock_alignment_uncertainty_ns: 40,
+            destination_clock_alignment_uncertainty_ns: 60,
             command_issued_ns: command,
             data_ready_ns: Some(command - 10),
             data_ready_evidence_id: Some(format!("data-ready-{id}")),
@@ -733,6 +787,14 @@ mod tests {
         let mut wrong_clock = trial("clock", MigrationDataAccessMode::RemoteReadOnly, 10_000);
         wrong_clock.common_clock_id = "host-clock".to_string();
         assert!(evaluate_migration_response_trials(contract(), &[wrong_clock]).is_err());
+    }
+
+    #[test]
+    fn pairwise_clock_uncertainty_is_the_sum_of_source_and_destination_bounds() {
+        let mut over_limit = trial("clock-over", MigrationDataAccessMode::RemoteReadOnly, 10_000);
+        over_limit.source_clock_alignment_uncertainty_ns = 60;
+        over_limit.destination_clock_alignment_uncertainty_ns = 60;
+        assert!(evaluate_migration_response_trials(contract(), &[over_limit]).is_err());
     }
 
     #[test]
