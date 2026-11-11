@@ -1405,6 +1405,74 @@ mod tests {
     }
 
     #[test]
+    fn rejects_calibration_without_exchangeability_review_assumption() {
+        let mut contract = calibration_contract(&["normal"]);
+        contract.session_exchangeability_assumption = false;
+        assert!(fit_regime_forecast_calibrator(
+            contract,
+            calibration_sessions(9, "normal"),
+        ).is_err());
+    }
+
+    #[test]
+    fn rejects_full_upstream_model_contract_mismatch() {
+        let mut sessions = calibration_sessions(9, "normal");
+        sessions[0].traces[0].predicted.calibration_contract.sensor_id = "other-sensor".to_string();
+        assert!(fit_regime_forecast_calibrator(
+            calibration_contract(&["normal"]),
+            sessions,
+        ).is_err());
+    }
+
+    #[test]
+    fn calibrated_prediction_cannot_reuse_calibration_run_id() {
+        let mut prediction = predicted(20, PredictionScope::OperationalScenario);
+        prediction.run_id = "run-000".to_string();
+        assert!(apply_regime_forecast_calibration(
+            &calibrator(),
+            "normal",
+            &prediction,
+        ).is_err());
+    }
+
+    #[test]
+    fn monitoring_reports_nominal_session_coverage_when_wilson_gate_passes() {
+        let report = evaluate_forecast_monitoring(
+            &calibrator(),
+            ForecastMonitoringContract {
+                minimum_observed_sessions_per_regime: 30,
+                minimum_wilson_lower_bound_session_coverage: 0.80,
+                one_sided_confidence_z_score: 1.281_551_565_5,
+                independent_monitor_sessions_assumption: true,
+                monitor_session_independence_review_evidence_id: Some("monitor-design-review-v1".to_string()),
+            },
+            (20..50)
+                .map(|index| session(index, "normal", 100, PredictionScope::OperationalScenario))
+                .collect(),
+        ).unwrap();
+        assert_eq!(report.regime_health[0].status, ForecastHealthStatus::Nominal);
+        assert!(report.regime_health[0].wilson_lower_bound_session_coverage
+            .is_some_and(|bound| bound >= 0.80));
+    }
+
+    #[test]
+    fn monitoring_rejects_run_reuse_from_calibration_sessions() {
+        let mut reused = session(20, "normal", 100, PredictionScope::OperationalScenario);
+        reused.traces[0].predicted.run_id = "run-000".to_string();
+        assert!(evaluate_forecast_monitoring(
+            &calibrator(),
+            ForecastMonitoringContract {
+                minimum_observed_sessions_per_regime: 5,
+                minimum_wilson_lower_bound_session_coverage: 0.50,
+                one_sided_confidence_z_score: 1.281_551_565_5,
+                independent_monitor_sessions_assumption: true,
+                monitor_session_independence_review_evidence_id: Some("monitor-design-review-v1".to_string()),
+            },
+            vec![reused],
+        ).is_err());
+    }
+
+    #[test]
     fn monitoring_does_not_mutate_the_frozen_calibrator() {
         let fitted = calibrator();
         let before = fitted.clone();
