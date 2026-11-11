@@ -191,6 +191,7 @@ pub enum ForecastHealthStatus {
     Nominal,
     Degraded,
     InsufficientSupport,
+    SamplingDesignUnqualified,
     OutOfDomain,
 }
 
@@ -230,6 +231,8 @@ pub struct ForecastMonitoringContract {
     pub minimum_observed_sessions_per_regime: usize,
     pub minimum_wilson_lower_bound_session_coverage: f64,
     pub one_sided_confidence_z_score: f64,
+    pub independent_monitor_sessions_assumption: bool,
+    pub monitor_session_independence_review_evidence_id: Option<String>,
 }
 
 impl ForecastMonitoringContract {
@@ -246,6 +249,24 @@ impl ForecastMonitoringContract {
                 "forecast monitoring contract contains an invalid support, coverage or z-score threshold"
                     .to_string(),
             ));
+        }
+        match (
+            self.independent_monitor_sessions_assumption,
+            self.monitor_session_independence_review_evidence_id.as_deref(),
+        ) {
+            (true, Some(value)) if !value.trim().is_empty() => {}
+            (true, _) => {
+                return Err(AuditError(
+                    "independent monitor sessions require a non-blank sampling-design review reference"
+                        .to_string(),
+                ));
+            }
+            (false, Some(value)) if value.trim().is_empty() => {
+                return Err(AuditError(
+                    "monitor independence evidence must be absent or non-blank".to_string(),
+                ));
+            }
+            (false, _) => {}
         }
         Ok(())
     }
@@ -807,6 +828,7 @@ pub fn evaluate_forecast_monitoring(
 
     let mut session_ids = HashSet::new();
     let mut run_ids = HashSet::new();
+    let mut trace_ids = HashSet::new();
     let mut session_results = Vec::with_capacity(sessions.len());
     let mut grouped: BTreeMap<String, (usize, usize, usize, usize)> = BTreeMap::new();
     let mut out_of_domain_by_regime: BTreeMap<String, usize> = BTreeMap::new();
@@ -842,6 +864,12 @@ pub fn evaluate_forecast_monitoring(
                 return Err(AuditError(format!(
                     "duplicate forecast monitoring run {:?}",
                     observation.predicted.run_id
+                )));
+            }
+            if !trace_ids.insert(observation.predicted.trace_id.as_str()) {
+                return Err(AuditError(format!(
+                    "duplicate forecast monitoring prediction trace {:?}",
+                    observation.predicted.trace_id
                 )));
             }
             if calibrator.regimes.iter().any(|regime| {
@@ -953,17 +981,23 @@ pub fn evaluate_forecast_monitoring(
     let mut regimes = Vec::new();
     for (regime_id, (observed, covered_sessions, sample_count, covered_samples)) in grouped {
         let empirical_session_coverage = covered_sessions as f64 / observed as f64;
-        let wilson = wilson_lower_bound(
-            covered_sessions,
-            observed,
-            contract.one_sided_confidence_z_score,
-        );
+        let wilson = if contract.independent_monitor_sessions_assumption {
+            wilson_lower_bound(
+                covered_sessions,
+                observed,
+                contract.one_sided_confidence_z_score,
+            )
+        } else {
+            None
+        };
         let empirical_sample_coverage = if sample_count > 0 {
             Some(covered_samples as f64 / sample_count as f64)
         } else {
             None
         };
-        let status = if observed < contract.minimum_observed_sessions_per_regime {
+        let status = if !contract.independent_monitor_sessions_assumption {
+            ForecastHealthStatus::SamplingDesignUnqualified
+        } else if observed < contract.minimum_observed_sessions_per_regime {
             ForecastHealthStatus::InsufficientSupport
         } else if wilson.is_some_and(|lower_bound| {
             lower_bound >= contract.minimum_wilson_lower_bound_session_coverage
@@ -985,6 +1019,7 @@ pub fn evaluate_forecast_monitoring(
                 .get(&regime_id)
                 .copied()
                 .unwrap_or(0),
+            sampling_design_verified: contract.independent_monitor_sessions_assumption,
             status,
         });
     }
@@ -1000,6 +1035,7 @@ pub fn evaluate_forecast_monitoring(
             covered_sample_count: 0,
             empirical_sample_coverage: None,
             out_of_domain_session_count: out_of_domain_count,
+            sampling_design_verified: contract.independent_monitor_sessions_assumption,
             status: ForecastHealthStatus::OutOfDomain,
         });
     }
@@ -1291,6 +1327,8 @@ mod tests {
                 minimum_observed_sessions_per_regime: 5,
                 minimum_wilson_lower_bound_session_coverage: 0.80,
                 one_sided_confidence_z_score: 1.281_551_565_5,
+                independent_monitor_sessions_assumption: true,
+                monitor_session_independence_review_evidence_id: Some("monitor-design-review-v1".to_string()),
             },
             vec![session(20, "hot", 100, PredictionScope::OperationalScenario)],
         ).unwrap();
@@ -1329,6 +1367,26 @@ mod tests {
                 .collect(),
         ).unwrap();
         assert_eq!(report.regime_health[0].status, ForecastHealthStatus::InsufficientSupport);
+    }
+
+    #[test]
+    fn monitoring_withholds_wilson_bound_without_independent_session_design() {
+        let report = evaluate_forecast_monitoring(
+            &calibrator(),
+            ForecastMonitoringContract {
+                minimum_observed_sessions_per_regime: 5,
+                minimum_wilson_lower_bound_session_coverage: 0.50,
+                one_sided_confidence_z_score: 1.281_551_565_5,
+                independent_monitor_sessions_assumption: false,
+                monitor_session_independence_review_evidence_id: None,
+            },
+            (20..29)
+                .map(|index| session(index, "normal", 100, PredictionScope::OperationalScenario))
+                .collect(),
+        ).unwrap();
+        assert_eq!(report.regime_health[0].status, ForecastHealthStatus::SamplingDesignUnqualified);
+        assert_eq!(report.regime_health[0].wilson_lower_bound_session_coverage, None);
+        assert!(!report.regime_health[0].sampling_design_verified);
     }
 
     #[test]
