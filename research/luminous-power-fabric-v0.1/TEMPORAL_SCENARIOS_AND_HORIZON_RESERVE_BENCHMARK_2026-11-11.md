@@ -68,7 +68,7 @@ R_{\lambda}=(1-\lambda)R+\lambda I,\qquad 0<\lambda<1
 
 5. Require a finite symmetric matrix with unit diagonal and a successful Cholesky factorization. No unrecorded jitter is added.
 6. Generate deterministic independent standard-normal vectors, correlate them using the lower-triangular Cholesky factor, map through the normal CDF, and interpolate the current forecast's marginal quantile functions.
-7. Retain the full residual-pool, sample, model, clock, time-origin, correlation, regularized-matrix and Cholesky evidence in the report.
+7. Retain the raw residual vectors, recomputed rank-normal score matrix, per-residual exact model/regime/clock/time-origin contracts, source sample timestamps/evidence, correlation, regularized matrix and Cholesky evidence. The evaluator recomputes rank scores from the raw residual vectors and correlation from those scores before accepting the report.
 
 The current contract requires at least max(30, horizon_steps + 1) non-overlapping residual trajectories per regime and an explicit shrinkage lambda. This is a conservative initial research gate, not a universal statistical sample-size theorem. A constant or near-constant residual dimension, insufficient support, singular factorization, future/overlapping residuals or any contract mismatch fails closed.
 
@@ -170,7 +170,7 @@ The new temporal_scenarios module:
 - evaluates scenario energy score, variogram score, peak/ramp/energy diagnostics, PIT and horizon-wide reserve critical-fractile outcomes;
 - labels results as modelled scenario/reserve economics, not measured or accredited capacity.
 
-Thirty-two synthetic Rust tests are authored. They cover deterministic independent-marginal sampling, with-replacement residual bootstrap, source trajectory integrity, Schaake marginal sample preservation, residual overlap/future leakage, quantile crossing, timestamp alignment, insufficient support, reserve critical fractile, energy/variogram scoring, invalid measurements, residual identity, full provenance carry-through, common clock/time-origin mismatch and claim-ceiling tampering.
+Thirty-four synthetic Rust tests are authored. They cover deterministic independent-marginal sampling, with-replacement residual bootstrap, source trajectory integrity, Schaake marginal sample preservation, residual overlap/future leakage, quantile crossing, timestamp alignment, insufficient support, reserve critical fractile, energy/variogram scoring, invalid measurements, residual identity, full provenance carry-through, common clock/time-origin mismatch and claim-ceiling tampering.
 
 **Tests are authored but not executed.** No Rust compilation, cargo test, formatting, Clippy, runtime benchmark, MIT dataset download, paper result reproduction, physical PCC measurement, grid dispatch, reserve delivery or grid accreditation is claimed.
 
