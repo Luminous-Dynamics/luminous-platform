@@ -104,6 +104,7 @@ The differentiator should not be “we calculate correlation.” That is establi
 - measured electrical boundaries and storage correction (#382);
 - repeated-event conservative site capacity (#396);
 - and policy comparisons under identical correlated and independent scenarios (#402).
+- cross-site data readiness and command-to-source-relief response evidence (#404).
 
 This lets operators see not just each site's marginal flexibility, but the probability that the fleet can deliver simultaneously when called, under a shared workload and control environment. It should also reveal regimes where coordination improves diversity and where synchronized actions amplify risk.
 
@@ -116,6 +117,7 @@ This lets operators see not just each site's marginal flexibility, but the proba
 5. Reconcile child aggregation against measured parent traces.
 6. Feed correlation-aware dispatch trials into #396 only after site/PCC measurement gates.
 7. Compare policy tournament #402 under asynchronous, correlated and common-mode workload episodes.
+8. Pair the correlated scenarios with #404 data-path/pre-launch migration trials; preserve source relief and destination added load separately.
 
 ## 10. Claim ceiling
 
