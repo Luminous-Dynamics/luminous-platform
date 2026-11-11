@@ -805,6 +805,13 @@ mod tests {
     }
 
     #[test]
+    fn successful_trial_still_requires_terminal_outcome_evidence() {
+        let mut missing_outcome = trial("no-outcome", MigrationDataAccessMode::RemoteReadOnly, 10_000);
+        missing_outcome.trial_outcome_evidence_id.clear();
+        assert!(evaluate_migration_response_trials(contract(), &[missing_outcome]).is_err());
+    }
+
+    #[test]
     fn missing_power_trace_reference_fails_closed_even_when_no_stable_event_is_seen() {
         let mut no_power_trace = trial("no-trace", MigrationDataAccessMode::RemoteReadOnly, 10_000);
         no_power_trace.source_power_trace_evidence_id.clear();
