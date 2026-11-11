@@ -940,7 +940,7 @@ fn standard_normal_cdf(value: f64) -> Result<f64, AuditError> {
     Ok(probability.clamp(1e-15, 1.0 - 1e-15))
 }
 
-fn rank_normal_scores_from_values(
+pub(crate) fn rank_normal_scores_from_values(
     residual_values: &[Vec<i64>],
     residual_ids: &[String],
     horizon_steps: usize,
@@ -1008,7 +1008,7 @@ fn rank_normal_scores(
     rank_normal_scores_from_values(&residual_values, &residual_ids, horizon_steps)
 }
 
-fn empirical_rank_correlation(scores: &[Vec<f64>], horizon_steps: usize) -> Result<Vec<Vec<f64>>, AuditError> {
+pub(crate) fn empirical_rank_correlation(scores: &[Vec<f64>], horizon_steps: usize) -> Result<Vec<Vec<f64>>, AuditError> {
     if scores.len() < 3 || scores.iter().any(|row| row.len() != horizon_steps) {
         return Err(AuditError(
             "rank-normal score matrix has invalid dimensions".to_string(),
@@ -1062,7 +1062,7 @@ fn empirical_rank_correlation(scores: &[Vec<f64>], horizon_steps: usize) -> Resu
     Ok(correlation)
 }
 
-fn regularize_correlation(
+pub(crate) fn regularize_correlation(
     correlation: &[Vec<f64>],
     shrinkage_lambda: f64,
 ) -> Result<Vec<Vec<f64>>, AuditError> {
@@ -1096,7 +1096,7 @@ fn regularize_correlation(
     Ok(result)
 }
 
-fn cholesky_lower(matrix: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, AuditError> {
+pub(crate) fn cholesky_lower(matrix: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, AuditError> {
     let dimension = matrix.len();
     if dimension == 0 || matrix.iter().any(|row| row.len() != dimension) {
         return Err(AuditError("Cholesky input must be a non-empty square matrix".to_string()));
