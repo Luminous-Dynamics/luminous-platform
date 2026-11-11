@@ -153,7 +153,7 @@ pub struct MigrationTrial {
     pub destination_power_increase_stable_ns: Option<u64>,
     pub destination_power_trace_evidence_id: String,
     pub destination_pcc_measurement_reference: String,
-    pub rollback_or_timeout_evidence_id: String,
+    pub trial_outcome_evidence_id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -199,7 +199,7 @@ pub struct MigrationTrialResult {
     pub source_pcc_measurement_reference: String,
     pub destination_power_trace_evidence_id: String,
     pub destination_pcc_measurement_reference: String,
-    pub rollback_or_timeout_evidence_id: String,
+    pub trial_outcome_evidence_id: String,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -317,7 +317,7 @@ fn evaluate_trial(
         (trial.source_pcc_measurement_reference.as_str(), "source_pcc_measurement_reference"),
         (trial.destination_power_trace_evidence_id.as_str(), "destination_power_trace_evidence_id"),
         (trial.destination_pcc_measurement_reference.as_str(), "destination_pcc_measurement_reference"),
-        (trial.rollback_or_timeout_evidence_id.as_str(), "rollback_or_timeout_evidence_id"),
+        (trial.trial_outcome_evidence_id.as_str(), "trial_outcome_evidence_id"),
     ] {
         required_ref(value, field)?;
     }
@@ -490,7 +490,7 @@ fn evaluate_trial(
         source_pcc_measurement_reference: trial.source_pcc_measurement_reference.clone(),
         destination_power_trace_evidence_id: trial.destination_power_trace_evidence_id.clone(),
         destination_pcc_measurement_reference: trial.destination_pcc_measurement_reference.clone(),
-        rollback_or_timeout_evidence_id: trial.rollback_or_timeout_evidence_id.clone(),
+        trial_outcome_evidence_id: trial.trial_outcome_evidence_id.clone(),
     })
 }
 
@@ -695,7 +695,7 @@ mod tests {
             destination_power_increase_stable_ns: Some(command + 1_500_000_000),
             destination_power_trace_evidence_id: format!("destination-power-{id}"),
             destination_pcc_measurement_reference: format!("pcc-destination-{id}"),
-            rollback_or_timeout_evidence_id: format!("rollback-{id}"),
+            trial_outcome_evidence_id: format!("rollback-{id}"),
         }
     }
 
