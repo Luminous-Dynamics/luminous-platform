@@ -291,6 +291,7 @@ pub struct ForecastScenarioSet {
     pub contract: ScenarioGenerationContract,
     pub gaussian_copula_evidence: Option<GaussianCopulaEvidence>,
     pub forecast_id: String,
+    pub forecast_origin_id: String,
     pub forecast_origin_timestamp_ns: u64,
     pub clock_id: String,
     pub time_origin_id: String,
@@ -337,6 +338,7 @@ pub struct MeasuredForecastHorizon {
 #[derive(Debug, Clone, PartialEq)]
 pub struct ScenarioEvaluationReport {
     pub forecast_id: String,
+    pub forecast_origin_id: String,
     pub model_contract: PowerModelContract,
     pub generator_id: String,
     pub generator_revision: String,
@@ -1317,6 +1319,7 @@ pub fn generate_forecast_scenarios(
         contract: contract.clone(),
         gaussian_copula_evidence,
         forecast_id: forecast.forecast_id.clone(),
+        forecast_origin_id: forecast.origin_id.clone(),
         forecast_origin_timestamp_ns: forecast.origin_timestamp_ns,
         clock_id: forecast.clock_id.clone(),
         time_origin_id: forecast.time_origin_id.clone(),
@@ -1429,6 +1432,8 @@ fn empirical_pit_u128(values: &[u128], actual: u128) -> f64 {
 
 fn validate_gaussian_copula_evidence(
     contract: &ScenarioGenerationContract,
+    forecast_origin_id: &str,
+    forecast_origin_timestamp_ns: u64,
     scenarios: &[ForecastScenarioTrajectory],
     evidence: &GaussianCopulaEvidence,
 ) -> Result<(), AuditError> {
@@ -1508,9 +1513,12 @@ fn validate_gaussian_copula_evidence(
         let expected_duration = (dimension as u64)
             .checked_mul(contract.step_period_ns)
             .ok_or_else(|| AuditError("copula residual duration overflowed".to_string()))?;
-        if origin.checked_add(expected_duration) != Some(target_end) {
+        if evidence.residual_origin_ids[index] == forecast_origin_id
+            || origin.checked_add(expected_duration) != Some(target_end)
+            || target_end > forecast_origin_timestamp_ns
+        {
             return Err(AuditError(
-                "Gaussian copula residual target window differs from the frozen horizon"
+                "Gaussian copula residual target window is incomplete, overlaps the current origin, or differs from the frozen horizon"
                     .to_string(),
             ));
         }
@@ -1619,6 +1627,7 @@ fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditErr
     if scenarios.claim_ceiling
         != "MODELLED_TEMPORAL_POWER_SCENARIOS_NOT_MEASUREMENT_OR_GRID_RESERVE_QUALIFICATION"
         || scenarios.forecast_id.trim().is_empty()
+        || scenarios.forecast_origin_id.trim().is_empty()
         || scenarios.forecast_evidence_id.trim().is_empty()
         || scenarios.state_mapping_evidence_id.trim().is_empty()
         || scenarios.time_alignment_evidence_id.trim().is_empty()
@@ -1802,7 +1811,13 @@ fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditErr
             let evidence = scenarios.gaussian_copula_evidence.as_ref().ok_or_else(|| {
                 AuditError("Gaussian copula scenario set is missing its correlation/pool evidence".to_string())
             })?;
-            validate_gaussian_copula_evidence(&scenarios.contract, &scenarios.scenarios, evidence)?;
+            validate_gaussian_copula_evidence(
+                &scenarios.contract,
+                &scenarios.forecast_origin_id,
+                scenarios.forecast_origin_timestamp_ns,
+                &scenarios.scenarios,
+                evidence,
+            )?;
         }
     }
     Ok(())
@@ -1964,6 +1979,7 @@ pub fn evaluate_forecast_scenarios(
 
     Ok(ScenarioEvaluationReport {
         forecast_id: scenarios.forecast_id.clone(),
+        forecast_origin_id: scenarios.forecast_origin_id.clone(),
         model_contract: scenarios.contract.model_contract.clone(),
         generator_id: scenarios.contract.generator_id.clone(),
         generator_revision: scenarios.contract.generator_revision.clone(),
