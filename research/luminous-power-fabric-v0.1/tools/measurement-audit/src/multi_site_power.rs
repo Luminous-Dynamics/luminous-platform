@@ -1090,15 +1090,31 @@ mod tests {
     }
 
     #[test]
-    fn short_traces_do_not_emit_spectral_coherence_without_minimum_segments() {
+    fn seven_complete_segments_do_not_emit_spectral_coherence() {
+        let values: Vec<u64> = (0..128).map(|index| 1_000 + index as u64).collect();
         let report = aggregate_aligned_sites(
             contract(),
-            &[
-                trace("site-a", 0, &[100, 200, 300, 200, 100]),
-                trace("site-b", 0, &[100, 200, 300, 200, 100]),
-            ],
+            &[trace("site-a", 0, &values), trace("site-b", 0, &values)],
         ).unwrap();
+        assert_eq!(report.aligned_sample_count, 128);
         assert!(report.spectral_coherence.is_empty());
+    }
+
+    #[test]
+    fn invalid_welch_configuration_fails_closed() {
+        let mut invalid_length = contract();
+        invalid_length.spectral_segment_length = 24;
+        assert!(aggregate_aligned_sites(
+            invalid_length,
+            &[trace("site-a", 0, &[10, 20, 30, 20, 10]), trace("site-b", 0, &[10, 20, 30, 20, 10])],
+        ).is_err());
+
+        let mut insufficient_segments = contract();
+        insufficient_segments.minimum_spectral_segments = 7;
+        assert!(aggregate_aligned_sites(
+            insufficient_segments,
+            &[trace("site-a", 0, &[10, 20, 30, 20, 10]), trace("site-b", 0, &[10, 20, 30, 20, 10])],
+        ).is_err());
     }
 
     #[test]
