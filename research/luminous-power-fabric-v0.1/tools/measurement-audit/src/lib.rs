@@ -19,6 +19,7 @@ pub mod grid_service;
 pub mod workload_replay;
 pub mod power_state;
 pub mod temporal_scenarios;
+pub mod scenario_tournament;
 pub mod forecast_calibration;
 pub mod loss_budget;
 pub mod energy_chain;
