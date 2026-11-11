@@ -500,4 +500,4 @@ Dispatch and recovery windows use explicit nanosecond timestamps; recovery begin
 
 See [GRID_INTERACTIVE_COMPUTE_RESOURCE_QUALIFICATION_2026-11-11.md](../../GRID_INTERACTIVE_COMPUTE_RESOURCE_QUALIFICATION_2026-11-11.md) for the attribution equations, literature comparison, test targets and limitations.
 
-**Validation:** sixteen synthetic Rust tests are authored but not executed. No compilation, formatting, Clippy, live dispatch, site measurement, grid participation, market capacity accreditation or certification is claimed.
+**Validation:** eighteen synthetic Rust tests are authored but not executed. No compilation, formatting, Clippy, live dispatch, site measurement, grid participation, market capacity accreditation or certification is claimed.
