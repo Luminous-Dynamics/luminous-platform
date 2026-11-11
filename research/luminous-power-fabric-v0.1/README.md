@@ -265,4 +265,4 @@ The new [Grid-Interactive Compute Resource Qualification v0.1](./GRID_INTERACTIV
 
 The evaluator subtracts independently measured non-compute load reductions and conservative uncertainty bounds, then evaluates service quality, useful-work retention, response, sustain, recovery and rebound across repeated events. It reports P10 credited compute capacity and a conditional Wilson lower confidence bound; it explicitly does not provide market accreditation or grid-service authorization.
 
-This is a measurement protocol and synthetic evaluator only. Sixteen new tests are authored but not executed; there is no compiled, CI-tested, site-measured or field-validated result.
+This is a measurement protocol and synthetic evaluator only. Eighteen new tests are authored but not executed; there is no compiled, CI-tested, site-measured or field-validated result.
