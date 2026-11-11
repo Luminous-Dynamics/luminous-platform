@@ -1102,13 +1102,32 @@ pub fn evaluate_scenario_tournament(
         // conjunction of separately multiplicity-adjusted stratum results.
         summary.exact_lower_confidence_bound_target_saving_probability = None;
         summary.confidence_level = None;
-        let all_strata_qualified = stratum_results.iter().all(|stratum| {
-            stratum
-                .candidate_arms
-                .iter()
-                .any(|arm| arm.generator_kind == generator_kind && arm.qualified_under_declared_benchmark)
-        });
-        summary.qualified_under_declared_benchmark &= all_strata_qualified;
+        let corresponding_arms: Vec<&ScenarioTournamentArmSummary> = stratum_results
+            .iter()
+            .filter_map(|stratum| {
+                stratum.candidate_arms
+                    .iter()
+                    .find(|arm| arm.generator_kind == generator_kind)
+            })
+            .collect();
+        if corresponding_arms.len() != stratum_results.len() {
+            return Err(AuditError(
+                "overall scenario summary is missing a required stratum arm".to_string(),
+            ));
+        }
+        summary.minimum_cluster_support_met =
+            corresponding_arms.iter().all(|arm| arm.minimum_cluster_support_met);
+        summary.mean_saving_target_met =
+            corresponding_arms.iter().all(|arm| arm.mean_saving_target_met);
+        summary.shortfall_constraint_met =
+            corresponding_arms.iter().all(|arm| arm.shortfall_constraint_met);
+        summary.cluster_target_reliability_met =
+            corresponding_arms.iter().all(|arm| arm.cluster_target_reliability_met);
+        summary.qualified_under_declared_benchmark = contract.independent_cluster_assumption
+            && summary.minimum_cluster_support_met
+            && summary.mean_saving_target_met
+            && summary.shortfall_constraint_met
+            && summary.cluster_target_reliability_met;
         overall_candidate_arms.push(summary);
     }
 
