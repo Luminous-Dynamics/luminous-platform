@@ -94,6 +94,7 @@ pub struct PowerCalibrationRun {
     pub measurement_boundary_id: String,
     pub workload_contract_id: String,
     pub state_mapper_id: String,
+    pub clock_alignment_method_id: String,
     pub state_mapping_evidence_id: String,
     pub time_alignment_evidence_id: String,
     pub samples: Vec<PowerTraceSample>,
@@ -192,6 +193,7 @@ fn validate_run(
         (run.measurement_boundary_id.as_str(), "measurement_boundary_id"),
         (run.workload_contract_id.as_str(), "workload_contract_id"),
         (run.state_mapper_id.as_str(), "state_mapper_id"),
+        (run.clock_alignment_method_id.as_str(), "clock_alignment_method_id"),
         (run.state_mapping_evidence_id.as_str(), "state_mapping_evidence_id"),
         (run.time_alignment_evidence_id.as_str(), "time_alignment_evidence_id"),
     ] {
@@ -203,6 +205,7 @@ fn validate_run(
         || run.measurement_boundary_id != contract.measurement_boundary_id
         || run.workload_contract_id != contract.workload_contract_id
         || run.state_mapper_id != contract.state_mapper_id
+        || run.clock_alignment_method_id != contract.clock_alignment_method_id
     {
         return Err(AuditError(format!(
             "calibration run {:?} does not match the exact power-model configuration, boundary, workload or state mapper",
@@ -471,6 +474,12 @@ pub fn predict_power_trace(
         return Err(AuditError(
             "prediction trace is outside the exact calibrated configuration, boundary, workload or state-mapper support".to_string(),
         ));
+    }
+    if !model.held_out_run_ids.iter().any(|run_id| run_id == &trace.run_id) {
+        return Err(AuditError(format!(
+            "prediction run {:?} is not in this model's held-out sessions",
+            trace.run_id
+        )));
     }
     if trace.samples.is_empty() {
         return Err(AuditError("mapped state trace contains no samples".to_string()));
@@ -745,6 +754,7 @@ mod tests {
             measurement_boundary_id: "server-input-pdu-01".to_string(),
             workload_contract_id: "llm-serving-contract-v1".to_string(),
             state_mapper_id: "prefill-decode-idle-v1".to_string(),
+            clock_alignment_method_id: "ptp-alignment-v1".to_string(),
             state_mapping_evidence_id: format!("mapping:{run_id}"),
             time_alignment_evidence_id: format!("alignment:{run_id}"),
             samples,
@@ -816,6 +826,19 @@ mod tests {
         assert_eq!(trace.training_evidence[0].time_alignment_evidence_id, "alignment:train-a");
         assert_eq!(trace.held_out_evidence[0].run_id, "heldout-a");
         assert_eq!(trace.claim_ceiling, "MODELLED_CONDITIONAL_POWER_ENVELOPE_NOT_MEASUREMENT_OR_GRID_QUALIFICATION");
+    }
+
+    #[test]
+    fn training_run_cannot_be_used_as_a_held_out_prediction_target() {
+        let model = fit_power_state_model(contract(), &training_and_holdout()).unwrap();
+        assert!(predict_power_trace(&model, &mapped_trace("train-a")).is_err());
+    }
+
+    #[test]
+    fn calibration_clock_alignment_method_mismatch_fails_closed() {
+        let mut runs = training_and_holdout();
+        runs[0].clock_alignment_method_id = "different-clock-method".to_string();
+        assert!(fit_power_state_model(contract(), &runs).is_err());
     }
 
     #[test]
