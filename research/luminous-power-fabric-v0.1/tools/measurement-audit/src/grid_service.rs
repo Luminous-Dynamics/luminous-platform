@@ -182,7 +182,9 @@ pub struct GridDispatchEvent {
     pub non_compute_measurement_uncertainty_bound_w: f64,
     pub response_latency_ms: f64,
     pub sustained_delivery_duration_s: f64,
-    pub recovery_observation_duration_s: f64,
+    /// Explicit recovery interval after this dispatch event.
+    pub recovery_window_start_ns: u64,
+    pub recovery_window_end_ns: u64,
     pub useful_work_retention_fraction: f64,
     pub p99_latency_increase_fraction: f64,
     pub p99_ttft_increase_fraction: f64,
@@ -195,6 +197,11 @@ pub struct GridDispatchEvent {
 impl GridDispatchEvent {
     pub fn duration_s(&self) -> f64 {
         (self.window_end_ns - self.window_start_ns) as f64 / 1_000_000_000.0
+    }
+
+    pub fn recovery_observation_duration_s(&self) -> f64 {
+        (self.recovery_window_end_ns - self.recovery_window_start_ns) as f64
+            / 1_000_000_000.0
     }
 
     fn validate(&self, contract: &GridServiceContract) -> Result<(), AuditError> {
@@ -238,6 +245,14 @@ impl GridDispatchEvent {
                 self.event_id
             )));
         }
+        if self.recovery_window_start_ns < self.window_end_ns
+            || self.recovery_window_end_ns <= self.recovery_window_start_ns
+        {
+            return Err(AuditError(format!(
+                "dispatch event {:?} requires a positive recovery window starting after dispatch",
+                self.event_id
+            )));
+        }
         if !self.measurement_contract_valid {
             return Err(AuditError(format!(
                 "dispatch event {:?} does not satisfy its upstream measurement contract",
@@ -253,7 +268,7 @@ impl GridDispatchEvent {
             self.non_compute_measurement_uncertainty_bound_w,
             self.response_latency_ms,
             self.sustained_delivery_duration_s,
-            self.recovery_observation_duration_s,
+            self.recovery_observation_duration_s(),
             self.useful_work_retention_fraction,
             self.p99_latency_increase_fraction,
             self.p99_ttft_increase_fraction,
@@ -267,7 +282,6 @@ impl GridDispatchEvent {
             || self.response_latency_ms < 0.0
             || self.sustained_delivery_duration_s <= 0.0
             || self.sustained_delivery_duration_s > self.duration_s()
-            || self.recovery_observation_duration_s < 0.0
             || self.useful_work_retention_fraction < 0.0
             || !(0.0..=1.0).contains(&self.slo_violation_fraction)
         {
@@ -383,7 +397,7 @@ fn evaluate_event(
             <= contract.maximum_combined_uncertainty_fraction
         && event.response_latency_ms <= contract.maximum_response_latency_ms
         && event.sustained_delivery_duration_s >= contract.minimum_sustained_duration_s
-        && event.recovery_observation_duration_s >= contract.minimum_recovery_window_s
+        && event.recovery_observation_duration_s() >= contract.minimum_recovery_window_s
         && event.useful_work_retention_fraction
             >= contract.minimum_useful_work_retention_fraction
         && event.p99_latency_increase_fraction
@@ -439,7 +453,7 @@ pub fn evaluate_grid_service_sweep(
     let mut event_ids = HashSet::new();
     let mut ordered_events = events.clone();
     ordered_events.sort_by_key(|event| event.window_start_ns);
-    let mut previous_end_ns = None;
+    let mut previous_recovery_end_ns = None;
     for event in &ordered_events {
         event.validate(&contract)?;
         if !event_ids.insert(event.event_id.as_str()) {
@@ -448,12 +462,14 @@ pub fn evaluate_grid_service_sweep(
                 event.event_id
             )));
         }
-        if previous_end_ns.is_some_and(|end| event.window_start_ns < end) {
+        if previous_recovery_end_ns
+            .is_some_and(|end| event.window_start_ns < end)
+        {
             return Err(AuditError(
-                "dispatch-event windows must not overlap for one resource".to_string(),
+                "dispatch and recovery windows must not overlap for one resource".to_string(),
             ));
         }
-        previous_end_ns = Some(event.window_end_ns);
+        previous_recovery_end_ns = Some(event.recovery_window_end_ns);
     }
 
     let event_results: Vec<GridDispatchEventResult> = ordered_events
@@ -585,6 +601,8 @@ mod tests {
             control_action_id: "defer-preemptible-work-v1".to_string(),
             window_start_ns: start,
             window_end_ns: start + 120_000_000_000,
+            recovery_window_start_ns: start + 120_000_000_000,
+            recovery_window_end_ns: start + 420_000_000_000,
             site_baseline_power_w: 1_000.0,
             site_event_power_w: 800.0,
             non_compute_load_reduction_w: 0.0,
@@ -592,7 +610,6 @@ mod tests {
             non_compute_measurement_uncertainty_bound_w: 5.0,
             response_latency_ms: 500.0,
             sustained_delivery_duration_s: 60.0,
-            recovery_observation_duration_s: 300.0,
             useful_work_retention_fraction: 0.995,
             p99_latency_increase_fraction: 0.03,
             p99_ttft_increase_fraction: 0.02,
@@ -673,7 +690,7 @@ mod tests {
         assert!(!report.commitment_qualified);
 
         let mut events = all_events(30);
-        events[0].recovery_observation_duration_s = 100.0;
+        events[0].recovery_window_end_ns = events[0].recovery_window_start_ns + 100_000_000_000;
         let report = evaluate_grid_service_sweep(contract(), events).unwrap();
         assert!(!report.event_results[0].service_contract_pass);
     }
@@ -759,6 +776,17 @@ mod tests {
 
         let mut events = all_events(30);
         events[0].control_action_id = "different-action".to_string();
+        assert!(evaluate_grid_service_sweep(contract(), events).is_err());
+    }
+
+    #[test]
+    fn recovery_windows_must_follow_dispatch_and_not_overlap_later_events() {
+        let mut events = all_events(30);
+        events[0].recovery_window_start_ns = events[0].window_end_ns - 1;
+        assert!(evaluate_grid_service_sweep(contract(), events).is_err());
+
+        let mut events = all_events(30);
+        events[0].recovery_window_end_ns = events[1].window_start_ns + 1;
         assert!(evaluate_grid_service_sweep(contract(), events).is_err());
     }
 
