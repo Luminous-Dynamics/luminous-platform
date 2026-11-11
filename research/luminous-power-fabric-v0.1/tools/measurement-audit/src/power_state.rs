@@ -616,6 +616,11 @@ pub fn evaluate_held_out_power_trace(
     if measured_run_id != predicted.run_id {
         return Err(AuditError("held-out measurement run ID does not match the predicted trace".to_string()));
     }
+    if !predicted.held_out_evidence.iter().any(|evidence| evidence.run_id == measured_run_id) {
+        return Err(AuditError(
+            "measured run is not recorded as held-out evidence in the prediction model".to_string(),
+        ));
+    }
     if measured.len() != predicted.samples.len() || measured.is_empty() {
         return Err(AuditError("held-out measured and predicted sample counts must match and be non-zero".to_string()));
     }
@@ -894,6 +899,17 @@ mod tests {
     fn exact_holdout_alignment_and_quality_are_required_for_metrics() {
         let model = fit_power_state_model(contract(), &training_and_holdout()).unwrap();
         let prediction = predict_power_trace(&model, &mapped_trace("heldout-a")).unwrap();
+        let mut tampered = prediction.clone();
+        tampered.held_out_evidence.clear();
+        let heldout_fixture = vec![
+            sample(0, "idle", 900),
+            sample(10, "idle", 910),
+            sample(20, "prefill", 1_400),
+            sample(30, "prefill", 1_420),
+            sample(40, "decode", 1_250),
+            sample(50, "decode", 1_240),
+        ];
+        assert!(evaluate_held_out_power_trace(&tampered, "heldout-a", &heldout_fixture).is_err());
         let heldout = vec![
             sample(0, "idle", 900),
             sample(10, "idle", 910),
