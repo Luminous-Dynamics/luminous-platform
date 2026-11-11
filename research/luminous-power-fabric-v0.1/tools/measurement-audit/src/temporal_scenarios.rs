@@ -2634,6 +2634,37 @@ mod tests {
     }
 
     #[test]
+    fn residual_dependent_scenario_evaluation_rejects_missing_complete_source_record() {
+        let mut scenarios = generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap),
+            &forecast(),
+            &residuals(),
+        ).unwrap();
+        scenarios.scenarios[0].source_residual_trajectory = None;
+        assert!(evaluate_forecast_scenarios(
+            &scenarios,
+            &actual_horizon(),
+            0.10,
+        ).is_err());
+    }
+
+    #[test]
+    fn residual_dependent_scenario_evaluation_rejects_future_source_record() {
+        let mut scenarios = generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap),
+            &forecast(),
+            &residuals(),
+        ).unwrap();
+        scenarios.scenarios[0].source_residual_trajectory.as_mut().unwrap()
+            .target_window_end_ns = scenarios.forecast_origin_timestamp_ns + 1;
+        assert!(evaluate_forecast_scenarios(
+            &scenarios,
+            &actual_horizon(),
+            0.10,
+        ).is_err());
+    }
+
+    #[test]
     fn schaake_shuffle_preserves_each_forecast_marginal_sample_set() {
         let mut pool = residuals();
         for index in 3..5 {
