@@ -301,7 +301,7 @@ Scenario scoring includes multivariate energy and variogram scores, peak/ramp/en
 
 The direct comparator is Yao et al.'s 6 November 2026 448-GPU GPU-IT forecast study. The MIT Supercloud source dataset has a CC BY-NC-ND 4.0 rights gate; no data are imported or used commercially by this implementation. See TEMPORAL_SCENARIOS_AND_HORIZON_RESERVE_BENCHMARK_2026-11-11.md.
 
-Twenty-six Rust tests are authored but not executed. No reproduction, performance claim or physical qualification is made.
+Thirty-four Rust tests are authored but not executed. No reproduction, performance claim or physical qualification is made.
 
 
-The v0.1 scenario evaluator currently implements three generator arms. Gaussian-copula dependence estimation and full four-arm paper parity remain open in [issue #408](https://github.com/Luminous-Dynamics/luminous-platform/issues/408); no complete paper reproduction is claimed.
+The scenario evaluator now contains all four scenario arms described in the Yao et al. benchmark: independent marginal negative control, empirical residual bootstrap, Schaake shuffle and a Gaussian copula. The copula arm uses rank-normal residual dependence, raw residual/evidence retention with score and correlation recomputation, per-residual model/regime/clock/time-origin contracts, a frozen regularized correlation matrix, deterministic Cholesky sampling and the current forecast's marginal quantile functions. It fails closed on low support, constant dimensions, invalid matrices and future/overlapping residuals. The implementation is in a separate draft stacked on PR #407; 32 tests are authored but not executed. This is methodological parity, not a completed paper reproduction or measured improvement.

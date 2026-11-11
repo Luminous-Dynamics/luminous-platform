@@ -12,6 +12,10 @@ pub enum ScenarioGeneratorKind {
     /// Transfers historical cross-horizon residual ranks onto calibrated
     /// forecast marginal quantile samples (Schaake-shuffle style).
     SchaakeShuffle,
+    /// Estimates rank-normal residual dependence, regularizes it with a frozen
+    /// shrinkage coefficient, then samples a Gaussian copula over the forecast
+    /// marginal quantile functions.
+    GaussianCopula,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -93,6 +97,9 @@ pub struct ScenarioGenerationContract {
     /// dependence-preserving arms this must be at least one full target horizon
     /// so sampled historical target windows do not overlap.
     pub minimum_residual_origin_separation_ns: u64,
+    /// Explicit shrinkage lambda for Gaussian-copula residual correlation.
+    /// Absent for all non-copula generator arms.
+    pub gaussian_copula_shrinkage: Option<f64>,
 }
 
 impl ScenarioGenerationContract {
@@ -169,6 +176,7 @@ impl ScenarioGenerationContract {
                 if self.minimum_residual_trajectory_count != 0
                     || self.minimum_residual_origin_separation_ns != 0
                     || self.residual_pool_evidence_id.is_some()
+                    || self.gaussian_copula_shrinkage.is_some()
                 {
                     return Err(AuditError(
                         "independent quantile sampling must not claim a residual pool".to_string(),
@@ -185,6 +193,7 @@ impl ScenarioGenerationContract {
                         .residual_pool_evidence_id
                         .as_deref()
                         .is_none_or(|value| value.trim().is_empty())
+                    || self.gaussian_copula_shrinkage.is_some()
                 {
                     return Err(AuditError(
                         "residual bootstrap requires a residual-pool evidence reference and at least two historical trajectories"
@@ -202,11 +211,34 @@ impl ScenarioGenerationContract {
                         .residual_pool_evidence_id
                         .as_deref()
                         .is_none_or(|value| value.trim().is_empty())
+                    || self.gaussian_copula_shrinkage.is_some()
                 {
                     return Err(AuditError(
-                        "Schaake shuffle requires a residual-pool evidence reference and at least one historical rank row per scenario"
+                        "Schaake shuffle requires a residual-pool reference, one historical rank row per scenario, and no copula shrinkage value"
                             .to_string(),
                     ));
+                }
+            }
+            ScenarioGeneratorKind::GaussianCopula => {
+                let horizon_duration_ns = (self.horizon_steps as u64)
+                    .checked_mul(self.step_period_ns)
+                    .ok_or_else(|| AuditError("scenario horizon duration overflowed".to_string()))?;
+                let minimum_support = self.horizon_steps.checked_add(1)
+                    .ok_or_else(|| AuditError("copula minimum support calculation overflowed".to_string()))?
+                    .max(30);
+                if self.minimum_residual_trajectory_count < minimum_support
+                    || self.minimum_residual_origin_separation_ns < horizon_duration_ns
+                    || self
+                        .residual_pool_evidence_id
+                        .as_deref()
+                        .is_none_or(|value| value.trim().is_empty())
+                    || self.gaussian_copula_shrinkage.is_none_or(|lambda| {
+                        !lambda.is_finite() || lambda <= 0.0 || lambda >= 1.0
+                    })
+                {
+                    return Err(AuditError(format!(
+                        "Gaussian copula requires at least {minimum_support} residual trajectories, non-overlapping historical windows, a pool evidence reference and shrinkage lambda in (0, 1)"
+                    )));
                 }
             }
         }
@@ -232,9 +264,40 @@ pub struct ForecastScenarioTrajectory {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct GaussianCopulaEvidence {
+    pub residual_pool_evidence_id: String,
+    pub residual_ids: Vec<String>,
+    pub residual_origin_ids: Vec<String>,
+    pub residual_origin_timestamps_ns: Vec<u64>,
+    pub residual_target_window_end_timestamps_ns: Vec<u64>,
+    pub residual_operating_regime_ids: Vec<String>,
+    pub residual_clock_ids: Vec<String>,
+    pub residual_time_origin_ids: Vec<String>,
+    pub residual_model_contracts: Vec<PowerModelContract>,
+    pub raw_residual_power_mw: Vec<Vec<i64>>,
+    pub rank_normal_scores: Vec<Vec<f64>>,
+    pub measurement_evidence_ids: Vec<String>,
+    pub forecast_evidence_ids: Vec<String>,
+    pub residual_generation_evidence_ids: Vec<String>,
+    pub state_mapping_evidence_ids: Vec<String>,
+    pub time_alignment_evidence_ids: Vec<String>,
+    pub timeline_digest_references: Vec<String>,
+    pub source_sample_evidence_ids: Vec<Vec<String>>,
+    pub source_sample_timestamps_ns: Vec<Vec<u64>>,
+    pub tie_policy: &'static str,
+    pub plotting_position_method: &'static str,
+    pub shrinkage_lambda: f64,
+    pub empirical_rank_correlation: Vec<Vec<f64>>,
+    pub regularized_correlation: Vec<Vec<f64>>,
+    pub cholesky_lower_factor: Vec<Vec<f64>>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct ForecastScenarioSet {
     pub contract: ScenarioGenerationContract,
+    pub gaussian_copula_evidence: Option<GaussianCopulaEvidence>,
     pub forecast_id: String,
+    pub forecast_origin_id: String,
     pub forecast_origin_timestamp_ns: u64,
     pub clock_id: String,
     pub time_origin_id: String,
@@ -281,6 +344,7 @@ pub struct MeasuredForecastHorizon {
 #[derive(Debug, Clone, PartialEq)]
 pub struct ScenarioEvaluationReport {
     pub forecast_id: String,
+    pub forecast_origin_id: String,
     pub model_contract: PowerModelContract,
     pub generator_id: String,
     pub generator_revision: String,
@@ -292,6 +356,7 @@ pub struct ScenarioEvaluationReport {
     pub forecast_time_alignment_evidence_id: String,
     pub forecast_source_timeline_digest_reference: String,
     pub residual_pool_evidence_id: Option<String>,
+    pub gaussian_copula_evidence: Option<GaussianCopulaEvidence>,
     pub selected_residual_ids: Vec<String>,
     pub selected_residual_evidence_ids: Vec<String>,
     pub selected_residual_forecast_evidence_ids: Vec<String>,
@@ -786,6 +851,371 @@ fn generate_schaake_shuffle(
     Ok((output, selected_ids, selected_evidence, 0))
 }
 
+fn inverse_standard_normal_cdf(probability: f64) -> Result<f64, AuditError> {
+    if !probability.is_finite() || probability <= 0.0 || probability >= 1.0 {
+        return Err(AuditError(
+            "inverse normal CDF requires a finite probability strictly inside (0, 1)"
+                .to_string(),
+        ));
+    }
+
+    const A: [f64; 6] = [
+        -3.969_683_028_665_376e1,
+        2.209_460_984_245_205e2,
+        -2.759_285_104_469_687e2,
+        1.383_577_518_672_690e2,
+        -3.066_479_806_614_716e1,
+        2.506_628_277_459_239,
+    ];
+    const B: [f64; 5] = [
+        -5.447_609_879_822_406e1,
+        1.615_858_368_580_409e2,
+        -1.556_989_798_598_866e2,
+        6.680_131_188_771_972e1,
+        -1.328_068_155_288_572e1,
+    ];
+    const C: [f64; 6] = [
+        -7.784_894_002_430_293e-3,
+        -3.223_964_580_411_365e-1,
+        -2.400_758_277_161_838,
+        -2.549_732_539_343_734,
+        4.374_664_141_464_968,
+        2.938_163_982_698_783,
+    ];
+    const D: [f64; 4] = [
+        7.784_695_709_041_462e-3,
+        3.224_671_290_700_398e-1,
+        2.445_134_137_142_996,
+        3.754_408_661_907_416,
+    ];
+    const LOW: f64 = 0.024_25;
+    const HIGH: f64 = 1.0 - LOW;
+
+    let value = if probability < LOW {
+        let q = (-2.0 * probability.ln()).sqrt();
+        (((((C[0] * q + C[1]) * q + C[2]) * q + C[3]) * q + C[4]) * q + C[5])
+            / ((((D[0] * q + D[1]) * q + D[2]) * q + D[3]) * q + 1.0)
+    } else if probability > HIGH {
+        let q = (-2.0 * (1.0 - probability).ln()).sqrt();
+        -(((((C[0] * q + C[1]) * q + C[2]) * q + C[3]) * q + C[4]) * q + C[5])
+            / ((((D[0] * q + D[1]) * q + D[2]) * q + D[3]) * q + 1.0)
+    } else {
+        let q = probability - 0.5;
+        let r = q * q;
+        (((((A[0] * r + A[1]) * r + A[2]) * r + A[3]) * r + A[4]) * r + A[5]) * q
+            / (((((B[0] * r + B[1]) * r + B[2]) * r + B[3]) * r + B[4]) * r + 1.0)
+    };
+    if !value.is_finite() {
+        return Err(AuditError("inverse normal CDF produced a non-finite score".to_string()));
+    }
+    Ok(value)
+}
+
+fn standard_normal_cdf(value: f64) -> Result<f64, AuditError> {
+    if !value.is_finite() {
+        return Err(AuditError("normal CDF input must be finite".to_string()));
+    }
+    // Abramowitz-Stegun 7.1.26 approximation; the error is below 8e-8.
+    let absolute = value.abs();
+    let t = 1.0 / (1.0 + 0.231_641_9 * absolute);
+    let polynomial = t
+        * (0.319_381_530
+            + t * (-0.356_563_782
+                + t * (1.781_477_937 + t * (-1.821_255_978 + t * 1.330_274_429))));
+    let upper_tail = 0.398_942_280_401_432_7
+        * (-0.5 * absolute * absolute).exp()
+        * polynomial;
+    let probability = if value >= 0.0 {
+        1.0 - upper_tail
+    } else {
+        upper_tail
+    };
+    if !probability.is_finite() {
+        return Err(AuditError(
+            "normal CDF approximation produced a non-finite probability".to_string(),
+        ));
+    }
+    Ok(probability.clamp(1e-15, 1.0 - 1e-15))
+}
+
+fn rank_normal_scores_from_values(
+    residual_values: &[Vec<i64>],
+    residual_ids: &[String],
+    horizon_steps: usize,
+) -> Result<Vec<Vec<f64>>, AuditError> {
+    if residual_values.len() < 3
+        || residual_values.len() != residual_ids.len()
+        || horizon_steps == 0
+        || residual_values.iter().any(|row| row.len() != horizon_steps)
+        || residual_ids.iter().any(|value| value.trim().is_empty())
+    {
+        return Err(AuditError(
+            "rank-normal residual evidence has invalid identities, dimensions or support"
+                .to_string(),
+        ));
+    }
+    let sample_count = residual_values.len();
+    let mut scores = vec![vec![0.0; horizon_steps]; sample_count];
+
+    for horizon_index in 0..horizon_steps {
+        let mut ordered: Vec<usize> = (0..sample_count).collect();
+        ordered.sort_by(|left, right| {
+            residual_values[*left][horizon_index]
+                .cmp(&residual_values[*right][horizon_index])
+                .then_with(|| residual_ids[*left].cmp(&residual_ids[*right]))
+        });
+
+        let mut start = 0_usize;
+        while start < ordered.len() {
+            let value = residual_values[ordered[start]][horizon_index];
+            let mut end = start + 1;
+            while end < ordered.len()
+                && residual_values[ordered[end]][horizon_index] == value
+            {
+                end += 1;
+            }
+
+            // Average ranks for ties; plotting position is (midrank - 0.5) / n.
+            let average_zero_based_rank = (start as f64 + (end - 1) as f64) / 2.0;
+            let plotting_position =
+                ((average_zero_based_rank + 0.5) / sample_count as f64)
+                    .clamp(f64::EPSILON, 1.0 - f64::EPSILON);
+            let score = inverse_standard_normal_cdf(plotting_position)?;
+            for ordered_position in start..end {
+                scores[ordered[ordered_position]][horizon_index] = score;
+            }
+            start = end;
+        }
+    }
+
+    Ok(scores)
+}
+
+fn rank_normal_scores(
+    residuals: &[ForecastResidualTrajectory],
+    horizon_steps: usize,
+) -> Result<Vec<Vec<f64>>, AuditError> {
+    let residual_values: Vec<Vec<i64>> = residuals
+        .iter()
+        .map(|item| item.residual_power_mw.clone())
+        .collect();
+    let residual_ids: Vec<String> = residuals
+        .iter()
+        .map(|item| item.residual_id.clone())
+        .collect();
+    rank_normal_scores_from_values(&residual_values, &residual_ids, horizon_steps)
+}
+
+fn empirical_rank_correlation(scores: &[Vec<f64>], horizon_steps: usize) -> Result<Vec<Vec<f64>>, AuditError> {
+    if scores.len() < 3 || scores.iter().any(|row| row.len() != horizon_steps) {
+        return Err(AuditError(
+            "rank-normal score matrix has invalid dimensions".to_string(),
+        ));
+    }
+    let sample_count = scores.len() as f64;
+    let mut means = vec![0.0; horizon_steps];
+    for row in scores {
+        for horizon_index in 0..horizon_steps {
+            means[horizon_index] += row[horizon_index] / sample_count;
+        }
+    }
+
+    let mut sums_of_squares = vec![0.0; horizon_steps];
+    for row in scores {
+        for horizon_index in 0..horizon_steps {
+            let centered = row[horizon_index] - means[horizon_index];
+            sums_of_squares[horizon_index] += centered * centered;
+        }
+    }
+    if sums_of_squares
+        .iter()
+        .any(|variance| !variance.is_finite() || *variance <= 1e-12)
+    {
+        return Err(AuditError(
+            "Gaussian copula cannot estimate dependence from a constant or near-constant residual horizon"
+                .to_string(),
+        ));
+    }
+
+    let mut correlation = vec![vec![0.0; horizon_steps]; horizon_steps];
+    for first in 0..horizon_steps {
+        for second in first..horizon_steps {
+            let mut covariance_sum = 0.0;
+            for row in scores {
+                covariance_sum +=
+                    (row[first] - means[first]) * (row[second] - means[second]);
+            }
+            let denominator = (sums_of_squares[first] * sums_of_squares[second]).sqrt();
+            let value = covariance_sum / denominator;
+            if !value.is_finite() {
+                return Err(AuditError(
+                    "Gaussian copula correlation estimate is non-finite".to_string(),
+                ));
+            }
+            let value = if first == second { 1.0 } else { value.clamp(-1.0, 1.0) };
+            correlation[first][second] = value;
+            correlation[second][first] = value;
+        }
+    }
+    Ok(correlation)
+}
+
+fn regularize_correlation(
+    correlation: &[Vec<f64>],
+    shrinkage_lambda: f64,
+) -> Result<Vec<Vec<f64>>, AuditError> {
+    let dimension = correlation.len();
+    if dimension == 0
+        || correlation.iter().any(|row| row.len() != dimension)
+        || !shrinkage_lambda.is_finite()
+        || shrinkage_lambda <= 0.0
+        || shrinkage_lambda >= 1.0
+    {
+        return Err(AuditError(
+            "Gaussian copula correlation matrix or shrinkage parameter is invalid".to_string(),
+        ));
+    }
+    let mut result = vec![vec![0.0; dimension]; dimension];
+    for first in 0..dimension {
+        for second in 0..dimension {
+            let value = correlation[first][second];
+            if !value.is_finite()
+                || (value - correlation[second][first]).abs() > 1e-10
+            {
+                return Err(AuditError(
+                    "empirical Gaussian copula correlation matrix is non-finite or asymmetric"
+                        .to_string(),
+                ));
+            }
+            result[first][second] =
+                if first == second { 1.0 } else { (1.0 - shrinkage_lambda) * value };
+        }
+    }
+    Ok(result)
+}
+
+fn cholesky_lower(matrix: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, AuditError> {
+    let dimension = matrix.len();
+    if dimension == 0 || matrix.iter().any(|row| row.len() != dimension) {
+        return Err(AuditError("Cholesky input must be a non-empty square matrix".to_string()));
+    }
+    let mut lower = vec![vec![0.0; dimension]; dimension];
+    for row in 0..dimension {
+        for column in 0..=row {
+            let mut sum = matrix[row][column];
+            for previous in 0..column {
+                sum -= lower[row][previous] * lower[column][previous];
+            }
+            if row == column {
+                if !sum.is_finite() || sum <= 1e-12 {
+                    return Err(AuditError(
+                        "regularized Gaussian copula correlation matrix is not positive definite"
+                            .to_string(),
+                    ));
+                }
+                lower[row][column] = sum.sqrt();
+            } else {
+                let divisor = lower[column][column];
+                let value = sum / divisor;
+                if !value.is_finite() {
+                    return Err(AuditError("Cholesky factor contains a non-finite value".to_string()));
+                }
+                lower[row][column] = value;
+            }
+        }
+    }
+    Ok(lower)
+}
+
+fn next_standard_normal(state: &mut u64) -> f64 {
+    let first = ((next_random(state) >> 11) as f64 + 0.5) / 9_007_199_254_740_992.0;
+    let second = ((next_random(state) >> 11) as f64 + 0.5) / 9_007_199_254_740_992.0;
+    (-2.0 * first.ln()).sqrt() * (std::f64::consts::TAU * second).cos()
+}
+
+fn generate_gaussian_copula(
+    contract: &ScenarioGenerationContract,
+    residuals: &[ForecastResidualTrajectory],
+    forecast: &ProbabilisticPowerForecast,
+) -> Result<(Vec<ForecastScenarioTrajectory>, GaussianCopulaEvidence, usize), AuditError> {
+    let shrinkage_lambda = contract.gaussian_copula_shrinkage.ok_or_else(|| {
+        AuditError("Gaussian copula requires a frozen shrinkage value".to_string())
+    })?;
+    let scores = rank_normal_scores(residuals, contract.horizon_steps)?;
+    let empirical = empirical_rank_correlation(&scores, contract.horizon_steps)?;
+    let regularized = regularize_correlation(&empirical, shrinkage_lambda)?;
+    let lower = cholesky_lower(&regularized)?;
+
+    let mut output = Vec::with_capacity(contract.scenario_count);
+    let mut random_state = contract.deterministic_seed;
+    let mut clipped_count = 0_usize;
+    for scenario_index in 0..contract.scenario_count {
+        let independent: Vec<f64> = (0..contract.horizon_steps)
+            .map(|_| next_standard_normal(&mut random_state))
+            .collect();
+        let mut power = Vec::with_capacity(contract.horizon_steps);
+        for horizon_index in 0..contract.horizon_steps {
+            let mut correlated = 0.0;
+            for previous in 0..=horizon_index {
+                correlated += lower[horizon_index][previous] * independent[previous];
+            }
+            let probability = standard_normal_cdf(correlated)?;
+            let (value, clipped) =
+                interpolate_quantile(&forecast.steps[horizon_index].quantiles, probability)?;
+            power.push(value);
+            if clipped {
+                clipped_count = clipped_count.checked_add(1).ok_or_else(|| {
+                    AuditError("Gaussian copula quantile-tail clipping count overflowed".to_string())
+                })?;
+            }
+        }
+        output.push(ForecastScenarioTrajectory {
+            scenario_id: format!("{}-scenario-{scenario_index:04}", contract.generator_id),
+            source_residual_id: None,
+            source_residual_evidence_id: None,
+            source_residual_forecast_evidence_id: None,
+            source_residual_generation_evidence_id: None,
+            source_residual_state_mapping_evidence_id: None,
+            source_residual_time_alignment_evidence_id: None,
+            source_residual_timeline_digest_reference: None,
+            source_sample_evidence_ids: Vec::new(),
+            source_sample_timestamps_ns: Vec::new(),
+            power_mw: power,
+        });
+    }
+
+    let evidence = GaussianCopulaEvidence {
+        residual_pool_evidence_id: contract.residual_pool_evidence_id.clone().ok_or_else(|| {
+            AuditError("Gaussian copula residual pool evidence reference is missing".to_string())
+        })?,
+        residual_ids: residuals.iter().map(|item| item.residual_id.clone()).collect(),
+        residual_origin_ids: residuals.iter().map(|item| item.origin_id.clone()).collect(),
+        residual_origin_timestamps_ns: residuals.iter().map(|item| item.origin_timestamp_ns).collect(),
+        residual_target_window_end_timestamps_ns: residuals.iter().map(|item| item.target_window_end_ns).collect(),
+        residual_operating_regime_ids: residuals.iter().map(|item| item.operating_regime_id.clone()).collect(),
+        residual_clock_ids: residuals.iter().map(|item| item.clock_id.clone()).collect(),
+        residual_time_origin_ids: residuals.iter().map(|item| item.time_origin_id.clone()).collect(),
+        residual_model_contracts: residuals.iter().map(|item| item.model_contract.clone()).collect(),
+        raw_residual_power_mw: residuals.iter().map(|item| item.residual_power_mw.clone()).collect(),
+        rank_normal_scores: scores.clone(),
+        measurement_evidence_ids: residuals.iter().map(|item| item.measurement_evidence_id.clone()).collect(),
+        forecast_evidence_ids: residuals.iter().map(|item| item.forecast_evidence_id.clone()).collect(),
+        residual_generation_evidence_ids: residuals.iter().map(|item| item.residual_generation_evidence_id.clone()).collect(),
+        state_mapping_evidence_ids: residuals.iter().map(|item| item.state_mapping_evidence_id.clone()).collect(),
+        time_alignment_evidence_ids: residuals.iter().map(|item| item.time_alignment_evidence_id.clone()).collect(),
+        timeline_digest_references: residuals.iter().map(|item| item.source_timeline_digest_reference.clone()).collect(),
+        source_sample_evidence_ids: residuals.iter().map(|item| item.source_sample_evidence_ids.clone()).collect(),
+        source_sample_timestamps_ns: residuals.iter().map(|item| item.source_sample_timestamps_ns.clone()).collect(),
+        tie_policy: "AVERAGE_RANKS_FOR_TIES_SORTED_BY_RESIDUAL_ID",
+        plotting_position_method: "MIDRANK_MINUS_HALF_OVER_N",
+        shrinkage_lambda,
+        empirical_rank_correlation: empirical,
+        regularized_correlation: regularized,
+        cholesky_lower_factor: lower,
+    };
+    Ok((output, evidence, clipped_count))
+}
+
 /// Generate deterministic marginal or dependence-preserving horizon scenarios.
 ///
 /// All selected historical residual trajectories must have complete target
@@ -810,13 +1240,17 @@ pub fn generate_forecast_scenarios(
             }
         }
         ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap
-        | ScenarioGeneratorKind::SchaakeShuffle => {
+        | ScenarioGeneratorKind::SchaakeShuffle
+        | ScenarioGeneratorKind::GaussianCopula => {
             let required_pool_size = match contract.generator_kind {
                 ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap => {
                     contract.minimum_residual_trajectory_count
                 }
                 ScenarioGeneratorKind::SchaakeShuffle => {
                     contract.minimum_residual_trajectory_count.max(contract.scenario_count)
+                }
+                ScenarioGeneratorKind::GaussianCopula => {
+                    contract.minimum_residual_trajectory_count
                 }
                 ScenarioGeneratorKind::IndependentQuantileSampling => 0,
             };
@@ -867,6 +1301,8 @@ pub fn generate_forecast_scenarios(
     let (marginal_samples, tail_clipped) =
         marginal_quantile_samples(forecast, contract.scenario_count)?;
     let scheduled_median = median_path(forecast)?;
+    let mut gaussian_copula_evidence = None;
+    let mut marginal_tail_clipped_sample_count = tail_clipped;
     let (scenarios, selected_ids, selected_evidence, clamped) = match contract.generator_kind {
         ScenarioGeneratorKind::IndependentQuantileSampling => generate_independent_scenarios(
             &contract,
@@ -884,6 +1320,16 @@ pub fn generate_forecast_scenarios(
             residual_trajectories,
             &marginal_samples,
         )?,
+        ScenarioGeneratorKind::GaussianCopula => {
+            let (scenarios, evidence, clipped) = generate_gaussian_copula(
+                &contract,
+                residual_trajectories,
+                forecast,
+            )?;
+            gaussian_copula_evidence = Some(evidence);
+            marginal_tail_clipped_sample_count = clipped;
+            (scenarios, Vec::new(), Vec::new(), 0)
+        }
     };
 
     let step_timestamps_ns = forecast.steps.iter().map(|step| step.timestamp_ns).collect();
@@ -904,7 +1350,9 @@ pub fn generate_forecast_scenarios(
         .collect();
     Ok(ForecastScenarioSet {
         contract: contract.clone(),
+        gaussian_copula_evidence,
         forecast_id: forecast.forecast_id.clone(),
+        forecast_origin_id: forecast.origin_id.clone(),
         forecast_origin_timestamp_ns: forecast.origin_timestamp_ns,
         clock_id: forecast.clock_id.clone(),
         time_origin_id: forecast.time_origin_id.clone(),
@@ -922,7 +1370,7 @@ pub fn generate_forecast_scenarios(
         selected_residual_state_mapping_evidence_ids,
         selected_residual_time_alignment_evidence_ids,
         selected_residual_timeline_digest_references,
-        marginal_tail_clipped_sample_count: tail_clipped,
+        marginal_tail_clipped_sample_count,
         residual_floor_clamped_sample_count: clamped,
         claim_ceiling: "MODELLED_TEMPORAL_POWER_SCENARIOS_NOT_MEASUREMENT_OR_GRID_RESERVE_QUALIFICATION",
     })
@@ -1015,11 +1463,253 @@ fn empirical_pit_u128(values: &[u128], actual: u128) -> f64 {
     (less + 0.5 * equal) / values.len() as f64
 }
 
+fn validate_gaussian_copula_evidence(
+    contract: &ScenarioGenerationContract,
+    forecast_origin_id: &str,
+    forecast_origin_timestamp_ns: u64,
+    scenarios: &[ForecastScenarioTrajectory],
+    evidence: &GaussianCopulaEvidence,
+) -> Result<(), AuditError> {
+    let pool_count = evidence.residual_ids.len();
+    let dimension = contract.horizon_steps;
+    let pool_lists_len = [
+        evidence.residual_origin_ids.len(),
+        evidence.residual_origin_timestamps_ns.len(),
+        evidence.residual_target_window_end_timestamps_ns.len(),
+        evidence.residual_operating_regime_ids.len(),
+        evidence.residual_clock_ids.len(),
+        evidence.residual_time_origin_ids.len(),
+        evidence.residual_model_contracts.len(),
+        evidence.raw_residual_power_mw.len(),
+        evidence.rank_normal_scores.len(),
+        evidence.measurement_evidence_ids.len(),
+        evidence.forecast_evidence_ids.len(),
+        evidence.residual_generation_evidence_ids.len(),
+        evidence.state_mapping_evidence_ids.len(),
+        evidence.time_alignment_evidence_ids.len(),
+        evidence.timeline_digest_references.len(),
+        evidence.source_sample_evidence_ids.len(),
+        evidence.source_sample_timestamps_ns.len(),
+    ];
+    if evidence.residual_pool_evidence_id
+        != contract.residual_pool_evidence_id.as_deref().unwrap_or_default()
+        || pool_count < contract.minimum_residual_trajectory_count
+        || pool_lists_len.iter().any(|length| *length != pool_count)
+        || evidence.tie_policy != "AVERAGE_RANKS_FOR_TIES_SORTED_BY_RESIDUAL_ID"
+        || evidence.plotting_position_method != "MIDRANK_MINUS_HALF_OVER_N"
+        || Some(evidence.shrinkage_lambda) != contract.gaussian_copula_shrinkage
+        || scenarios.iter().any(|scenario| {
+            scenario.source_residual_id.is_some()
+                || scenario.source_residual_evidence_id.is_some()
+                || scenario.source_residual_forecast_evidence_id.is_some()
+                || scenario.source_residual_generation_evidence_id.is_some()
+                || scenario.source_residual_state_mapping_evidence_id.is_some()
+                || scenario.source_residual_time_alignment_evidence_id.is_some()
+                || scenario.source_residual_timeline_digest_reference.is_some()
+                || !scenario.source_sample_evidence_ids.is_empty()
+                || !scenario.source_sample_timestamps_ns.is_empty()
+        })
+    {
+        return Err(AuditError(
+            "Gaussian copula residual-pool evidence or scenario lineage is incomplete or inconsistent"
+                .to_string(),
+        ));
+    }
+
+    let mut residual_ids = HashSet::new();
+    let mut origin_ids = HashSet::new();
+    let mut sample_evidence_ids = HashSet::new();
+    let mut ordered_origins = Vec::with_capacity(pool_count);
+    for index in 0..pool_count {
+        for (value, field) in [
+            (evidence.residual_ids[index].as_str(), "residual_id"),
+            (evidence.residual_origin_ids[index].as_str(), "origin_id"),
+            (evidence.residual_operating_regime_ids[index].as_str(), "operating_regime_id"),
+            (evidence.residual_clock_ids[index].as_str(), "clock_id"),
+            (evidence.residual_time_origin_ids[index].as_str(), "time_origin_id"),
+            (evidence.measurement_evidence_ids[index].as_str(), "measurement_evidence_id"),
+            (evidence.forecast_evidence_ids[index].as_str(), "forecast_evidence_id"),
+            (evidence.residual_generation_evidence_ids[index].as_str(), "residual_generation_evidence_id"),
+            (evidence.state_mapping_evidence_ids[index].as_str(), "state_mapping_evidence_id"),
+            (evidence.time_alignment_evidence_ids[index].as_str(), "time_alignment_evidence_id"),
+            (evidence.timeline_digest_references[index].as_str(), "timeline_digest_reference"),
+        ] {
+            if value.trim().is_empty() {
+                return Err(AuditError(format!(
+                    "Gaussian copula residual manifest {field} at index {index} is blank"
+                )));
+            }
+        }
+        if !residual_ids.insert(evidence.residual_ids[index].as_str())
+            || !origin_ids.insert(evidence.residual_origin_ids[index].as_str())
+            || evidence.residual_operating_regime_ids[index] != contract.operating_regime_id
+            || evidence.residual_clock_ids[index] != contract.clock_id
+            || evidence.residual_time_origin_ids[index] != contract.time_origin_id
+            || evidence.residual_model_contracts[index] != contract.model_contract
+            || evidence.raw_residual_power_mw[index].len() != dimension
+            || evidence.rank_normal_scores[index].len() != dimension
+            || evidence.rank_normal_scores[index].iter().any(|value| !value.is_finite())
+            || evidence.source_sample_evidence_ids[index].len() != dimension
+            || evidence.source_sample_timestamps_ns[index].len() != dimension
+        {
+            return Err(AuditError(
+                "Gaussian copula residual manifest contains duplicate identities or invalid sample dimensions"
+                    .to_string(),
+            ));
+        }
+        let origin = evidence.residual_origin_timestamps_ns[index];
+        let target_end = evidence.residual_target_window_end_timestamps_ns[index];
+        let expected_duration = (dimension as u64)
+            .checked_mul(contract.step_period_ns)
+            .ok_or_else(|| AuditError("copula residual duration overflowed".to_string()))?;
+        if evidence.residual_origin_ids[index] == forecast_origin_id
+            || origin.checked_add(expected_duration) != Some(target_end)
+            || target_end > forecast_origin_timestamp_ns
+        {
+            return Err(AuditError(
+                "Gaussian copula residual target window is incomplete, overlaps the current origin, or differs from the frozen horizon"
+                    .to_string(),
+            ));
+        }
+        for sample_index in 0..dimension {
+            if evidence.source_sample_evidence_ids[index][sample_index].trim().is_empty()
+                || !sample_evidence_ids.insert(
+                    evidence.source_sample_evidence_ids[index][sample_index].as_str(),
+                )
+            {
+                return Err(AuditError(
+                    "Gaussian copula residual sample evidence is blank or reused across blocks"
+                        .to_string(),
+                ));
+            }
+            let offset = (sample_index as u64 + 1)
+                .checked_mul(contract.step_period_ns)
+                .ok_or_else(|| AuditError("copula residual sample offset overflowed".to_string()))?;
+            if origin.checked_add(offset)
+                != Some(evidence.source_sample_timestamps_ns[index][sample_index])
+            {
+                return Err(AuditError(
+                    "Gaussian copula source-sample timestamps do not match the frozen cadence"
+                        .to_string(),
+                ));
+            }
+        }
+        ordered_origins.push(origin);
+    }
+    ordered_origins.sort_unstable();
+    let horizon_duration = (dimension as u64)
+        .checked_mul(contract.step_period_ns)
+        .ok_or_else(|| AuditError("copula horizon duration overflowed".to_string()))?;
+    if ordered_origins.windows(2).any(|pair| {
+        pair[1].checked_sub(pair[0]).is_none_or(|separation| {
+            separation < contract.minimum_residual_origin_separation_ns.max(horizon_duration)
+        })
+    }) {
+        return Err(AuditError(
+            "Gaussian copula residual origin blocks overlap or violate the frozen separation"
+                .to_string(),
+        ));
+    }
+
+    let recomputed_scores = rank_normal_scores_from_values(
+        &evidence.raw_residual_power_mw,
+        &evidence.residual_ids,
+        dimension,
+    )?;
+    for (expected_row, actual_row) in recomputed_scores.iter().zip(evidence.rank_normal_scores.iter()) {
+        for (expected, actual) in expected_row.iter().zip(actual_row.iter()) {
+            if (expected - actual).abs() > 1e-10 {
+                return Err(AuditError(
+                    "Gaussian copula retained rank-normal score matrix does not match its raw residuals"
+                        .to_string(),
+                ));
+            }
+        }
+    }
+    let recomputed_correlation =
+        empirical_rank_correlation(&recomputed_scores, dimension)?;
+    for row in 0..dimension {
+        for column in 0..dimension {
+            if (recomputed_correlation[row][column]
+                - evidence.empirical_rank_correlation[row][column])
+                .abs() > 1e-8
+            {
+                return Err(AuditError(
+                    "Gaussian copula empirical rank correlation does not match retained residual blocks"
+                        .to_string(),
+                ));
+            }
+        }
+    }
+
+    for matrix in [
+        &evidence.empirical_rank_correlation,
+        &evidence.regularized_correlation,
+        &evidence.cholesky_lower_factor,
+    ] {
+        if matrix.len() != dimension || matrix.iter().any(|row| row.len() != dimension) {
+            return Err(AuditError(
+                "Gaussian copula correlation/factor matrix has invalid dimensions".to_string(),
+            ));
+        }
+        if matrix.iter().flatten().any(|value| !value.is_finite()) {
+            return Err(AuditError(
+                "Gaussian copula correlation/factor matrix contains non-finite entries"
+                    .to_string(),
+            ));
+        }
+    }
+    for row in 0..dimension {
+        for column in 0..dimension {
+            let empirical = evidence.empirical_rank_correlation[row][column];
+            let regularized = evidence.regularized_correlation[row][column];
+            let lower = evidence.cholesky_lower_factor[row][column];
+            if (empirical - evidence.empirical_rank_correlation[column][row]).abs() > 1e-10
+                || (regularized - evidence.regularized_correlation[column][row]).abs() > 1e-10
+                || (row == column && (empirical - 1.0).abs() > 1e-8)
+                || empirical.abs() > 1.0 + 1e-8
+                || (row == column && (regularized - 1.0).abs() > 1e-8)
+                || (row == column && lower <= 0.0)
+                || (row < column && lower.abs() > 1e-12)
+            {
+                return Err(AuditError(
+                    "Gaussian copula correlation matrix symmetry/diagonal or Cholesky triangularity is invalid"
+                        .to_string(),
+                ));
+            }
+            let expected = if row == column {
+                1.0
+            } else {
+                (1.0 - evidence.shrinkage_lambda) * empirical
+            };
+            if (regularized - expected).abs() > 1e-8 {
+                return Err(AuditError(
+                    "Gaussian copula regularized correlation does not match the frozen shrinkage rule"
+                        .to_string(),
+                ));
+            }
+            let mut reconstructed = 0.0;
+            for previous in 0..=row.min(column) {
+                reconstructed += evidence.cholesky_lower_factor[row][previous]
+                    * evidence.cholesky_lower_factor[column][previous];
+            }
+            if (reconstructed - regularized).abs() > 1e-7 {
+                return Err(AuditError(
+                    "Gaussian copula Cholesky factor does not reconstruct the regularized matrix"
+                        .to_string(),
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
 fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditError> {
     scenarios.contract.validate()?;
     if scenarios.claim_ceiling
         != "MODELLED_TEMPORAL_POWER_SCENARIOS_NOT_MEASUREMENT_OR_GRID_RESERVE_QUALIFICATION"
         || scenarios.forecast_id.trim().is_empty()
+        || scenarios.forecast_origin_id.trim().is_empty()
         || scenarios.forecast_evidence_id.trim().is_empty()
         || scenarios.state_mapping_evidence_id.trim().is_empty()
         || scenarios.time_alignment_evidence_id.trim().is_empty()
@@ -1063,7 +1753,8 @@ fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditErr
 
     match scenarios.contract.generator_kind {
         ScenarioGeneratorKind::IndependentQuantileSampling => {
-            if !scenarios.selected_residual_ids.is_empty()
+            if scenarios.gaussian_copula_evidence.is_some()
+                || !scenarios.selected_residual_ids.is_empty()
                 || !scenarios.selected_residual_evidence_ids.is_empty()
                 || !scenarios.selected_residual_forecast_evidence_ids.is_empty()
                 || !scenarios.selected_residual_generation_evidence_ids.is_empty()
@@ -1090,7 +1781,8 @@ fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditErr
         }
         ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap
         | ScenarioGeneratorKind::SchaakeShuffle => {
-            if scenarios.selected_residual_ids.len() != scenarios.contract.scenario_count
+            if scenarios.gaussian_copula_evidence.is_some()
+                || scenarios.selected_residual_ids.len() != scenarios.contract.scenario_count
                 || scenarios.selected_residual_evidence_ids.len()
                     != scenarios.contract.scenario_count
                 || scenarios.selected_residual_forecast_evidence_ids.len()
@@ -1183,6 +1875,31 @@ fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditErr
                     ));
                 }
             }
+        }
+        ScenarioGeneratorKind::GaussianCopula => {
+            if !scenarios.selected_residual_ids.is_empty()
+                || !scenarios.selected_residual_evidence_ids.is_empty()
+                || !scenarios.selected_residual_forecast_evidence_ids.is_empty()
+                || !scenarios.selected_residual_generation_evidence_ids.is_empty()
+                || !scenarios.selected_residual_state_mapping_evidence_ids.is_empty()
+                || !scenarios.selected_residual_time_alignment_evidence_ids.is_empty()
+                || !scenarios.selected_residual_timeline_digest_references.is_empty()
+            {
+                return Err(AuditError(
+                    "Gaussian copula scenarios must carry a pool manifest, not per-row selected-residual attribution"
+                        .to_string(),
+                ));
+            }
+            let evidence = scenarios.gaussian_copula_evidence.as_ref().ok_or_else(|| {
+                AuditError("Gaussian copula scenario set is missing its correlation/pool evidence".to_string())
+            })?;
+            validate_gaussian_copula_evidence(
+                &scenarios.contract,
+                &scenarios.forecast_origin_id,
+                scenarios.forecast_origin_timestamp_ns,
+                &scenarios.scenarios,
+                evidence,
+            )?;
         }
     }
     Ok(())
@@ -1344,6 +2061,7 @@ pub fn evaluate_forecast_scenarios(
 
     Ok(ScenarioEvaluationReport {
         forecast_id: scenarios.forecast_id.clone(),
+        forecast_origin_id: scenarios.forecast_origin_id.clone(),
         model_contract: scenarios.contract.model_contract.clone(),
         generator_id: scenarios.contract.generator_id.clone(),
         generator_revision: scenarios.contract.generator_revision.clone(),
@@ -1355,6 +2073,7 @@ pub fn evaluate_forecast_scenarios(
         forecast_time_alignment_evidence_id: scenarios.time_alignment_evidence_id.clone(),
         forecast_source_timeline_digest_reference: scenarios.source_timeline_digest_reference.clone(),
         residual_pool_evidence_id: scenarios.contract.residual_pool_evidence_id.clone(),
+        gaussian_copula_evidence: scenarios.gaussian_copula_evidence.clone(),
         selected_residual_ids: scenarios.selected_residual_ids.clone(),
         selected_residual_evidence_ids: scenarios.selected_residual_evidence_ids.clone(),
         selected_residual_forecast_evidence_ids: scenarios.selected_residual_forecast_evidence_ids.clone(),
@@ -1481,6 +2200,7 @@ mod tests {
             kind,
             ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap
                 | ScenarioGeneratorKind::SchaakeShuffle
+                | ScenarioGeneratorKind::GaussianCopula
         );
         ScenarioGenerationContract {
             generator_id: "scenario-generator-v1".to_string(),
@@ -1495,8 +2215,15 @@ mod tests {
             scenario_count: 3,
             deterministic_seed: 42,
             residual_pool_evidence_id: residual_method.then(|| "residual-pool-evidence".to_string()),
-            minimum_residual_trajectory_count: if residual_method { 3 } else { 0 },
+            minimum_residual_trajectory_count: if kind == ScenarioGeneratorKind::GaussianCopula {
+                30
+            } else if residual_method {
+                3
+            } else {
+                0
+            },
             minimum_residual_origin_separation_ns: if residual_method { 30 } else { 0 },
+            gaussian_copula_shrinkage: (kind == ScenarioGeneratorKind::GaussianCopula).then_some(0.05),
         }
     }
 
@@ -1562,6 +2289,39 @@ mod tests {
         ]
     }
 
+    fn copula_residuals() -> Vec<ForecastResidualTrajectory> {
+        let template = residuals()[0].clone();
+        let mut pool = Vec::with_capacity(30);
+        for index in 0..30 {
+            let origin = (index as u64 + 1) * 300;
+            let mut item = template.clone();
+            item.residual_id = format!("copula-residual-{index:03}");
+            item.origin_id = format!("copula-origin-{index:03}");
+            item.origin_timestamp_ns = origin;
+            item.target_window_end_ns = origin + 30;
+            item.forecast_evidence_id = format!("copula-forecast-{index:03}");
+            item.measurement_evidence_id = format!("copula-measurement-{index:03}");
+            item.residual_generation_evidence_id =
+                format!("copula-generation-{index:03}");
+            item.state_mapping_evidence_id = format!("copula-mapping-{index:03}");
+            item.time_alignment_evidence_id = format!("copula-alignment-{index:03}");
+            item.source_timeline_digest_reference = format!("copula-timeline-{index:03}");
+            item.source_sample_timestamps_ns = vec![origin + 10, origin + 20, origin + 30];
+            item.source_sample_evidence_ids = vec![
+                format!("copula-{index:03}-sample-1"),
+                format!("copula-{index:03}-sample-2"),
+                format!("copula-{index:03}-sample-3"),
+            ];
+            item.residual_power_mw = vec![
+                ((index * 7) % 29) as i64 - 14,
+                ((index * 11) % 31) as i64 - 15,
+                ((index * 17) % 37) as i64 - 18,
+            ];
+            pool.push(item);
+        }
+        pool
+    }
+
     fn actual_horizon() -> MeasuredForecastHorizon {
         MeasuredForecastHorizon {
             forecast_id: "forecast-current".to_string(),
@@ -1593,6 +2353,129 @@ mod tests {
                 },
             ],
         }
+    }
+
+    #[test]
+    fn gaussian_copula_is_deterministic_and_carries_complete_pool_evidence() {
+        let config = contract(ScenarioGeneratorKind::GaussianCopula);
+        let pool = copula_residuals();
+        let first = generate_forecast_scenarios(
+            config.clone(),
+            &forecast(),
+            &pool,
+        ).unwrap();
+        let second = generate_forecast_scenarios(config, &forecast(), &pool).unwrap();
+        assert_eq!(first, second);
+        assert_eq!(first.scenarios.len(), 3);
+        assert!(first.selected_residual_ids.is_empty());
+        let evidence = first.gaussian_copula_evidence.as_ref().unwrap();
+        assert_eq!(evidence.residual_ids.len(), 30);
+        assert_eq!(evidence.raw_residual_power_mw.len(), 30);
+        assert_eq!(evidence.rank_normal_scores.len(), 30);
+        assert_eq!(evidence.residual_model_contracts[0], model_contract());
+        assert_eq!(evidence.residual_clock_ids[0], "clock-common");
+        assert_eq!(evidence.shrinkage_lambda, 0.05);
+        assert_eq!(evidence.empirical_rank_correlation.len(), 3);
+        assert_eq!(evidence.regularized_correlation.len(), 3);
+        assert_eq!(evidence.cholesky_lower_factor.len(), 3);
+    }
+
+    #[test]
+    fn gaussian_copula_scenarios_pass_matrix_and_provenance_evaluation() {
+        let scenarios = generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::GaussianCopula),
+            &forecast(),
+            &copula_residuals(),
+        ).unwrap();
+        let report =
+            evaluate_forecast_scenarios(&scenarios, &actual_horizon(), 0.10).unwrap();
+        assert!(report.energy_score_mw.is_finite());
+        assert!(report.variogram_score.is_finite());
+        assert!(report.gaussian_copula_evidence.is_some());
+        assert_eq!(report.generator_kind, ScenarioGeneratorKind::GaussianCopula);
+    }
+
+    #[test]
+    fn gaussian_copula_rejects_insufficient_residual_pool_support() {
+        let mut pool = copula_residuals();
+        pool.pop();
+        assert!(generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::GaussianCopula),
+            &forecast(),
+            &pool,
+        ).is_err());
+    }
+
+    #[test]
+    fn gaussian_copula_rejects_constant_residual_horizon() {
+        let mut pool = copula_residuals();
+        for residual in &mut pool {
+            residual.residual_power_mw[1] = 7;
+        }
+        assert!(generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::GaussianCopula),
+            &forecast(),
+            &pool,
+        ).is_err());
+    }
+
+    #[test]
+    fn gaussian_copula_requires_explicit_positive_shrinkage() {
+        let mut config = contract(ScenarioGeneratorKind::GaussianCopula);
+        config.gaussian_copula_shrinkage = Some(0.0);
+        assert!(generate_forecast_scenarios(
+            config,
+            &forecast(),
+            &copula_residuals(),
+        ).is_err());
+    }
+
+    #[test]
+    fn gaussian_copula_evaluation_rejects_tampered_rank_normal_score_manifest() {
+        let mut scenarios = generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::GaussianCopula),
+            &forecast(),
+            &copula_residuals(),
+        ).unwrap();
+        scenarios.gaussian_copula_evidence.as_mut().unwrap()
+            .rank_normal_scores[0][0] += 0.1;
+        assert!(evaluate_forecast_scenarios(
+            &scenarios,
+            &actual_horizon(),
+            0.10,
+        ).is_err());
+    }
+
+    #[test]
+    fn gaussian_copula_evaluation_rejects_residual_model_contract_tampering() {
+        let mut scenarios = generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::GaussianCopula),
+            &forecast(),
+            &copula_residuals(),
+        ).unwrap();
+        scenarios.gaussian_copula_evidence.as_mut().unwrap()
+            .residual_model_contracts[0].model_revision = "rev-other".to_string();
+        assert!(evaluate_forecast_scenarios(
+            &scenarios,
+            &actual_horizon(),
+            0.10,
+        ).is_err());
+    }
+
+    #[test]
+    fn gaussian_copula_evaluation_rejects_tampered_cholesky_evidence() {
+        let mut scenarios = generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::GaussianCopula),
+            &forecast(),
+            &copula_residuals(),
+        ).unwrap();
+        scenarios.gaussian_copula_evidence.as_mut().unwrap()
+            .cholesky_lower_factor[0][0] += 0.1;
+        assert!(evaluate_forecast_scenarios(
+            &scenarios,
+            &actual_horizon(),
+            0.10,
+        ).is_err());
     }
 
     #[test]
