@@ -62,7 +62,7 @@ The initial implementation does not silently update its correction from monitori
 The monitor evaluates later, disjoint sessions using the frozen corrections and reports:
 - Whole-session coverage (every sample covered) as the primary statistical unit.
 - Sample-level coverage separately as a diagnostic only; individual samples are not treated as independent trials.
-- A one-sided Wilson lower bound over monitored sessions.
+- A one-sided Wilson lower bound over monitored sessions only when a separate monitor-session independence assumption and review evidence are supplied; otherwise the confidence bound is withheld and status is SAMPLING_DESIGN_UNQUALIFIED.
 - Regime health as NOMINAL, DEGRADED, INSUFFICIENT_SUPPORT or OUT_OF_DOMAIN.
 - Exact session, run, trace, timeline, event and measured-sample evidence references.
 
@@ -143,7 +143,7 @@ The registered Rust forecast_calibration module provides:
 - Per-regime online health monitoring using session-level coverage and Wilson lower bounds.
 - Explicit claim ceilings and no silent online mutation of the frozen calibrator.
 
-Seventeen synthetic Rust tests are authored. They cover conformal rank support, session-maximum fitting, insufficient/missing/undeclared regimes, held-out-data rejection, model revision mismatch, timestamp/state mismatch, invalid sample quality, duplicate sessions, unequal exposure, out-of-domain abstention, interval expansion, degraded monitoring, insufficient monitor support and calibrator immutability.
+Twenty-three synthetic Rust tests are authored. They cover conformal rank support, session-maximum fitting, insufficient/missing/undeclared regimes, held-out-data rejection, model revision mismatch, timestamp/state mismatch, invalid sample quality, duplicate sessions, unequal exposure, out-of-domain abstention, interval expansion, degraded monitoring, insufficient monitor support and calibrator immutability.
 
 **Tests are authored but not executed.** No Rust compilation, cargo test, formatting, Clippy, performance benchmark, public dataset import, model reproduction, physical measurement, scenario reserve savings or grid-service qualification is claimed.
 
