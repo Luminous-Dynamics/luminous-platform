@@ -223,6 +223,10 @@ pub struct ForecastScenarioSet {
     pub contract: ScenarioGenerationContract,
     pub forecast_id: String,
     pub forecast_origin_timestamp_ns: u64,
+    pub forecast_evidence_id: String,
+    pub state_mapping_evidence_id: String,
+    pub time_alignment_evidence_id: String,
+    pub source_timeline_digest_reference: String,
     pub step_timestamps_ns: Vec<u64>,
     pub scheduled_median_power_mw: Vec<u64>,
     pub scenarios: Vec<ForecastScenarioTrajectory>,
@@ -255,9 +259,18 @@ pub struct MeasuredForecastHorizon {
 #[derive(Debug, Clone, PartialEq)]
 pub struct ScenarioEvaluationReport {
     pub forecast_id: String,
+    pub model_contract: PowerModelContract,
     pub generator_id: String,
     pub generator_revision: String,
     pub generator_kind: ScenarioGeneratorKind,
+    pub forecast_evidence_id: String,
+    pub state_mapping_evidence_id: String,
+    pub forecast_time_alignment_evidence_id: String,
+    pub forecast_source_timeline_digest_reference: String,
+    pub residual_pool_evidence_id: Option<String>,
+    pub selected_residual_ids: Vec<String>,
+    pub selected_residual_evidence_ids: Vec<String>,
+    pub selected_residual_sample_evidence_ids: Vec<Vec<String>>,
     pub scenario_count: usize,
     pub horizon_steps: usize,
     pub energy_score_mw: f64,
@@ -289,8 +302,8 @@ pub struct ScenarioEvaluationReport {
     pub realized_reserve_cost_ratio_units: f64,
     pub measurement_run_id: String,
     pub measurement_evidence_id: String,
-    pub time_alignment_evidence_id: String,
-    pub source_timeline_digest_reference: String,
+    pub measurement_time_alignment_evidence_id: String,
+    pub measurement_source_timeline_digest_reference: String,
     pub measured_sample_evidence_ids: Vec<String>,
     pub claim_ceiling: &'static str,
 }
@@ -820,6 +833,10 @@ pub fn generate_forecast_scenarios(
         contract: contract.clone(),
         forecast_id: forecast.forecast_id.clone(),
         forecast_origin_timestamp_ns: forecast.origin_timestamp_ns,
+        forecast_evidence_id: forecast.forecast_evidence_id.clone(),
+        state_mapping_evidence_id: forecast.state_mapping_evidence_id.clone(),
+        time_alignment_evidence_id: forecast.time_alignment_evidence_id.clone(),
+        source_timeline_digest_reference: forecast.source_timeline_digest_reference.clone(),
         step_timestamps_ns,
         scheduled_median_power_mw: scheduled_median,
         scenarios,
@@ -912,6 +929,10 @@ fn empirical_pit(values: &[u64], actual: u64) -> f64 {
 fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditError> {
     scenarios.contract.validate()?;
     if scenarios.forecast_id.trim().is_empty()
+        || scenarios.forecast_evidence_id.trim().is_empty()
+        || scenarios.state_mapping_evidence_id.trim().is_empty()
+        || scenarios.time_alignment_evidence_id.trim().is_empty()
+        || scenarios.source_timeline_digest_reference.trim().is_empty()
         || scenarios.scenarios.len() != scenarios.contract.scenario_count
         || scenarios.step_timestamps_ns.len() != scenarios.contract.horizon_steps
         || scenarios.scheduled_median_power_mw.len() != scenarios.contract.horizon_steps
@@ -1188,9 +1209,20 @@ pub fn evaluate_forecast_scenarios(
 
     Ok(ScenarioEvaluationReport {
         forecast_id: scenarios.forecast_id.clone(),
+        model_contract: scenarios.contract.model_contract.clone(),
         generator_id: scenarios.contract.generator_id.clone(),
         generator_revision: scenarios.contract.generator_revision.clone(),
         generator_kind: scenarios.contract.generator_kind,
+        forecast_evidence_id: scenarios.forecast_evidence_id.clone(),
+        state_mapping_evidence_id: scenarios.state_mapping_evidence_id.clone(),
+        forecast_time_alignment_evidence_id: scenarios.time_alignment_evidence_id.clone(),
+        forecast_source_timeline_digest_reference: scenarios.source_timeline_digest_reference.clone(),
+        residual_pool_evidence_id: scenarios.contract.residual_pool_evidence_id.clone(),
+        selected_residual_ids: scenarios.selected_residual_ids.clone(),
+        selected_residual_evidence_ids: scenarios.selected_residual_evidence_ids.clone(),
+        selected_residual_sample_evidence_ids: scenarios.scenarios.iter()
+            .map(|scenario| scenario.source_sample_evidence_ids.clone())
+            .collect(),
         scenario_count,
         horizon_steps: scenarios.contract.horizon_steps,
         energy_score_mw,
@@ -1225,8 +1257,8 @@ pub fn evaluate_forecast_scenarios(
         realized_reserve_cost_ratio_units,
         measurement_run_id: actual.measurement_run_id.clone(),
         measurement_evidence_id: actual.measurement_evidence_id.clone(),
-        time_alignment_evidence_id: actual.time_alignment_evidence_id.clone(),
-        source_timeline_digest_reference: actual.source_timeline_digest_reference.clone(),
+        measurement_time_alignment_evidence_id: actual.time_alignment_evidence_id.clone(),
+        measurement_source_timeline_digest_reference: actual.source_timeline_digest_reference.clone(),
         measured_sample_evidence_ids: actual_evidence_ids,
         claim_ceiling: "MODELLED_SCENARIO_AND_MEASURED_HORIZON_SCORE_NOT_GRID_RESERVE_QUALIFICATION",
     })
@@ -1592,6 +1624,26 @@ mod tests {
         assert!(report.actual_energy_mw_ns > 0);
         assert!(report.scenario_energy_p90_mw_ns >= report.scenario_energy_p10_mw_ns);
         assert!(report.actual_peak_pit.is_finite());
+        assert_eq!(report.model_contract, model_contract());
+        assert_eq!(report.forecast_evidence_id, "forecast-evidence-current");
+        assert_eq!(report.forecast_time_alignment_evidence_id, "clock-current");
+        assert_eq!(
+            report.measurement_time_alignment_evidence_id,
+            "actual-clock-evidence-current"
+        );
+        assert_eq!(report.selected_residual_ids.len(), 3);
+        assert!(report.selected_residual_sample_evidence_ids.iter().all(|ids| ids.len() == 3));
+    }
+
+    #[test]
+    fn evaluation_rejects_tampered_residual_sample_timestamps() {
+        let mut scenarios = generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::SchaakeShuffle),
+            &forecast(),
+            &residuals(),
+        ).unwrap();
+        scenarios.scenarios[0].source_sample_timestamps_ns[1] += 1;
+        assert!(evaluate_forecast_scenarios(&scenarios, &actual_horizon(), 0.10).is_err());
     }
 
     #[test]
