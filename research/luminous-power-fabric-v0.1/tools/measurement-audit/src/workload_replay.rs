@@ -1558,6 +1558,47 @@ mod tests {
     }
 
     #[test]
+    fn completion_then_capacity_boundary_then_admission_are_half_open_at_same_timestamp() {
+        let jobs = vec![
+            gpu_job("first", WorkloadClass::NonDeferrable, 0, 0, 10, 5, 4, 10),
+            gpu_job("second", WorkloadClass::NonDeferrable, 5, 5, 15, 5, 4, 20),
+        ];
+        let report = evaluate_workload_replay(
+            contract(),
+            jobs,
+            vec![window("dispatch", 5, 10, 4)],
+        )
+        .unwrap();
+
+        assert_eq!(report.job_results[0].dispatch_finish_ns, Some(5));
+        assert_eq!(report.job_results[1].dispatch_start_ns, Some(5));
+        assert_eq!(report.job_results[1].dispatch_finish_ns, Some(10));
+        assert_eq!(report.dispatch_timeline.len(), 2);
+        assert_eq!(
+            (
+                report.dispatch_timeline[0].start_ns,
+                report.dispatch_timeline[0].end_ns,
+                report.dispatch_timeline[0].active_resources.gpu_units,
+                report.dispatch_timeline[0].dispatch_window_id.clone(),
+            ),
+            (0, 5, 4, None)
+        );
+        assert_eq!(
+            (
+                report.dispatch_timeline[1].start_ns,
+                report.dispatch_timeline[1].end_ns,
+                report.dispatch_timeline[1].active_resources.gpu_units,
+                report.dispatch_timeline[1].dispatch_window_id.as_deref(),
+            ),
+            (5, 10, 4, Some("dispatch"))
+        );
+        assert_eq!(
+            report.dispatch_completions.iter().map(|event| event.completion_time_ns).collect::<Vec<_>>(),
+            vec![5, 10]
+        );
+    }
+
+    #[test]
     fn admission_restriction_integrates_cpu_gpu_and_memory_separately() {
         let jobs = vec![gpu_job(
             "batch",
