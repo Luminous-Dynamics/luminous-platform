@@ -132,13 +132,15 @@ The evaluator reports three distinct quantities:
 
 1. **Empirical event success fraction:** commitment-success events divided by all submitted events. Failed events remain in the denominator.
 2. **P10 credited compute capacity:** nearest-rank 10th percentile of event-level credited capacity. A service-failed event contributes zero. A service-feasible event that delivers less than the commitment retains its smaller observed capacity and still counts as a failed commitment event.
-3. **One-sided Wilson lower confidence bound:** a conservative interval estimate for the event-success probability using the declared z-score.
+3. **One-sided Wilson lower confidence bound:** a conservative interval estimate for the event-success probability using the declared z-score. For a one-sided 90% lower bound, use z = 1.2815515655; z = 1.644853627 is the one-sided 95% value, not the 90% value.
 
 Qualification requires all of the following:
 
 - Event count meets the contract's minimum.
 - P10 credited capacity is at least the declared commitment.
 - The Wilson lower bound meets the required success probability.
+
+With 30 independent events and all 30 successful, the one-sided 90% Wilson lower bound is approximately 0.9481. With 29 successes from 30 events it is approximately 0.8949, so one failed event misses the initial 0.90 reliability gate.
 - The event design declares the independent-trial assumption.
 
 **Statistical limitation:** the Wilson bound has its stated binomial interpretation only when the event trials are representative and sufficiently independent. Repeated events on the same day, under the same weather or thermal state, or under correlated workload conditions may not be independent. The code withholds the confidence bound when the independent-event assumption is not declared, but a boolean declaration and a design-reference string do not prove independence. A field programme should use preregistered randomization/stratification, cluster-aware analysis or a hierarchical model where appropriate, and independent statistical review.
@@ -152,7 +154,8 @@ The Rust module at tools/measurement-audit/src/grid_service.rs exposes:
 - GridServiceContract — location, operating envelope, service class, frozen compute contract, baseline method, event-sampling assumptions and explicit qualification gates.
 - GridDispatchEvent — site and non-compute power deltas, conservative uncertainty bounds, compute service metrics, response/sustain and recovery observations.
 - evaluate_grid_service_sweep — per-event attribution, failed-event zero credit, nearest-rank P10 capacity, event success fraction and conditional Wilson lower bound.
-- GridServiceQualificationReport — P10 capacity, reliability, event counts, each qualification gate and a claim ceiling that explicitly excludes market accreditation.
+- GridServiceQualificationReport — the exact frozen contract and thresholds, baseline IDs/evidence, sampling design, P10 capacity, reliability, event counts, and each qualification gate.
+- GridDispatchEventResult — event evidence ID and exact dispatch/recovery timestamp intervals alongside attribution and pass/fail metrics, so credited capacity remains traceable.
 
 Sixteen synthetic Rust unit tests are authored. They exercise the all-pass repeated-event case and negative controls for single-event overclaim, one failed event, non-compute subtraction, uncertainty, missing/excessive rebound, missing recovery, useful-work loss, P99/TTFT/SLO regression, late response, short sustain, post-hoc baselines, unvalidated baseline models, unproven event independence, changed location/boundary/workload/control, overlapping windows, duplicate IDs and invalid measurement contracts.
 
