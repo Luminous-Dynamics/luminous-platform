@@ -1337,6 +1337,27 @@ mod tests {
                 origin + 40,
             ]);
         }
+        let residual_ids = evidence.residual_ids.clone();
+        evidence.rank_normal_scores =
+            crate::temporal_scenarios::rank_normal_scores_from_values(
+                &evidence.raw_residual_power_mw,
+                &residual_ids,
+                4,
+            ).unwrap();
+        evidence.empirical_rank_correlation =
+            crate::temporal_scenarios::empirical_rank_correlation(
+                &evidence.rank_normal_scores,
+                4,
+            ).unwrap();
+        evidence.regularized_correlation =
+            crate::temporal_scenarios::regularize_correlation(
+                &evidence.empirical_rank_correlation,
+                0.05,
+            ).unwrap();
+        evidence.cholesky_lower_factor =
+            crate::temporal_scenarios::cholesky_lower(
+                &evidence.regularized_correlation,
+            ).unwrap();
         evidence
     }
 
