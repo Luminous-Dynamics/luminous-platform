@@ -145,6 +145,7 @@ impl GridServiceContract {
             || self.committed_compute_reduction_w <= 0.0
             || !self.confidence_z_score.is_finite()
             || self.confidence_z_score <= 0.0
+            || !(self.confidence_z_score * self.confidence_z_score).is_finite()
             || !self.maximum_response_latency_ms.is_finite()
             || self.maximum_response_latency_ms <= 0.0
             || !self.minimum_sustained_duration_s.is_finite()
@@ -309,6 +310,47 @@ impl GridDispatchEvent {
             )));
         }
 
+        let site_power_reduction_w = self.site_baseline_power_w - self.site_event_power_w;
+        let attributed_compute_reduction_w =
+            site_power_reduction_w - self.non_compute_load_reduction_w;
+        let uncertainty_bound_w = self.site_measurement_uncertainty_bound_w
+            + self.non_compute_measurement_uncertainty_bound_w;
+        let conservative_compute_reduction_w =
+            attributed_compute_reduction_w - uncertainty_bound_w;
+        let uncertainty_fraction = uncertainty_bound_w / self.site_baseline_power_w;
+        let derived_power_values = [
+            site_power_reduction_w,
+            attributed_compute_reduction_w,
+            uncertainty_bound_w,
+            conservative_compute_reduction_w,
+            uncertainty_fraction,
+        ];
+        if derived_power_values.iter().any(|value| !value.is_finite()) {
+            return Err(AuditError(format!(
+                "dispatch event {:?} produces a non-finite derived power or uncertainty value",
+                self.event_id
+            )));
+        }
+        if conservative_compute_reduction_w > 0.0 {
+            let shed_energy_j =
+                conservative_compute_reduction_w * self.sustained_delivery_duration_s;
+            if !shed_energy_j.is_finite() || shed_energy_j <= 0.0 {
+                return Err(AuditError(format!(
+                    "dispatch event {:?} produces an invalid conservative shed-energy denominator",
+                    self.event_id
+                )));
+            }
+            if let Some(rebound_energy_j) = self.recovery_rebound_energy_j {
+                let rebound_fraction = rebound_energy_j / shed_energy_j;
+                if !rebound_fraction.is_finite() {
+                    return Err(AuditError(format!(
+                        "dispatch event {:?} produces a non-finite rebound fraction",
+                        self.event_id
+                    )));
+                }
+            }
+        }
+
         Ok(())
     }
 }
@@ -373,10 +415,14 @@ pub fn wilson_lower_bound(successes: usize, trials: usize, z_score: f64) -> Opti
     let n = trials as f64;
     let p = successes as f64 / n;
     let z2 = z_score * z_score;
+    if !z2.is_finite() {
+        return None;
+    }
     let denominator = 1.0 + z2 / n;
     let center = p + z2 / (2.0 * n);
     let margin = z_score * (p * (1.0 - p) / n + z2 / (4.0 * n * n)).sqrt();
-    Some(((center - margin) / denominator).clamp(0.0, 1.0))
+    let lower = ((center - margin) / denominator).clamp(0.0, 1.0);
+    lower.is_finite().then_some(lower)
 }
 
 fn nearest_rank_quantile(values: &mut [f64], quantile: f64) -> Option<f64> {
@@ -871,6 +917,18 @@ mod tests {
     }
 
     #[test]
+    fn rejects_finite_inputs_that_overflow_derived_power_attribution() {
+        let mut events = all_events(30);
+        events[0].site_baseline_power_w = f64::MAX;
+        events[0].non_compute_load_reduction_w = -f64::MAX;
+        assert!(evaluate_grid_service_sweep(contract(), events).is_err());
+
+        let mut contract = contract();
+        contract.confidence_z_score = f64::MAX;
+        assert!(evaluate_grid_service_sweep(contract, all_events(30)).is_err());
+    }
+
+    #[test]
     fn invalid_contract_thresholds_and_empty_sweep_are_rejected() {
         let mut bad = contract();
         bad.committed_compute_reduction_w = f64::NAN;
@@ -882,6 +940,7 @@ mod tests {
     fn wilson_bound_rejects_invalid_counts_and_matches_one_sided_90_percent_reference() {
         assert!(wilson_lower_bound(2, 1, 1.645).is_none());
         assert!(wilson_lower_bound(1, 1, f64::NAN).is_none());
+        assert!(wilson_lower_bound(1, 1, f64::MAX).is_none());
         let one_sided_90 = 1.281_551_565_5;
         let all_pass_lower = wilson_lower_bound(30, 30, one_sided_90).unwrap();
         assert!((all_pass_lower - 0.948_095_727_789_154_3).abs() < 1e-12);
