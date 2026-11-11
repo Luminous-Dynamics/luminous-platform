@@ -513,4 +513,4 @@ Independence review references and separation rules are retained, but remain evi
 
 See [CLUSTER_AWARE_REPEATED_EVENT_QUALIFICATION_2026-11-11.md](../../CLUSTER_AWARE_REPEATED_EVENT_QUALIFICATION_2026-11-11.md) for the statistical derivation, benchmark programme and limitations.
 
-**Validation:** seventeen synthetic Rust tests are authored but not executed. No compilation, formatting, Clippy, runtime benchmark, physical measurement, field dispatch or grid-service accreditation is claimed.
+**Validation:** nineteen synthetic Rust tests are authored but not executed. No compilation, formatting, Clippy, runtime benchmark, physical measurement, field dispatch or grid-service accreditation is claimed.
