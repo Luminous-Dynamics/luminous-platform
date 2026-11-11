@@ -301,7 +301,7 @@ Scenario scoring includes multivariate energy and variogram scores, peak/ramp/en
 
 The direct comparator is Yao et al.'s 6 November 2026 448-GPU GPU-IT forecast study. The MIT Supercloud source dataset has a CC BY-NC-ND 4.0 rights gate; no data are imported or used commercially by this implementation. See TEMPORAL_SCENARIOS_AND_HORIZON_RESERVE_BENCHMARK_2026-11-11.md.
 
-Thirty-four Rust tests are authored but not executed. No reproduction, performance claim or physical qualification is made.
+Thirty-six Rust tests are authored but not executed. No reproduction, performance claim or physical qualification is made.
 
 
 The scenario evaluator now contains all four scenario arms described in the Yao et al. benchmark: independent marginal negative control, empirical residual bootstrap, Schaake shuffle and a Gaussian copula. The copula arm uses rank-normal residual dependence, raw residual/evidence retention with score and correlation recomputation, per-residual model/regime/clock/time-origin contracts, a frozen regularized correlation matrix, deterministic Cholesky sampling and the current forecast's marginal quantile functions. It fails closed on low support, constant dimensions, invalid matrices and future/overlapping residuals. The implementation is in a separate draft stacked on PR #407; 32 tests are authored but not executed. This is methodological parity, not a completed paper reproduction or measured improvement.
@@ -309,7 +309,7 @@ The scenario evaluator now contains all four scenario arms described in the Yao 
 
 ## Paired, cluster-aware scenario decision benchmark
 
-A new Rust \`scenario_tournament\` layer now compares independent marginal sampling, Gaussian copula, empirical residual bootstrap and Schaake shuffle on the exact same forecast origins and measured horizons. It rejects comparisons that change the model, clock, workload, measurement evidence, horizon, scenario count or reserve/shortfall ratio. Bootstrap and Schaake selected residual records must also match the same complete historical residual pool used by the Gaussian copula, including raw residual vectors and origin/time/source evidence.
+A new Rust \`scenario_tournament\` layer now compares independent marginal sampling, Gaussian copula, empirical residual bootstrap and Schaake shuffle on the exact same forecast origins and measured horizons. It rejects comparisons that change the model, clock, workload, measurement evidence, horizon, scenario count or reserve/shortfall ratio. Bootstrap and Schaake selected residual records must also match the same complete historical residual pool used by the Gaussian copula, including raw residual vectors and origin/time/source evidence. Forecast-origin timestamps are checked against the preregistered episode windows.
 
 The statistical unit is a fixed-exposure operating cluster. Episodes inside a cluster may be dependent; the benchmark aggregates their paired cost outcomes before inference. It uses an exact one-sided Clopper–Pearson lower bound over independent clusters and Bonferroni-adjusted confidence across required strata. Overall pooled cost comparisons are descriptive only.
 
