@@ -107,6 +107,14 @@ impl ScenarioGenerationContract {
                 self.model_contract.hardware_configuration_fingerprint.as_str(),
                 "model_contract.hardware_configuration_fingerprint",
             ),
+            (self.model_contract.sensor_id.as_str(), "model_contract.sensor_id"),
+            (
+                self.model_contract.sensor_calibration_evidence_id.as_str(),
+                "model_contract.sensor_calibration_evidence_id",
+            ),
+            (self.model_contract.dataset_id.as_str(), "model_contract.dataset_id"),
+            (self.model_contract.dataset_version.as_str(), "model_contract.dataset_version"),
+            (self.model_contract.normalization_id.as_str(), "model_contract.normalization_id"),
             (
                 self.model_contract.measurement_boundary_id.as_str(),
                 "model_contract.measurement_boundary_id",
@@ -206,6 +214,7 @@ pub struct ForecastScenarioTrajectory {
     /// Exact measured-sample evidence references for the selected residual block.
     /// Empty only for the independent-quantile negative-control arm.
     pub source_sample_evidence_ids: Vec<String>,
+    pub source_sample_timestamps_ns: Vec<u64>,
     pub power_mw: Vec<u64>,
 }
 
@@ -987,6 +996,24 @@ fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditErr
                         "scenario residual lineage differs from selected residual manifest"
                             .to_string(),
                     ));
+                }
+                let mut sample_ids = HashSet::new();
+                let mut previous_timestamp = None;
+                for (sample_index, timestamp) in
+                    scenario.source_sample_timestamps_ns.iter().enumerate()
+                {
+                    if !sample_ids.insert(scenario.source_sample_evidence_ids[sample_index].as_str())
+                        || previous_timestamp.is_some_and(|previous| {
+                            timestamp.checked_sub(previous)
+                                != Some(scenarios.contract.step_period_ns)
+                        })
+                    {
+                        return Err(AuditError(
+                            "scenario residual sample evidence/timestamps are not unique and cadence-aligned"
+                                .to_string(),
+                        ));
+                    }
+                    previous_timestamp = Some(*timestamp);
                 }
             }
             if scenarios.contract.generator_kind == ScenarioGeneratorKind::SchaakeShuffle {
