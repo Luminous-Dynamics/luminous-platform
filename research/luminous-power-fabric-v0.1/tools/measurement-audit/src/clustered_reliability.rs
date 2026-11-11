@@ -27,6 +27,12 @@ pub struct ClusteredReliabilityContract {
     pub target_lower_quantile: f64,
     /// One-sided confidence required for the distribution-free quantile bound.
     pub one_sided_confidence: f64,
+    /// All clusters in this analysis use the same observation-window duration,
+    /// so cluster minima have comparable exposure.
+    pub cluster_window_duration_ns: u64,
+    /// Minimum dispatch count in each cluster; avoids comparing minima over
+    /// materially different event counts.
+    pub minimum_events_per_cluster: usize,
     /// Minimum gap between cluster windows. Derive it from the sampling design;
     /// non-overlap alone does not prove statistical independence.
     pub minimum_cluster_separation_ns: u64,
@@ -86,6 +92,13 @@ impl ClusteredReliabilityContract {
         {
             return Err(AuditError(
                 "quantile must be in (0, 1) and one-sided confidence must be in (0.5, 1)"
+                    .to_string(),
+            ));
+        }
+
+        if self.cluster_window_duration_ns == 0 || self.minimum_events_per_cluster == 0 {
+            return Err(AuditError(
+                "cluster window duration and minimum events per cluster must be positive"
                     .to_string(),
             ));
         }
@@ -386,9 +399,11 @@ pub fn evaluate_clustered_reliability(
                 cluster.cluster_id, cluster.stratum_id
             )));
         }
-        if cluster.window_end_ns <= cluster.window_start_ns {
+        if cluster.window_end_ns.checked_sub(cluster.window_start_ns)
+            != Some(contract.cluster_window_duration_ns)
+        {
             return Err(AuditError(format!(
-                "cluster {:?} requires a positive window",
+                "cluster {:?} window duration differs from the frozen cluster exposure",
                 cluster.cluster_id
             )));
         }
@@ -497,6 +512,15 @@ pub fn evaluate_clustered_reliability(
                 )));
             }
             events.push(event);
+        }
+
+        if events.len() < contract.minimum_events_per_cluster {
+            return Err(AuditError(format!(
+                "cluster {:?} has {} events; minimum is {}",
+                cluster.cluster_id,
+                events.len(),
+                contract.minimum_events_per_cluster
+            )));
         }
 
         let successful_event_count = events.iter().filter(|event| event.event_success).count();
@@ -675,7 +699,6 @@ pub fn evaluate_clustered_reliability(
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
     use super::{
         evaluate_clustered_reliability, minimum_clusters_for_quantile_confidence,
         ClusteredReliabilityContract, EventClusterAssignment, IndependenceCluster,
@@ -796,6 +819,8 @@ mod tests {
             required_strata: required_strata.iter().map(|value| (*value).to_string()).collect(),
             target_lower_quantile: 0.10,
             one_sided_confidence: 0.90,
+            cluster_window_duration_ns: 100_000_000_000,
+            minimum_events_per_cluster: 1,
             minimum_cluster_separation_ns: if independent { 1_000_000_000 } else { 0 },
         }
     }
@@ -990,6 +1015,26 @@ mod tests {
         let (source, contract, clusters, mut assignments) =
             fixture(&sizes, None, &strata, true);
         assignments.push(assignments[0].clone());
+        assert!(evaluate_clustered_reliability(&source, contract, clusters, assignments).is_err());
+    }
+
+    #[test]
+    fn rejects_cluster_with_non_matching_exposure_duration() {
+        let sizes = vec![1; 30];
+        let strata = one_stratum(sizes.len());
+        let (source, contract, mut clusters, assignments) =
+            fixture(&sizes, None, &strata, true);
+        clusters[0].window_end_ns -= 1;
+        assert!(evaluate_clustered_reliability(&source, contract, clusters, assignments).is_err());
+    }
+
+    #[test]
+    fn rejects_cluster_below_minimum_event_count() {
+        let sizes = vec![1; 30];
+        let strata = one_stratum(sizes.len());
+        let (source, mut contract, clusters, assignments) =
+            fixture(&sizes, None, &strata, true);
+        contract.minimum_events_per_cluster = 2;
         assert!(evaluate_clustered_reliability(&source, contract, clusters, assignments).is_err());
     }
 
