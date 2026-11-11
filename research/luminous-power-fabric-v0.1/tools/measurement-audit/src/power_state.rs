@@ -419,6 +419,7 @@ pub struct PredictedPowerTrace {
     pub measurement_boundary_id: String,
     pub workload_contract_id: String,
     pub state_mapper_id: String,
+    pub state_mapping_evidence_id: String,
     pub time_alignment_evidence_id: String,
     pub source_timeline_digest_reference: String,
     pub sample_period_ns: u64,
@@ -563,6 +564,7 @@ pub fn predict_power_trace(
         measurement_boundary_id: contract.measurement_boundary_id.clone(),
         workload_contract_id: contract.workload_contract_id.clone(),
         state_mapper_id: contract.state_mapper_id.clone(),
+        state_mapping_evidence_id: trace.state_mapping_evidence_id.clone(),
         time_alignment_evidence_id: trace.time_alignment_evidence_id.clone(),
         source_timeline_digest_reference: trace.source_timeline_digest_reference.clone(),
         sample_period_ns: contract.sample_period_ns,
@@ -834,6 +836,7 @@ mod tests {
         assert_eq!(trace.calibration_contract.sensor_calibration_evidence_id, "calibration:fixture");
         assert_eq!(trace.training_evidence[0].time_alignment_evidence_id, "alignment:train-a");
         assert_eq!(trace.held_out_evidence[0].run_id, "heldout-a");
+        assert_eq!(trace.state_mapping_evidence_id, "mapping:heldout");
         assert_eq!(trace.claim_ceiling, "MODELLED_CONDITIONAL_POWER_ENVELOPE_NOT_MEASUREMENT_OR_GRID_QUALIFICATION");
     }
 
