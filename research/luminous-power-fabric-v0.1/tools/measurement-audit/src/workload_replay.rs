@@ -388,8 +388,8 @@ fn run_schedule(
                 effective_capacity_at(now_ns, full_capacity, windows);
             let after = used_resources.checked_add(jobs[index].resource_demand);
 
-            if after.is_some_and(|resources| resources.fits_within(admission_capacity)) {
-                used_resources = after.expect("checked resource addition was Some");
+            if let Some(after) = after.filter(|resources| resources.fits_within(admission_capacity)) {
+                used_resources = after;
                 ready.remove(&priority);
                 let finish_ns = now_ns
                     .checked_add(jobs[index].runtime_ns)
@@ -468,10 +468,17 @@ fn gpu_resource_time_during_windows(
         else {
             continue;
         };
-        for window in windows {
+        if job.resource_demand.gpu_units == 0 {
+            continue;
+        }
+        let first_window = windows.partition_point(|window| window.end_ns <= start_ns);
+        for window in &windows[first_window..] {
+            if window.start_ns >= finish_ns {
+                break;
+            }
             let overlap_start = start_ns.max(window.start_ns);
             let overlap_end = finish_ns.min(window.end_ns);
-            if overlap_end > overlap_start && job.resource_demand.gpu_units > 0 {
+            if overlap_end > overlap_start {
                 let duration_ns = (overlap_end - overlap_start) as u128;
                 let resource_time = (job.resource_demand.gpu_units as u128)
                     .checked_mul(duration_ns)
