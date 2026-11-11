@@ -556,7 +556,7 @@ The evaluator computes multivariate energy and variogram scores, peak/ramp/energ
 
 See TEMPORAL_SCENARIOS_AND_HORIZON_RESERVE_BENCHMARK_2026-11-11.md for the 6 November 2026 Yao et al. reproduction protocol, industry comparators and MIT dataset rights gate.
 
-Validation: 32 synthetic Rust tests are authored but not executed. No compiler, Cargo test, formatting, Clippy, runtime benchmark, dataset download or physical measurement is claimed.
+Validation: 34 synthetic Rust tests are authored but not executed. No compiler, Cargo test, formatting, Clippy, runtime benchmark, dataset download or physical measurement is claimed.
 
 
-**Gaussian-copula arm:** a rank-normal residual dependence estimator, frozen correlation shrinkage, deterministic Cholesky sampling and current-marginal quantile mapping are now implemented. It requires at least max(30, horizon_steps + 1) non-overlapping residual blocks, records correlation/regularization/factor evidence and rejects constant dimensions. Thirty-two synthetic tests are authored but not executed. This completes the four method arms structurally; no paper reproduction is claimed.
+**Gaussian-copula arm:** a rank-normal residual dependence estimator, frozen correlation shrinkage, deterministic Cholesky sampling and current-marginal quantile mapping are now implemented. It requires at least max(30, horizon_steps + 1) non-overlapping residual blocks, records raw residual vectors, recomputable rank scores, exact per-residual model/regime/clock/time-origin contracts, correlation/regularization/factor evidence and rejects constant dimensions. Thirty-two synthetic tests are authored but not executed. This completes the four method arms structurally; no paper reproduction is claimed.
