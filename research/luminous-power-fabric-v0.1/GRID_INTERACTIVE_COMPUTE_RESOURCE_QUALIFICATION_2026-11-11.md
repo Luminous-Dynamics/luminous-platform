@@ -2,7 +2,7 @@
 
 Research snapshot: 11 November 2026.
 
-Status: **offline event-level evaluator and eighteen synthetic Rust unit tests authored; tests not executed**. This is a proposed measurement and qualification protocol, not a grid-market product, accredited capacity result, utility approval or field demonstration.
+Status: **offline event-level evaluator and nineteen synthetic Rust unit tests authored; tests not executed**. This is a proposed measurement and qualification protocol, not a grid-market product, accredited capacity result, utility approval or field demonstration.
 
 ## 1. The paradigm shift
 
@@ -140,7 +140,7 @@ Qualification requires all of the following:
 - P10 credited capacity is at least the declared commitment.
 - The Wilson lower bound meets the required success probability.
 
-With 30 independent events and all 30 successful, the one-sided 90% Wilson lower bound is approximately 0.9481. With 29 successes from 30 events it is approximately 0.8949, so one failed event misses the initial 0.90 reliability gate.
+With 30 independent events and all 30 successful, the one-sided 90% Wilson lower bound is approximately 0.9481. With 29 successes from 30 events it is approximately 0.8949, so one failed event misses the initial 0.90 reliability gate. A one-sided 95% Wilson lower bound of at least 0.95 requires at least 52 independent all-success events; any failures require a larger sample, and representative event design remains essential.
 - The event design declares the independent-trial assumption.
 
 **Statistical limitation:** the Wilson bound has its stated binomial interpretation only when the event trials are representative and sufficiently independent. Repeated events on the same day, under the same weather or thermal state, or under correlated workload conditions may not be independent. The code withholds the confidence bound when the independent-event assumption is not declared, but a boolean declaration and a design-reference string do not prove independence. A field programme should use preregistered randomization/stratification, cluster-aware analysis or a hierarchical model where appropriate, and independent statistical review.
@@ -155,6 +155,8 @@ The Rust module at tools/measurement-audit/src/grid_service.rs exposes:
 - GridDispatchEvent — site and non-compute power deltas, conservative uncertainty bounds, compute service metrics, response/sustain and recovery observations.
 - evaluate_grid_service_sweep — per-event attribution, failed-event zero credit, nearest-rank P10 capacity, event success fraction and conditional Wilson lower bound.
 - GridServiceQualificationReport — the exact frozen contract and thresholds, baseline IDs/evidence, sampling design, P10 capacity, reliability, event counts, and each qualification gate.
+
+The evaluator rejects finite input combinations that overflow when deriving site reduction, compute attribution, uncertainty, conservative shed energy or rebound ratio. The standalone Wilson helper also withholds a result for an overflowed z-score.
 - GridDispatchEventResult — event evidence ID and exact dispatch/recovery timestamp intervals alongside attribution and pass/fail metrics, so credited capacity remains traceable.
 
 Sixteen synthetic Rust unit tests are authored. They exercise the all-pass repeated-event case and negative controls for single-event overclaim, one failed event, non-compute subtraction, uncertainty, missing/excessive rebound, missing recovery, useful-work loss, P99/TTFT/SLO regression, late response, short sustain, post-hoc baselines, unvalidated baseline models, unproven event independence, changed location/boundary/workload/control, overlapping windows, duplicate IDs and invalid measurement contracts.
