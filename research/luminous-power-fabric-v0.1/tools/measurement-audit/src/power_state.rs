@@ -394,6 +394,12 @@ pub enum PredictionBasis {
     OrderedStateTransitionEnvelope,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PredictionScope {
+    HeldOutValidation,
+    OperationalScenario,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PredictedPowerSample {
     pub timestamp_ns: u64,
@@ -409,6 +415,7 @@ pub struct PredictedPowerSample {
 pub struct PredictedPowerTrace {
     pub trace_id: String,
     pub run_id: String,
+    pub prediction_scope: PredictionScope,
     /// Full calibration contract and per-run evidence lineage accompany every prediction.
     pub calibration_contract: PowerModelContract,
     pub training_evidence: Vec<CalibrationRunEvidence>,
@@ -448,9 +455,10 @@ fn find_transition_envelope<'a>(
 /// Map an independently evidenced state sequence to modelled power envelopes.
 /// The input order and timestamps are preserved exactly; no sample shuffling,
 /// interpolation across unsupported states, TDP scaling or linear GPU-count scaling occurs.
-pub fn predict_power_trace(
+fn predict_power_trace_internal(
     model: &PowerStateModel,
     trace: &MappedStateTrace,
+    prediction_scope: PredictionScope,
 ) -> Result<PredictedPowerTrace, AuditError> {
     for (value, field) in [
         (trace.trace_id.as_str(), "trace_id"),
@@ -479,11 +487,25 @@ pub fn predict_power_trace(
             "prediction trace is outside the exact calibrated configuration, boundary, workload or state-mapper support".to_string(),
         ));
     }
-    if !model.held_out_run_ids.iter().any(|run_id| run_id == &trace.run_id) {
-        return Err(AuditError(format!(
-            "prediction run {:?} is not in this model's held-out sessions",
-            trace.run_id
-        )));
+    match prediction_scope {
+        PredictionScope::HeldOutValidation => {
+            if !model.held_out_run_ids.iter().any(|run_id| run_id == &trace.run_id) {
+                return Err(AuditError(format!(
+                    "prediction run {:?} is not in this model's held-out sessions",
+                    trace.run_id
+                )));
+            }
+        }
+        PredictionScope::OperationalScenario => {
+            if model.training_run_ids.iter().any(|run_id| run_id == &trace.run_id)
+                || model.held_out_run_ids.iter().any(|run_id| run_id == &trace.run_id)
+            {
+                return Err(AuditError(format!(
+                    "operational scenario {:?} reuses a calibration or held-out evaluation run ID",
+                    trace.run_id
+                )));
+            }
+        }
     }
     if trace.samples.is_empty() {
         return Err(AuditError("mapped state trace contains no samples".to_string()));
@@ -555,6 +577,7 @@ pub fn predict_power_trace(
     Ok(PredictedPowerTrace {
         trace_id: trace.trace_id.clone(),
         run_id: trace.run_id.clone(),
+        prediction_scope,
         calibration_contract: contract.clone(),
         training_evidence: model.training_evidence.clone(),
         held_out_evidence: model.held_out_evidence.clone(),
@@ -569,8 +592,32 @@ pub fn predict_power_trace(
         source_timeline_digest_reference: trace.source_timeline_digest_reference.clone(),
         sample_period_ns: contract.sample_period_ns,
         samples: predicted,
-        claim_ceiling: "MODELLED_CONDITIONAL_POWER_ENVELOPE_NOT_MEASUREMENT_OR_GRID_QUALIFICATION",
+        claim_ceiling: match prediction_scope {
+            PredictionScope::HeldOutValidation =>
+                "HELD_OUT_MODELLED_POWER_PREDICTION_NOT_MEASUREMENT_OR_GRID_QUALIFICATION",
+            PredictionScope::OperationalScenario =>
+                "MODELLED_OPERATIONAL_SCENARIO_NOT_HELD_OUT_VALIDATION_OR_MEASUREMENT",
+        },
     })
+}
+
+/// Predict on a held-out calibration run for model validation.
+/// The run must be explicitly listed in the whole-session held-out partition.
+pub fn predict_power_trace(
+    model: &PowerStateModel,
+    trace: &MappedStateTrace,
+) -> Result<PredictedPowerTrace, AuditError> {
+    predict_power_trace_internal(model, trace, PredictionScope::HeldOutValidation)
+}
+
+/// Predict a new operational workload scenario using the fitted calibration.
+/// The run ID must not be part of either calibration or held-out evaluation data.
+/// Scenario predictions are MODELLED and cannot be scored as held-out validation.
+pub fn predict_operational_scenario(
+    model: &PowerStateModel,
+    trace: &MappedStateTrace,
+) -> Result<PredictedPowerTrace, AuditError> {
+    predict_power_trace_internal(model, trace, PredictionScope::OperationalScenario)
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -615,6 +662,11 @@ pub fn evaluate_held_out_power_trace(
     measured_run_id: &str,
     measured: &[PowerTraceSample],
 ) -> Result<PowerValidationMetrics, AuditError> {
+    if predicted.prediction_scope != PredictionScope::HeldOutValidation {
+        return Err(AuditError(
+            "operational scenario predictions cannot be scored as held-out validation".to_string(),
+        ));
+    }
     if measured_run_id != predicted.run_id {
         return Err(AuditError("held-out measurement run ID does not match the predicted trace".to_string()));
     }
@@ -717,9 +769,9 @@ pub fn evaluate_held_out_power_trace(
 #[cfg(test)]
 mod tests {
     use super::{
-        evaluate_held_out_power_trace, fit_power_state_model, predict_power_trace,
-        CalibrationSplit, MappedStateSample, MappedStateTrace, PowerCalibrationRun,
-        PowerModelContract, PowerTraceSample, SampleQuality,
+        evaluate_held_out_power_trace, fit_power_state_model, predict_operational_scenario,
+        predict_power_trace, CalibrationSplit, MappedStateSample, MappedStateTrace,
+        PowerCalibrationRun, PowerModelContract, PowerTraceSample, PredictionScope, SampleQuality,
     };
 
     fn contract() -> PowerModelContract {
@@ -851,6 +903,34 @@ mod tests {
         let mut runs = training_and_holdout();
         runs[0].clock_alignment_method_id = "different-clock-method".to_string();
         assert!(fit_power_state_model(contract(), &runs).is_err());
+    }
+
+    #[test]
+    fn new_operational_run_can_be_predicted_without_weakening_holdout_validation() {
+        let model = fit_power_state_model(contract(), &training_and_holdout()).unwrap();
+        let trace = mapped_trace("future-scenario-01");
+        let prediction = predict_operational_scenario(&model, &trace).unwrap();
+        assert_eq!(prediction.prediction_scope, PredictionScope::OperationalScenario);
+        assert_eq!(
+            prediction.claim_ceiling,
+            "MODELLED_OPERATIONAL_SCENARIO_NOT_HELD_OUT_VALIDATION_OR_MEASUREMENT"
+        );
+        let measured = vec![
+            sample(0, "idle", 900),
+            sample(10, "idle", 910),
+            sample(20, "prefill", 1_400),
+            sample(30, "prefill", 1_420),
+            sample(40, "decode", 1_250),
+            sample(50, "decode", 1_240),
+        ];
+        assert!(evaluate_held_out_power_trace(&prediction, "future-scenario-01", &measured).is_err());
+    }
+
+    #[test]
+    fn operational_scenario_cannot_reuse_training_or_holdout_run_ids() {
+        let model = fit_power_state_model(contract(), &training_and_holdout()).unwrap();
+        assert!(predict_operational_scenario(&model, &mapped_trace("train-a")).is_err());
+        assert!(predict_operational_scenario(&model, &mapped_trace("heldout-a")).is_err());
     }
 
     #[test]
