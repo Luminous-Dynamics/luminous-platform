@@ -25,7 +25,7 @@ A frozen ClusteredReliabilityContract binds:
 - the lower-tail quantile and one-sided confidence target;
 - an explicit independence-review evidence reference and minimum cluster separation.
 
-Each IndependenceCluster has a stable ID, one declared operating stratum, a half-open sampling window and design evidence. Every source dispatch event must map to exactly one cluster with an assignment evidence reference. The complete dispatch and recovery interval must fit inside the cluster window. Cluster windows cannot overlap; when independence is claimed, the declared minimum separation is enforced.
+Each IndependenceCluster has a stable ID, one declared operating stratum, a half-open sampling window and design evidence. The contract freezes one common window duration and a minimum event count per cluster, so cluster minima do not mix different observation exposures or materially different event counts. Every source dispatch event must map to exactly one cluster with an assignment evidence reference. The complete dispatch and recovery interval must fit inside the cluster window. Cluster windows cannot overlap; when independence is claimed, the declared minimum separation is enforced.
 
 The independence review must justify the unit and separation from the operating process: site, season/thermal state, workload regime, dispatch cadence, common-cause events, maintenance and recovery. The implementation checks the declared window and evidence structure; it cannot prove independence from identifiers or timestamps alone.
 
@@ -107,7 +107,7 @@ The new clustered_reliability module:
 - computes the distribution-free lower-tail capacity support requirement and stratified cluster-level Wilson bounds;
 - withholds inferential outputs when cluster independence is not declared or support is inadequate.
 
-Seventeen synthetic Rust unit tests are authored. They cover 22/29-cluster thresholds, valid 30-event/30-cluster qualification, 30 events grouped into three clusters, within-cluster failure, per-stratum support, undeclared independence, assignment omissions/duplicates/unknown IDs, cluster separation, event/recovery containment, source-contract mismatch, inconsistent source outcomes and unused clusters.
+Nineteen synthetic Rust unit tests are authored. They cover 22/29-cluster thresholds, valid 30-event/30-cluster qualification, 30 events grouped into three clusters, within-cluster failure, per-stratum support, undeclared independence, assignment omissions/duplicates/unknown IDs, unequal cluster exposure, minimum event-count rejection, cluster separation, event/recovery containment, source-contract mismatch, inconsistent source outcomes and unused clusters.
 
 **Tests are authored but not executed.** No Rust compilation, cargo test, formatting, Clippy, runtime benchmark, physical measurement, field dispatch, grid-service qualification, market participation or capacity accreditation is claimed. The module is read-only and cannot authenticate the referenced evidence or prove statistical independence. An independent reviewer must approve the cluster design before inferential use.
 
