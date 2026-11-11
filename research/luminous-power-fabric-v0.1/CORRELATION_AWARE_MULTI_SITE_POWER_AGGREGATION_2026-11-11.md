@@ -120,3 +120,25 @@ This lets operators see not just each site's marginal flexibility, but the proba
 ## 10. Claim ceiling
 
 This document is a research specification. No multi-site telemetry corpus, regional trace model, correlation metric implementation, field dispatch or reserve/diversity credit has been produced by this revision. A predicted aggregate is MODELLED; a measured parent-boundary trace is MEASURED; grid qualification remains separate.
+
+## 11. v0.1 Rust implementation status
+
+The first offline implementation is registered as `tools/measurement-audit/src/multi_site_power.rs`.
+
+Implemented in this increment:
+- at least two child traces with exact parent-topology and region membership;
+- distinct source clock/time-origin IDs mapped by caller-supplied signed constant offsets into an explicit common clock and time origin;
+- exact declared sample cadence and common timestamp sequence; no interpolation or row shuffling;
+- maximum clock-alignment uncertainty, method ID and evidence ID checks;
+- fail-closed rejection of missing, saturated, unsynchronized or calibration-invalid samples;
+- no mixing MODELLED and MEASURED traces in one aggregate;
+- deterministic canonical ordering by site ID;
+- aggregate power samples and mean/variance/P99/peak;
+- pairwise contemporaneous Pearson correlation, covariance and P90 tail co-exceedance;
+- lagged Pearson correlations and sample counts for each configured lag;
+- independent-reference variance as the sum of child population variances, variance amplification ratio and covariance-decomposition residual;
+- source site/run/session/trace/clock-alignment lineage.
+
+Not implemented yet: Spearman correlation, spectral coherence, time-varying clock-drift estimation/correction, state-conditioned dependence models, long-memory/common-factor model, physically matched independent-session trace synthesis, measured parent-boundary reconciliation, energy integration, causal attribution or region-level grid simulation. The current implementation only applies a caller-declared constant offset and alignment-uncertainty ceiling; it does not estimate clock drift.
+
+Fifteen synthetic Rust tests are authored but not executed. No multi-site measured or licensed trace data were imported. No compile, formatter, linter, runtime benchmark or field result is claimed.
