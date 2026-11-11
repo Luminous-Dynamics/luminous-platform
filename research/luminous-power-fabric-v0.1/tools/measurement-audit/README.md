@@ -529,3 +529,18 @@ Each `PredictedPowerTrace` now includes the mapped source trace's own state-mapp
 The model now exposes distinct prediction APIs for held-out validation and new operational scenarios. `predict_power_trace` only accepts a run in the held-out session set. `predict_operational_scenario` accepts a new run ID not present in either training or holdout sets. Each output records a `PredictionScope` and distinct claim ceiling; held-out scoring rejects operational-scenario traces. This keeps calibration leakage checks intact while allowing #400/#403/#404 to use the calibrated model for new MODELLED counterfactual traces.
 
 Fifteen synthetic Rust tests are authored but not executed. No held-out or scenario prediction has been run on a physical power trace.
+
+
+## Regime-conditioned session conformal forecast calibration
+
+The forecast_calibration module adds a regime-specific split-conformal correction on top of #401 predictions. Its exchangeability unit is a complete, fixed-exposure acquisition session, not a sample row. Each session contributes the maximum interval violation over every sample/trace in that session, allowing arbitrary temporal dependence inside the session.
+
+The exact complete PowerModelContract, model revision, hardware, boundary, workload, state mapper, clock method and cadence are bound to every calibration. Calibration accepts only new OperationalScenario predictions, never #401 held-out validation traces. Calibration and monitoring session/run/trace IDs must be disjoint. Unknown regimes are OUT_OF_DOMAIN and receive no borrowed interval correction.
+
+The fitted correction targets whole-session coverage: every sample in a session must lie inside the corrected interval. The finite-sample conformal order statistic is ceil((n+1) × target_coverage); a 90% target first has an observable rank at nine exchangeable sessions per regime. That is a mathematical minimum, not a recommended field sample size. Fixed session duration, trace count, samples per trace and minimum separation are required so session maxima have comparable exposure.
+
+A separate monitor reports whole-session coverage, sample-level coverage as a non-independent diagnostic, per-regime Wilson lower bounds and NOMINAL / DEGRADED / INSUFFICIENT_SUPPORT / OUT_OF_DOMAIN states. Monitoring never mutates the frozen calibrator; recalibration requires a new version and a new calibration set.
+
+See [REGIME_CONDITIONED_SESSION_CONFORMAL_FORECAST_CALIBRATION_2026-11-11.md](../../REGIME_CONDITIONED_SESSION_CONFORMAL_FORECAST_CALIBRATION_2026-11-11.md) for the statistical contract and reproduction plan for Yao et al. (6 November 2026).
+
+**Validation:** seventeen synthetic Rust tests are authored but not executed. No compile, Cargo test, formatter, Clippy, physical trace, dataset reproduction or runtime benchmark is claimed.
