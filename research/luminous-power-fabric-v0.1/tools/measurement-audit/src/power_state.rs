@@ -127,6 +127,14 @@ pub struct StateTransitionPowerEnvelope {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CalibrationRunEvidence {
+    pub run_id: String,
+    pub session_id: String,
+    pub state_mapping_evidence_id: String,
+    pub time_alignment_evidence_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PowerStateModel {
     pub contract: PowerModelContract,
     pub state_envelopes: Vec<StatePowerEnvelope>,
@@ -136,6 +144,8 @@ pub struct PowerStateModel {
     /// Recorded for split audit only. Held-out samples never enter fitted envelopes.
     pub held_out_run_ids: Vec<String>,
     pub held_out_session_ids: Vec<String>,
+    pub training_evidence: Vec<CalibrationRunEvidence>,
+    pub held_out_evidence: Vec<CalibrationRunEvidence>,
     pub claim_ceiling: &'static str,
 }
 
@@ -255,6 +265,8 @@ pub fn fit_power_state_model(
     let mut training_session_ids = BTreeSet::new();
     let mut held_out_run_ids = Vec::new();
     let mut held_out_session_ids = BTreeSet::new();
+    let mut training_evidence = Vec::new();
+    let mut held_out_evidence = Vec::new();
 
     for run in runs {
         validate_run(&contract, run)?;
@@ -274,6 +286,12 @@ pub fn fit_power_state_model(
             CalibrationSplit::Training => {
                 training_run_ids.push(run.run_id.clone());
                 training_session_ids.insert(run.session_id.clone());
+                training_evidence.push(CalibrationRunEvidence {
+                    run_id: run.run_id.clone(),
+                    session_id: run.session_id.clone(),
+                    state_mapping_evidence_id: run.state_mapping_evidence_id.clone(),
+                    time_alignment_evidence_id: run.time_alignment_evidence_id.clone(),
+                });
                 for sample in &run.samples {
                     state_values
                         .entry(sample.state_id.clone())
@@ -290,6 +308,12 @@ pub fn fit_power_state_model(
             CalibrationSplit::HeldOut => {
                 held_out_run_ids.push(run.run_id.clone());
                 held_out_session_ids.insert(run.session_id.clone());
+                held_out_evidence.push(CalibrationRunEvidence {
+                    run_id: run.run_id.clone(),
+                    session_id: run.session_id.clone(),
+                    state_mapping_evidence_id: run.state_mapping_evidence_id.clone(),
+                    time_alignment_evidence_id: run.time_alignment_evidence_id.clone(),
+                });
             }
         }
     }
@@ -323,6 +347,8 @@ pub fn fit_power_state_model(
 
     training_run_ids.sort();
     held_out_run_ids.sort();
+    training_evidence.sort_by(|left, right| left.run_id.cmp(&right.run_id));
+    held_out_evidence.sort_by(|left, right| left.run_id.cmp(&right.run_id));
     Ok(PowerStateModel {
         contract,
         state_envelopes,
@@ -331,6 +357,8 @@ pub fn fit_power_state_model(
         training_session_ids: training_session_ids.into_iter().collect(),
         held_out_run_ids,
         held_out_session_ids: held_out_session_ids.into_iter().collect(),
+        training_evidence,
+        held_out_evidence,
         claim_ceiling: "CALIBRATED_STATE_CONDITIONAL_POWER_MODEL_NOT_MEASURED_OUTPUT_OR_QUALIFICATION",
     })
 }
@@ -377,6 +405,10 @@ pub struct PredictedPowerSample {
 pub struct PredictedPowerTrace {
     pub trace_id: String,
     pub run_id: String,
+    /// Full calibration contract and per-run evidence lineage accompany every prediction.
+    pub calibration_contract: PowerModelContract,
+    pub training_evidence: Vec<CalibrationRunEvidence>,
+    pub held_out_evidence: Vec<CalibrationRunEvidence>,
     pub model_id: String,
     pub model_revision: String,
     pub hardware_configuration_fingerprint: String,
@@ -510,6 +542,9 @@ pub fn predict_power_trace(
     Ok(PredictedPowerTrace {
         trace_id: trace.trace_id.clone(),
         run_id: trace.run_id.clone(),
+        calibration_contract: contract.clone(),
+        training_evidence: model.training_evidence.clone(),
+        held_out_evidence: model.held_out_evidence.clone(),
         model_id: contract.model_id.clone(),
         model_revision: contract.model_revision.clone(),
         hardware_configuration_fingerprint: contract.hardware_configuration_fingerprint.clone(),
@@ -777,6 +812,9 @@ mod tests {
         assert_eq!(trace.samples[2].basis, super::PredictionBasis::OrderedStateTransitionEnvelope);
         assert_eq!(trace.samples[2].state_id, "prefill");
         assert_eq!(trace.samples[4].state_id, "decode");
+        assert_eq!(trace.calibration_contract.sensor_calibration_evidence_id, "calibration:fixture");
+        assert_eq!(trace.training_evidence[0].time_alignment_evidence_id, "alignment:train-a");
+        assert_eq!(trace.held_out_evidence[0].run_id, "heldout-a");
         assert_eq!(trace.claim_ceiling, "MODELLED_CONDITIONAL_POWER_ENVELOPE_NOT_MEASUREMENT_OR_GRID_QUALIFICATION");
     }
 
