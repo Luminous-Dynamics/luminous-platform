@@ -173,6 +173,17 @@ pub struct ScenarioTournamentBaselineSummary {
 #[derive(Debug, Clone, PartialEq)]
 pub struct ScenarioTournamentClusterComparison {
     pub cluster_id: String,
+    pub stratum_id: String,
+    pub cluster_window_start_ns: u64,
+    pub cluster_window_end_ns: u64,
+    pub cluster_design_evidence_id: String,
+    pub episode_ids: Vec<String>,
+    pub episode_evidence_ids: Vec<String>,
+    pub forecast_ids: Vec<String>,
+    pub forecast_origin_ids: Vec<String>,
+    pub measurement_run_ids: Vec<String>,
+    pub measurement_evidence_ids: Vec<String>,
+    pub measured_sample_evidence_ids: Vec<Vec<String>>,
     pub episode_count: usize,
     pub baseline_mean_cost_ratio_units: f64,
     pub candidate_mean_cost_ratio_units: f64,
@@ -244,6 +255,17 @@ struct EpisodeArmCosts {
 #[derive(Debug, Clone, PartialEq)]
 struct ClusterArmCosts {
     cluster_id: String,
+    stratum_id: String,
+    window_start_ns: u64,
+    window_end_ns: u64,
+    cluster_design_evidence_id: String,
+    episode_ids: Vec<String>,
+    episode_evidence_ids: Vec<String>,
+    forecast_ids: Vec<String>,
+    forecast_origin_ids: Vec<String>,
+    measurement_run_ids: Vec<String>,
+    measurement_evidence_ids: Vec<String>,
+    measured_sample_evidence_ids: Vec<Vec<String>>,
     episode_costs: Vec<EpisodeArmCosts>,
 }
 
@@ -598,6 +620,17 @@ fn summarize_arm(
         // The actual strings are also checked during pairing in the outer API.
         cluster_comparisons.push(ScenarioTournamentClusterComparison {
             cluster_id: cluster.cluster_id.clone(),
+            stratum_id: cluster.stratum_id.clone(),
+            cluster_window_start_ns: cluster.window_start_ns,
+            cluster_window_end_ns: cluster.window_end_ns,
+            cluster_design_evidence_id: cluster.cluster_design_evidence_id.clone(),
+            episode_ids: cluster.episode_ids.clone(),
+            episode_evidence_ids: cluster.episode_evidence_ids.clone(),
+            forecast_ids: cluster.forecast_ids.clone(),
+            forecast_origin_ids: cluster.forecast_origin_ids.clone(),
+            measurement_run_ids: cluster.measurement_run_ids.clone(),
+            measurement_evidence_ids: cluster.measurement_evidence_ids.clone(),
+            measured_sample_evidence_ids: cluster.measured_sample_evidence_ids.clone(),
             episode_count,
             baseline_mean_cost_ratio_units: baseline_mean,
             candidate_mean_cost_ratio_units: candidate_mean,
@@ -681,6 +714,13 @@ fn build_cluster_costs(
     paired_reports: &[(ScenarioTournamentEpisode, [ScenarioEvaluationReport; 4])],
 ) -> Result<ClusterArmCosts, AuditError> {
     let mut episode_costs = Vec::with_capacity(paired_reports.len());
+    let mut episode_ids = Vec::with_capacity(paired_reports.len());
+    let mut episode_evidence_ids = Vec::with_capacity(paired_reports.len());
+    let mut forecast_ids = Vec::with_capacity(paired_reports.len());
+    let mut forecast_origin_ids = Vec::with_capacity(paired_reports.len());
+    let mut measurement_run_ids = Vec::with_capacity(paired_reports.len());
+    let mut measurement_evidence_ids = Vec::with_capacity(paired_reports.len());
+    let mut measured_sample_evidence_ids = Vec::with_capacity(paired_reports.len());
     for (episode, reports) in paired_reports {
         let baseline = &reports[0];
         let mut candidate_costs = Vec::with_capacity(3);
@@ -691,6 +731,13 @@ fn build_cluster_costs(
             candidate_shortfalls.push(candidate.reserve_shortfall_occurred);
             candidate_shortfall_mw.push(candidate.actual_shortfall_mw);
         }
+        episode_ids.push(episode.episode_id.clone());
+        episode_evidence_ids.push(episode.episode_evidence_id.clone());
+        forecast_ids.push(baseline.forecast_id.clone());
+        forecast_origin_ids.push(baseline.forecast_origin_id.clone());
+        measurement_run_ids.push(baseline.measurement_run_id.clone());
+        measurement_evidence_ids.push(baseline.measurement_evidence_id.clone());
+        measured_sample_evidence_ids.push(baseline.measured_sample_evidence_ids.clone());
         episode_costs.push(EpisodeArmCosts {
             baseline_cost: baseline.realized_reserve_cost_ratio_units,
             candidate_costs,
@@ -703,6 +750,17 @@ fn build_cluster_costs(
     }
     Ok(ClusterArmCosts {
         cluster_id: cluster.cluster_id.clone(),
+        stratum_id: cluster.stratum_id.clone(),
+        window_start_ns: cluster.window_start_ns,
+        window_end_ns: cluster.window_end_ns,
+        cluster_design_evidence_id: cluster.cluster_design_evidence_id.clone(),
+        episode_ids,
+        episode_evidence_ids,
+        forecast_ids,
+        forecast_origin_ids,
+        measurement_run_ids,
+        measurement_evidence_ids,
+        measured_sample_evidence_ids,
         episode_costs,
     })
 }
