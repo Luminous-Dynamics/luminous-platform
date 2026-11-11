@@ -301,7 +301,7 @@ Scenario scoring includes multivariate energy and variogram scores, peak/ramp/en
 
 The direct comparator is Yao et al.'s 6 November 2026 448-GPU GPU-IT forecast study. The MIT Supercloud source dataset has a CC BY-NC-ND 4.0 rights gate; no data are imported or used commercially by this implementation. See TEMPORAL_SCENARIOS_AND_HORIZON_RESERVE_BENCHMARK_2026-11-11.md.
 
-Twenty-four Rust tests are authored but not executed. No reproduction, performance claim or physical qualification is made.
+Twenty-six Rust tests are authored but not executed. No reproduction, performance claim or physical qualification is made.
 
 
 The v0.1 scenario evaluator currently implements three generator arms. Gaussian-copula dependence estimation and full four-arm paper parity remain open in [issue #408](https://github.com/Luminous-Dynamics/luminous-platform/issues/408); no complete paper reproduction is claimed.
