@@ -2203,6 +2203,38 @@ mod tests {
         ]
     }
 
+    fn copula_residuals() -> Vec<ForecastResidualTrajectory> {
+        let mut pool = residuals();
+        for index in 3..30 {
+            let start = (index as u64 + 1) * 1_000;
+            let mut extra = pool[index % 3].clone();
+            extra.residual_id = format!("copula-residual-{index:03}");
+            extra.origin_id = format!("copula-origin-{index:03}");
+            extra.origin_timestamp_ns = start;
+            extra.target_window_end_ns = start + 30;
+            extra.forecast_evidence_id = format!("copula-forecast-{index:03}");
+            extra.measurement_evidence_id = format!("copula-measurement-{index:03}");
+            extra.residual_generation_evidence_id =
+                format!("copula-generation-{index:03}");
+            extra.state_mapping_evidence_id = format!("copula-mapping-{index:03}");
+            extra.time_alignment_evidence_id = format!("copula-alignment-{index:03}");
+            extra.source_timeline_digest_reference = format!("copula-timeline-{index:03}");
+            extra.source_sample_timestamps_ns = vec![start + 10, start + 20, start + 30];
+            extra.source_sample_evidence_ids = vec![
+                format!("copula-{index:03}-sample-1"),
+                format!("copula-{index:03}-sample-2"),
+                format!("copula-{index:03}-sample-3"),
+            ];
+            extra.residual_power_mw = vec![
+                ((index * 7) % 29) as i64 - 14,
+                ((index * 11) % 31) as i64 - 15,
+                ((index * 17) % 37) as i64 - 18,
+            ];
+            pool.push(extra);
+        }
+        pool
+    }
+
     fn actual_horizon() -> MeasuredForecastHorizon {
         MeasuredForecastHorizon {
             forecast_id: "forecast-current".to_string(),
@@ -2234,6 +2266,93 @@ mod tests {
                 },
             ],
         }
+    }
+
+    #[test]
+    fn gaussian_copula_is_deterministic_and_carries_complete_pool_evidence() {
+        let config = contract(ScenarioGeneratorKind::GaussianCopula);
+        let pool = copula_residuals();
+        let first = generate_forecast_scenarios(
+            config.clone(),
+            &forecast(),
+            &pool,
+        ).unwrap();
+        let second = generate_forecast_scenarios(config, &forecast(), &pool).unwrap();
+        assert_eq!(first, second);
+        assert_eq!(first.scenarios.len(), 3);
+        assert!(first.selected_residual_ids.is_empty());
+        let evidence = first.gaussian_copula_evidence.as_ref().unwrap();
+        assert_eq!(evidence.residual_ids.len(), 30);
+        assert_eq!(evidence.shrinkage_lambda, 0.05);
+        assert_eq!(evidence.empirical_rank_correlation.len(), 3);
+        assert_eq!(evidence.regularized_correlation.len(), 3);
+        assert_eq!(evidence.cholesky_lower_factor.len(), 3);
+    }
+
+    #[test]
+    fn gaussian_copula_scenarios_pass_matrix_and_provenance_evaluation() {
+        let scenarios = generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::GaussianCopula),
+            &forecast(),
+            &copula_residuals(),
+        ).unwrap();
+        let report =
+            evaluate_forecast_scenarios(&scenarios, &actual_horizon(), 0.10).unwrap();
+        assert!(report.energy_score_mw.is_finite());
+        assert!(report.variogram_score.is_finite());
+        assert!(report.gaussian_copula_evidence.is_some());
+        assert_eq!(report.generator_kind, ScenarioGeneratorKind::GaussianCopula);
+    }
+
+    #[test]
+    fn gaussian_copula_rejects_insufficient_residual_pool_support() {
+        let mut pool = copula_residuals();
+        pool.pop();
+        assert!(generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::GaussianCopula),
+            &forecast(),
+            &pool,
+        ).is_err());
+    }
+
+    #[test]
+    fn gaussian_copula_rejects_constant_residual_horizon() {
+        let mut pool = copula_residuals();
+        for residual in &mut pool {
+            residual.residual_power_mw[1] = 7;
+        }
+        assert!(generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::GaussianCopula),
+            &forecast(),
+            &pool,
+        ).is_err());
+    }
+
+    #[test]
+    fn gaussian_copula_requires_explicit_positive_shrinkage() {
+        let mut config = contract(ScenarioGeneratorKind::GaussianCopula);
+        config.gaussian_copula_shrinkage = Some(0.0);
+        assert!(generate_forecast_scenarios(
+            config,
+            &forecast(),
+            &copula_residuals(),
+        ).is_err());
+    }
+
+    #[test]
+    fn gaussian_copula_evaluation_rejects_tampered_cholesky_evidence() {
+        let mut scenarios = generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::GaussianCopula),
+            &forecast(),
+            &copula_residuals(),
+        ).unwrap();
+        scenarios.gaussian_copula_evidence.as_mut().unwrap()
+            .cholesky_lower_factor[0][0] += 0.1;
+        assert!(evaluate_forecast_scenarios(
+            &scenarios,
+            &actual_horizon(),
+            0.10,
+        ).is_err());
     }
 
     #[test]
