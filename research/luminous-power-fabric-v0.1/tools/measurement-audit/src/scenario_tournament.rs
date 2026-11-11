@@ -370,8 +370,26 @@ fn expected_generator_identities() -> [(ScenarioGeneratorKind, usize); 4] {
 
 fn validate_generator_evidence(
     report: &ScenarioEvaluationReport,
-    stratum_id: &str,
 ) -> Result<(), AuditError> {
+    let generation = &report.scenario_generation_contract;
+    generation.validate()?;
+    if generation.generator_kind != report.generator_kind
+        || generation.generator_id != report.generator_id
+        || generation.generator_revision != report.generator_revision
+        || generation.model_contract != report.model_contract
+        || generation.horizon_steps != report.horizon_steps
+        || generation.scenario_count != report.scenario_count
+        || generation.operating_regime_id.trim().is_empty()
+        || generation.clock_id != report.clock_id
+        || generation.time_origin_id != report.time_origin_id
+        || generation.residual_pool_evidence_id != report.residual_pool_evidence_id
+    {
+        return Err(AuditError(
+            "scenario report does not preserve its exact scenario-generation contract"
+                .to_string(),
+        ));
+    }
+
     let arrays = [
         report.selected_residual_ids.len(),
         report.selected_residual_evidence_ids.len(),
@@ -383,6 +401,7 @@ fn validate_generator_evidence(
         report.selected_residual_sample_evidence_ids.len(),
         report.selected_residual_sample_timestamps_ns.len(),
     ];
+
     match report.generator_kind {
         ScenarioGeneratorKind::IndependentQuantileSampling => {
             if report.residual_pool_evidence_id.is_some()
@@ -399,117 +418,19 @@ fn validate_generator_evidence(
             let evidence = report.gaussian_copula_evidence.as_ref().ok_or_else(|| {
                 AuditError("Gaussian copula report is missing its residual/correlation evidence".to_string())
             })?;
-            let pool_count = evidence.residual_ids.len();
-            let pool_list_lengths = [
-                evidence.residual_origin_ids.len(),
-                evidence.residual_origin_timestamps_ns.len(),
-                evidence.residual_target_window_end_timestamps_ns.len(),
-                evidence.residual_operating_regime_ids.len(),
-                evidence.residual_clock_ids.len(),
-                evidence.residual_time_origin_ids.len(),
-                evidence.residual_model_contracts.len(),
-                evidence.raw_residual_power_mw.len(),
-                evidence.rank_normal_scores.len(),
-                evidence.measurement_evidence_ids.len(),
-                evidence.forecast_evidence_ids.len(),
-                evidence.residual_generation_evidence_ids.len(),
-                evidence.state_mapping_evidence_ids.len(),
-                evidence.time_alignment_evidence_ids.len(),
-                evidence.timeline_digest_references.len(),
-                evidence.source_sample_evidence_ids.len(),
-                evidence.source_sample_timestamps_ns.len(),
-            ];
-            let mut residual_ids = HashSet::new();
-            let mut origin_ids = HashSet::new();
-            let mut sample_ids = HashSet::new();
-            let mut origins = Vec::with_capacity(pool_count);
-            let minimum_pool = report.horizon_steps.saturating_add(1).max(30);
-            let mut invalid_row = false;
-            for index in 0..pool_count {
-                let values = [
-                    evidence.residual_ids[index].as_str(),
-                    evidence.residual_origin_ids[index].as_str(),
-                    evidence.residual_operating_regime_ids[index].as_str(),
-                    evidence.residual_clock_ids[index].as_str(),
-                    evidence.residual_time_origin_ids[index].as_str(),
-                    evidence.measurement_evidence_ids[index].as_str(),
-                    evidence.forecast_evidence_ids[index].as_str(),
-                    evidence.residual_generation_evidence_ids[index].as_str(),
-                    evidence.state_mapping_evidence_ids[index].as_str(),
-                    evidence.time_alignment_evidence_ids[index].as_str(),
-                    evidence.timeline_digest_references[index].as_str(),
-                ];
-                if values.iter().any(|value| value.trim().is_empty())
-                    || !residual_ids.insert(evidence.residual_ids[index].as_str())
-                    || !origin_ids.insert(evidence.residual_origin_ids[index].as_str())
-                    || evidence.residual_operating_regime_ids[index] != stratum_id
-                    || evidence.residual_clock_ids[index] != report.clock_id
-                    || evidence.residual_time_origin_ids[index] != report.time_origin_id
-                    || evidence.residual_model_contracts[index] != report.model_contract
-                    || evidence.raw_residual_power_mw[index].len() != report.horizon_steps
-                    || evidence.rank_normal_scores[index].len() != report.horizon_steps
-                    || evidence.rank_normal_scores[index].iter().any(|value| !value.is_finite())
-                    || evidence.source_sample_evidence_ids[index].len() != report.horizon_steps
-                    || evidence.source_sample_timestamps_ns[index].len() != report.horizon_steps
-                {
-                    invalid_row = true;
-                    break;
-                }
-                for sample_id in &evidence.source_sample_evidence_ids[index] {
-                    if sample_id.trim().is_empty() || !sample_ids.insert(sample_id.as_str()) {
-                        invalid_row = true;
-                        break;
-                    }
-                }
-                let expected_duration = (report.horizon_steps as u64)
-                    .checked_mul(report.model_contract.sample_period_ns);
-                if expected_duration.is_none()
-                    || evidence.residual_origin_timestamps_ns[index]
-                        .checked_add(expected_duration.unwrap_or(0))
-                        != Some(evidence.residual_target_window_end_timestamps_ns[index])
-                {
-                    invalid_row = true;
-                    break;
-                }
-                origins.push(evidence.residual_origin_timestamps_ns[index]);
-            }
-            origins.sort_unstable();
-            let residual_windows_overlap = origins.windows(2).any(|pair| {
-                pair[1].checked_sub(pair[0]).is_none_or(|separation| {
-                    separation
-                        < (report.horizon_steps as u64)
-                            .saturating_mul(report.model_contract.sample_period_ns)
-                })
-            });
-            let matrix_invalid = [
-                &evidence.empirical_rank_correlation,
-                &evidence.regularized_correlation,
-                &evidence.cholesky_lower_factor,
-            ]
-            .iter()
-            .any(|matrix| {
-                matrix.len() != report.horizon_steps
-                    || matrix.iter().any(|row| {
-                        row.len() != report.horizon_steps
-                            || row.iter().any(|value| !value.is_finite())
-                    })
-            });
+            crate::temporal_scenarios::validate_gaussian_copula_evidence(
+                generation,
+                &report.forecast_origin_id,
+                report.forecast_origin_timestamp_ns,
+                &[],
+                evidence,
+            )?;
             if report.residual_pool_evidence_id.as_deref()
                 != Some(evidence.residual_pool_evidence_id.as_str())
-                || pool_count < minimum_pool
-                || pool_list_lengths.iter().any(|length| *length != pool_count)
-                || evidence.tie_policy != "AVERAGE_RANKS_FOR_TIES_SORTED_BY_RESIDUAL_ID"
-                || evidence.plotting_position_method != "MIDRANK_MINUS_HALF_OVER_N"
-                || !evidence.shrinkage_lambda.is_finite()
-                || evidence.shrinkage_lambda <= 0.0
-                || evidence.shrinkage_lambda >= 1.0
-                || invalid_row
-                || residual_windows_overlap
-                || matrix_invalid
                 || arrays.iter().any(|length| *length != 0)
             {
                 return Err(AuditError(
-                    "Gaussian copula report has inconsistent full-pool evidence or per-row residual lineage"
+                    "Gaussian copula report has inconsistent residual-pool evidence or per-scenario residual attribution"
                         .to_string(),
                 ));
             }
@@ -517,7 +438,8 @@ fn validate_generator_evidence(
         ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap
         | ScenarioGeneratorKind::SchaakeShuffle => {
             if report.gaussian_copula_evidence.is_some()
-                || report.residual_pool_evidence_id.as_deref().is_none_or(|id| id.trim().is_empty())
+                || report.residual_pool_evidence_id.as_deref()
+                    .is_none_or(|id| id.trim().is_empty())
                 || arrays.iter().any(|length| *length != report.scenario_count)
                 || report.selected_residual_sample_evidence_ids.iter().any(|row| {
                     row.len() != report.horizon_steps
@@ -539,8 +461,32 @@ fn validate_generator_evidence(
                         .to_string(),
                 ));
             }
+
+            for row in 0..report.scenario_count {
+                let mut unique_sample_ids = HashSet::new();
+                if report.selected_residual_sample_evidence_ids[row]
+                    .iter()
+                    .any(|id| !unique_sample_ids.insert(id.as_str()))
+                    || report.selected_residual_sample_timestamps_ns[row]
+                        .windows(2)
+                        .any(|pair| {
+                            pair[1].checked_sub(pair[0])
+                                != Some(generation.step_period_ns)
+                        })
+                {
+                    return Err(AuditError(
+                        "selected residual sample evidence or timestamps are duplicated or cadence-invalid"
+                            .to_string(),
+                    ));
+                }
+            }
+
             if report.generator_kind == ScenarioGeneratorKind::SchaakeShuffle {
-                let unique: HashSet<&str> = report.selected_residual_ids.iter().map(String::as_str).collect();
+                let unique: HashSet<&str> = report
+                    .selected_residual_ids
+                    .iter()
+                    .map(String::as_str)
+                    .collect();
                 if unique.len() != report.scenario_count {
                     return Err(AuditError(
                         "Schaake-shuffle report must identify one unique historical rank trajectory per scenario"
@@ -556,14 +502,13 @@ fn validate_generator_evidence(
 fn validate_evaluation_report(
     report: &ScenarioEvaluationReport,
     contract: &ScenarioTournamentContract,
-    stratum_id: &str,
 ) -> Result<(), AuditError> {
     if !REQUIRED_GENERATORS.contains(&report.generator_kind) {
         return Err(AuditError(
             "scenario tournament received an undeclared generator arm".to_string(),
         ));
     }
-    validate_generator_evidence(report, stratum_id)?;
+    validate_generator_evidence(report)?;
     if report.claim_ceiling != EXPECTED_CLAIM_CEILING
         || report.forecast_id.trim().is_empty()
         || report.forecast_origin_id.trim().is_empty()
@@ -626,7 +571,6 @@ fn validate_evaluation_report(
 fn ensure_episode_reports_paired(
     reports: &[ScenarioEvaluationReport],
     contract: &ScenarioTournamentContract,
-    stratum_id: &str,
 ) -> Result<[ScenarioEvaluationReport; 4], AuditError> {
     if reports.len() != REQUIRED_GENERATORS.len() {
         return Err(AuditError(
@@ -636,7 +580,7 @@ fn ensure_episode_reports_paired(
     }
     let mut ordered: Vec<Option<ScenarioEvaluationReport>> = vec![None; REQUIRED_GENERATORS.len()];
     for report in reports {
-        validate_evaluation_report(report, contract, stratum_id)?;
+        validate_evaluation_report(report, contract)?;
         let (_, index) = expected_generator_identities()
             .iter()
             .find(|(kind, _)| *kind == report.generator_kind)
@@ -660,6 +604,17 @@ fn ensure_episode_reports_paired(
     for report in ordered.iter().skip(1) {
         if report.forecast_id != baseline.forecast_id
             || report.forecast_origin_id != baseline.forecast_origin_id
+            || report.forecast_origin_timestamp_ns != baseline.forecast_origin_timestamp_ns
+            || report.scenario_generation_contract.operating_regime_id
+                != baseline.scenario_generation_contract.operating_regime_id
+            || report.scenario_generation_contract.clock_id
+                != baseline.scenario_generation_contract.clock_id
+            || report.scenario_generation_contract.time_origin_id
+                != baseline.scenario_generation_contract.time_origin_id
+            || report.scenario_generation_contract.step_period_ns
+                != baseline.scenario_generation_contract.step_period_ns
+            || report.scenario_generation_contract.horizon_steps
+                != baseline.scenario_generation_contract.horizon_steps
             || report.model_contract != baseline.model_contract
             || report.forecast_evidence_id != baseline.forecast_evidence_id
             || report.clock_id != baseline.clock_id
@@ -1074,7 +1029,7 @@ pub fn evaluate_scenario_tournament(
             }
             previous_episode_end = Some(episode.window_end_ns);
 
-            let paired = ensure_episode_reports_paired(&episode.evaluations, &contract, &cluster.stratum_id)?;
+            let paired = ensure_episode_reports_paired(&episode.evaluations, &contract)?;
             let baseline = &paired[0];
             if !forecast_ids.insert(baseline.forecast_id.as_str())
                 || !measurement_run_ids.insert(baseline.measurement_run_id.as_str())
@@ -1140,7 +1095,7 @@ pub fn evaluate_scenario_tournament(
             for episode in &cluster.episodes {
                 paired_reports.push((
                     episode.clone(),
-                    ensure_episode_reports_paired(&episode.evaluations, &contract, &cluster.stratum_id)?,
+                    ensure_episode_reports_paired(&episode.evaluations, &contract)?,
                 ));
             }
             costs.push(build_cluster_costs(cluster, &paired_reports)?);
@@ -1361,11 +1316,11 @@ mod tests {
             evidence.residual_model_contracts.push(model_contract());
             evidence.raw_residual_power_mw.push(vec![
                 index as i64,
-                index as i64 * 2,
-                index as i64 * 3,
-                index as i64 * 4,
+                ((index * 7) % 30) as i64,
+                ((index * 11) % 30) as i64,
+                ((index * 13) % 30) as i64,
             ]);
-            evidence.rank_normal_scores.push(vec![-1.0, -0.3, 0.3, 1.0]);
+            evidence.rank_normal_scores.push(Vec::new());
             evidence.measurement_evidence_ids.push(format!("pool-measurement-{index:02}"));
             evidence.forecast_evidence_ids.push(format!("pool-forecast-{index:02}"));
             evidence.residual_generation_evidence_ids.push(format!("pool-generation-{index:02}"));
@@ -1383,6 +1338,33 @@ mod tests {
             ]);
         }
         evidence
+    }
+
+    fn scenario_generation_contract(kind: ScenarioGeneratorKind) -> crate::temporal_scenarios::ScenarioGenerationContract {
+        use crate::temporal_scenarios::ScenarioGenerationContract;
+        let residual = kind != ScenarioGeneratorKind::IndependentQuantileSampling;
+        ScenarioGenerationContract {
+            generator_id: format!("{kind:?}-generator"),
+            generator_revision: "frozen-rev-1".to_string(),
+            generator_kind: kind,
+            model_contract: model_contract(),
+            operating_regime_id: "normal".to_string(),
+            clock_id: "clock-common".to_string(),
+            time_origin_id: "time-origin-common".to_string(),
+            step_period_ns: 10,
+            horizon_steps: 4,
+            scenario_count: 200,
+            deterministic_seed: 42,
+            residual_pool_evidence_id: residual.then(|| "residual-pool-v1".to_string()),
+            minimum_residual_trajectory_count: match kind {
+                ScenarioGeneratorKind::IndependentQuantileSampling => 0,
+                ScenarioGeneratorKind::GaussianCopula => 30,
+                ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap => 2,
+                ScenarioGeneratorKind::SchaakeShuffle => 200,
+            },
+            minimum_residual_origin_separation_ns: if residual { 40 } else { 0 },
+            gaussian_copula_shrinkage: (kind == ScenarioGeneratorKind::GaussianCopula).then_some(0.05),
+        }
     }
 
     fn report(index: usize, kind: ScenarioGeneratorKind, saving: bool) -> ScenarioEvaluationReport {
@@ -1423,6 +1405,8 @@ mod tests {
         ScenarioEvaluationReport {
             forecast_id: format!("forecast-{index:03}"),
             forecast_origin_id: format!("origin-{index:03}"),
+            forecast_origin_timestamp_ns: 10_000,
+            scenario_generation_contract: scenario_generation_contract(kind),
             model_contract: model_contract(),
             generator_id: format!("{kind:?}-generator"),
             generator_revision: "frozen-rev-1".to_string(),
