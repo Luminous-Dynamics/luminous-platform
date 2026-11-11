@@ -523,3 +523,5 @@ The held-out evaluator requires exact run, timestamp, cadence, state and sample-
 See [the benchmark contract](../../CALIBRATED_WORKLOAD_STATE_POWER_MODEL_BENCHMARK_2026-11-11.md). Ten synthetic Rust tests are authored but not executed. No physical sensor data, licensed trace corpus, compilation, lint or runtime benchmark is claimed.
 
 The current implementation also rejects attempts to predict a training run and independently verifies that a measured run is listed in the prediction trace's held-out evidence manifest before computing validation metrics. The mapped prediction trace must carry the exact clock-alignment method ID from the calibration contract. These prevent caller-side relabelling from bypassing the declared split or alignment method; evidence references themselves are still references, not authenticated signatures.
+
+Each `PredictedPowerTrace` now includes the mapped source trace's own state-mapping evidence reference as well as calibration-run mapping/time-alignment evidence. This distinguishes evidence that trained the model from evidence that assigned states to the particular sequence being predicted.
