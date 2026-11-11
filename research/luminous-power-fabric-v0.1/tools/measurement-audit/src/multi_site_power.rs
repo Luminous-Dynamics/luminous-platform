@@ -59,6 +59,69 @@ pub struct SitePowerTrace {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SiteTraceProvenance {
+    pub site_id: String,
+    pub parent_topology_id: String,
+    pub region_id: String,
+    pub run_id: String,
+    pub session_id: String,
+    pub dataset_id: String,
+    pub dataset_version: String,
+    pub dataset_evidence_id: String,
+    pub use_authorization_reference: String,
+    pub trace_evidence_id: String,
+    pub hardware_configuration_fingerprint: String,
+    pub measurement_boundary_id: String,
+    pub workload_contract_id: String,
+    pub orchestration_domain_id: String,
+    pub state_mapper_id: String,
+    pub state_mapping_evidence_id: String,
+    pub source_clock_id: String,
+    pub source_time_origin_id: String,
+    pub aligned_clock_id: String,
+    pub aligned_time_origin_id: String,
+    pub clock_alignment_method_id: String,
+    pub clock_alignment_evidence_id: String,
+    pub clock_offset_to_common_ns: i64,
+    pub clock_alignment_uncertainty_ns: u64,
+    pub sample_period_ns: u64,
+    pub evidence_class: TraceEvidenceClass,
+}
+
+impl From<&SitePowerTrace> for SiteTraceProvenance {
+    fn from(trace: &SitePowerTrace) -> Self {
+        Self {
+            site_id: trace.site_id.clone(),
+            parent_topology_id: trace.parent_topology_id.clone(),
+            region_id: trace.region_id.clone(),
+            run_id: trace.run_id.clone(),
+            session_id: trace.session_id.clone(),
+            dataset_id: trace.dataset_id.clone(),
+            dataset_version: trace.dataset_version.clone(),
+            dataset_evidence_id: trace.dataset_evidence_id.clone(),
+            use_authorization_reference: trace.use_authorization_reference.clone(),
+            trace_evidence_id: trace.trace_evidence_id.clone(),
+            hardware_configuration_fingerprint: trace.hardware_configuration_fingerprint.clone(),
+            measurement_boundary_id: trace.measurement_boundary_id.clone(),
+            workload_contract_id: trace.workload_contract_id.clone(),
+            orchestration_domain_id: trace.orchestration_domain_id.clone(),
+            state_mapper_id: trace.state_mapper_id.clone(),
+            state_mapping_evidence_id: trace.state_mapping_evidence_id.clone(),
+            source_clock_id: trace.source_clock_id.clone(),
+            source_time_origin_id: trace.source_time_origin_id.clone(),
+            aligned_clock_id: trace.aligned_clock_id.clone(),
+            aligned_time_origin_id: trace.aligned_time_origin_id.clone(),
+            clock_alignment_method_id: trace.clock_alignment_method_id.clone(),
+            clock_alignment_evidence_id: trace.clock_alignment_evidence_id.clone(),
+            clock_offset_to_common_ns: trace.clock_offset_to_common_ns,
+            clock_alignment_uncertainty_ns: trace.clock_alignment_uncertainty_ns,
+            sample_period_ns: trace.sample_period_ns,
+            evidence_class: trace.evidence_class,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MultiSiteAggregationContract {
     pub aggregation_id: String,
     pub parent_topology_id: String,
@@ -214,6 +277,8 @@ pub struct MultiSiteAggregationReport {
     pub lagged_correlations: Vec<LaggedCorrelationMetric>,
     pub spectral_coherence: Vec<SpectralCoherenceMetric>,
     pub source_site_ids: Vec<String>,
+    /// Complete per-site source and rights/configuration/boundary/clock metadata.
+    pub source_site_provenance: Vec<SiteTraceProvenance>,
     pub source_run_ids: Vec<String>,
     pub source_session_ids: Vec<String>,
     pub source_trace_evidence_ids: Vec<String>,
@@ -605,6 +670,7 @@ pub fn aggregate_aligned_sites(
     let mut summaries = Vec::with_capacity(traces.len());
     let mut aligned_power: Vec<Vec<u64>> = Vec::with_capacity(traces.len());
     let mut source_site_ids = Vec::with_capacity(traces.len());
+    let mut source_site_provenance = Vec::with_capacity(traces.len());
     let mut source_run_ids = Vec::with_capacity(traces.len());
     let mut source_session_ids = Vec::with_capacity(traces.len());
     let mut source_trace_evidence_ids = Vec::with_capacity(traces.len());
@@ -646,6 +712,7 @@ pub fn aggregate_aligned_sites(
         });
         aligned_power.push(values);
         source_site_ids.push(trace.site_id.clone());
+        source_site_provenance.push(SiteTraceProvenance::from(*trace));
         source_run_ids.push(trace.run_id.clone());
         source_session_ids.push(trace.session_id.clone());
         source_trace_evidence_ids.push(trace.trace_evidence_id.clone());
@@ -795,6 +862,7 @@ pub fn aggregate_aligned_sites(
         lagged_correlations,
         spectral_coherence,
         source_site_ids,
+        source_site_provenance,
         source_run_ids,
         source_session_ids,
         source_trace_evidence_ids,
@@ -892,6 +960,11 @@ mod tests {
         assert_eq!(report.aggregate_peak_power_mw, 450);
         assert_eq!(report.evidence_class, TraceEvidenceClass::Measured);
         assert_eq!(report.source_state_mapping_evidence_ids[0], "state-map-evidence-site-a");
+        assert_eq!(report.source_site_provenance[0].dataset_evidence_id, "dataset-evidence-site-a");
+        assert_eq!(report.source_site_provenance[0].use_authorization_reference, "rights-fixture");
+        assert_eq!(report.source_site_provenance[0].hardware_configuration_fingerprint, "sha256-config-site-a");
+        assert_eq!(report.source_site_provenance[0].measurement_boundary_id, "server-input-site-a");
+        assert_eq!(report.source_site_provenance[0].parent_topology_id, "region-a-root");
     }
 
     #[test]
