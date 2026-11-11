@@ -644,15 +644,10 @@ fn summarize_arm(
     let cluster_target_reliability_met =
         lower_bound >= contract.minimum_cluster_target_success_probability;
 
-    // Generator ID/revision are stored by the caller's frozen per-arm manifest.
-    // These placeholders are overwritten with the manifest values after summary.
-    generator_id = Some(format!("{generator_kind:?}"));
-    generator_revision = Some("FROZEN_PER_TOURNAMENT_ARM".to_string());
-
     Ok(ScenarioTournamentArmSummary {
         generator_kind,
-        generator_id: generator_id.unwrap_or_default(),
-        generator_revision: generator_revision.unwrap_or_default(),
+        generator_id: generator_id.to_string(),
+        generator_revision: generator_revision.to_string(),
         episode_count: total_episodes,
         independent_cluster_count: clusters.len(),
         mean_baseline_cost_ratio_units: total_baseline_cost / total_episodes as f64,
@@ -983,7 +978,7 @@ mod tests {
         ScenarioTournamentContract, ScenarioTournamentEpisode,
     };
     use crate::temporal_scenarios::{
-        GaussianCopulaEvidence, ScenarioEvaluationReport, ScenarioGeneratorKind,
+        ScenarioEvaluationReport, ScenarioGeneratorKind,
     };
     use crate::power_state::PowerModelContract;
 
