@@ -211,6 +211,11 @@ pub struct ForecastScenarioTrajectory {
     pub scenario_id: String,
     pub source_residual_id: Option<String>,
     pub source_residual_evidence_id: Option<String>,
+    pub source_residual_forecast_evidence_id: Option<String>,
+    pub source_residual_generation_evidence_id: Option<String>,
+    pub source_residual_state_mapping_evidence_id: Option<String>,
+    pub source_residual_time_alignment_evidence_id: Option<String>,
+    pub source_residual_timeline_digest_reference: Option<String>,
     /// Exact measured-sample evidence references for the selected residual block.
     /// Empty only for the independent-quantile negative-control arm.
     pub source_sample_evidence_ids: Vec<String>,
@@ -232,6 +237,11 @@ pub struct ForecastScenarioSet {
     pub scenarios: Vec<ForecastScenarioTrajectory>,
     pub selected_residual_ids: Vec<String>,
     pub selected_residual_evidence_ids: Vec<String>,
+    pub selected_residual_forecast_evidence_ids: Vec<String>,
+    pub selected_residual_generation_evidence_ids: Vec<String>,
+    pub selected_residual_state_mapping_evidence_ids: Vec<String>,
+    pub selected_residual_time_alignment_evidence_ids: Vec<String>,
+    pub selected_residual_timeline_digest_references: Vec<String>,
     pub marginal_tail_clipped_sample_count: usize,
     pub residual_floor_clamped_sample_count: usize,
     pub claim_ceiling: &'static str,
@@ -270,7 +280,13 @@ pub struct ScenarioEvaluationReport {
     pub residual_pool_evidence_id: Option<String>,
     pub selected_residual_ids: Vec<String>,
     pub selected_residual_evidence_ids: Vec<String>,
+    pub selected_residual_forecast_evidence_ids: Vec<String>,
+    pub selected_residual_generation_evidence_ids: Vec<String>,
+    pub selected_residual_state_mapping_evidence_ids: Vec<String>,
+    pub selected_residual_time_alignment_evidence_ids: Vec<String>,
+    pub selected_residual_timeline_digest_references: Vec<String>,
     pub selected_residual_sample_evidence_ids: Vec<Vec<String>>,
+    pub selected_residual_sample_timestamps_ns: Vec<Vec<u64>>,
     pub scenario_count: usize,
     pub horizon_steps: usize,
     pub energy_score_mw: f64,
@@ -620,6 +636,11 @@ fn generate_independent_scenarios(
             scenario_id: format!("{}-scenario-{scenario_index:04}", contract.generator_id),
             source_residual_id: None,
             source_residual_evidence_id: None,
+            source_residual_forecast_evidence_id: None,
+            source_residual_generation_evidence_id: None,
+            source_residual_state_mapping_evidence_id: None,
+            source_residual_time_alignment_evidence_id: None,
+            source_residual_timeline_digest_reference: None,
             source_sample_evidence_ids: Vec::new(),
             source_sample_timestamps_ns: Vec::new(),
             power_mw: vec![0; contract.horizon_steps],
@@ -671,6 +692,11 @@ fn generate_residual_bootstrap(
             scenario_id: format!("{}-scenario-{scenario_index:04}", contract.generator_id),
             source_residual_id: Some(residual.residual_id.clone()),
             source_residual_evidence_id: Some(residual.measurement_evidence_id.clone()),
+            source_residual_forecast_evidence_id: Some(residual.forecast_evidence_id.clone()),
+            source_residual_generation_evidence_id: Some(residual.residual_generation_evidence_id.clone()),
+            source_residual_state_mapping_evidence_id: Some(residual.state_mapping_evidence_id.clone()),
+            source_residual_time_alignment_evidence_id: Some(residual.time_alignment_evidence_id.clone()),
+            source_residual_timeline_digest_reference: Some(residual.source_timeline_digest_reference.clone()),
             source_sample_evidence_ids: residual.source_sample_evidence_ids.clone(),
             source_sample_timestamps_ns: residual.source_sample_timestamps_ns.clone(),
             power_mw: power,
@@ -724,6 +750,21 @@ fn generate_schaake_shuffle(
             source_residual_id: Some(residuals[residual_index].residual_id.clone()),
             source_residual_evidence_id: Some(
                 residuals[residual_index].measurement_evidence_id.clone(),
+            ),
+            source_residual_forecast_evidence_id: Some(
+                residuals[residual_index].forecast_evidence_id.clone(),
+            ),
+            source_residual_generation_evidence_id: Some(
+                residuals[residual_index].residual_generation_evidence_id.clone(),
+            ),
+            source_residual_state_mapping_evidence_id: Some(
+                residuals[residual_index].state_mapping_evidence_id.clone(),
+            ),
+            source_residual_time_alignment_evidence_id: Some(
+                residuals[residual_index].time_alignment_evidence_id.clone(),
+            ),
+            source_residual_timeline_digest_reference: Some(
+                residuals[residual_index].source_timeline_digest_reference.clone(),
             ),
             source_sample_evidence_ids: residuals[residual_index]
                 .source_sample_evidence_ids
@@ -840,6 +881,21 @@ pub fn generate_forecast_scenarios(
     };
 
     let step_timestamps_ns = forecast.steps.iter().map(|step| step.timestamp_ns).collect();
+    let selected_residual_forecast_evidence_ids = scenarios.iter()
+        .filter_map(|scenario| scenario.source_residual_forecast_evidence_id.clone())
+        .collect();
+    let selected_residual_generation_evidence_ids = scenarios.iter()
+        .filter_map(|scenario| scenario.source_residual_generation_evidence_id.clone())
+        .collect();
+    let selected_residual_state_mapping_evidence_ids = scenarios.iter()
+        .filter_map(|scenario| scenario.source_residual_state_mapping_evidence_id.clone())
+        .collect();
+    let selected_residual_time_alignment_evidence_ids = scenarios.iter()
+        .filter_map(|scenario| scenario.source_residual_time_alignment_evidence_id.clone())
+        .collect();
+    let selected_residual_timeline_digest_references = scenarios.iter()
+        .filter_map(|scenario| scenario.source_residual_timeline_digest_reference.clone())
+        .collect();
     Ok(ForecastScenarioSet {
         contract: contract.clone(),
         forecast_id: forecast.forecast_id.clone(),
@@ -853,6 +909,11 @@ pub fn generate_forecast_scenarios(
         scenarios,
         selected_residual_ids: selected_ids,
         selected_residual_evidence_ids: selected_evidence,
+        selected_residual_forecast_evidence_ids,
+        selected_residual_generation_evidence_ids,
+        selected_residual_state_mapping_evidence_ids,
+        selected_residual_time_alignment_evidence_ids,
+        selected_residual_timeline_digest_references,
         marginal_tail_clipped_sample_count: tail_clipped,
         residual_floor_clamped_sample_count: clamped,
         claim_ceiling: "MODELLED_TEMPORAL_POWER_SCENARIOS_NOT_MEASUREMENT_OR_GRID_RESERVE_QUALIFICATION",
@@ -997,6 +1058,11 @@ fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditErr
                 || scenarios.scenarios.iter().any(|scenario| {
                     scenario.source_residual_id.is_some()
                         || scenario.source_residual_evidence_id.is_some()
+                        || scenario.source_residual_forecast_evidence_id.is_some()
+                        || scenario.source_residual_generation_evidence_id.is_some()
+                        || scenario.source_residual_state_mapping_evidence_id.is_some()
+                        || scenario.source_residual_time_alignment_evidence_id.is_some()
+                        || scenario.source_residual_timeline_digest_reference.is_some()
                         || !scenario.source_sample_evidence_ids.is_empty()
                         || !scenario.source_sample_timestamps_ns.is_empty()
                 })
@@ -1012,9 +1078,24 @@ fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditErr
             if scenarios.selected_residual_ids.len() != scenarios.contract.scenario_count
                 || scenarios.selected_residual_evidence_ids.len()
                     != scenarios.contract.scenario_count
+                || scenarios.selected_residual_forecast_evidence_ids.len()
+                    != scenarios.contract.scenario_count
+                || scenarios.selected_residual_generation_evidence_ids.len()
+                    != scenarios.contract.scenario_count
+                || scenarios.selected_residual_state_mapping_evidence_ids.len()
+                    != scenarios.contract.scenario_count
+                || scenarios.selected_residual_time_alignment_evidence_ids.len()
+                    != scenarios.contract.scenario_count
+                || scenarios.selected_residual_timeline_digest_references.len()
+                    != scenarios.contract.scenario_count
                 || scenarios.scenarios.iter().any(|scenario| {
                     scenario.source_residual_id.is_none()
-                        || scenario.source_residual_evidence_id.is_none()
+                        || scenario.source_residual_evidence_id.as_deref().is_none_or(|id| id.trim().is_empty())
+                        || scenario.source_residual_forecast_evidence_id.as_deref().is_none_or(|id| id.trim().is_empty())
+                        || scenario.source_residual_generation_evidence_id.as_deref().is_none_or(|id| id.trim().is_empty())
+                        || scenario.source_residual_state_mapping_evidence_id.as_deref().is_none_or(|id| id.trim().is_empty())
+                        || scenario.source_residual_time_alignment_evidence_id.as_deref().is_none_or(|id| id.trim().is_empty())
+                        || scenario.source_residual_timeline_digest_reference.as_deref().is_none_or(|id| id.trim().is_empty())
                         || scenario.source_sample_evidence_ids.len()
                             != scenarios.contract.horizon_steps
                         || scenario.source_sample_timestamps_ns.len()
@@ -1032,6 +1113,16 @@ fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditErr
                     != Some(scenarios.selected_residual_ids[index].as_str())
                     || scenario.source_residual_evidence_id.as_deref()
                         != Some(scenarios.selected_residual_evidence_ids[index].as_str())
+                    || scenario.source_residual_forecast_evidence_id.as_deref()
+                        != Some(scenarios.selected_residual_forecast_evidence_ids[index].as_str())
+                    || scenario.source_residual_generation_evidence_id.as_deref()
+                        != Some(scenarios.selected_residual_generation_evidence_ids[index].as_str())
+                    || scenario.source_residual_state_mapping_evidence_id.as_deref()
+                        != Some(scenarios.selected_residual_state_mapping_evidence_ids[index].as_str())
+                    || scenario.source_residual_time_alignment_evidence_id.as_deref()
+                        != Some(scenarios.selected_residual_time_alignment_evidence_ids[index].as_str())
+                    || scenario.source_residual_timeline_digest_reference.as_deref()
+                        != Some(scenarios.selected_residual_timeline_digest_references[index].as_str())
                 {
                     return Err(AuditError(
                         "scenario residual lineage differs from selected residual manifest"
@@ -1240,8 +1331,16 @@ pub fn evaluate_forecast_scenarios(
         residual_pool_evidence_id: scenarios.contract.residual_pool_evidence_id.clone(),
         selected_residual_ids: scenarios.selected_residual_ids.clone(),
         selected_residual_evidence_ids: scenarios.selected_residual_evidence_ids.clone(),
+        selected_residual_forecast_evidence_ids: scenarios.selected_residual_forecast_evidence_ids.clone(),
+        selected_residual_generation_evidence_ids: scenarios.selected_residual_generation_evidence_ids.clone(),
+        selected_residual_state_mapping_evidence_ids: scenarios.selected_residual_state_mapping_evidence_ids.clone(),
+        selected_residual_time_alignment_evidence_ids: scenarios.selected_residual_time_alignment_evidence_ids.clone(),
+        selected_residual_timeline_digest_references: scenarios.selected_residual_timeline_digest_references.clone(),
         selected_residual_sample_evidence_ids: scenarios.scenarios.iter()
             .map(|scenario| scenario.source_sample_evidence_ids.clone())
+            .collect(),
+        selected_residual_sample_timestamps_ns: scenarios.scenarios.iter()
+            .map(|scenario| scenario.source_sample_timestamps_ns.clone())
             .collect(),
         scenario_count,
         horizon_steps: scenarios.contract.horizon_steps,
@@ -1689,7 +1788,11 @@ mod tests {
             "actual-clock-evidence-current"
         );
         assert_eq!(report.selected_residual_ids.len(), 3);
+        assert_eq!(report.selected_residual_generation_evidence_ids.len(), 3);
+        assert_eq!(report.selected_residual_state_mapping_evidence_ids.len(), 3);
+        assert_eq!(report.selected_residual_time_alignment_evidence_ids.len(), 3);
         assert!(report.selected_residual_sample_evidence_ids.iter().all(|ids| ids.len() == 3));
+        assert!(report.selected_residual_sample_timestamps_ns.iter().all(|times| times.len() == 3));
     }
 
     #[test]
