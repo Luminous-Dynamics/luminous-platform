@@ -601,7 +601,20 @@ fn ensure_episode_reports_paired(
         })
         .collect::<Result<_, _>>()?;
     let baseline = &ordered[0];
+    let reference_residual_pool = ordered
+        .iter()
+        .filter(|report| report.generator_kind != ScenarioGeneratorKind::IndependentQuantileSampling)
+        .next()
+        .and_then(|report| report.residual_pool_evidence_id.as_deref())
+        .ok_or_else(|| AuditError("paired dependence arms have no common residual pool reference".to_string()))?;
     for report in ordered.iter().skip(1) {
+        if report.generator_kind != ScenarioGeneratorKind::IndependentQuantileSampling
+            && report.residual_pool_evidence_id.as_deref() != Some(reference_residual_pool)
+        {
+            return Err(AuditError(
+                "paired dependence arms do not use the same frozen residual-pool evidence".to_string(),
+            ));
+        }
         if report.forecast_id != baseline.forecast_id
             || report.forecast_origin_id != baseline.forecast_origin_id
             || report.forecast_origin_timestamp_ns != baseline.forecast_origin_timestamp_ns
@@ -615,6 +628,8 @@ fn ensure_episode_reports_paired(
                 != baseline.scenario_generation_contract.step_period_ns
             || report.scenario_generation_contract.horizon_steps
                 != baseline.scenario_generation_contract.horizon_steps
+            || report.scenario_generation_contract.deterministic_seed
+                != baseline.scenario_generation_contract.deterministic_seed
             || report.model_contract != baseline.model_contract
             || report.forecast_evidence_id != baseline.forecast_evidence_id
             || report.clock_id != baseline.clock_id
@@ -1586,6 +1601,23 @@ mod tests {
     fn rejects_unpaired_measurement_horizon_across_generator_arms() {
         let mut input = clusters(4, true);
         input[0].episodes[0].evaluations[1].measurement_run_id = "different-run".to_string();
+        assert!(evaluate_scenario_tournament(contract(), input).is_err());
+    }
+
+    #[test]
+    fn rejects_different_residual_pool_across_dependence_arms() {
+        let mut input = clusters(4, true);
+        input[0].episodes[0].evaluations[2].residual_pool_evidence_id =
+            Some("different-residual-pool".to_string());
+        input[0].episodes[0].evaluations[2].scenario_generation_contract.residual_pool_evidence_id =
+            Some("different-residual-pool".to_string());
+        assert!(evaluate_scenario_tournament(contract(), input).is_err());
+    }
+
+    #[test]
+    fn rejects_different_deterministic_seed_across_generator_arms() {
+        let mut input = clusters(4, true);
+        input[0].episodes[0].evaluations[1].scenario_generation_contract.deterministic_seed = 43;
         assert!(evaluate_scenario_tournament(contract(), input).is_err());
     }
 
