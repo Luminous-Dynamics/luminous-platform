@@ -501,3 +501,16 @@ Each report retains the frozen service contract, baseline and event evidence IDs
 See [GRID_INTERACTIVE_COMPUTE_RESOURCE_QUALIFICATION_2026-11-11.md](../../GRID_INTERACTIVE_COMPUTE_RESOURCE_QUALIFICATION_2026-11-11.md) for the attribution equations, literature comparison, test targets and limitations.
 
 **Validation:** nineteen synthetic Rust tests are authored but not executed. No compilation, formatting, Clippy, live dispatch, site measurement, grid participation, market capacity accreditation or certification is claimed.
+
+
+## Cluster-aware repeated-event qualification
+
+The new clustered_reliability module consumes the event-level grid_service report rather than recalculating its power attribution or service gates. It assigns every event to exactly one predeclared operating cluster, requires complete dispatch/recovery containment, and evaluates all required strata separately.
+
+Events within a cluster may be dependent: one event failure fails the cluster, and cluster capacity is the minimum event-level credited capacity. The capacity confidence gate uses a distribution-free sample-minimum lower bound for the declared population quantile. P10 at 90% one-sided confidence requires at least 22 independent clusters in every required stratum; P10 at 95% requires 29. The block-level Wilson bound uses clusters—not event rows—as trials.
+
+Independence review references and separation rules are retained, but remain evidence requirements, not proof of independence. Inferential outputs are withheld when the independent-cluster assumption or required per-stratum support is absent.
+
+See [CLUSTER_AWARE_REPEATED_EVENT_QUALIFICATION_2026-11-11.md](../../CLUSTER_AWARE_REPEATED_EVENT_QUALIFICATION_2026-11-11.md) for the statistical derivation, benchmark programme and limitations.
+
+**Validation:** seventeen synthetic Rust tests are authored but not executed. No compilation, formatting, Clippy, runtime benchmark, physical measurement, field dispatch or grid-service accreditation is claimed.
