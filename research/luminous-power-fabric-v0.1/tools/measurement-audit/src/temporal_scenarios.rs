@@ -1009,7 +1009,9 @@ fn empirical_pit_u128(values: &[u128], actual: u128) -> f64 {
 
 fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditError> {
     scenarios.contract.validate()?;
-    if scenarios.forecast_id.trim().is_empty()
+    if scenarios.claim_ceiling
+        != "MODELLED_TEMPORAL_POWER_SCENARIOS_NOT_MEASUREMENT_OR_GRID_RESERVE_QUALIFICATION"
+        || scenarios.forecast_id.trim().is_empty()
         || scenarios.forecast_evidence_id.trim().is_empty()
         || scenarios.state_mapping_evidence_id.trim().is_empty()
         || scenarios.time_alignment_evidence_id.trim().is_empty()
@@ -1055,6 +1057,11 @@ fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditErr
         ScenarioGeneratorKind::IndependentQuantileSampling => {
             if !scenarios.selected_residual_ids.is_empty()
                 || !scenarios.selected_residual_evidence_ids.is_empty()
+                || !scenarios.selected_residual_forecast_evidence_ids.is_empty()
+                || !scenarios.selected_residual_generation_evidence_ids.is_empty()
+                || !scenarios.selected_residual_state_mapping_evidence_ids.is_empty()
+                || !scenarios.selected_residual_time_alignment_evidence_ids.is_empty()
+                || !scenarios.selected_residual_timeline_digest_references.is_empty()
                 || scenarios.scenarios.iter().any(|scenario| {
                     scenario.source_residual_id.is_some()
                         || scenario.source_residual_evidence_id.is_some()
@@ -1088,8 +1095,15 @@ fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditErr
                     != scenarios.contract.scenario_count
                 || scenarios.selected_residual_timeline_digest_references.len()
                     != scenarios.contract.scenario_count
+                || scenarios.selected_residual_ids.iter().any(|id| id.trim().is_empty())
+                || scenarios.selected_residual_evidence_ids.iter().any(|id| id.trim().is_empty())
+                || scenarios.selected_residual_forecast_evidence_ids.iter().any(|id| id.trim().is_empty())
+                || scenarios.selected_residual_generation_evidence_ids.iter().any(|id| id.trim().is_empty())
+                || scenarios.selected_residual_state_mapping_evidence_ids.iter().any(|id| id.trim().is_empty())
+                || scenarios.selected_residual_time_alignment_evidence_ids.iter().any(|id| id.trim().is_empty())
+                || scenarios.selected_residual_timeline_digest_references.iter().any(|id| id.trim().is_empty())
                 || scenarios.scenarios.iter().any(|scenario| {
-                    scenario.source_residual_id.is_none()
+                    scenario.source_residual_id.as_deref().is_none_or(|id| id.trim().is_empty())
                         || scenario.source_residual_evidence_id.as_deref().is_none_or(|id| id.trim().is_empty())
                         || scenario.source_residual_forecast_evidence_id.as_deref().is_none_or(|id| id.trim().is_empty())
                         || scenario.source_residual_generation_evidence_id.as_deref().is_none_or(|id| id.trim().is_empty())
@@ -1793,6 +1807,17 @@ mod tests {
         assert_eq!(report.selected_residual_time_alignment_evidence_ids.len(), 3);
         assert!(report.selected_residual_sample_evidence_ids.iter().all(|ids| ids.len() == 3));
         assert!(report.selected_residual_sample_timestamps_ns.iter().all(|times| times.len() == 3));
+    }
+
+    #[test]
+    fn evaluation_rejects_tampered_claim_ceiling() {
+        let mut scenarios = generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::IndependentQuantileSampling),
+            &forecast(),
+            &[],
+        ).unwrap();
+        scenarios.claim_ceiling = "QUALIFIED";
+        assert!(evaluate_forecast_scenarios(&scenarios, &actual_horizon(), 0.10).is_err());
     }
 
     #[test]
