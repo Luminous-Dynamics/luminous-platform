@@ -34,6 +34,8 @@ pub struct ProbabilisticPowerForecast {
     pub forecast_id: String,
     pub origin_id: String,
     pub origin_timestamp_ns: u64,
+    pub clock_id: String,
+    pub time_origin_id: String,
     pub operating_regime_id: String,
     pub model_contract: PowerModelContract,
     pub forecast_evidence_id: String,
@@ -56,6 +58,8 @@ pub struct ForecastResidualTrajectory {
     pub operating_regime_id: String,
     pub origin_timestamp_ns: u64,
     pub target_window_end_ns: u64,
+    pub clock_id: String,
+    pub time_origin_id: String,
     pub model_contract: PowerModelContract,
     pub forecast_evidence_id: String,
     pub measurement_evidence_id: String,
@@ -75,6 +79,8 @@ pub struct ScenarioGenerationContract {
     pub generator_kind: ScenarioGeneratorKind,
     pub model_contract: PowerModelContract,
     pub operating_regime_id: String,
+    pub clock_id: String,
+    pub time_origin_id: String,
     pub step_period_ns: u64,
     pub horizon_steps: usize,
     pub scenario_count: usize,
@@ -95,6 +101,8 @@ impl ScenarioGenerationContract {
             (self.generator_id.as_str(), "generator_id"),
             (self.generator_revision.as_str(), "generator_revision"),
             (self.operating_regime_id.as_str(), "operating_regime_id"),
+            (self.clock_id.as_str(), "clock_id"),
+            (self.time_origin_id.as_str(), "time_origin_id"),
             (
                 self.model_contract.model_id.as_str(),
                 "model_contract.model_id",
@@ -228,6 +236,8 @@ pub struct ForecastScenarioSet {
     pub contract: ScenarioGenerationContract,
     pub forecast_id: String,
     pub forecast_origin_timestamp_ns: u64,
+    pub clock_id: String,
+    pub time_origin_id: String,
     pub forecast_evidence_id: String,
     pub state_mapping_evidence_id: String,
     pub time_alignment_evidence_id: String,
@@ -259,6 +269,8 @@ pub struct MeasuredForecastHorizonSample {
 pub struct MeasuredForecastHorizon {
     pub forecast_id: String,
     pub measurement_run_id: String,
+    pub clock_id: String,
+    pub time_origin_id: String,
     pub measurement_evidence_id: String,
     pub time_alignment_evidence_id: String,
     pub source_timeline_digest_reference: String,
@@ -274,6 +286,8 @@ pub struct ScenarioEvaluationReport {
     pub generator_revision: String,
     pub generator_kind: ScenarioGeneratorKind,
     pub forecast_evidence_id: String,
+    pub clock_id: String,
+    pub time_origin_id: String,
     pub state_mapping_evidence_id: String,
     pub forecast_time_alignment_evidence_id: String,
     pub forecast_source_timeline_digest_reference: String,
@@ -332,6 +346,8 @@ fn validate_forecast(
     for (value, field) in [
         (forecast.forecast_id.as_str(), "forecast_id"),
         (forecast.origin_id.as_str(), "origin_id"),
+        (forecast.clock_id.as_str(), "clock_id"),
+        (forecast.time_origin_id.as_str(), "time_origin_id"),
         (forecast.operating_regime_id.as_str(), "operating_regime_id"),
         (forecast.forecast_evidence_id.as_str(), "forecast_evidence_id"),
         (
@@ -354,6 +370,8 @@ fn validate_forecast(
         }
     }
     if forecast.model_contract != contract.model_contract
+        || forecast.clock_id != contract.clock_id
+        || forecast.time_origin_id != contract.time_origin_id
         || forecast.operating_regime_id != contract.operating_regime_id
         || forecast.step_period_ns != contract.step_period_ns
         || forecast.steps.len() != contract.horizon_steps
@@ -431,6 +449,8 @@ fn validate_residual_trajectory(
     for (value, field) in [
         (trajectory.residual_id.as_str(), "residual_id"),
         (trajectory.origin_id.as_str(), "origin_id"),
+        (trajectory.clock_id.as_str(), "clock_id"),
+        (trajectory.time_origin_id.as_str(), "time_origin_id"),
         (
             trajectory.operating_regime_id.as_str(),
             "operating_regime_id",
@@ -467,6 +487,8 @@ fn validate_residual_trajectory(
         }
     }
     if trajectory.model_contract != contract.model_contract
+        || trajectory.clock_id != contract.clock_id
+        || trajectory.time_origin_id != contract.time_origin_id
         || trajectory.operating_regime_id != contract.operating_regime_id
         || trajectory.residual_power_mw.len() != contract.horizon_steps
         || trajectory.source_sample_timestamps_ns.len() != contract.horizon_steps
@@ -900,6 +922,8 @@ pub fn generate_forecast_scenarios(
         contract: contract.clone(),
         forecast_id: forecast.forecast_id.clone(),
         forecast_origin_timestamp_ns: forecast.origin_timestamp_ns,
+        clock_id: forecast.clock_id.clone(),
+        time_origin_id: forecast.time_origin_id.clone(),
         forecast_evidence_id: forecast.forecast_evidence_id.clone(),
         state_mapping_evidence_id: forecast.state_mapping_evidence_id.clone(),
         time_alignment_evidence_id: forecast.time_alignment_evidence_id.clone(),
@@ -1193,6 +1217,8 @@ pub fn evaluate_forecast_scenarios(
 ) -> Result<ScenarioEvaluationReport, AuditError> {
     validate_scenario_set(scenarios)?;
     if actual.forecast_id != scenarios.forecast_id
+        || actual.clock_id != scenarios.contract.clock_id
+        || actual.time_origin_id != scenarios.contract.time_origin_id
         || actual.model_contract != scenarios.contract.model_contract
         || actual.measurement_run_id.trim().is_empty()
         || actual.measurement_evidence_id.trim().is_empty()
@@ -1340,6 +1366,8 @@ pub fn evaluate_forecast_scenarios(
         generator_kind: scenarios.contract.generator_kind,
         forecast_evidence_id: scenarios.forecast_evidence_id.clone(),
         state_mapping_evidence_id: scenarios.state_mapping_evidence_id.clone(),
+        clock_id: scenarios.clock_id.clone(),
+        time_origin_id: scenarios.time_origin_id.clone(),
         forecast_time_alignment_evidence_id: scenarios.time_alignment_evidence_id.clone(),
         forecast_source_timeline_digest_reference: scenarios.source_timeline_digest_reference.clone(),
         residual_pool_evidence_id: scenarios.contract.residual_pool_evidence_id.clone(),
@@ -1442,6 +1470,8 @@ mod tests {
             forecast_id: "forecast-current".to_string(),
             origin_id: "origin-current".to_string(),
             origin_timestamp_ns: 10_000,
+            clock_id: "clock-common".to_string(),
+            time_origin_id: "time-origin-common".to_string(),
             operating_regime_id: "active".to_string(),
             model_contract: model_contract(),
             forecast_evidence_id: "forecast-evidence-current".to_string(),
@@ -1474,6 +1504,8 @@ mod tests {
             generator_kind: kind,
             model_contract: model_contract(),
             operating_regime_id: "active".to_string(),
+            clock_id: "clock-common".to_string(),
+            time_origin_id: "time-origin-common".to_string(),
             step_period_ns: 10,
             horizon_steps: 3,
             scenario_count: 3,
@@ -1492,6 +1524,8 @@ mod tests {
                 operating_regime_id: "active".to_string(),
                 origin_timestamp_ns: 1_000,
                 target_window_end_ns: 1_030,
+                clock_id: "clock-common".to_string(),
+                time_origin_id: "time-origin-common".to_string(),
                 model_contract: model_contract(),
                 forecast_evidence_id: "forecast-a".to_string(),
                 measurement_evidence_id: "measurement-a".to_string(),
@@ -1509,6 +1543,8 @@ mod tests {
                 operating_regime_id: "active".to_string(),
                 origin_timestamp_ns: 2_000,
                 target_window_end_ns: 2_030,
+                clock_id: "clock-common".to_string(),
+                time_origin_id: "time-origin-common".to_string(),
                 model_contract: model_contract(),
                 forecast_evidence_id: "forecast-b".to_string(),
                 measurement_evidence_id: "measurement-b".to_string(),
@@ -1526,6 +1562,8 @@ mod tests {
                 operating_regime_id: "active".to_string(),
                 origin_timestamp_ns: 3_000,
                 target_window_end_ns: 3_030,
+                clock_id: "clock-common".to_string(),
+                time_origin_id: "time-origin-common".to_string(),
                 model_contract: model_contract(),
                 forecast_evidence_id: "forecast-c".to_string(),
                 measurement_evidence_id: "measurement-c".to_string(),
@@ -1544,6 +1582,8 @@ mod tests {
         MeasuredForecastHorizon {
             forecast_id: "forecast-current".to_string(),
             measurement_run_id: "measurement-run-current".to_string(),
+            clock_id: "clock-common".to_string(),
+            time_origin_id: "time-origin-common".to_string(),
             measurement_evidence_id: "measurement-evidence-current".to_string(),
             time_alignment_evidence_id: "actual-clock-evidence-current".to_string(),
             source_timeline_digest_reference: "actual-timeline-current".to_string(),
@@ -1697,6 +1737,29 @@ mod tests {
             &forecast(),
             &pool,
         ).is_err());
+    }
+
+    #[test]
+    fn rejects_residual_clock_identity_mismatch() {
+        let mut pool = residuals();
+        pool[0].clock_id = "other-clock".to_string();
+        assert!(generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap),
+            &forecast(),
+            &pool,
+        ).is_err());
+    }
+
+    #[test]
+    fn rejects_measurement_time_origin_mismatch() {
+        let scenarios = generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::IndependentQuantileSampling),
+            &forecast(),
+            &[],
+        ).unwrap();
+        let mut actual = actual_horizon();
+        actual.time_origin_id = "other-time-origin".to_string();
+        assert!(evaluate_forecast_scenarios(&scenarios, &actual, 0.10).is_err());
     }
 
     #[test]
