@@ -45,6 +45,8 @@ pub struct SitePowerTrace {
     pub state_mapper_id: String,
     pub source_clock_id: String,
     pub source_time_origin_id: String,
+    pub aligned_clock_id: String,
+    pub aligned_time_origin_id: String,
     pub clock_alignment_method_id: String,
     pub clock_alignment_evidence_id: String,
     /// Signed offset added to source timestamps to map them to the common clock.
@@ -95,6 +97,16 @@ impl MultiSiteAggregationContract {
             return Err(AuditError(
                 "maximum lag must leave at least three paired samples for correlation"
                     .to_string(),
+            ));
+        }
+        if self.maximum_lag_samples > i32::MAX as usize
+            || self.sample_period_ns > i64::MAX as u64
+            || (self.maximum_lag_samples as u128)
+                .checked_mul(self.sample_period_ns as u128)
+                .is_none_or(|lag_ns| lag_ns > i64::MAX as u128)
+        {
+            return Err(AuditError(
+                "maximum lag duration does not fit the signed nanosecond representation".to_string(),
             ));
         }
         Ok(())
@@ -198,6 +210,8 @@ fn validate_site_trace(
         (trace.state_mapper_id.as_str(), "state_mapper_id"),
         (trace.source_clock_id.as_str(), "source_clock_id"),
         (trace.source_time_origin_id.as_str(), "source_time_origin_id"),
+        (trace.aligned_clock_id.as_str(), "aligned_clock_id"),
+        (trace.aligned_time_origin_id.as_str(), "aligned_time_origin_id"),
         (trace.clock_alignment_method_id.as_str(), "clock_alignment_method_id"),
         (trace.clock_alignment_evidence_id.as_str(), "clock_alignment_evidence_id"),
     ] {
@@ -207,7 +221,8 @@ fn validate_site_trace(
     }
     if trace.parent_topology_id != contract.parent_topology_id
         || trace.region_id != contract.region_id
-        || trace.source_time_origin_id != contract.common_time_origin_id
+        || trace.aligned_clock_id != contract.common_clock_id
+        || trace.aligned_time_origin_id != contract.common_time_origin_id
         || trace.clock_alignment_method_id != contract.clock_alignment_method_id
         || trace.sample_period_ns != contract.sample_period_ns
         || trace.clock_alignment_uncertainty_ns > contract.maximum_alignment_uncertainty_ns
@@ -338,7 +353,9 @@ pub fn aggregate_aligned_sites(
         return Err(AuditError("multi-site aggregation requires at least two site traces".to_string()));
     }
 
-    let evidence_class = traces[0].evidence_class;
+    let mut ordered_traces: Vec<&SitePowerTrace> = traces.iter().collect();
+    ordered_traces.sort_by(|left, right| left.site_id.cmp(&right.site_id));
+    let evidence_class = ordered_traces[0].evidence_class;
     let mut site_ids = HashSet::new();
     let mut aligned_times: Option<Vec<u64>> = None;
     let mut summaries = Vec::with_capacity(traces.len());
@@ -349,7 +366,7 @@ pub fn aggregate_aligned_sites(
     let mut source_trace_evidence_ids = Vec::with_capacity(traces.len());
     let mut clock_alignment_evidence_ids = Vec::with_capacity(traces.len());
 
-    for trace in traces {
+    for trace in &ordered_traces {
         if trace.evidence_class != evidence_class {
             return Err(AuditError(
                 "measured and modelled site traces cannot be silently mixed in one aggregate".to_string(),
@@ -455,7 +472,9 @@ pub fn aggregate_aligned_sites(
                     first_site_id: summaries[first].site_id.clone(),
                     second_site_id: summaries[second].site_id.clone(),
                     lag_samples: lag,
-                    lag_ns: lag as i64 * contract.sample_period_ns as i64,
+                    lag_ns: (lag as i64)
+                    .checked_mul(contract.sample_period_ns as i64)
+                    .ok_or_else(|| AuditError("lag nanoseconds overflowed".to_string()))?,
                     sample_count: lagged_left.len(),
                     pearson: pearson(&lagged_left, &lagged_right),
                 });
@@ -532,7 +551,9 @@ mod tests {
             orchestration_domain_id: "shared-serving-domain".to_string(),
             state_mapper_id: "prefill-decode-idle-v1".to_string(),
             source_clock_id: format!("clock-{site}"),
-            source_time_origin_id: "epoch-utc-ns".to_string(),
+            source_time_origin_id: format!("source-epoch-{site}"),
+            aligned_clock_id: "ptp-root-clock".to_string(),
+            aligned_time_origin_id: "epoch-utc-ns".to_string(),
             clock_alignment_method_id: "ptp-v1".to_string(),
             clock_alignment_evidence_id: format!("clock-evidence-{site}"),
             clock_offset_to_common_ns: offset,
@@ -552,7 +573,10 @@ mod tests {
     #[test]
     fn aligns_site_offsets_and_sums_power_at_exact_common_timestamps() {
         let first = trace("site-a", 0, &[100, 200, 300, 200, 100]);
-        let second = trace("site-b", -100, &[50, 100, 150, 100, 50]);
+        let mut second = trace("site-b", -100, &[50, 100, 150, 100, 50]);
+        for sample in &mut second.samples {
+            sample.timestamp_ns += 100;
+        }
         let report = aggregate_aligned_sites(contract(), &[first, second]).unwrap();
         assert_eq!(report.aligned_sample_count, 5);
         assert_eq!(report.aggregate_samples[0].timestamp_ns, 1_000);
@@ -659,7 +683,7 @@ mod tests {
         assert!(aggregate_aligned_sites(contract(), &[first.clone(), second]).is_err());
 
         let mut third = trace("site-c", 0, &[10, 20, 30, 20, 10]);
-        third.source_time_origin_id = "wrong-epoch".to_string();
+        third.aligned_time_origin_id = "wrong-epoch".to_string();
         assert!(aggregate_aligned_sites(contract(), &[first, third]).is_err());
     }
 
@@ -680,7 +704,25 @@ mod tests {
             contract(),
             &[trace("site-a", 0, &[1, 2, 3, 4, 5]), trace("site-b", 0, &[5, 4, 3, 2, 1])],
         ).unwrap();
-        assert_eq!(report.lagged_correlations.len(), 10);
+        assert_eq!(report.lagged_correlations.len(), 5);
         assert!(report.lagged_correlations.iter().all(|metric| metric.lag_ns == metric.lag_samples as i64 * 1_000));
+    }
+
+    #[test]
+    fn output_order_is_canonical_by_site_id() {
+        let first = trace("site-b", 0, &[10, 20, 30, 20, 10]);
+        let second = trace("site-a", 0, &[20, 30, 40, 30, 20]);
+        let forward = aggregate_aligned_sites(contract(), &[first.clone(), second.clone()]).unwrap();
+        let reverse = aggregate_aligned_sites(contract(), &[second, first]).unwrap();
+        assert_eq!(forward, reverse);
+        assert_eq!(forward.source_site_ids, vec!["site-a", "site-b"]);
+    }
+
+    #[test]
+    fn mapped_clock_identity_must_match_common_clock() {
+        let first = trace("site-a", 0, &[10, 20, 30, 20, 10]);
+        let mut second = trace("site-b", 0, &[10, 20, 30, 20, 10]);
+        second.aligned_clock_id = "different-clock".to_string();
+        assert!(aggregate_aligned_sites(contract(), &[first, second]).is_err());
     }
 }
