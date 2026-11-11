@@ -25,6 +25,8 @@ pub enum CounterfactualBaselineMethod {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct GridServiceContract {
+    /// Immutable ID for this exact service-contract revision.
+    pub service_contract_id: String,
     pub resource_id: String,
     pub grid_zone_id: String,
     pub point_of_interconnection_id: String,
@@ -65,6 +67,7 @@ pub struct GridServiceContract {
 impl GridServiceContract {
     fn validate(&self) -> Result<(), AuditError> {
         for (value, field) in [
+            (self.service_contract_id.as_str(), "service_contract_id"),
             (self.resource_id.as_str(), "resource_id"),
             (self.grid_zone_id.as_str(), "grid_zone_id"),
             (self.point_of_interconnection_id.as_str(), "point_of_interconnection_id"),
@@ -313,6 +316,12 @@ impl GridDispatchEvent {
 #[derive(Debug, Clone, PartialEq)]
 pub struct GridDispatchEventResult {
     pub event_id: String,
+    /// Evidence reference and exact time bounds supporting this event result.
+    pub evidence_id: String,
+    pub window_start_ns: u64,
+    pub window_end_ns: u64,
+    pub recovery_window_start_ns: u64,
+    pub recovery_window_end_ns: u64,
     pub site_power_reduction_w: f64,
     pub non_compute_load_reduction_w: f64,
     pub compute_attributed_reduction_before_uncertainty_w: f64,
@@ -332,6 +341,8 @@ pub struct GridDispatchEventResult {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct GridServiceQualificationReport {
+    /// Exact frozen contract and qualification thresholds used for this report.
+    pub contract: GridServiceContract,
     pub resource_id: String,
     pub grid_zone_id: String,
     pub point_of_interconnection_id: String,
@@ -425,6 +436,11 @@ fn evaluate_event(
 
     GridDispatchEventResult {
         event_id: event.event_id.clone(),
+        evidence_id: event.evidence_id.clone(),
+        window_start_ns: event.window_start_ns,
+        window_end_ns: event.window_end_ns,
+        recovery_window_start_ns: event.recovery_window_start_ns,
+        recovery_window_end_ns: event.recovery_window_end_ns,
         site_power_reduction_w,
         non_compute_load_reduction_w: event.non_compute_load_reduction_w,
         compute_attributed_reduction_before_uncertainty_w,
@@ -526,6 +542,7 @@ pub fn evaluate_grid_service_sweep(
         && meets_reliability_lower_bound;
 
     Ok(GridServiceQualificationReport {
+        contract: contract.clone(),
         resource_id: contract.resource_id,
         grid_zone_id: contract.grid_zone_id,
         point_of_interconnection_id: contract.point_of_interconnection_id,
@@ -557,6 +574,7 @@ mod tests {
 
     fn contract() -> GridServiceContract {
         GridServiceContract {
+            service_contract_id: "grid-service-contract-v1".to_string(),
             resource_id: "dc-site-01".to_string(),
             grid_zone_id: "zone-west".to_string(),
             point_of_interconnection_id: "poi-11kv-01".to_string(),
@@ -632,6 +650,17 @@ mod tests {
     fn thirty_repeated_events_qualify_at_the_p10_capacity_not_the_best_event() {
         let report = evaluate_grid_service_sweep(contract(), all_events(30)).unwrap();
         assert_eq!(report.total_event_count, 30);
+        assert_eq!(report.contract.service_contract_id, "grid-service-contract-v1");
+        assert_eq!(
+            report.contract.counterfactual_baseline_evidence_id,
+            "baseline-evidence-sha256"
+        );
+        assert_eq!(report.event_results[0].evidence_id, "event-evidence-000");
+        assert_eq!(report.event_results[0].window_end_ns, 121_000_000_000);
+        assert_eq!(
+            report.event_results[0].recovery_window_start_ns,
+            report.event_results[0].window_end_ns
+        );
         assert_eq!(report.service_feasible_event_count, 30);
         assert_eq!(report.commitment_success_event_count, 30);
         assert!((report.p10_credited_compute_capacity_w.unwrap() - 190.0).abs() < 1e-12);
