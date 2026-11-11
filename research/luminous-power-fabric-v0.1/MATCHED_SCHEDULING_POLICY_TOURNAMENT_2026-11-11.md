@@ -40,6 +40,19 @@ The first implementation may consume #400's frozen constant-duration, non-preemp
 
 No arm may preempt running work unless preemption/checkpoint/restart is an explicit shared workload capability with the same cost and failure semantics applied to every eligible policy.
 
+### Spatial-migration factor (crossed with, not confused with, scheduler policy)
+
+Spatial data movement is a second experimental axis, not another queue algorithm. Cross eligible scheduler policies with:
+- local-only execution;
+- replicated read-only destination;
+- remote read-only access;
+- on-demand copy;
+- observed pre-launch combinations (data only, runtime only, both, neither).
+
+Use #404's frozen migration contract for data version, owner authorization, residency/jurisdiction, data freshness, destination reservation, common-clock event timing and output-quality/SLO checks. Report source-side power relief and destination-side added load separately, together with data bytes and first accepted useful work. A source-site reduction alone is not a net-system or regional flexibility result. Do not count pre-launch readiness as a free action: include reserved destination capacity, data movement and pre-launch resource cost.
+
+Migration trials must be stratified by network quality and destination headroom. A scheduler cannot claim a response class unless the #404 source-relief event reaches its measured stability criterion within the declared response window and accepted useful work remains preserved.
+
 The EDF-backfill arm must publish its reservation algorithm. A “backfill” label without a reservation guarantee is not sufficient.
 
 ## 4. Exact-oracle protocol
@@ -123,6 +136,8 @@ Synthetic tests must cover:
 10. Heterogeneous runtimes and time-varying fragment demand once the adapter exists.
 11. Dependency DAGs and parent/child completion constraints when represented.
 12. Integer-boundary/overflow cases and deterministic tie-break replay.
+13. Cross-site common-mode bursts, synchronized source/destination events and destination saturation from #403.
+14. Migration failure modes from #404: cold copy delay, stale replica, remote-read outage, pre-launch reservation loss, revoked rights/residency and destination readiness after source shutdown.
 
 Every fixture must have an independently computed expected schedule or an exact small-instance oracle result.
 
@@ -160,7 +175,9 @@ These targets are internal research gates only. No target is claimed attained.
 4. **Exact oracle:** tiny independent corpus and solver-backed optimum/gap evidence.
 5. **LAD-Flex reproduction:** only after lawful, exact trace and parameter access.
 6. **Power join:** #401 modelled results; #382 measured electrical comparisons.
-7. **Repeated service qualification:** #396 only after site/PCC measured gates and repeated-event protocol.
+7. **Migration response:** compare data path and pre-launch strata with #404's observed command-to-source-relief and destination-stability evidence.
+8. **Correlation-aware delivery:** cross scheduler and migration policies with #403 independent/partially correlated/synchronized episodes.
+9. **Repeated service qualification:** #396 only after site/PCC measured gates, dependence-aware aggregation and repeated-event protocol.
 
 ## 10. Claim boundary
 
