@@ -281,6 +281,7 @@ pub struct ScenarioEvaluationReport {
     pub scenario_energy_p10_mw_ns: u128,
     pub scenario_energy_p50_mw_ns: u128,
     pub scenario_energy_p90_mw_ns: u128,
+    pub actual_horizon_energy_pit: f64,
     pub actual_peak_power_mw: u64,
     pub actual_max_ramp_up_mw_per_step: u64,
     pub actual_max_ramp_down_mw_per_step: u64,
@@ -936,6 +937,15 @@ fn empirical_pit(values: &[u64], actual: u64) -> f64 {
     (less + 0.5 * equal) / values.len() as f64
 }
 
+fn empirical_pit_u128(values: &[u128], actual: u128) -> f64 {
+    if values.is_empty() {
+        return f64::NAN;
+    }
+    let less = values.iter().filter(|value| **value < actual).count() as f64;
+    let equal = values.iter().filter(|value| **value == actual).count() as f64;
+    (less + 0.5 * equal) / values.len() as f64
+}
+
 fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditError> {
     scenarios.contract.validate()?;
     if scenarios.forecast_id.trim().is_empty()
@@ -1241,6 +1251,7 @@ pub fn evaluate_forecast_scenarios(
         scenario_energy_p10_mw_ns: nearest_rank_u128(&scenario_energies, 0.10)?,
         scenario_energy_p50_mw_ns: nearest_rank_u128(&scenario_energies, 0.50)?,
         scenario_energy_p90_mw_ns: nearest_rank_u128(&scenario_energies, 0.90)?,
+        actual_horizon_energy_pit: empirical_pit_u128(&scenario_energies, actual_energy),
         actual_peak_power_mw: *actual_power.iter().max().unwrap_or(&0),
         actual_max_ramp_up_mw_per_step: max_ramp_up(&actual_power),
         actual_max_ramp_down_mw_per_step: max_ramp_down(&actual_power),
@@ -1554,6 +1565,17 @@ mod tests {
     }
 
     #[test]
+    fn rejects_residual_trajectory_with_misaligned_source_sample_timestamps() {
+        let mut pool = residuals();
+        pool[0].source_sample_timestamps_ns[1] += 1;
+        assert!(generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap),
+            &forecast(),
+            &pool,
+        ).is_err());
+    }
+
+    #[test]
     fn rejects_residual_trajectory_that_uses_future_information() {
         let mut pool = residuals();
         pool[0].target_window_end_ns = 10_001;
@@ -1658,6 +1680,7 @@ mod tests {
         assert!(report.actual_energy_mw_ns > 0);
         assert!(report.scenario_energy_p90_mw_ns >= report.scenario_energy_p10_mw_ns);
         assert!(report.actual_peak_pit.is_finite());
+        assert!(report.actual_horizon_energy_pit.is_finite());
         assert_eq!(report.model_contract, model_contract());
         assert_eq!(report.forecast_evidence_id, "forecast-evidence-current");
         assert_eq!(report.forecast_time_alignment_evidence_id, "clock-current");
