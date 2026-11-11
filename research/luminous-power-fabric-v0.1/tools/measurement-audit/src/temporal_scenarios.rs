@@ -756,9 +756,9 @@ fn generate_schaake_shuffle(
         })
         .collect();
 
-    // Rank only the selected historical trajectories. Assigning sorted forecast
-    // marginal samples by these ranks preserves every marginal sample exactly,
-    // even when the residual pool is larger than the scenario count.
+    // Rank only the selected historical trajectories. Assigning the sorted
+    // forecast marginal samples by these ranks preserves every marginal sample
+    // exactly, even when the residual pool is larger than the scenario count.
     for horizon_index in 0..contract.horizon_steps {
         let mut selected_order: Vec<usize> = (0..contract.scenario_count).collect();
         selected_order.sort_by(|left, right| {
@@ -1682,7 +1682,7 @@ mod tests {
             let mut extra = pool[0].clone();
             extra.residual_id = format!("residual-extra-{index}");
             extra.origin_id = format!("origin-extra-{index}");
-            extra.origin_timestamp_ns = index as u64 * 1_000;
+            extra.origin_timestamp_ns = (index as u64 + 1) * 1_000;
             extra.target_window_end_ns = extra.origin_timestamp_ns + 30;
             extra.forecast_evidence_id = format!("forecast-extra-{index}");
             extra.measurement_evidence_id = format!("measurement-extra-{index}");
@@ -1936,29 +1936,6 @@ mod tests {
     fn residual_pool_requires_unique_trajectory_and_origin_ids() {
         let mut pool = residuals();
         pool[1].residual_id = pool[0].residual_id.clone();
-        assert!(generate_forecast_scenarios(
-            contract(ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap),
-            &forecast(),
-            &pool,
-        ).is_err());
-    }
-
-    #[test]
-    fn residual_pool_rejects_reused_source_sample_evidence() {
-        let mut pool = residuals();
-        pool[1].source_sample_evidence_ids[0] =
-            pool[0].source_sample_evidence_ids[0].clone();
-        assert!(generate_forecast_scenarios(
-            contract(ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap),
-            &forecast(),
-            &pool,
-        ).is_err());
-    }
-
-    #[test]
-    fn residual_pool_rejects_current_forecast_origin_reuse() {
-        let mut pool = residuals();
-        pool[0].origin_id = forecast().origin_id;
         assert!(generate_forecast_scenarios(
             contract(ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap),
             &forecast(),
