@@ -105,7 +105,7 @@ A stronger benchmark result would demonstrate a Pareto improvement in source res
 
 ## 7. Validation status and limitations
 
-- Sixteen synthetic Rust tests are authored but not executed.
+- Seventeen synthetic Rust tests are authored but not executed.
 - Structural inspection only; no Rust build, cargo test, fmt, clippy or runtime measurement is claimed.
 - No operational data-centre trace, cross-site dataset, model artifact or real data transfer was performed.
 - The module carries caller-supplied evidence references and status booleans; it does not authenticate signatures or data rights.
