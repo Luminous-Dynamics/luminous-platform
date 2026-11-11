@@ -652,6 +652,60 @@ fn ensure_episode_reports_paired(
         })
         .collect::<Result<_, _>>()?;
     let baseline = &ordered[0];
+    let gaussian_report = ordered
+        .iter()
+        .find(|report| report.generator_kind == ScenarioGeneratorKind::GaussianCopula)
+        .ok_or_else(|| AuditError("paired tournament is missing its Gaussian-copula residual pool".to_string()))?;
+    let gaussian_pool = gaussian_report.gaussian_copula_evidence.as_ref().ok_or_else(|| {
+        AuditError("paired Gaussian-copula report is missing its historical residual pool".to_string())
+    })?;
+    for report in ordered.iter().filter(|report| {
+        matches!(
+            report.generator_kind,
+            ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap
+                | ScenarioGeneratorKind::SchaakeShuffle
+        )
+    }) {
+        for residual in report.selected_residual_trajectories.iter().flatten() {
+            let pool_index = gaussian_pool.residual_ids
+                .iter()
+                .position(|id| id == &residual.residual_id)
+                .ok_or_else(|| {
+                    AuditError("selected residual trajectory is absent from the paired Gaussian historical pool".to_string())
+                })?;
+            if gaussian_pool.residual_origin_ids[pool_index] != residual.origin_id
+                || gaussian_pool.residual_origin_timestamps_ns[pool_index] != residual.origin_timestamp_ns
+                || gaussian_pool.residual_target_window_end_timestamps_ns[pool_index]
+                    != residual.target_window_end_ns
+                || gaussian_pool.residual_operating_regime_ids[pool_index]
+                    != residual.operating_regime_id
+                || gaussian_pool.residual_clock_ids[pool_index] != residual.clock_id
+                || gaussian_pool.residual_time_origin_ids[pool_index] != residual.time_origin_id
+                || gaussian_pool.residual_model_contracts[pool_index] != residual.model_contract
+                || gaussian_pool.raw_residual_power_mw[pool_index] != residual.residual_power_mw
+                || gaussian_pool.measurement_evidence_ids[pool_index] != residual.measurement_evidence_id
+                || gaussian_pool.forecast_evidence_ids[pool_index] != residual.forecast_evidence_id
+                || gaussian_pool.residual_generation_evidence_ids[pool_index]
+                    != residual.residual_generation_evidence_id
+                || gaussian_pool.state_mapping_evidence_ids[pool_index]
+                    != residual.state_mapping_evidence_id
+                || gaussian_pool.time_alignment_evidence_ids[pool_index]
+                    != residual.time_alignment_evidence_id
+                || gaussian_pool.timeline_digest_references[pool_index]
+                    != residual.source_timeline_digest_reference
+                || gaussian_pool.source_sample_evidence_ids[pool_index]
+                    != residual.source_sample_evidence_ids
+                || gaussian_pool.source_sample_timestamps_ns[pool_index]
+                    != residual.source_sample_timestamps_ns
+            {
+                return Err(AuditError(
+                    "bootstrap/Schaake selected residual differs from the shared historical residual pool"
+                        .to_string(),
+                ));
+            }
+        }
+    }
+
     let reference_residual_pool = ordered
         .iter()
         .filter(|report| report.generator_kind != ScenarioGeneratorKind::IndependentQuantileSampling)
@@ -1706,6 +1760,24 @@ mod tests {
             Some("different-residual-pool".to_string());
         input[0].episodes[0].evaluations[2].scenario_generation_contract.residual_pool_evidence_id =
             Some("different-residual-pool".to_string());
+        assert!(evaluate_scenario_tournament(contract(), input).is_err());
+    }
+
+    #[test]
+    fn rejects_selected_residual_not_present_in_shared_historical_pool() {
+        let mut input = clusters(4, true);
+        let report = &mut input[0].episodes[0].evaluations[2];
+        report.selected_residual_ids[0] = "unseen-residual".to_string();
+        report.selected_residual_trajectories[0].as_mut().unwrap().residual_id =
+            "unseen-residual".to_string();
+        assert!(evaluate_scenario_tournament(contract(), input).is_err());
+    }
+
+    #[test]
+    fn rejects_selected_residual_values_that_differ_from_shared_pool() {
+        let mut input = clusters(4, true);
+        input[0].episodes[0].evaluations[2].selected_residual_trajectories[0]
+            .as_mut().unwrap().residual_power_mw[0] += 1;
         assert!(evaluate_scenario_tournament(contract(), input).is_err());
     }
 
