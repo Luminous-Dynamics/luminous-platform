@@ -1327,6 +1327,41 @@ mod tests {
         }
     }
 
+    fn residual_fixture(index: usize) -> crate::temporal_scenarios::ForecastResidualTrajectory {
+        let origin = 100 + index as u64 * 45;
+        crate::temporal_scenarios::ForecastResidualTrajectory {
+            residual_id: format!("residual-{index:03}"),
+            origin_id: format!("residual-origin-{index:03}"),
+            operating_regime_id: "normal".to_string(),
+            clock_id: "clock-common".to_string(),
+            time_origin_id: "time-origin-common".to_string(),
+            origin_timestamp_ns: origin,
+            target_window_end_ns: origin + 40,
+            model_contract: model_contract(),
+            forecast_evidence_id: format!("pool-forecast-{index:03}"),
+            measurement_evidence_id: format!("pool-measurement-{index:03}"),
+            residual_generation_evidence_id: format!("pool-generation-{index:03}"),
+            state_mapping_evidence_id: format!("pool-mapping-{index:03}"),
+            time_alignment_evidence_id: format!("pool-alignment-{index:03}"),
+            source_timeline_digest_reference: format!("pool-timeline-{index:03}"),
+            source_sample_evidence_ids: (0..4)
+                .map(|sample| format!("pool-sample-{index:03}-{sample}"))
+                .collect(),
+            source_sample_timestamps_ns: vec![
+                origin + 10,
+                origin + 20,
+                origin + 30,
+                origin + 40,
+            ],
+            residual_power_mw: vec![
+                index as i64,
+                ((index * 7) % 200) as i64,
+                ((index * 11) % 200) as i64,
+                ((index * 13) % 200) as i64,
+            ],
+        }
+    }
+
     fn gaussian_evidence() -> GaussianCopulaEvidence {
         let mut evidence = GaussianCopulaEvidence {
             residual_pool_evidence_id: "residual-pool-v1".to_string(),
@@ -1370,10 +1405,10 @@ mod tests {
                 vec![0.0, 0.0, 0.0, 1.0],
             ],
         };
-        for index in 0..30 {
-            let origin = 100 + index as u64 * 100;
-            evidence.residual_ids.push(format!("residual-{index:02}"));
-            evidence.residual_origin_ids.push(format!("residual-origin-{index:02}"));
+        for index in 0..200 {
+            let origin = 100 + index as u64 * 45;
+            evidence.residual_ids.push(format!("residual-{index:03}"));
+            evidence.residual_origin_ids.push(format!("residual-origin-{index:03}"));
             evidence.residual_origin_timestamps_ns.push(origin);
             evidence.residual_target_window_end_timestamps_ns.push(origin + 40);
             evidence.residual_operating_regime_ids.push("normal".to_string());
@@ -1382,19 +1417,19 @@ mod tests {
             evidence.residual_model_contracts.push(model_contract());
             evidence.raw_residual_power_mw.push(vec![
                 index as i64,
-                ((index * 7) % 30) as i64,
-                ((index * 11) % 30) as i64,
-                ((index * 13) % 30) as i64,
+                ((index * 7) % 200) as i64,
+                ((index * 11) % 200) as i64,
+                ((index * 13) % 200) as i64,
             ]);
             evidence.rank_normal_scores.push(Vec::new());
-            evidence.measurement_evidence_ids.push(format!("pool-measurement-{index:02}"));
-            evidence.forecast_evidence_ids.push(format!("pool-forecast-{index:02}"));
-            evidence.residual_generation_evidence_ids.push(format!("pool-generation-{index:02}"));
-            evidence.state_mapping_evidence_ids.push(format!("pool-mapping-{index:02}"));
-            evidence.time_alignment_evidence_ids.push(format!("pool-alignment-{index:02}"));
-            evidence.timeline_digest_references.push(format!("pool-timeline-{index:02}"));
+            evidence.measurement_evidence_ids.push(format!("pool-measurement-{index:03}"));
+            evidence.forecast_evidence_ids.push(format!("pool-forecast-{index:03}"));
+            evidence.residual_generation_evidence_ids.push(format!("pool-generation-{index:03}"));
+            evidence.state_mapping_evidence_ids.push(format!("pool-mapping-{index:03}"));
+            evidence.time_alignment_evidence_ids.push(format!("pool-alignment-{index:03}"));
+            evidence.timeline_digest_references.push(format!("pool-timeline-{index:03}"));
             evidence.source_sample_evidence_ids.push((0..4)
-                .map(|sample| format!("pool-sample-{index:02}-{sample}"))
+                .map(|sample| format!("pool-sample-{index:03}-{sample}"))
                 .collect());
             evidence.source_sample_timestamps_ns.push(vec![
                 origin + 10,
@@ -1477,51 +1512,22 @@ mod tests {
         let mut selected_residual_trajectories = Vec::new();
         if residual_dependent {
             for scenario in 0..200 {
-                selected_residual_ids.push(format!("residual-{index}-{scenario}"));
-                selected_residual_evidence_ids.push(format!("residual-measurement-{index}-{scenario}"));
-                selected_residual_forecast_evidence_ids.push(format!("residual-forecast-{index}-{scenario}"));
-                selected_residual_generation_evidence_ids.push(format!("residual-generation-{index}-{scenario}"));
-                selected_residual_state_mapping_evidence_ids.push(format!("residual-mapping-{index}-{scenario}"));
-                selected_residual_time_alignment_evidence_ids.push(format!("residual-alignment-{index}-{scenario}"));
-                selected_residual_timeline_digest_references.push(format!("residual-timeline-{index}-{scenario}"));
-                selected_residual_sample_evidence_ids.push((0..4)
-                    .map(|sample| format!("residual-sample-{index}-{scenario}-{sample}"))
-                    .collect());
-                let origin_timestamp_ns = 100 + scenario as u64 * 45;
-                selected_residual_sample_timestamps_ns.push(vec![
-                    origin_timestamp_ns + 10,
-                    origin_timestamp_ns + 20,
-                    origin_timestamp_ns + 30,
-                    origin_timestamp_ns + 40,
-                ]);
-                selected_residual_trajectories.push(Some(
-                    crate::temporal_scenarios::ForecastResidualTrajectory {
-                        residual_id: format!("residual-{index}-{scenario}"),
-                        origin_id: format!("residual-origin-{index}-{scenario}"),
-                        operating_regime_id: "normal".to_string(),
-                        clock_id: "clock-common".to_string(),
-                        time_origin_id: "time-origin-common".to_string(),
-                        origin_timestamp_ns,
-                        target_window_end_ns: origin_timestamp_ns + 40,
-                        model_contract: model_contract(),
-                        forecast_evidence_id: format!("residual-forecast-{index}-{scenario}"),
-                        measurement_evidence_id: format!("residual-measurement-{index}-{scenario}"),
-                        residual_generation_evidence_id: format!("residual-generation-{index}-{scenario}"),
-                        state_mapping_evidence_id: format!("residual-mapping-{index}-{scenario}"),
-                        time_alignment_evidence_id: format!("residual-alignment-{index}-{scenario}"),
-                        source_timeline_digest_reference: format!("residual-timeline-{index}-{scenario}"),
-                        source_sample_evidence_ids: (0..4)
-                            .map(|sample| format!("residual-sample-{index}-{scenario}-{sample}"))
-                            .collect(),
-                        source_sample_timestamps_ns: vec![
-                            origin_timestamp_ns + 10,
-                            origin_timestamp_ns + 20,
-                            origin_timestamp_ns + 30,
-                            origin_timestamp_ns + 40,
-                        ],
-                        residual_power_mw: vec![0, 0, 0, 0],
-                    }
-                ));
+                let pool_index = if kind == ScenarioGeneratorKind::SchaakeShuffle {
+                    scenario
+                } else {
+                    scenario % 100
+                };
+                let residual = residual_fixture(pool_index);
+                selected_residual_ids.push(residual.residual_id.clone());
+                selected_residual_evidence_ids.push(residual.measurement_evidence_id.clone());
+                selected_residual_forecast_evidence_ids.push(residual.forecast_evidence_id.clone());
+                selected_residual_generation_evidence_ids.push(residual.residual_generation_evidence_id.clone());
+                selected_residual_state_mapping_evidence_ids.push(residual.state_mapping_evidence_id.clone());
+                selected_residual_time_alignment_evidence_ids.push(residual.time_alignment_evidence_id.clone());
+                selected_residual_timeline_digest_references.push(residual.source_timeline_digest_reference.clone());
+                selected_residual_sample_evidence_ids.push(residual.source_sample_evidence_ids.clone());
+                selected_residual_sample_timestamps_ns.push(residual.source_sample_timestamps_ns.clone());
+                selected_residual_trajectories.push(Some(residual));
             }
         } else {
             selected_residual_trajectories = vec![None; 200];
