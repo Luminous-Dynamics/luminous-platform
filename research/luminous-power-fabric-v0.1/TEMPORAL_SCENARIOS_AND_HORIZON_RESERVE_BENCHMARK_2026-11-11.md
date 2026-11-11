@@ -47,9 +47,9 @@ Residual floor clamping at zero power is reported explicitly. The source residua
 
 ### C. Schaake-shuffle rank transfer
 
-The generator ranks historical residual trajectories independently at each horizon step, selects historical trajectory rows without replacement, and maps each selected row's historical rank profile onto the current forecast's marginal quantile grid.
+The generator selects historical trajectory rows without replacement, ranks only that selected subset independently at each horizon step, sorts the current forecast's marginal scenario samples, and assigns each marginal sample exactly once according to the selected rows' rank order.
 
-This transfers the historical temporal dependence pattern while retaining the forecast's current marginal quantile samples. When the residual pool is larger than the requested scenario ensemble, the rank-to-grid mapping is an approximation; it must be evaluated with proper multivariate scores and marginal diagnostics, not described as exact rank preservation.
+This transfers the selected historical temporal dependence pattern while preserving the forecast's discrete marginal sample set exactly at every horizon step, even when the residual pool is larger than the requested ensemble. The temporal dependence remains an empirical finite-ensemble approximation and must be evaluated with proper multivariate scores and ramp/peak diagnostics.
 
 The selected historical trajectory and its source sample evidence are retained for every scenario.
 
