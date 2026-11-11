@@ -287,7 +287,6 @@ pub struct GaussianCopulaEvidence {
 pub struct ForecastScenarioSet {
     pub contract: ScenarioGenerationContract,
     pub gaussian_copula_evidence: Option<GaussianCopulaEvidence>,
-    pub contract: ScenarioGenerationContract,
     pub forecast_id: String,
     pub forecast_origin_timestamp_ns: u64,
     pub clock_id: String,
@@ -865,13 +864,17 @@ pub fn generate_forecast_scenarios(
             }
         }
         ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap
-        | ScenarioGeneratorKind::SchaakeShuffle => {
+        | ScenarioGeneratorKind::SchaakeShuffle
+        | ScenarioGeneratorKind::GaussianCopula => {
             let required_pool_size = match contract.generator_kind {
                 ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap => {
                     contract.minimum_residual_trajectory_count
                 }
                 ScenarioGeneratorKind::SchaakeShuffle => {
                     contract.minimum_residual_trajectory_count.max(contract.scenario_count)
+                }
+                ScenarioGeneratorKind::GaussianCopula => {
+                    contract.minimum_residual_trajectory_count
                 }
                 ScenarioGeneratorKind::IndependentQuantileSampling => 0,
             };
@@ -922,6 +925,8 @@ pub fn generate_forecast_scenarios(
     let (marginal_samples, tail_clipped) =
         marginal_quantile_samples(forecast, contract.scenario_count)?;
     let scheduled_median = median_path(forecast)?;
+    let mut gaussian_copula_evidence = None;
+    let mut marginal_tail_clipped_sample_count = tail_clipped;
     let (scenarios, selected_ids, selected_evidence, clamped) = match contract.generator_kind {
         ScenarioGeneratorKind::IndependentQuantileSampling => generate_independent_scenarios(
             &contract,
@@ -939,6 +944,16 @@ pub fn generate_forecast_scenarios(
             residual_trajectories,
             &marginal_samples,
         )?,
+        ScenarioGeneratorKind::GaussianCopula => {
+            let (scenarios, evidence, clipped) = generate_gaussian_copula(
+                &contract,
+                residual_trajectories,
+                forecast,
+            )?;
+            gaussian_copula_evidence = Some(evidence);
+            marginal_tail_clipped_sample_count = clipped;
+            (scenarios, Vec::new(), Vec::new(), 0)
+        }
     };
 
     let step_timestamps_ns = forecast.steps.iter().map(|step| step.timestamp_ns).collect();
@@ -959,6 +974,7 @@ pub fn generate_forecast_scenarios(
         .collect();
     Ok(ForecastScenarioSet {
         contract: contract.clone(),
+        gaussian_copula_evidence,
         forecast_id: forecast.forecast_id.clone(),
         forecast_origin_timestamp_ns: forecast.origin_timestamp_ns,
         clock_id: forecast.clock_id.clone(),
@@ -977,7 +993,7 @@ pub fn generate_forecast_scenarios(
         selected_residual_state_mapping_evidence_ids,
         selected_residual_time_alignment_evidence_ids,
         selected_residual_timeline_digest_references,
-        marginal_tail_clipped_sample_count: tail_clipped,
+        marginal_tail_clipped_sample_count,
         residual_floor_clamped_sample_count: clamped,
         claim_ceiling: "MODELLED_TEMPORAL_POWER_SCENARIOS_NOT_MEASUREMENT_OR_GRID_RESERVE_QUALIFICATION",
     })
@@ -1410,6 +1426,7 @@ pub fn evaluate_forecast_scenarios(
         forecast_time_alignment_evidence_id: scenarios.time_alignment_evidence_id.clone(),
         forecast_source_timeline_digest_reference: scenarios.source_timeline_digest_reference.clone(),
         residual_pool_evidence_id: scenarios.contract.residual_pool_evidence_id.clone(),
+        gaussian_copula_evidence: scenarios.gaussian_copula_evidence.clone(),
         selected_residual_ids: scenarios.selected_residual_ids.clone(),
         selected_residual_evidence_ids: scenarios.selected_residual_evidence_ids.clone(),
         selected_residual_forecast_evidence_ids: scenarios.selected_residual_forecast_evidence_ids.clone(),
