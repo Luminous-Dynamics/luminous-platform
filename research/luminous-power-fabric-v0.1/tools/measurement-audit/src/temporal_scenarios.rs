@@ -22,6 +22,8 @@ pub struct ForecastQuantile {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ForecastHorizonStep {
+    /// End timestamp of the interval-average power value for
+    /// [timestamp_ns - step_period_ns, timestamp_ns).
     pub timestamp_ns: u64,
     pub quantiles: Vec<ForecastQuantile>,
 }
@@ -148,8 +150,20 @@ impl ScenarioGenerationContract {
                     ));
                 }
             }
-            ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap
-            | ScenarioGeneratorKind::SchaakeShuffle => {
+            ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap => {
+                if self.minimum_residual_trajectory_count < 2
+                    || self
+                        .residual_pool_evidence_id
+                        .as_deref()
+                        .is_none_or(|value| value.trim().is_empty())
+                {
+                    return Err(AuditError(
+                        "residual bootstrap requires a residual-pool evidence reference and at least two historical trajectories"
+                            .to_string(),
+                    ));
+                }
+            }
+            ScenarioGeneratorKind::SchaakeShuffle => {
                 if self.minimum_residual_trajectory_count < self.scenario_count
                     || self
                         .residual_pool_evidence_id
@@ -157,7 +171,7 @@ impl ScenarioGenerationContract {
                         .is_none_or(|value| value.trim().is_empty())
                 {
                     return Err(AuditError(
-                        "dependence-preserving scenario generation requires a residual-pool evidence reference and support at least equal to scenario count"
+                        "Schaake shuffle requires a residual-pool evidence reference and at least one historical rank row per scenario"
                             .to_string(),
                     ));
                 }
@@ -172,6 +186,9 @@ pub struct ForecastScenarioTrajectory {
     pub scenario_id: String,
     pub source_residual_id: Option<String>,
     pub source_residual_evidence_id: Option<String>,
+    /// Exact measured-sample evidence references for the selected residual block.
+    /// Empty only for the independent-quantile negative-control arm.
+    pub source_sample_evidence_ids: Vec<String>,
     pub power_mw: Vec<u64>,
 }
 
@@ -218,7 +235,12 @@ pub struct ScenarioEvaluationReport {
     pub horizon_steps: usize,
     pub energy_score_mw: f64,
     pub variogram_score: f64,
-    pub actual_energy_mw_steps: u128,
+    /// Integrated measured horizon energy in mW·ns, using interval-average
+    /// power and the frozen forecast step duration.
+    pub actual_energy_mw_ns: u128,
+    pub scenario_energy_p10_mw_ns: u128,
+    pub scenario_energy_p50_mw_ns: u128,
+    pub scenario_energy_p90_mw_ns: u128,
     pub actual_peak_power_mw: u64,
     pub actual_max_ramp_up_mw_per_step: u64,
     pub actual_max_ramp_down_mw_per_step: u64,
@@ -522,6 +544,7 @@ fn generate_independent_scenarios(
             scenario_id: format!("{}-scenario-{scenario_index:04}", contract.generator_id),
             source_residual_id: None,
             source_residual_evidence_id: None,
+            source_sample_evidence_ids: Vec::new(),
             power_mw: vec![0; contract.horizon_steps],
         });
     }
@@ -543,14 +566,17 @@ fn generate_residual_bootstrap(
     residuals: &[ForecastResidualTrajectory],
     scheduled_median: &[u64],
 ) -> Result<(Vec<ForecastScenarioTrajectory>, Vec<String>, Vec<String>, usize), AuditError> {
-    let permutation = deterministic_permutation(residuals.len(), contract.deterministic_seed);
+    let mut random_state = contract.deterministic_seed;
     let mut output = Vec::with_capacity(contract.scenario_count);
     let mut selected_ids = Vec::with_capacity(contract.scenario_count);
     let mut selected_evidence = Vec::with_capacity(contract.scenario_count);
     let mut clamped = 0_usize;
 
+    // A bootstrap samples whole residual trajectories with replacement.
+    // Repeated source IDs are expected and preserve cross-horizon error shape.
     for scenario_index in 0..contract.scenario_count {
-        let residual = &residuals[permutation[scenario_index]];
+        let residual_index = (next_random(&mut random_state) % residuals.len() as u64) as usize;
+        let residual = &residuals[residual_index];
         let mut power = Vec::with_capacity(contract.horizon_steps);
         for horizon_index in 0..contract.horizon_steps {
             let (value, was_clamped) = add_signed_residual(
@@ -568,6 +594,7 @@ fn generate_residual_bootstrap(
             scenario_id: format!("{}-scenario-{scenario_index:04}", contract.generator_id),
             source_residual_id: Some(residual.residual_id.clone()),
             source_residual_evidence_id: Some(residual.measurement_evidence_id.clone()),
+            source_sample_evidence_ids: residual.source_sample_evidence_ids.clone(),
             power_mw: power,
         });
         selected_ids.push(residual.residual_id.clone());
@@ -620,6 +647,9 @@ fn generate_schaake_shuffle(
             source_residual_evidence_id: Some(
                 residuals[residual_index].measurement_evidence_id.clone(),
             ),
+            source_sample_evidence_ids: residuals[residual_index]
+                .source_sample_evidence_ids
+                .clone(),
             power_mw: power,
         });
         selected_ids.push(residuals[residual_index].residual_id.clone());
@@ -653,13 +683,21 @@ pub fn generate_forecast_scenarios(
         }
         ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap
         | ScenarioGeneratorKind::SchaakeShuffle => {
-            if residual_trajectories.len() < contract.minimum_residual_trajectory_count
-                || residual_trajectories.len() < contract.scenario_count
-            {
-                return Err(AuditError(
-                    "residual pool does not meet the frozen trajectory support requirement"
-                        .to_string(),
-                ));
+            let required_pool_size = match contract.generator_kind {
+                ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap => {
+                    contract.minimum_residual_trajectory_count
+                }
+                ScenarioGeneratorKind::SchaakeShuffle => {
+                    contract.minimum_residual_trajectory_count.max(contract.scenario_count)
+                }
+                ScenarioGeneratorKind::IndependentQuantileSampling => 0,
+            };
+            if residual_trajectories.len() < required_pool_size {
+                return Err(AuditError(format!(
+                    "residual pool has {} trajectories; frozen method requires at least {}",
+                    residual_trajectories.len(),
+                    required_pool_size
+                )));
             }
             for residual in residual_trajectories {
                 validate_residual_trajectory(&contract, forecast, residual)?;
@@ -826,8 +864,11 @@ pub fn evaluate_forecast_scenarios(
                 "measured horizon sample {index} is invalid or not exactly aligned"
             )));
         }
+        let interval_energy = (sample.power_mw as u128)
+            .checked_mul(scenarios.contract.step_period_ns as u128)
+            .ok_or_else(|| AuditError("actual horizon energy interval overflowed".to_string()))?;
         actual_energy = actual_energy
-            .checked_add(sample.power_mw as u128)
+            .checked_add(interval_energy)
             .ok_or_else(|| AuditError("actual horizon energy sum overflowed".to_string()))?;
         actual_power.push(sample.power_mw);
         actual_evidence_ids.push(sample.source_evidence_id.clone());
@@ -852,7 +893,10 @@ pub fn evaluate_forecast_scenarios(
         scenario_ramp_downs.push(max_ramp_down(&scenario.power_mw));
         scenario_energies.push(
             scenario.power_mw.iter().try_fold(0_u128, |sum, value| {
-                sum.checked_add(*value as u128)
+                let interval_energy = (*value as u128)
+                    .checked_mul(scenarios.contract.step_period_ns as u128)
+                    .ok_or_else(|| AuditError("scenario energy interval overflowed".to_string()))?;
+                sum.checked_add(interval_energy)
                     .ok_or_else(|| AuditError("scenario energy sum overflowed".to_string()))
             })?,
         );
@@ -928,7 +972,10 @@ pub fn evaluate_forecast_scenarios(
         horizon_steps: scenarios.contract.horizon_steps,
         energy_score_mw,
         variogram_score,
-        actual_energy_mw_steps: actual_energy,
+        actual_energy_mw_ns: actual_energy,
+        scenario_energy_p10_mw_ns: nearest_rank_u128(&scenario_energies, 0.10)?,
+        scenario_energy_p50_mw_ns: nearest_rank_u128(&scenario_energies, 0.50)?,
+        scenario_energy_p90_mw_ns: nearest_rank_u128(&scenario_energies, 0.90)?,
         actual_peak_power_mw: *actual_power.iter().max().unwrap_or(&0),
         actual_max_ramp_up_mw_per_step: max_ramp_up(&actual_power),
         actual_max_ramp_down_mw_per_step: max_ramp_down(&actual_power),
