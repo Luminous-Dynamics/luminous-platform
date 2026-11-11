@@ -2,7 +2,7 @@
 
 Research snapshot: 11 November 2026.
 
-Status: **offline event-level evaluator and sixteen synthetic Rust unit tests authored; tests not executed**. This is a proposed measurement and qualification protocol, not a grid-market product, accredited capacity result, utility approval or field demonstration.
+Status: **offline event-level evaluator and eighteen synthetic Rust unit tests authored; tests not executed**. This is a proposed measurement and qualification protocol, not a grid-market product, accredited capacity result, utility approval or field demonstration.
 
 ## 1. The paradigm shift
 
@@ -107,7 +107,7 @@ An event is service-feasible only when all of the following hold:
 - Sustained delivery lasts at least the declared minimum.
 - Useful-work retention remains above its declared floor.
 - P99 latency, P99 TTFT and SLO violation remain inside their limits.
-- The recovery observation is long enough to cover the declared horizon.
+- The recovery observation is bound to explicit start/end timestamps, begins after the dispatch window, does not overlap another event or recovery interval, and is long enough to cover the declared horizon.
 - Rebound energy is actually measured and bounded.
 
 Energy shifted into the recovery window is not free flexibility:
@@ -124,7 +124,7 @@ r_{\mathrm{rebound}} =
 
 If the rebound observation is missing, or the ratio exceeds the contract maximum, that event receives zero credited capacity. A lower power trace with reduced useful work or an unobserved recovery period cannot become a successful event.
 
-The evaluator rejects overlapping event windows for one resource, duplicate event IDs and events that alter the frozen location, boundary, workload or control contract.
+The evaluator rejects overlapping dispatch/recovery intervals for one resource, recovery windows that begin before dispatch ends, duplicate event IDs and events that alter the frozen location, boundary, workload or control contract.
 
 ## 5. Repeated-event capacity and reliability
 
