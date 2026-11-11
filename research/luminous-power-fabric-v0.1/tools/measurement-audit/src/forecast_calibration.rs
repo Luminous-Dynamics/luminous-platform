@@ -1,5 +1,5 @@
 use crate::power_state::{
-    PowerTraceSample, PredictedPowerTrace, PredictionScope, SampleQuality,
+    PowerModelContract, PowerTraceSample, PredictedPowerTrace, PredictionScope, SampleQuality,
 };
 use crate::AuditError;
 use std::collections::{BTreeMap, HashSet};
@@ -15,6 +15,9 @@ pub struct ForecastCalibrationContract {
     pub calibrator_revision: String,
     pub model_id: String,
     pub model_revision: String,
+    /// Complete upstream model contract; equality binds sensor, calibration,
+    /// dataset, rights, normalization and support thresholds as well.
+    pub power_model_contract: PowerModelContract,
     pub hardware_configuration_fingerprint: String,
     pub measurement_boundary_id: String,
     pub workload_contract_id: String,
@@ -134,6 +137,11 @@ pub struct RegimeConformalCalibration {
     pub calibration_session_ids: Vec<String>,
     pub calibration_session_evidence_ids: Vec<String>,
     pub calibration_measurement_evidence_ids: Vec<String>,
+    pub calibration_run_ids: Vec<String>,
+    pub calibration_prediction_trace_ids: Vec<String>,
+    pub calibration_timeline_digest_references: Vec<String>,
+    pub calibration_sample_evidence_ids: Vec<String>,
+    pub calibration_source_event_ids: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -197,6 +205,10 @@ pub struct ForecastSessionResult {
     pub additive_interval_correction_mw: Option<u64>,
     pub session_evidence_id: String,
     pub measurement_evidence_ids: Vec<String>,
+    pub prediction_trace_ids: Vec<String>,
+    pub source_timeline_digest_references: Vec<String>,
+    pub sample_evidence_ids: Vec<String>,
+    pub source_event_ids: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -258,6 +270,11 @@ struct SessionCalibrationScore {
     session_evidence_id: String,
     score_mw: u64,
     measurement_evidence_ids: Vec<String>,
+    run_ids: Vec<String>,
+    prediction_trace_ids: Vec<String>,
+    timeline_digest_references: Vec<String>,
+    sample_evidence_ids: Vec<String>,
+    source_event_ids: Vec<String>,
 }
 
 fn conformal_order_statistic_rank(sample_count: usize, coverage: f64) -> Option<usize> {
@@ -275,7 +292,8 @@ fn model_contract_matches(
     calibration: &ForecastCalibrationContract,
     predicted: &PredictedPowerTrace,
 ) -> bool {
-    predicted.model_id == calibration.model_id
+    predicted.calibration_contract == calibration.power_model_contract
+        && predicted.model_id == calibration.model_id
         && predicted.model_revision == calibration.model_revision
         && predicted.hardware_configuration_fingerprint
             == calibration.hardware_configuration_fingerprint
@@ -467,6 +485,7 @@ pub fn fit_regime_forecast_calibrator(
 
     let mut session_ids = HashSet::new();
     let mut run_ids = HashSet::new();
+    let mut trace_ids = HashSet::new();
     let mut scores_by_regime: BTreeMap<String, Vec<SessionCalibrationScore>> = BTreeMap::new();
 
     for session in &sessions {
@@ -479,11 +498,22 @@ pub fn fit_regime_forecast_calibrator(
         }
         let mut score_mw = 0_u64;
         let mut measurement_evidence_ids = Vec::with_capacity(session.traces.len());
+        let mut session_run_ids = Vec::with_capacity(session.traces.len());
+        let mut prediction_trace_ids = Vec::with_capacity(session.traces.len());
+        let mut timeline_digest_references = Vec::with_capacity(session.traces.len());
+        let mut sample_evidence_ids = Vec::new();
+        let mut source_event_ids = Vec::new();
         for observation in &session.traces {
             if !run_ids.insert(observation.predicted.run_id.as_str()) {
                 return Err(AuditError(format!(
                     "duplicate forecast calibration run {:?}",
                     observation.predicted.run_id
+                )));
+            }
+            if !trace_ids.insert(observation.predicted.trace_id.as_str()) {
+                return Err(AuditError(format!(
+                    "duplicate forecast prediction trace {:?}",
+                    observation.predicted.trace_id
                 )));
             }
             score_mw = score_mw.max(validate_trace_observation(
@@ -493,6 +523,17 @@ pub fn fit_regime_forecast_calibrator(
                 session.window_end_ns,
             )?);
             measurement_evidence_ids.push(observation.measurement_evidence_id.clone());
+            session_run_ids.push(observation.predicted.run_id.clone());
+            prediction_trace_ids.push(observation.predicted.trace_id.clone());
+            timeline_digest_references.push(
+                observation.predicted.source_timeline_digest_reference.clone(),
+            );
+            sample_evidence_ids.extend(
+                observation.measured.iter().map(|sample| sample.source_evidence_id.clone()),
+            );
+            source_event_ids.extend(
+                observation.predicted.samples.iter().map(|sample| sample.source_event_id.clone()),
+            );
         }
         scores_by_regime
             .entry(session.operating_regime_id.clone())
@@ -502,6 +543,11 @@ pub fn fit_regime_forecast_calibrator(
                 session_evidence_id: session.session_evidence_id.clone(),
                 score_mw,
                 measurement_evidence_ids,
+                run_ids: session_run_ids,
+                prediction_trace_ids,
+                timeline_digest_references,
+                sample_evidence_ids,
+                source_event_ids,
             });
     }
 
@@ -557,6 +603,26 @@ pub fn fit_regime_forecast_calibrator(
             calibration_measurement_evidence_ids: session_evidence
                 .iter()
                 .flat_map(|score| score.measurement_evidence_ids.clone())
+                .collect(),
+            calibration_run_ids: session_evidence
+                .iter()
+                .flat_map(|score| score.run_ids.clone())
+                .collect(),
+            calibration_prediction_trace_ids: session_evidence
+                .iter()
+                .flat_map(|score| score.prediction_trace_ids.clone())
+                .collect(),
+            calibration_timeline_digest_references: session_evidence
+                .iter()
+                .flat_map(|score| score.timeline_digest_references.clone())
+                .collect(),
+            calibration_sample_evidence_ids: session_evidence
+                .iter()
+                .flat_map(|score| score.sample_evidence_ids.clone())
+                .collect(),
+            calibration_source_event_ids: session_evidence
+                .iter()
+                .flat_map(|score| score.source_event_ids.clone())
                 .collect(),
         });
     }
@@ -628,6 +694,11 @@ pub fn apply_regime_forecast_calibration(
         ))
     })?;
 
+    if regime.calibration_run_ids.iter().any(|run_id| run_id == &predicted.run_id) {
+        return Err(AuditError(
+            "prediction run ID was already used to fit this regime calibrator".to_string(),
+        ));
+    }
     let mut samples = Vec::with_capacity(predicted.samples.len());
     let mut previous_timestamp = None;
     for (index, estimate) in predicted.samples.iter().enumerate() {
@@ -748,10 +819,21 @@ pub fn evaluate_forecast_monitoring(
                 session.session_id
             )));
         }
+        if calibrator.regimes.iter().any(|regime| {
+            regime.calibration_session_ids.iter().any(|id| id == &session.session_id)
+        }) {
+            return Err(AuditError(
+                "monitoring session ID overlaps the frozen conformal calibration set".to_string(),
+            ));
+        }
 
         let mut sample_count = 0_usize;
         let mut covered_sample_count = 0_usize;
         let mut session_measurement_evidence = Vec::with_capacity(session.traces.len());
+        let mut session_trace_ids = Vec::with_capacity(session.traces.len());
+        let mut session_timeline_digests = Vec::with_capacity(session.traces.len());
+        let mut session_sample_evidence_ids = Vec::new();
+        let mut session_source_event_ids = Vec::new();
 
         for observation in &session.traces {
             if !run_ids.insert(observation.predicted.run_id.as_str()) {
@@ -760,6 +842,13 @@ pub fn evaluate_forecast_monitoring(
                     observation.predicted.run_id
                 )));
             }
+            if calibrator.regimes.iter().any(|regime| {
+                regime.calibration_run_ids.iter().any(|run_id| run_id == &observation.predicted.run_id)
+            }) {
+                return Err(AuditError(
+                    "monitoring run ID overlaps the frozen conformal calibration set".to_string(),
+                ));
+            }
             let _ = validate_trace_observation(
                 &calibrator.contract,
                 observation,
@@ -767,6 +856,16 @@ pub fn evaluate_forecast_monitoring(
                 session.window_end_ns,
             )?;
             session_measurement_evidence.push(observation.measurement_evidence_id.clone());
+            session_trace_ids.push(observation.predicted.trace_id.clone());
+            session_timeline_digests.push(
+                observation.predicted.source_timeline_digest_reference.clone(),
+            );
+            session_sample_evidence_ids.extend(
+                observation.measured.iter().map(|sample| sample.source_evidence_id.clone()),
+            );
+            session_source_event_ids.extend(
+                observation.predicted.samples.iter().map(|sample| sample.source_event_id.clone()),
+            );
             sample_count = sample_count
                 .checked_add(observation.measured.len())
                 .ok_or_else(|| AuditError("monitoring sample count overflowed".to_string()))?;
@@ -820,6 +919,10 @@ pub fn evaluate_forecast_monitoring(
                 additive_interval_correction_mw: Some(regime.additive_interval_correction_mw),
                 session_evidence_id: session.session_evidence_id.clone(),
                 measurement_evidence_ids: session_measurement_evidence,
+                prediction_trace_ids: session_trace_ids,
+                source_timeline_digest_references: session_timeline_digests,
+                sample_evidence_ids: session_sample_evidence_ids,
+                source_event_ids: session_source_event_ids,
             });
         } else {
             out_of_domain_session_count += 1;
@@ -836,6 +939,10 @@ pub fn evaluate_forecast_monitoring(
                 additive_interval_correction_mw: None,
                 session_evidence_id: session.session_evidence_id.clone(),
                 measurement_evidence_ids: session_measurement_evidence,
+                prediction_trace_ids: session_trace_ids,
+                source_timeline_digest_references: session_timeline_digests,
+                sample_evidence_ids: session_sample_evidence_ids,
+                source_event_ids: session_source_event_ids,
             });
         }
     }
@@ -925,6 +1032,7 @@ mod tests {
         PowerModelContract {
             model_id: "power-state-v1".to_string(),
             model_revision: "rev-a".to_string(),
+            power_model_contract: model_contract(),
             hardware_configuration_fingerprint: "hardware-sha".to_string(),
             measurement_boundary_id: "gpu-board-pcc".to_string(),
             sensor_id: "sensor-1".to_string(),
