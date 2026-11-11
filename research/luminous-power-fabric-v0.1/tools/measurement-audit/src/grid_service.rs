@@ -254,11 +254,11 @@ impl GridDispatchEvent {
                 self.event_id
             )));
         }
-        if self.recovery_window_start_ns < self.window_end_ns
+        if self.recovery_window_start_ns != self.window_end_ns
             || self.recovery_window_end_ns <= self.recovery_window_start_ns
         {
             return Err(AuditError(format!(
-                "dispatch event {:?} requires a positive recovery window starting after dispatch",
+                "dispatch event {:?} requires a positive recovery window beginning exactly at dispatch end",
                 self.event_id
             )));
         }
@@ -863,6 +863,10 @@ mod tests {
     fn recovery_windows_must_follow_dispatch_and_not_overlap_later_events() {
         let mut events = all_events(30);
         events[0].recovery_window_start_ns = events[0].window_end_ns - 1;
+        assert!(evaluate_grid_service_sweep(contract(), events).is_err());
+
+        let mut events = all_events(30);
+        events[0].recovery_window_start_ns = events[0].window_end_ns + 1;
         assert!(evaluate_grid_service_sweep(contract(), events).is_err());
 
         let mut events = all_events(30);
