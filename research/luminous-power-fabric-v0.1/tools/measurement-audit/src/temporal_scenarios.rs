@@ -12,6 +12,10 @@ pub enum ScenarioGeneratorKind {
     /// Transfers historical cross-horizon residual ranks onto calibrated
     /// forecast marginal quantile samples (Schaake-shuffle style).
     SchaakeShuffle,
+    /// Estimates rank-normal residual dependence, regularizes it with a frozen
+    /// shrinkage coefficient, then samples a Gaussian copula over the forecast
+    /// marginal quantile functions.
+    GaussianCopula,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -93,6 +97,9 @@ pub struct ScenarioGenerationContract {
     /// dependence-preserving arms this must be at least one full target horizon
     /// so sampled historical target windows do not overlap.
     pub minimum_residual_origin_separation_ns: u64,
+    /// Explicit shrinkage lambda for Gaussian-copula residual correlation.
+    /// Absent for all non-copula generator arms.
+    pub gaussian_copula_shrinkage: Option<f64>,
 }
 
 impl ScenarioGenerationContract {
@@ -169,6 +176,7 @@ impl ScenarioGenerationContract {
                 if self.minimum_residual_trajectory_count != 0
                     || self.minimum_residual_origin_separation_ns != 0
                     || self.residual_pool_evidence_id.is_some()
+                    || self.gaussian_copula_shrinkage.is_some()
                 {
                     return Err(AuditError(
                         "independent quantile sampling must not claim a residual pool".to_string(),
@@ -185,6 +193,7 @@ impl ScenarioGenerationContract {
                         .residual_pool_evidence_id
                         .as_deref()
                         .is_none_or(|value| value.trim().is_empty())
+                    || self.gaussian_copula_shrinkage.is_some()
                 {
                     return Err(AuditError(
                         "residual bootstrap requires a residual-pool evidence reference and at least two historical trajectories"
@@ -202,11 +211,34 @@ impl ScenarioGenerationContract {
                         .residual_pool_evidence_id
                         .as_deref()
                         .is_none_or(|value| value.trim().is_empty())
+                    || self.gaussian_copula_shrinkage.is_some()
                 {
                     return Err(AuditError(
-                        "Schaake shuffle requires a residual-pool evidence reference and at least one historical rank row per scenario"
+                        "Schaake shuffle requires a residual-pool reference, one historical rank row per scenario, and no copula shrinkage value"
                             .to_string(),
                     ));
+                }
+            }
+            ScenarioGeneratorKind::GaussianCopula => {
+                let horizon_duration_ns = (self.horizon_steps as u64)
+                    .checked_mul(self.step_period_ns)
+                    .ok_or_else(|| AuditError("scenario horizon duration overflowed".to_string()))?;
+                let minimum_support = self.horizon_steps.checked_add(1)
+                    .ok_or_else(|| AuditError("copula minimum support calculation overflowed".to_string()))?
+                    .max(30);
+                if self.minimum_residual_trajectory_count < minimum_support
+                    || self.minimum_residual_origin_separation_ns < horizon_duration_ns
+                    || self
+                        .residual_pool_evidence_id
+                        .as_deref()
+                        .is_none_or(|value| value.trim().is_empty())
+                    || self.gaussian_copula_shrinkage.is_none_or(|lambda| {
+                        !lambda.is_finite() || lambda <= 0.0 || lambda >= 1.0
+                    })
+                {
+                    return Err(AuditError(format!(
+                        "Gaussian copula requires at least {minimum_support} residual trajectories, non-overlapping historical windows, a pool evidence reference and shrinkage lambda in (0, 1)"
+                    )));
                 }
             }
         }
@@ -232,7 +264,29 @@ pub struct ForecastScenarioTrajectory {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct GaussianCopulaEvidence {
+    pub residual_pool_evidence_id: String,
+    pub residual_ids: Vec<String>,
+    pub measurement_evidence_ids: Vec<String>,
+    pub forecast_evidence_ids: Vec<String>,
+    pub residual_generation_evidence_ids: Vec<String>,
+    pub state_mapping_evidence_ids: Vec<String>,
+    pub time_alignment_evidence_ids: Vec<String>,
+    pub timeline_digest_references: Vec<String>,
+    pub source_sample_evidence_ids: Vec<Vec<String>>,
+    pub source_sample_timestamps_ns: Vec<Vec<u64>>,
+    pub tie_policy: &'static str,
+    pub plotting_position_method: &'static str,
+    pub shrinkage_lambda: f64,
+    pub empirical_rank_correlation: Vec<Vec<f64>>,
+    pub regularized_correlation: Vec<Vec<f64>>,
+    pub cholesky_lower_factor: Vec<Vec<f64>>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct ForecastScenarioSet {
+    pub contract: ScenarioGenerationContract,
+    pub gaussian_copula_evidence: Option<GaussianCopulaEvidence>,
     pub contract: ScenarioGenerationContract,
     pub forecast_id: String,
     pub forecast_origin_timestamp_ns: u64,
@@ -292,6 +346,7 @@ pub struct ScenarioEvaluationReport {
     pub forecast_time_alignment_evidence_id: String,
     pub forecast_source_timeline_digest_reference: String,
     pub residual_pool_evidence_id: Option<String>,
+    pub gaussian_copula_evidence: Option<GaussianCopulaEvidence>,
     pub selected_residual_ids: Vec<String>,
     pub selected_residual_evidence_ids: Vec<String>,
     pub selected_residual_forecast_evidence_ids: Vec<String>,
@@ -1497,6 +1552,7 @@ mod tests {
             residual_pool_evidence_id: residual_method.then(|| "residual-pool-evidence".to_string()),
             minimum_residual_trajectory_count: if residual_method { 3 } else { 0 },
             minimum_residual_origin_separation_ns: if residual_method { 30 } else { 0 },
+            gaussian_copula_shrinkage: (kind == ScenarioGeneratorKind::GaussianCopula).then_some(0.05),
         }
     }
 
