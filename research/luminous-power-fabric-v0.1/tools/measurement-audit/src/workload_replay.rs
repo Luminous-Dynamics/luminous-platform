@@ -60,6 +60,13 @@ pub struct WorkloadReplayContract {
     pub normalization_id: String,
     pub scheduling_policy_id: String,
     pub work_unit: String,
+    /// Immutable ID for the monotonic clock used by all replay timestamps.
+    pub replay_clock_id: String,
+    /// Identifies the epoch/origin from which replay timestamps are measured.
+    pub replay_time_origin_id: String,
+    /// Caller-supplied evidence reference to the digest of the serialized schedule artifact.
+    /// This module preserves but does not compute or authenticate the digest.
+    pub schedule_digest_reference: String,
     pub full_resource_capacity: ResourceVector,
 }
 
@@ -78,6 +85,9 @@ impl WorkloadReplayContract {
             (self.normalization_id.as_str(), "normalization_id"),
             (self.scheduling_policy_id.as_str(), "scheduling_policy_id"),
             (self.work_unit.as_str(), "work_unit"),
+            (self.replay_clock_id.as_str(), "replay_clock_id"),
+            (self.replay_time_origin_id.as_str(), "replay_time_origin_id"),
+            (self.schedule_digest_reference.as_str(), "schedule_digest_reference"),
         ] {
             if value.trim().is_empty() {
                 return Err(AuditError(format!(
@@ -193,6 +203,80 @@ enum JobState {
     Missed,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct ResourceTimeIntegral {
+    pub cpu_millicore_ns: u128,
+    pub gpu_unit_ns: u128,
+    pub memory_mib_ns: u128,
+}
+
+impl ResourceTimeIntegral {
+    fn add_scaled(&mut self, resources: ResourceVector, duration_ns: u64) -> Result<(), AuditError> {
+        let duration = duration_ns as u128;
+        self.cpu_millicore_ns = self.cpu_millicore_ns
+            .checked_add((resources.cpu_millicores as u128).checked_mul(duration)
+                .ok_or_else(|| AuditError("CPU resource-time multiplication overflowed".to_string()))?)
+            .ok_or_else(|| AuditError("CPU resource-time sum overflowed".to_string()))?;
+        self.gpu_unit_ns = self.gpu_unit_ns
+            .checked_add((resources.gpu_units as u128).checked_mul(duration)
+                .ok_or_else(|| AuditError("GPU resource-time multiplication overflowed".to_string()))?)
+            .ok_or_else(|| AuditError("GPU resource-time sum overflowed".to_string()))?;
+        self.memory_mib_ns = self.memory_mib_ns
+            .checked_add((resources.memory_mib as u128).checked_mul(duration)
+                .ok_or_else(|| AuditError("memory resource-time multiplication overflowed".to_string()))?)
+            .ok_or_else(|| AuditError("memory resource-time sum overflowed".to_string()))?;
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct AdmissionRestrictionIntegral {
+    pub cpu_millicore_ns: u128,
+    pub gpu_unit_ns: u128,
+    pub memory_mib_ns: u128,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkloadOccupancySegment {
+    /// Half-open interval [start_ns, end_ns).
+    pub start_ns: u64,
+    pub end_ns: u64,
+    pub active_resources: ResourceVector,
+    pub active_job_count: usize,
+    pub active_non_deferrable_job_count: usize,
+    pub active_deferrable_job_count: usize,
+    pub full_resource_capacity: ResourceVector,
+    pub admission_capacity: ResourceVector,
+    pub dispatch_window_id: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkloadCompletionEvent {
+    pub completion_time_ns: u64,
+    pub job_id: String,
+    pub source_evidence_id: String,
+    pub class: WorkloadClass,
+    pub useful_work_units: u64,
+    pub work_unit: String,
+    pub replay_contract_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkloadPowerJoinReference {
+    pub replay_contract_id: String,
+    pub workload_id: String,
+    pub dataset_id: String,
+    pub dataset_version: String,
+    pub dataset_evidence_id: String,
+    pub normalization_id: String,
+    pub scheduling_policy_id: String,
+    pub replay_clock_id: String,
+    pub replay_time_origin_id: String,
+    pub schedule_digest_reference: String,
+    pub work_unit: String,
+    pub claim_ceiling: &'static str,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorkloadRunSummary {
     pub total_job_count: usize,
@@ -203,8 +287,10 @@ pub struct WorkloadRunSummary {
     pub total_useful_work_units: u64,
     pub completed_useful_work_units: u64,
     pub missed_useful_work_units: u64,
-    /// GPU-capacity-unit nanoseconds actually occupied by scheduled jobs
-    /// inside the declared dispatch windows. This is not energy.
+    /// CPU/GPU/memory resource occupancy integrated only over dispatch windows.
+    /// These are resource-unit nanoseconds, never watts or energy.
+    pub resource_time_during_dispatch: ResourceTimeIntegral,
+    /// Retained convenience field; identical to resource_time_during_dispatch.gpu_unit_ns.
     pub gpu_resource_time_during_dispatch_unit_ns: u128,
 }
 
@@ -229,6 +315,7 @@ pub struct WorkloadJobReplayResult {
 #[derive(Debug, Clone, PartialEq)]
 pub struct WorkloadReplayReport {
     pub contract: WorkloadReplayContract,
+    pub power_join_reference: WorkloadPowerJoinReference,
     pub baseline: WorkloadRunSummary,
     pub dispatch_constrained: WorkloadRunSummary,
     pub useful_work_retention_fraction: Option<f64>,
@@ -250,6 +337,14 @@ pub struct WorkloadReplayReport {
     /// None means candidate GPU resource-time in dispatch windows exceeded
     /// baseline resource-time; both raw values remain available.
     pub gpu_resource_time_reduction_unit_ns: Option<u128>,
+    pub admission_capacity_restriction: AdmissionRestrictionIntegral,
+    /// Exact piecewise-constant occupancy timeline for the baseline schedule.
+    pub baseline_timeline: Vec<WorkloadOccupancySegment>,
+    /// Exact piecewise-constant occupancy timeline for the dispatch schedule.
+    pub dispatch_timeline: Vec<WorkloadOccupancySegment>,
+    /// Timestamped accepted-work completions for downstream time-bin integration.
+    pub baseline_completions: Vec<WorkloadCompletionEvent>,
+    pub dispatch_completions: Vec<WorkloadCompletionEvent>,
     pub job_results: Vec<WorkloadJobReplayResult>,
     pub claim_ceiling: &'static str,
 }
@@ -831,6 +926,9 @@ mod tests {
             normalization_id: "normalization-v1".to_string(),
             scheduling_policy_id: "nondeferrable-first-strict-no-backfill-latest-start-deadline-release-id-v1".to_string(),
             work_unit: "accepted-job".to_string(),
+            replay_clock_id: "synthetic-monotonic-clock".to_string(),
+            replay_time_origin_id: "synthetic-epoch-0".to_string(),
+            schedule_digest_reference: "sha256:synthetic-schedule-fixture".to_string(),
             full_resource_capacity: capacity(),
         }
     }
