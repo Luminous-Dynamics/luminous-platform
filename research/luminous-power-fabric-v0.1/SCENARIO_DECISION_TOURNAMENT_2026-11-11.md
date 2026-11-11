@@ -147,10 +147,11 @@ The new Rust \`scenario_tournament\` module:
 - compares candidate cluster-mean costs against the same independent-marginal baseline;
 - calculates exact one-sided Clopper–Pearson lower bounds using clusters as trials;
 - adjusts confidence across required strata and withholds a pooled overall confidence bound;
+- requires bootstrap/Schaake selected historical residual records to match the same complete Gaussian-copula residual pool, including raw residual values, origin/target windows, model/regime/clock/time-origin and sample evidence;
 - retains cluster design, episode, forecast, measurement-run and measured-sample evidence references;
 - marks candidate qualification only when mean savings, shortfall ceiling, cluster reliability and every stratum's support pass.
 
-Sixteen synthetic Rust tests are authored. They cover exact binomial bounds, successful paired comparisons, no-improvement rejection, missing or duplicate arms, mismatched measurement, generator revision drift, cluster exposure, episode overlap, duplicate forecast origins, evidence reuse, missing strata and familywise multi-stratum confidence.
+Twenty-one synthetic Rust tests are authored. They cover exact binomial bounds, successful paired comparisons, no-improvement rejection, missing or duplicate arms, mismatched measurement, generator revision drift, cluster exposure, episode overlap, duplicate forecast origins, evidence reuse, missing strata and familywise multi-stratum confidence.
 
 **Tests are authored but not executed.** No Rust compilation, Cargo test, formatting, Clippy, runtime benchmark, public dataset import, physical reserve delivery, PCC test, grid-service qualification, market participation or accreditation is claimed.
 
