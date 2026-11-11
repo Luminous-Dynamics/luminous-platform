@@ -587,12 +587,12 @@ fn run_schedule(
     Ok(states)
 }
 
-fn gpu_resource_time_during_windows(
+fn resource_time_during_windows(
     jobs: &[WorkloadJob],
     states: &[JobState],
     windows: &[DispatchCapacityWindow],
-) -> Result<u128, AuditError> {
-    let mut total = 0_u128;
+) -> Result<ResourceTimeIntegral, AuditError> {
+    let mut total = ResourceTimeIntegral::default();
     for (job, state) in jobs.iter().zip(states.iter()) {
         let JobState::Completed {
             start_ns,
@@ -601,9 +601,6 @@ fn gpu_resource_time_during_windows(
         else {
             continue;
         };
-        if job.resource_demand.gpu_units == 0 {
-            continue;
-        }
         let first_window = windows.partition_point(|window| window.end_ns <= start_ns);
         for window in &windows[first_window..] {
             if window.start_ns >= finish_ns {
@@ -612,15 +609,7 @@ fn gpu_resource_time_during_windows(
             let overlap_start = start_ns.max(window.start_ns);
             let overlap_end = finish_ns.min(window.end_ns);
             if overlap_end > overlap_start {
-                let duration_ns = (overlap_end - overlap_start) as u128;
-                let resource_time = (job.resource_demand.gpu_units as u128)
-                    .checked_mul(duration_ns)
-                    .ok_or_else(|| {
-                        AuditError("GPU resource-time integral overflowed".to_string())
-                    })?;
-                total = total.checked_add(resource_time).ok_or_else(|| {
-                    AuditError("GPU resource-time sum overflowed".to_string())
-                })?;
+                total.add_scaled(job.resource_demand, overlap_end - overlap_start)?;
             }
         }
     }
@@ -641,6 +630,7 @@ fn run_summary(
         total_useful_work_units: 0,
         completed_useful_work_units: 0,
         missed_useful_work_units: 0,
+        resource_time_during_dispatch: ResourceTimeIntegral::default(),
         gpu_resource_time_during_dispatch_unit_ns: 0,
     };
 
@@ -683,8 +673,10 @@ fn run_summary(
             }
         }
     }
+    summary.resource_time_during_dispatch =
+        resource_time_during_windows(jobs, states, windows_for_measurement)?;
     summary.gpu_resource_time_during_dispatch_unit_ns =
-        gpu_resource_time_during_windows(jobs, states, windows_for_measurement)?;
+        summary.resource_time_during_dispatch.gpu_unit_ns;
     Ok(summary)
 }
 
@@ -697,29 +689,36 @@ fn nearest_rank_positive(values: &mut [u64], quantile: f64) -> Option<u64> {
     values.get(rank.saturating_sub(1)).copied()
 }
 
-fn gpu_admission_restriction_time(
+fn admission_capacity_restriction_time(
     full_capacity: ResourceVector,
     windows: &[DispatchCapacityWindow],
-) -> Result<(u128, u128, u64), AuditError> {
-    let mut restriction = 0_u128;
+) -> Result<(AdmissionRestrictionIntegral, u128, u64), AuditError> {
+    let mut restriction = AdmissionRestrictionIntegral::default();
     let mut total_duration = 0_u128;
     let mut longest = 0_u64;
     for window in windows {
-        let duration = window.duration_ns();
-        let withheld_gpu_units =
-            full_capacity.gpu_units - window.admission_capacity.gpu_units;
-        let units_ns = (withheld_gpu_units as u128)
-            .checked_mul(duration as u128)
-            .ok_or_else(|| {
-                AuditError("GPU admission restriction integral overflowed".to_string())
-            })?;
-        restriction = restriction.checked_add(units_ns).ok_or_else(|| {
-            AuditError("GPU admission restriction sum overflowed".to_string())
-        })?;
+        let duration = window.duration_ns() as u128;
+        let withheld_cpu = full_capacity.cpu_millicores - window.admission_capacity.cpu_millicores;
+        let withheld_gpu = full_capacity.gpu_units - window.admission_capacity.gpu_units;
+        let withheld_memory = full_capacity.memory_mib - window.admission_capacity.memory_mib;
+
+        restriction.cpu_millicore_ns = restriction.cpu_millicore_ns
+            .checked_add((withheld_cpu as u128).checked_mul(duration)
+                .ok_or_else(|| AuditError("CPU admission restriction overflowed".to_string()))?)
+            .ok_or_else(|| AuditError("CPU admission restriction sum overflowed".to_string()))?;
+        restriction.gpu_unit_ns = restriction.gpu_unit_ns
+            .checked_add((withheld_gpu as u128).checked_mul(duration)
+                .ok_or_else(|| AuditError("GPU admission restriction overflowed".to_string()))?)
+            .ok_or_else(|| AuditError("GPU admission restriction sum overflowed".to_string()))?;
+        restriction.memory_mib_ns = restriction.memory_mib_ns
+            .checked_add((withheld_memory as u128).checked_mul(duration)
+                .ok_or_else(|| AuditError("memory admission restriction overflowed".to_string()))?)
+            .ok_or_else(|| AuditError("memory admission restriction sum overflowed".to_string()))?;
+
         total_duration = total_duration
-            .checked_add(duration as u128)
+            .checked_add(duration)
             .ok_or_else(|| AuditError("dispatch duration sum overflowed".to_string()))?;
-        longest = longest.max(duration);
+        longest = longest.max(window.duration_ns());
     }
     Ok((restriction, total_duration, longest))
 }
