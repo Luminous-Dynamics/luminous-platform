@@ -737,68 +737,52 @@ fn generate_schaake_shuffle(
 ) -> Result<(Vec<ForecastScenarioTrajectory>, Vec<String>, Vec<String>, usize), AuditError> {
     let permutation = deterministic_permutation(residuals.len(), contract.deterministic_seed);
     let selected: Vec<usize> = permutation.into_iter().take(contract.scenario_count).collect();
-    let mut rank_by_horizon = Vec::with_capacity(contract.horizon_steps);
 
-    for horizon_index in 0..contract.horizon_steps {
-        let mut ordered: Vec<usize> = (0..residuals.len()).collect();
-        ordered.sort_by(|left, right| {
-            residuals[*left].residual_power_mw[horizon_index]
-                .cmp(&residuals[*right].residual_power_mw[horizon_index])
-                .then_with(|| residuals[*left].residual_id.cmp(&residuals[*right].residual_id))
-        });
-        let mut rank = vec![0_usize; residuals.len()];
-        for (position, residual_index) in ordered.iter().enumerate() {
-            rank[*residual_index] = position;
-        }
-        rank_by_horizon.push(rank);
-    }
-
-    let mut output = Vec::with_capacity(contract.scenario_count);
-    let mut selected_ids = Vec::with_capacity(contract.scenario_count);
-    let mut selected_evidence = Vec::with_capacity(contract.scenario_count);
-    for (scenario_index, residual_index) in selected.iter().copied().enumerate() {
-        let mut power = Vec::with_capacity(contract.horizon_steps);
-        for horizon_index in 0..contract.horizon_steps {
-            let rank = rank_by_horizon[horizon_index][residual_index];
-            let marginal_index = if residuals.len() <= 1 {
-                0
-            } else {
-                rank.saturating_mul(contract.scenario_count - 1) / (residuals.len() - 1)
-            };
-            power.push(marginal_samples[horizon_index][marginal_index]);
-        }
-        output.push(ForecastScenarioTrajectory {
+    let mut output: Vec<ForecastScenarioTrajectory> = selected
+        .iter()
+        .enumerate()
+        .map(|(scenario_index, residual_index)| ForecastScenarioTrajectory {
             scenario_id: format!("{}-scenario-{scenario_index:04}", contract.generator_id),
-            source_residual_id: Some(residuals[residual_index].residual_id.clone()),
-            source_residual_evidence_id: Some(
-                residuals[residual_index].measurement_evidence_id.clone(),
-            ),
-            source_residual_forecast_evidence_id: Some(
-                residuals[residual_index].forecast_evidence_id.clone(),
-            ),
-            source_residual_generation_evidence_id: Some(
-                residuals[residual_index].residual_generation_evidence_id.clone(),
-            ),
-            source_residual_state_mapping_evidence_id: Some(
-                residuals[residual_index].state_mapping_evidence_id.clone(),
-            ),
-            source_residual_time_alignment_evidence_id: Some(
-                residuals[residual_index].time_alignment_evidence_id.clone(),
-            ),
-            source_residual_timeline_digest_reference: Some(
-                residuals[residual_index].source_timeline_digest_reference.clone(),
-            ),
-            source_sample_evidence_ids: residuals[residual_index]
-                .source_sample_evidence_ids
-                .clone(),
-            source_sample_timestamps_ns: residuals[residual_index]
-                .source_sample_timestamps_ns
-                .clone(),
-            power_mw: power,
+            source_residual_id: Some(residuals[*residual_index].residual_id.clone()),
+            source_residual_evidence_id: Some(residuals[*residual_index].measurement_evidence_id.clone()),
+            source_residual_forecast_evidence_id: Some(residuals[*residual_index].forecast_evidence_id.clone()),
+            source_residual_generation_evidence_id: Some(residuals[*residual_index].residual_generation_evidence_id.clone()),
+            source_residual_state_mapping_evidence_id: Some(residuals[*residual_index].state_mapping_evidence_id.clone()),
+            source_residual_time_alignment_evidence_id: Some(residuals[*residual_index].time_alignment_evidence_id.clone()),
+            source_residual_timeline_digest_reference: Some(residuals[*residual_index].source_timeline_digest_reference.clone()),
+            source_sample_evidence_ids: residuals[*residual_index].source_sample_evidence_ids.clone(),
+            source_sample_timestamps_ns: residuals[*residual_index].source_sample_timestamps_ns.clone(),
+            power_mw: Vec::with_capacity(contract.horizon_steps),
+        })
+        .collect();
+
+    // Rank only the selected historical trajectories. Assigning sorted forecast
+    // marginal samples by these ranks preserves every marginal sample exactly,
+    // even when the residual pool is larger than the scenario count.
+    for horizon_index in 0..contract.horizon_steps {
+        let mut selected_order: Vec<usize> = (0..contract.scenario_count).collect();
+        selected_order.sort_by(|left, right| {
+            let left_residual = &residuals[selected[*left]];
+            let right_residual = &residuals[selected[*right]];
+            left_residual.residual_power_mw[horizon_index]
+                .cmp(&right_residual.residual_power_mw[horizon_index])
+                .then_with(|| left_residual.residual_id.cmp(&right_residual.residual_id))
         });
-        selected_ids.push(residuals[residual_index].residual_id.clone());
-        selected_evidence.push(residuals[residual_index].measurement_evidence_id.clone());
+        let mut marginal = marginal_samples[horizon_index].clone();
+        marginal.sort_unstable();
+        for (rank, scenario_index) in selected_order.iter().copied().enumerate() {
+            output[scenario_index].power_mw.push(marginal[rank]);
+        }
     }
+
+    let selected_ids = selected
+        .iter()
+        .map(|index| residuals[*index].residual_id.clone())
+        .collect();
+    let selected_evidence = selected
+        .iter()
+        .map(|index| residuals[*index].measurement_evidence_id.clone())
+        .collect();
     Ok((output, selected_ids, selected_evidence, 0))
 }
 
@@ -1693,10 +1677,40 @@ mod tests {
 
     #[test]
     fn schaake_shuffle_preserves_each_forecast_marginal_sample_set() {
+        let mut pool = residuals();
+        for index in 3..5 {
+            let mut extra = pool[0].clone();
+            extra.residual_id = format!("residual-extra-{index}");
+            extra.origin_id = format!("origin-extra-{index}");
+            extra.origin_timestamp_ns = index as u64 * 1_000;
+            extra.target_window_end_ns = extra.origin_timestamp_ns + 30;
+            extra.forecast_evidence_id = format!("forecast-extra-{index}");
+            extra.measurement_evidence_id = format!("measurement-extra-{index}");
+            extra.residual_generation_evidence_id = format!("generation-extra-{index}");
+            extra.state_mapping_evidence_id = format!("mapping-extra-{index}");
+            extra.time_alignment_evidence_id = format!("alignment-extra-{index}");
+            extra.source_timeline_digest_reference = format!("timeline-extra-{index}");
+            extra.source_sample_timestamps_ns = vec![
+                extra.origin_timestamp_ns + 10,
+                extra.origin_timestamp_ns + 20,
+                extra.origin_timestamp_ns + 30,
+            ];
+            extra.source_sample_evidence_ids = vec![
+                format!("extra-{index}-1"),
+                format!("extra-{index}-2"),
+                format!("extra-{index}-3"),
+            ];
+            extra.residual_power_mw = vec![
+                index as i64 * 3,
+                -(index as i64),
+                -(index as i64) * 2,
+            ];
+            pool.push(extra);
+        }
         let result = generate_forecast_scenarios(
             contract(ScenarioGeneratorKind::SchaakeShuffle),
             &forecast(),
-            &residuals(),
+            &pool,
         ).unwrap();
         for horizon_index in 0..3 {
             let generated: Vec<u64> = result.scenarios.iter()
@@ -1922,6 +1936,29 @@ mod tests {
     fn residual_pool_requires_unique_trajectory_and_origin_ids() {
         let mut pool = residuals();
         pool[1].residual_id = pool[0].residual_id.clone();
+        assert!(generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap),
+            &forecast(),
+            &pool,
+        ).is_err());
+    }
+
+    #[test]
+    fn residual_pool_rejects_reused_source_sample_evidence() {
+        let mut pool = residuals();
+        pool[1].source_sample_evidence_ids[0] =
+            pool[0].source_sample_evidence_ids[0].clone();
+        assert!(generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap),
+            &forecast(),
+            &pool,
+        ).is_err());
+    }
+
+    #[test]
+    fn residual_pool_rejects_current_forecast_origin_reuse() {
+        let mut pool = residuals();
+        pool[0].origin_id = forecast().origin_id;
         assert!(generate_forecast_scenarios(
             contract(ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap),
             &forecast(),
