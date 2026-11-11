@@ -810,7 +810,7 @@ mod tests {
             dataset_evidence_id: "synthetic-source-evidence".to_string(),
             use_authorization_reference: "synthetic-only-authorization".to_string(),
             normalization_id: "normalization-v1".to_string(),
-            scheduling_policy_id: "earliest-latest-start-deadline-release-id-v1".to_string(),
+            scheduling_policy_id: "nondeferrable-first-strict-no-backfill-latest-start-deadline-release-id-v1".to_string(),
             work_unit: "accepted-job".to_string(),
             full_resource_capacity: capacity(),
         }
@@ -869,7 +869,10 @@ mod tests {
             gpu_job("job-b", WorkloadClass::NonDeferrable, 0, 0, 10, 5, 2, 1),
         ];
         let report =
+            evaluate_workload_replay(contract(), jobs.clone(), vec![]).unwrap();
+        let repeated =
             evaluate_workload_replay(contract(), jobs, vec![]).unwrap();
+        assert_eq!(report, repeated);
         assert_eq!(report.baseline.completed_job_count, 2);
         assert_eq!(report.dispatch_constrained.completed_job_count, 2);
         assert_eq!(report.useful_work_retention_fraction, Some(1.0));
@@ -1053,8 +1056,8 @@ mod tests {
     #[test]
     fn stable_job_id_breaks_equal_priority_ties() {
         let jobs = vec![
-            gpu_job("z-job", WorkloadClass::NonDeferrable, 0, 0, 10, 5, 4, 1),
-            gpu_job("a-job", WorkloadClass::NonDeferrable, 0, 0, 10, 5, 4, 1),
+            gpu_job("z-job", WorkloadClass::Deferrable, 0, 10, 20, 5, 4, 1),
+            gpu_job("a-job", WorkloadClass::Deferrable, 0, 10, 20, 5, 4, 1),
         ];
         let report = evaluate_workload_replay(contract(), jobs, vec![]).unwrap();
         let a_job = report.job_results.iter().find(|item| item.job_id == "a-job").unwrap();
