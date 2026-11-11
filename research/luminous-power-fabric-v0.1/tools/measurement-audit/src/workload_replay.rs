@@ -945,12 +945,14 @@ mod tests {
             2,
             1,
         )];
-        assert!(evaluate_workload_replay(
+        let report = evaluate_workload_replay(
             contract(),
             jobs,
             vec![window("dispatch", 0, 10, 0)]
         )
-        .is_err());
+        .unwrap();
+        assert_eq!(report.dispatch_constrained.missed_job_count, 1);
+        assert_eq!(report.job_results[0].dispatch_start_ns, None);
     }
 
     #[test]
@@ -1093,7 +1095,7 @@ mod tests {
     fn recovery_tail_and_work_loss_are_reported_separately() {
         let jobs = vec![
             gpu_job("shifted", WorkloadClass::Deferrable, 0, 10, 20, 5, 2, 10),
-            gpu_job("missed", WorkloadClass::Deferrable, 0, 10, 12, 5, 2, 20),
+            gpu_job("missed", WorkloadClass::Deferrable, 0, 5, 10, 5, 2, 20),
         ];
         let report =
             evaluate_workload_replay(contract(), jobs, vec![window("dispatch", 0, 10, 0)])
