@@ -270,7 +270,7 @@ This is a measurement protocol and synthetic evaluator only. Nineteen new tests 
 
 ## Cluster-aware repeated-event qualification
 
-A follow-on evaluator now addresses a statistical limitation in event-level repeated-dispatch scoring: events from the same operating episode are not automatically independent. It groups dispatches into predeclared operating clusters with fixed exposure windows and minimum event counts, allows arbitrary dependence within each cluster, and scores the cluster by its worst event. Every required operating stratum must independently meet its support and reliability gates.
+A follow-on evaluator now addresses a statistical limitation in event-level repeated-dispatch scoring: events from the same operating episode are not automatically independent. It groups dispatches into predeclared operating clusters with fixed exposure windows and exact event counts, allows arbitrary dependence within each cluster, and scores the cluster by its worst event. Every required operating stratum must independently meet its support and reliability gates.
 
 For a distribution-free one-sided lower confidence bound on population P10 cluster capacity, the sample minimum requires at least 22 independent clusters at 90% confidence or 29 at 95%. A larger number of dispatch rows inside fewer clusters does not satisfy this requirement. The report preserves the parent event evidence and withholds inferential outputs when cluster independence is not declared or adequately supported.
 
