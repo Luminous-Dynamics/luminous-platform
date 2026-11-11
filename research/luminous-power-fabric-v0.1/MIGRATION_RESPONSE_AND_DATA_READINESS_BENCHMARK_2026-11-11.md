@@ -105,7 +105,7 @@ A stronger benchmark result would demonstrate a Pareto improvement in source res
 
 ## 7. Validation status and limitations
 
-- Seventeen synthetic Rust tests are authored but not executed.
+- Eighteen synthetic Rust tests are authored but not executed. Response/work eligibility also requires an observed destination power-stabilization event; source relief alone is never sufficient for eligibility.
 - Structural inspection only; no Rust build, cargo test, fmt, clippy or runtime measurement is claimed.
 - No operational data-centre trace, cross-site dataset, model artifact or real data transfer was performed.
 - The module carries caller-supplied evidence references and status booleans; it does not authenticate signatures or data rights.
