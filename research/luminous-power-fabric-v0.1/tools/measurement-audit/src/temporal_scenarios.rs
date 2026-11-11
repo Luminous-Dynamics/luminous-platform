@@ -1449,6 +1449,7 @@ mod tests {
         let mut pool = residuals();
         pool[1].origin_timestamp_ns = 1_010;
         pool[1].target_window_end_ns = 1_040;
+        pool[1].source_sample_timestamps_ns = vec![1_020, 1_030, 1_040];
         assert!(generate_forecast_scenarios(
             contract(ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap),
             &forecast(),
