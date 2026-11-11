@@ -17,7 +17,7 @@ This increment starts the temporal-scenario layer after #401/#406. It keeps base
 ## 2. Exact input contract
 
 ProbabilisticPowerForecast binds:
-- Exact full PowerModelContract from #401 (model revision, hardware, sensor/calibration, dataset/right-to-use, normalization, measurement boundary, workload, state mapper, clock method and cadence).
+- Exact full PowerModelContract from #401 (model revision, hardware, sensor/calibration, dataset/right-to-use, normalization, measurement boundary, workload, state mapper, clock method and cadence), plus an exact common clock identity and time-origin ID shared by forecast, residual blocks and measured evaluation.
 - Forecast ID and origin ID/timestamp.
 - Predeclared operating regime.
 - Forecast, state-mapping and time-alignment evidence references plus source-timeline digest.
@@ -146,7 +146,7 @@ The new temporal_scenarios module:
 - evaluates scenario energy score, variogram score, peak/ramp/energy diagnostics, PIT and horizon-wide reserve critical-fractile outcomes;
 - labels results as modelled scenario/reserve economics, not measured or accredited capacity.
 
-Twenty-four synthetic Rust tests are authored. They cover deterministic independent-marginal sampling, with-replacement residual bootstrap, source trajectory integrity, Schaake marginal sample preservation, residual overlap/future leakage, quantile crossing, timestamp alignment, insufficient support, reserve critical fractile, energy/variogram scoring, invalid measurements, residual identity, full provenance carry-through and claim-ceiling tampering.
+Twenty-six synthetic Rust tests are authored. They cover deterministic independent-marginal sampling, with-replacement residual bootstrap, source trajectory integrity, Schaake marginal sample preservation, residual overlap/future leakage, quantile crossing, timestamp alignment, insufficient support, reserve critical fractile, energy/variogram scoring, invalid measurements, residual identity, full provenance carry-through, common clock/time-origin mismatch and claim-ceiling tampering.
 
 **Tests are authored but not executed.** No Rust compilation, cargo test, formatting, Clippy, runtime benchmark, MIT dataset download, paper result reproduction, physical PCC measurement, grid dispatch, reserve delivery or grid accreditation is claimed.
 
