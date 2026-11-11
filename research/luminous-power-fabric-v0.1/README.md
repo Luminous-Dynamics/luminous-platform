@@ -266,3 +266,11 @@ The new [Grid-Interactive Compute Resource Qualification v0.1](./GRID_INTERACTIV
 The evaluator subtracts independently measured non-compute load reductions and conservative uncertainty bounds, then evaluates service quality, useful-work retention, response, sustain, timestamped recovery and rebound across repeated events. The report retains the frozen contract, baseline/event evidence references and event/recovery intervals; it reports P10 credited compute capacity and a conditional one-sided Wilson lower confidence bound (z=1.2815515655 for 90%). It explicitly does not provide market accreditation or grid-service authorization.
 
 This is a measurement protocol and synthetic evaluator only. Nineteen new tests are authored but not executed; there is no compiled, CI-tested, site-measured or field-validated result.
+
+## Deterministic workload replay and counterfactual flexibility
+
+The [Deterministic Workload Replay and Counterfactual Flexibility Benchmark v0.1](./DETERMINISTIC_WORKLOAD_REPLAY_AND_COUNTERFACTUAL_BENCHMARK_2026-11-11.md) adds an offline replay engine that evaluates the same normalized CPU/GPU/memory-constrained jobs under a full-capacity baseline and a dispatch-constrained candidate.
+
+The deterministic scheduler uses ordered release, ready and completion sets; the strict-priority policy protects non-deferrable jobs, applies explicit latest-start and hard completion deadlines, and never preempts in-flight work. It reports useful-work retention, misses, positive start-delay percentiles, GPU resource-time during the dispatch window and recovery tail. Resource-time is not converted into watts or energy.
+
+Seventeen synthetic Rust tests are authored, including a 10,000-job fixture; they are **not executed**. No trace binaries were imported and no million-job throughput, power reduction, carbon reduction or grid-service claim is made.
