@@ -1386,6 +1386,31 @@ mod tests {
         assert_eq!(report.maximum_positive_start_delay_ns, Some(10));
         assert_eq!(report.recovery_tail_after_last_dispatch_ns, Some(5));
         assert!(report.gpu_resource_time_reduction_unit_ns.is_some());
+        assert_eq!(report.power_join_reference.replay_clock_id, "synthetic-monotonic-clock");
+        assert_eq!(
+            report.power_join_reference.schedule_digest_reference,
+            "sha256:synthetic-schedule-fixture"
+        );
+        assert_eq!(
+            report.baseline_completions[0].completion_time_ns,
+            5
+        );
+        assert_eq!(
+            report.dispatch_completions[0].completion_time_ns,
+            15
+        );
+        assert_eq!(report.dispatch_timeline.len(), 2);
+        assert_eq!(report.dispatch_timeline[0].start_ns, 0);
+        assert_eq!(report.dispatch_timeline[0].end_ns, 10);
+        assert_eq!(report.dispatch_timeline[0].active_resources.gpu_units, 0);
+        assert_eq!(
+            report.dispatch_timeline[0].dispatch_window_id.as_deref(),
+            Some("dispatch")
+        );
+        assert_eq!(report.dispatch_timeline[1].start_ns, 10);
+        assert_eq!(report.dispatch_timeline[1].end_ns, 15);
+        assert_eq!(report.dispatch_timeline[1].active_resources.gpu_units, 2);
+        assert_eq!(report.dispatch_timeline[1].dispatch_window_id, None);
     }
 
     #[test]
@@ -1533,6 +1558,88 @@ mod tests {
     }
 
     #[test]
+    fn admission_restriction_integrates_cpu_gpu_and_memory_separately() {
+        let jobs = vec![gpu_job(
+            "batch",
+            WorkloadClass::Deferrable,
+            0,
+            10,
+            20,
+            5,
+            2,
+            1,
+        )];
+        let window = DispatchCapacityWindow {
+            window_id: "multi-resource-cap".to_string(),
+            start_ns: 0,
+            end_ns: 10,
+            admission_capacity: ResourceVector {
+                cpu_millicores: 4_000,
+                gpu_units: 2,
+                memory_mib: 32_000,
+            },
+        };
+        let report = evaluate_workload_replay(contract(), jobs, vec![window]).unwrap();
+        assert_eq!(report.admission_capacity_restriction.cpu_millicore_ns, 40_000);
+        assert_eq!(report.admission_capacity_restriction.gpu_unit_ns, 20);
+        assert_eq!(report.admission_capacity_restriction.memory_mib_ns, 320_000);
+        assert_eq!(
+            report.dispatch_constrained.resource_time_during_dispatch.gpu_unit_ns,
+            report.dispatch_constrained.gpu_resource_time_during_dispatch_unit_ns
+        );
+    }
+
+    #[test]
+    fn event_sourced_timeline_and_completion_corruption_fail_conservation_checks() {
+        let jobs = vec![gpu_job(
+            "batch",
+            WorkloadClass::Deferrable,
+            0,
+            10,
+            20,
+            5,
+            2,
+            100,
+        )];
+        let report = evaluate_workload_replay(
+            contract(),
+            jobs,
+            vec![window("dispatch", 0, 10, 0)],
+        )
+        .unwrap();
+
+        let mut overlapping = report.dispatch_timeline.clone();
+        overlapping[0].end_ns += 1;
+        assert!(super::validate_timeline_segments(&overlapping).is_err());
+
+        let mut non_conserving = report.dispatch_timeline.clone();
+        non_conserving[0].active_resources.gpu_units = 1;
+        assert!(super::validate_timeline_resource_time_conservation(
+            &non_conserving,
+            report.dispatch_constrained.resource_time_during_dispatch,
+        )
+        .is_err());
+
+        let mut duplicate_completion = report.dispatch_completions.clone();
+        duplicate_completion.push(duplicate_completion[0].clone());
+        assert!(super::validate_completion_event_conservation(
+            &duplicate_completion,
+            &report.dispatch_constrained,
+            &report.contract,
+        )
+        .is_err());
+
+        let mut wrong_work_sum = report.dispatch_completions.clone();
+        wrong_work_sum[0].useful_work_units += 1;
+        assert!(super::validate_completion_event_conservation(
+            &wrong_work_sum,
+            &report.dispatch_constrained,
+            &report.contract,
+        )
+        .is_err());
+    }
+
+    #[test]
     fn stable_job_id_breaks_equal_priority_ties() {
         let jobs = vec![
             gpu_job("z-job", WorkloadClass::Deferrable, 0, 10, 20, 5, 4, 1),
@@ -1632,7 +1739,19 @@ mod tests {
 
         let mut no_work_unit = contract();
         no_work_unit.work_unit.clear();
-        assert!(evaluate_workload_replay(no_work_unit, jobs, vec![]).is_err());
+        assert!(evaluate_workload_replay(no_work_unit, jobs.clone(), vec![]).is_err());
+
+        let mut no_clock = contract();
+        no_clock.replay_clock_id.clear();
+        assert!(evaluate_workload_replay(no_clock, jobs.clone(), vec![]).is_err());
+
+        let mut no_origin = contract();
+        no_origin.replay_time_origin_id.clear();
+        assert!(evaluate_workload_replay(no_origin, jobs.clone(), vec![]).is_err());
+
+        let mut no_schedule_digest = contract();
+        no_schedule_digest.schedule_digest_reference.clear();
+        assert!(evaluate_workload_replay(no_schedule_digest, jobs, vec![]).is_err());
     }
 
     #[test]
