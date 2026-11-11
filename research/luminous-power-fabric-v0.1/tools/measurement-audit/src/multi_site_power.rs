@@ -129,6 +129,7 @@ pub struct SiteDependenceMetric {
     pub first_site_id: String,
     pub second_site_id: String,
     pub contemporaneous_pearson: Option<f64>,
+    pub contemporaneous_spearman: Option<f64>,
     pub contemporaneous_covariance_mw2: f64,
     pub p90_tail_coexceedance_fraction: Option<f64>,
 }
@@ -341,6 +342,58 @@ fn pearson(left: &[u64], right: &[u64]) -> Option<f64> {
     }
 }
 
+/// Assign average one-based ranks for ties. Spearman is Pearson correlation
+/// over these ranks and remains undefined for constant sequences.
+fn average_ranks(values: &[u64]) -> Vec<f64> {
+    let mut ordered: Vec<(u64, usize)> = values.iter().copied().enumerate()
+        .map(|(index, value)| (value, index))
+        .collect();
+    ordered.sort_unstable_by_key(|(value, index)| (*value, *index));
+    let mut ranks = vec![0.0; values.len()];
+    let mut start = 0;
+    while start < ordered.len() {
+        let mut end = start + 1;
+        while end < ordered.len() && ordered[end].0 == ordered[start].0 {
+            end += 1;
+        }
+        // The occupied one-based ranks are start+1 through end.
+        let average_rank = ((start + 1 + end) as f64) / 2.0;
+        for (_, original_index) in &ordered[start..end] {
+            ranks[*original_index] = average_rank;
+        }
+        start = end;
+    }
+    ranks
+}
+
+fn pearson_f64(left: &[f64], right: &[f64]) -> Option<f64> {
+    if left.len() != right.len() || left.len() < 2 {
+        return None;
+    }
+    let left_mean = left.iter().sum::<f64>() / left.len() as f64;
+    let right_mean = right.iter().sum::<f64>() / right.len() as f64;
+    let covariance = left.iter().zip(right.iter())
+        .map(|(a, b)| (a - left_mean) * (b - right_mean))
+        .sum::<f64>() / left.len() as f64;
+    let left_variance = left.iter().map(|a| (a - left_mean).powi(2)).sum::<f64>()
+        / left.len() as f64;
+    let right_variance = right.iter().map(|b| (b - right_mean).powi(2)).sum::<f64>()
+        / right.len() as f64;
+    let denominator = (left_variance * right_variance).sqrt();
+    if !denominator.is_finite() || denominator <= f64::EPSILON {
+        None
+    } else {
+        Some((covariance / denominator).clamp(-1.0, 1.0))
+    }
+}
+
+fn spearman(left: &[u64], right: &[u64]) -> Option<f64> {
+    if left.len() != right.len() || left.len() < 2 {
+        return None;
+    }
+    pearson_f64(&average_ranks(left), &average_ranks(right))
+}
+
 fn nearest_rank_u64(values: &[u64], numerator: usize, denominator: usize) -> u64 {
     let mut ordered = values.to_vec();
     ordered.sort_unstable();
@@ -513,6 +566,7 @@ pub fn aggregate_aligned_sites(
                 first_site_id: summaries[first].site_id.clone(),
                 second_site_id: summaries[second].site_id.clone(),
                 contemporaneous_pearson: pearson(left, right),
+                contemporaneous_spearman: spearman(left, right),
                 contemporaneous_covariance_mw2: covariance,
                 p90_tail_coexceedance_fraction: if sample_count >= contract.minimum_tail_sample_count {
                     Some(simultaneous_exceedances as f64 / sample_count as f64)
@@ -660,6 +714,7 @@ mod tests {
             &[trace("site-a", 0, values), trace("site-b", 0, values)],
         ).unwrap();
         assert!((report.pairwise_dependence[0].contemporaneous_pearson.unwrap() - 1.0).abs() < 1e-12);
+        assert!((report.pairwise_dependence[0].contemporaneous_spearman.unwrap() - 1.0).abs() < 1e-12);
         assert!((report.variance_amplification_factor.unwrap() - 2.0).abs() < 1e-12);
         assert!(report.variance_decomposition_residual_mw2 < 1e-9);
     }
@@ -675,6 +730,30 @@ mod tests {
         ).unwrap();
         assert!(report.aggregate_variance_power_mw2.abs() < 1e-9);
         assert!((report.pairwise_dependence[0].contemporaneous_pearson.unwrap() + 1.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn spearman_uses_average_ranks_for_tied_values() {
+        let report = aggregate_aligned_sites(
+            contract(),
+            &[
+                trace("site-a", 0, &[1, 1, 2, 3, 3]),
+                trace("site-b", 0, &[2, 2, 4, 6, 6]),
+            ],
+        ).unwrap();
+        assert!((report.pairwise_dependence[0].contemporaneous_spearman.unwrap() - 1.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn constant_series_has_undefined_rank_correlation() {
+        let report = aggregate_aligned_sites(
+            contract(),
+            &[
+                trace("site-a", 0, &[1, 1, 1, 1, 1]),
+                trace("site-b", 0, &[1, 2, 3, 4, 5]),
+            ],
+        ).unwrap();
+        assert_eq!(report.pairwise_dependence[0].contemporaneous_spearman, None);
     }
 
     #[test]
