@@ -238,6 +238,9 @@ pub struct AdmissionRestrictionIntegral {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorkloadOccupancySegment {
+    pub replay_contract_id: String,
+    pub replay_clock_id: String,
+    pub replay_time_origin_id: String,
     /// Half-open interval [start_ns, end_ns).
     pub start_ns: u64,
     pub end_ns: u64,
@@ -252,6 +255,10 @@ pub struct WorkloadOccupancySegment {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorkloadCompletionEvent {
+    pub replay_contract_id: String,
+    pub workload_id: String,
+    pub replay_clock_id: String,
+    pub replay_time_origin_id: String,
     pub completion_time_ns: u64,
     pub job_id: String,
     pub source_evidence_id: String,
@@ -734,7 +741,27 @@ fn validate_timeline_segments(
     segments: &[WorkloadOccupancySegment],
 ) -> Result<(), AuditError> {
     let mut previous_end_ns = None;
+    let mut identity: Option<(&str, &str, &str)> = None;
     for segment in segments {
+        if segment.replay_contract_id.trim().is_empty()
+            || segment.replay_clock_id.trim().is_empty()
+            || segment.replay_time_origin_id.trim().is_empty()
+        {
+            return Err(AuditError(
+                "timeline segment is missing replay contract or clock identity".to_string(),
+            ));
+        }
+        let current_identity = (
+            segment.replay_contract_id.as_str(),
+            segment.replay_clock_id.as_str(),
+            segment.replay_time_origin_id.as_str(),
+        );
+        if identity.is_some_and(|expected| expected != current_identity) {
+            return Err(AuditError(
+                "timeline segments mix replay contracts or clock origins".to_string(),
+            ));
+        }
+        identity = Some(current_identity);
         if segment.end_ns <= segment.start_ns {
             return Err(AuditError(
                 "occupancy timeline contains a non-positive interval".to_string(),
@@ -803,10 +830,11 @@ fn validate_timeline_resource_time_conservation(
 fn build_occupancy_timeline(
     jobs: &[WorkloadJob],
     states: &[JobState],
-    full_capacity: ResourceVector,
+    contract: &WorkloadReplayContract,
     windows: &[DispatchCapacityWindow],
     apply_dispatch_capacity: bool,
 ) -> Result<Vec<WorkloadOccupancySegment>, AuditError> {
+    let full_capacity = contract.full_resource_capacity;
     let mut changes = Vec::new();
     let mut boundaries = Vec::new();
 
@@ -934,6 +962,9 @@ fn build_occupancy_timeline(
             ));
         }
         segments.push(WorkloadOccupancySegment {
+            replay_contract_id: contract.replay_contract_id.clone(),
+            replay_clock_id: contract.replay_clock_id.clone(),
+            replay_time_origin_id: contract.replay_time_origin_id.clone(),
             start_ns,
             end_ns,
             active_resources,
@@ -961,6 +992,10 @@ fn build_completion_events(
     for (job, state) in jobs.iter().zip(states.iter()) {
         if let JobState::Completed { finish_ns, .. } = *state {
             events.push(WorkloadCompletionEvent {
+                replay_contract_id: contract.replay_contract_id.clone(),
+                workload_id: contract.workload_id.clone(),
+                replay_clock_id: contract.replay_clock_id.clone(),
+                replay_time_origin_id: contract.replay_time_origin_id.clone(),
                 completion_time_ns: finish_ns,
                 job_id: job.job_id.clone(),
                 source_evidence_id: job.source_evidence_id.clone(),
@@ -993,6 +1028,9 @@ fn validate_completion_event_conservation(
             || event.useful_work_units == 0
             || event.work_unit != contract.work_unit
             || event.replay_contract_id != contract.replay_contract_id
+            || event.workload_id != contract.workload_id
+            || event.replay_clock_id != contract.replay_clock_id
+            || event.replay_time_origin_id != contract.replay_time_origin_id
         {
             return Err(AuditError(
                 "completion event contains missing provenance, work or contract identity"
@@ -1093,14 +1131,14 @@ pub fn evaluate_workload_replay(
     let baseline_timeline = build_occupancy_timeline(
         &jobs,
         &baseline_states,
-        contract.full_resource_capacity,
+        &contract,
         &dispatch_windows,
         false,
     )?;
     let dispatch_timeline = build_occupancy_timeline(
         &jobs,
         &dispatch_states,
-        contract.full_resource_capacity,
+        &contract,
         &dispatch_windows,
         true,
     )?;
