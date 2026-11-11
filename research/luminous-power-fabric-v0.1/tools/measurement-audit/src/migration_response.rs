@@ -443,6 +443,7 @@ fn evaluate_trial(
         _ => false,
     };
     let service_eligible = response_deadline_met
+        && destination_latency.is_some()
         && useful_work_preserved
         && authority_and_residency_passed
         && data_freshness_passed
@@ -755,6 +756,21 @@ mod tests {
         assert_eq!(report.strata[0].source_response_success_fraction, 0.0);
         assert_eq!(report.strata[0].observed_response_latency_count, 0);
         assert_eq!(report.strata[0].p95_source_response_latency_ns, None);
+    }
+
+    #[test]
+    fn source_relief_without_destination_power_stabilization_is_not_response_eligible() {
+        let mut no_destination_stability =
+            trial("destination-not-stable", MigrationDataAccessMode::RemoteReadOnly, 10_000);
+        no_destination_stability.destination_power_increase_stable_ns = None;
+        let report = evaluate_migration_response_trials(contract(), &[no_destination_stability]).unwrap();
+        let result = &report.trial_results[0];
+        assert!(result.response_deadline_met);
+        assert!(result.useful_work_preserved);
+        assert_eq!(result.destination_power_stabilization_latency_ns, None);
+        assert!(!result.service_eligible);
+        assert_eq!(report.strata[0].trial_count, 1);
+        assert_eq!(report.strata[0].observed_destination_stabilization_count, 0);
     }
 
     #[test]
