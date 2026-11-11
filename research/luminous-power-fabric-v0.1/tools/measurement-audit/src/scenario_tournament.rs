@@ -390,6 +390,13 @@ fn validate_generator_evidence(
         ));
     }
 
+    if report.selected_residual_trajectories.len() != report.scenario_count {
+        return Err(AuditError(
+            "scenario evaluation is missing the complete per-scenario residual manifest"
+                .to_string(),
+        ));
+    }
+
     let arrays = [
         report.selected_residual_ids.len(),
         report.selected_residual_evidence_ids.len(),
@@ -406,6 +413,7 @@ fn validate_generator_evidence(
         ScenarioGeneratorKind::IndependentQuantileSampling => {
             if report.residual_pool_evidence_id.is_some()
                 || report.gaussian_copula_evidence.is_some()
+                || report.selected_residual_trajectories.iter().any(Option::is_some)
                 || arrays.iter().any(|length| *length != 0)
             {
                 return Err(AuditError(
@@ -427,6 +435,7 @@ fn validate_generator_evidence(
             )?;
             if report.residual_pool_evidence_id.as_deref()
                 != Some(evidence.residual_pool_evidence_id.as_str())
+                || report.selected_residual_trajectories.iter().any(Option::is_some)
                 || arrays.iter().any(|length| *length != 0)
             {
                 return Err(AuditError(
@@ -441,6 +450,7 @@ fn validate_generator_evidence(
                 || report.residual_pool_evidence_id.as_deref()
                     .is_none_or(|id| id.trim().is_empty())
                 || arrays.iter().any(|length| *length != report.scenario_count)
+                || report.selected_residual_trajectories.iter().any(Option::is_none)
                 || report.selected_residual_sample_evidence_ids.iter().any(|row| {
                     row.len() != report.horizon_steps
                         || row.iter().any(|id| id.trim().is_empty())
@@ -462,22 +472,63 @@ fn validate_generator_evidence(
                 ));
             }
 
+            let expected_residual_duration = (report.horizon_steps as u64)
+                .checked_mul(generation.step_period_ns)
+                .ok_or_else(|| AuditError("tournament residual horizon duration overflowed".to_string()))?;
+            let mut residual_by_id = std::collections::HashMap::new();
             for row in 0..report.scenario_count {
+                let residual = report.selected_residual_trajectories[row].as_ref().ok_or_else(|| {
+                    AuditError("selected complete residual trajectory is missing".to_string())
+                })?;
                 let mut unique_sample_ids = HashSet::new();
-                if report.selected_residual_sample_evidence_ids[row]
-                    .iter()
-                    .any(|id| !unique_sample_ids.insert(id.as_str()))
-                    || report.selected_residual_sample_timestamps_ns[row]
-                        .windows(2)
-                        .any(|pair| {
-                            pair[1].checked_sub(pair[0])
-                                != Some(generation.step_period_ns)
-                        })
+                if residual.residual_id != report.selected_residual_ids[row]
+                    || residual.measurement_evidence_id != report.selected_residual_evidence_ids[row]
+                    || residual.forecast_evidence_id != report.selected_residual_forecast_evidence_ids[row]
+                    || residual.residual_generation_evidence_id != report.selected_residual_generation_evidence_ids[row]
+                    || residual.state_mapping_evidence_id != report.selected_residual_state_mapping_evidence_ids[row]
+                    || residual.time_alignment_evidence_id != report.selected_residual_time_alignment_evidence_ids[row]
+                    || residual.source_timeline_digest_reference != report.selected_residual_timeline_digest_references[row]
+                    || residual.source_sample_evidence_ids != report.selected_residual_sample_evidence_ids[row]
+                    || residual.source_sample_timestamps_ns != report.selected_residual_sample_timestamps_ns[row]
+                    || residual.model_contract != report.model_contract
+                    || residual.operating_regime_id != generation.operating_regime_id
+                    || residual.clock_id != report.clock_id
+                    || residual.time_origin_id != report.time_origin_id
+                    || residual.origin_id == report.forecast_origin_id
+                    || residual.origin_timestamp_ns.checked_add(expected_residual_duration)
+                        != Some(residual.target_window_end_ns)
+                    || residual.target_window_end_ns > report.forecast_origin_timestamp_ns
+                    || residual.source_sample_evidence_ids.len() != report.horizon_steps
+                    || residual.source_sample_timestamps_ns.len() != report.horizon_steps
+                    || residual.source_sample_evidence_ids.iter()
+                        .any(|id| id.trim().is_empty() || !unique_sample_ids.insert(id.as_str()))
                 {
                     return Err(AuditError(
-                        "selected residual sample evidence or timestamps are duplicated or cadence-invalid"
+                        "selected residual record is not aligned to its report's complete model, regime, clock, evidence and causal cutoff"
                             .to_string(),
                     ));
+                }
+                for sample_index in 0..report.horizon_steps {
+                    let offset = (sample_index as u64 + 1)
+                        .checked_mul(generation.step_period_ns)
+                        .ok_or_else(|| AuditError("tournament residual sample offset overflowed".to_string()))?;
+                    if residual.origin_timestamp_ns.checked_add(offset)
+                        != Some(residual.source_sample_timestamps_ns[sample_index])
+                    {
+                        return Err(AuditError(
+                            "selected residual sample timestamp does not match the historical origin and cadence"
+                                .to_string(),
+                        ));
+                    }
+                }
+                if let Some(existing) = residual_by_id.get(residual.residual_id.as_str()) {
+                    if *existing != residual {
+                        return Err(AuditError(
+                            "bootstrap repeats a residual ID with conflicting residual data".to_string(),
+                        ));
+                    }
+                } else {
+                    residual_by_id.insert(residual.residual_id.as_str(), residual);
                 }
             }
 
@@ -1423,6 +1474,7 @@ mod tests {
         let mut selected_residual_timeline_digest_references = Vec::new();
         let mut selected_residual_sample_evidence_ids = Vec::new();
         let mut selected_residual_sample_timestamps_ns = Vec::new();
+        let mut selected_residual_trajectories = Vec::new();
         if residual_dependent {
             for scenario in 0..200 {
                 selected_residual_ids.push(format!("residual-{index}-{scenario}"));
@@ -1435,8 +1487,44 @@ mod tests {
                 selected_residual_sample_evidence_ids.push((0..4)
                     .map(|sample| format!("residual-sample-{index}-{scenario}-{sample}"))
                     .collect());
-                selected_residual_sample_timestamps_ns.push(vec![110, 120, 130, 140]);
+                let origin_timestamp_ns = 100 + scenario as u64 * 45;
+                selected_residual_sample_timestamps_ns.push(vec![
+                    origin_timestamp_ns + 10,
+                    origin_timestamp_ns + 20,
+                    origin_timestamp_ns + 30,
+                    origin_timestamp_ns + 40,
+                ]);
+                selected_residual_trajectories.push(Some(
+                    crate::temporal_scenarios::ForecastResidualTrajectory {
+                        residual_id: format!("residual-{index}-{scenario}"),
+                        origin_id: format!("residual-origin-{index}-{scenario}"),
+                        operating_regime_id: "normal".to_string(),
+                        clock_id: "clock-common".to_string(),
+                        time_origin_id: "time-origin-common".to_string(),
+                        origin_timestamp_ns,
+                        target_window_end_ns: origin_timestamp_ns + 40,
+                        model_contract: model_contract(),
+                        forecast_evidence_id: format!("residual-forecast-{index}-{scenario}"),
+                        measurement_evidence_id: format!("residual-measurement-{index}-{scenario}"),
+                        residual_generation_evidence_id: format!("residual-generation-{index}-{scenario}"),
+                        state_mapping_evidence_id: format!("residual-mapping-{index}-{scenario}"),
+                        time_alignment_evidence_id: format!("residual-alignment-{index}-{scenario}"),
+                        source_timeline_digest_reference: format!("residual-timeline-{index}-{scenario}"),
+                        source_sample_evidence_ids: (0..4)
+                            .map(|sample| format!("residual-sample-{index}-{scenario}-{sample}"))
+                            .collect(),
+                        source_sample_timestamps_ns: vec![
+                            origin_timestamp_ns + 10,
+                            origin_timestamp_ns + 20,
+                            origin_timestamp_ns + 30,
+                            origin_timestamp_ns + 40,
+                        ],
+                        residual_power_mw: vec![0, 0, 0, 0],
+                    }
+                ));
             }
+        } else {
+            selected_residual_trajectories = vec![None; 200];
         }
         ScenarioEvaluationReport {
             forecast_id: format!("forecast-{index:03}"),
@@ -1465,6 +1553,7 @@ mod tests {
             selected_residual_timeline_digest_references,
             selected_residual_sample_evidence_ids,
             selected_residual_sample_timestamps_ns,
+            selected_residual_trajectories,
             scenario_count: 200,
             horizon_steps: 4,
             energy_score_mw: 1.0,
