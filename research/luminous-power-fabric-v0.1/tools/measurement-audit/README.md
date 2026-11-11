@@ -489,3 +489,15 @@ The library exposes fleet_capacity::evaluate_fleet_capacity_sweep to compare fix
 The evaluator separates capacity feasibility, completed-useful-work feasibility and QoS feasibility. Storage correction applies to the declared total-system energy boundary, not to GPU-board component energy. Optional capex requires a currency and cost-source reference; unknown cost remains unknown. Capacity-scaled goodput is a linear projection, not measured multi-GPU performance.
 
 **Validation:** eleven Rust tests are authored but not executed. No compilation, formatting, Clippy, multi-GPU physical experiment, fleet scheduler or grid qualification is claimed. See [FLEET_CAPACITY_AWARE_JOULE_POINT_BENCHMARK_2026-11-10.md](../../FLEET_CAPACITY_AWARE_JOULE_POINT_BENCHMARK_2026-11-10.md).
+
+## Repeated-event grid-interactive compute qualification
+
+The library exposes grid_service::evaluate_grid_service_sweep for a preregistered, location-specific compute-derived demand-response contract. It keeps market-serving, grid-serving and system-serving demand response distinct; it does not qualify inverter services or grid-code compliance.
+
+For each event, the evaluator computes site/PCC power reduction, subtracts independently metered non-compute load reduction and subtracts conservative absolute uncertainty bounds. It then applies response, sustain, useful-work, P99 latency/TTFT, SLO, recovery-observation and rebound gates. Events failing a service gate receive zero credited capacity.
+
+Each report retains the frozen service contract, baseline and event evidence IDs, and exact event/recovery nanosecond timestamps. Recovery begins exactly at dispatch end (no unobserved gap), and dispatch/recovery intervals for one resource cannot overlap. The sweep reports event success fraction, nearest-rank P10 credited compute capacity and a one-sided Wilson lower confidence bound when an independent-trial assumption is explicitly declared (z=1.2815515655 for one-sided 90%). The Wilson bound remains conditional on a representative, independent event design; the declaration is metadata, not proof. The calculation rejects confidence parameters or derived arithmetic that overflow. A single event, post-hoc baseline, missing rebound data, unmeasured non-compute contribution or inadequate event count cannot qualify a resource commitment.
+
+See [GRID_INTERACTIVE_COMPUTE_RESOURCE_QUALIFICATION_2026-11-11.md](../../GRID_INTERACTIVE_COMPUTE_RESOURCE_QUALIFICATION_2026-11-11.md) for the attribution equations, literature comparison, test targets and limitations.
+
+**Validation:** nineteen synthetic Rust tests are authored but not executed. No compilation, formatting, Clippy, live dispatch, site measurement, grid participation, market capacity accreditation or certification is claimed.
