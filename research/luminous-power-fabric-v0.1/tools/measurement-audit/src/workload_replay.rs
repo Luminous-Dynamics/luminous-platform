@@ -1,5 +1,5 @@
 use crate::AuditError;
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WorkloadClass {
@@ -273,10 +273,30 @@ fn running_resource_use(
     Ok(used)
 }
 
+type ReadyPriority = (u8, u64, u64, u64, String, usize);
+
+fn ready_priority(job: &WorkloadJob, index: usize) -> ReadyPriority {
+    let class_rank = match job.class {
+        WorkloadClass::NonDeferrable => 0,
+        WorkloadClass::Deferrable => 1,
+    };
+    (
+        class_rank,
+        job.latest_start_ns,
+        job.completion_deadline_ns,
+        job.release_time_ns,
+        job.job_id.clone(),
+        index,
+    )
+}
+
 fn next_event_time(
     now_ns: u64,
     jobs: &[WorkloadJob],
     states: &[JobState],
+    release_order: &[usize],
+    next_release_index: usize,
+    ready: &BTreeSet<ReadyPriority>,
     windows: &[DispatchCapacityWindow],
 ) -> Option<u64> {
     let mut next = None;
@@ -286,14 +306,15 @@ fn next_event_time(
         }
     };
 
-    for (job, state) in jobs.iter().zip(states.iter()) {
-        match state {
-            JobState::Pending => {
-                consider(job.release_time_ns);
-                consider(job.latest_start_ns);
-            }
-            JobState::Running { finish_ns, .. } => consider(*finish_ns),
-            JobState::Completed { .. } | JobState::Missed => {}
+    if let Some(index) = release_order.get(next_release_index) {
+        consider(jobs[*index].release_time_ns);
+    }
+    if let Some(priority) = ready.first() {
+        consider(priority.1);
+    }
+    for state in states {
+        if let JobState::Running { finish_ns, .. } = state {
+            consider(*finish_ns);
         }
     }
     for window in windows {
@@ -315,6 +336,24 @@ fn run_schedule(
         ));
     };
 
+    // Sort arrivals once, then maintain an ordered ready set. The v0.1 policy
+    // is deterministic strict priority: non-deferrable first, then earliest
+    // latest-start, completion deadline, release time and stable job ID.
+    // It deliberately does not backfill around a higher-priority job that
+    // cannot currently fit; alternative policies can be compared later.
+    let mut release_order: Vec<usize> = (0..jobs.len()).collect();
+    release_order.sort_by(|left, right| {
+        jobs[*left]
+            .release_time_ns
+            .cmp(&jobs[*right].release_time_ns)
+            .then_with(|| {
+                ready_priority(&jobs[*left], *left)
+                    .cmp(&ready_priority(&jobs[*right], *right))
+            })
+    });
+    let mut next_release_index = 0_usize;
+    let mut ready: BTreeSet<ReadyPriority> = BTreeSet::new();
+
     loop {
         for state in &mut states {
             if let JobState::Running {
@@ -331,85 +370,75 @@ fn run_schedule(
             }
         }
 
+        while let Some(index) = release_order.get(next_release_index).copied() {
+            if jobs[index].release_time_ns > now_ns {
+                break;
+            }
+            ready.insert(ready_priority(&jobs[index], index));
+            next_release_index += 1;
+        }
+
         loop {
+            let Some(priority) = ready.first().cloned() else {
+                break;
+            };
+            let index = priority.5;
             let admission_capacity =
                 effective_capacity_at(now_ns, full_capacity, windows);
             let used = running_resource_use(jobs, &states)?;
-            if !used.fits_within(admission_capacity) {
-                break;
+            let after = used.checked_add(jobs[index].resource_demand);
+
+            if after.is_some_and(|resources| resources.fits_within(admission_capacity)) {
+                ready.remove(&priority);
+                let finish_ns = now_ns
+                    .checked_add(jobs[index].runtime_ns)
+                    .ok_or_else(|| {
+                        AuditError(format!(
+                            "job {:?} finish timestamp overflowed",
+                            jobs[index].job_id
+                        ))
+                    })?;
+                if finish_ns > jobs[index].completion_deadline_ns {
+                    states[index] = JobState::Missed;
+                    continue;
+                }
+                states[index] = JobState::Running {
+                    start_ns: now_ns,
+                    finish_ns,
+                };
+                continue;
             }
 
-            let mut candidates: Vec<usize> = (0..jobs.len())
-                .filter(|index| {
-                    states[*index] == JobState::Pending
-                        && jobs[*index].release_time_ns <= now_ns
-                        && now_ns <= jobs[*index].latest_start_ns
-                })
-                .collect();
-            candidates.sort_by(|left, right| {
-                let a = &jobs[*left];
-                let b = &jobs[*right];
-                a.latest_start_ns
-                    .cmp(&b.latest_start_ns)
-                    .then_with(|| {
-                        a.completion_deadline_ns
-                            .cmp(&b.completion_deadline_ns)
-                    })
-                    .then_with(|| a.release_time_ns.cmp(&b.release_time_ns))
-                    .then_with(|| a.job_id.cmp(&b.job_id))
-            });
-
-            let chosen = candidates.into_iter().find(|index| {
-                used.checked_add(jobs[*index].resource_demand)
-                    .is_some_and(|after| after.fits_within(admission_capacity))
-            });
-            let Some(index) = chosen else {
-                break;
-            };
-
-            let finish_ns = now_ns
-                .checked_add(jobs[index].runtime_ns)
-                .ok_or_else(|| {
-                    AuditError(format!(
-                        "job {:?} finish timestamp overflowed",
-                        jobs[index].job_id
-                    ))
-                })?;
-            if finish_ns > jobs[index].completion_deadline_ns {
+            // At the exact latest-start instant, failure to fit is a miss.
+            // Before that instant, wait for a completion or capacity change.
+            if jobs[index].latest_start_ns <= now_ns {
+                ready.remove(&priority);
                 states[index] = JobState::Missed;
                 continue;
             }
-            states[index] = JobState::Running {
-                start_ns: now_ns,
-                finish_ns,
-            };
-        }
-
-        // A job receives its one permitted admission attempt at latest_start.
-        // If the resources are unavailable then, it is a deadline miss; it is
-        // not silently queued beyond its declared slack.
-        for (job, state) in jobs.iter().zip(states.iter_mut()) {
-            if *state == JobState::Pending
-                && job.release_time_ns <= now_ns
-                && job.latest_start_ns <= now_ns
-            {
-                *state = JobState::Missed;
-            }
+            break;
         }
 
         if states.iter().all(|state| {
             matches!(state, JobState::Completed { .. } | JobState::Missed)
-        }) {
+        }) && next_release_index == release_order.len()
+        {
             break;
         }
 
-        let Some(next_ns) = next_event_time(now_ns, jobs, &states, windows) else {
-            // No future release, completion or capacity transition remains.
-            // Any remaining pending work cannot be admitted.
-            for state in &mut states {
-                if *state == JobState::Pending {
-                    *state = JobState::Missed;
-                }
+        let Some(next_ns) = next_event_time(
+            now_ns,
+            jobs,
+            &states,
+            &release_order,
+            next_release_index,
+            &ready,
+            windows,
+        ) else {
+            // No future release, completion, latest-start or capacity
+            // transition remains. Remaining ready work cannot be admitted.
+            for priority in &ready {
+                states[priority.5] = JobState::Missed;
             }
             break;
         };
