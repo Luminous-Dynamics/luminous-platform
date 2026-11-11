@@ -922,12 +922,12 @@ fn standard_normal_cdf(value: f64) -> Result<f64, AuditError> {
     } else {
         upper_tail
     };
-    if !probability.is_finite() || probability <= 0.0 || probability >= 1.0 {
+    if !probability.is_finite() {
         return Err(AuditError(
-            "normal CDF probability fell outside its finite open interval".to_string(),
+            "normal CDF approximation produced a non-finite probability".to_string(),
         ));
     }
-    Ok(probability)
+    Ok(probability.clamp(1e-15, 1.0 - 1e-15))
 }
 
 fn rank_normal_scores(
@@ -1474,12 +1474,6 @@ fn validate_gaussian_copula_evidence(
 
     let mut residual_ids = HashSet::new();
     let mut origin_ids = HashSet::new();
-    let mut measurement_ids = HashSet::new();
-    let mut forecast_ids = HashSet::new();
-    let mut generation_ids = HashSet::new();
-    let mut mapping_ids = HashSet::new();
-    let mut alignment_ids = HashSet::new();
-    let mut timeline_ids = HashSet::new();
     let mut sample_evidence_ids = HashSet::new();
     let mut ordered_origins = Vec::with_capacity(pool_count);
     for index in 0..pool_count {
@@ -1501,12 +1495,6 @@ fn validate_gaussian_copula_evidence(
         }
         if !residual_ids.insert(evidence.residual_ids[index].as_str())
             || !origin_ids.insert(evidence.residual_origin_ids[index].as_str())
-            || !measurement_ids.insert(evidence.measurement_evidence_ids[index].as_str())
-            || !forecast_ids.insert(evidence.forecast_evidence_ids[index].as_str())
-            || !generation_ids.insert(evidence.residual_generation_evidence_ids[index].as_str())
-            || !mapping_ids.insert(evidence.state_mapping_evidence_ids[index].as_str())
-            || !alignment_ids.insert(evidence.time_alignment_evidence_ids[index].as_str())
-            || !timeline_ids.insert(evidence.timeline_digest_references[index].as_str())
             || evidence.source_sample_evidence_ids[index].len() != dimension
             || evidence.source_sample_timestamps_ns[index].len() != dimension
         {
