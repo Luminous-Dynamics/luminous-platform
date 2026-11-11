@@ -1307,31 +1307,26 @@ mod tests {
     }
 
     fn gaussian_evidence() -> GaussianCopulaEvidence {
-        GaussianCopulaEvidence {
+        let mut evidence = GaussianCopulaEvidence {
             residual_pool_evidence_id: "residual-pool-v1".to_string(),
-            residual_ids: vec!["residual-1".to_string()],
-            residual_origin_ids: vec!["residual-origin-1".to_string()],
-            residual_origin_timestamps_ns: vec![100],
-            residual_target_window_end_timestamps_ns: vec![140],
-            residual_operating_regime_ids: vec!["normal".to_string()],
-            residual_clock_ids: vec!["clock-common".to_string()],
-            residual_time_origin_ids: vec!["time-origin-common".to_string()],
-            residual_model_contracts: vec![model_contract()],
-            raw_residual_power_mw: vec![vec![1, 2, 3, 4]],
-            rank_normal_scores: vec![vec![-1.0, -0.3, 0.3, 1.0]],
-            measurement_evidence_ids: vec!["measurement-evidence-pool-1".to_string()],
-            forecast_evidence_ids: vec!["forecast-evidence-pool-1".to_string()],
-            residual_generation_evidence_ids: vec!["generation-evidence-pool-1".to_string()],
-            state_mapping_evidence_ids: vec!["mapping-evidence-pool-1".to_string()],
-            time_alignment_evidence_ids: vec!["alignment-evidence-pool-1".to_string()],
-            timeline_digest_references: vec!["timeline-pool-1".to_string()],
-            source_sample_evidence_ids: vec![vec![
-                "pool-sample-1".to_string(),
-                "pool-sample-2".to_string(),
-                "pool-sample-3".to_string(),
-                "pool-sample-4".to_string(),
-            ]],
-            source_sample_timestamps_ns: vec![vec![110, 120, 130, 140]],
+            residual_ids: Vec::new(),
+            residual_origin_ids: Vec::new(),
+            residual_origin_timestamps_ns: Vec::new(),
+            residual_target_window_end_timestamps_ns: Vec::new(),
+            residual_operating_regime_ids: Vec::new(),
+            residual_clock_ids: Vec::new(),
+            residual_time_origin_ids: Vec::new(),
+            residual_model_contracts: Vec::new(),
+            raw_residual_power_mw: Vec::new(),
+            rank_normal_scores: Vec::new(),
+            measurement_evidence_ids: Vec::new(),
+            forecast_evidence_ids: Vec::new(),
+            residual_generation_evidence_ids: Vec::new(),
+            state_mapping_evidence_ids: Vec::new(),
+            time_alignment_evidence_ids: Vec::new(),
+            timeline_digest_references: Vec::new(),
+            source_sample_evidence_ids: Vec::new(),
+            source_sample_timestamps_ns: Vec::new(),
             tie_policy: "AVERAGE_RANKS_FOR_TIES_SORTED_BY_RESIDUAL_ID",
             plotting_position_method: "MIDRANK_MINUS_HALF_OVER_N",
             shrinkage_lambda: 0.05,
@@ -1353,7 +1348,41 @@ mod tests {
                 vec![0.0, 0.0, 1.0, 0.0],
                 vec![0.0, 0.0, 0.0, 1.0],
             ],
+        };
+        for index in 0..30 {
+            let origin = 100 + index as u64 * 100;
+            evidence.residual_ids.push(format!("residual-{index:02}"));
+            evidence.residual_origin_ids.push(format!("residual-origin-{index:02}"));
+            evidence.residual_origin_timestamps_ns.push(origin);
+            evidence.residual_target_window_end_timestamps_ns.push(origin + 40);
+            evidence.residual_operating_regime_ids.push("normal".to_string());
+            evidence.residual_clock_ids.push("clock-common".to_string());
+            evidence.residual_time_origin_ids.push("time-origin-common".to_string());
+            evidence.residual_model_contracts.push(model_contract());
+            evidence.raw_residual_power_mw.push(vec![
+                index as i64,
+                index as i64 * 2,
+                index as i64 * 3,
+                index as i64 * 4,
+            ]);
+            evidence.rank_normal_scores.push(vec![-1.0, -0.3, 0.3, 1.0]);
+            evidence.measurement_evidence_ids.push(format!("pool-measurement-{index:02}"));
+            evidence.forecast_evidence_ids.push(format!("pool-forecast-{index:02}"));
+            evidence.residual_generation_evidence_ids.push(format!("pool-generation-{index:02}"));
+            evidence.state_mapping_evidence_ids.push(format!("pool-mapping-{index:02}"));
+            evidence.time_alignment_evidence_ids.push(format!("pool-alignment-{index:02}"));
+            evidence.timeline_digest_references.push(format!("pool-timeline-{index:02}"));
+            evidence.source_sample_evidence_ids.push((0..4)
+                .map(|sample| format!("pool-sample-{index:02}-{sample}"))
+                .collect());
+            evidence.source_sample_timestamps_ns.push(vec![
+                origin + 10,
+                origin + 20,
+                origin + 30,
+                origin + 40,
+            ]);
         }
+        evidence
     }
 
     fn report(index: usize, kind: ScenarioGeneratorKind, saving: bool) -> ScenarioEvaluationReport {
