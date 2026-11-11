@@ -17,6 +17,7 @@ pub mod power_flexibility;
 pub mod fleet_capacity;
 pub mod grid_service;
 pub mod workload_replay;
+pub mod power_state;
 pub mod loss_budget;
 pub mod energy_chain;
 pub mod dab_sps;
