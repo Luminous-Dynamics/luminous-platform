@@ -286,7 +286,7 @@ The implementation does not infer prefill/decode/idle from abstract occupancy, d
 
 A new Rust layer follows #401's state-conditioned power model with regime-specific session-level split-conformal interval calibration. It treats a complete acquisition session as the statistical unit, preserves temporal dependence within that session, binds the entire upstream PowerModelContract and refuses calibrated outputs for unknown operating regimes.
 
-The monitor reports whole-session coverage and a Wilson lower bound by regime, with explicit NOMINAL, DEGRADED, INSUFFICIENT_SUPPORT and OUT_OF_DOMAIN statuses. It does not silently adapt the frozen calibrator; a new calibration requires a new revision and disjoint sessions.
+The monitor reports whole-session coverage and a Wilson lower bound by regime, with explicit NOMINAL, DEGRADED, INSUFFICIENT_SUPPORT, SAMPLING_DESIGN_UNQUALIFIED and OUT_OF_DOMAIN statuses. Wilson monitoring bounds are withheld without a separate sampling-design review. It does not silently adapt the frozen calibrator; a new calibration requires a new revision and disjoint sessions.
 
 This work is motivated by Yao et al.'s 6 November 2026 grid-oriented 448-GPU forecasting benchmark, which reports undercoverage after utilization shifts and shows that independent sampling of marginal forecasts produces unrealistic ramps and reserve costs. The Luminous reproduction plan also records the MIT Supercloud dataset's non-commercial/no-derivatives license and does not import it into commercial product work without rights review.
 
