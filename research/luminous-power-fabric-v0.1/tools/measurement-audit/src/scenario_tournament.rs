@@ -1043,8 +1043,8 @@ mod tests {
 
     fn report(index: usize, kind: ScenarioGeneratorKind, saving: bool) -> ScenarioEvaluationReport {
         let baseline = kind == ScenarioGeneratorKind::IndependentQuantileSampling;
-        let reserve = if baseline || !saving { 100 } else { 80 };
-        let shortfall = if baseline || !saving { 10 } else { 0 };
+        let reserve = if baseline || !saving { 80 } else { 100 };
+        let shortfall = if baseline || !saving { 20 } else { 0 };
         let cost = 0.10 * reserve as f64 + shortfall as f64;
         let gaussian = kind == ScenarioGeneratorKind::GaussianCopula;
         ScenarioEvaluationReport {
