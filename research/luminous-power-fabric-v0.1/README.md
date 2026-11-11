@@ -290,4 +290,18 @@ The monitor reports whole-session coverage and a Wilson lower bound by regime, w
 
 This work is motivated by Yao et al.'s 6 November 2026 grid-oriented 448-GPU forecasting benchmark, which reports undercoverage after utilization shifts and shows that independent sampling of marginal forecasts produces unrealistic ramps and reserve costs. The Luminous reproduction plan also records the MIT Supercloud dataset's non-commercial/no-derivatives license and does not import it into commercial product work without rights review.
 
-See [Regime-Conditioned Session Conformal Forecast Calibration](./REGIME_CONDITIONED_SESSION_CONFORMAL_FORECAST_CALIBRATION_2026-11-11.md). Seventeen Rust tests are authored but not executed; no performance or physical qualification is claimed.
+See [Regime-Conditioned Session Conformal Forecast Calibration](./REGIME_CONDITIONED_SESSION_CONFORMAL_FORECAST_CALIBRATION_2026-11-11.md). Twenty-three Rust tests are authored but not executed; no performance or physical qualification is claimed.
+
+
+## Dependence-preserving temporal scenarios and horizon-wide reserve sizing
+
+The temporal_scenarios Rust module adds independent marginal-quantile sampling as a negative control, complete residual-trajectory bootstrap with replacement, and Schaake-shuffle rank transfer. It binds exact forecast/model/regime/horizon inputs and preserves historical residual sample timestamps and evidence. Historical residual target windows must be complete, prior to the forecast origin and separated by at least one target horizon.
+
+Scenario scoring includes multivariate energy and variogram scores, peak/ramp/energy distributions and PIT diagnostics. Horizon-wide reserve is derived from the critical fractile of maximum positive deviation from the scheduled median path, with the measured horizon retained for realized shortfall/cost evaluation. These are offline modelled scenario comparisons, not grid capacity or physical reserve credit.
+
+The direct comparator is Yao et al.'s 6 November 2026 448-GPU GPU-IT forecast study. The MIT Supercloud source dataset has a CC BY-NC-ND 4.0 rights gate; no data are imported or used commercially by this implementation. See TEMPORAL_SCENARIOS_AND_HORIZON_RESERVE_BENCHMARK_2026-11-11.md.
+
+Twenty-six Rust tests are authored but not executed. No reproduction, performance claim or physical qualification is made.
+
+
+The v0.1 scenario evaluator currently implements three generator arms. Gaussian-copula dependence estimation and full four-arm paper parity remain open in [issue #408](https://github.com/Luminous-Dynamics/luminous-platform/issues/408); no complete paper reproduction is claimed.
