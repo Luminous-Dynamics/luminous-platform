@@ -269,13 +269,16 @@ fn effective_capacity_at(
 
 type ReadyPriority = (u8, u64, u64, u64, String, usize);
 
-fn ready_priority(job: &WorkloadJob, index: usize) -> ReadyPriority {
-    let class_rank = match job.class {
+fn class_rank(class: WorkloadClass) -> u8 {
+    match class {
         WorkloadClass::NonDeferrable => 0,
         WorkloadClass::Deferrable => 1,
-    };
+    }
+}
+
+fn ready_priority(job: &WorkloadJob, index: usize) -> ReadyPriority {
     (
-        class_rank,
+        class_rank(job.class),
         job.latest_start_ns,
         job.completion_deadline_ns,
         job.release_time_ns,
@@ -291,7 +294,8 @@ fn next_event_time(
     next_release_index: usize,
     ready: &BTreeSet<ReadyPriority>,
     running: &BTreeSet<(u64, usize)>,
-    windows: &[DispatchCapacityWindow],
+    window_boundaries: &[u64],
+    next_window_boundary_index: usize,
 ) -> Option<u64> {
     let mut next = None;
     let mut consider = |time_ns: u64| {
@@ -309,9 +313,8 @@ fn next_event_time(
     if let Some((finish_ns, _)) = running.first() {
         consider(*finish_ns);
     }
-    for window in windows {
-        consider(window.start_ns);
-        consider(window.end_ns);
+    if let Some(boundary_ns) = window_boundaries.get(next_window_boundary_index) {
+        consider(*boundary_ns);
     }
     next
 }
@@ -337,19 +340,34 @@ fn run_schedule(
     // cannot currently fit; alternative policies can be compared later.
     let mut release_order: Vec<usize> = (0..jobs.len()).collect();
     release_order.sort_by(|left, right| {
-        jobs[*left]
-            .release_time_ns
-            .cmp(&jobs[*right].release_time_ns)
-            .then_with(|| {
-                ready_priority(&jobs[*left], *left)
-                    .cmp(&ready_priority(&jobs[*right], *right))
-            })
+        let a = &jobs[*left];
+        let b = &jobs[*right];
+        a.release_time_ns
+            .cmp(&b.release_time_ns)
+            .then_with(|| class_rank(a.class).cmp(&class_rank(b.class)))
+            .then_with(|| a.latest_start_ns.cmp(&b.latest_start_ns))
+            .then_with(|| a.completion_deadline_ns.cmp(&b.completion_deadline_ns))
+            .then_with(|| a.job_id.cmp(&b.job_id))
+            .then_with(|| left.cmp(right))
     });
+    let mut window_boundaries = Vec::with_capacity(windows.len().saturating_mul(2));
+    for window in windows {
+        window_boundaries.push(window.start_ns);
+        window_boundaries.push(window.end_ns);
+    }
+    let mut next_window_boundary_index = 0_usize;
     let mut next_release_index = 0_usize;
     let mut ready: BTreeSet<ReadyPriority> = BTreeSet::new();
     let mut running: BTreeSet<(u64, usize)> = BTreeSet::new();
 
     loop {
+        while window_boundaries
+            .get(next_window_boundary_index)
+            .is_some_and(|boundary_ns| *boundary_ns <= now_ns)
+        {
+            next_window_boundary_index += 1;
+        }
+
         // Complete only jobs whose finish event is due. This avoids scanning
         // every job at each scheduler event.
         while let Some((finish_ns, index)) = running.first().copied() {
@@ -452,7 +470,8 @@ fn run_schedule(
             next_release_index,
             &ready,
             &running,
-            windows,
+            &window_boundaries,
+            next_window_boundary_index,
         ) else {
             // No future release, completion, latest-start or capacity
             // transition remains. Any residual ready work cannot be admitted.
