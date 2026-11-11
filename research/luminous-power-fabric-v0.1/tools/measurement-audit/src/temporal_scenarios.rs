@@ -220,6 +220,7 @@ pub struct MeasuredForecastHorizon {
     pub forecast_id: String,
     pub measurement_run_id: String,
     pub measurement_evidence_id: String,
+    pub time_alignment_evidence_id: String,
     pub source_timeline_digest_reference: String,
     pub model_contract: PowerModelContract,
     pub samples: Vec<MeasuredForecastHorizonSample>,
@@ -262,6 +263,8 @@ pub struct ScenarioEvaluationReport {
     pub realized_reserve_cost_ratio_units: f64,
     pub measurement_run_id: String,
     pub measurement_evidence_id: String,
+    pub time_alignment_evidence_id: String,
+    pub source_timeline_digest_reference: String,
     pub measured_sample_evidence_ids: Vec<String>,
     pub claim_ceiling: &'static str,
 }
@@ -765,6 +768,20 @@ fn nearest_rank_u64(values: &[u64], quantile: f64) -> Result<u64, AuditError> {
     })
 }
 
+fn nearest_rank_u128(values: &[u128], quantile: f64) -> Result<u128, AuditError> {
+    if values.is_empty() || !quantile.is_finite() || quantile <= 0.0 || quantile > 1.0 {
+        return Err(AuditError(
+            "nearest-rank quantile requires data and a quantile in (0, 1]".to_string(),
+        ));
+    }
+    let mut ordered = values.to_vec();
+    ordered.sort_unstable();
+    let rank = (quantile * ordered.len() as f64).ceil() as usize;
+    ordered.get(rank.saturating_sub(1)).copied().ok_or_else(|| {
+        AuditError("nearest-rank quantile fell outside its sample".to_string())
+    })
+}
+
 fn vector_distance(left: &[u64], right: &[u64]) -> f64 {
     left.iter()
         .zip(right.iter())
@@ -815,6 +832,111 @@ fn empirical_pit(values: &[u64], actual: u64) -> f64 {
     (less + 0.5 * equal) / values.len() as f64
 }
 
+fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditError> {
+    scenarios.contract.validate()?;
+    if scenarios.forecast_id.trim().is_empty()
+        || scenarios.forecast_origin_timestamp_ns == 0
+        || scenarios.scenarios.len() != scenarios.contract.scenario_count
+        || scenarios.step_timestamps_ns.len() != scenarios.contract.horizon_steps
+        || scenarios.scheduled_median_power_mw.len() != scenarios.contract.horizon_steps
+    {
+        return Err(AuditError(
+            "scenario set has missing identity or inconsistent scenario/horizon dimensions"
+                .to_string(),
+        ));
+    }
+
+    for (index, timestamp) in scenarios.step_timestamps_ns.iter().enumerate() {
+        let offset = (index as u64 + 1)
+            .checked_mul(scenarios.contract.step_period_ns)
+            .ok_or_else(|| AuditError("scenario timestamp offset overflowed".to_string()))?;
+        let expected = scenarios.forecast_origin_timestamp_ns
+            .checked_add(offset)
+            .ok_or_else(|| AuditError("scenario timestamp overflowed".to_string()))?;
+        if *timestamp != expected {
+            return Err(AuditError(format!(
+                "scenario set timestamp {index} does not match its frozen forecast origin"
+            )));
+        }
+    }
+
+    let mut scenario_ids = HashSet::new();
+    for scenario in &scenarios.scenarios {
+        if scenario.scenario_id.trim().is_empty()
+            || !scenario_ids.insert(scenario.scenario_id.as_str())
+            || scenario.power_mw.len() != scenarios.contract.horizon_steps
+        {
+            return Err(AuditError(
+                "scenario set contains a blank/duplicate ID or invalid trajectory length"
+                    .to_string(),
+            ));
+        }
+    }
+
+    match scenarios.contract.generator_kind {
+        ScenarioGeneratorKind::IndependentQuantileSampling => {
+            if !scenarios.selected_residual_ids.is_empty()
+                || !scenarios.selected_residual_evidence_ids.is_empty()
+                || scenarios.scenarios.iter().any(|scenario| {
+                    scenario.source_residual_id.is_some()
+                        || scenario.source_residual_evidence_id.is_some()
+                        || !scenario.source_sample_evidence_ids.is_empty()
+                })
+            {
+                return Err(AuditError(
+                    "independent-sampling scenario set unexpectedly carries residual lineage"
+                        .to_string(),
+                ));
+            }
+        }
+        ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap
+        | ScenarioGeneratorKind::SchaakeShuffle => {
+            if scenarios.selected_residual_ids.len() != scenarios.contract.scenario_count
+                || scenarios.selected_residual_evidence_ids.len()
+                    != scenarios.contract.scenario_count
+                || scenarios.scenarios.iter().any(|scenario| {
+                    scenario.source_residual_id.is_none()
+                        || scenario.source_residual_evidence_id.is_none()
+                        || scenario.source_sample_evidence_ids.len()
+                            != scenarios.contract.horizon_steps
+                        || scenario.source_sample_evidence_ids.iter().any(|id| id.trim().is_empty())
+                })
+            {
+                return Err(AuditError(
+                    "dependence-preserving scenario set is missing residual and source-sample lineage"
+                        .to_string(),
+                ));
+            }
+            for (index, scenario) in scenarios.scenarios.iter().enumerate() {
+                if scenario.source_residual_id.as_deref()
+                    != Some(scenarios.selected_residual_ids[index].as_str())
+                    || scenario.source_residual_evidence_id.as_deref()
+                        != Some(scenarios.selected_residual_evidence_ids[index].as_str())
+                {
+                    return Err(AuditError(
+                        "scenario residual lineage differs from selected residual manifest"
+                            .to_string(),
+                    ));
+                }
+            }
+            if scenarios.contract.generator_kind == ScenarioGeneratorKind::SchaakeShuffle {
+                let unique: HashSet<&str> = scenarios
+                    .selected_residual_ids
+                    .iter()
+                    .map(String::as_str)
+                    .collect();
+                if unique.len() != scenarios.contract.scenario_count {
+                    return Err(AuditError(
+                        "Schaake-shuffle scenarios require unique historical rank trajectories"
+                            .to_string(),
+                    ));
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Score a scenario set against one exact measured horizon and size reserve
 /// using the horizon maximum-deviation critical fractile.
 ///
@@ -826,10 +948,12 @@ pub fn evaluate_forecast_scenarios(
     actual: &MeasuredForecastHorizon,
     reserve_cost_ratio: f64,
 ) -> Result<ScenarioEvaluationReport, AuditError> {
+    validate_scenario_set(scenarios)?;
     if actual.forecast_id != scenarios.forecast_id
         || actual.model_contract != scenarios.contract.model_contract
         || actual.measurement_run_id.trim().is_empty()
         || actual.measurement_evidence_id.trim().is_empty()
+        || actual.time_alignment_evidence_id.trim().is_empty()
         || actual.source_timeline_digest_reference.trim().is_empty()
         || actual.samples.len() != scenarios.contract.horizon_steps
     {
@@ -854,11 +978,13 @@ pub fn evaluate_forecast_scenarios(
 
     let mut actual_power = Vec::with_capacity(actual.samples.len());
     let mut actual_energy = 0_u128;
+    let mut actual_sample_ids = HashSet::new();
     let mut actual_evidence_ids = Vec::with_capacity(actual.samples.len());
     for (index, sample) in actual.samples.iter().enumerate() {
         if sample.timestamp_ns != scenarios.step_timestamps_ns[index]
             || sample.quality != SampleQuality::Good
             || sample.source_evidence_id.trim().is_empty()
+            || !actual_sample_ids.insert(sample.source_evidence_id.as_str())
         {
             return Err(AuditError(format!(
                 "measured horizon sample {index} is invalid or not exactly aligned"
@@ -1002,6 +1128,8 @@ pub fn evaluate_forecast_scenarios(
         realized_reserve_cost_ratio_units,
         measurement_run_id: actual.measurement_run_id.clone(),
         measurement_evidence_id: actual.measurement_evidence_id.clone(),
+        time_alignment_evidence_id: actual.time_alignment_evidence_id.clone(),
+        source_timeline_digest_reference: actual.source_timeline_digest_reference.clone(),
         measured_sample_evidence_ids: actual_evidence_ids,
         claim_ceiling: "MODELLED_SCENARIO_AND_MEASURED_HORIZON_SCORE_NOT_GRID_RESERVE_QUALIFICATION",
     })
@@ -1140,6 +1268,7 @@ mod tests {
             forecast_id: "forecast-current".to_string(),
             measurement_run_id: "measurement-run-current".to_string(),
             measurement_evidence_id: "measurement-evidence-current".to_string(),
+            time_alignment_evidence_id: "actual-clock-evidence-current".to_string(),
             source_timeline_digest_reference: "actual-timeline-current".to_string(),
             model_contract: model_contract(),
             samples: vec![
@@ -1315,7 +1444,8 @@ mod tests {
         let report = evaluate_forecast_scenarios(&scenarios, &actual_horizon(), 0.10).unwrap();
         assert!(report.energy_score_mw.is_finite());
         assert!(report.variogram_score.is_finite());
-        assert!(report.actual_energy_mw_steps > 0);
+        assert!(report.actual_energy_mw_ns > 0);
+        assert!(report.scenario_energy_p90_mw_ns >= report.scenario_energy_p10_mw_ns);
         assert!(report.actual_peak_pit.is_finite());
     }
 
