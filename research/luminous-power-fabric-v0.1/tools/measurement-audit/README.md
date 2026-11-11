@@ -544,3 +544,16 @@ A separate monitor reports whole-session coverage, sample-level coverage as a no
 See [REGIME_CONDITIONED_SESSION_CONFORMAL_FORECAST_CALIBRATION_2026-11-11.md](../../REGIME_CONDITIONED_SESSION_CONFORMAL_FORECAST_CALIBRATION_2026-11-11.md) for the statistical contract and reproduction plan for Yao et al. (6 November 2026).
 
 **Validation:** twenty-three synthetic Rust tests are authored but not executed. No compile, Cargo test, formatter, Clippy, physical trace, dataset reproduction or runtime benchmark is claimed.
+
+
+## Dependence-preserving probabilistic power scenarios and reserve sizing
+
+The registered temporal_scenarios module adds three matched scenario arms: independent marginal-quantile sampling as a temporal-dependence negative control, complete empirical residual-trajectory bootstrap with replacement, and Schaake-shuffle rank transfer.
+
+The residual contract binds the exact model/configuration/regime/horizon, historical forecast origin and complete target window, forecast/measurement/residual/state/clock evidence, source timeline, exact sample timestamps and per-sample evidence IDs. It rejects future residual windows, duplicate origins/trajectory IDs, raw sample-evidence reuse across blocks, and residual origin gaps shorter than a full target horizon. This avoids direct target-window overlap; it does not prove stationarity or independence.
+
+The evaluator computes multivariate energy and variogram scores, peak/ramp/energy distributions and PIT diagnostics, then sizes horizon-wide reserve using the declared c_R/c_S critical fractile of maximum positive deviation from the scheduled median path. Energy is integrated from interval-average power and frozen forecast-step duration (mW·ns in audit units). This remains offline scenario analysis, not physical reserve, PCC qualification or grid accreditation.
+
+See TEMPORAL_SCENARIOS_AND_HORIZON_RESERVE_BENCHMARK_2026-11-11.md for the 6 November 2026 Yao et al. reproduction protocol, industry comparators and MIT dataset rights gate.
+
+Validation: 23 synthetic Rust tests are authored but not executed. No compiler, Cargo test, formatting, Clippy, runtime benchmark, dataset download or physical measurement is claimed.
