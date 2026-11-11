@@ -59,7 +59,11 @@ pub struct ForecastResidualTrajectory {
     pub model_contract: PowerModelContract,
     pub forecast_evidence_id: String,
     pub measurement_evidence_id: String,
+    pub residual_generation_evidence_id: String,
+    pub state_mapping_evidence_id: String,
+    pub time_alignment_evidence_id: String,
     pub source_timeline_digest_reference: String,
+    pub source_sample_timestamps_ns: Vec<u64>,
     pub source_sample_evidence_ids: Vec<String>,
     pub residual_power_mw: Vec<i64>,
 }
@@ -401,6 +405,18 @@ fn validate_residual_trajectory(
             "measurement_evidence_id",
         ),
         (
+            trajectory.residual_generation_evidence_id.as_str(),
+            "residual_generation_evidence_id",
+        ),
+        (
+            trajectory.state_mapping_evidence_id.as_str(),
+            "state_mapping_evidence_id",
+        ),
+        (
+            trajectory.time_alignment_evidence_id.as_str(),
+            "time_alignment_evidence_id",
+        ),
+        (
             trajectory.source_timeline_digest_reference.as_str(),
             "source_timeline_digest_reference",
         ),
@@ -414,6 +430,7 @@ fn validate_residual_trajectory(
     if trajectory.model_contract != contract.model_contract
         || trajectory.operating_regime_id != contract.operating_regime_id
         || trajectory.residual_power_mw.len() != contract.horizon_steps
+        || trajectory.source_sample_timestamps_ns.len() != contract.horizon_steps
         || trajectory.source_sample_evidence_ids.len() != contract.horizon_steps
     {
         return Err(AuditError(format!(
@@ -447,6 +464,26 @@ fn validate_residual_trajectory(
             "residual trajectory {:?} has a sample without source evidence",
             trajectory.residual_id
         )));
+    }
+    let mut evidence_ids = HashSet::new();
+    let mut previous_timestamp = None;
+    for (index, timestamp) in trajectory.source_sample_timestamps_ns.iter().enumerate() {
+        let offset = (index as u64 + 1)
+            .checked_mul(contract.step_period_ns)
+            .ok_or_else(|| AuditError("residual sample timestamp offset overflowed".to_string()))?;
+        let expected = trajectory.origin_timestamp_ns
+            .checked_add(offset)
+            .ok_or_else(|| AuditError("residual sample timestamp overflowed".to_string()))?;
+        if *timestamp != expected
+            || previous_timestamp.is_some_and(|previous| *timestamp <= previous)
+            || !evidence_ids.insert(trajectory.source_sample_evidence_ids[index].as_str())
+        {
+            return Err(AuditError(format!(
+                "residual trajectory {:?} has duplicate evidence or a sample timestamp/cadence mismatch at index {index}",
+                trajectory.residual_id
+            )));
+        }
+        previous_timestamp = Some(*timestamp);
     }
     Ok(())
 }
@@ -561,6 +598,7 @@ fn generate_independent_scenarios(
             source_residual_id: None,
             source_residual_evidence_id: None,
             source_sample_evidence_ids: Vec::new(),
+            source_sample_timestamps_ns: Vec::new(),
             power_mw: vec![0; contract.horizon_steps],
         });
     }
@@ -611,6 +649,7 @@ fn generate_residual_bootstrap(
             source_residual_id: Some(residual.residual_id.clone()),
             source_residual_evidence_id: Some(residual.measurement_evidence_id.clone()),
             source_sample_evidence_ids: residual.source_sample_evidence_ids.clone(),
+            source_sample_timestamps_ns: residual.source_sample_timestamps_ns.clone(),
             power_mw: power,
         });
         selected_ids.push(residual.residual_id.clone());
@@ -665,6 +704,9 @@ fn generate_schaake_shuffle(
             ),
             source_sample_evidence_ids: residuals[residual_index]
                 .source_sample_evidence_ids
+                .clone(),
+            source_sample_timestamps_ns: residuals[residual_index]
+                .source_sample_timestamps_ns
                 .clone(),
             power_mw: power,
         });
@@ -861,7 +903,6 @@ fn empirical_pit(values: &[u64], actual: u64) -> f64 {
 fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditError> {
     scenarios.contract.validate()?;
     if scenarios.forecast_id.trim().is_empty()
-        || scenarios.forecast_origin_timestamp_ns == 0
         || scenarios.scenarios.len() != scenarios.contract.scenario_count
         || scenarios.step_timestamps_ns.len() != scenarios.contract.horizon_steps
         || scenarios.scheduled_median_power_mw.len() != scenarios.contract.horizon_steps
@@ -907,6 +948,7 @@ fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditErr
                     scenario.source_residual_id.is_some()
                         || scenario.source_residual_evidence_id.is_some()
                         || !scenario.source_sample_evidence_ids.is_empty()
+                        || !scenario.source_sample_timestamps_ns.is_empty()
                 })
             {
                 return Err(AuditError(
@@ -924,6 +966,8 @@ fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditErr
                     scenario.source_residual_id.is_none()
                         || scenario.source_residual_evidence_id.is_none()
                         || scenario.source_sample_evidence_ids.len()
+                            != scenarios.contract.horizon_steps
+                        || scenario.source_sample_timestamps_ns.len()
                             != scenarios.contract.horizon_steps
                         || scenario.source_sample_evidence_ids.iter().any(|id| id.trim().is_empty())
                 })
@@ -1257,7 +1301,11 @@ mod tests {
                 model_contract: model_contract(),
                 forecast_evidence_id: "forecast-a".to_string(),
                 measurement_evidence_id: "measurement-a".to_string(),
+                residual_generation_evidence_id: "residual-generation-a".to_string(),
+                state_mapping_evidence_id: "state-map-a".to_string(),
+                time_alignment_evidence_id: "clock-a".to_string(),
                 source_timeline_digest_reference: "timeline-a".to_string(),
+                source_sample_timestamps_ns: vec![1_010, 1_020, 1_030],
                 source_sample_evidence_ids: vec!["a-1".to_string(), "a-2".to_string(), "a-3".to_string()],
                 residual_power_mw: vec![0, 10, 0],
             },
@@ -1270,7 +1318,11 @@ mod tests {
                 model_contract: model_contract(),
                 forecast_evidence_id: "forecast-b".to_string(),
                 measurement_evidence_id: "measurement-b".to_string(),
+                residual_generation_evidence_id: "residual-generation-b".to_string(),
+                state_mapping_evidence_id: "state-map-b".to_string(),
+                time_alignment_evidence_id: "clock-b".to_string(),
                 source_timeline_digest_reference: "timeline-b".to_string(),
+                source_sample_timestamps_ns: vec![2_010, 2_020, 2_030],
                 source_sample_evidence_ids: vec!["b-1".to_string(), "b-2".to_string(), "b-3".to_string()],
                 residual_power_mw: vec![10, 0, -10],
             },
@@ -1283,7 +1335,11 @@ mod tests {
                 model_contract: model_contract(),
                 forecast_evidence_id: "forecast-c".to_string(),
                 measurement_evidence_id: "measurement-c".to_string(),
+                residual_generation_evidence_id: "residual-generation-c".to_string(),
+                state_mapping_evidence_id: "state-map-c".to_string(),
+                time_alignment_evidence_id: "clock-c".to_string(),
                 source_timeline_digest_reference: "timeline-c".to_string(),
+                source_sample_timestamps_ns: vec![3_010, 3_020, 3_030],
                 source_sample_evidence_ids: vec!["c-1".to_string(), "c-2".to_string(), "c-3".to_string()],
                 residual_power_mw: vec![-10, -10, 10],
             },
