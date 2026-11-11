@@ -133,7 +133,7 @@ Neither quantity is watts, joules, kWh, power shed, energy saved, PUE-adjusted f
 
 ## 6. v0.1 validation contract
 
-Seventeen Rust unit tests are authored. They cover:
+Twenty Rust unit tests are authored. They cover:
 - deterministic identical baseline/empty-window replay;
 - deadline-respecting deferrable shifts;
 - non-deferrable work blocked from dispatch-induced delay;
@@ -150,9 +150,26 @@ Seventeen Rust unit tests are authored. They cover:
 - separate reporting for recovery tail and lost work;
 - timestamp overflow;
 - delay percentiles;
+- event-sourced occupancy timeline and timestamped useful-work completion events;
+- exact half-open boundary ordering at a simultaneous completion/dispatch/start timestamp;
+- CPU/GPU/memory admission restriction integrals and conservation negative controls;
 - a 10,000-job deterministic regression fixture.
 
 **Tests are authored but not executed.** Compilation, cargo test, cargo fmt, cargo clippy and runtime/performance measurements are not claimed. The engine is read-only and uses synthetic fixtures only.
+
+## 6A. Event-sourced timeline export and multi-resource flexibility tensor (v0.2)
+
+The replay now emits both baseline and dispatch-constrained event-sourced outputs:
+
+- **Occupancy segments** are exact half-open intervals [start_ns, end_ns) with active CPU milli-cores, GPU units, memory MiB, active job counts by deferrability class, full resource capacity, admission capacity and optional dispatch-window ID.
+- **Completion events** carry exact finish timestamp, job ID, source evidence ID, deferrability class, useful-work units, work unit and replay-contract ID. These are the accepted-useful-work events for downstream time-bin integration.
+- **Clock contract** carries a named monotonic clock ID and time-origin ID. A caller-supplied schedule digest reference is preserved for downstream evidence binding; this module does not compute or authenticate that digest.
+- **Resource restriction tensor** reports CPU-millicore-nanoseconds, GPU-unit-nanoseconds and memory-MiB-nanoseconds separately. They are abstract admission-capacity restrictions, not watts or energy.
+- **Conservation checks** require occupancy-segment resource-time to reconcile exactly with per-job scheduled resource-time during dispatch windows, and completion-event sums to reconcile with completed jobs and useful-work units.
+
+At equal timestamps, the replay uses half-open semantics: complete jobs at t, apply the capacity-window boundary at t, then admit newly released jobs. The resulting timeline is intended as an input to issue #382's existing matched PCC/useful-work auditor. It does not duplicate PCC energy integration, power quality checks or stored-energy accounting.
+
+This export makes the workload-to-power join possible without guessing how aggregate work maps to time. It still does not provide a measured power trace, power curve, facility overhead, carbon intensity or market qualification.
 
 ## 7. Proposed benchmark programme
 
