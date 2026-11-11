@@ -723,6 +723,308 @@ fn admission_capacity_restriction_time(
     Ok((restriction, total_duration, longest))
 }
 
+#[derive(Debug, Clone, Copy)]
+struct TimelineJobChange {
+    timestamp_ns: u64,
+    job_index: usize,
+    is_start: bool,
+}
+
+fn validate_timeline_segments(
+    segments: &[WorkloadOccupancySegment],
+) -> Result<(), AuditError> {
+    let mut previous_end_ns = None;
+    for segment in segments {
+        if segment.end_ns <= segment.start_ns {
+            return Err(AuditError(
+                "occupancy timeline contains a non-positive interval".to_string(),
+            ));
+        }
+        if previous_end_ns.is_some_and(|end| segment.start_ns != end) {
+            return Err(AuditError(
+                "occupancy timeline intervals must be ordered, contiguous and non-overlapping"
+                    .to_string(),
+            ));
+        }
+        if !segment.active_resources.fits_within(segment.full_resource_capacity)
+            || !segment.admission_capacity.fits_within(segment.full_resource_capacity)
+        {
+            return Err(AuditError(
+                "occupancy or admission capacity exceeds the declared full resource envelope"
+                    .to_string(),
+            ));
+        }
+        if segment.active_job_count
+            != segment.active_non_deferrable_job_count + segment.active_deferrable_job_count
+        {
+            return Err(AuditError(
+                "occupancy timeline active job-class counts do not reconcile".to_string(),
+            ));
+        }
+        if segment.dispatch_window_id.is_none()
+            && segment.admission_capacity != segment.full_resource_capacity
+        {
+            return Err(AuditError(
+                "non-dispatch timeline segment must use full admission capacity".to_string(),
+            ));
+        }
+        previous_end_ns = Some(segment.end_ns);
+    }
+    Ok(())
+}
+
+fn timeline_resource_time_during_dispatch(
+    segments: &[WorkloadOccupancySegment],
+) -> Result<ResourceTimeIntegral, AuditError> {
+    let mut total = ResourceTimeIntegral::default();
+    for segment in segments {
+        if segment.dispatch_window_id.is_some() {
+            total.add_scaled(segment.active_resources, segment.end_ns - segment.start_ns)?;
+        }
+    }
+    Ok(total)
+}
+
+fn validate_timeline_resource_time_conservation(
+    segments: &[WorkloadOccupancySegment],
+    expected: ResourceTimeIntegral,
+) -> Result<(), AuditError> {
+    validate_timeline_segments(segments)?;
+    let actual = timeline_resource_time_during_dispatch(segments)?;
+    if actual != expected {
+        return Err(AuditError(format!(
+            "timeline resource-time does not reconcile: expected {:?}, observed {:?}",
+            expected, actual
+        )));
+    }
+    Ok(())
+}
+
+fn build_occupancy_timeline(
+    jobs: &[WorkloadJob],
+    states: &[JobState],
+    full_capacity: ResourceVector,
+    windows: &[DispatchCapacityWindow],
+) -> Result<Vec<WorkloadOccupancySegment>, AuditError> {
+    let mut changes = Vec::new();
+    let mut boundaries = Vec::new();
+
+    for (index, state) in states.iter().enumerate() {
+        if let JobState::Completed {
+            start_ns,
+            finish_ns,
+        } = *state
+        {
+            changes.push(TimelineJobChange {
+                timestamp_ns: finish_ns,
+                job_index: index,
+                is_start: false,
+            });
+            changes.push(TimelineJobChange {
+                timestamp_ns: start_ns,
+                job_index: index,
+                is_start: true,
+            });
+            boundaries.push(start_ns);
+            boundaries.push(finish_ns);
+        }
+    }
+    for window in windows {
+        boundaries.push(window.start_ns);
+        boundaries.push(window.end_ns);
+    }
+    if boundaries.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    changes.sort_by(|left, right| {
+        left.timestamp_ns
+            .cmp(&right.timestamp_ns)
+            // Half-open interval rule: finish jobs before starting jobs at t.
+            .then_with(|| left.is_start.cmp(&right.is_start))
+            .then_with(|| left.job_index.cmp(&right.job_index))
+    });
+    boundaries.sort_unstable();
+    boundaries.dedup();
+
+    let mut segments = Vec::with_capacity(boundaries.len().saturating_sub(1));
+    let mut change_index = 0_usize;
+    let mut active_resources = ResourceVector::default();
+    let mut active_non_deferrable_job_count = 0_usize;
+    let mut active_deferrable_job_count = 0_usize;
+
+    for (boundary_index, start_ns) in boundaries.iter().copied().enumerate() {
+        while let Some(change) = changes.get(change_index) {
+            if change.timestamp_ns != start_ns {
+                break;
+            }
+            let job = &jobs[change.job_index];
+            if change.is_start {
+                active_resources = active_resources
+                    .checked_add(job.resource_demand)
+                    .ok_or_else(|| {
+                        AuditError("timeline active resource addition overflowed".to_string())
+                    })?;
+                match job.class {
+                    WorkloadClass::NonDeferrable => {
+                        active_non_deferrable_job_count = active_non_deferrable_job_count
+                            .checked_add(1)
+                            .ok_or_else(|| {
+                                AuditError("active non-deferrable job count overflowed".to_string())
+                            })?;
+                    }
+                    WorkloadClass::Deferrable => {
+                        active_deferrable_job_count = active_deferrable_job_count
+                            .checked_add(1)
+                            .ok_or_else(|| {
+                                AuditError("active deferrable job count overflowed".to_string())
+                            })?;
+                    }
+                }
+            } else {
+                active_resources = active_resources
+                    .checked_sub(job.resource_demand)
+                    .ok_or_else(|| {
+                        AuditError("timeline active resource subtraction underflowed".to_string())
+                    })?;
+                match job.class {
+                    WorkloadClass::NonDeferrable => {
+                        active_non_deferrable_job_count = active_non_deferrable_job_count
+                            .checked_sub(1)
+                            .ok_or_else(|| {
+                                AuditError("active non-deferrable job count underflowed".to_string())
+                            })?;
+                    }
+                    WorkloadClass::Deferrable => {
+                        active_deferrable_job_count = active_deferrable_job_count
+                            .checked_sub(1)
+                            .ok_or_else(|| {
+                                AuditError("active deferrable job count underflowed".to_string())
+                            })?;
+                    }
+                }
+            }
+            change_index += 1;
+        }
+
+        let Some(end_ns) = boundaries.get(boundary_index + 1).copied() else {
+            break;
+        };
+        if end_ns <= start_ns {
+            return Err(AuditError(
+                "timeline boundary ordering did not advance".to_string(),
+            ));
+        }
+        let window_index = windows.partition_point(|window| window.end_ns <= start_ns);
+        let active_window = windows
+            .get(window_index)
+            .filter(|window| window.start_ns <= start_ns && start_ns < window.end_ns);
+        let admission_capacity = active_window
+            .map(|window| window.admission_capacity)
+            .unwrap_or(full_capacity);
+
+        if !active_resources.fits_within(full_capacity) {
+            return Err(AuditError(
+                "scheduled active resources exceed full capacity in timeline".to_string(),
+            ));
+        }
+        segments.push(WorkloadOccupancySegment {
+            start_ns,
+            end_ns,
+            active_resources,
+            active_job_count: active_non_deferrable_job_count
+                .checked_add(active_deferrable_job_count)
+                .ok_or_else(|| AuditError("active job count overflowed".to_string()))?,
+            active_non_deferrable_job_count,
+            active_deferrable_job_count,
+            full_resource_capacity: full_capacity,
+            admission_capacity,
+            dispatch_window_id: active_window.map(|window| window.window_id.clone()),
+        });
+    }
+
+    validate_timeline_segments(&segments)?;
+    Ok(segments)
+}
+
+fn build_completion_events(
+    jobs: &[WorkloadJob],
+    states: &[JobState],
+    contract: &WorkloadReplayContract,
+) -> Vec<WorkloadCompletionEvent> {
+    let mut events = Vec::new();
+    for (job, state) in jobs.iter().zip(states.iter()) {
+        if let JobState::Completed { finish_ns, .. } = *state {
+            events.push(WorkloadCompletionEvent {
+                completion_time_ns: finish_ns,
+                job_id: job.job_id.clone(),
+                source_evidence_id: job.source_evidence_id.clone(),
+                class: job.class,
+                useful_work_units: job.useful_work_units,
+                work_unit: contract.work_unit.clone(),
+                replay_contract_id: contract.replay_contract_id.clone(),
+            });
+        }
+    }
+    events.sort_by(|left, right| {
+        left.completion_time_ns
+            .cmp(&right.completion_time_ns)
+            .then_with(|| left.job_id.cmp(&right.job_id))
+    });
+    events
+}
+
+fn validate_completion_event_conservation(
+    events: &[WorkloadCompletionEvent],
+    expected: &WorkloadRunSummary,
+    contract: &WorkloadReplayContract,
+) -> Result<(), AuditError> {
+    let mut ids = HashSet::new();
+    let mut total_work_units = 0_u64;
+    let mut previous = None;
+    for event in events {
+        if event.job_id.trim().is_empty()
+            || event.source_evidence_id.trim().is_empty()
+            || event.useful_work_units == 0
+            || event.work_unit != contract.work_unit
+            || event.replay_contract_id != contract.replay_contract_id
+        {
+            return Err(AuditError(
+                "completion event contains missing provenance, work or contract identity"
+                    .to_string(),
+            ));
+        }
+        if !ids.insert(event.job_id.as_str()) {
+            return Err(AuditError(format!(
+                "duplicate workload completion event for job {:?}",
+                event.job_id
+            )));
+        }
+        let key = (event.completion_time_ns, event.job_id.as_str());
+        if previous.is_some_and(|prior| key < prior) {
+            return Err(AuditError(
+                "completion events must be sorted by timestamp and stable job ID".to_string(),
+            ));
+        }
+        previous = Some(key);
+        total_work_units = total_work_units
+            .checked_add(event.useful_work_units)
+            .ok_or_else(|| AuditError("completion work-unit sum overflowed".to_string()))?;
+    }
+    if events.len() != expected.completed_job_count
+        || total_work_units != expected.completed_useful_work_units
+    {
+        return Err(AuditError(format!(
+            "completion events do not reconcile: expected {} jobs / {} work units, observed {} jobs / {} work units",
+            expected.completed_job_count,
+            expected.completed_useful_work_units,
+            events.len(),
+            total_work_units
+        )));
+    }
+    Ok(())
+}
+
 /// Compare the same normalized job set under a full-capacity baseline and a
 /// dispatch-constrained admission-capacity profile.
 ///
