@@ -138,6 +138,7 @@ Implemented in this increment:
 - lagged Pearson correlations and sample counts for each configured lag;
 - independent-reference variance as the sum of child population variances, variance amplification ratio and covariance-decomposition residual;
 - source site/run/session/trace/clock-alignment lineage.
+- every aggregate timestamp carries its exact per-site contribution vector (site ID, power, state and source sample evidence ID), enabling independent row-level reconstruction and sum checking.
 
 Not implemented yet: Spearman correlation, spectral coherence, time-varying clock-drift estimation/correction, state-conditioned dependence models, long-memory/common-factor model, physically matched independent-session trace synthesis, measured parent-boundary reconciliation, energy integration, causal attribution or region-level grid simulation. The current implementation only applies a caller-declared constant offset and alignment-uncertainty ceiling; it does not estimate clock drift.
 
