@@ -320,6 +320,22 @@ fn validate_source_report(
             )));
         }
     }
+
+    // The parent evaluator normally guarantees this invariant. Re-check it
+    // because this public API accepts a report value supplied by a caller.
+    let mut ordered_events: Vec<_> = source.event_results.iter().collect();
+    ordered_events.sort_by_key(|event| event.window_start_ns);
+    let mut previous_recovery_end_ns = None;
+    for event in ordered_events {
+        if previous_recovery_end_ns
+            .is_some_and(|end| event.window_start_ns < end)
+        {
+            return Err(AuditError(
+                "source dispatch and recovery intervals overlap".to_string(),
+            ));
+        }
+        previous_recovery_end_ns = Some(event.recovery_window_end_ns);
+    }
     Ok(())
 }
 
@@ -659,6 +675,7 @@ pub fn evaluate_clustered_reliability(
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
     use super::{
         evaluate_clustered_reliability, minimum_clusters_for_quantile_confidence,
         ClusteredReliabilityContract, EventClusterAssignment, IndependenceCluster,
@@ -817,12 +834,12 @@ mod tests {
                 event_index += 1;
             }
         }
+        let mut required_strata = strata.to_vec();
+        required_strata.sort_unstable();
+        required_strata.dedup();
         (
             source,
-            cluster_contract(
-                &strata.iter().copied().collect::<HashSet<_>>().into_iter().collect::<Vec<_>>(),
-                independent,
-            ),
+            cluster_contract(&required_strata, independent),
             clusters,
             assignments,
         )
