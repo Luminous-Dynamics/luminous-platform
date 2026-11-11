@@ -29,7 +29,7 @@ ForecastResidualTrajectory contains the full historical measured-minus-median-fo
 
 Residual target windows must end no later than the current forecast origin. The residual pool rejects duplicate origins, duplicate trajectory IDs, reuse of a source measurement-sample evidence ID across blocks, and origin separations shorter than the frozen minimum. For dependence-preserving methods, the minimum origin separation must be at least one full target horizon, so sampled target windows do not overlap. This reduces direct overlap; it does **not** prove statistical independence or stationarity.
 
-## 3. Three matched scenario-generation arms
+## 3. Four matched scenario-generation arms
 
 ### A. Independent marginal-quantile negative control
 
@@ -52,6 +52,30 @@ The generator ranks historical residual trajectories independently at each horiz
 This transfers the historical temporal dependence pattern while retaining the forecast's current marginal quantile samples. When the residual pool is larger than the requested scenario ensemble, the rank-to-grid mapping is an approximation; it must be evaluated with proper multivariate scores and marginal diagnostics, not described as exact rank preservation.
 
 The selected historical trajectory and its source sample evidence are retained for every scenario.
+
+### D. Gaussian-copula residual dependence
+
+The new Gaussian-copula arm estimates temporal dependence from **rank-normal historical residuals**, without replacing the forecast's current marginal quantile functions.
+
+1. At each horizon step, sort historical residuals and assign average ranks to ties using residual ID as the deterministic sort tie-breaker.
+2. Transform rank plotting positions (midrank minus one half, divided by sample count) through an inverse standard-normal approximation.
+3. Estimate the horizon-by-horizon Pearson correlation matrix of the rank-normal score columns.
+4. Apply the frozen shrinkage rule:
+
+\[
+R_{\lambda}=(1-\lambda)R+\lambda I,\qquad 0<\lambda<1
+\]
+
+5. Require a finite symmetric matrix with unit diagonal and a successful Cholesky factorization. No unrecorded jitter is added.
+6. Generate deterministic independent standard-normal vectors, correlate them using the lower-triangular Cholesky factor, map through the normal CDF, and interpolate the current forecast's marginal quantile functions.
+7. Retain the full residual-pool, sample, model, clock, time-origin, correlation, regularized-matrix and Cholesky evidence in the report.
+
+The current contract requires at least max(30, horizon_steps + 1) non-overlapping residual trajectories per regime and an explicit shrinkage lambda. This is a conservative initial research gate, not a universal statistical sample-size theorem. A constant or near-constant residual dimension, insufficient support, singular factorization, future/overlapping residuals or any contract mismatch fails closed.
+
+The v0.25 implementation uses a fixed, preregistered lambda (0.05 in synthetic fixtures). The next comparison should sweep a preregistered lambda grid and include data-driven shrinkage estimators such as Ledoit–Wolf as a separate comparator; do not silently select lambda using confirmatory test outcomes.
+
+Gaussian-copula finite-ensemble marginals are quantile-function samples, not an exact discrete marginal permutation. Quantile support outside the supplied forecast grid is clipped to the nearest supplied quantile and counted. Report this tail clipping; do not claim unmodelled extreme tails have been reconstructed.
+
 
 ## 4. Horizon-wide reserve sizing
 
@@ -146,7 +170,7 @@ The new temporal_scenarios module:
 - evaluates scenario energy score, variogram score, peak/ramp/energy diagnostics, PIT and horizon-wide reserve critical-fractile outcomes;
 - labels results as modelled scenario/reserve economics, not measured or accredited capacity.
 
-Twenty-six synthetic Rust tests are authored. They cover deterministic independent-marginal sampling, with-replacement residual bootstrap, source trajectory integrity, Schaake marginal sample preservation, residual overlap/future leakage, quantile crossing, timestamp alignment, insufficient support, reserve critical fractile, energy/variogram scoring, invalid measurements, residual identity, full provenance carry-through, common clock/time-origin mismatch and claim-ceiling tampering.
+Thirty-two synthetic Rust tests are authored. They cover deterministic independent-marginal sampling, with-replacement residual bootstrap, source trajectory integrity, Schaake marginal sample preservation, residual overlap/future leakage, quantile crossing, timestamp alignment, insufficient support, reserve critical fractile, energy/variogram scoring, invalid measurements, residual identity, full provenance carry-through, common clock/time-origin mismatch and claim-ceiling tampering.
 
 **Tests are authored but not executed.** No Rust compilation, cargo test, formatting, Clippy, runtime benchmark, MIT dataset download, paper result reproduction, physical PCC measurement, grid dispatch, reserve delivery or grid accreditation is claimed.
 
@@ -159,4 +183,4 @@ Twenty-six synthetic Rust tests are authored. They cover deterministic independe
 - [MIT Supercloud Dataset](https://github.com/MIT-AI-Accelerator/MIT-Supercloud-Dataset), [MIT Datacenter Challenge data page](https://dcc.mit.edu/data/) and [AWS Registry of Open Data](https://registry.opendata.aws/dcc/). Dataset right-to-use gate: CC BY-NC-ND 4.0.
 
 
-**Parity limitation:** Yao et al. also compare a Gaussian-copula scenario generator. That method is not implemented in this v0.1 module. [Issue #408](https://github.com/Luminous-Dynamics/luminous-platform/issues/408) owns the rank-normal residual dependence estimator, regularized correlation factorization, deterministic copula sampling and the missing four-arm parity tournament. Do not describe PR #407 as a complete reproduction of the paper's scenario suite.
+**Parity status:** the temporal-scenarios branch now contains all four paper-comparator arms: independent marginal sampling, empirical residual bootstrap, Schaake shuffle and Gaussian copula. Gaussian-copula implementation is a separate draft stacked on PR #407 and remains uncompiled/untested. The method suite is structurally present, but no paper reproduction or SOTA result is claimed.
