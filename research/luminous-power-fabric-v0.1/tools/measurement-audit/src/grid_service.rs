@@ -655,8 +655,8 @@ mod tests {
     fn measurement_uncertainty_is_subtracted_from_attributed_compute_reduction() {
         let mut events = all_events(30);
         for item in &mut events {
-            item.site_measurement_uncertainty_bound_w = 20.0;
-            item.non_compute_measurement_uncertainty_bound_w = 20.0;
+            item.site_measurement_uncertainty_bound_w = 30.0;
+            item.non_compute_measurement_uncertainty_bound_w = 30.0;
         }
         let report = evaluate_grid_service_sweep(contract(), events).unwrap();
         assert_eq!(report.event_results[0].credited_deliverable_capacity_w, 0.0);
