@@ -265,7 +265,6 @@ pub struct WorkloadCompletionEvent {
     pub class: WorkloadClass,
     pub useful_work_units: u64,
     pub work_unit: String,
-    pub replay_contract_id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
