@@ -88,7 +88,8 @@ The comparison must hold workload, useful work, QoS, deadlines, hardware, policy
 | Held-out integrated energy | median absolute error <= 5% on a matched, supported cohort | P50, P90, worst configuration and support coverage |
 | Held-out mean power | report relative error | P50/P90/worst, by state |
 | Held-out peak power | <= 10% relative error | Peak definition and common sample bandwidth |
-| Nominal 90% interval | empirical coverage 85–95% | Mean/median interval width and per-state coverage |
+| Base empirical p10–p90 envelope | nominal central 80% before sensor-uncertainty widening | Empirical coverage and width; do not label this a 90% interval |
+| Regime-calibrated whole-session interval | target 90% session coverage, with confirmatory empirical coverage 85–95% | Session-level all-samples-covered rate, sample-level diagnostic coverage and interval width |
 | Lag-one autocorrelation | absolute error <= 0.05 | Per-run result and sample length |
 | Ramp profile | report mean absolute ramp error | Sampling bandwidth, peak ramp error and sign |
 | Unsupported support | 0 extrapolated predictions | Unknown state/transition/configuration remains UNKNOWN |
@@ -146,3 +147,18 @@ The API now exposes two distinct paths:
 - `predict_operational_scenario`: new scenario forecast; the run ID must not appear in either training or held-out calibration runs.
 
 The prediction trace carries its `PredictionScope` and a matching claim ceiling. `evaluate_held_out_power_trace` rejects operational-scenario predictions, so a scenario estimate cannot be relabelled as a held-out score. This allows #400/#403/#404 to consume a fitted model for new hypothetical timelines without weakening the calibration leakage barrier. Scenario forecasts remain MODELLED and still require exact configuration, boundary, workload, state-mapper, clock-alignment and supported state/transition matches.
+
+
+## 13. Regime-conditioned session conformal calibration
+
+The base predictor's p10–p90 envelope is a central 80% empirical band before the additional sensor-uncertainty widening. It must not be described as a nominal 90% interval. A 90% target is now handled by a separate downstream calibration contract.
+
+The new forecast_calibration module uses regime-conditioned split conformal calibration over fixed-exposure acquisition sessions. Each calibration session contributes the maximum interval violation across all its samples and traces; the conformal correction therefore targets whole-session coverage rather than treating correlated sample rows as independent.
+
+A calibration contract binds the complete PowerModelContract from #401 and requires predictions from new operational scenario runs that are disjoint from training and held-out sessions. Calibration and monitoring sessions have fixed duration, trace count and samples per trace, with explicit session separation. A regime not present in the frozen calibration set is OUT_OF_DOMAIN and receives no calibrated interval.
+
+For target coverage gamma and n exchangeable calibration sessions within a regime, the correction uses rank ceil((n+1) gamma). Nine sessions make the 90% rank observable and nineteen make the 95% rank observable; these are finite-sample minima, not recommended field sample sizes. The research target is 30+ independent calibration sessions per regime, with a separate, disjoint confirmatory monitoring set.
+
+The monitor reports whole-session coverage, sample-level coverage as a diagnostic, and a Wilson lower bound only when its own monitor-session independence review is explicitly declared and evidenced. It does not update the calibrator; a new calibration requires a new version and new sessions.
+
+This addition is motivated by Yao et al.'s 6 November 2026 grid-oriented 448-GPU benchmark, which reports severe nominal-90% undercoverage after utilization changes and shows that pointwise calibrated marginal forecasts can still fail to reproduce temporal ramps. See [REGIME_CONDITIONED_SESSION_CONFORMAL_FORECAST_CALIBRATION_2026-11-11.md](./REGIME_CONDITIONED_SESSION_CONFORMAL_FORECAST_CALIBRATION_2026-11-11.md) for the research comparison and rights-aware reproduction plan.
