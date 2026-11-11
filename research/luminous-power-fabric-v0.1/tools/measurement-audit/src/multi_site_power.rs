@@ -153,9 +153,19 @@ pub struct SitePowerSummary {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SitePowerContribution {
+    pub site_id: String,
+    pub power_mw: u64,
+    pub state_id: String,
+    pub source_evidence_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AggregatePowerSample {
     pub timestamp_ns: u64,
     pub total_power_mw: u128,
+    /// Exact per-site contributions allow independent row-level sum reconstruction.
+    pub site_contributions: Vec<SitePowerContribution>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -418,14 +428,26 @@ pub fn aggregate_aligned_sites(
     let mut aggregate_samples = Vec::with_capacity(sample_count);
     let mut aggregate_values = Vec::with_capacity(sample_count);
     for index in 0..sample_count {
-        let total = aligned_power.iter().try_fold(0_u128, |sum, site| {
-            sum.checked_add(site[index] as u128)
-                .ok_or_else(|| AuditError("aggregate site power overflowed u128".to_string()))
-        })?;
+        let mut site_contributions = Vec::with_capacity(ordered_traces.len());
+        let mut total = 0_u128;
+        for (trace, site_values) in ordered_traces.iter().zip(aligned_power.iter()) {
+            let child_sample = &trace.samples[index];
+            let contribution = site_values[index] as u128;
+            total = total.checked_add(contribution).ok_or_else(|| {
+                AuditError("aggregate site power overflowed u128".to_string())
+            })?;
+            site_contributions.push(SitePowerContribution {
+                site_id: trace.site_id.clone(),
+                power_mw: child_sample.power_mw,
+                state_id: child_sample.state_id.clone(),
+                source_evidence_id: child_sample.source_evidence_id.clone(),
+            });
+        }
         aggregate_values.push(total);
         aggregate_samples.push(AggregatePowerSample {
             timestamp_ns: times[index],
             total_power_mw: total,
+            site_contributions,
         });
     }
 
@@ -593,6 +615,13 @@ mod tests {
         assert_eq!(report.aligned_sample_count, 5);
         assert_eq!(report.aggregate_samples[0].timestamp_ns, 1_000);
         assert_eq!(report.aggregate_samples[0].total_power_mw, 150);
+        assert_eq!(report.aggregate_samples[0].site_contributions.len(), 2);
+        assert_eq!(report.aggregate_samples[0].site_contributions[0].site_id, "site-a");
+        assert_eq!(report.aggregate_samples[0].site_contributions[0].source_evidence_id, "site-a-sample-0");
+        assert_eq!(
+            report.aggregate_samples[0].site_contributions.iter().map(|item| item.power_mw as u128).sum::<u128>(),
+            report.aggregate_samples[0].total_power_mw
+        );
         assert_eq!(report.aggregate_peak_power_mw, 450);
         assert_eq!(report.evidence_class, TraceEvidenceClass::Measured);
     }
@@ -745,6 +774,10 @@ mod tests {
         let reverse = aggregate_aligned_sites(contract(), &[second, first]).unwrap();
         assert_eq!(forward, reverse);
         assert_eq!(forward.source_site_ids, vec!["site-a", "site-b"]);
+        assert!(forward.aggregate_samples.iter().all(|sample| {
+            sample.site_contributions.iter().map(|item| item.power_mw as u128).sum::<u128>()
+                == sample.total_power_mw
+        }));
     }
 
     #[test]
