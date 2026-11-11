@@ -259,9 +259,10 @@ fn effective_capacity_at(
     full_capacity: ResourceVector,
     windows: &[DispatchCapacityWindow],
 ) -> ResourceVector {
+    let index = windows.partition_point(|window| window.end_ns <= now_ns);
     windows
-        .iter()
-        .find(|window| window.start_ns <= now_ns && now_ns < window.end_ns)
+        .get(index)
+        .filter(|window| window.start_ns <= now_ns && now_ns < window.end_ns)
         .map(|window| window.admission_capacity)
         .unwrap_or(full_capacity)
 }
@@ -286,10 +287,10 @@ fn ready_priority(job: &WorkloadJob, index: usize) -> ReadyPriority {
 fn next_event_time(
     now_ns: u64,
     jobs: &[WorkloadJob],
-    states: &[JobState],
     release_order: &[usize],
     next_release_index: usize,
     ready: &BTreeSet<ReadyPriority>,
+    running: &BTreeSet<(u64, usize)>,
     windows: &[DispatchCapacityWindow],
 ) -> Option<u64> {
     let mut next = None;
@@ -305,10 +306,8 @@ fn next_event_time(
     if let Some(priority) = ready.first() {
         consider(priority.1);
     }
-    for state in states {
-        if let JobState::Running { finish_ns, .. } = state {
-            consider(*finish_ns);
-        }
+    if let Some((finish_ns, _)) = running.first() {
+        consider(*finish_ns);
     }
     for window in windows {
         consider(window.start_ns);
@@ -324,14 +323,15 @@ fn run_schedule(
 ) -> Result<Vec<JobState>, AuditError> {
     let mut states = vec![JobState::Pending; jobs.len()];
     let mut used_resources = ResourceVector::default();
+    let mut completed_or_missed_count = 0_usize;
     let Some(mut now_ns) = jobs.iter().map(|job| job.release_time_ns).min() else {
         return Err(AuditError(
             "workload replay requires at least one job".to_string(),
         ));
     };
 
-    // Sort arrivals once, then maintain an ordered ready set. The v0.1 policy
-    // is deterministic strict priority: non-deferrable first, then earliest
+    // Sort arrivals once, then maintain ordered ready and completion sets.
+    // The v0.1 policy is strict priority: non-deferrable first, then earliest
     // latest-start, completion deadline, release time and stable job ID.
     // It deliberately does not backfill around a higher-priority job that
     // cannot currently fit; alternative policies can be compared later.
@@ -347,28 +347,40 @@ fn run_schedule(
     });
     let mut next_release_index = 0_usize;
     let mut ready: BTreeSet<ReadyPriority> = BTreeSet::new();
+    let mut running: BTreeSet<(u64, usize)> = BTreeSet::new();
 
     loop {
-        for (index, state) in states.iter_mut().enumerate() {
-            if let JobState::Running {
+        // Complete only jobs whose finish event is due. This avoids scanning
+        // every job at each scheduler event.
+        while let Some((finish_ns, index)) = running.first().copied() {
+            if finish_ns > now_ns {
+                break;
+            }
+            running.remove(&(finish_ns, index));
+            let JobState::Running {
+                start_ns,
+                finish_ns: expected_finish_ns,
+            } = states[index]
+            else {
+                return Err(AuditError(
+                    "running-completion queue is inconsistent with job state".to_string(),
+                ));
+            };
+            if expected_finish_ns != finish_ns {
+                return Err(AuditError(
+                    "running-completion timestamp does not match job state".to_string(),
+                ));
+            }
+            used_resources = used_resources
+                .checked_sub(jobs[index].resource_demand)
+                .ok_or_else(|| {
+                    AuditError("completed job resource accounting underflowed".to_string())
+                })?;
+            states[index] = JobState::Completed {
                 start_ns,
                 finish_ns,
-            } = *state
-            {
-                if finish_ns <= now_ns {
-                    used_resources = used_resources
-                        .checked_sub(jobs[index].resource_demand)
-                        .ok_or_else(|| {
-                            AuditError(
-                                "completed job resource accounting underflowed".to_string(),
-                            )
-                        })?;
-                    *state = JobState::Completed {
-                        start_ns,
-                        finish_ns,
-                    };
-                }
-            }
+            };
+            completed_or_missed_count += 1;
         }
 
         while let Some(index) = release_order.get(next_release_index).copied() {
@@ -401,12 +413,18 @@ fn run_schedule(
                     })?;
                 if finish_ns > jobs[index].completion_deadline_ns {
                     states[index] = JobState::Missed;
+                    completed_or_missed_count += 1;
                     continue;
                 }
                 states[index] = JobState::Running {
                     start_ns: now_ns,
                     finish_ns,
                 };
+                if !running.insert((finish_ns, index)) {
+                    return Err(AuditError(
+                        "duplicate running-completion event was generated".to_string(),
+                    ));
+                }
                 continue;
             }
 
@@ -415,14 +433,14 @@ fn run_schedule(
             if jobs[index].latest_start_ns <= now_ns {
                 ready.remove(&priority);
                 states[index] = JobState::Missed;
+                completed_or_missed_count += 1;
                 continue;
             }
             break;
         }
 
-        if states.iter().all(|state| {
-            matches!(state, JobState::Completed { .. } | JobState::Missed)
-        }) && next_release_index == release_order.len()
+        if completed_or_missed_count == jobs.len()
+            && next_release_index == release_order.len()
         {
             break;
         }
@@ -430,16 +448,17 @@ fn run_schedule(
         let Some(next_ns) = next_event_time(
             now_ns,
             jobs,
-            &states,
             &release_order,
             next_release_index,
             &ready,
+            &running,
             windows,
         ) else {
             // No future release, completion, latest-start or capacity
-            // transition remains. Remaining ready work cannot be admitted.
+            // transition remains. Any residual ready work cannot be admitted.
             for priority in &ready {
                 states[priority.5] = JobState::Missed;
+                completed_or_missed_count += 1;
             }
             break;
         };
