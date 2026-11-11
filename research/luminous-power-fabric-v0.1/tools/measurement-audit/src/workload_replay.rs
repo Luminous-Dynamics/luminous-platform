@@ -683,8 +683,9 @@ pub fn evaluate_workload_replay(
     let mut positive_delays = Vec::new();
     let mut deferred_and_completed_job_count = 0_usize;
     let mut deferred_and_completed_work_units = 0_u64;
-    let mut recovery_tail_after_last_dispatch_ns = None;
     let last_dispatch_end_ns = dispatch_windows.last().map(|window| window.end_ns);
+    let mut recovery_tail_after_last_dispatch_ns =
+        last_dispatch_end_ns.map(|_| 0_u64);
 
     for index in 0..jobs.len() {
         let baseline_times = match baseline_states[index] {
@@ -1017,9 +1018,14 @@ mod tests {
             gpu_job("batch-a", WorkloadClass::Deferrable, 0, 10, 30, 5, 2, 1),
             gpu_job("batch-b", WorkloadClass::Deferrable, 0, 15, 35, 5, 2, 1),
         ];
-        let report =
-            evaluate_workload_replay(contract(), jobs, vec![window("dispatch", 0, 10, 0)])
-                .unwrap();
+        let mut two_gpu_contract = contract();
+        two_gpu_contract.full_resource_capacity.gpu_units = 2;
+        let report = evaluate_workload_replay(
+            two_gpu_contract,
+            jobs,
+            vec![window("dispatch", 0, 10, 0)],
+        )
+        .unwrap();
         assert_eq!(report.dispatch_constrained.completed_job_count, 2);
         assert_eq!(report.dispatch_constrained.completed_useful_work_units, 2);
         assert_eq!(report.job_results[0].dispatch_start_ns, Some(10));
