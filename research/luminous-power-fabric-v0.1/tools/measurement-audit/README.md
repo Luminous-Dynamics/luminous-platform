@@ -539,3 +539,5 @@ The current v0.1 module only applies caller-declared fixed offsets; it does not 
 Fifteen synthetic Rust tests are authored but not executed. No physical multi-site traces, licensed corpus, compiler, formatter, linter, runtime benchmark or field result is claimed.
 
 P90 tail co-exceedance is returned as `None` unless the aggregation has at least the contract's 100-sample minimum tail-support threshold. The ordinary minimum sample count may be lower for deterministic alignment and arithmetic fixtures, but those small traces cannot be misrepresented as supported tail statistics. Lag-duration arithmetic is range-checked before conversion to signed nanoseconds.
+
+Every aggregate timestamp now carries a canonical per-site contribution vector with site ID, input power, state label and the exact source-sample evidence ID. The sum of these contributions is the emitted aggregate power at that timestamp, enabling an independent consumer to reconstruct the full aggregate row-by-row without inferring source-row alignment.
