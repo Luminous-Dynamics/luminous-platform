@@ -43,6 +43,7 @@ pub struct SitePowerTrace {
     pub workload_contract_id: String,
     pub orchestration_domain_id: String,
     pub state_mapper_id: String,
+    pub state_mapping_evidence_id: String,
     pub source_clock_id: String,
     pub source_time_origin_id: String,
     pub aligned_clock_id: String,
@@ -61,6 +62,7 @@ pub struct SitePowerTrace {
 pub struct MultiSiteAggregationContract {
     pub aggregation_id: String,
     pub parent_topology_id: String,
+    pub parent_topology_evidence_id: String,
     pub region_id: String,
     pub common_clock_id: String,
     pub common_time_origin_id: String,
@@ -78,6 +80,7 @@ impl MultiSiteAggregationContract {
         for (value, field) in [
             (self.aggregation_id.as_str(), "aggregation_id"),
             (self.parent_topology_id.as_str(), "parent_topology_id"),
+            (self.parent_topology_evidence_id.as_str(), "parent_topology_evidence_id"),
             (self.region_id.as_str(), "region_id"),
             (self.common_clock_id.as_str(), "common_clock_id"),
             (self.common_time_origin_id.as_str(), "common_time_origin_id"),
@@ -190,6 +193,7 @@ pub struct MultiSiteAggregationReport {
     pub source_run_ids: Vec<String>,
     pub source_session_ids: Vec<String>,
     pub source_trace_evidence_ids: Vec<String>,
+    pub source_state_mapping_evidence_ids: Vec<String>,
     pub clock_alignment_evidence_ids: Vec<String>,
     pub claim_ceiling: &'static str,
 }
@@ -226,6 +230,7 @@ fn validate_site_trace(
         (trace.workload_contract_id.as_str(), "workload_contract_id"),
         (trace.orchestration_domain_id.as_str(), "orchestration_domain_id"),
         (trace.state_mapper_id.as_str(), "state_mapper_id"),
+        (trace.state_mapping_evidence_id.as_str(), "state_mapping_evidence_id"),
         (trace.source_clock_id.as_str(), "source_clock_id"),
         (trace.source_time_origin_id.as_str(), "source_time_origin_id"),
         (trace.aligned_clock_id.as_str(), "aligned_clock_id"),
@@ -382,7 +387,9 @@ pub fn aggregate_aligned_sites(
     let mut source_run_ids = Vec::with_capacity(traces.len());
     let mut source_session_ids = Vec::with_capacity(traces.len());
     let mut source_trace_evidence_ids = Vec::with_capacity(traces.len());
+    let mut source_state_mapping_evidence_ids = Vec::with_capacity(traces.len());
     let mut clock_alignment_evidence_ids = Vec::with_capacity(traces.len());
+    let mut alignment_uncertainties = Vec::with_capacity(traces.len());
 
     for trace in &ordered_traces {
         if trace.evidence_class != evidence_class {
@@ -394,6 +401,7 @@ pub fn aggregate_aligned_sites(
             return Err(AuditError(format!("duplicate site ID {:?}", trace.site_id)));
         }
         let times = validate_site_trace(&contract, trace)?;
+        alignment_uncertainties.push(trace.clock_alignment_uncertainty_ns);
         if let Some(reference) = &aligned_times {
             if times != *reference {
                 return Err(AuditError(format!(
@@ -420,7 +428,21 @@ pub fn aggregate_aligned_sites(
         source_run_ids.push(trace.run_id.clone());
         source_session_ids.push(trace.session_id.clone());
         source_trace_evidence_ids.push(trace.trace_evidence_id.clone());
+        source_state_mapping_evidence_ids.push(trace.state_mapping_evidence_id.clone());
         clock_alignment_evidence_ids.push(trace.clock_alignment_evidence_id.clone());
+    }
+    for first in 0..alignment_uncertainties.len() {
+        for second in first + 1..alignment_uncertainties.len() {
+            let worst_case_pairwise = alignment_uncertainties[first]
+                .checked_add(alignment_uncertainties[second])
+                .ok_or_else(|| AuditError("pairwise clock uncertainty overflowed".to_string()))?;
+            if worst_case_pairwise > contract.maximum_alignment_uncertainty_ns {
+                return Err(AuditError(format!(
+                    "pairwise clock-alignment uncertainty for sites {:?} and {:?} exceeds the contract limit",
+                    source_site_ids[first], source_site_ids[second]
+                )));
+            }
+        }
     }
 
     let times = aligned_times.expect("at least two traces were validated");
@@ -536,6 +558,7 @@ pub fn aggregate_aligned_sites(
         source_run_ids,
         source_session_ids,
         source_trace_evidence_ids,
+        source_state_mapping_evidence_ids,
         clock_alignment_evidence_ids,
         claim_ceiling: match evidence_class {
             TraceEvidenceClass::Measured => "MEASURED_CHILD_TRACE_AGGREGATION_NOT_PCC_QUALIFICATION",
@@ -555,6 +578,7 @@ mod tests {
         MultiSiteAggregationContract {
             aggregation_id: "agg-region-a-v1".to_string(),
             parent_topology_id: "region-a-root".to_string(),
+            parent_topology_evidence_id: "topology-evidence-region-a".to_string(),
             region_id: "region-a".to_string(),
             common_clock_id: "ptp-root-clock".to_string(),
             common_time_origin_id: "epoch-utc-ns".to_string(),
@@ -584,6 +608,7 @@ mod tests {
             workload_contract_id: "workload-contract-v1".to_string(),
             orchestration_domain_id: "shared-serving-domain".to_string(),
             state_mapper_id: "prefill-decode-idle-v1".to_string(),
+            state_mapping_evidence_id: format!("state-map-evidence-{site}"),
             source_clock_id: format!("clock-{site}"),
             source_time_origin_id: format!("source-epoch-{site}"),
             aligned_clock_id: "ptp-root-clock".to_string(),
@@ -624,6 +649,7 @@ mod tests {
         );
         assert_eq!(report.aggregate_peak_power_mw, 450);
         assert_eq!(report.evidence_class, TraceEvidenceClass::Measured);
+        assert_eq!(report.source_state_mapping_evidence_ids[0], "state-map-evidence-site-a");
     }
 
     #[test]
@@ -694,6 +720,17 @@ mod tests {
         let mut second = trace("site-b", 0, &[10, 20, 30, 20, 10]);
         second.clock_alignment_uncertainty_ns = 101;
         assert!(aggregate_aligned_sites(contract(), &[trace("site-a", 0, &[10, 20, 30, 20, 10]), second]).is_err());
+    }
+
+    #[test]
+    fn pairwise_clock_uncertainty_uses_conservative_sum() {
+        let mut first = trace("site-a", 0, &[10, 20, 30, 20, 10]);
+        let mut second = trace("site-b", 0, &[10, 20, 30, 20, 10]);
+        first.clock_alignment_uncertainty_ns = 60;
+        second.clock_alignment_uncertainty_ns = 60;
+        // Each site is below the individual 100 ns limit; their worst-case
+        // relative uncertainty is 120 ns and must be rejected.
+        assert!(aggregate_aligned_sites(contract(), &[first, second]).is_err());
     }
 
     #[test]
