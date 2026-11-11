@@ -281,3 +281,13 @@ Twenty synthetic Rust tests are authored, including a 10,000-job fixture; they a
 
 The implementation does not infer prefill/decode/idle from abstract occupancy, does not synthesize a facility trace, and does not replace measured PCC energy or qualification. Its benchmark and SOTA comparison are specified in [CALIBRATED_WORKLOAD_STATE_POWER_MODEL_BENCHMARK_2026-11-11.md](./CALIBRATED_WORKLOAD_STATE_POWER_MODEL_BENCHMARK_2026-11-11.md). Fifteen synthetic Rust tests are authored but not executed; no physical or licensed trace data and no compile/runtime result are claimed.
  The model rejects training-run prediction targets, requires exact calibration/prediction clock-alignment method identity, and carries the source trace's state-mapping evidence reference into each prediction trace. It now separates held-out validation (`predict_power_trace`) from new operational scenario forecasts (`predict_operational_scenario`); scenario runs cannot reuse training/holdout IDs and cannot be scored as held-out validation.
+
+## Regime-conditioned forecast calibration and monitoring
+
+A new Rust layer follows #401's state-conditioned power model with regime-specific session-level split-conformal interval calibration. It treats a complete acquisition session as the statistical unit, preserves temporal dependence within that session, binds the entire upstream PowerModelContract and refuses calibrated outputs for unknown operating regimes.
+
+The monitor reports whole-session coverage and a Wilson lower bound by regime, with explicit NOMINAL, DEGRADED, INSUFFICIENT_SUPPORT and OUT_OF_DOMAIN statuses. It does not silently adapt the frozen calibrator; a new calibration requires a new revision and disjoint sessions.
+
+This work is motivated by Yao et al.'s 6 November 2026 grid-oriented 448-GPU forecasting benchmark, which reports undercoverage after utilization shifts and shows that independent sampling of marginal forecasts produces unrealistic ramps and reserve costs. The Luminous reproduction plan also records the MIT Supercloud dataset's non-commercial/no-derivatives license and does not import it into commercial product work without rights review.
+
+See [Regime-Conditioned Session Conformal Forecast Calibration](./REGIME_CONDITIONED_SESSION_CONFORMAL_FORECAST_CALIBRATION_2026-11-11.md). Seventeen Rust tests are authored but not executed; no performance or physical qualification is claimed.
