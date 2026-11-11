@@ -805,6 +805,7 @@ fn build_occupancy_timeline(
     states: &[JobState],
     full_capacity: ResourceVector,
     windows: &[DispatchCapacityWindow],
+    apply_dispatch_capacity: bool,
 ) -> Result<Vec<WorkloadOccupancySegment>, AuditError> {
     let mut changes = Vec::new();
     let mut boundaries = Vec::new();
@@ -919,9 +920,13 @@ fn build_occupancy_timeline(
         let active_window = windows
             .get(window_index)
             .filter(|window| window.start_ns <= start_ns && start_ns < window.end_ns);
-        let admission_capacity = active_window
-            .map(|window| window.admission_capacity)
-            .unwrap_or(full_capacity);
+        let admission_capacity = if apply_dispatch_capacity {
+            active_window
+                .map(|window| window.admission_capacity)
+                .unwrap_or(full_capacity)
+        } else {
+            full_capacity
+        };
 
         if !active_resources.fits_within(full_capacity) {
             return Err(AuditError(
@@ -1090,12 +1095,14 @@ pub fn evaluate_workload_replay(
         &baseline_states,
         contract.full_resource_capacity,
         &dispatch_windows,
+        false,
     )?;
     let dispatch_timeline = build_occupancy_timeline(
         &jobs,
         &dispatch_states,
         contract.full_resource_capacity,
         &dispatch_windows,
+        true,
     )?;
     validate_timeline_resource_time_conservation(
         &baseline_timeline,
@@ -1403,6 +1410,12 @@ mod tests {
         assert_eq!(report.dispatch_timeline[0].start_ns, 0);
         assert_eq!(report.dispatch_timeline[0].end_ns, 10);
         assert_eq!(report.dispatch_timeline[0].active_resources.gpu_units, 0);
+        assert_eq!(report.baseline_timeline[0].admission_capacity.gpu_units, 4);
+        assert_eq!(report.dispatch_timeline[0].admission_capacity.gpu_units, 0);
+        assert_eq!(
+            report.baseline_timeline[0].dispatch_window_id.as_deref(),
+            Some("dispatch")
+        );
         assert_eq!(
             report.dispatch_timeline[0].dispatch_window_id.as_deref(),
             Some("dispatch")
