@@ -114,11 +114,12 @@ impl MultiSiteAggregationContract {
             ));
         }
         if self.spectral_segment_length < 4
+            || self.spectral_segment_length > 65_536
             || !self.spectral_segment_length.is_power_of_two()
-            || self.minimum_spectral_segments < 2
+            || self.minimum_spectral_segments < 8
         {
             return Err(AuditError(
-                "Welch segment length must be a power of two >=4 and minimum segment count >=2".to_string(),
+                "Welch segment length must be a power of two in [4, 65536] and minimum segment count >=8".to_string(),
             ));
         }
         if self.maximum_lag_samples > i32::MAX as usize
@@ -828,7 +829,7 @@ mod tests {
             minimum_tail_sample_count: 100,
             maximum_lag_samples: 2,
             spectral_segment_length: 32,
-            minimum_spectral_segments: 3,
+            minimum_spectral_segments: 8,
         }
     }
 
@@ -1071,10 +1072,10 @@ mod tests {
 
     #[test]
     fn welch_spectral_coherence_detects_a_shared_frequency_band() {
-        let left: Vec<u64> = (0..128).map(|index| {
+        let left: Vec<u64> = (0..256).map(|index| {
             (1_000.0 + 100.0 * (2.0 * std::f64::consts::PI * 4.0 * index as f64 / 32.0).sin()).round() as u64
         }).collect();
-        let right: Vec<u64> = (0..128).map(|index| {
+        let right: Vec<u64> = (0..256).map(|index| {
             (1_000.0 + 120.0 * (2.0 * std::f64::consts::PI * 4.0 * index as f64 / 32.0 + 0.4).sin()).round() as u64
         }).collect();
         let report = aggregate_aligned_sites(
@@ -1084,7 +1085,7 @@ mod tests {
         let shared_bin = report.spectral_coherence.iter()
             .find(|metric| (metric.frequency_hz - 125_000.0).abs() < 1.0)
             .expect("bin 4 at the declared sample rate must be present");
-        assert_eq!(shared_bin.segment_count, 7);
+        assert_eq!(shared_bin.segment_count, 15);
         assert!(shared_bin.coherence.unwrap() > 0.99);
     }
 
