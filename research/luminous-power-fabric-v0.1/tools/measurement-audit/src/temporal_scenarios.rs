@@ -79,6 +79,10 @@ pub struct ScenarioGenerationContract {
     /// independent-quantile negative-control arm.
     pub residual_pool_evidence_id: Option<String>,
     pub minimum_residual_trajectory_count: usize,
+    /// Minimum separation between historical forecast origins. For the
+    /// dependence-preserving arms this must be at least one full target horizon
+    /// so sampled historical target windows do not overlap.
+    pub minimum_residual_origin_separation_ns: u64,
 }
 
 impl ScenarioGenerationContract {
@@ -143,6 +147,7 @@ impl ScenarioGenerationContract {
         match self.generator_kind {
             ScenarioGeneratorKind::IndependentQuantileSampling => {
                 if self.minimum_residual_trajectory_count != 0
+                    || self.minimum_residual_origin_separation_ns != 0
                     || self.residual_pool_evidence_id.is_some()
                 {
                     return Err(AuditError(
@@ -151,7 +156,11 @@ impl ScenarioGenerationContract {
                 }
             }
             ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap => {
+                let horizon_duration_ns = (self.horizon_steps as u64)
+                    .checked_mul(self.step_period_ns)
+                    .ok_or_else(|| AuditError("scenario horizon duration overflowed".to_string()))?;
                 if self.minimum_residual_trajectory_count < 2
+                    || self.minimum_residual_origin_separation_ns < horizon_duration_ns
                     || self
                         .residual_pool_evidence_id
                         .as_deref()
@@ -164,7 +173,11 @@ impl ScenarioGenerationContract {
                 }
             }
             ScenarioGeneratorKind::SchaakeShuffle => {
+                let horizon_duration_ns = (self.horizon_steps as u64)
+                    .checked_mul(self.step_period_ns)
+                    .ok_or_else(|| AuditError("scenario horizon duration overflowed".to_string()))?;
                 if self.minimum_residual_trajectory_count < self.scenario_count
+                    || self.minimum_residual_origin_separation_ns < horizon_duration_ns
                     || self
                         .residual_pool_evidence_id
                         .as_deref()
@@ -439,7 +452,7 @@ fn validate_residual_trajectory(
 }
 
 fn next_random(state: &mut u64) -> u64 {
-    *state = state.wrapping_add(0x9e37_79b9_7f4a_7c15);
+    *state = (*state).wrapping_add(0x9e37_79b9_7f4a_7c15);
     let mut value = *state;
     value = (value ^ (value >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
     value = (value ^ (value >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
@@ -702,6 +715,7 @@ pub fn generate_forecast_scenarios(
                     required_pool_size
                 )));
             }
+            let mut ordered_origins: Vec<u64> = Vec::with_capacity(residual_trajectories.len());
             for residual in residual_trajectories {
                 validate_residual_trajectory(&contract, forecast, residual)?;
                 if !residual_ids.insert(residual.residual_id.as_str())
@@ -709,6 +723,18 @@ pub fn generate_forecast_scenarios(
                 {
                     return Err(AuditError(
                         "residual pool contains duplicate trajectory or origin identities"
+                            .to_string(),
+                    ));
+                }
+                ordered_origins.push(residual.origin_timestamp_ns);
+            }
+            ordered_origins.sort_unstable();
+            for pair in ordered_origins.windows(2) {
+                if pair[1].checked_sub(pair[0]).is_none_or(|separation| {
+                    separation < contract.minimum_residual_origin_separation_ns
+                }) {
+                    return Err(AuditError(
+                        "residual trajectories overlap the frozen historical-origin separation"
                             .to_string(),
                     ));
                 }
@@ -1216,6 +1242,7 @@ mod tests {
             deterministic_seed: 42,
             residual_pool_evidence_id: residual_method.then(|| "residual-pool-evidence".to_string()),
             minimum_residual_trajectory_count: if residual_method { 3 } else { 0 },
+            minimum_residual_origin_separation_ns: if residual_method { 30 } else { 0 },
         }
     }
 
@@ -1337,6 +1364,40 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn residual_bootstrap_samples_complete_trajectories_with_replacement() {
+        let mut cfg = contract(ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap);
+        cfg.scenario_count = 12;
+        cfg.minimum_residual_trajectory_count = 3;
+        let result = generate_forecast_scenarios(cfg, &forecast(), &residuals()).unwrap();
+        assert_eq!(result.scenarios.len(), 12);
+        assert!(result.selected_residual_ids.iter().collect::<HashSet<_>>().len() < 12);
+        for scenario in &result.scenarios {
+            assert_eq!(scenario.source_sample_evidence_ids.len(), 3);
+            let residual_id = scenario.source_residual_id.as_ref().unwrap();
+            let source = residuals()
+                .into_iter()
+                .find(|item| &item.residual_id == residual_id)
+                .unwrap();
+            assert_eq!(
+                scenario.source_sample_evidence_ids,
+                source.source_sample_evidence_ids
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_overlapping_historical_residual_target_windows() {
+        let mut pool = residuals();
+        pool[1].origin_timestamp_ns = 1_010;
+        pool[1].target_window_end_ns = 1_040;
+        assert!(generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap),
+            &forecast(),
+            &pool,
+        ).is_err());
     }
 
     #[test]
