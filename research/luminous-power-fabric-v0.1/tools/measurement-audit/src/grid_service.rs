@@ -595,7 +595,7 @@ mod tests {
             committed_compute_reduction_w: 150.0,
             minimum_event_count: 30,
             minimum_success_probability: 0.90,
-            confidence_z_score: 1.645,
+            confidence_z_score: 1.281_551_565_5,
             minimum_useful_work_retention_fraction: 0.99,
             maximum_p99_latency_increase_fraction: 0.05,
             maximum_p99_ttft_increase_fraction: 0.05,
@@ -879,11 +879,15 @@ mod tests {
     }
 
     #[test]
-    fn wilson_bound_rejects_invalid_counts_and_is_below_observed_rate() {
+    fn wilson_bound_rejects_invalid_counts_and_matches_one_sided_90_percent_reference() {
         assert!(wilson_lower_bound(2, 1, 1.645).is_none());
         assert!(wilson_lower_bound(1, 1, f64::NAN).is_none());
-        let lower = wilson_lower_bound(29, 30, 1.645).unwrap();
-        assert!(lower < 29.0 / 30.0);
-        assert!(lower > 0.0);
+        let one_sided_90 = 1.281_551_565_5;
+        let all_pass_lower = wilson_lower_bound(30, 30, one_sided_90).unwrap();
+        assert!((all_pass_lower - 0.948_095_727_789_154_3).abs() < 1e-12);
+        let one_failure_lower = wilson_lower_bound(29, 30, one_sided_90).unwrap();
+        assert!((one_failure_lower - 0.894_913_883_240_079_5).abs() < 1e-12);
+        assert!(one_failure_lower < 0.90);
+        assert!(one_failure_lower > 0.0);
     }
 }
