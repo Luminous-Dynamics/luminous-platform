@@ -27,12 +27,16 @@ pub struct ClusteredReliabilityContract {
     pub target_lower_quantile: f64,
     /// One-sided confidence required for the distribution-free quantile bound.
     pub one_sided_confidence: f64,
+    /// Explicit normal-score z used for the cluster-success Wilson bound.
+    /// Kept separate from confidence so the source event contract cannot
+    /// silently override the cluster analysis's declared confidence level.
+    pub success_confidence_z_score: f64,
     /// All clusters in this analysis use the same observation-window duration,
     /// so cluster minima have comparable exposure.
     pub cluster_window_duration_ns: u64,
-    /// Minimum dispatch count in each cluster; avoids comparing minima over
-    /// materially different event counts.
-    pub minimum_events_per_cluster: usize,
+    /// Exact dispatch count per cluster. Exact equality keeps cluster minima
+    /// comparable when events within each cluster may be dependent.
+    pub events_per_cluster: usize,
     /// Minimum gap between cluster windows. Derive it from the sampling design;
     /// non-overlap alone does not prove statistical independence.
     pub minimum_cluster_separation_ns: u64,
@@ -96,9 +100,18 @@ impl ClusteredReliabilityContract {
             ));
         }
 
-        if self.cluster_window_duration_ns == 0 || self.minimum_events_per_cluster == 0 {
+        if !self.success_confidence_z_score.is_finite()
+            || self.success_confidence_z_score <= 0.0
+            || !(self.success_confidence_z_score * self.success_confidence_z_score).is_finite()
+        {
             return Err(AuditError(
-                "cluster window duration and minimum events per cluster must be positive"
+                "cluster success Wilson z-score must be finite, positive and square safely"
+                    .to_string(),
+            ));
+        }
+        if self.cluster_window_duration_ns == 0 || self.events_per_cluster == 0 {
+            return Err(AuditError(
+                "cluster window duration and exact events per cluster must be positive"
                     .to_string(),
             ));
         }
@@ -514,12 +527,12 @@ pub fn evaluate_clustered_reliability(
             events.push(event);
         }
 
-        if events.len() < contract.minimum_events_per_cluster {
+        if events.len() != contract.events_per_cluster {
             return Err(AuditError(format!(
-                "cluster {:?} has {} events; minimum is {}",
+                "cluster {:?} has {} events; exact frozen count is {}",
                 cluster.cluster_id,
                 events.len(),
-                contract.minimum_events_per_cluster
+                contract.events_per_cluster
             )));
         }
 
@@ -599,7 +612,7 @@ pub fn evaluate_clustered_reliability(
                 wilson_lower_bound(
                     successful_cluster_count,
                     cluster_count,
-                    source.contract.confidence_z_score,
+                    contract.success_confidence_z_score,
                 )
             } else {
                 None
@@ -819,8 +832,9 @@ mod tests {
             required_strata: required_strata.iter().map(|value| (*value).to_string()).collect(),
             target_lower_quantile: 0.10,
             one_sided_confidence: 0.90,
+            success_confidence_z_score: 1.281_551_565_5,
             cluster_window_duration_ns: 100_000_000_000,
-            minimum_events_per_cluster: 1,
+            events_per_cluster: 1,
             minimum_cluster_separation_ns: if independent { 1_000_000_000 } else { 0 },
         }
     }
@@ -925,8 +939,9 @@ mod tests {
     fn thirty_correlated_events_in_three_clusters_do_not_count_as_thirty_trials() {
         let sizes = vec![10, 10, 10];
         let strata = one_stratum(sizes.len());
-        let (source, contract, clusters, assignments) =
+        let (source, mut contract, clusters, assignments) =
             fixture(&sizes, None, &strata, true);
+        contract.events_per_cluster = 10;
         let result =
             evaluate_clustered_reliability(&source, contract, clusters, assignments).unwrap();
         assert!(!result.commitment_qualified);
@@ -941,10 +956,11 @@ mod tests {
 
     #[test]
     fn one_failed_event_fails_its_entire_cluster() {
-        let sizes = vec![2, 2, 1];
+        let sizes = vec![2, 2, 2];
         let strata = one_stratum(sizes.len());
-        let (source, contract, clusters, assignments) =
+        let (source, mut contract, clusters, assignments) =
             fixture(&sizes, Some(0), &strata, true);
+        contract.events_per_cluster = 2;
         let result =
             evaluate_clustered_reliability(&source, contract, clusters, assignments).unwrap();
         let failed_cluster = result
@@ -1029,12 +1045,22 @@ mod tests {
     }
 
     #[test]
-    fn rejects_cluster_below_minimum_event_count() {
+    fn rejects_cluster_event_count_different_from_frozen_contract() {
         let sizes = vec![1; 30];
         let strata = one_stratum(sizes.len());
         let (source, mut contract, clusters, assignments) =
             fixture(&sizes, None, &strata, true);
-        contract.minimum_events_per_cluster = 2;
+        contract.events_per_cluster = 2;
+        assert!(evaluate_clustered_reliability(&source, contract, clusters, assignments).is_err());
+    }
+
+    #[test]
+    fn rejects_invalid_cluster_success_wilson_z_score() {
+        let sizes = vec![1; 30];
+        let strata = one_stratum(sizes.len());
+        let (source, mut contract, clusters, assignments) =
+            fixture(&sizes, None, &strata, true);
+        contract.success_confidence_z_score = f64::NAN;
         assert!(evaluate_clustered_reliability(&source, contract, clusters, assignments).is_err());
     }
 
