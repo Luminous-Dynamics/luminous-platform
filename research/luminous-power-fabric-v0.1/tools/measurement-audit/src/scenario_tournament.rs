@@ -1829,11 +1829,10 @@ mod tests {
     #[test]
     fn rejects_duplicate_measurement_source_evidence_across_episodes() {
         let mut input = clusters(4, true);
-        input[1].episodes[0].evaluations[0].measured_sample_evidence_ids[0] =
+        let reused_sample_id =
             input[0].episodes[0].evaluations[0].measured_sample_evidence_ids[0].clone();
         for report in &mut input[1].episodes[0].evaluations {
-            report.measured_sample_evidence_ids[0] =
-                input[0].episodes[0].evaluations[0].measured_sample_evidence_ids[0].clone();
+            report.measured_sample_evidence_ids[0] = reused_sample_id.clone();
         }
         assert!(evaluate_scenario_tournament(contract(), input).is_err());
     }
@@ -1855,10 +1854,9 @@ mod tests {
     #[test]
     fn rejects_forecast_origin_outside_preregistered_episode_window() {
         let mut input = clusters(4, true);
-        input[0].episodes[0].evaluations[0].forecast_origin_timestamp_ns =
-            input[0].episodes[0].window_end_ns;
+        let invalid_timestamp = input[0].episodes[0].window_end_ns;
         for report in &mut input[0].episodes[0].evaluations {
-            report.forecast_origin_timestamp_ns = input[0].episodes[0].window_end_ns;
+            report.forecast_origin_timestamp_ns = invalid_timestamp;
         }
         assert!(evaluate_scenario_tournament(contract(), input).is_err());
     }
