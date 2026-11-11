@@ -60,6 +60,13 @@ pub struct WorkloadReplayContract {
     pub normalization_id: String,
     pub scheduling_policy_id: String,
     pub work_unit: String,
+    /// Immutable ID for the monotonic clock used by all replay timestamps.
+    pub replay_clock_id: String,
+    /// Identifies the epoch/origin from which replay timestamps are measured.
+    pub replay_time_origin_id: String,
+    /// Caller-supplied evidence reference to the digest of the serialized schedule artifact.
+    /// This module preserves but does not compute or authenticate the digest.
+    pub schedule_digest_reference: String,
     pub full_resource_capacity: ResourceVector,
 }
 
@@ -78,6 +85,9 @@ impl WorkloadReplayContract {
             (self.normalization_id.as_str(), "normalization_id"),
             (self.scheduling_policy_id.as_str(), "scheduling_policy_id"),
             (self.work_unit.as_str(), "work_unit"),
+            (self.replay_clock_id.as_str(), "replay_clock_id"),
+            (self.replay_time_origin_id.as_str(), "replay_time_origin_id"),
+            (self.schedule_digest_reference.as_str(), "schedule_digest_reference"),
         ] {
             if value.trim().is_empty() {
                 return Err(AuditError(format!(
@@ -193,6 +203,86 @@ enum JobState {
     Missed,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct ResourceTimeIntegral {
+    pub cpu_millicore_ns: u128,
+    pub gpu_unit_ns: u128,
+    pub memory_mib_ns: u128,
+}
+
+impl ResourceTimeIntegral {
+    fn add_scaled(&mut self, resources: ResourceVector, duration_ns: u64) -> Result<(), AuditError> {
+        let duration = duration_ns as u128;
+        self.cpu_millicore_ns = self.cpu_millicore_ns
+            .checked_add((resources.cpu_millicores as u128).checked_mul(duration)
+                .ok_or_else(|| AuditError("CPU resource-time multiplication overflowed".to_string()))?)
+            .ok_or_else(|| AuditError("CPU resource-time sum overflowed".to_string()))?;
+        self.gpu_unit_ns = self.gpu_unit_ns
+            .checked_add((resources.gpu_units as u128).checked_mul(duration)
+                .ok_or_else(|| AuditError("GPU resource-time multiplication overflowed".to_string()))?)
+            .ok_or_else(|| AuditError("GPU resource-time sum overflowed".to_string()))?;
+        self.memory_mib_ns = self.memory_mib_ns
+            .checked_add((resources.memory_mib as u128).checked_mul(duration)
+                .ok_or_else(|| AuditError("memory resource-time multiplication overflowed".to_string()))?)
+            .ok_or_else(|| AuditError("memory resource-time sum overflowed".to_string()))?;
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct AdmissionRestrictionIntegral {
+    pub cpu_millicore_ns: u128,
+    pub gpu_unit_ns: u128,
+    pub memory_mib_ns: u128,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkloadOccupancySegment {
+    pub replay_contract_id: String,
+    pub replay_clock_id: String,
+    pub replay_time_origin_id: String,
+    /// Half-open interval [start_ns, end_ns).
+    pub start_ns: u64,
+    pub end_ns: u64,
+    pub active_resources: ResourceVector,
+    pub active_job_count: usize,
+    pub active_non_deferrable_job_count: usize,
+    pub active_deferrable_job_count: usize,
+    pub full_resource_capacity: ResourceVector,
+    pub admission_capacity: ResourceVector,
+    pub dispatch_window_id: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkloadCompletionEvent {
+    pub replay_contract_id: String,
+    pub workload_id: String,
+    pub replay_clock_id: String,
+    pub replay_time_origin_id: String,
+    pub completion_time_ns: u64,
+    pub job_id: String,
+    pub source_evidence_id: String,
+    pub class: WorkloadClass,
+    pub useful_work_units: u64,
+    pub work_unit: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkloadPowerJoinReference {
+    pub replay_contract_id: String,
+    pub workload_id: String,
+    pub dataset_id: String,
+    pub dataset_version: String,
+    pub dataset_evidence_id: String,
+    pub normalization_id: String,
+    pub scheduling_policy_id: String,
+    pub replay_clock_id: String,
+    pub replay_time_origin_id: String,
+    pub schedule_digest_reference: String,
+    pub work_unit: String,
+    pub claim_ceiling: &'static str,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorkloadRunSummary {
     pub total_job_count: usize,
@@ -203,8 +293,10 @@ pub struct WorkloadRunSummary {
     pub total_useful_work_units: u64,
     pub completed_useful_work_units: u64,
     pub missed_useful_work_units: u64,
-    /// GPU-capacity-unit nanoseconds actually occupied by scheduled jobs
-    /// inside the declared dispatch windows. This is not energy.
+    /// CPU/GPU/memory resource occupancy integrated only over dispatch windows.
+    /// These are resource-unit nanoseconds, never watts or energy.
+    pub resource_time_during_dispatch: ResourceTimeIntegral,
+    /// Retained convenience field; identical to resource_time_during_dispatch.gpu_unit_ns.
     pub gpu_resource_time_during_dispatch_unit_ns: u128,
 }
 
@@ -229,6 +321,7 @@ pub struct WorkloadJobReplayResult {
 #[derive(Debug, Clone, PartialEq)]
 pub struct WorkloadReplayReport {
     pub contract: WorkloadReplayContract,
+    pub power_join_reference: WorkloadPowerJoinReference,
     pub baseline: WorkloadRunSummary,
     pub dispatch_constrained: WorkloadRunSummary,
     pub useful_work_retention_fraction: Option<f64>,
@@ -250,6 +343,14 @@ pub struct WorkloadReplayReport {
     /// None means candidate GPU resource-time in dispatch windows exceeded
     /// baseline resource-time; both raw values remain available.
     pub gpu_resource_time_reduction_unit_ns: Option<u128>,
+    pub admission_capacity_restriction: AdmissionRestrictionIntegral,
+    /// Exact piecewise-constant occupancy timeline for the baseline schedule.
+    pub baseline_timeline: Vec<WorkloadOccupancySegment>,
+    /// Exact piecewise-constant occupancy timeline for the dispatch schedule.
+    pub dispatch_timeline: Vec<WorkloadOccupancySegment>,
+    /// Timestamped accepted-work completions for downstream time-bin integration.
+    pub baseline_completions: Vec<WorkloadCompletionEvent>,
+    pub dispatch_completions: Vec<WorkloadCompletionEvent>,
     pub job_results: Vec<WorkloadJobReplayResult>,
     pub claim_ceiling: &'static str,
 }
@@ -492,12 +593,12 @@ fn run_schedule(
     Ok(states)
 }
 
-fn gpu_resource_time_during_windows(
+fn resource_time_during_windows(
     jobs: &[WorkloadJob],
     states: &[JobState],
     windows: &[DispatchCapacityWindow],
-) -> Result<u128, AuditError> {
-    let mut total = 0_u128;
+) -> Result<ResourceTimeIntegral, AuditError> {
+    let mut total = ResourceTimeIntegral::default();
     for (job, state) in jobs.iter().zip(states.iter()) {
         let JobState::Completed {
             start_ns,
@@ -506,9 +607,6 @@ fn gpu_resource_time_during_windows(
         else {
             continue;
         };
-        if job.resource_demand.gpu_units == 0 {
-            continue;
-        }
         let first_window = windows.partition_point(|window| window.end_ns <= start_ns);
         for window in &windows[first_window..] {
             if window.start_ns >= finish_ns {
@@ -517,15 +615,7 @@ fn gpu_resource_time_during_windows(
             let overlap_start = start_ns.max(window.start_ns);
             let overlap_end = finish_ns.min(window.end_ns);
             if overlap_end > overlap_start {
-                let duration_ns = (overlap_end - overlap_start) as u128;
-                let resource_time = (job.resource_demand.gpu_units as u128)
-                    .checked_mul(duration_ns)
-                    .ok_or_else(|| {
-                        AuditError("GPU resource-time integral overflowed".to_string())
-                    })?;
-                total = total.checked_add(resource_time).ok_or_else(|| {
-                    AuditError("GPU resource-time sum overflowed".to_string())
-                })?;
+                total.add_scaled(job.resource_demand, overlap_end - overlap_start)?;
             }
         }
     }
@@ -546,6 +636,7 @@ fn run_summary(
         total_useful_work_units: 0,
         completed_useful_work_units: 0,
         missed_useful_work_units: 0,
+        resource_time_during_dispatch: ResourceTimeIntegral::default(),
         gpu_resource_time_during_dispatch_unit_ns: 0,
     };
 
@@ -588,8 +679,10 @@ fn run_summary(
             }
         }
     }
+    summary.resource_time_during_dispatch =
+        resource_time_during_windows(jobs, states, windows_for_measurement)?;
     summary.gpu_resource_time_during_dispatch_unit_ns =
-        gpu_resource_time_during_windows(jobs, states, windows_for_measurement)?;
+        summary.resource_time_during_dispatch.gpu_unit_ns;
     Ok(summary)
 }
 
@@ -602,31 +695,376 @@ fn nearest_rank_positive(values: &mut [u64], quantile: f64) -> Option<u64> {
     values.get(rank.saturating_sub(1)).copied()
 }
 
-fn gpu_admission_restriction_time(
+fn admission_capacity_restriction_time(
     full_capacity: ResourceVector,
     windows: &[DispatchCapacityWindow],
-) -> Result<(u128, u128, u64), AuditError> {
-    let mut restriction = 0_u128;
+) -> Result<(AdmissionRestrictionIntegral, u128, u64), AuditError> {
+    let mut restriction = AdmissionRestrictionIntegral::default();
     let mut total_duration = 0_u128;
     let mut longest = 0_u64;
     for window in windows {
-        let duration = window.duration_ns();
-        let withheld_gpu_units =
-            full_capacity.gpu_units - window.admission_capacity.gpu_units;
-        let units_ns = (withheld_gpu_units as u128)
-            .checked_mul(duration as u128)
-            .ok_or_else(|| {
-                AuditError("GPU admission restriction integral overflowed".to_string())
-            })?;
-        restriction = restriction.checked_add(units_ns).ok_or_else(|| {
-            AuditError("GPU admission restriction sum overflowed".to_string())
-        })?;
+        let duration = window.duration_ns() as u128;
+        let withheld_cpu = full_capacity.cpu_millicores - window.admission_capacity.cpu_millicores;
+        let withheld_gpu = full_capacity.gpu_units - window.admission_capacity.gpu_units;
+        let withheld_memory = full_capacity.memory_mib - window.admission_capacity.memory_mib;
+
+        restriction.cpu_millicore_ns = restriction.cpu_millicore_ns
+            .checked_add((withheld_cpu as u128).checked_mul(duration)
+                .ok_or_else(|| AuditError("CPU admission restriction overflowed".to_string()))?)
+            .ok_or_else(|| AuditError("CPU admission restriction sum overflowed".to_string()))?;
+        restriction.gpu_unit_ns = restriction.gpu_unit_ns
+            .checked_add((withheld_gpu as u128).checked_mul(duration)
+                .ok_or_else(|| AuditError("GPU admission restriction overflowed".to_string()))?)
+            .ok_or_else(|| AuditError("GPU admission restriction sum overflowed".to_string()))?;
+        restriction.memory_mib_ns = restriction.memory_mib_ns
+            .checked_add((withheld_memory as u128).checked_mul(duration)
+                .ok_or_else(|| AuditError("memory admission restriction overflowed".to_string()))?)
+            .ok_or_else(|| AuditError("memory admission restriction sum overflowed".to_string()))?;
+
         total_duration = total_duration
-            .checked_add(duration as u128)
+            .checked_add(duration)
             .ok_or_else(|| AuditError("dispatch duration sum overflowed".to_string()))?;
-        longest = longest.max(duration);
+        longest = longest.max(window.duration_ns());
     }
     Ok((restriction, total_duration, longest))
+}
+
+#[derive(Debug, Clone, Copy)]
+struct TimelineJobChange {
+    timestamp_ns: u64,
+    job_index: usize,
+    is_start: bool,
+}
+
+fn validate_timeline_segments(
+    segments: &[WorkloadOccupancySegment],
+) -> Result<(), AuditError> {
+    let mut previous_end_ns = None;
+    let mut identity: Option<(&str, &str, &str)> = None;
+    for segment in segments {
+        if segment.replay_contract_id.trim().is_empty()
+            || segment.replay_clock_id.trim().is_empty()
+            || segment.replay_time_origin_id.trim().is_empty()
+        {
+            return Err(AuditError(
+                "timeline segment is missing replay contract or clock identity".to_string(),
+            ));
+        }
+        let current_identity = (
+            segment.replay_contract_id.as_str(),
+            segment.replay_clock_id.as_str(),
+            segment.replay_time_origin_id.as_str(),
+        );
+        if identity.is_some_and(|expected| expected != current_identity) {
+            return Err(AuditError(
+                "timeline segments mix replay contracts or clock origins".to_string(),
+            ));
+        }
+        identity = Some(current_identity);
+        if segment.end_ns <= segment.start_ns {
+            return Err(AuditError(
+                "occupancy timeline contains a non-positive interval".to_string(),
+            ));
+        }
+        if previous_end_ns.is_some_and(|end| segment.start_ns != end) {
+            return Err(AuditError(
+                "occupancy timeline intervals must be ordered, contiguous and non-overlapping"
+                    .to_string(),
+            ));
+        }
+        if !segment.active_resources.fits_within(segment.full_resource_capacity)
+            || !segment.admission_capacity.fits_within(segment.full_resource_capacity)
+        {
+            return Err(AuditError(
+                "occupancy or admission capacity exceeds the declared full resource envelope"
+                    .to_string(),
+            ));
+        }
+        if segment.active_job_count
+            != segment.active_non_deferrable_job_count + segment.active_deferrable_job_count
+        {
+            return Err(AuditError(
+                "occupancy timeline active job-class counts do not reconcile".to_string(),
+            ));
+        }
+        if segment.dispatch_window_id.is_none()
+            && segment.admission_capacity != segment.full_resource_capacity
+        {
+            return Err(AuditError(
+                "non-dispatch timeline segment must use full admission capacity".to_string(),
+            ));
+        }
+        previous_end_ns = Some(segment.end_ns);
+    }
+    Ok(())
+}
+
+fn timeline_resource_time_during_dispatch(
+    segments: &[WorkloadOccupancySegment],
+) -> Result<ResourceTimeIntegral, AuditError> {
+    let mut total = ResourceTimeIntegral::default();
+    for segment in segments {
+        if segment.dispatch_window_id.is_some() {
+            total.add_scaled(segment.active_resources, segment.end_ns - segment.start_ns)?;
+        }
+    }
+    Ok(total)
+}
+
+fn validate_timeline_resource_time_conservation(
+    segments: &[WorkloadOccupancySegment],
+    expected: ResourceTimeIntegral,
+) -> Result<(), AuditError> {
+    validate_timeline_segments(segments)?;
+    let actual = timeline_resource_time_during_dispatch(segments)?;
+    if actual != expected {
+        return Err(AuditError(format!(
+            "timeline resource-time does not reconcile: expected {:?}, observed {:?}",
+            expected, actual
+        )));
+    }
+    Ok(())
+}
+
+fn build_occupancy_timeline(
+    jobs: &[WorkloadJob],
+    states: &[JobState],
+    contract: &WorkloadReplayContract,
+    windows: &[DispatchCapacityWindow],
+    apply_dispatch_capacity: bool,
+) -> Result<Vec<WorkloadOccupancySegment>, AuditError> {
+    let full_capacity = contract.full_resource_capacity;
+    let mut changes = Vec::new();
+    let mut boundaries = Vec::new();
+
+    for (index, state) in states.iter().enumerate() {
+        if let JobState::Completed {
+            start_ns,
+            finish_ns,
+        } = *state
+        {
+            changes.push(TimelineJobChange {
+                timestamp_ns: finish_ns,
+                job_index: index,
+                is_start: false,
+            });
+            changes.push(TimelineJobChange {
+                timestamp_ns: start_ns,
+                job_index: index,
+                is_start: true,
+            });
+            boundaries.push(start_ns);
+            boundaries.push(finish_ns);
+        }
+    }
+    for window in windows {
+        boundaries.push(window.start_ns);
+        boundaries.push(window.end_ns);
+    }
+    if boundaries.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    changes.sort_by(|left, right| {
+        left.timestamp_ns
+            .cmp(&right.timestamp_ns)
+            // Half-open interval rule: finish jobs before starting jobs at t.
+            .then_with(|| left.is_start.cmp(&right.is_start))
+            .then_with(|| left.job_index.cmp(&right.job_index))
+    });
+    boundaries.sort_unstable();
+    boundaries.dedup();
+
+    let mut segments = Vec::with_capacity(boundaries.len().saturating_sub(1));
+    let mut change_index = 0_usize;
+    let mut active_resources = ResourceVector::default();
+    let mut active_non_deferrable_job_count = 0_usize;
+    let mut active_deferrable_job_count = 0_usize;
+
+    for (boundary_index, start_ns) in boundaries.iter().copied().enumerate() {
+        while let Some(change) = changes.get(change_index) {
+            if change.timestamp_ns != start_ns {
+                break;
+            }
+            let job = &jobs[change.job_index];
+            if change.is_start {
+                active_resources = active_resources
+                    .checked_add(job.resource_demand)
+                    .ok_or_else(|| {
+                        AuditError("timeline active resource addition overflowed".to_string())
+                    })?;
+                match job.class {
+                    WorkloadClass::NonDeferrable => {
+                        active_non_deferrable_job_count = active_non_deferrable_job_count
+                            .checked_add(1)
+                            .ok_or_else(|| {
+                                AuditError("active non-deferrable job count overflowed".to_string())
+                            })?;
+                    }
+                    WorkloadClass::Deferrable => {
+                        active_deferrable_job_count = active_deferrable_job_count
+                            .checked_add(1)
+                            .ok_or_else(|| {
+                                AuditError("active deferrable job count overflowed".to_string())
+                            })?;
+                    }
+                }
+            } else {
+                active_resources = active_resources
+                    .checked_sub(job.resource_demand)
+                    .ok_or_else(|| {
+                        AuditError("timeline active resource subtraction underflowed".to_string())
+                    })?;
+                match job.class {
+                    WorkloadClass::NonDeferrable => {
+                        active_non_deferrable_job_count = active_non_deferrable_job_count
+                            .checked_sub(1)
+                            .ok_or_else(|| {
+                                AuditError("active non-deferrable job count underflowed".to_string())
+                            })?;
+                    }
+                    WorkloadClass::Deferrable => {
+                        active_deferrable_job_count = active_deferrable_job_count
+                            .checked_sub(1)
+                            .ok_or_else(|| {
+                                AuditError("active deferrable job count underflowed".to_string())
+                            })?;
+                    }
+                }
+            }
+            change_index += 1;
+        }
+
+        let Some(end_ns) = boundaries.get(boundary_index + 1).copied() else {
+            break;
+        };
+        if end_ns <= start_ns {
+            return Err(AuditError(
+                "timeline boundary ordering did not advance".to_string(),
+            ));
+        }
+        let window_index = windows.partition_point(|window| window.end_ns <= start_ns);
+        let active_window = windows
+            .get(window_index)
+            .filter(|window| window.start_ns <= start_ns && start_ns < window.end_ns);
+        let admission_capacity = if apply_dispatch_capacity {
+            active_window
+                .map(|window| window.admission_capacity)
+                .unwrap_or(full_capacity)
+        } else {
+            full_capacity
+        };
+
+        if !active_resources.fits_within(full_capacity) {
+            return Err(AuditError(
+                "scheduled active resources exceed full capacity in timeline".to_string(),
+            ));
+        }
+        segments.push(WorkloadOccupancySegment {
+            replay_contract_id: contract.replay_contract_id.clone(),
+            replay_clock_id: contract.replay_clock_id.clone(),
+            replay_time_origin_id: contract.replay_time_origin_id.clone(),
+            start_ns,
+            end_ns,
+            active_resources,
+            active_job_count: active_non_deferrable_job_count
+                .checked_add(active_deferrable_job_count)
+                .ok_or_else(|| AuditError("active job count overflowed".to_string()))?,
+            active_non_deferrable_job_count,
+            active_deferrable_job_count,
+            full_resource_capacity: full_capacity,
+            admission_capacity,
+            dispatch_window_id: active_window.map(|window| window.window_id.clone()),
+        });
+    }
+
+    validate_timeline_segments(&segments)?;
+    Ok(segments)
+}
+
+fn build_completion_events(
+    jobs: &[WorkloadJob],
+    states: &[JobState],
+    contract: &WorkloadReplayContract,
+) -> Vec<WorkloadCompletionEvent> {
+    let mut events = Vec::new();
+    for (job, state) in jobs.iter().zip(states.iter()) {
+        if let JobState::Completed { finish_ns, .. } = *state {
+            events.push(WorkloadCompletionEvent {
+                replay_contract_id: contract.replay_contract_id.clone(),
+                workload_id: contract.workload_id.clone(),
+                replay_clock_id: contract.replay_clock_id.clone(),
+                replay_time_origin_id: contract.replay_time_origin_id.clone(),
+                completion_time_ns: finish_ns,
+                job_id: job.job_id.clone(),
+                source_evidence_id: job.source_evidence_id.clone(),
+                class: job.class,
+                useful_work_units: job.useful_work_units,
+                work_unit: contract.work_unit.clone(),
+                replay_contract_id: contract.replay_contract_id.clone(),
+            });
+        }
+    }
+    events.sort_by(|left, right| {
+        left.completion_time_ns
+            .cmp(&right.completion_time_ns)
+            .then_with(|| left.job_id.cmp(&right.job_id))
+    });
+    events
+}
+
+fn validate_completion_event_conservation(
+    events: &[WorkloadCompletionEvent],
+    expected: &WorkloadRunSummary,
+    contract: &WorkloadReplayContract,
+) -> Result<(), AuditError> {
+    let mut ids = HashSet::new();
+    let mut total_work_units = 0_u64;
+    let mut previous = None;
+    for event in events {
+        if event.job_id.trim().is_empty()
+            || event.source_evidence_id.trim().is_empty()
+            || event.useful_work_units == 0
+            || event.work_unit != contract.work_unit
+            || event.replay_contract_id != contract.replay_contract_id
+            || event.workload_id != contract.workload_id
+            || event.replay_clock_id != contract.replay_clock_id
+            || event.replay_time_origin_id != contract.replay_time_origin_id
+        {
+            return Err(AuditError(
+                "completion event contains missing provenance, work or contract identity"
+                    .to_string(),
+            ));
+        }
+        if !ids.insert(event.job_id.as_str()) {
+            return Err(AuditError(format!(
+                "duplicate workload completion event for job {:?}",
+                event.job_id
+            )));
+        }
+        let key = (event.completion_time_ns, event.job_id.as_str());
+        if previous.is_some_and(|prior| key < prior) {
+            return Err(AuditError(
+                "completion events must be sorted by timestamp and stable job ID".to_string(),
+            ));
+        }
+        previous = Some(key);
+        total_work_units = total_work_units
+            .checked_add(event.useful_work_units)
+            .ok_or_else(|| AuditError("completion work-unit sum overflowed".to_string()))?;
+    }
+    if events.len() != expected.completed_job_count
+        || total_work_units != expected.completed_useful_work_units
+    {
+        return Err(AuditError(format!(
+            "completion events do not reconcile: expected {} jobs / {} work units, observed {} jobs / {} work units",
+            expected.completed_job_count,
+            expected.completed_useful_work_units,
+            events.len(),
+            total_work_units
+        )));
+    }
+    Ok(())
 }
 
 /// Compare the same normalized job set under a full-capacity baseline and a
@@ -688,6 +1126,40 @@ pub fn evaluate_workload_replay(
     let baseline = run_summary(&jobs, &baseline_states, &dispatch_windows)?;
     let dispatch_constrained =
         run_summary(&jobs, &dispatch_states, &dispatch_windows)?;
+
+    let baseline_timeline = build_occupancy_timeline(
+        &jobs,
+        &baseline_states,
+        &contract,
+        &dispatch_windows,
+        false,
+    )?;
+    let dispatch_timeline = build_occupancy_timeline(
+        &jobs,
+        &dispatch_states,
+        &contract,
+        &dispatch_windows,
+        true,
+    )?;
+    validate_timeline_resource_time_conservation(
+        &baseline_timeline,
+        baseline.resource_time_during_dispatch,
+    )?;
+    validate_timeline_resource_time_conservation(
+        &dispatch_timeline,
+        dispatch_constrained.resource_time_during_dispatch,
+    )?;
+
+    let baseline_completions =
+        build_completion_events(&jobs, &baseline_states, &contract);
+    let dispatch_completions =
+        build_completion_events(&jobs, &dispatch_states, &contract);
+    validate_completion_event_conservation(&baseline_completions, &baseline, &contract)?;
+    validate_completion_event_conservation(
+        &dispatch_completions,
+        &dispatch_constrained,
+        &contract,
+    )?;
 
     let useful_work_retention_fraction = if baseline.completed_useful_work_units > 0 {
         Some(
@@ -773,11 +1245,34 @@ pub fn evaluate_workload_replay(
         });
     }
 
-    let (gpu_admission_restriction_unit_ns, total_dispatch_window_ns, longest_dispatch_window_ns) =
-        gpu_admission_restriction_time(contract.full_resource_capacity, &dispatch_windows)?;
+    let (
+        admission_capacity_restriction,
+        total_dispatch_window_ns,
+        longest_dispatch_window_ns,
+    ) = admission_capacity_restriction_time(
+        contract.full_resource_capacity,
+        &dispatch_windows,
+    )?;
+    let gpu_admission_restriction_unit_ns =
+        admission_capacity_restriction.gpu_unit_ns;
     let gpu_resource_time_reduction_unit_ns = baseline
         .gpu_resource_time_during_dispatch_unit_ns
         .checked_sub(dispatch_constrained.gpu_resource_time_during_dispatch_unit_ns);
+
+    let power_join_reference = WorkloadPowerJoinReference {
+        replay_contract_id: contract.replay_contract_id.clone(),
+        workload_id: contract.workload_id.clone(),
+        dataset_id: contract.dataset_id.clone(),
+        dataset_version: contract.dataset_version.clone(),
+        dataset_evidence_id: contract.dataset_evidence_id.clone(),
+        normalization_id: contract.normalization_id.clone(),
+        scheduling_policy_id: contract.scheduling_policy_id.clone(),
+        replay_clock_id: contract.replay_clock_id.clone(),
+        replay_time_origin_id: contract.replay_time_origin_id.clone(),
+        schedule_digest_reference: contract.schedule_digest_reference.clone(),
+        work_unit: contract.work_unit.clone(),
+        claim_ceiling: "SCHEDULE_TIMELINE_INPUT_TO_MEASURED_POWER_AUDIT_NOT_POWER_EVIDENCE",
+    };
 
     let p50_positive_start_delay_ns = nearest_rank_positive(&mut positive_delays.clone(), 0.50);
     let p95_positive_start_delay_ns = nearest_rank_positive(&mut positive_delays.clone(), 0.95);
@@ -786,6 +1281,7 @@ pub fn evaluate_workload_replay(
 
     Ok(WorkloadReplayReport {
         contract,
+        power_join_reference,
         baseline,
         dispatch_constrained,
         useful_work_retention_fraction,
@@ -800,6 +1296,11 @@ pub fn evaluate_workload_replay(
         longest_dispatch_window_ns,
         recovery_tail_after_last_dispatch_ns,
         gpu_resource_time_reduction_unit_ns,
+        admission_capacity_restriction,
+        baseline_timeline,
+        dispatch_timeline,
+        baseline_completions,
+        dispatch_completions,
         job_results,
         claim_ceiling: "WORKLOAD_REPLAY_RESOURCE_TIME_ONLY_NOT_POWER_OR_GRID_QUALIFICATION",
     })
@@ -831,6 +1332,9 @@ mod tests {
             normalization_id: "normalization-v1".to_string(),
             scheduling_policy_id: "nondeferrable-first-strict-no-backfill-latest-start-deadline-release-id-v1".to_string(),
             work_unit: "accepted-job".to_string(),
+            replay_clock_id: "synthetic-monotonic-clock".to_string(),
+            replay_time_origin_id: "synthetic-epoch-0".to_string(),
+            schedule_digest_reference: "sha256:synthetic-schedule-fixture".to_string(),
             full_resource_capacity: capacity(),
         }
     }
@@ -926,6 +1430,37 @@ mod tests {
         assert_eq!(report.maximum_positive_start_delay_ns, Some(10));
         assert_eq!(report.recovery_tail_after_last_dispatch_ns, Some(5));
         assert!(report.gpu_resource_time_reduction_unit_ns.is_some());
+        assert_eq!(report.power_join_reference.replay_clock_id, "synthetic-monotonic-clock");
+        assert_eq!(
+            report.power_join_reference.schedule_digest_reference,
+            "sha256:synthetic-schedule-fixture"
+        );
+        assert_eq!(
+            report.baseline_completions[0].completion_time_ns,
+            5
+        );
+        assert_eq!(
+            report.dispatch_completions[0].completion_time_ns,
+            15
+        );
+        assert_eq!(report.dispatch_timeline.len(), 2);
+        assert_eq!(report.dispatch_timeline[0].start_ns, 0);
+        assert_eq!(report.dispatch_timeline[0].end_ns, 10);
+        assert_eq!(report.dispatch_timeline[0].active_resources.gpu_units, 0);
+        assert_eq!(report.baseline_timeline[0].admission_capacity.gpu_units, 4);
+        assert_eq!(report.dispatch_timeline[0].admission_capacity.gpu_units, 0);
+        assert_eq!(
+            report.baseline_timeline[0].dispatch_window_id.as_deref(),
+            Some("dispatch")
+        );
+        assert_eq!(
+            report.dispatch_timeline[0].dispatch_window_id.as_deref(),
+            Some("dispatch")
+        );
+        assert_eq!(report.dispatch_timeline[1].start_ns, 10);
+        assert_eq!(report.dispatch_timeline[1].end_ns, 15);
+        assert_eq!(report.dispatch_timeline[1].active_resources.gpu_units, 2);
+        assert_eq!(report.dispatch_timeline[1].dispatch_window_id, None);
     }
 
     #[test]
@@ -1073,6 +1608,129 @@ mod tests {
     }
 
     #[test]
+    fn completion_then_capacity_boundary_then_admission_are_half_open_at_same_timestamp() {
+        let jobs = vec![
+            gpu_job("first", WorkloadClass::NonDeferrable, 0, 0, 10, 5, 4, 10),
+            gpu_job("second", WorkloadClass::NonDeferrable, 5, 5, 15, 5, 4, 20),
+        ];
+        let report = evaluate_workload_replay(
+            contract(),
+            jobs,
+            vec![window("dispatch", 5, 10, 4)],
+        )
+        .unwrap();
+
+        assert_eq!(report.job_results[0].dispatch_finish_ns, Some(5));
+        assert_eq!(report.job_results[1].dispatch_start_ns, Some(5));
+        assert_eq!(report.job_results[1].dispatch_finish_ns, Some(10));
+        assert_eq!(report.dispatch_timeline.len(), 2);
+        assert_eq!(
+            (
+                report.dispatch_timeline[0].start_ns,
+                report.dispatch_timeline[0].end_ns,
+                report.dispatch_timeline[0].active_resources.gpu_units,
+                report.dispatch_timeline[0].dispatch_window_id.clone(),
+            ),
+            (0, 5, 4, None)
+        );
+        assert_eq!(
+            (
+                report.dispatch_timeline[1].start_ns,
+                report.dispatch_timeline[1].end_ns,
+                report.dispatch_timeline[1].active_resources.gpu_units,
+                report.dispatch_timeline[1].dispatch_window_id.as_deref(),
+            ),
+            (5, 10, 4, Some("dispatch"))
+        );
+        assert_eq!(
+            report.dispatch_completions.iter().map(|event| event.completion_time_ns).collect::<Vec<_>>(),
+            vec![5, 10]
+        );
+    }
+
+    #[test]
+    fn admission_restriction_integrates_cpu_gpu_and_memory_separately() {
+        let jobs = vec![gpu_job(
+            "batch",
+            WorkloadClass::Deferrable,
+            0,
+            10,
+            20,
+            5,
+            2,
+            1,
+        )];
+        let window = DispatchCapacityWindow {
+            window_id: "multi-resource-cap".to_string(),
+            start_ns: 0,
+            end_ns: 10,
+            admission_capacity: ResourceVector {
+                cpu_millicores: 4_000,
+                gpu_units: 2,
+                memory_mib: 32_000,
+            },
+        };
+        let report = evaluate_workload_replay(contract(), jobs, vec![window]).unwrap();
+        assert_eq!(report.admission_capacity_restriction.cpu_millicore_ns, 40_000);
+        assert_eq!(report.admission_capacity_restriction.gpu_unit_ns, 20);
+        assert_eq!(report.admission_capacity_restriction.memory_mib_ns, 320_000);
+        assert_eq!(
+            report.dispatch_constrained.resource_time_during_dispatch.gpu_unit_ns,
+            report.dispatch_constrained.gpu_resource_time_during_dispatch_unit_ns
+        );
+    }
+
+    #[test]
+    fn event_sourced_timeline_and_completion_corruption_fail_conservation_checks() {
+        let jobs = vec![gpu_job(
+            "batch",
+            WorkloadClass::Deferrable,
+            0,
+            10,
+            20,
+            5,
+            2,
+            100,
+        )];
+        let report = evaluate_workload_replay(
+            contract(),
+            jobs,
+            vec![window("dispatch", 0, 10, 0)],
+        )
+        .unwrap();
+
+        let mut overlapping = report.dispatch_timeline.clone();
+        overlapping[0].end_ns += 1;
+        assert!(super::validate_timeline_segments(&overlapping).is_err());
+
+        let mut non_conserving = report.dispatch_timeline.clone();
+        non_conserving[0].active_resources.gpu_units = 1;
+        assert!(super::validate_timeline_resource_time_conservation(
+            &non_conserving,
+            report.dispatch_constrained.resource_time_during_dispatch,
+        )
+        .is_err());
+
+        let mut duplicate_completion = report.dispatch_completions.clone();
+        duplicate_completion.push(duplicate_completion[0].clone());
+        assert!(super::validate_completion_event_conservation(
+            &duplicate_completion,
+            &report.dispatch_constrained,
+            &report.contract,
+        )
+        .is_err());
+
+        let mut wrong_work_sum = report.dispatch_completions.clone();
+        wrong_work_sum[0].useful_work_units += 1;
+        assert!(super::validate_completion_event_conservation(
+            &wrong_work_sum,
+            &report.dispatch_constrained,
+            &report.contract,
+        )
+        .is_err());
+    }
+
+    #[test]
     fn stable_job_id_breaks_equal_priority_ties() {
         let jobs = vec![
             gpu_job("z-job", WorkloadClass::Deferrable, 0, 10, 20, 5, 4, 1),
@@ -1172,7 +1830,19 @@ mod tests {
 
         let mut no_work_unit = contract();
         no_work_unit.work_unit.clear();
-        assert!(evaluate_workload_replay(no_work_unit, jobs, vec![]).is_err());
+        assert!(evaluate_workload_replay(no_work_unit, jobs.clone(), vec![]).is_err());
+
+        let mut no_clock = contract();
+        no_clock.replay_clock_id.clear();
+        assert!(evaluate_workload_replay(no_clock, jobs.clone(), vec![]).is_err());
+
+        let mut no_origin = contract();
+        no_origin.replay_time_origin_id.clear();
+        assert!(evaluate_workload_replay(no_origin, jobs.clone(), vec![]).is_err());
+
+        let mut no_schedule_digest = contract();
+        no_schedule_digest.schedule_digest_reference.clear();
+        assert!(evaluate_workload_replay(no_schedule_digest, jobs, vec![]).is_err());
     }
 
     #[test]
