@@ -525,3 +525,15 @@ See [the benchmark contract](../../CALIBRATED_WORKLOAD_STATE_POWER_MODEL_BENCHMA
 The current implementation also rejects attempts to predict a training run and independently verifies that a measured run is listed in the prediction trace's held-out evidence manifest before computing validation metrics. The mapped prediction trace must carry the exact clock-alignment method ID from the calibration contract. These prevent caller-side relabelling from bypassing the declared split or alignment method; evidence references themselves are still references, not authenticated signatures.
 
 Each `PredictedPowerTrace` now includes the mapped source trace's own state-mapping evidence reference as well as calibration-run mapping/time-alignment evidence. This distinguishes evidence that trained the model from evidence that assigned states to the particular sequence being predicted.
+
+## Correlation-aware multi-site aggregation (issue #403)
+
+The `multi_site_power` module composes at least two child site power traces at identical aligned timestamps. Each site must declare parent topology, region, run/session, dataset/use-rights evidence, configuration and measurement boundary, workload/orchestration IDs, source clock and time origin, target common clock/time origin, alignment method/evidence, signed constant offset, alignment uncertainty, sample period, evidence class and per-sample quality/source evidence.
+
+It rejects mixed MEASURED/MODELLED inputs, unknown or excessive alignment uncertainty, mismatched parent/region/common clock/time origin/alignment method/cadence, missing/invalid samples, irregular timestamps, incompatible common timestamp sequences, duplicate site IDs and arithmetic overflow. It performs no interpolation, row shuffling, automatic unit conversion, or hidden missing-sample deletion. Output order is canonicalized by site ID.
+
+The report contains total power by timestamp, aggregate mean/variance/P99/peak, per-site mean/variance/P90/peak, pairwise contemporaneous Pearson correlation, covariance, P90 tail co-exceedance, lagged Pearson correlation with physical lag and overlap count, a zero-cross-covariance reference equal to the sum of per-site variances, a scenario-specific variance-amplification ratio and variance-decomposition residual. It retains source site/run/session/trace and clock-alignment evidence IDs.
+
+The current v0.1 module only applies caller-declared fixed offsets; it does not estimate/correct time-varying clock drift. It does not yet implement Spearman, spectral coherence, state-conditioned dependence, matched independent-session synthesis, parent-boundary reconciliation, energy integration or causal attribution. It is a child-trace power aggregator, not a PCC auditor; #382 and #396 remain the downstream authorities.
+
+Fifteen synthetic Rust tests are authored but not executed. No physical multi-site traces, licensed corpus, compiler, formatter, linter, runtime benchmark or field result is claimed.
