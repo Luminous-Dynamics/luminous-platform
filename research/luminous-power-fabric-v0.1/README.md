@@ -266,3 +266,12 @@ The new [Grid-Interactive Compute Resource Qualification v0.1](./GRID_INTERACTIV
 The evaluator subtracts independently measured non-compute load reductions and conservative uncertainty bounds, then evaluates service quality, useful-work retention, response, sustain, timestamped recovery and rebound across repeated events. The report retains the frozen contract, baseline/event evidence references and event/recovery intervals; it reports P10 credited compute capacity and a conditional one-sided Wilson lower confidence bound (z=1.2815515655 for 90%). It explicitly does not provide market accreditation or grid-service authorization.
 
 This is a measurement protocol and synthetic evaluator only. Nineteen new tests are authored but not executed; there is no compiled, CI-tested, site-measured or field-validated result.
+
+
+## Cluster-aware repeated-event qualification
+
+A follow-on evaluator now addresses a statistical limitation in event-level repeated-dispatch scoring: events from the same operating episode are not automatically independent. It groups dispatches into predeclared operating clusters, allows arbitrary dependence within each cluster, and scores the cluster by its worst event. Every required operating stratum must independently meet its support and reliability gates.
+
+For a distribution-free one-sided lower confidence bound on population P10 cluster capacity, the sample minimum requires at least 22 independent clusters at 90% confidence or 29 at 95%. A larger number of dispatch rows inside fewer clusters does not satisfy this requirement. The report preserves the parent event evidence and withholds inferential outputs when cluster independence is not declared or adequately supported.
+
+See [Cluster-Aware Repeated-Event Qualification](./CLUSTER_AWARE_REPEATED_EVENT_QUALIFICATION_2026-11-11.md). Seventeen Rust tests are authored but not executed; no physical, field or accredited capacity claim is made.
