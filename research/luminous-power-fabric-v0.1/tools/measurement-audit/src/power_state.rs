@@ -381,6 +381,7 @@ pub struct MappedStateTrace {
     pub measurement_boundary_id: String,
     pub workload_contract_id: String,
     pub state_mapper_id: String,
+    pub clock_alignment_method_id: String,
     pub state_mapping_evidence_id: String,
     pub time_alignment_evidence_id: String,
     pub source_timeline_digest_reference: String,
@@ -457,6 +458,7 @@ pub fn predict_power_trace(
         (trace.measurement_boundary_id.as_str(), "measurement_boundary_id"),
         (trace.workload_contract_id.as_str(), "workload_contract_id"),
         (trace.state_mapper_id.as_str(), "state_mapper_id"),
+        (trace.clock_alignment_method_id.as_str(), "clock_alignment_method_id"),
         (trace.state_mapping_evidence_id.as_str(), "state_mapping_evidence_id"),
         (trace.time_alignment_evidence_id.as_str(), "time_alignment_evidence_id"),
         (trace.source_timeline_digest_reference.as_str(), "source_timeline_digest_reference"),
@@ -470,6 +472,7 @@ pub fn predict_power_trace(
         || trace.measurement_boundary_id != contract.measurement_boundary_id
         || trace.workload_contract_id != contract.workload_contract_id
         || trace.state_mapper_id != contract.state_mapper_id
+        || trace.clock_alignment_method_id != contract.clock_alignment_method_id
     {
         return Err(AuditError(
             "prediction trace is outside the exact calibrated configuration, boundary, workload or state-mapper support".to_string(),
@@ -790,6 +793,7 @@ mod tests {
             measurement_boundary_id: "server-input-pdu-01".to_string(),
             workload_contract_id: "llm-serving-contract-v1".to_string(),
             state_mapper_id: "prefill-decode-idle-v1".to_string(),
+            clock_alignment_method_id: "ptp-alignment-v1".to_string(),
             state_mapping_evidence_id: "mapping:heldout".to_string(),
             time_alignment_evidence_id: "alignment:heldout".to_string(),
             source_timeline_digest_reference: "sha256:source-timeline".to_string(),
@@ -846,6 +850,14 @@ mod tests {
         let model = fit_power_state_model(contract(), &training_and_holdout()).unwrap();
         let mut trace = mapped_trace("heldout-a");
         trace.hardware_configuration_fingerprint = "sha256:other-gpu-or-power-cap".to_string();
+        assert!(predict_power_trace(&model, &trace).is_err());
+    }
+
+    #[test]
+    fn mapped_trace_clock_alignment_method_mismatch_fails_closed() {
+        let model = fit_power_state_model(contract(), &training_and_holdout()).unwrap();
+        let mut trace = mapped_trace("heldout-a");
+        trace.clock_alignment_method_id = "different-clock-method".to_string();
         assert!(predict_power_trace(&model, &trace).is_err());
     }
 
