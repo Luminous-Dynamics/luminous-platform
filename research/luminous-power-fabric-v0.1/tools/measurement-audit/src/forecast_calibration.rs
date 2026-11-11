@@ -275,6 +275,7 @@ impl ForecastMonitoringContract {
 #[derive(Debug, Clone, PartialEq)]
 pub struct ForecastMonitoringReport {
     pub calibrator_id: String,
+    pub monitoring_contract: ForecastMonitoringContract,
     pub calibrator_revision: String,
     pub target_session_coverage: f64,
     pub total_monitoring_session_count: usize,
@@ -1043,6 +1044,7 @@ pub fn evaluate_forecast_monitoring(
 
     Ok(ForecastMonitoringReport {
         calibrator_id: calibrator.contract.calibrator_id.clone(),
+        monitoring_contract: contract.clone(),
         calibrator_revision: calibrator.contract.calibrator_revision.clone(),
         target_session_coverage: calibrator.contract.target_session_coverage,
         total_monitoring_session_count: sessions.len(),
@@ -1345,6 +1347,8 @@ mod tests {
                 minimum_observed_sessions_per_regime: 9,
                 minimum_wilson_lower_bound_session_coverage: 0.80,
                 one_sided_confidence_z_score: 1.281_551_565_5,
+                independent_monitor_sessions_assumption: true,
+                monitor_session_independence_review_evidence_id: Some("monitor-design-review-v1".to_string()),
             },
             (20..40)
                 .map(|index| session(index, "normal", 10_000, PredictionScope::OperationalScenario))
@@ -1361,6 +1365,8 @@ mod tests {
                 minimum_observed_sessions_per_regime: 10,
                 minimum_wilson_lower_bound_session_coverage: 0.50,
                 one_sided_confidence_z_score: 1.281_551_565_5,
+                independent_monitor_sessions_assumption: true,
+                monitor_session_independence_review_evidence_id: Some("monitor-design-review-v1".to_string()),
             },
             (20..29)
                 .map(|index| session(index, "normal", 100, PredictionScope::OperationalScenario))
@@ -1399,6 +1405,8 @@ mod tests {
                 minimum_observed_sessions_per_regime: 5,
                 minimum_wilson_lower_bound_session_coverage: 0.50,
                 one_sided_confidence_z_score: 1.281_551_565_5,
+                independent_monitor_sessions_assumption: true,
+                monitor_session_independence_review_evidence_id: Some("monitor-design-review-v1".to_string()),
             },
             vec![session(20, "normal", 100, PredictionScope::OperationalScenario)],
         ).unwrap();
