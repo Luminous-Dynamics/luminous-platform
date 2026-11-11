@@ -564,7 +564,7 @@ Validation: 34 synthetic Rust tests are authored but not executed. No compiler, 
 
 ## Paired, cluster-aware scenario decision tournament
 
-The new \`scenario_tournament\` module compares the four scenario generators from #407/#409 on exact paired episodes. Each episode must have one report per method and all four must use the same forecast origin, full model contract, physical measurement run, measured-sample evidence, horizon, scenario count and reserve/shortfall cost ratio.
+The new \`scenario_tournament\` module compares the four scenario generators from #407/#409 on exact paired episodes. Each episode must have one report per method and all four must use the same forecast origin, full model contract, physical measurement run, measured-sample evidence, horizon, scenario count and reserve/shortfall cost ratio. Bootstrap/Schaake residual rows are compared field-for-field with the Gaussian arm's common 200-row historical pool, so a shared pool ID cannot conceal different residual data.
 
 The independent-marginal generator is the negative-control baseline. Gaussian copula, empirical residual bootstrap and Schaake shuffle are compared against that same episode-level baseline. The evaluator checks each method's reserve/shortfall arithmetic and freezes the exact generator ID and revision across the experiment.
 
