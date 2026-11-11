@@ -68,6 +68,8 @@ pub struct MultiSiteAggregationContract {
     pub sample_period_ns: u64,
     pub maximum_alignment_uncertainty_ns: u64,
     pub minimum_sample_count: usize,
+    /// Tail-coexceedance is suppressed until this many aligned observations exist.
+    pub minimum_tail_sample_count: usize,
     pub maximum_lag_samples: usize,
 }
 
@@ -90,6 +92,12 @@ impl MultiSiteAggregationContract {
         if self.sample_period_ns == 0 || self.minimum_sample_count < 3 {
             return Err(AuditError(
                 "sample period must be positive and minimum sample count must be at least three"
+                    .to_string(),
+            ));
+        }
+        if self.minimum_tail_sample_count < 100 {
+            return Err(AuditError(
+                "tail co-exceedance support threshold must be at least 100 aligned samples"
                     .to_string(),
             ));
         }
@@ -119,7 +127,7 @@ pub struct SiteDependenceMetric {
     pub second_site_id: String,
     pub contemporaneous_pearson: Option<f64>,
     pub contemporaneous_covariance_mw2: f64,
-    pub p90_tail_coexceedance_fraction: f64,
+    pub p90_tail_coexceedance_fraction: Option<f64>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -462,8 +470,11 @@ pub fn aggregate_aligned_sites(
                 second_site_id: summaries[second].site_id.clone(),
                 contemporaneous_pearson: pearson(left, right),
                 contemporaneous_covariance_mw2: covariance,
-                p90_tail_coexceedance_fraction: simultaneous_exceedances as f64
-                    / sample_count as f64,
+                p90_tail_coexceedance_fraction: if sample_count >= contract.minimum_tail_sample_count {
+                    Some(simultaneous_exceedances as f64 / sample_count as f64)
+                } else {
+                    None
+                },
             });
 
             for lag in -(contract.maximum_lag_samples as i32)..=(contract.maximum_lag_samples as i32) {
@@ -529,6 +540,7 @@ mod tests {
             sample_period_ns: 1_000,
             maximum_alignment_uncertainty_ns: 100,
             minimum_sample_count: 5,
+            minimum_tail_sample_count: 100,
             maximum_lag_samples: 2,
         }
     }
@@ -627,12 +639,25 @@ mod tests {
 
     #[test]
     fn tail_coexceedance_is_reported_for_synchronized_peaks() {
-        let values = &[100, 100, 100, 500, 600];
+        let values: Vec<u64> = (0..100).collect();
         let report = aggregate_aligned_sites(
             contract(),
-            &[trace("site-a", 0, values), trace("site-b", 0, values)],
+            &[trace("site-a", 0, &values), trace("site-b", 0, &values)],
         ).unwrap();
-        assert!(report.pairwise_dependence[0].p90_tail_coexceedance_fraction > 0.0);
+        assert!(report.pairwise_dependence[0].p90_tail_coexceedance_fraction.unwrap() > 0.0);
+        assert!(report.pairwise_dependence[0].p90_tail_coexceedance_fraction.unwrap() <= 1.0);
+    }
+
+    #[test]
+    fn short_traces_do_not_claim_tail_coexceedance_support() {
+        let report = aggregate_aligned_sites(
+            contract(),
+            &[
+                trace("site-a", 0, &[100, 200, 300, 200, 100]),
+                trace("site-b", 0, &[100, 200, 300, 200, 100]),
+            ],
+        ).unwrap();
+        assert_eq!(report.pairwise_dependence[0].p90_tail_coexceedance_fraction, None);
     }
 
     #[test]
@@ -690,11 +715,15 @@ mod tests {
     #[test]
     fn signed_clock_offset_underflow_and_overflow_fail_closed() {
         let mut low = trace("site-a", -10_000, &[10, 20, 30, 20, 10]);
-        low.samples[0].timestamp_ns = 1;
+        for (index, sample) in low.samples.iter_mut().enumerate() {
+            sample.timestamp_ns = 1 + index as u64 * 1_000;
+        }
         assert!(aggregate_aligned_sites(contract(), &[low, trace("site-b", 0, &[10, 20, 30, 20, 10])]).is_err());
 
         let mut high = trace("site-c", 10, &[10, 20, 30, 20, 10]);
-        high.samples[0].timestamp_ns = u64::MAX;
+        for (index, sample) in high.samples.iter_mut().enumerate() {
+            sample.timestamp_ns = u64::MAX - 4_000 + index as u64 * 1_000;
+        }
         assert!(aggregate_aligned_sites(contract(), &[high, trace("site-d", 0, &[10, 20, 30, 20, 10])]).is_err());
     }
 
