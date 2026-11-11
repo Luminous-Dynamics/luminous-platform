@@ -163,7 +163,7 @@ pub struct CalibratedPowerSample {
     pub additive_interval_correction_mw: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct CalibratedPowerTrace {
     pub trace_id: String,
     pub run_id: String,
@@ -694,9 +694,11 @@ pub fn apply_regime_forecast_calibration(
         ))
     })?;
 
-    if regime.calibration_run_ids.iter().any(|run_id| run_id == &predicted.run_id) {
+    if regime.calibration_run_ids.iter().any(|run_id| run_id == &predicted.run_id)
+        || regime.calibration_prediction_trace_ids.iter().any(|trace_id| trace_id == &predicted.trace_id)
+    {
         return Err(AuditError(
-            "prediction run ID was already used to fit this regime calibrator".to_string(),
+            "prediction run or trace ID was already used to fit this regime calibrator".to_string(),
         ));
     }
     let mut samples = Vec::with_capacity(predicted.samples.len());
@@ -844,9 +846,10 @@ pub fn evaluate_forecast_monitoring(
             }
             if calibrator.regimes.iter().any(|regime| {
                 regime.calibration_run_ids.iter().any(|run_id| run_id == &observation.predicted.run_id)
+                    || regime.calibration_prediction_trace_ids.iter().any(|trace_id| trace_id == &observation.predicted.trace_id)
             }) {
                 return Err(AuditError(
-                    "monitoring run ID overlaps the frozen conformal calibration set".to_string(),
+                    "monitoring run or trace ID overlaps the frozen conformal calibration set".to_string(),
                 ));
             }
             let _ = validate_trace_observation(
