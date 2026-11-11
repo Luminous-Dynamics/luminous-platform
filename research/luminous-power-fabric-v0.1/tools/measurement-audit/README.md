@@ -539,8 +539,8 @@ The exact complete PowerModelContract, model revision, hardware, boundary, workl
 
 The fitted correction targets whole-session coverage: every sample in a session must lie inside the corrected interval. The finite-sample conformal order statistic is ceil((n+1) × target_coverage); a 90% target first has an observable rank at nine exchangeable sessions per regime. That is a mathematical minimum, not a recommended field sample size. Fixed session duration, trace count, samples per trace and minimum separation are required so session maxima have comparable exposure.
 
-A separate monitor reports whole-session coverage, sample-level coverage as a non-independent diagnostic, per-regime Wilson lower bounds and NOMINAL / DEGRADED / INSUFFICIENT_SUPPORT / OUT_OF_DOMAIN states. Monitoring never mutates the frozen calibrator; recalibration requires a new version and a new calibration set.
+A separate monitor reports whole-session coverage, sample-level coverage as a non-independent diagnostic, per-regime Wilson lower bounds (only with a separately evidenced monitor-session independence design) and NOMINAL / DEGRADED / INSUFFICIENT_SUPPORT / SAMPLING_DESIGN_UNQUALIFIED / OUT_OF_DOMAIN states. Monitoring never mutates the frozen calibrator; recalibration requires a new version and a new calibration set.
 
 See [REGIME_CONDITIONED_SESSION_CONFORMAL_FORECAST_CALIBRATION_2026-11-11.md](../../REGIME_CONDITIONED_SESSION_CONFORMAL_FORECAST_CALIBRATION_2026-11-11.md) for the statistical contract and reproduction plan for Yao et al. (6 November 2026).
 
-**Validation:** seventeen synthetic Rust tests are authored but not executed. No compile, Cargo test, formatter, Clippy, physical trace, dataset reproduction or runtime benchmark is claimed.
+**Validation:** twenty-three synthetic Rust tests are authored but not executed. No compile, Cargo test, formatter, Clippy, physical trace, dataset reproduction or runtime benchmark is claimed.
