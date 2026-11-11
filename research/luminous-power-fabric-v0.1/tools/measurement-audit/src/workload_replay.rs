@@ -35,6 +35,14 @@ impl ResourceVector {
             memory_mib: self.memory_mib.checked_add(other.memory_mib)?,
         })
     }
+
+    fn checked_sub(self, other: Self) -> Option<Self> {
+        Some(Self {
+            cpu_millicores: self.cpu_millicores.checked_sub(other.cpu_millicores)?,
+            gpu_units: self.gpu_units.checked_sub(other.gpu_units)?,
+            memory_mib: self.memory_mib.checked_sub(other.memory_mib)?,
+        })
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -258,21 +266,6 @@ fn effective_capacity_at(
         .unwrap_or(full_capacity)
 }
 
-fn running_resource_use(
-    jobs: &[WorkloadJob],
-    states: &[JobState],
-) -> Result<ResourceVector, AuditError> {
-    let mut used = ResourceVector::default();
-    for (job, state) in jobs.iter().zip(states.iter()) {
-        if matches!(state, JobState::Running { .. }) {
-            used = used.checked_add(job.resource_demand).ok_or_else(|| {
-                AuditError("running CPU/GPU/memory resource sum overflowed".to_string())
-            })?;
-        }
-    }
-    Ok(used)
-}
-
 type ReadyPriority = (u8, u64, u64, u64, String, usize);
 
 fn ready_priority(job: &WorkloadJob, index: usize) -> ReadyPriority {
@@ -330,6 +323,7 @@ fn run_schedule(
     windows: &[DispatchCapacityWindow],
 ) -> Result<Vec<JobState>, AuditError> {
     let mut states = vec![JobState::Pending; jobs.len()];
+    let mut used_resources = ResourceVector::default();
     let Some(mut now_ns) = jobs.iter().map(|job| job.release_time_ns).min() else {
         return Err(AuditError(
             "workload replay requires at least one job".to_string(),
@@ -355,13 +349,20 @@ fn run_schedule(
     let mut ready: BTreeSet<ReadyPriority> = BTreeSet::new();
 
     loop {
-        for state in &mut states {
+        for (index, state) in states.iter_mut().enumerate() {
             if let JobState::Running {
                 start_ns,
                 finish_ns,
             } = *state
             {
                 if finish_ns <= now_ns {
+                    used_resources = used_resources
+                        .checked_sub(jobs[index].resource_demand)
+                        .ok_or_else(|| {
+                            AuditError(
+                                "completed job resource accounting underflowed".to_string(),
+                            )
+                        })?;
                     *state = JobState::Completed {
                         start_ns,
                         finish_ns,
@@ -385,10 +386,10 @@ fn run_schedule(
             let index = priority.5;
             let admission_capacity =
                 effective_capacity_at(now_ns, full_capacity, windows);
-            let used = running_resource_use(jobs, &states)?;
-            let after = used.checked_add(jobs[index].resource_demand);
+            let after = used_resources.checked_add(jobs[index].resource_demand);
 
             if after.is_some_and(|resources| resources.fits_within(admission_capacity)) {
+                used_resources = after.expect("checked resource addition was Some");
                 ready.remove(&priority);
                 let finish_ns = now_ns
                     .checked_add(jobs[index].runtime_ns)
