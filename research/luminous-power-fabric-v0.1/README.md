@@ -304,7 +304,7 @@ The direct comparator is Yao et al.'s 6 November 2026 448-GPU GPU-IT forecast st
 Thirty-six Rust tests are authored but not executed. No reproduction, performance claim or physical qualification is made.
 
 
-The scenario evaluator now contains all four scenario arms described in the Yao et al. benchmark: independent marginal negative control, empirical residual bootstrap, Schaake shuffle and a Gaussian copula. The copula arm uses rank-normal residual dependence, raw residual/evidence retention with score and correlation recomputation, per-residual model/regime/clock/time-origin contracts, a frozen regularized correlation matrix, deterministic Cholesky sampling and the current forecast's marginal quantile functions. It fails closed on low support, constant dimensions, invalid matrices and future/overlapping residuals. The implementation is in a separate draft stacked on PR #407; 32 tests are authored but not executed. This is methodological parity, not a completed paper reproduction or measured improvement.
+The scenario evaluator now contains all four scenario arms described in the Yao et al. benchmark: independent marginal negative control, empirical residual bootstrap, Schaake shuffle and a Gaussian copula. The copula arm uses rank-normal residual dependence, raw residual/evidence retention with score and correlation recomputation, per-residual model/regime/clock/time-origin contracts, a frozen regularized correlation matrix, deterministic Cholesky sampling and the current forecast's marginal quantile functions. It fails closed on low support, constant dimensions, invalid matrices and future/overlapping residuals. The implementation is in a separate draft stacked on PR #407; 36 tests are authored but not executed. This is methodological parity, not a completed paper reproduction or measured improvement.
 
 
 ## Paired, cluster-aware scenario decision benchmark
@@ -315,4 +315,4 @@ The statistical unit is a fixed-exposure operating cluster. Episodes inside a cl
 
 The internal research target is at least 7.4% lower normalized reserve cost than the independent-marginal negative control while satisfying the same preregistered shortfall ceiling and cluster-level reliability requirement. The published 7.4–10.6% study result motivates the target; no improvement has been demonstrated by Luminous.
 
-See [Paired, Cluster-Aware Scenario Decision Tournament](./SCENARIO_DECISION_TOURNAMENT_2026-11-11.md). Sixteen synthetic Rust tests are authored but not executed; no compilation, physical measurement or grid reserve qualification is claimed.
+See [Paired, Cluster-Aware Scenario Decision Tournament](./SCENARIO_DECISION_TOURNAMENT_2026-11-11.md). Twenty-one synthetic Rust tests are authored but not executed; no compilation, physical measurement or grid reserve qualification is claimed.
