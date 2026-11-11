@@ -267,6 +267,9 @@ pub struct ForecastScenarioTrajectory {
 pub struct GaussianCopulaEvidence {
     pub residual_pool_evidence_id: String,
     pub residual_ids: Vec<String>,
+    pub residual_origin_ids: Vec<String>,
+    pub residual_origin_timestamps_ns: Vec<u64>,
+    pub residual_target_window_end_timestamps_ns: Vec<u64>,
     pub measurement_evidence_ids: Vec<String>,
     pub forecast_evidence_ids: Vec<String>,
     pub residual_generation_evidence_ids: Vec<String>,
@@ -1157,6 +1160,9 @@ fn generate_gaussian_copula(
             AuditError("Gaussian copula residual pool evidence reference is missing".to_string())
         })?,
         residual_ids: residuals.iter().map(|item| item.residual_id.clone()).collect(),
+        residual_origin_ids: residuals.iter().map(|item| item.origin_id.clone()).collect(),
+        residual_origin_timestamps_ns: residuals.iter().map(|item| item.origin_timestamp_ns).collect(),
+        residual_target_window_end_timestamps_ns: residuals.iter().map(|item| item.target_window_end_ns).collect(),
         measurement_evidence_ids: residuals.iter().map(|item| item.measurement_evidence_id.clone()).collect(),
         forecast_evidence_ids: residuals.iter().map(|item| item.forecast_evidence_id.clone()).collect(),
         residual_generation_evidence_ids: residuals.iter().map(|item| item.residual_generation_evidence_id.clone()).collect(),
@@ -1421,6 +1427,205 @@ fn empirical_pit_u128(values: &[u128], actual: u128) -> f64 {
     (less + 0.5 * equal) / values.len() as f64
 }
 
+fn validate_gaussian_copula_evidence(
+    contract: &ScenarioGenerationContract,
+    scenarios: &[ForecastScenarioTrajectory],
+    evidence: &GaussianCopulaEvidence,
+) -> Result<(), AuditError> {
+    let pool_count = evidence.residual_ids.len();
+    let dimension = contract.horizon_steps;
+    let pool_lists_len = [
+        evidence.residual_origin_ids.len(),
+        evidence.residual_origin_timestamps_ns.len(),
+        evidence.residual_target_window_end_timestamps_ns.len(),
+        evidence.measurement_evidence_ids.len(),
+        evidence.forecast_evidence_ids.len(),
+        evidence.residual_generation_evidence_ids.len(),
+        evidence.state_mapping_evidence_ids.len(),
+        evidence.time_alignment_evidence_ids.len(),
+        evidence.timeline_digest_references.len(),
+        evidence.source_sample_evidence_ids.len(),
+        evidence.source_sample_timestamps_ns.len(),
+    ];
+    if evidence.residual_pool_evidence_id
+        != contract.residual_pool_evidence_id.as_deref().unwrap_or_default()
+        || pool_count < contract.minimum_residual_trajectory_count
+        || pool_lists_len.iter().any(|length| *length != pool_count)
+        || evidence.tie_policy != "AVERAGE_RANKS_FOR_TIES_SORTED_BY_RESIDUAL_ID"
+        || evidence.plotting_position_method != "MIDRANK_MINUS_HALF_OVER_N"
+        || Some(evidence.shrinkage_lambda) != contract.gaussian_copula_shrinkage
+        || scenarios.iter().any(|scenario| {
+            scenario.source_residual_id.is_some()
+                || scenario.source_residual_evidence_id.is_some()
+                || scenario.source_residual_forecast_evidence_id.is_some()
+                || scenario.source_residual_generation_evidence_id.is_some()
+                || scenario.source_residual_state_mapping_evidence_id.is_some()
+                || scenario.source_residual_time_alignment_evidence_id.is_some()
+                || scenario.source_residual_timeline_digest_reference.is_some()
+                || !scenario.source_sample_evidence_ids.is_empty()
+                || !scenario.source_sample_timestamps_ns.is_empty()
+        })
+    {
+        return Err(AuditError(
+            "Gaussian copula residual-pool evidence or scenario lineage is incomplete or inconsistent"
+                .to_string(),
+        ));
+    }
+
+    let mut residual_ids = HashSet::new();
+    let mut origin_ids = HashSet::new();
+    let mut measurement_ids = HashSet::new();
+    let mut forecast_ids = HashSet::new();
+    let mut generation_ids = HashSet::new();
+    let mut mapping_ids = HashSet::new();
+    let mut alignment_ids = HashSet::new();
+    let mut timeline_ids = HashSet::new();
+    let mut sample_evidence_ids = HashSet::new();
+    let mut ordered_origins = Vec::with_capacity(pool_count);
+    for index in 0..pool_count {
+        for (value, field) in [
+            (evidence.residual_ids[index].as_str(), "residual_id"),
+            (evidence.residual_origin_ids[index].as_str(), "origin_id"),
+            (evidence.measurement_evidence_ids[index].as_str(), "measurement_evidence_id"),
+            (evidence.forecast_evidence_ids[index].as_str(), "forecast_evidence_id"),
+            (evidence.residual_generation_evidence_ids[index].as_str(), "residual_generation_evidence_id"),
+            (evidence.state_mapping_evidence_ids[index].as_str(), "state_mapping_evidence_id"),
+            (evidence.time_alignment_evidence_ids[index].as_str(), "time_alignment_evidence_id"),
+            (evidence.timeline_digest_references[index].as_str(), "timeline_digest_reference"),
+        ] {
+            if value.trim().is_empty() {
+                return Err(AuditError(format!(
+                    "Gaussian copula residual manifest {field} at index {index} is blank"
+                )));
+            }
+        }
+        if !residual_ids.insert(evidence.residual_ids[index].as_str())
+            || !origin_ids.insert(evidence.residual_origin_ids[index].as_str())
+            || !measurement_ids.insert(evidence.measurement_evidence_ids[index].as_str())
+            || !forecast_ids.insert(evidence.forecast_evidence_ids[index].as_str())
+            || !generation_ids.insert(evidence.residual_generation_evidence_ids[index].as_str())
+            || !mapping_ids.insert(evidence.state_mapping_evidence_ids[index].as_str())
+            || !alignment_ids.insert(evidence.time_alignment_evidence_ids[index].as_str())
+            || !timeline_ids.insert(evidence.timeline_digest_references[index].as_str())
+            || evidence.source_sample_evidence_ids[index].len() != dimension
+            || evidence.source_sample_timestamps_ns[index].len() != dimension
+        {
+            return Err(AuditError(
+                "Gaussian copula residual manifest contains duplicate identities or invalid sample dimensions"
+                    .to_string(),
+            ));
+        }
+        let origin = evidence.residual_origin_timestamps_ns[index];
+        let target_end = evidence.residual_target_window_end_timestamps_ns[index];
+        let expected_duration = (dimension as u64)
+            .checked_mul(contract.step_period_ns)
+            .ok_or_else(|| AuditError("copula residual duration overflowed".to_string()))?;
+        if origin.checked_add(expected_duration) != Some(target_end) {
+            return Err(AuditError(
+                "Gaussian copula residual target window differs from the frozen horizon"
+                    .to_string(),
+            ));
+        }
+        for sample_index in 0..dimension {
+            if evidence.source_sample_evidence_ids[index][sample_index].trim().is_empty()
+                || !sample_evidence_ids.insert(
+                    evidence.source_sample_evidence_ids[index][sample_index].as_str(),
+                )
+            {
+                return Err(AuditError(
+                    "Gaussian copula residual sample evidence is blank or reused across blocks"
+                        .to_string(),
+                ));
+            }
+            let offset = (sample_index as u64 + 1)
+                .checked_mul(contract.step_period_ns)
+                .ok_or_else(|| AuditError("copula residual sample offset overflowed".to_string()))?;
+            if origin.checked_add(offset)
+                != Some(evidence.source_sample_timestamps_ns[index][sample_index])
+            {
+                return Err(AuditError(
+                    "Gaussian copula source-sample timestamps do not match the frozen cadence"
+                        .to_string(),
+                ));
+            }
+        }
+        ordered_origins.push(origin);
+    }
+    ordered_origins.sort_unstable();
+    let horizon_duration = (dimension as u64)
+        .checked_mul(contract.step_period_ns)
+        .ok_or_else(|| AuditError("copula horizon duration overflowed".to_string()))?;
+    if ordered_origins.windows(2).any(|pair| {
+        pair[1].checked_sub(pair[0]).is_none_or(|separation| {
+            separation < contract.minimum_residual_origin_separation_ns.max(horizon_duration)
+        })
+    }) {
+        return Err(AuditError(
+            "Gaussian copula residual origin blocks overlap or violate the frozen separation"
+                .to_string(),
+        ));
+    }
+
+    for matrix in [
+        &evidence.empirical_rank_correlation,
+        &evidence.regularized_correlation,
+        &evidence.cholesky_lower_factor,
+    ] {
+        if matrix.len() != dimension || matrix.iter().any(|row| row.len() != dimension) {
+            return Err(AuditError(
+                "Gaussian copula correlation/factor matrix has invalid dimensions".to_string(),
+            ));
+        }
+        if matrix.iter().flatten().any(|value| !value.is_finite()) {
+            return Err(AuditError(
+                "Gaussian copula correlation/factor matrix contains non-finite entries"
+                    .to_string(),
+            ));
+        }
+    }
+    for row in 0..dimension {
+        for column in 0..dimension {
+            let empirical = evidence.empirical_rank_correlation[row][column];
+            let regularized = evidence.regularized_correlation[row][column];
+            let lower = evidence.cholesky_lower_factor[row][column];
+            if (empirical - evidence.empirical_rank_correlation[column][row]).abs() > 1e-10
+                || (regularized - evidence.regularized_correlation[column][row]).abs() > 1e-10
+                || (row == column && (empirical - 1.0).abs() > 1e-8)
+                || (row == column && (regularized - 1.0).abs() > 1e-8)
+                || (row < column && lower.abs() > 1e-12)
+            {
+                return Err(AuditError(
+                    "Gaussian copula correlation matrix symmetry/diagonal or Cholesky triangularity is invalid"
+                        .to_string(),
+                ));
+            }
+            let expected = if row == column {
+                1.0
+            } else {
+                (1.0 - evidence.shrinkage_lambda) * empirical
+            };
+            if (regularized - expected).abs() > 1e-8 {
+                return Err(AuditError(
+                    "Gaussian copula regularized correlation does not match the frozen shrinkage rule"
+                        .to_string(),
+                ));
+            }
+            let mut reconstructed = 0.0;
+            for previous in 0..=row.min(column) {
+                reconstructed += evidence.cholesky_lower_factor[row][previous]
+                    * evidence.cholesky_lower_factor[column][previous];
+            }
+            if (reconstructed - regularized).abs() > 1e-7 {
+                return Err(AuditError(
+                    "Gaussian copula Cholesky factor does not reconstruct the regularized matrix"
+                        .to_string(),
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
 fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditError> {
     scenarios.contract.validate()?;
     if scenarios.claim_ceiling
@@ -1469,7 +1674,8 @@ fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditErr
 
     match scenarios.contract.generator_kind {
         ScenarioGeneratorKind::IndependentQuantileSampling => {
-            if !scenarios.selected_residual_ids.is_empty()
+            if scenarios.gaussian_copula_evidence.is_some()
+                || !scenarios.selected_residual_ids.is_empty()
                 || !scenarios.selected_residual_evidence_ids.is_empty()
                 || !scenarios.selected_residual_forecast_evidence_ids.is_empty()
                 || !scenarios.selected_residual_generation_evidence_ids.is_empty()
@@ -1496,7 +1702,8 @@ fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditErr
         }
         ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap
         | ScenarioGeneratorKind::SchaakeShuffle => {
-            if scenarios.selected_residual_ids.len() != scenarios.contract.scenario_count
+            if scenarios.gaussian_copula_evidence.is_some()
+                || scenarios.selected_residual_ids.len() != scenarios.contract.scenario_count
                 || scenarios.selected_residual_evidence_ids.len()
                     != scenarios.contract.scenario_count
                 || scenarios.selected_residual_forecast_evidence_ids.len()
@@ -1589,6 +1796,25 @@ fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditErr
                     ));
                 }
             }
+        }
+        ScenarioGeneratorKind::GaussianCopula => {
+            if !scenarios.selected_residual_ids.is_empty()
+                || !scenarios.selected_residual_evidence_ids.is_empty()
+                || !scenarios.selected_residual_forecast_evidence_ids.is_empty()
+                || !scenarios.selected_residual_generation_evidence_ids.is_empty()
+                || !scenarios.selected_residual_state_mapping_evidence_ids.is_empty()
+                || !scenarios.selected_residual_time_alignment_evidence_ids.is_empty()
+                || !scenarios.selected_residual_timeline_digest_references.is_empty()
+            {
+                return Err(AuditError(
+                    "Gaussian copula scenarios must carry a pool manifest, not per-row selected-residual attribution"
+                        .to_string(),
+                ));
+            }
+            let evidence = scenarios.gaussian_copula_evidence.as_ref().ok_or_else(|| {
+                AuditError("Gaussian copula scenario set is missing its correlation/pool evidence".to_string())
+            })?;
+            validate_gaussian_copula_evidence(&scenarios.contract, &scenarios.scenarios, evidence)?;
         }
     }
     Ok(())
@@ -1888,6 +2114,7 @@ mod tests {
             kind,
             ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap
                 | ScenarioGeneratorKind::SchaakeShuffle
+                | ScenarioGeneratorKind::GaussianCopula
         );
         ScenarioGenerationContract {
             generator_id: "scenario-generator-v1".to_string(),
@@ -1902,7 +2129,13 @@ mod tests {
             scenario_count: 3,
             deterministic_seed: 42,
             residual_pool_evidence_id: residual_method.then(|| "residual-pool-evidence".to_string()),
-            minimum_residual_trajectory_count: if residual_method { 3 } else { 0 },
+            minimum_residual_trajectory_count: if kind == ScenarioGeneratorKind::GaussianCopula {
+                30
+            } else if residual_method {
+                3
+            } else {
+                0
+            },
             minimum_residual_origin_separation_ns: if residual_method { 30 } else { 0 },
             gaussian_copula_shrinkage: (kind == ScenarioGeneratorKind::GaussianCopula).then_some(0.05),
         }
