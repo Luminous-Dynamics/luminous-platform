@@ -1587,7 +1587,9 @@ fn validate_gaussian_copula_evidence(
             if (empirical - evidence.empirical_rank_correlation[column][row]).abs() > 1e-10
                 || (regularized - evidence.regularized_correlation[column][row]).abs() > 1e-10
                 || (row == column && (empirical - 1.0).abs() > 1e-8)
+                || empirical.abs() > 1.0 + 1e-8
                 || (row == column && (regularized - 1.0).abs() > 1e-8)
+                || (row == column && lower <= 0.0)
                 || (row < column && lower.abs() > 1e-12)
             {
                 return Err(AuditError(
@@ -2208,33 +2210,34 @@ mod tests {
     }
 
     fn copula_residuals() -> Vec<ForecastResidualTrajectory> {
-        let mut pool = residuals();
-        for index in 3..30 {
-            let start = (index as u64 + 1) * 1_000;
-            let mut extra = pool[index % 3].clone();
-            extra.residual_id = format!("copula-residual-{index:03}");
-            extra.origin_id = format!("copula-origin-{index:03}");
-            extra.origin_timestamp_ns = start;
-            extra.target_window_end_ns = start + 30;
-            extra.forecast_evidence_id = format!("copula-forecast-{index:03}");
-            extra.measurement_evidence_id = format!("copula-measurement-{index:03}");
-            extra.residual_generation_evidence_id =
+        let template = residuals()[0].clone();
+        let mut pool = Vec::with_capacity(30);
+        for index in 0..30 {
+            let origin = (index as u64 + 1) * 300;
+            let mut item = template.clone();
+            item.residual_id = format!("copula-residual-{index:03}");
+            item.origin_id = format!("copula-origin-{index:03}");
+            item.origin_timestamp_ns = origin;
+            item.target_window_end_ns = origin + 30;
+            item.forecast_evidence_id = format!("copula-forecast-{index:03}");
+            item.measurement_evidence_id = format!("copula-measurement-{index:03}");
+            item.residual_generation_evidence_id =
                 format!("copula-generation-{index:03}");
-            extra.state_mapping_evidence_id = format!("copula-mapping-{index:03}");
-            extra.time_alignment_evidence_id = format!("copula-alignment-{index:03}");
-            extra.source_timeline_digest_reference = format!("copula-timeline-{index:03}");
-            extra.source_sample_timestamps_ns = vec![start + 10, start + 20, start + 30];
-            extra.source_sample_evidence_ids = vec![
+            item.state_mapping_evidence_id = format!("copula-mapping-{index:03}");
+            item.time_alignment_evidence_id = format!("copula-alignment-{index:03}");
+            item.source_timeline_digest_reference = format!("copula-timeline-{index:03}");
+            item.source_sample_timestamps_ns = vec![origin + 10, origin + 20, origin + 30];
+            item.source_sample_evidence_ids = vec![
                 format!("copula-{index:03}-sample-1"),
                 format!("copula-{index:03}-sample-2"),
                 format!("copula-{index:03}-sample-3"),
             ];
-            extra.residual_power_mw = vec![
+            item.residual_power_mw = vec![
                 ((index * 7) % 29) as i64 - 14,
                 ((index * 11) % 31) as i64 - 15,
                 ((index * 17) % 37) as i64 - 18,
             ];
-            pool.push(extra);
+            pool.push(item);
         }
         pool
     }
