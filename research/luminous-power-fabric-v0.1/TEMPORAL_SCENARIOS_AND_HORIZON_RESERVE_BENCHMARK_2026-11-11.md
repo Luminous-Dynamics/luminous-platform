@@ -157,3 +157,6 @@ Twenty-four synthetic Rust tests are authored. They cover deterministic independ
 - Gneiting and Raftery, [Strictly Proper Scoring Rules, Prediction, and Estimation](https://doi.org/10.1198/016214506000001437), Journal of the American Statistical Association, 2007.
 - Scheuerer and Hamill, [Variogram-Based Proper Scoring Rules for Probabilistic Forecasts of Multivariate Quantities](https://doi.org/10.1175/MWR-D-14-00269.1), Monthly Weather Review, 2015.
 - [MIT Supercloud Dataset](https://github.com/MIT-AI-Accelerator/MIT-Supercloud-Dataset), [MIT Datacenter Challenge data page](https://dcc.mit.edu/data/) and [AWS Registry of Open Data](https://registry.opendata.aws/dcc/). Dataset right-to-use gate: CC BY-NC-ND 4.0.
+
+
+**Parity limitation:** Yao et al. also compare a Gaussian-copula scenario generator. That method is not implemented in this v0.1 module. [Issue #408](https://github.com/Luminous-Dynamics/luminous-platform/issues/408) owns the rank-normal residual dependence estimator, regularized correlation factorization, deterministic copula sampling and the missing four-arm parity tournament. Do not describe PR #407 as a complete reproduction of the paper's scenario suite.
