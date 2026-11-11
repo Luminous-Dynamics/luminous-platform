@@ -196,8 +196,10 @@ pub struct ScenarioTournamentArmSummary {
     pub target_saving_cluster_count: usize,
     pub observed_target_saving_cluster_fraction: f64,
     /// Exact one-sided Clopper–Pearson lower bound over independent clusters.
-    pub exact_lower_confidence_bound_target_saving_probability: f64,
-    pub confidence_level: f64,
+    /// Present for one stratum. The overall multi-stratum descriptive summary
+    /// deliberately has no pooled confidence bound.
+    pub exact_lower_confidence_bound_target_saving_probability: Option<f64>,
+    pub confidence_level: Option<f64>,
     pub baseline_shortfall_episode_fraction: f64,
     pub candidate_shortfall_episode_fraction: f64,
     pub candidate_total_shortfall_mw: u128,
@@ -655,8 +657,8 @@ fn summarize_arm(
         relative_cost_saving_fraction: Some(saving_fraction),
         target_saving_cluster_count: target_success_clusters,
         observed_target_saving_cluster_fraction: target_success_clusters as f64 / clusters.len() as f64,
-        exact_lower_confidence_bound_target_saving_probability: lower_bound,
-        confidence_level: contract.one_sided_confidence,
+        exact_lower_confidence_bound_target_saving_probability: Some(lower_bound),
+        confidence_level: Some(contract.one_sided_confidence),
         baseline_shortfall_episode_fraction,
         candidate_shortfall_episode_fraction: shortfall_fraction,
         candidate_total_shortfall_mw: candidate_shortfall_mw,
@@ -904,11 +906,19 @@ pub fn evaluate_scenario_tournament(
     for (stratum_id, costs) in &clusters_by_stratum {
         let baseline = summarize_baseline(costs)?;
         let mut candidate_arms = Vec::with_capacity(CANDIDATE_GENERATORS.len());
+        // Bonferroni adjustment makes the collection of one-sided stratum
+        // bounds a simultaneous familywise confidence statement.
+        let adjusted_stratum_confidence =
+            1.0 - (1.0 - contract.one_sided_confidence) / contract.required_strata.len() as f64;
+        let adjusted_contract = ScenarioTournamentContract {
+            one_sided_confidence: adjusted_stratum_confidence,
+            ..contract.clone()
+        };
         for generator_kind in CANDIDATE_GENERATORS {
             let (generator_id, generator_revision) =
                 frozen_generator_identity(&generator_versions, generator_kind)?;
             candidate_arms.push(summarize_arm(
-                &contract,
+                &adjusted_contract,
                 generator_kind,
                 costs,
                 baseline.shortfall_episode_fraction,
@@ -944,6 +954,11 @@ pub fn evaluate_scenario_tournament(
             generator_id,
             generator_revision,
         )?;
+        // Do not pool distinct seasonal/workload strata into one binomial
+        // population. Overall costs are descriptive; qualification is the
+        // conjunction of separately multiplicity-adjusted stratum results.
+        summary.exact_lower_confidence_bound_target_saving_probability = None;
+        summary.confidence_level = None;
         let all_strata_qualified = stratum_results.iter().all(|stratum| {
             stratum
                 .candidate_arms
@@ -1068,7 +1083,7 @@ mod tests {
             actual_peak_power_mw: 150,
             actual_max_ramp_up_mw_per_step: 20,
             actual_max_ramp_down_mw_per_step: 10,
-            actual_horizon_max_surplus_mw: 120,
+            actual_horizon_max_surplus_mw: 100,
             scenario_peak_p10_mw: 120,
             scenario_peak_p50_mw: 130,
             scenario_peak_p90_mw: 140,
@@ -1150,6 +1165,27 @@ mod tests {
         assert!(result.overall_candidate_arms.iter().all(|arm| arm.qualified_under_declared_benchmark));
         assert!(result.overall_candidate_arms.iter().all(|arm| {
             arm.relative_cost_saving_fraction.is_some_and(|value| value >= 0.074)
+        }));
+    }
+
+    #[test]
+    fn stratum_bounds_use_bonferroni_familywise_confidence_and_overall_has_no_pooled_bound() {
+        let mut config = contract();
+        config.required_strata = vec!["normal".to_string(), "winter".to_string()];
+        config.minimum_cluster_target_success_probability = 0.47;
+        let mut input = clusters(8, true);
+        for cluster in input.iter_mut().skip(4) {
+            cluster.stratum_id = "winter".to_string();
+        }
+        let result = evaluate_scenario_tournament(config, input).unwrap();
+        assert_eq!(result.strata.len(), 2);
+        assert!(result.strata.iter().all(|stratum| {
+            stratum.candidate_arms.iter().all(|arm| arm.confidence_level == Some(0.95))
+        }));
+        assert!(result.overall_candidate_arms.iter().all(|arm| {
+            arm.exact_lower_confidence_bound_target_saving_probability.is_none()
+                && arm.confidence_level.is_none()
+                && arm.qualified_under_declared_benchmark
         }));
     }
 
