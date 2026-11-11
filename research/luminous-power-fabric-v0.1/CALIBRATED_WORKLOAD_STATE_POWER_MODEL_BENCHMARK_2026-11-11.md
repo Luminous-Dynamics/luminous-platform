@@ -138,3 +138,11 @@ Prediction now only accepts a run explicitly declared in the fitted model's held
 The calibration run and mapped prediction trace must also declare the exact same clock-alignment method ID as the model contract. A PTP-labelled calibration cannot be joined to an NTP- or host-clock-mapped trace without a new explicitly validated alignment contract. These are implemented fail-closed checks; the clock evidence itself still depends on the supplied evidence references and is not cryptographically authenticated by this module.
 
 The output trace also carries the specific mapped-input `state_mapping_evidence_id`, in addition to the model's calibration-run mapping evidence, clock-alignment evidence and source timeline digest reference. This makes the per-prediction input mapping provenance explicit in the output object.
+
+## 12. Separate held-out evaluation from operational scenario prediction
+
+The API now exposes two distinct paths:
+- `predict_power_trace`: held-out validation only; the run ID must be declared in the whole-session held-out partition.
+- `predict_operational_scenario`: new scenario forecast; the run ID must not appear in either training or held-out calibration runs.
+
+The prediction trace carries its `PredictionScope` and a matching claim ceiling. `evaluate_held_out_power_trace` rejects operational-scenario predictions, so a scenario estimate cannot be relabelled as a held-out score. This allows #400/#403/#404 to consume a fitted model for new hypothetical timelines without weakening the calibration leakage barrier. Scenario forecasts remain MODELLED and still require exact configuration, boundary, workload, state-mapper, clock-alignment and supported state/transition matches.
