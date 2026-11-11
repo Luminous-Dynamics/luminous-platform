@@ -260,6 +260,9 @@ pub struct ForecastScenarioTrajectory {
     /// Empty only for the independent-quantile negative-control arm.
     pub source_sample_evidence_ids: Vec<String>,
     pub source_sample_timestamps_ns: Vec<u64>,
+    /// Complete historical residual block for bootstrap/Schaake arms.
+    /// Absent for independent marginal and Gaussian-copula scenarios.
+    pub source_residual_trajectory: Option<ForecastResidualTrajectory>,
     pub power_mw: Vec<u64>,
 }
 
@@ -368,6 +371,7 @@ pub struct ScenarioEvaluationReport {
     pub selected_residual_timeline_digest_references: Vec<String>,
     pub selected_residual_sample_evidence_ids: Vec<Vec<String>>,
     pub selected_residual_sample_timestamps_ns: Vec<Vec<u64>>,
+    pub selected_residual_trajectories: Vec<Option<ForecastResidualTrajectory>>,
     pub scenario_count: usize,
     pub horizon_steps: usize,
     pub energy_score_mw: f64,
@@ -732,6 +736,7 @@ fn generate_independent_scenarios(
             source_residual_timeline_digest_reference: None,
             source_sample_evidence_ids: Vec::new(),
             source_sample_timestamps_ns: Vec::new(),
+            source_residual_trajectory: None,
             power_mw: vec![0; contract.horizon_steps],
         });
     }
@@ -788,6 +793,7 @@ fn generate_residual_bootstrap(
             source_residual_timeline_digest_reference: Some(residual.source_timeline_digest_reference.clone()),
             source_sample_evidence_ids: residual.source_sample_evidence_ids.clone(),
             source_sample_timestamps_ns: residual.source_sample_timestamps_ns.clone(),
+            source_residual_trajectory: Some(residual.clone()),
             power_mw: power,
         });
         selected_ids.push(residual.residual_id.clone());
@@ -819,6 +825,7 @@ fn generate_schaake_shuffle(
             source_residual_timeline_digest_reference: Some(residuals[*residual_index].source_timeline_digest_reference.clone()),
             source_sample_evidence_ids: residuals[*residual_index].source_sample_evidence_ids.clone(),
             source_sample_timestamps_ns: residuals[*residual_index].source_sample_timestamps_ns.clone(),
+            source_residual_trajectory: Some(residuals[*residual_index].clone()),
             power_mw: Vec::with_capacity(contract.horizon_steps),
         })
         .collect();
@@ -1182,6 +1189,7 @@ fn generate_gaussian_copula(
             source_residual_timeline_digest_reference: None,
             source_sample_evidence_ids: Vec::new(),
             source_sample_timestamps_ns: Vec::new(),
+            source_residual_trajectory: None,
             power_mw: power,
         });
     }
@@ -1510,6 +1518,7 @@ pub(crate) fn validate_gaussian_copula_evidence(
                 || scenario.source_residual_timeline_digest_reference.is_some()
                 || !scenario.source_sample_evidence_ids.is_empty()
                 || !scenario.source_sample_timestamps_ns.is_empty()
+                || scenario.source_residual_trajectory.is_some()
         })
     {
         return Err(AuditError(
@@ -1773,6 +1782,7 @@ fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditErr
                         || scenario.source_residual_timeline_digest_reference.is_some()
                         || !scenario.source_sample_evidence_ids.is_empty()
                         || !scenario.source_sample_timestamps_ns.is_empty()
+                        || scenario.source_residual_trajectory.is_some()
                 })
             {
                 return Err(AuditError(
@@ -1817,6 +1827,7 @@ fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditErr
                         || scenario.source_sample_timestamps_ns.len()
                             != scenarios.contract.horizon_steps
                         || scenario.source_sample_evidence_ids.iter().any(|id| id.trim().is_empty())
+                        || scenario.source_residual_trajectory.is_none()
                 })
             {
                 return Err(AuditError(
@@ -1844,6 +1855,61 @@ fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditErr
                         "scenario residual lineage differs from selected residual manifest"
                             .to_string(),
                     ));
+                }
+                let residual = scenario.source_residual_trajectory.as_ref().ok_or_else(|| {
+                    AuditError("complete selected residual trajectory record is missing".to_string())
+                })?;
+                let duration_ns = (scenarios.contract.horizon_steps as u64)
+                    .checked_mul(scenarios.contract.step_period_ns)
+                    .ok_or_else(|| AuditError("residual trajectory duration overflowed".to_string()))?;
+                if residual.residual_id != scenarios.selected_residual_ids[index]
+                    || residual.measurement_evidence_id != scenarios.selected_residual_evidence_ids[index]
+                    || residual.forecast_evidence_id != scenarios.selected_residual_forecast_evidence_ids[index]
+                    || residual.residual_generation_evidence_id != scenarios.selected_residual_generation_evidence_ids[index]
+                    || residual.state_mapping_evidence_id != scenarios.selected_residual_state_mapping_evidence_ids[index]
+                    || residual.time_alignment_evidence_id != scenarios.selected_residual_time_alignment_evidence_ids[index]
+                    || residual.source_timeline_digest_reference != scenarios.selected_residual_timeline_digest_references[index]
+                    || residual.source_sample_evidence_ids != scenario.source_sample_evidence_ids
+                    || residual.source_sample_timestamps_ns != scenario.source_sample_timestamps_ns
+                    || residual.model_contract != scenarios.contract.model_contract
+                    || residual.operating_regime_id != scenarios.contract.operating_regime_id
+                    || residual.origin_id == scenarios.forecast_origin_id
+                    || residual.origin_timestamp_ns.checked_add(duration_ns) != Some(residual.target_window_end_ns)
+                    || residual.target_window_end_ns > scenarios.forecast_origin_timestamp_ns
+                    || residual.source_sample_evidence_ids.len() != scenarios.contract.horizon_steps
+                {
+                    return Err(AuditError(
+                        "scenario residual record is contract-mismatched, incomplete or future-dated"
+                            .to_string(),
+                    ));
+                }
+                for sample_index in 0..scenarios.contract.horizon_steps {
+                    let offset = (sample_index as u64 + 1)
+                        .checked_mul(scenarios.contract.step_period_ns)
+                        .ok_or_else(|| AuditError("residual sample offset overflowed".to_string()))?;
+                    if residual.origin_timestamp_ns.checked_add(offset)
+                        != Some(residual.source_sample_timestamps_ns[sample_index])
+                    {
+                        return Err(AuditError(
+                            "residual source-sample timestamps do not match its origin and cadence"
+                                .to_string(),
+                        ));
+                    }
+                }
+                if scenarios.contract.generator_kind
+                    == ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap
+                {
+                    for horizon_index in 0..scenarios.contract.horizon_steps {
+                        let expected = scenarios.scheduled_median_power_mw[horizon_index] as i128
+                            + residual.residual_power_mw[horizon_index] as i128;
+                        let expected = expected.clamp(0, u64::MAX as i128) as u64;
+                        if scenario.power_mw[horizon_index] != expected {
+                            return Err(AuditError(
+                                "bootstrap scenario does not reproduce its complete residual trajectory"
+                                    .to_string(),
+                            ));
+                        }
+                    }
                 }
                 let mut sample_ids = HashSet::new();
                 let mut previous_timestamp = None;
@@ -2090,6 +2156,9 @@ pub fn evaluate_forecast_scenarios(
             .collect(),
         selected_residual_sample_timestamps_ns: scenarios.scenarios.iter()
             .map(|scenario| scenario.source_sample_timestamps_ns.clone())
+            .collect(),
+        selected_residual_trajectories: scenarios.scenarios.iter()
+            .map(|scenario| scenario.source_residual_trajectory.clone())
             .collect(),
         scenario_count,
         horizon_steps: scenarios.contract.horizon_steps,
