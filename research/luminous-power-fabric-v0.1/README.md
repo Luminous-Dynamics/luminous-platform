@@ -258,3 +258,11 @@ CLLC models remain bounded by their documented ideal/FHA/equation assumptions. N
 physical ZVS guarantee or permission to energize hardware. High-voltage and grid-connected product
 families remain architecture/research tracks only. Hardware energization remains gated on qualified
 engineering review, fault/energy analysis, suitable laboratory containment and a reviewed procedure.
+
+## Repeated-event grid-interactive compute qualification
+
+The new [Grid-Interactive Compute Resource Qualification v0.1](./GRID_INTERACTIVE_COMPUTE_RESOURCE_QUALIFICATION_2026-11-11.md) adds an offline event-level evaluator for compute-derived demand response. It binds the claim to one resource, grid zone, point of interconnection, operating envelope, workload contract, frozen counterfactual and control action.
+
+The evaluator subtracts independently measured non-compute load reductions and conservative uncertainty bounds, then evaluates service quality, useful-work retention, response, sustain, recovery and rebound across repeated events. It reports P10 credited compute capacity and a conditional Wilson lower confidence bound; it explicitly does not provide market accreditation or grid-service authorization.
+
+This is a measurement protocol and synthetic evaluator only. Sixteen new tests are authored but not executed; there is no compiled, CI-tested, site-measured or field-validated result.
