@@ -103,7 +103,7 @@ pub struct ScenarioGenerationContract {
 }
 
 impl ScenarioGenerationContract {
-    fn validate(&self) -> Result<(), AuditError> {
+    pub(crate) fn validate(&self) -> Result<(), AuditError> {
         for (value, field) in [
             (self.generator_id.as_str(), "generator_id"),
             (self.generator_revision.as_str(), "generator_revision"),
@@ -345,6 +345,8 @@ pub struct MeasuredForecastHorizon {
 pub struct ScenarioEvaluationReport {
     pub forecast_id: String,
     pub forecast_origin_id: String,
+    pub forecast_origin_timestamp_ns: u64,
+    pub scenario_generation_contract: ScenarioGenerationContract,
     pub model_contract: PowerModelContract,
     pub generator_id: String,
     pub generator_revision: String,
@@ -1463,7 +1465,7 @@ fn empirical_pit_u128(values: &[u128], actual: u128) -> f64 {
     (less + 0.5 * equal) / values.len() as f64
 }
 
-fn validate_gaussian_copula_evidence(
+pub(crate) fn validate_gaussian_copula_evidence(
     contract: &ScenarioGenerationContract,
     forecast_origin_id: &str,
     forecast_origin_timestamp_ns: u64,
@@ -2062,6 +2064,8 @@ pub fn evaluate_forecast_scenarios(
     Ok(ScenarioEvaluationReport {
         forecast_id: scenarios.forecast_id.clone(),
         forecast_origin_id: scenarios.forecast_origin_id.clone(),
+        forecast_origin_timestamp_ns: scenarios.forecast_origin_timestamp_ns,
+        scenario_generation_contract: scenarios.contract.clone(),
         model_contract: scenarios.contract.model_contract.clone(),
         generator_id: scenarios.contract.generator_id.clone(),
         generator_revision: scenarios.contract.generator_revision.clone(),
