@@ -146,7 +146,7 @@ The new temporal_scenarios module:
 - evaluates scenario energy score, variogram score, peak/ramp/energy diagnostics, PIT and horizon-wide reserve critical-fractile outcomes;
 - labels results as modelled scenario/reserve economics, not measured or accredited capacity.
 
-Twenty-three synthetic Rust tests are authored. They cover deterministic independent-marginal sampling, with-replacement residual bootstrap, source trajectory integrity, Schaake marginal sample preservation, residual overlap/future leakage, quantile crossing, timestamp alignment, insufficient support, reserve critical fractile, energy/variogram scoring, invalid measurements, residual identity and explicit claim ceiling.
+Twenty-four synthetic Rust tests are authored. They cover deterministic independent-marginal sampling, with-replacement residual bootstrap, source trajectory integrity, Schaake marginal sample preservation, residual overlap/future leakage, quantile crossing, timestamp alignment, insufficient support, reserve critical fractile, energy/variogram scoring, invalid measurements, residual identity, full provenance carry-through and claim-ceiling tampering.
 
 **Tests are authored but not executed.** No Rust compilation, cargo test, formatting, Clippy, runtime benchmark, MIT dataset download, paper result reproduction, physical PCC measurement, grid dispatch, reserve delivery or grid accreditation is claimed.
 
