@@ -130,3 +130,9 @@ The state-model output is tagged MODELLED. Only #382's matched physical data are
 - State labels and clock-alignment evidence are supplied by callers and are not authenticated by this module.
 - This is not a replication of Microsoft's compositional generator.
 - No device/rack/facility aggregation, long-memory state model, power-control action, grid bid, carbon accounting or hardware qualification is implemented.
+
+## 11. Additional leakage and clock-identity hardening
+
+Prediction now only accepts a run explicitly declared in the fitted model's held-out run set. A prediction cannot target a training run. The held-out evaluator independently checks that the run being scored is present in the prediction trace's carried held-out evidence manifest; a caller cannot relabel a prediction run and bypass the split merely by supplying a matching string.
+
+The calibration run and mapped prediction trace must also declare the exact same clock-alignment method ID as the model contract. A PTP-labelled calibration cannot be joined to an NTP- or host-clock-mapped trace without a new explicitly validated alignment contract. These are implemented fail-closed checks; the clock evidence itself still depends on the supplied evidence references and is not cryptographically authenticated by this module.
