@@ -270,6 +270,12 @@ pub struct GaussianCopulaEvidence {
     pub residual_origin_ids: Vec<String>,
     pub residual_origin_timestamps_ns: Vec<u64>,
     pub residual_target_window_end_timestamps_ns: Vec<u64>,
+    pub residual_operating_regime_ids: Vec<String>,
+    pub residual_clock_ids: Vec<String>,
+    pub residual_time_origin_ids: Vec<String>,
+    pub residual_model_contracts: Vec<PowerModelContract>,
+    pub raw_residual_power_mw: Vec<Vec<i64>>,
+    pub rank_normal_scores: Vec<Vec<f64>>,
     pub measurement_evidence_ids: Vec<String>,
     pub forecast_evidence_ids: Vec<String>,
     pub residual_generation_evidence_ids: Vec<String>,
@@ -932,33 +938,39 @@ fn standard_normal_cdf(value: f64) -> Result<f64, AuditError> {
     Ok(probability.clamp(1e-15, 1.0 - 1e-15))
 }
 
-fn rank_normal_scores(
-    residuals: &[ForecastResidualTrajectory],
+fn rank_normal_scores_from_values(
+    residual_values: &[Vec<i64>],
+    residual_ids: &[String],
     horizon_steps: usize,
 ) -> Result<Vec<Vec<f64>>, AuditError> {
-    if residuals.len() < 3 || horizon_steps == 0 {
+    if residual_values.len() < 3
+        || residual_values.len() != residual_ids.len()
+        || horizon_steps == 0
+        || residual_values.iter().any(|row| row.len() != horizon_steps)
+        || residual_ids.iter().any(|value| value.trim().is_empty())
+    {
         return Err(AuditError(
-            "rank-normal residual estimation requires at least three trajectories and one horizon step"
+            "rank-normal residual evidence has invalid identities, dimensions or support"
                 .to_string(),
         ));
     }
-    let sample_count = residuals.len();
+    let sample_count = residual_values.len();
     let mut scores = vec![vec![0.0; horizon_steps]; sample_count];
 
     for horizon_index in 0..horizon_steps {
         let mut ordered: Vec<usize> = (0..sample_count).collect();
         ordered.sort_by(|left, right| {
-            residuals[*left].residual_power_mw[horizon_index]
-                .cmp(&residuals[*right].residual_power_mw[horizon_index])
-                .then_with(|| residuals[*left].residual_id.cmp(&residuals[*right].residual_id))
+            residual_values[*left][horizon_index]
+                .cmp(&residual_values[*right][horizon_index])
+                .then_with(|| residual_ids[*left].cmp(&residual_ids[*right]))
         });
 
         let mut start = 0_usize;
         while start < ordered.len() {
-            let value = residuals[ordered[start]].residual_power_mw[horizon_index];
+            let value = residual_values[ordered[start]][horizon_index];
             let mut end = start + 1;
             while end < ordered.len()
-                && residuals[ordered[end]].residual_power_mw[horizon_index] == value
+                && residual_values[ordered[end]][horizon_index] == value
             {
                 end += 1;
             }
@@ -977,6 +989,21 @@ fn rank_normal_scores(
     }
 
     Ok(scores)
+}
+
+fn rank_normal_scores(
+    residuals: &[ForecastResidualTrajectory],
+    horizon_steps: usize,
+) -> Result<Vec<Vec<f64>>, AuditError> {
+    let residual_values: Vec<Vec<i64>> = residuals
+        .iter()
+        .map(|item| item.residual_power_mw.clone())
+        .collect();
+    let residual_ids: Vec<String> = residuals
+        .iter()
+        .map(|item| item.residual_id.clone())
+        .collect();
+    rank_normal_scores_from_values(&residual_values, &residual_ids, horizon_steps)
 }
 
 fn empirical_rank_correlation(scores: &[Vec<f64>], horizon_steps: usize) -> Result<Vec<Vec<f64>>, AuditError> {
@@ -1165,6 +1192,12 @@ fn generate_gaussian_copula(
         residual_origin_ids: residuals.iter().map(|item| item.origin_id.clone()).collect(),
         residual_origin_timestamps_ns: residuals.iter().map(|item| item.origin_timestamp_ns).collect(),
         residual_target_window_end_timestamps_ns: residuals.iter().map(|item| item.target_window_end_ns).collect(),
+        residual_operating_regime_ids: residuals.iter().map(|item| item.operating_regime_id.clone()).collect(),
+        residual_clock_ids: residuals.iter().map(|item| item.clock_id.clone()).collect(),
+        residual_time_origin_ids: residuals.iter().map(|item| item.time_origin_id.clone()).collect(),
+        residual_model_contracts: residuals.iter().map(|item| item.model_contract.clone()).collect(),
+        raw_residual_power_mw: residuals.iter().map(|item| item.residual_power_mw.clone()).collect(),
+        rank_normal_scores: scores.clone(),
         measurement_evidence_ids: residuals.iter().map(|item| item.measurement_evidence_id.clone()).collect(),
         forecast_evidence_ids: residuals.iter().map(|item| item.forecast_evidence_id.clone()).collect(),
         residual_generation_evidence_ids: residuals.iter().map(|item| item.residual_generation_evidence_id.clone()).collect(),
@@ -1443,6 +1476,12 @@ fn validate_gaussian_copula_evidence(
         evidence.residual_origin_ids.len(),
         evidence.residual_origin_timestamps_ns.len(),
         evidence.residual_target_window_end_timestamps_ns.len(),
+        evidence.residual_operating_regime_ids.len(),
+        evidence.residual_clock_ids.len(),
+        evidence.residual_time_origin_ids.len(),
+        evidence.residual_model_contracts.len(),
+        evidence.raw_residual_power_mw.len(),
+        evidence.rank_normal_scores.len(),
         evidence.measurement_evidence_ids.len(),
         evidence.forecast_evidence_ids.len(),
         evidence.residual_generation_evidence_ids.len(),
@@ -1485,6 +1524,9 @@ fn validate_gaussian_copula_evidence(
         for (value, field) in [
             (evidence.residual_ids[index].as_str(), "residual_id"),
             (evidence.residual_origin_ids[index].as_str(), "origin_id"),
+            (evidence.residual_operating_regime_ids[index].as_str(), "operating_regime_id"),
+            (evidence.residual_clock_ids[index].as_str(), "clock_id"),
+            (evidence.residual_time_origin_ids[index].as_str(), "time_origin_id"),
             (evidence.measurement_evidence_ids[index].as_str(), "measurement_evidence_id"),
             (evidence.forecast_evidence_ids[index].as_str(), "forecast_evidence_id"),
             (evidence.residual_generation_evidence_ids[index].as_str(), "residual_generation_evidence_id"),
@@ -1500,6 +1542,13 @@ fn validate_gaussian_copula_evidence(
         }
         if !residual_ids.insert(evidence.residual_ids[index].as_str())
             || !origin_ids.insert(evidence.residual_origin_ids[index].as_str())
+            || evidence.residual_operating_regime_ids[index] != contract.operating_regime_id
+            || evidence.residual_clock_ids[index] != contract.clock_id
+            || evidence.residual_time_origin_ids[index] != contract.time_origin_id
+            || evidence.residual_model_contracts[index] != contract.model_contract
+            || evidence.raw_residual_power_mw[index].len() != dimension
+            || evidence.rank_normal_scores[index].len() != dimension
+            || evidence.rank_normal_scores[index].iter().any(|value| !value.is_finite())
             || evidence.source_sample_evidence_ids[index].len() != dimension
             || evidence.source_sample_timestamps_ns[index].len() != dimension
         {
@@ -1560,6 +1609,37 @@ fn validate_gaussian_copula_evidence(
             "Gaussian copula residual origin blocks overlap or violate the frozen separation"
                 .to_string(),
         ));
+    }
+
+    let recomputed_scores = rank_normal_scores_from_values(
+        &evidence.raw_residual_power_mw,
+        &evidence.residual_ids,
+        dimension,
+    )?;
+    for (expected_row, actual_row) in recomputed_scores.iter().zip(evidence.rank_normal_scores.iter()) {
+        for (expected, actual) in expected_row.iter().zip(actual_row.iter()) {
+            if (expected - actual).abs() > 1e-10 {
+                return Err(AuditError(
+                    "Gaussian copula retained rank-normal score matrix does not match its raw residuals"
+                        .to_string(),
+                ));
+            }
+        }
+    }
+    let recomputed_correlation =
+        empirical_rank_correlation(&recomputed_scores, dimension)?;
+    for row in 0..dimension {
+        for column in 0..dimension {
+            if (recomputed_correlation[row][column]
+                - evidence.empirical_rank_correlation[row][column])
+                .abs() > 1e-8
+            {
+                return Err(AuditError(
+                    "Gaussian copula empirical rank correlation does not match retained residual blocks"
+                        .to_string(),
+                ));
+            }
+        }
     }
 
     for matrix in [
@@ -2290,6 +2370,10 @@ mod tests {
         assert!(first.selected_residual_ids.is_empty());
         let evidence = first.gaussian_copula_evidence.as_ref().unwrap();
         assert_eq!(evidence.residual_ids.len(), 30);
+        assert_eq!(evidence.raw_residual_power_mw.len(), 30);
+        assert_eq!(evidence.rank_normal_scores.len(), 30);
+        assert_eq!(evidence.residual_model_contracts[0], model_contract());
+        assert_eq!(evidence.residual_clock_ids[0], "clock-common");
         assert_eq!(evidence.shrinkage_lambda, 0.05);
         assert_eq!(evidence.empirical_rank_correlation.len(), 3);
         assert_eq!(evidence.regularized_correlation.len(), 3);
@@ -2343,6 +2427,38 @@ mod tests {
             config,
             &forecast(),
             &copula_residuals(),
+        ).is_err());
+    }
+
+    #[test]
+    fn gaussian_copula_evaluation_rejects_tampered_rank_normal_score_manifest() {
+        let mut scenarios = generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::GaussianCopula),
+            &forecast(),
+            &copula_residuals(),
+        ).unwrap();
+        scenarios.gaussian_copula_evidence.as_mut().unwrap()
+            .rank_normal_scores[0][0] += 0.1;
+        assert!(evaluate_forecast_scenarios(
+            &scenarios,
+            &actual_horizon(),
+            0.10,
+        ).is_err());
+    }
+
+    #[test]
+    fn gaussian_copula_evaluation_rejects_residual_model_contract_tampering() {
+        let mut scenarios = generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::GaussianCopula),
+            &forecast(),
+            &copula_residuals(),
+        ).unwrap();
+        scenarios.gaussian_copula_evidence.as_mut().unwrap()
+            .residual_model_contracts[0].model_revision = "rev-other".to_string();
+        assert!(evaluate_forecast_scenarios(
+            &scenarios,
+            &actual_horizon(),
+            0.10,
         ).is_err());
     }
 
