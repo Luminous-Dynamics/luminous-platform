@@ -25,7 +25,7 @@ A frozen ClusteredReliabilityContract binds:
 - the lower-tail quantile and one-sided confidence target;
 - an explicit independence-review evidence reference and minimum cluster separation.
 
-Each IndependenceCluster has a stable ID, one declared operating stratum, a half-open sampling window and design evidence. The contract freezes one common window duration and a minimum event count per cluster, so cluster minima do not mix different observation exposures or materially different event counts. Every source dispatch event must map to exactly one cluster with an assignment evidence reference. The complete dispatch and recovery interval must fit inside the cluster window. Cluster windows cannot overlap; when independence is claimed, the declared minimum separation is enforced.
+Each IndependenceCluster has a stable ID, one declared operating stratum, a half-open sampling window and design evidence. The contract freezes one common window duration and an exact event count per cluster, so cluster minima do not mix different observation exposures or different event counts. Every source dispatch event must map to exactly one cluster with an assignment evidence reference. The complete dispatch and recovery interval must fit inside the cluster window. Cluster windows cannot overlap; when independence is claimed, the declared minimum separation is enforced.
 
 The independence review must justify the unit and separation from the operating process: site, season/thermal state, workload regime, dispatch cadence, common-cause events, maintenance and recovery. The implementation checks the declared window and evidence structure; it cannot prove independence from identifiers or timestamps alone.
 
@@ -64,7 +64,7 @@ where gamma is the requested confidence. This is intentionally conservative: it 
 
 These counts apply to independent clusters **within each declared stratum**. Thirty dispatches in three clusters do not satisfy a 22-cluster P10/90% requirement.
 
-The cluster-level success probability is reported separately using the existing one-sided Wilson score lower bound, but with the number of independent clusters as its denominator and the success definition S_c=1. This is a block-level “all events succeeded” reliability statement, not the per-event success probability. Wilson's normal-score interval is approximate; the confidence level and z-score remain explicit.
+The cluster-level success probability is reported separately using a one-sided Wilson score lower bound with the number of independent clusters as its denominator and the success definition S_c=1. Its z-score is frozen explicitly in the clustered contract, separate from the confidence level used for the distribution-free capacity bound. This is a block-level “all events succeeded” reliability statement, not the per-event success probability. Wilson's normal-score interval is approximate.
 
 ## 5. Why this is not just a bootstrap
 
