@@ -309,7 +309,7 @@ The scenario evaluator now contains all four scenario arms described in the Yao 
 
 ## Paired, cluster-aware scenario decision benchmark
 
-A new Rust \`scenario_tournament\` layer now compares independent marginal sampling, Gaussian copula, empirical residual bootstrap and Schaake shuffle on the exact same forecast origins and measured horizons. It rejects comparisons that change the model, clock, workload, measurement evidence, horizon, scenario count or reserve/shortfall ratio.
+A new Rust \`scenario_tournament\` layer now compares independent marginal sampling, Gaussian copula, empirical residual bootstrap and Schaake shuffle on the exact same forecast origins and measured horizons. It rejects comparisons that change the model, clock, workload, measurement evidence, horizon, scenario count or reserve/shortfall ratio. Bootstrap and Schaake selected residual records must also match the same complete historical residual pool used by the Gaussian copula, including raw residual vectors and origin/time/source evidence.
 
 The statistical unit is a fixed-exposure operating cluster. Episodes inside a cluster may be dependent; the benchmark aggregates their paired cost outcomes before inference. It uses an exact one-sided Clopper–Pearson lower bound over independent clusters and Bonferroni-adjusted confidence across required strata. Overall pooled cost comparisons are descriptive only.
 
