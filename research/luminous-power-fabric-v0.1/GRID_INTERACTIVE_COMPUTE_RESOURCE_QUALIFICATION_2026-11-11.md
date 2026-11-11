@@ -107,7 +107,7 @@ An event is service-feasible only when all of the following hold:
 - Sustained delivery lasts at least the declared minimum.
 - Useful-work retention remains above its declared floor.
 - P99 latency, P99 TTFT and SLO violation remain inside their limits.
-- The recovery observation is bound to explicit start/end timestamps, begins after the dispatch window, does not overlap another event or recovery interval, and is long enough to cover the declared horizon.
+- The recovery observation is bound to explicit start/end timestamps, begins exactly at the dispatch-window end (no unobserved gap), does not overlap another event or recovery interval, and is long enough to cover the declared horizon.
 - Rebound energy is actually measured and bounded.
 
 Energy shifted into the recovery window is not free flexibility:
