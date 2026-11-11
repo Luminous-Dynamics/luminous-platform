@@ -73,6 +73,9 @@ pub struct MultiSiteAggregationContract {
     /// Tail-coexceedance is suppressed until this many aligned observations exist.
     pub minimum_tail_sample_count: usize,
     pub maximum_lag_samples: usize,
+    /// Power-of-two segment length for Welch spectral coherence.
+    pub spectral_segment_length: usize,
+    pub minimum_spectral_segments: usize,
 }
 
 impl MultiSiteAggregationContract {
@@ -110,6 +113,14 @@ impl MultiSiteAggregationContract {
                     .to_string(),
             ));
         }
+        if self.spectral_segment_length < 4
+            || !self.spectral_segment_length.is_power_of_two()
+            || self.minimum_spectral_segments < 2
+        {
+            return Err(AuditError(
+                "Welch segment length must be a power of two >=4 and minimum segment count >=2".to_string(),
+            ));
+        }
         if self.maximum_lag_samples > i32::MAX as usize
             || self.sample_period_ns > i64::MAX as u64
             || (self.maximum_lag_samples as u128)
@@ -143,6 +154,16 @@ pub struct LaggedCorrelationMetric {
     pub lag_ns: i64,
     pub sample_count: usize,
     pub pearson: Option<f64>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct SpectralCoherenceMetric {
+    pub first_site_id: String,
+    pub second_site_id: String,
+    pub frequency_hz: f64,
+    pub coherence: Option<f64>,
+    pub segment_count: usize,
+    pub segment_length: usize,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -190,6 +211,7 @@ pub struct MultiSiteAggregationReport {
     pub variance_decomposition_residual_mw2: f64,
     pub pairwise_dependence: Vec<SiteDependenceMetric>,
     pub lagged_correlations: Vec<LaggedCorrelationMetric>,
+    pub spectral_coherence: Vec<SpectralCoherenceMetric>,
     pub source_site_ids: Vec<String>,
     pub source_run_ids: Vec<String>,
     pub source_session_ids: Vec<String>,
@@ -408,6 +430,151 @@ fn nearest_rank_u128(values: &[u128], numerator: usize, denominator: usize) -> u
     ordered[rank - 1]
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+struct Complex {
+    re: f64,
+    im: f64,
+}
+
+impl Complex {
+    fn multiply(self, other: Self) -> Self {
+        Self {
+            re: self.re * other.re - self.im * other.im,
+            im: self.re * other.im + self.im * other.re,
+        }
+    }
+
+    fn add(self, other: Self) -> Self {
+        Self {
+            re: self.re + other.re,
+            im: self.im + other.im,
+        }
+    }
+
+    fn magnitude_squared(self) -> f64 {
+        self.re * self.re + self.im * self.im
+    }
+}
+
+/// In-place radix-2 forward FFT. Input length must be a power of two.
+fn fft(values: &mut [Complex]) {
+    let n = values.len();
+    let mut reversed = 0_usize;
+    for index in 1..n {
+        let mut bit = n >> 1;
+        while reversed & bit != 0 {
+            reversed ^= bit;
+            bit >>= 1;
+        }
+        reversed ^= bit;
+        if index < reversed {
+            values.swap(index, reversed);
+        }
+    }
+
+    let mut block_length = 2_usize;
+    while block_length <= n {
+        let angle = -2.0 * std::f64::consts::PI / block_length as f64;
+        let root = Complex { re: angle.cos(), im: angle.sin() };
+        for block_start in (0..n).step_by(block_length) {
+            let mut twiddle = Complex { re: 1.0, im: 0.0 };
+            for offset in 0..(block_length / 2) {
+                let even = values[block_start + offset];
+                let odd = values[block_start + offset + block_length / 2]
+                    .multiply(twiddle);
+                values[block_start + offset] = even.add(odd);
+                values[block_start + offset + block_length / 2] = Complex {
+                    re: even.re - odd.re,
+                    im: even.im - odd.im,
+                };
+                twiddle = twiddle.multiply(root);
+            }
+        }
+        block_length *= 2;
+    }
+}
+
+/// Welch magnitude-squared coherence with 50% overlap and Hann windows.
+/// Returns no bins unless the configured number of complete segments exists.
+fn welch_spectral_coherence(
+    left: &[u64],
+    right: &[u64],
+    segment_length: usize,
+    minimum_segments: usize,
+    sample_period_ns: u64,
+) -> Vec<(f64, Option<f64>, usize)> {
+    if left.len() != right.len() || segment_length < 4
+        || !segment_length.is_power_of_two() || left.len() < segment_length
+    {
+        return Vec::new();
+    }
+    let hop = segment_length / 2;
+    let starts: Vec<usize> = (0..=(left.len() - segment_length))
+        .step_by(hop)
+        .collect();
+    if starts.len() < minimum_segments {
+        return Vec::new();
+    }
+
+    let window: Vec<f64> = (0..segment_length)
+        .map(|index| {
+            0.5 * (1.0 - (2.0 * std::f64::consts::PI * index as f64
+                / (segment_length - 1) as f64).cos())
+        })
+        .collect();
+    let bins = segment_length / 2 + 1;
+    let mut cross_sum = vec![Complex::default(); bins];
+    let mut left_power_sum = vec![0.0_f64; bins];
+    let mut right_power_sum = vec![0.0_f64; bins];
+
+    for start in starts.iter().copied() {
+        let left_slice = &left[start..start + segment_length];
+        let right_slice = &right[start..start + segment_length];
+        let left_mean = mean(left_slice);
+        let right_mean = mean(right_slice);
+        let mut left_fft: Vec<Complex> = left_slice.iter().enumerate()
+            .map(|(index, value)| Complex {
+                re: (*value as f64 - left_mean) * window[index],
+                im: 0.0,
+            })
+            .collect();
+        let mut right_fft: Vec<Complex> = right_slice.iter().enumerate()
+            .map(|(index, value)| Complex {
+                re: (*value as f64 - right_mean) * window[index],
+                im: 0.0,
+            })
+            .collect();
+        fft(&mut left_fft);
+        fft(&mut right_fft);
+        for bin in 0..bins {
+            let x = left_fft[bin];
+            let y = right_fft[bin];
+            // Cross spectrum X * conj(Y).
+            cross_sum[bin] = cross_sum[bin].add(Complex {
+                re: x.re * y.re + x.im * y.im,
+                im: x.im * y.re - x.re * y.im,
+            });
+            left_power_sum[bin] += x.magnitude_squared();
+            right_power_sum[bin] += y.magnitude_squared();
+        }
+    }
+
+    (1..bins)
+        .map(|bin| {
+            let denominator = left_power_sum[bin] * right_power_sum[bin];
+            let numerator = cross_sum[bin].magnitude_squared();
+            let coherence = if denominator.is_finite() && denominator > f64::EPSILON {
+                Some((numerator / denominator).clamp(0.0, 1.0))
+            } else {
+                None
+            };
+            let frequency_hz = bin as f64
+                / (segment_length as f64 * sample_period_ns as f64 * 1e-9);
+            (frequency_hz, coherence, starts.len())
+        })
+        .collect()
+}
+
 fn paired_at_lag(left: &[u64], right: &[u64], lag: i32) -> (Vec<u64>, Vec<u64>) {
     if lag >= 0 {
         let shift = lag as usize;
@@ -548,6 +715,7 @@ pub fn aggregate_aligned_sites(
 
     let mut pairwise_dependence = Vec::new();
     let mut lagged_correlations = Vec::new();
+    let mut spectral_coherence = Vec::new();
     let mut covariance_sum = 0.0_f64;
     for first in 0..aligned_power.len() {
         for second in first + 1..aligned_power.len() {
@@ -588,6 +756,22 @@ pub fn aggregate_aligned_sites(
                     pearson: pearson(&lagged_left, &lagged_right),
                 });
             }
+            for (frequency_hz, coherence, segment_count) in welch_spectral_coherence(
+                left,
+                right,
+                contract.spectral_segment_length,
+                contract.minimum_spectral_segments,
+                contract.sample_period_ns,
+            ) {
+                spectral_coherence.push(SpectralCoherenceMetric {
+                    first_site_id: summaries[first].site_id.clone(),
+                    second_site_id: summaries[second].site_id.clone(),
+                    frequency_hz,
+                    coherence,
+                    segment_count,
+                    segment_length: contract.spectral_segment_length,
+                });
+            }
         }
     }
     let variance_decomposition = independent_variance_reference + 2.0 * covariance_sum;
@@ -608,6 +792,7 @@ pub fn aggregate_aligned_sites(
         variance_decomposition_residual_mw2: variance_decomposition_residual,
         pairwise_dependence,
         lagged_correlations,
+        spectral_coherence,
         source_site_ids,
         source_run_ids,
         source_session_ids,
@@ -642,6 +827,8 @@ mod tests {
             minimum_sample_count: 5,
             minimum_tail_sample_count: 100,
             maximum_lag_samples: 2,
+            spectral_segment_length: 32,
+            minimum_spectral_segments: 3,
         }
     }
 
@@ -880,6 +1067,37 @@ mod tests {
         ).unwrap();
         assert_eq!(report.lagged_correlations.len(), 5);
         assert!(report.lagged_correlations.iter().all(|metric| metric.lag_ns == metric.lag_samples as i64 * 1_000));
+    }
+
+    #[test]
+    fn welch_spectral_coherence_detects_a_shared_frequency_band() {
+        let left: Vec<u64> = (0..128).map(|index| {
+            (1_000.0 + 100.0 * (2.0 * std::f64::consts::PI * 4.0 * index as f64 / 32.0).sin()).round() as u64
+        }).collect();
+        let right: Vec<u64> = (0..128).map(|index| {
+            (1_000.0 + 120.0 * (2.0 * std::f64::consts::PI * 4.0 * index as f64 / 32.0 + 0.4).sin()).round() as u64
+        }).collect();
+        let report = aggregate_aligned_sites(
+            contract(),
+            &[trace("site-a", 0, &left), trace("site-b", 0, &right)],
+        ).unwrap();
+        let shared_bin = report.spectral_coherence.iter()
+            .find(|metric| (metric.frequency_hz - 125_000.0).abs() < 1.0)
+            .expect("bin 4 at the declared sample rate must be present");
+        assert_eq!(shared_bin.segment_count, 7);
+        assert!(shared_bin.coherence.unwrap() > 0.99);
+    }
+
+    #[test]
+    fn short_traces_do_not_emit_spectral_coherence_without_minimum_segments() {
+        let report = aggregate_aligned_sites(
+            contract(),
+            &[
+                trace("site-a", 0, &[100, 200, 300, 200, 100]),
+                trace("site-b", 0, &[100, 200, 300, 200, 100]),
+            ],
+        ).unwrap();
+        assert!(report.spectral_coherence.is_empty());
     }
 
     #[test]
