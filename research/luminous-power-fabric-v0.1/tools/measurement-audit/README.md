@@ -525,3 +525,7 @@ See [the benchmark contract](../../CALIBRATED_WORKLOAD_STATE_POWER_MODEL_BENCHMA
 The current implementation also rejects attempts to predict a training run and independently verifies that a measured run is listed in the prediction trace's held-out evidence manifest before computing validation metrics. The mapped prediction trace must carry the exact clock-alignment method ID from the calibration contract. These prevent caller-side relabelling from bypassing the declared split or alignment method; evidence references themselves are still references, not authenticated signatures.
 
 Each `PredictedPowerTrace` now includes the mapped source trace's own state-mapping evidence reference as well as calibration-run mapping/time-alignment evidence. This distinguishes evidence that trained the model from evidence that assigned states to the particular sequence being predicted.
+
+The model now exposes distinct prediction APIs for held-out validation and new operational scenarios. `predict_power_trace` only accepts a run in the held-out session set. `predict_operational_scenario` accepts a new run ID not present in either training or holdout sets. Each output records a `PredictionScope` and distinct claim ceiling; held-out scoring rejects operational-scenario traces. This keeps calibration leakage checks intact while allowing #400/#403/#404 to use the calibrated model for new MODELLED counterfactual traces.
+
+Fifteen synthetic Rust tests are authored but not executed. No held-out or scenario prediction has been run on a physical power trace.
