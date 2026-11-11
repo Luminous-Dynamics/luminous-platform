@@ -368,6 +368,90 @@ fn expected_generator_identities() -> [(ScenarioGeneratorKind, usize); 4] {
     ]
 }
 
+fn validate_generator_evidence(
+    report: &ScenarioEvaluationReport,
+) -> Result<(), AuditError> {
+    let arrays = [
+        report.selected_residual_ids.len(),
+        report.selected_residual_evidence_ids.len(),
+        report.selected_residual_forecast_evidence_ids.len(),
+        report.selected_residual_generation_evidence_ids.len(),
+        report.selected_residual_state_mapping_evidence_ids.len(),
+        report.selected_residual_time_alignment_evidence_ids.len(),
+        report.selected_residual_timeline_digest_references.len(),
+        report.selected_residual_sample_evidence_ids.len(),
+        report.selected_residual_sample_timestamps_ns.len(),
+    ];
+    match report.generator_kind {
+        ScenarioGeneratorKind::IndependentQuantileSampling => {
+            if report.residual_pool_evidence_id.is_some()
+                || report.gaussian_copula_evidence.is_some()
+                || arrays.iter().any(|length| *length != 0)
+            {
+                return Err(AuditError(
+                    "independent marginal baseline must not carry residual-pool or dependence-method lineage"
+                        .to_string(),
+                ));
+            }
+        }
+        ScenarioGeneratorKind::GaussianCopula => {
+            let evidence = report.gaussian_copula_evidence.as_ref().ok_or_else(|| {
+                AuditError("Gaussian copula report is missing its residual/correlation evidence".to_string())
+            })?;
+            if report.residual_pool_evidence_id.as_deref()
+                != Some(evidence.residual_pool_evidence_id.as_str())
+                || evidence.residual_ids.is_empty()
+                || evidence.residual_ids.len() != evidence.raw_residual_power_mw.len()
+                || evidence.residual_ids.len() != evidence.rank_normal_scores.len()
+                || evidence.raw_residual_power_mw.iter().any(|row| row.len() != report.horizon_steps)
+                || evidence.rank_normal_scores.iter().any(|row| row.len() != report.horizon_steps)
+                || arrays.iter().any(|length| *length != 0)
+            {
+                return Err(AuditError(
+                    "Gaussian copula report has inconsistent full-pool evidence or per-row residual lineage"
+                        .to_string(),
+                ));
+            }
+        }
+        ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap
+        | ScenarioGeneratorKind::SchaakeShuffle => {
+            if report.gaussian_copula_evidence.is_some()
+                || report.residual_pool_evidence_id.as_deref().is_none_or(|id| id.trim().is_empty())
+                || arrays.iter().any(|length| *length != report.scenario_count)
+                || report.selected_residual_sample_evidence_ids.iter().any(|row| {
+                    row.len() != report.horizon_steps
+                        || row.iter().any(|id| id.trim().is_empty())
+                })
+                || report.selected_residual_sample_timestamps_ns.iter().any(|row| {
+                    row.len() != report.horizon_steps
+                })
+                || report.selected_residual_ids.iter().any(|id| id.trim().is_empty())
+                || report.selected_residual_evidence_ids.iter().any(|id| id.trim().is_empty())
+                || report.selected_residual_forecast_evidence_ids.iter().any(|id| id.trim().is_empty())
+                || report.selected_residual_generation_evidence_ids.iter().any(|id| id.trim().is_empty())
+                || report.selected_residual_state_mapping_evidence_ids.iter().any(|id| id.trim().is_empty())
+                || report.selected_residual_time_alignment_evidence_ids.iter().any(|id| id.trim().is_empty())
+                || report.selected_residual_timeline_digest_references.iter().any(|id| id.trim().is_empty())
+            {
+                return Err(AuditError(
+                    "residual-dependent scenario report is missing exact selected-trajectory lineage"
+                        .to_string(),
+                ));
+            }
+            if report.generator_kind == ScenarioGeneratorKind::SchaakeShuffle {
+                let unique: HashSet<&str> = report.selected_residual_ids.iter().map(String::as_str).collect();
+                if unique.len() != report.scenario_count {
+                    return Err(AuditError(
+                        "Schaake-shuffle report must identify one unique historical rank trajectory per scenario"
+                            .to_string(),
+                    ));
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 fn validate_evaluation_report(
     report: &ScenarioEvaluationReport,
     contract: &ScenarioTournamentContract,
@@ -377,6 +461,7 @@ fn validate_evaluation_report(
             "scenario tournament received an undeclared generator arm".to_string(),
         ));
     }
+    validate_generator_evidence(report)?;
     if report.claim_ceiling != EXPECTED_CLAIM_CEILING
         || report.forecast_id.trim().is_empty()
         || report.forecast_origin_id.trim().is_empty()
@@ -1051,7 +1136,7 @@ mod tests {
         ScenarioTournamentContract, ScenarioTournamentEpisode,
     };
     use crate::temporal_scenarios::{
-        ScenarioEvaluationReport, ScenarioGeneratorKind,
+        GaussianCopulaEvidence, ScenarioEvaluationReport, ScenarioGeneratorKind,
     };
     use crate::power_state::PowerModelContract;
 
@@ -1099,12 +1184,91 @@ mod tests {
         }
     }
 
+    fn gaussian_evidence() -> GaussianCopulaEvidence {
+        GaussianCopulaEvidence {
+            residual_pool_evidence_id: "residual-pool-v1".to_string(),
+            residual_ids: vec!["residual-1".to_string()],
+            residual_origin_ids: vec!["residual-origin-1".to_string()],
+            residual_origin_timestamps_ns: vec![100],
+            residual_target_window_end_timestamps_ns: vec![140],
+            residual_operating_regime_ids: vec!["normal".to_string()],
+            residual_clock_ids: vec!["clock-common".to_string()],
+            residual_time_origin_ids: vec!["time-origin-common".to_string()],
+            residual_model_contracts: vec![model_contract()],
+            raw_residual_power_mw: vec![vec![1, 2, 3, 4]],
+            rank_normal_scores: vec![vec![-1.0, -0.3, 0.3, 1.0]],
+            measurement_evidence_ids: vec!["measurement-evidence-pool-1".to_string()],
+            forecast_evidence_ids: vec!["forecast-evidence-pool-1".to_string()],
+            residual_generation_evidence_ids: vec!["generation-evidence-pool-1".to_string()],
+            state_mapping_evidence_ids: vec!["mapping-evidence-pool-1".to_string()],
+            time_alignment_evidence_ids: vec!["alignment-evidence-pool-1".to_string()],
+            timeline_digest_references: vec!["timeline-pool-1".to_string()],
+            source_sample_evidence_ids: vec![vec![
+                "pool-sample-1".to_string(),
+                "pool-sample-2".to_string(),
+                "pool-sample-3".to_string(),
+                "pool-sample-4".to_string(),
+            ]],
+            source_sample_timestamps_ns: vec![vec![110, 120, 130, 140]],
+            tie_policy: "AVERAGE_RANKS_FOR_TIES_SORTED_BY_RESIDUAL_ID",
+            plotting_position_method: "MIDRANK_MINUS_HALF_OVER_N",
+            shrinkage_lambda: 0.05,
+            empirical_rank_correlation: vec![
+                vec![1.0, 0.0, 0.0, 0.0],
+                vec![0.0, 1.0, 0.0, 0.0],
+                vec![0.0, 0.0, 1.0, 0.0],
+                vec![0.0, 0.0, 0.0, 1.0],
+            ],
+            regularized_correlation: vec![
+                vec![1.0, 0.0, 0.0, 0.0],
+                vec![0.0, 1.0, 0.0, 0.0],
+                vec![0.0, 0.0, 1.0, 0.0],
+                vec![0.0, 0.0, 0.0, 1.0],
+            ],
+            cholesky_lower_factor: vec![
+                vec![1.0, 0.0, 0.0, 0.0],
+                vec![0.0, 1.0, 0.0, 0.0],
+                vec![0.0, 0.0, 1.0, 0.0],
+                vec![0.0, 0.0, 0.0, 1.0],
+            ],
+        }
+    }
+
     fn report(index: usize, kind: ScenarioGeneratorKind, saving: bool) -> ScenarioEvaluationReport {
         let baseline = kind == ScenarioGeneratorKind::IndependentQuantileSampling;
         let reserve = if baseline || !saving { 80 } else { 100 };
         let shortfall = if baseline || !saving { 20 } else { 0 };
         let cost = 0.10 * reserve as f64 + shortfall as f64;
         let gaussian = kind == ScenarioGeneratorKind::GaussianCopula;
+        let residual_dependent = matches!(
+            kind,
+            ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap
+                | ScenarioGeneratorKind::SchaakeShuffle
+        );
+        let mut selected_residual_ids = Vec::new();
+        let mut selected_residual_evidence_ids = Vec::new();
+        let mut selected_residual_forecast_evidence_ids = Vec::new();
+        let mut selected_residual_generation_evidence_ids = Vec::new();
+        let mut selected_residual_state_mapping_evidence_ids = Vec::new();
+        let mut selected_residual_time_alignment_evidence_ids = Vec::new();
+        let mut selected_residual_timeline_digest_references = Vec::new();
+        let mut selected_residual_sample_evidence_ids = Vec::new();
+        let mut selected_residual_sample_timestamps_ns = Vec::new();
+        if residual_dependent {
+            for scenario in 0..200 {
+                selected_residual_ids.push(format!("residual-{index}-{scenario}"));
+                selected_residual_evidence_ids.push(format!("residual-measurement-{index}-{scenario}"));
+                selected_residual_forecast_evidence_ids.push(format!("residual-forecast-{index}-{scenario}"));
+                selected_residual_generation_evidence_ids.push(format!("residual-generation-{index}-{scenario}"));
+                selected_residual_state_mapping_evidence_ids.push(format!("residual-mapping-{index}-{scenario}"));
+                selected_residual_time_alignment_evidence_ids.push(format!("residual-alignment-{index}-{scenario}"));
+                selected_residual_timeline_digest_references.push(format!("residual-timeline-{index}-{scenario}"));
+                selected_residual_sample_evidence_ids.push((0..4)
+                    .map(|sample| format!("residual-sample-{index}-{scenario}-{sample}"))
+                    .collect());
+                selected_residual_sample_timestamps_ns.push(vec![110, 120, 130, 140]);
+            }
+        }
         ScenarioEvaluationReport {
             forecast_id: format!("forecast-{index:03}"),
             forecast_origin_id: format!("origin-{index:03}"),
@@ -1118,17 +1282,18 @@ mod tests {
             state_mapping_evidence_id: format!("mapping-{index:03}"),
             forecast_time_alignment_evidence_id: format!("forecast-clock-{index:03}"),
             forecast_source_timeline_digest_reference: format!("forecast-timeline-{index:03}"),
-            residual_pool_evidence_id: gaussian.then(|| "residual-pool-v1".to_string()),
-            gaussian_copula_evidence: None,
-            selected_residual_ids: Vec::new(),
-            selected_residual_evidence_ids: Vec::new(),
-            selected_residual_forecast_evidence_ids: Vec::new(),
-            selected_residual_generation_evidence_ids: Vec::new(),
-            selected_residual_state_mapping_evidence_ids: Vec::new(),
-            selected_residual_time_alignment_evidence_ids: Vec::new(),
-            selected_residual_timeline_digest_references: Vec::new(),
-            selected_residual_sample_evidence_ids: Vec::new(),
-            selected_residual_sample_timestamps_ns: Vec::new(),
+            residual_pool_evidence_id: (gaussian || residual_dependent)
+                .then(|| "residual-pool-v1".to_string()),
+            gaussian_copula_evidence: gaussian.then(gaussian_evidence),
+            selected_residual_ids,
+            selected_residual_evidence_ids,
+            selected_residual_forecast_evidence_ids,
+            selected_residual_generation_evidence_ids,
+            selected_residual_state_mapping_evidence_ids,
+            selected_residual_time_alignment_evidence_ids,
+            selected_residual_timeline_digest_references,
+            selected_residual_sample_evidence_ids,
+            selected_residual_sample_timestamps_ns,
             scenario_count: 200,
             horizon_steps: 4,
             energy_score_mw: 1.0,
