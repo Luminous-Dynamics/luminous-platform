@@ -764,8 +764,8 @@ mod tests {
         let model = fit_power_state_model(contract(), &training_and_holdout()).unwrap();
         let idle = model.state_envelopes.iter().find(|item| item.state_id == "idle").unwrap();
         assert_eq!(idle.distribution.maximum_power_mw, 110);
-        assert_eq!(model.training_run_ids, vec!["train-a"]);
-        assert_eq!(model.held_out_run_ids, vec!["heldout-a"]);
+        assert_eq!(model.training_run_ids, vec!["train-a".to_string()]);
+        assert_eq!(model.held_out_run_ids, vec!["heldout-a".to_string()]);
     }
 
     #[test]
