@@ -301,4 +301,4 @@ Scenario scoring includes multivariate energy and variogram scores, peak/ramp/en
 
 The direct comparator is Yao et al.'s 6 November 2026 448-GPU GPU-IT forecast study. The MIT Supercloud source dataset has a CC BY-NC-ND 4.0 rights gate; no data are imported or used commercially by this implementation. See TEMPORAL_SCENARIOS_AND_HORIZON_RESERVE_BENCHMARK_2026-11-11.md.
 
-Twenty-three Rust tests are authored but not executed. No reproduction, performance claim or physical qualification is made.
+Twenty-four Rust tests are authored but not executed. No reproduction, performance claim or physical qualification is made.
