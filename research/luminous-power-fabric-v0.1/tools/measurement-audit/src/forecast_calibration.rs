@@ -926,20 +926,26 @@ pub fn evaluate_forecast_monitoring(
                         })?;
                     let covered = actual.power_mw >= lower && actual.power_mw <= upper;
                     if covered {
-                        covered_sample_count += 1;
+                        covered_sample_count = covered_sample_count.checked_add(1)
+                            .ok_or_else(|| AuditError("covered monitoring sample count overflowed".to_string()))?;
                     } else {
                         all_samples_covered = false;
                     }
                 }
             }
-            calibrated_session_count += 1;
+            calibrated_session_count = calibrated_session_count.checked_add(1)
+                .ok_or_else(|| AuditError("calibrated monitoring session count overflowed".to_string()))?;
             let group = grouped
                 .entry(session.operating_regime_id.clone())
                 .or_insert((0, 0, 0, 0));
-            group.0 += 1;
-            group.1 += usize::from(all_samples_covered);
-            group.2 += sample_count;
-            group.3 += covered_sample_count;
+            group.0 = group.0.checked_add(1)
+                .ok_or_else(|| AuditError("regime monitoring session count overflowed".to_string()))?;
+            group.1 = group.1.checked_add(usize::from(all_samples_covered))
+                .ok_or_else(|| AuditError("regime covered-session count overflowed".to_string()))?;
+            group.2 = group.2.checked_add(sample_count)
+                .ok_or_else(|| AuditError("regime monitoring sample count overflowed".to_string()))?;
+            group.3 = group.3.checked_add(covered_sample_count)
+                .ok_or_else(|| AuditError("regime covered-sample count overflowed".to_string()))?;
 
             session_results.push(ForecastSessionResult {
                 session_id: session.session_id.clone(),
@@ -957,10 +963,13 @@ pub fn evaluate_forecast_monitoring(
                 source_event_ids: session_source_event_ids,
             });
         } else {
-            out_of_domain_session_count += 1;
-            *out_of_domain_by_regime
+            out_of_domain_session_count = out_of_domain_session_count.checked_add(1)
+                .ok_or_else(|| AuditError("out-of-domain session count overflowed".to_string()))?;
+            let out_of_domain_count = out_of_domain_by_regime
                 .entry(session.operating_regime_id.clone())
-                .or_insert(0) += 1;
+                .or_insert(0);
+            *out_of_domain_count = out_of_domain_count.checked_add(1)
+                .ok_or_else(|| AuditError("out-of-domain regime count overflowed".to_string()))?;
             session_results.push(ForecastSessionResult {
                 session_id: session.session_id.clone(),
                 operating_regime_id: session.operating_regime_id.clone(),
