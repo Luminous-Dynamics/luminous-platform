@@ -134,12 +134,13 @@ Implemented in this increment:
 - no mixing MODELLED and MEASURED traces in one aggregate;
 - deterministic canonical ordering by site ID;
 - aggregate power samples and mean/variance/P99/peak;
-- pairwise contemporaneous Pearson correlation, covariance and P90 tail co-exceedance;
+- pairwise contemporaneous Pearson and tie-aware Spearman correlation, covariance and P90 tail co-exceedance;
 - lagged Pearson correlations and sample counts for each configured lag;
+- Welch magnitude-squared spectral coherence over Hann-windowed, 50%-overlapped, power-of-two segments, with frequency bins and number of segments; this is a descriptive trace statistic, not a network/EMT stability simulation;
 - independent-reference variance as the sum of child population variances, variance amplification ratio and covariance-decomposition residual;
 - source site/run/session/trace/clock-alignment lineage.
 - every aggregate timestamp carries its exact per-site contribution vector (site ID, power, state and source sample evidence ID), enabling independent row-level reconstruction and sum checking.
 
 Not implemented yet: Spearman correlation, spectral coherence, time-varying clock-drift estimation/correction, state-conditioned dependence models, long-memory/common-factor model, physically matched independent-session trace synthesis, measured parent-boundary reconciliation, energy integration, causal attribution or region-level grid simulation. The current implementation only applies a caller-declared constant offset and alignment-uncertainty ceiling; it does not estimate clock drift.
 
-Sixteen synthetic Rust tests are authored but not executed. P90 tail co-exceedance is suppressed unless at least 100 common aligned samples are available; smaller fixtures still exercise exact alignment and aggregate arithmetic without claiming supported tail statistics. The implementation applies a fixed caller-declared offset and requires the mapped common clock/time-origin IDs to match the aggregation contract. No time-varying clock-drift estimate/correction is implemented. No multi-site measured or licensed trace data were imported. No compile, formatter, linter, runtime benchmark or field result is claimed.
+Twenty-one synthetic Rust tests are authored but not executed. P90 tail co-exceedance is suppressed unless at least 100 common aligned samples are available; Welch coherence is suppressed unless at least eight complete 50%-overlapped segments are available (segment length capped at 65,536); smaller fixtures still exercise exact alignment and aggregate arithmetic without claiming supported tail statistics. The implementation applies a fixed caller-declared offset, requires mapped common clock/time-origin IDs to match the aggregation contract, and enforces a conservative pairwise clock-uncertainty sum. Parent-topology evidence and per-site state-mapping evidence are carried into the report. No time-varying clock-drift estimate/correction is implemented. No multi-site measured or licensed trace data were imported. No compile, formatter, linter, runtime benchmark or field result is claimed.
