@@ -119,16 +119,21 @@ impl GridServiceContract {
             ));
         }
 
-        let fractions = [
+        let minimum_fractions = [
             self.minimum_success_probability,
             self.minimum_useful_work_retention_fraction,
+        ];
+        let maximum_fractions = [
             self.maximum_slo_violation_fraction,
             self.maximum_rebound_energy_fraction,
             self.maximum_combined_uncertainty_fraction,
         ];
-        if fractions
+        if minimum_fractions
             .iter()
             .any(|value| !value.is_finite() || *value <= 0.0 || *value > 1.0)
+            || maximum_fractions
+                .iter()
+                .any(|value| !value.is_finite() || *value < 0.0 || *value > 1.0)
             || !self.maximum_p99_latency_increase_fraction.is_finite()
             || self.maximum_p99_latency_increase_fraction < 0.0
             || !self.maximum_p99_ttft_increase_fraction.is_finite()
@@ -815,6 +820,25 @@ mod tests {
         assert_eq!(report.p10_credited_compute_capacity_w, Some(0.0));
         assert_eq!(report.commitment_success_event_count, 0);
         assert!(!report.commitment_qualified);
+    }
+
+    #[test]
+    fn zero_maximum_slo_rebound_and_uncertainty_limits_are_valid() {
+        let mut contract = contract();
+        contract.maximum_slo_violation_fraction = 0.0;
+        contract.maximum_rebound_energy_fraction = 0.0;
+        contract.maximum_combined_uncertainty_fraction = 0.0;
+
+        let mut events = all_events(30);
+        for event in &mut events {
+            event.slo_violation_fraction = 0.0;
+            event.site_measurement_uncertainty_bound_w = 0.0;
+            event.non_compute_measurement_uncertainty_bound_w = 0.0;
+            event.recovery_rebound_energy_j = Some(0.0);
+        }
+
+        let report = evaluate_grid_service_sweep(contract, events).unwrap();
+        assert!(report.commitment_qualified);
     }
 
     #[test]
