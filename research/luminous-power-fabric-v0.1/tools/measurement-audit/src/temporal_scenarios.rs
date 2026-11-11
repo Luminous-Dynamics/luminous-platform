@@ -780,15 +780,25 @@ pub fn generate_forecast_scenarios(
                 )));
             }
             let mut ordered_origins: Vec<u64> = Vec::with_capacity(residual_trajectories.len());
+            let mut pool_sample_evidence_ids = HashSet::new();
             for residual in residual_trajectories {
                 validate_residual_trajectory(&contract, forecast, residual)?;
-                if !residual_ids.insert(residual.residual_id.as_str())
+                if residual.origin_id == forecast.origin_id
+                    || !residual_ids.insert(residual.residual_id.as_str())
                     || !residual_origins.insert(residual.origin_id.as_str())
                 {
                     return Err(AuditError(
                         "residual pool contains duplicate trajectory or origin identities"
                             .to_string(),
                     ));
+                }
+                for evidence_id in &residual.source_sample_evidence_ids {
+                    if !pool_sample_evidence_ids.insert(evidence_id.as_str()) {
+                        return Err(AuditError(
+                            "residual pool reuses a measured-sample evidence ID across trajectories"
+                                .to_string(),
+                        ));
+                    }
                 }
                 ordered_origins.push(residual.origin_timestamp_ns);
             }
@@ -1266,6 +1276,7 @@ pub fn evaluate_forecast_scenarios(
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
     use super::{
         evaluate_forecast_scenarios, generate_forecast_scenarios, ForecastHorizonStep,
         ForecastQuantile, ForecastResidualTrajectory, MeasuredForecastHorizon,
@@ -1559,6 +1570,29 @@ mod tests {
         pool[0].model_contract.model_revision = "rev-b".to_string();
         assert!(generate_forecast_scenarios(
             contract(ScenarioGeneratorKind::SchaakeShuffle),
+            &forecast(),
+            &pool,
+        ).is_err());
+    }
+
+    #[test]
+    fn rejects_residual_pool_reusing_current_forecast_origin_id() {
+        let mut pool = residuals();
+        pool[0].origin_id = forecast().origin_id;
+        assert!(generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap),
+            &forecast(),
+            &pool,
+        ).is_err());
+    }
+
+    #[test]
+    fn rejects_residual_pool_reusing_sample_evidence_across_blocks() {
+        let mut pool = residuals();
+        pool[1].source_sample_evidence_ids[0] =
+            pool[0].source_sample_evidence_ids[0].clone();
+        assert!(generate_forecast_scenarios(
+            contract(ScenarioGeneratorKind::EmpiricalResidualTrajectoryBootstrap),
             &forecast(),
             &pool,
         ).is_err());
