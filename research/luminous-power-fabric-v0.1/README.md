@@ -281,3 +281,9 @@ Twenty synthetic Rust tests are authored, including a 10,000-job fixture; they a
 
 The implementation does not infer prefill/decode/idle from abstract occupancy, does not synthesize a facility trace, and does not replace measured PCC energy or qualification. Its benchmark and SOTA comparison are specified in [CALIBRATED_WORKLOAD_STATE_POWER_MODEL_BENCHMARK_2026-11-11.md](./CALIBRATED_WORKLOAD_STATE_POWER_MODEL_BENCHMARK_2026-11-11.md). Thirteen synthetic Rust tests are authored but not executed; no physical or licensed trace data and no compile/runtime result are claimed.
  The model rejects training-run prediction targets, requires exact calibration/prediction clock-alignment method identity, and carries the source trace's state-mapping evidence reference into each prediction trace.
+
+## Correlation-aware multi-site aggregation
+
+[Issue #403](https://github.com/Luminous-Dynamics/luminous-platform/issues/403) extends the calibrated state-power programme from isolated servers to dependent multi-site load traces. The benchmark treats spatial synchrony, shared workload bursts, clock uncertainty and common-mode controls as first-class constraints. It compares defensible independent-session references against lagged/state-conditioned dependence and measured parent-boundary aggregation; it does not award fleet diversity credit from a single average correlation coefficient. See [CORRELATION_AWARE_MULTI_SITE_POWER_AGGREGATION_2026-11-11.md](./CORRELATION_AWARE_MULTI_SITE_POWER_AGGREGATION_2026-11-11.md).
+
+This is a research specification only. No multi-site trace corpus, correlation engine, field dispatch or regional reserve credit is implemented. #382 remains the measured PCC auditor and #396 remains the repeated-event qualification owner.
