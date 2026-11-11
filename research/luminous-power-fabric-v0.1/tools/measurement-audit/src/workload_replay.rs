@@ -1085,6 +1085,38 @@ pub fn evaluate_workload_replay(
     let dispatch_constrained =
         run_summary(&jobs, &dispatch_states, &dispatch_windows)?;
 
+    let baseline_timeline = build_occupancy_timeline(
+        &jobs,
+        &baseline_states,
+        contract.full_resource_capacity,
+        &dispatch_windows,
+    )?;
+    let dispatch_timeline = build_occupancy_timeline(
+        &jobs,
+        &dispatch_states,
+        contract.full_resource_capacity,
+        &dispatch_windows,
+    )?;
+    validate_timeline_resource_time_conservation(
+        &baseline_timeline,
+        baseline.resource_time_during_dispatch,
+    )?;
+    validate_timeline_resource_time_conservation(
+        &dispatch_timeline,
+        dispatch_constrained.resource_time_during_dispatch,
+    )?;
+
+    let baseline_completions =
+        build_completion_events(&jobs, &baseline_states, &contract);
+    let dispatch_completions =
+        build_completion_events(&jobs, &dispatch_states, &contract);
+    validate_completion_event_conservation(&baseline_completions, &baseline, &contract)?;
+    validate_completion_event_conservation(
+        &dispatch_completions,
+        &dispatch_constrained,
+        &contract,
+    )?;
+
     let useful_work_retention_fraction = if baseline.completed_useful_work_units > 0 {
         Some(
             dispatch_constrained.completed_useful_work_units as f64
@@ -1169,11 +1201,34 @@ pub fn evaluate_workload_replay(
         });
     }
 
-    let (gpu_admission_restriction_unit_ns, total_dispatch_window_ns, longest_dispatch_window_ns) =
-        gpu_admission_restriction_time(contract.full_resource_capacity, &dispatch_windows)?;
+    let (
+        admission_capacity_restriction,
+        total_dispatch_window_ns,
+        longest_dispatch_window_ns,
+    ) = admission_capacity_restriction_time(
+        contract.full_resource_capacity,
+        &dispatch_windows,
+    )?;
+    let gpu_admission_restriction_unit_ns =
+        admission_capacity_restriction.gpu_unit_ns;
     let gpu_resource_time_reduction_unit_ns = baseline
         .gpu_resource_time_during_dispatch_unit_ns
         .checked_sub(dispatch_constrained.gpu_resource_time_during_dispatch_unit_ns);
+
+    let power_join_reference = WorkloadPowerJoinReference {
+        replay_contract_id: contract.replay_contract_id.clone(),
+        workload_id: contract.workload_id.clone(),
+        dataset_id: contract.dataset_id.clone(),
+        dataset_version: contract.dataset_version.clone(),
+        dataset_evidence_id: contract.dataset_evidence_id.clone(),
+        normalization_id: contract.normalization_id.clone(),
+        scheduling_policy_id: contract.scheduling_policy_id.clone(),
+        replay_clock_id: contract.replay_clock_id.clone(),
+        replay_time_origin_id: contract.replay_time_origin_id.clone(),
+        schedule_digest_reference: contract.schedule_digest_reference.clone(),
+        work_unit: contract.work_unit.clone(),
+        claim_ceiling: "SCHEDULE_TIMELINE_INPUT_TO_MEASURED_POWER_AUDIT_NOT_POWER_EVIDENCE",
+    };
 
     let p50_positive_start_delay_ns = nearest_rank_positive(&mut positive_delays.clone(), 0.50);
     let p95_positive_start_delay_ns = nearest_rank_positive(&mut positive_delays.clone(), 0.95);
@@ -1182,6 +1237,7 @@ pub fn evaluate_workload_replay(
 
     Ok(WorkloadReplayReport {
         contract,
+        power_join_reference,
         baseline,
         dispatch_constrained,
         useful_work_retention_fraction,
@@ -1196,6 +1252,11 @@ pub fn evaluate_workload_replay(
         longest_dispatch_window_ns,
         recovery_tail_after_last_dispatch_ns,
         gpu_resource_time_reduction_unit_ns,
+        admission_capacity_restriction,
+        baseline_timeline,
+        dispatch_timeline,
+        baseline_completions,
+        dispatch_completions,
         job_results,
         claim_ceiling: "WORKLOAD_REPLAY_RESOURCE_TIME_ONLY_NOT_POWER_OR_GRID_QUALIFICATION",
     })
