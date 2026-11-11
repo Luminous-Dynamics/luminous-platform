@@ -234,6 +234,7 @@ struct EpisodeArmCosts {
     baseline_cost: f64,
     candidate_costs: Vec<f64>,
     baseline_shortfall: bool,
+    baseline_shortfall_mw: u64,
     candidate_shortfalls: Vec<bool>,
     candidate_shortfall_mw: Vec<u64>,
 }
@@ -483,6 +484,19 @@ fn ensure_episode_reports_paired(
     })
 }
 
+fn frozen_generator_identity(
+    versions: &[(ScenarioGeneratorKind, String, String)],
+    kind: ScenarioGeneratorKind,
+) -> Result<(&str, &str), AuditError> {
+    let (_, generator_id, revision) = versions
+        .iter()
+        .find(|(version_kind, _, _)| *version_kind == kind)
+        .ok_or_else(|| {
+            AuditError(format!("scenario tournament is missing generator identity for {kind:?}"))
+        })?;
+    Ok((generator_id.as_str(), revision.as_str()))
+}
+
 fn summarize_baseline(
     costs: &[ClusterArmCosts],
 ) -> Result<ScenarioTournamentBaselineSummary, AuditError> {
@@ -497,11 +511,11 @@ fn summarize_baseline(
             shortfalls = shortfalls.checked_add(usize::from(episode.baseline_shortfall))
                 .ok_or_else(|| AuditError("tournament baseline shortfall count overflowed".to_string()))?;
             total_cost += episode.baseline_cost;
+            total_shortfall = total_shortfall
+                .checked_add(episode.baseline_shortfall_mw as u128)
+                .ok_or_else(|| AuditError("baseline total shortfall overflowed".to_string()))?;
         }
     }
-    // The caller uses the baseline's actual shortfall MW from the paired report
-    // in a parallel accumulator; this helper contains the episode-level cost
-    // summary only.
     if episodes == 0 || !total_cost.is_finite() {
         return Err(AuditError("tournament baseline has no valid episodes".to_string()));
     }
@@ -511,7 +525,7 @@ fn summarize_baseline(
         shortfall_episode_count: shortfalls,
         shortfall_episode_fraction: shortfalls as f64 / episodes as f64,
         total_shortfall_mw: total_shortfall,
-        mean_shortfall_mw: 0.0,
+        mean_shortfall_mw: total_shortfall as f64 / episodes as f64,
     })
 }
 
@@ -520,6 +534,8 @@ fn summarize_arm(
     generator_kind: ScenarioGeneratorKind,
     clusters: &[ClusterArmCosts],
     baseline_shortfall_fraction: f64,
+    generator_id: &str,
+    generator_revision: &str,
 ) -> Result<ScenarioTournamentArmSummary, AuditError> {
     let mut total_episodes = 0_usize;
     let mut total_baseline_cost = 0.0_f64;
@@ -528,9 +544,6 @@ fn summarize_arm(
     let mut candidate_shortfall_mw = 0_u128;
     let mut target_success_clusters = 0_usize;
     let mut cluster_comparisons = Vec::with_capacity(clusters.len());
-    let mut generator_id: Option<String> = None;
-    let mut generator_revision: Option<String> = None;
-
     for cluster in clusters {
         let mut baseline_cost = 0.0_f64;
         let mut candidate_cost = 0.0_f64;
@@ -685,6 +698,7 @@ fn build_cluster_costs(
             baseline_cost: baseline.realized_reserve_cost_ratio_units,
             candidate_costs,
             baseline_shortfall: baseline.reserve_shortfall_occurred,
+            baseline_shortfall_mw: baseline.actual_shortfall_mw,
             candidate_shortfalls,
             candidate_shortfall_mw,
         });
@@ -896,11 +910,15 @@ pub fn evaluate_scenario_tournament(
         let baseline = summarize_baseline(costs)?;
         let mut candidate_arms = Vec::with_capacity(CANDIDATE_GENERATORS.len());
         for generator_kind in CANDIDATE_GENERATORS {
+            let (generator_id, generator_revision) =
+                frozen_generator_identity(&generator_versions, generator_kind)?;
             candidate_arms.push(summarize_arm(
                 &contract,
                 generator_kind,
                 costs,
                 baseline.shortfall_episode_fraction,
+                generator_id,
+                generator_revision,
             )?);
         }
         stratum_results.push(ScenarioTournamentStratumResult {
@@ -921,11 +939,15 @@ pub fn evaluate_scenario_tournament(
     let all_baseline = summarize_baseline(&all_costs)?;
     let mut overall_candidate_arms = Vec::with_capacity(CANDIDATE_GENERATORS.len());
     for generator_kind in CANDIDATE_GENERATORS {
+        let (generator_id, generator_revision) =
+            frozen_generator_identity(&generator_versions, generator_kind)?;
         let mut summary = summarize_arm(
             &contract,
             generator_kind,
             &all_costs,
             all_baseline.shortfall_episode_fraction,
+            generator_id,
+            generator_revision,
         )?;
         let all_strata_qualified = stratum_results.iter().all(|stratum| {
             stratum
