@@ -401,8 +401,6 @@ fn run_schedule(
             let after = used_resources.checked_add(jobs[index].resource_demand);
 
             if let Some(after) = after.filter(|resources| resources.fits_within(admission_capacity)) {
-                used_resources = after;
-                ready.remove(&priority);
                 let finish_ns = now_ns
                     .checked_add(jobs[index].runtime_ns)
                     .ok_or_else(|| {
@@ -411,11 +409,13 @@ fn run_schedule(
                             jobs[index].job_id
                         ))
                     })?;
+                ready.remove(&priority);
                 if finish_ns > jobs[index].completion_deadline_ns {
                     states[index] = JobState::Missed;
                     completed_or_missed_count += 1;
                     continue;
                 }
+                used_resources = after;
                 states[index] = JobState::Running {
                     start_ns: now_ns,
                     finish_ns,
@@ -1162,6 +1162,36 @@ mod tests {
         assert_eq!(report.deferred_and_completed_work_units, 10);
         assert_eq!(report.recovery_tail_after_last_dispatch_ns, Some(5));
         assert_eq!(report.useful_work_retention_fraction, Some(1.0 / 3.0));
+    }
+
+    #[test]
+    fn ordered_event_queues_replay_ten_thousand_jobs_without_full_state_scans() {
+        let jobs: Vec<WorkloadJob> = (0..10_000_u64)
+            .map(|index| {
+                gpu_job(
+                    &format!("bulk-{index:05}"),
+                    WorkloadClass::Deferrable,
+                    0,
+                    100_000_000_000,
+                    120_000_000_000,
+                    1_000_000_000,
+                    1,
+                    1,
+                )
+            })
+            .collect();
+        let report = evaluate_workload_replay(
+            contract(),
+            jobs,
+            vec![window("dispatch", 0, 100_000_000_000, 0)],
+        )
+        .unwrap();
+
+        assert_eq!(report.baseline.completed_job_count, 10_000);
+        assert_eq!(report.dispatch_constrained.completed_job_count, 10_000);
+        assert_eq!(report.dispatch_constrained.missed_job_count, 0);
+        assert_eq!(report.deferred_and_completed_job_count, 10_000);
+        assert_eq!(report.useful_work_retention_fraction, Some(1.0));
     }
 
     #[test]
