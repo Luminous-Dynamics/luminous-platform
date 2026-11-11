@@ -559,4 +559,23 @@ See TEMPORAL_SCENARIOS_AND_HORIZON_RESERVE_BENCHMARK_2026-11-11.md for the 6 Nov
 Validation: 34 synthetic Rust tests are authored but not executed. No compiler, Cargo test, formatting, Clippy, runtime benchmark, dataset download or physical measurement is claimed.
 
 
-**Gaussian-copula arm:** a rank-normal residual dependence estimator, frozen correlation shrinkage, deterministic Cholesky sampling and current-marginal quantile mapping are now implemented. It requires at least max(30, horizon_steps + 1) non-overlapping residual blocks, records raw residual vectors, recomputable rank scores, exact per-residual model/regime/clock/time-origin contracts, correlation/regularization/factor evidence and rejects constant dimensions. Thirty-two synthetic tests are authored but not executed. This completes the four method arms structurally; no paper reproduction is claimed.
+**Gaussian-copula arm:** a rank-normal residual dependence estimator, frozen correlation shrinkage, deterministic Cholesky sampling and current-marginal quantile mapping are now implemented. It requires at least max(30, horizon_steps + 1) non-overlapping residual blocks, records raw residual vectors, recomputable rank scores, exact per-residual model/regime/clock/time-origin contracts, correlation/regularization/factor evidence and rejects constant dimensions. Thirty-six synthetic tests are authored but not executed. This completes the four method arms structurally; no paper reproduction is claimed.
+
+
+## Paired, cluster-aware scenario decision tournament
+
+The new \`scenario_tournament\` module compares the four scenario generators from #407/#409 on exact paired episodes. Each episode must have one report per method and all four must use the same forecast origin and timestamp, full model contract, physical measurement run, measured-sample evidence, horizon, scenario count, deterministic seed and reserve/shortfall cost ratio. The forecast origin must lie inside its preregistered episode window.
+
+Bootstrap and Schaake carry the complete selected historical residual records. The tournament checks those records field-for-field against the same 200-row historical pool retained by the Gaussian arm; a shared pool ID cannot conceal different residual data. Bootstrap may resample pool rows with replacement; Schaake requires unique selected historical rank rows.
+
+The independent-marginal generator is the negative-control baseline. Gaussian copula, empirical residual bootstrap and Schaake shuffle are compared against that same episode-level baseline. The evaluator checks each method's reserve/shortfall arithmetic and freezes the exact generator ID, revision, model, regime and clock contracts across the experiment.
+
+Episodes are grouped into fixed-exposure clusters. All episodes inside one cluster may be dependent; the cluster mean cost is one statistical unit. A candidate cluster succeeds only if it achieves the preregistered relative cost saving. The tournament computes an exact one-sided Clopper–Pearson lower confidence bound over independent clusters, not episode rows.
+
+Every required stratum is qualified separately. Confidence is Bonferroni-adjusted across the required strata; the overall pooled cost summary is descriptive and publishes no pooled binomial confidence bound. Candidate qualification requires adequate cluster support, the target mean cost saving, the same frozen shortfall ceiling and the cluster-success lower bound in every required stratum.
+
+The initial target is at least 7.4% lower normalized reserve cost than independent marginal sampling, at the same preregistered shortfall ceiling. This is a research target motivated by the study-specific 7.4–10.6% saving reported by Yao et al.; it is not a Luminous result or a physical reserve claim.
+
+See [SCENARIO_DECISION_TOURNAMENT_2026-11-11.md](../../SCENARIO_DECISION_TOURNAMENT_2026-11-11.md).
+
+**Validation:** twenty-one synthetic Rust tests are authored but not executed. No compile, Cargo test, formatting, Clippy, runtime benchmark, physical measurement, grid-service qualification or accreditation is claimed.
