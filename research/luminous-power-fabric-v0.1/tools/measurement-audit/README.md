@@ -537,3 +537,5 @@ The report contains total power by timestamp, aggregate mean/variance/P99/peak, 
 The current v0.1 module only applies caller-declared fixed offsets; it does not estimate/correct time-varying clock drift. It does not yet implement Spearman, spectral coherence, state-conditioned dependence, matched independent-session synthesis, parent-boundary reconciliation, energy integration or causal attribution. It is a child-trace power aggregator, not a PCC auditor; #382 and #396 remain the downstream authorities.
 
 Fifteen synthetic Rust tests are authored but not executed. No physical multi-site traces, licensed corpus, compiler, formatter, linter, runtime benchmark or field result is claimed.
+
+P90 tail co-exceedance is returned as `None` unless the aggregation has at least the contract's 100-sample minimum tail-support threshold. The ordinary minimum sample count may be lower for deterministic alignment and arithmetic fixtures, but those small traces cannot be misrepresented as supported tail statistics. Lag-duration arithmetic is range-checked before conversion to signed nanoseconds.
