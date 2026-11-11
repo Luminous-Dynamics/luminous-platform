@@ -543,7 +543,7 @@ A separate monitor reports whole-session coverage, sample-level coverage as a no
 
 See [REGIME_CONDITIONED_SESSION_CONFORMAL_FORECAST_CALIBRATION_2026-11-11.md](../../REGIME_CONDITIONED_SESSION_CONFORMAL_FORECAST_CALIBRATION_2026-11-11.md) for the statistical contract and reproduction plan for Yao et al. (6 November 2026).
 
-**Validation:** twenty-three synthetic Rust tests are authored but not executed. No compile, Cargo test, formatter, Clippy, physical trace, dataset reproduction or runtime benchmark is claimed.
+**Validation:** twenty-four synthetic Rust tests are authored but not executed. No compile, Cargo test, formatter, Clippy, physical trace, dataset reproduction or runtime benchmark is claimed.
 
 
 ## Dependence-preserving probabilistic power scenarios and reserve sizing
