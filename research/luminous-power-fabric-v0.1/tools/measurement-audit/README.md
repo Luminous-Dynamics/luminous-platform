@@ -557,3 +557,6 @@ The evaluator computes multivariate energy and variogram scores, peak/ramp/energ
 See TEMPORAL_SCENARIOS_AND_HORIZON_RESERVE_BENCHMARK_2026-11-11.md for the 6 November 2026 Yao et al. reproduction protocol, industry comparators and MIT dataset rights gate.
 
 Validation: 23 synthetic Rust tests are authored but not executed. No compiler, Cargo test, formatting, Clippy, runtime benchmark, dataset download or physical measurement is claimed.
+
+
+**Scenario-method scope:** this version contains three generator arms. The paper's Gaussian-copula arm is not yet implemented; it is tracked in [issue #408](https://github.com/Luminous-Dynamics/luminous-platform/issues/408). The current branch is not a full scenario-method reproduction.
