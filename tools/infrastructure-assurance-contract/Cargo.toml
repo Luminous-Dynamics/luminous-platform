@@ -1,0 +1,14 @@
+[package]
+name = "infrastructure-assurance-contract"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "AGPL-3.0-or-later"
+description = "Offline validation tests for the infrastructure assurance benchmark contract"
+
+[workspace]
+resolver = "2"
+
+[dependencies]
+jsonschema = "=0.33.0"
+serde_json = "=1.0.150"
