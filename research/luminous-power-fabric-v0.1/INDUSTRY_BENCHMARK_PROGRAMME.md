@@ -102,8 +102,8 @@ Publish outcomes together: useful delivered energy, unserved energy, fuel, power
 
 ## 8. Immediate execution
 
-1. Keep the existing field-mission-profile schema as the mission input contract.
-2. Add generator-only and generator+BESS synthetic matched episodes with independent arithmetic oracles.
+1. Keep the existing field-mission-profile schema as the site/load mission input contract.
+2. Use the mission-energy envelope (#422) to compose owner-qualified interval-average source capability, storage limits, conservative uncertainty and end-of-mission reserve.
 3. Bind each replay to Symtropy model/trace revisions and each measured observation to Mycelix instrument/timebase/calibration evidence.
 4. Use Symthaea's decision-impact selector to prioritize specialist laboratory tests.
 5. Bind package, connectors, harness, cooling and service-access revisions through Sol-Atlas's product engineering thread.
@@ -112,3 +112,33 @@ Publish outcomes together: useful delivered energy, unserved energy, fuel, power
 ## 9. Claim boundary
 
 The competitor values above are vendor-published specifications, not independent measurements. The Power Fabric branch currently contains research documents, schemas, synthetic fixtures and software screening tools; it does not contain a fabricated PCB, qualified power stage, field product, accredited test result, protection certificate or independently reproduced performance advantage. CI/test runners have not verified the current exact head. No energized battery, mains/grid, high-energy fault or field test is authorized by this benchmark document.
+
+
+## 10. Mission energy, storage and reserve comparison
+
+[Issue #422](https://github.com/Luminous-Dynamics/luminous-platform/issues/422) and
+[MISSION_ENERGY_ENVELOPE.md](./MISSION_ENERGY_ENVELOPE.md) introduce an interval-energy contract
+for mission-level service comparison. This does not duplicate Symtropy's generator, inverter or
+hybrid-plant physics. It consumes the time-weighted interval-average output from that owner, applies
+conservative source measurement/model uncertainty, and accounts for one aggregate store's capacity,
+SOC, charge/discharge power and efficiencies.
+
+The key competitive control is the **equal terminal-state obligation**: compare generator-only,
+generator+BESS and BESS-only against the same useful load, environment, outage schedule, initial SOC
+and final reserve. A hybrid system cannot claim fuel/efficiency superiority by discharging a battery
+and leaving the next operator with a depleted system. Report the SOC trace, source energy, battery
+energy withdrawn/added, curtailed energy, delivered service and every unserved segment.
+
+The synthetic two-segment fixture demonstrates arithmetic only (1,000 Wh source surplus charged at
+90%, followed by 800 Wh of storage-delivered service at 90% discharge efficiency). It is not a
+measured system or performance result.
+
+Standards/test-method references newly added for this work:
+- [ISO 8528-5:2025](https://www.iso.org/standard/85960.html) for the RIC-engine/AC-generator-set subsystem.
+- [IEC TS 62933-2-2:2022](https://webstore.iec.ch/en/publication/64570) for EES application duty cycles/performance testing.
+- [IEC TS 62933-2-3:2025](https://webstore.iec.ch/en/publication/77334) for site-operation performance assessment after commissioning.
+- [IEEE 2030.3-2016](https://standards.ieee.org/ieee/2030.3/5076/) and [IEEE 1679-2020](https://standards.ieee.org/ieee/1679/7716/) as scoped storage test/characterization references.
+
+These references do not by themselves qualify a portable hybrid product. Product classification, South
+African SANS/NRCS applicability, battery safety, converter safety, protection, installation and
+accredited physical testing remain separate release gates.
