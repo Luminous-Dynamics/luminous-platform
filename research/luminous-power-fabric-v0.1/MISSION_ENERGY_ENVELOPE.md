@@ -112,6 +112,8 @@ The SOC uncertainty is an absolute fraction (0.01 means one percentage point). T
 S_{\mathrm{final}}\ge q_{\mathrm{reserve}}C_{\mathrm{eff}}
 \]
 
+Each segment also carries its own maximum permitted unserved energy. The segment must pass its local service gate, and the mission must pass its aggregate unserved-energy budget. A generous aggregate allowance cannot compensate for a critical segment shortfall. Set a critical segment's maximum to zero.
+ 
 A service-complete run that misses its final reserve is a **mission failure**. This is intentional: it cannot borrow resilience from the next shift or emergency.
 
 ## 4. Evidence and fail-closed rules
