@@ -114,6 +114,8 @@ pub struct DispatchPolicyTraceReport {
     pub component_constraints_pass: bool,
     pub reserve_pass: bool,
     pub causal_integrity_pass: bool,
+    pub decision_deadlines_pass: bool,
+    pub action_outcomes_final: bool,
     pub evidence_current: bool,
     pub overall_hard_gates_pass: bool,
     pub critical_required_wh: f64,
@@ -320,14 +322,19 @@ pub fn evaluate_dispatch_policy_trace(t: &DispatchPolicyTrace) -> Result<Dispatc
     }
 
     let evidence_current=t.controller_evidence_status==EvidenceStatus::Current
-        && t.plant_evidence_status==EvidenceStatus::Current && unknown==0;
-    if !evidence_current { blockers.push("controller_or_plant_evidence_not_current_or_action_unknown".to_string()); }
-    let hard_gates=service_pass&&component_pass&&reserve_pass&&evidence_current;
+        && t.plant_evidence_status==EvidenceStatus::Current;
+    let decision_deadlines_pass=misses==0;
+    let action_outcomes_final=unknown==0;
+    if !evidence_current { blockers.push("controller_or_plant_evidence_not_current".to_string()); }
+    if !decision_deadlines_pass { blockers.push("decision_deadline_missed".to_string()); }
+    if !action_outcomes_final { blockers.push("action_outcome_indeterminate".to_string()); }
+    let hard_gates=service_pass&&component_pass&&reserve_pass&&evidence_current
+        &&decision_deadlines_pass&&action_outcomes_final;
     Ok(DispatchPolicyTraceReport {
         trace_id:t.trace_id.clone(),scenario_id:t.scenario_id.clone(),
         effective_evidence_class:if t.controller_evidence_class<=t.plant_evidence_class {t.controller_evidence_class} else {t.plant_evidence_class},
         critical_service_pass:service_pass,component_constraints_pass:component_pass,reserve_pass,
-        causal_integrity_pass:true,evidence_current,overall_hard_gates_pass:hard_gates,
+        causal_integrity_pass:true,decision_deadlines_pass,action_outcomes_final,evidence_current,overall_hard_gates_pass:hard_gates,
         critical_required_wh:required,critical_delivered_wh:delivered,critical_unserved_wh:unserved,
         primary_source_input_wh:primary,auxiliary_energy_wh:auxiliary,
         storage_charge_input_wh:charge,storage_discharge_output_wh:discharge,
@@ -428,5 +435,7 @@ mod tests {
     #[test] fn simulated_plant_cannot_claim_physical_comparison(){let mut a=trace();let mut b=trace();for x in [&mut a,&mut b]{x.controller_evidence_class=TraceEvidenceClass::Measured;x.plant_evidence_class=TraceEvidenceClass::Modelled;}b.trace_id="t2".into();b.policy_id="p2".into();b.policy_revision_sha256=h('f');let c=compare_dispatch_policy_traces(&a,&b).unwrap();assert!(c.comparison_eligible);assert!(!c.physical_measurement_eligible);}
     #[test] fn physical_requires_measured_controller_and_plant(){let mut a=trace();let mut b=trace();for x in [&mut a,&mut b]{x.controller_evidence_class=TraceEvidenceClass::Measured;x.plant_evidence_class=TraceEvidenceClass::Measured;}b.trace_id="t2".into();b.policy_id="p2".into();b.policy_revision_sha256=h('f');let c=compare_dispatch_policy_traces(&a,&b).unwrap();assert!(c.physical_measurement_eligible);assert!(!c.independent_claim_evidence_eligible);}
     #[test] fn unverified_plant_blocks_hard_gate(){let mut t=trace();t.plant_evidence_status=EvidenceStatus::Unverified;let r=evaluate_dispatch_policy_trace(&t).unwrap();assert!(!r.evidence_current);assert!(!r.overall_hard_gates_pass);}
+    #[test] fn unknown_action_is_not_misreported_as_stale_evidence(){let mut t=trace();t.decisions[0].disposition=ActionDisposition::Unknown;t.decisions[0].effect_observed_time_ns=None;let r=evaluate_dispatch_policy_trace(&t).unwrap();assert!(r.evidence_current);assert!(!r.action_outcomes_final);assert!(!r.overall_hard_gates_pass);}
+    #[test] fn missed_deadline_is_an_explicit_hard_gate(){let mut t=trace();t.decisions[0].completion_time_ns=45;t.decisions[0].effect_observed_time_ns=Some(50);let r=evaluate_dispatch_policy_trace(&t).unwrap();assert!(!r.decision_deadlines_pass);assert!(!r.overall_hard_gates_pass);}
     #[test] fn claim_ceiling_is_bounded(){let r=evaluate_dispatch_policy_trace(&trace()).unwrap();assert_eq!(r.claim_ceiling(),TRACE_CLAIM_CEILING);}
 }
