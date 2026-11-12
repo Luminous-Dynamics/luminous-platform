@@ -1,0 +1,892 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/integrations/decision-aware-probes-v0.1/decision-aware-probe-proposal.schema.json",
+  "title": "Luminous Decision-Aware Read-Only Probe Proposal v0.1",
+  "description": "A planner-originated request for one catalogued read-only observation. Structural validity does not confer authorization or prove source independence or harmlessness.",
+  "type": "object",
+  "required": [
+    "schema",
+    "version",
+    "proposal_id",
+    "proposed_action",
+    "episode",
+    "planner",
+    "probe",
+    "session_budget",
+    "freshness",
+    "stop_policy"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous-decision-aware-probe-proposal-v0.1"
+    },
+    "version": {
+      "const": 1
+    },
+    "proposal_id": {
+      "type": "string",
+      "pattern": "^dap-[A-Za-z0-9._-]{1,96}$"
+    },
+    "proposed_action": {
+      "const": "READ_ONLY_PROBE"
+    },
+    "episode": {
+      "type": "object",
+      "required": [
+        "episode_ref",
+        "tenant_commitment",
+        "principal_ref",
+        "session_ref",
+        "target_ref",
+        "target_digest",
+        "topology_epoch",
+        "topology_digest",
+        "intent_ref",
+        "intent_digest",
+        "purpose_ref",
+        "purpose_digest"
+      ],
+      "properties": {
+        "episode_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "tenant_commitment": {
+          "type": "string",
+          "pattern": "^(hmac-sha256|opaque):[A-Za-z0-9_-]{32,128}$"
+        },
+        "principal_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "session_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "target_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "target_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "topology_epoch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "topology_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "intent_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "intent_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "purpose_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "purpose_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "planner": {
+      "type": "object",
+      "required": [
+        "planner_id",
+        "api_ref",
+        "build_digest",
+        "result_digest",
+        "method",
+        "hypothesis_set_digest",
+        "scenario_set_digest",
+        "claim_ceiling",
+        "predicted_quantity"
+      ],
+      "properties": {
+        "planner_id": {
+          "const": "symthaea"
+        },
+        "api_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "build_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "result_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "method": {
+          "enum": [
+            "point_eig",
+            "expected_eig",
+            "worst_case_eig",
+            "cvar_eig",
+            "expected_evsi",
+            "worst_case_evsi",
+            "cvar_evsi",
+            "minimax_regret"
+          ]
+        },
+        "hypothesis_set_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "scenario_set_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "utility_model_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "scenario_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "predicted_quantity": {
+          "type": "object",
+          "required": [
+            "metric",
+            "value",
+            "unit"
+          ],
+          "properties": {
+            "metric": {
+              "enum": [
+                "point_eig",
+                "expected_eig",
+                "worst_case_eig",
+                "cvar_eig",
+                "expected_evsi",
+                "worst_case_evsi",
+                "cvar_evsi",
+                "minimax_regret"
+              ]
+            },
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "enum": [
+                "nats",
+                "bits",
+                "utility",
+                "loss",
+                "regret"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "top_rank_stability": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "claim_ceiling": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "caller_supplied_priors",
+              "caller_supplied_likelihoods",
+              "finite_scenario_set_only",
+              "utility_model_caller_owned",
+              "likelihoods_not_independently_calibrated",
+              "not_executed",
+              "no_authority_granted"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "probe": {
+      "type": "object",
+      "required": [
+        "catalog_snapshot_digest",
+        "catalog_entry_ref",
+        "catalog_entry_digest",
+        "operation_digest",
+        "input_schema_digest",
+        "output_contract_digest",
+        "capability",
+        "target_ref",
+        "target_digest",
+        "data_scope_commitment",
+        "privacy_class",
+        "expected_observation_fields",
+        "requested_purpose_ref",
+        "result_sink_class"
+      ],
+      "properties": {
+        "catalog_snapshot_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "catalog_entry_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "catalog_entry_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "operation_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "input_schema_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "output_contract_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "capability": {
+          "const": "read_only"
+        },
+        "target_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "target_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "data_scope_commitment": {
+          "type": "string",
+          "pattern": "^(hmac-sha256|opaque):[A-Za-z0-9_-]{32,128}$"
+        },
+        "privacy_class": {
+          "enum": [
+            "public",
+            "internal",
+            "confidential",
+            "restricted"
+          ]
+        },
+        "expected_observation_fields": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "requested_purpose_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "result_sink_class": {
+          "const": "principal_authorized_session"
+        }
+      },
+      "additionalProperties": false
+    },
+    "session_budget": {
+      "type": "object",
+      "required": [
+        "budget_state_ref",
+        "budget_state_digest",
+        "budget_state_version",
+        "requested_reservation"
+      ],
+      "properties": {
+        "budget_state_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "budget_state_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "budget_state_version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "requested_reservation": {
+          "type": "object",
+          "required": [
+            "probe_calls",
+            "resource_ceiling"
+          ],
+          "properties": {
+            "probe_calls": {
+              "const": 1
+            },
+            "resource_ceiling": {
+              "type": "object",
+              "required": [
+                "max_duration_ms",
+                "max_cpu_millicores",
+                "max_memory_bytes",
+                "max_io_bytes",
+                "max_network_bytes",
+                "max_result_rows"
+              ],
+              "properties": {
+                "max_duration_ms": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 300000
+                },
+                "max_cpu_millicores": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 64000
+                },
+                "max_memory_bytes": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "max_io_bytes": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "max_network_bytes": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "max_result_rows": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "freshness": {
+      "type": "object",
+      "required": [
+        "max_observation_age_ms",
+        "deadline_at"
+      ],
+      "properties": {
+        "max_observation_age_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "required_valid_after": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "required_valid_before": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "deadline_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "stop_policy": {
+      "type": "object",
+      "required": [
+        "stop_when_predicted_value_non_positive",
+        "abstain_on_missing_required_provenance",
+        "escalate_when_impact_unknown",
+        "max_additional_probe_calls"
+      ],
+      "properties": {
+        "stop_when_predicted_value_non_positive": {
+          "const": true
+        },
+        "abstain_on_missing_required_provenance": {
+          "const": true
+        },
+        "escalate_when_impact_unknown": {
+          "const": true
+        },
+        "max_additional_probe_calls": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "context": {
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "sol_atlas": {
+          "type": "object",
+          "required": [
+            "asset_context_ref",
+            "asset_context_digest",
+            "spatial_projection_ref",
+            "spatial_projection_digest",
+            "topology_epoch",
+            "topology_digest",
+            "source_revision_ref",
+            "valid_time_start",
+            "valid_time_end"
+          ],
+          "properties": {
+            "asset_context_ref": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "asset_context_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "spatial_projection_ref": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "spatial_projection_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "topology_epoch": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "topology_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "source_revision_ref": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "valid_time_start": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "valid_time_end": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "additionalProperties": false
+        },
+        "mycelix": {
+          "type": "object",
+          "required": [
+            "dependency_graph_ref",
+            "dependency_graph_digest",
+            "assurance_profile_ref",
+            "assurance_profile_digest",
+            "assessment_ref",
+            "assessment_digest"
+          ],
+          "properties": {
+            "dependency_graph_ref": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "dependency_graph_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "assurance_profile_ref": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "assurance_profile_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "assessment_ref": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "assessment_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            }
+          },
+          "additionalProperties": false
+        },
+        "symtropy": {
+          "type": "object",
+          "required": [
+            "simulation_ref",
+            "simulation_digest",
+            "model_digest",
+            "parameter_digest",
+            "initial_state_digest",
+            "scenario_set_digest",
+            "output_digest",
+            "valid_until",
+            "claim_ceiling"
+          ],
+          "properties": {
+            "simulation_ref": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "simulation_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "model_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "parameter_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "initial_state_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "scenario_set_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "output_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "valid_until": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "claim_ceiling": {
+              "const": "simulation_only"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "planner": {
+            "properties": {
+              "method": {
+                "const": "point_eig"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "planner": {
+            "properties": {
+              "predicted_quantity": {
+                "properties": {
+                  "metric": {
+                    "const": "point_eig"
+                  },
+                  "unit": {
+                    "enum": [
+                      "nats",
+                      "bits"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "planner": {
+            "properties": {
+              "method": {
+                "const": "expected_eig"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "planner"
+        ],
+        "properties": {
+          "planner": {
+            "required": [
+              "scenario_count"
+            ],
+            "properties": {
+              "predicted_quantity": {
+                "properties": {
+                  "metric": {
+                    "const": "expected_eig"
+                  },
+                  "unit": {
+                    "enum": [
+                      "nats",
+                      "bits"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "planner": {
+            "properties": {
+              "method": {
+                "const": "worst_case_eig"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "planner": {
+            "required": [
+              "scenario_count"
+            ],
+            "properties": {
+              "predicted_quantity": {
+                "properties": {
+                  "metric": {
+                    "const": "worst_case_eig"
+                  },
+                  "unit": {
+                    "enum": [
+                      "nats",
+                      "bits"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "planner": {
+            "properties": {
+              "method": {
+                "const": "cvar_eig"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "planner": {
+            "required": [
+              "scenario_count"
+            ],
+            "properties": {
+              "predicted_quantity": {
+                "properties": {
+                  "metric": {
+                    "const": "cvar_eig"
+                  },
+                  "unit": {
+                    "enum": [
+                      "nats",
+                      "bits"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "planner": {
+            "properties": {
+              "method": {
+                "const": "expected_evsi"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "planner": {
+            "required": [
+              "utility_model_digest",
+              "scenario_count"
+            ],
+            "properties": {
+              "predicted_quantity": {
+                "properties": {
+                  "metric": {
+                    "const": "expected_evsi"
+                  },
+                  "unit": {
+                    "const": "utility"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "planner": {
+            "properties": {
+              "method": {
+                "const": "worst_case_evsi"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "planner": {
+            "required": [
+              "utility_model_digest",
+              "scenario_count"
+            ],
+            "properties": {
+              "predicted_quantity": {
+                "properties": {
+                  "metric": {
+                    "const": "worst_case_evsi"
+                  },
+                  "unit": {
+                    "const": "utility"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "planner": {
+            "properties": {
+              "method": {
+                "const": "cvar_evsi"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "planner": {
+            "required": [
+              "utility_model_digest",
+              "scenario_count"
+            ],
+            "properties": {
+              "predicted_quantity": {
+                "properties": {
+                  "metric": {
+                    "const": "cvar_evsi"
+                  },
+                  "unit": {
+                    "const": "utility"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "planner": {
+            "properties": {
+              "method": {
+                "const": "minimax_regret"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "planner": {
+            "required": [
+              "utility_model_digest",
+              "scenario_count"
+            ],
+            "properties": {
+              "predicted_quantity": {
+                "properties": {
+                  "metric": {
+                    "const": "minimax_regret"
+                  },
+                  "unit": {
+                    "const": "regret"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
