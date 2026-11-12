@@ -344,6 +344,22 @@ profile (#422); event unserved energy is a diagnostic and must not be added to t
 again. See [POWER_DURATION_EVENT_ENVELOPE.md](./POWER_DURATION_EVENT_ENVELOPE.md) and
 the schema/synthetic event fixture under `schemas/power-event-envelope-*`.
 
+## Replayable benchmark evidence passport
+
+[Issue #429](https://github.com/Luminous-Dynamics/luminous-platform/issues/429) adds a typed, read-only
+pairwise gate in `tools/measurement-audit/src/benchmark_comparison.rs`. It requires a matched POC,
+service/load/event/environment/source/fuel/reserve/test/data-treatment/timebase context, current
+calibration and timebase evidence, matching measurement and calibration methods, and raw-data
+digests for physical runs. Site-operational assessments also carry representative sample counts,
+preprocessing policy and fault/maintenance/dispatch log digests.
+
+The JSON contract and synthetic/adversarial examples are under `schemas/benchmark-evidence-*`;
+the full boundary and IEC operational-assessment distinction are in
+[BENCHMARK_EVIDENCE_PASSPORT.md](./BENCHMARK_EVIDENCE_PASSPORT.md). Structural match, physical
+measurement eligibility and independent claim eligibility are separate outputs. A synthetic pair
+may test matching logic but cannot support physical SOTA. The comparator does not authenticate raw
+digests/certificates or calculate significance/superiority.
+
 ## Matched-service industry benchmark
 
 [Issue #419](https://github.com/Luminous-Dynamics/luminous-platform/issues/419) and
