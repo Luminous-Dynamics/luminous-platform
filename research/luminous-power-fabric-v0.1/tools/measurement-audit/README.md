@@ -57,6 +57,22 @@ See [LOSS_BUDGET_AND_MODEL_PLAN.md](../../LOSS_BUDGET_AND_MODEL_PLAN.md) for equ
 anti-double-counting rules and the DAB/CLLC model-to-bench plan.
 
 
+
+## Common-cause-aware multi-path capability
+
+The crate exposes `multi_port_capability::evaluate_multi_path_capability`, a read-only
+deterministic composition of already-qualified parallel source-to-load paths. It calculates a
+baseline sum, automatically evaluates failure of every declared component and shared failure
+domain, and accepts explicit compound contingencies. The robust capability is the minimum surviving
+path capacity over the baseline and all enumerated scenarios. A shared source, bus, cooling loop,
+controller or other dependency ID removes every path that declares that dependency.
+
+This is not an electrical network solver, fault-current model, protection coordination test,
+reliability-probability estimator or minimal-cut-set discovery engine. It does not infer missing
+dependencies, calculate serial-component bottlenecks or authorize switching. Each route's input
+power must already be bounded by the upstream capability and engineering assessment. See
+`multi_port_capability.rs` and [MULTI_PORT_CAPABILITY_DESIGN.md](../../MULTI_PORT_CAPABILITY_DESIGN.md).
+
 ## Evidence-gated capability envelope
 
 The crate exposes `capability_envelope::evaluate_capability_envelope`, a read-only evaluator
