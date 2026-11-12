@@ -304,6 +304,16 @@ solve electrical networks, calculate fault current or protection selectivity, es
 probabilities, solve storage energy/ramp/recovery, or authorize switching. Recovery/requalification
 and physical dependency verification remain separate next stages.
 
+## Matched-service industry benchmark
+
+[Issue #419](https://github.com/Luminous-Dynamics/luminous-platform/issues/419) and
+[INDUSTRY_BENCHMARK_PROGRAMME.md](./INDUSTRY_BENCHMARK_PROGRAMME.md) pin the Cat XES120,
+Atlas Copco ZBC, ABB Infinitus and TI TIDA-050090 vendor baselines and define component,
+source-to-load, useful-service and resilience benchmark tiers. The benchmark reuses the existing
+field-mission-profile contract and composes Symthaea, Symtropy, Sol-Atlas and Mycelix owners.
+Vendor specifications remain separate from independent physical measurements and accredited
+qualification evidence.
+
 ## Current limitations
 
 This package contains analytical screening models and offline data-audit tools; it does **not**
