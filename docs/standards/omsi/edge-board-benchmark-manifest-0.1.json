@@ -1,0 +1,214 @@
+{
+  "schema": "omsi.edge-intelligence-benchmark",
+  "version": "0.1.0-draft",
+  "state": "DESIGN_NOT_EXECUTED",
+  "owner_issue": 300,
+  "workload_profile": {
+    "id": "EDGE-SENSOR-FEATURE-WINDOW-001",
+    "mode": "synthetic_and_recorded_non_transmitting_sensor_features_only",
+    "input_profile": {
+      "window_duration_ms": 5000,
+      "feature_rate_hz": 100,
+      "feature_channels": [
+        "enclosure_temperature",
+        "supply_voltage",
+        "supply_current",
+        "vibration_x",
+        "vibration_y",
+        "vibration_z",
+        "clock_drift_estimate",
+        "network_loss_estimate"
+      ],
+      "numeric_representation": "int16_fixed_point",
+      "timestamp_basis": "synthetic_monotonic_epoch"
+    },
+    "target_task": "equipment_anomaly_ranking",
+    "input_identity_rule": "identical_frozen_window_bytes_and_labels_for_all_comparators",
+    "retention_policy": "raw_measurements_local_only_unless_explicitly_authorized"
+  },
+  "board_candidates": [
+    {
+      "candidate_id": "ESP32-S3-CANDIDATE",
+      "soc_family": "ESP32-S3",
+      "selection_state": "UNSELECTED_EXACT_BOARD_REQUIRED",
+      "datasheet_status": "CURRENT_FAMILY_DOCUMENT_TO_PIN",
+      "hardware_identity": {
+        "board_manufacturer": null,
+        "board_model": null,
+        "board_revision": null,
+        "module_part": null,
+        "soc_revision": null,
+        "flash_bytes": null,
+        "psram_bytes": null,
+        "schematic_sha256": null,
+        "bom_sha256": null
+      },
+      "connectivity": {
+        "wifi": "integrated",
+        "bluetooth": "integrated",
+        "companion_part": null
+      },
+      "runtime_profiles": [],
+      "qualification_gates": [
+        "reproducible_firmware_build",
+        "secure_boot",
+        "flash_encryption",
+        "signed_ota",
+        "rollback_recovery",
+        "anti_rollback",
+        "debug_interface_policy",
+        "offline_buffer_integrity",
+        "privacy_exfiltration_test"
+      ]
+    },
+    {
+      "candidate_id": "ESP32-P4-CANDIDATE",
+      "soc_family": "ESP32-P4",
+      "selection_state": "UNSELECTED_EXACT_BOARD_REQUIRED",
+      "datasheet_status": "PRELIMINARY_DOCUMENT",
+      "hardware_identity": {
+        "board_manufacturer": null,
+        "board_model": null,
+        "board_revision": null,
+        "module_part": null,
+        "soc_revision": null,
+        "flash_bytes": null,
+        "psram_bytes": null,
+        "schematic_sha256": null,
+        "bom_sha256": null
+      },
+      "connectivity": {
+        "wifi": "companion",
+        "bluetooth": "companion",
+        "companion_part": null
+      },
+      "runtime_profiles": [],
+      "qualification_gates": [
+        "reproducible_firmware_build",
+        "secure_boot",
+        "flash_encryption",
+        "signed_ota",
+        "rollback_recovery",
+        "anti_rollback",
+        "debug_interface_policy",
+        "offline_buffer_integrity",
+        "privacy_exfiltration_test"
+      ]
+    }
+  ],
+  "comparators": [
+    "fixed_threshold_or_statistical_reference",
+    "host_fp32_reference",
+    "esp_dl_quantized_target",
+    "tflite_micro_if_compatible",
+    "cloud_assisted_reference_with_network_loss"
+  ],
+  "metric_tracks": [
+    "EDGE-CORRECT",
+    "EDGE-CALIBRATION",
+    "EDGE-OOD",
+    "EDGE-LATENCY",
+    "EDGE-MEMORY",
+    "EDGE-ENERGY",
+    "EDGE-THERMAL",
+    "EDGE-SAMPLE-LOSS",
+    "EDGE-OFFLINE",
+    "EDGE-SECURITY",
+    "EDGE-PRIVACY",
+    "EDGE-RECEIPT"
+  ],
+  "scenarios": [
+    {
+      "id": "EDGE-001",
+      "purpose": "Nominal frozen sensor windows.",
+      "stimulus": "nominal_input",
+      "expected_behavior": "process_with_receipt",
+      "non_compensatory": true
+    },
+    {
+      "id": "EDGE-002",
+      "purpose": "Required sensor disappears or calibration becomes absent.",
+      "stimulus": "sensor_missing",
+      "expected_behavior": "mark_measurement_unknown",
+      "non_compensatory": true
+    },
+    {
+      "id": "EDGE-003",
+      "purpose": "Sensor is stuck or saturated while model confidence remains high.",
+      "stimulus": "sensor_stuck_or_saturated",
+      "expected_behavior": "reject_reliance_and_abstain",
+      "non_compensatory": true
+    },
+    {
+      "id": "EDGE-004",
+      "purpose": "Calibration interval is expired for the exact sensor identity.",
+      "stimulus": "calibration_expired",
+      "expected_behavior": "reject_reliance_and_abstain",
+      "non_compensatory": true
+    },
+    {
+      "id": "EDGE-005",
+      "purpose": "Device reboots or time correlation is absent.",
+      "stimulus": "clock_reset_or_uncorrelated",
+      "expected_behavior": "mark_measurement_unknown",
+      "non_compensatory": true
+    },
+    {
+      "id": "EDGE-006",
+      "purpose": "Feature window lies outside the supported model distribution.",
+      "stimulus": "model_ood",
+      "expected_behavior": "reject_reliance_and_abstain",
+      "non_compensatory": true
+    },
+    {
+      "id": "EDGE-007",
+      "purpose": "WAN, DNS and central platform are unavailable.",
+      "stimulus": "network_partition",
+      "expected_behavior": "continue_local_and_buffer",
+      "non_compensatory": true
+    },
+    {
+      "id": "EDGE-008",
+      "purpose": "Ring buffer reaches its declared capacity.",
+      "stimulus": "buffer_overflow",
+      "expected_behavior": "report_sample_loss",
+      "non_compensatory": true
+    },
+    {
+      "id": "EDGE-009",
+      "purpose": "Power loss occurs during firmware update.",
+      "stimulus": "power_loss_during_update",
+      "expected_behavior": "reject_firmware_and_recover",
+      "non_compensatory": true
+    },
+    {
+      "id": "EDGE-010",
+      "purpose": "Unsigned, stale or replayed firmware package is presented.",
+      "stimulus": "unsigned_or_replayed_firmware",
+      "expected_behavior": "reject_firmware_and_recover",
+      "non_compensatory": true
+    },
+    {
+      "id": "EDGE-011",
+      "purpose": "Quantization changes a decision across the declared threshold.",
+      "stimulus": "quantization_threshold_flip",
+      "expected_behavior": "mark_quantization_regression",
+      "non_compensatory": true
+    },
+    {
+      "id": "EDGE-012",
+      "purpose": "A model or process attempts to export raw data without authorization.",
+      "stimulus": "raw_data_export_attempt",
+      "expected_behavior": "deny_export",
+      "non_compensatory": true
+    }
+  ],
+  "run_records": [],
+  "claim_ceiling": [
+    "No hardware selected or physically tested.",
+    "No model benchmark or energy/latency measurement claimed.",
+    "No sensor calibration, physical truth, RF measurement or PNT integrity claim.",
+    "No production security, radio certification or industrial safety qualification.",
+    "Synthetic and recorded non-transmitting sensor feature workloads only."
+  ]
+}
