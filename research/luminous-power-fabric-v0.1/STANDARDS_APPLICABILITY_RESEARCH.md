@@ -223,3 +223,16 @@ and product applicability before any compliance claim.
 Sources:
 - IEC TS 62933-2-3:2025 publisher page: https://webstore.iec.ch/en/publication/77334
 - IEC TS 62933-2-3:2025 public preview: https://cdn.standards.iteh.ai/samples/iec/iec-ts-62933-2-3-2025/8df418d2566940208430adcf448df1ab/iec-ts-62933-2-3-2025.pdf
+
+## 10. Microgrid monitoring, control and energy-management system testing
+
+[IEC TS 62898-3-5:2026](https://webstore.iec.ch/en/publication/84175), published 11 June 2026, provides requirements for hardware-in-the-loop testing, commissioning testing and periodic testing of microgrid monitoring, control and energy-management systems (MMCS/MEMS), for grid-connected and isolated microgrids.
+
+This is directly relevant to the Power Fabric controller test ladder. Use it alongside:
+- IEEE 2030.7-2017 for the common functional specification of microgrid controllers;
+- IEEE 2030.8-2018 for controller testing procedures and performance comparison metrics;
+- IEC TS 62898-3-5:2026 for HIL, commissioning and periodic testing requirements.
+
+The IEEE revision projects P2030.7 and P2030.8 are active PARs in this snapshot, not published replacement editions. Confirm all detailed requirements in the licensed standards and with qualified test laboratories. This applicability map is not a conformity assessment.
+
+Source: https://webstore.iec.ch/en/publication/84175

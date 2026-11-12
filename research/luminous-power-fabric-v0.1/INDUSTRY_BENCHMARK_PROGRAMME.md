@@ -194,3 +194,39 @@ controlled tests when accurate numeric characterization is needed.
 The code returns three distinct gates—structural match, physical measurement eligibility and
 independent claim eligibility. A synthetic pair can test the first gate but not the latter two.
 No physical superiority claim is made.
+
+
+## 13. Dispatch-controller benchmark
+
+[Issue #432](https://github.com/Luminous-Dynamics/luminous-platform/issues/432) and
+[DISPATCH_CONTROLLER_BENCHMARK.md](./DISPATCH_CONTROLLER_BENCHMARK.md) open the controller-policy
+qualification layer. It compares fixed schedules, transparent rules, constrained optimisation and
+MPC/robust-MPC policies over complete matched mission trajectories, including forecast error, source
+loss/start failure, storage derating, auxiliary/cooling common causes, stale telemetry and recovery.
+
+The controller benchmark consumes source, storage, common-path and mission constraints from their
+owners; it does not create a competing physical plant model. Service, feasibility/safety, resilience,
+resource/lifecycle, controller quality and evidence/replay remain separate scoreboards. Critical
+service, qualified-envelope, telemetry and terminal-reserve failures are non-compensatory.
+
+The versioned schema and synthetic positive/negative corpus are under
+`schemas/dispatch-controller-*`; the typed in-memory semantic validator is registered in
+`measurement-audit/src/dispatch_controller_corpus.rs`. These are offline fixtures, not controller
+results or physical measurements. Alongside IEEE 2030.7-2017 and IEEE 2030.8-2018, the programme
+includes IEC TS 62898-3-5:2026 for HIL, commissioning and periodic testing of MMCS/MEMS.
+The IEEE P2030.7/P2030.8 revisions remain active projects in this snapshot. No standards-conformity
+or dispatch-superiority claim is made.
+
+
+### IEC TS 62898-3-5:2026 — newly published controller test reference
+
+The benchmark now includes [IEC TS 62898-3-5:2026](https://webstore.iec.ch/en/publication/84175), published 11 June 2026. The IEC publisher states that it provides requirements for HIL, commissioning and periodic testing to verify and quantify microgrid monitoring, control and energy-management systems in grid-connected or isolated microgrids.
+
+This is a more direct test-method anchor for the controller qualification work than treating controller tests as an extension of the storage-energy tests. Map its licensed requirements into separate HIL, commissioning and periodic-test records. Keep IEEE 2030.7-2017 (controller functional specification) and IEEE 2030.8-2018 (controller test procedures/metrics) in the crosswalk; their P2030.7/P2030.8 revisions are active projects, not yet published replacement standards in this snapshot.
+
+Sources:
+- IEC TS 62898-3-5:2026: https://webstore.iec.ch/en/publication/84175
+- IEEE 2030.7-2017: https://standards.ieee.org/ieee/2030.7/5941/
+- IEEE 2030.8-2018: https://standards.ieee.org/ieee/2030.8/6169/
+- P2030.7: https://standards.ieee.org/ieee/2030.7/12022/
+- P2030.8: https://standards.ieee.org/ieee/2030.8/12543/
