@@ -1,0 +1,123 @@
+{
+  "schema_version": "0.1",
+  "record_class": "synthetic_fixture",
+  "run_id": "PF-LV01-SYNTHETIC-LOSS-0001",
+  "topology": "NOT_SELECTED",
+  "operating_point": {
+    "direction": "A_TO_B",
+    "port_a_voltage_v": 48,
+    "port_b_voltage_v": 48,
+    "load_fraction": 1,
+    "switching_frequency_hz": null,
+    "ambient_c": 25,
+    "cooling_mode": "unknown",
+    "modulation": null,
+    "thermal_state": "unknown"
+  },
+  "model": {
+    "model_name": "illustrative-loss-budget-only",
+    "model_revision": "0.1-example",
+    "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "solver": "none",
+    "solver_revision": null,
+    "assumptions": [
+      "All watts and uncertainties in this fixture are invented for schema demonstration.",
+      "No DAB or CLLC topology has been selected.",
+      "No waveform, current, magnetic, thermal or switching result is represented."
+    ],
+    "validated_against_hardware": false
+  },
+  "budget": {
+    "output_power_w": 500,
+    "target_efficiency": 0.98
+  },
+  "terms": [
+    {
+      "name": "semiconductor conduction",
+      "category": "semiconductor_conduction",
+      "watts": 4.2,
+      "standard_uncertainty_w": 0.4,
+      "evidence": "assumption",
+      "reference": "urn:luminous:synthetic-example",
+      "notes": "Invented fixture value."
+    },
+    {
+      "name": "semiconductor switching",
+      "category": "semiconductor_switching",
+      "watts": 1.8,
+      "standard_uncertainty_w": 0.4,
+      "evidence": "assumption",
+      "reference": "urn:luminous:synthetic-example",
+      "notes": "Invented fixture value."
+    },
+    {
+      "name": "magnetic copper",
+      "category": "magnetic_copper",
+      "watts": 1.5,
+      "standard_uncertainty_w": 0.3,
+      "evidence": "assumption",
+      "reference": "urn:luminous:synthetic-example",
+      "notes": "Invented fixture value."
+    },
+    {
+      "name": "magnetic core",
+      "category": "magnetic_core",
+      "watts": 1.2,
+      "standard_uncertainty_w": 0.3,
+      "evidence": "assumption",
+      "reference": "urn:luminous:synthetic-example",
+      "notes": "Invented fixture value."
+    },
+    {
+      "name": "capacitor",
+      "category": "capacitor",
+      "watts": 0.6,
+      "standard_uncertainty_w": 0.1,
+      "evidence": "assumption",
+      "reference": "urn:luminous:synthetic-example",
+      "notes": "Invented fixture value."
+    },
+    {
+      "name": "gate drive",
+      "category": "gate_drive",
+      "watts": 0.4,
+      "standard_uncertainty_w": 0.1,
+      "evidence": "assumption",
+      "reference": "urn:luminous:synthetic-example",
+      "notes": "Invented fixture value."
+    },
+    {
+      "name": "cooling and auxiliary",
+      "category": "cooling_and_auxiliary",
+      "watts": 1.6,
+      "standard_uncertainty_w": 0.3,
+      "evidence": "assumption",
+      "reference": "urn:luminous:synthetic-example",
+      "notes": "Invented fixture value."
+    },
+    {
+      "name": "interconnect",
+      "category": "interconnect",
+      "watts": 0.7,
+      "standard_uncertainty_w": 0.1,
+      "evidence": "assumption",
+      "reference": "urn:luminous:synthetic-example",
+      "notes": "Invented fixture value."
+    },
+    {
+      "name": "other",
+      "category": "other",
+      "watts": 0.5,
+      "standard_uncertainty_w": 0.2,
+      "evidence": "assumption",
+      "reference": "urn:luminous:synthetic-example",
+      "notes": "Invented fixture value."
+    }
+  ],
+  "claim_ceiling": "PARAMETERIZED_LOSS_ACCOUNTING_ONLY_NOT_TOPOLOGY_MODEL_OR_QUALIFICATION",
+  "limitations": [
+    "This is a synthetic schema example, not a Luminous converter result.",
+    "The sum of invented loss terms is 12.5 W; it must not be cited as a design prediction or measurement.",
+    "No circuit, switching model, solver, instrument, or hardware has been qualified."
+  ]
+}
