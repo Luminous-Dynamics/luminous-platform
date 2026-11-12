@@ -132,9 +132,11 @@ discharges it to cover a source deficit.
 
 The evaluator limits storage by conservative capacity, initial-SOC uncertainty, charge/discharge
 power, charge/discharge efficiency, minimum SOC and an explicit end-of-mission reserve. It retains
-per-segment source digest/evidence/uncertainty and the exact storage evidence/configuration/limit
-snapshot. Global system mismatch or expired mission qualification blocks all capability; a stale
-source segment or ineligible storage bank is excluded rather than trusted.
+qualified/observed source digests, source-specific expiry, evidence status and uncertainty bounds per
+segment, plus the exact storage evidence/configuration/limit snapshot. Global system mismatch or expired mission qualification blocks all capability; a stale
+source segment is excluded rather than trusted. If a storage bank is configured but is ineligible,
+the mission cannot claim a pass because its final SOC/reserve is unknown. For a true generator-only
+comparison, omit the storage object.
 
 This is interval-energy bookkeeping only, not a dispatch optimizer/controller, BMS, electrochemical
 or thermal model, generator/inverter transient simulator, AC/DC network solver, fuel calculation,
