@@ -60,7 +60,7 @@ impl ReserveRiskContract {
         }
 
         if !self.tail_confidence.is_finite()
-            || self.tail_confidence <= 0.5
+            || self.tail_confidence <= 0.0
             || self.tail_confidence >= 1.0
             || !self.total_variation_radius.is_finite()
             || self.total_variation_radius < 0.0
