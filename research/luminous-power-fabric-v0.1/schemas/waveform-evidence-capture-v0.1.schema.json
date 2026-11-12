@@ -60,6 +60,7 @@
               "wiring_revision_sha256",
               "test_protocol_sha256",
               "raw_waveform_sha256",
+              "evidence_status",
               "capture_class",
               "nominal_frequency_hz",
               "measurement_window_start_epoch_ns",
@@ -361,6 +362,15 @@
                   "null"
                 ],
                 "maxLength": 2048
+              },
+              "evidence_status": {
+                "enum": [
+                  "current",
+                  "missing",
+                  "expired",
+                  "invalid",
+                  "unverified"
+                ]
               }
             }
           }

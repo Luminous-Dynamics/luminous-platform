@@ -89,7 +89,8 @@
             "evidence_reference": "synthetic-metric"
           }
         ],
-        "independent_assessment_reference": null
+        "independent_assessment_reference": null,
+        "evidence_status": "current"
       }
     },
     {
@@ -176,7 +177,8 @@
             "evidence_reference": "synthetic-metric"
           }
         ],
-        "independent_assessment_reference": null
+        "independent_assessment_reference": null,
+        "evidence_status": "current"
       }
     },
     {
@@ -263,7 +265,8 @@
             "evidence_reference": "synthetic-metric"
           }
         ],
-        "independent_assessment_reference": null
+        "independent_assessment_reference": null,
+        "evidence_status": "current"
       }
     },
     {
@@ -350,7 +353,8 @@
             "evidence_reference": "synthetic-metric"
           }
         ],
-        "independent_assessment_reference": null
+        "independent_assessment_reference": null,
+        "evidence_status": "current"
       }
     },
     {
@@ -437,7 +441,8 @@
             "evidence_reference": "synthetic-metric"
           }
         ],
-        "independent_assessment_reference": null
+        "independent_assessment_reference": null,
+        "evidence_status": "current"
       }
     },
     {
@@ -524,7 +529,8 @@
             "evidence_reference": "synthetic-metric"
           }
         ],
-        "independent_assessment_reference": null
+        "independent_assessment_reference": null,
+        "evidence_status": "current"
       }
     }
   ]
