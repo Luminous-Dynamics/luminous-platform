@@ -1715,7 +1715,7 @@ pub(crate) fn validate_gaussian_copula_evidence(
     Ok(())
 }
 
-fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditError> {
+pub(crate) fn validate_scenario_set(scenarios: &ForecastScenarioSet) -> Result<(), AuditError> {
     scenarios.contract.validate()?;
     if scenarios.claim_ceiling
         != "MODELLED_TEMPORAL_POWER_SCENARIOS_NOT_MEASUREMENT_OR_GRID_RESERVE_QUALIFICATION"
