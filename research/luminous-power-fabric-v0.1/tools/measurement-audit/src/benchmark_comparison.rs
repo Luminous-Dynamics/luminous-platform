@@ -285,6 +285,24 @@ fn validate_run(run: &BenchmarkRun) -> Result<(), AuditError> {
     Ok(())
 }
 
+fn calibration_method_signature(
+    run: &BenchmarkRun,
+    metric: &BenchmarkMetricObservation,
+) -> Vec<String> {
+    let mut methods = metric
+        .instrument_ids
+        .iter()
+        .filter_map(|instrument_id| {
+            run.instruments
+                .iter()
+                .find(|instrument| instrument.instrument_id == *instrument_id)
+                .map(|instrument| instrument.calibration_method_sha256.clone())
+        })
+        .collect::<Vec<_>>();
+    methods.sort();
+    methods
+}
+
 fn compare_key(
     blockers: &mut Vec<String>,
     reference_value: &str,
@@ -445,6 +463,15 @@ pub fn compare_matched_benchmark_runs(
             blockers.push(format!(
                 "candidate_calibration_scope_mismatch:{}",
                 candidate_metric.metric_id
+            ));
+        }
+
+        if calibration_method_signature(reference, reference_metric)
+            != calibration_method_signature(candidate, candidate_metric)
+        {
+            blockers.push(format!(
+                "metric_calibration_method_mismatch:{}",
+                reference_metric.metric_id
             ));
         }
 
@@ -730,6 +757,21 @@ mod tests {
         .unwrap();
         assert!(!report.structural_match);
         assert!(report.blockers.contains(&"metric_method_mismatch:delivered_energy".to_string()));
+    }
+
+    #[test]
+    fn mismatched_calibration_method_blocks_comparison() {
+        let reference = run("run-ref", BenchmarkEvidenceClass::Measured, '4', 10_000.0);
+        let mut candidate = run("run-candidate", BenchmarkEvidenceClass::Measured, '5', 9_900.0);
+        candidate.instruments[0].calibration_method_sha256 = digest('9');
+        let report = compare_matched_benchmark_runs(MatchedBenchmarkInput {
+            evaluation_time_epoch_s: 100,
+            reference: &reference,
+            candidate: &candidate,
+        })
+        .unwrap();
+        assert!(!report.physical_measurement_eligible);
+        assert!(report.blockers.contains(&"metric_calibration_method_mismatch:delivered_energy".to_string()));
     }
 
     #[test]
