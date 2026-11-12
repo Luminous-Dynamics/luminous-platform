@@ -1,0 +1,186 @@
+{
+  "schema_version": "sovereign-compute-benchmark-0.1",
+  "run_id": "hdc-16k-modelled-demo-0001",
+  "started_at": "2026-11-10T08:00:00Z",
+  "finished_at": "2026-11-10T08:00:01Z",
+  "benchmark": {
+    "benchmark_id": "SCB-HDC-001",
+    "title": "Exact BinaryHV retrieval",
+    "revision": "0.1.0",
+    "protocol_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "evidence_class": "modelled",
+  "result_unit": "independently_accepted_correct_result",
+  "workload": {
+    "workload_id": "symthaea-binaryhv-exact-topk",
+    "semantic_version": "1",
+    "input_manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "expected_output_manifest_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "store_vectors_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "query_vectors_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "dimension_bits": 16384,
+    "bytes_per_vector": 2048,
+    "query_count": 1,
+    "store_count": 4096,
+    "top_k": 1,
+    "tie_break": "lowest_stable_id",
+    "task_semantics": "Exact Hamming distance popcount(q XOR x), top-1, stable ID tie-break",
+    "data_classification": "public_synthetic",
+    "seed": 350
+  },
+  "comparison": {
+    "design": "paired",
+    "matched_semantics": true,
+    "matched_policy": true,
+    "arms": [
+      "local",
+      "peer-plaintext"
+    ],
+    "deviations": []
+  },
+  "policy": {
+    "policy_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "owner_authority_mode": "synthetic_fixture_policy",
+    "allowed_destinations": [
+      "origin",
+      "peer-01"
+    ],
+    "confidentiality_mode": "plaintext_consented_peer",
+    "verification_strategy": "local_recompute",
+    "duplicate_execution_safe": true,
+    "unknown_is_eligible": false,
+    "required_assurance": "synthetic",
+    "maximum_data_egress_bytes": 0,
+    "maximum_energy_joules": 100,
+    "deadline_ms": 250
+  },
+  "environment": {
+    "nodes": [
+      {
+        "node_id": "origin-01",
+        "role": "origin",
+        "owner_domain": "owner-a",
+        "device_profile": "synthetic-x86",
+        "evidence_class": "synthetic",
+        "os": "Linux model",
+        "architecture": "x86_64",
+        "cpu": "modelled CPU",
+        "memory_bytes": 8589934592
+      },
+      {
+        "node_id": "peer-01",
+        "role": "executor",
+        "owner_domain": "owner-b",
+        "device_profile": "synthetic-x86",
+        "evidence_class": "synthetic",
+        "os": "Linux model",
+        "architecture": "x86_64",
+        "cpu": "modelled CPU",
+        "memory_bytes": 8589934592,
+        "operator_domain": "simulated"
+      }
+    ],
+    "network_profile": {
+      "topology": "modelled two-node link",
+      "fault_injection": [],
+      "round_trip_latency_ms": 1,
+      "bandwidth_mbps": 1000
+    },
+    "measurement_method": {
+      "energy": "synthetic fixture value; not instrumented",
+      "latency": "model clock; not wall time",
+      "resource_accounting": "no physical resources measured"
+    }
+  },
+  "arms": [
+    {
+      "arm_id": "local",
+      "system": "Symthaea reference",
+      "system_version": "fixture-model",
+      "source_commit": "1111111111111111111111111111111111111111",
+      "configuration_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "execution_mode": "local plaintext",
+      "verification_strategy": "local reference oracle",
+      "node_ids": [
+        "origin-01"
+      ]
+    },
+    {
+      "arm_id": "peer-plaintext",
+      "system": "DWF evaluator fixture",
+      "system_version": "0.1",
+      "source_repository": "https://github.com/Luminous-Dynamics/luminous-platform",
+      "source_commit": "3333333333333333333333333333333333333333",
+      "configuration_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "execution_mode": "modelled plaintext peer",
+      "verification_strategy": "synthetic oracle field",
+      "node_ids": [
+        "origin-01",
+        "peer-01"
+      ],
+      "verifier_id": "origin-01"
+    }
+  ],
+  "outcomes": {
+    "offered": 1,
+    "dispatched": 1,
+    "executed": 1,
+    "accepted": 1,
+    "correct_accepted": 1,
+    "rejected": 0,
+    "deferred": 0,
+    "indeterminate": 0,
+    "unknown": 0,
+    "duplicate_attempts": 0,
+    "false_accepts": 0,
+    "false_rejects": 0
+  },
+  "metrics": [
+    {
+      "metric_id": "request_to_accepted_result_latency",
+      "value": 4.2,
+      "unit": "ms",
+      "statistic": "p50",
+      "sample_count": 1,
+      "measurement_boundary": "model event timestamps from request to acceptance",
+      "evidence_class": "modelled",
+      "arm_id": "peer-plaintext"
+    },
+    {
+      "metric_id": "accepted_correct_results_per_joule",
+      "value": 0.5,
+      "unit": "results/J",
+      "statistic": "rate",
+      "sample_count": 1,
+      "measurement_boundary": "synthetic fixture numerator and denominator; not physical energy",
+      "evidence_class": "modelled",
+      "arm_id": "peer-plaintext"
+    }
+  ],
+  "artifacts": [
+    {
+      "artifact_id": "fixture-input",
+      "uri": "artifacts/input.json",
+      "media_type": "application/json",
+      "sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+      "evidence_class": "synthetic",
+      "description": "Synthetic fixture input manifest"
+    },
+    {
+      "artifact_id": "event-log",
+      "uri": "artifacts/events.json",
+      "media_type": "application/json",
+      "sha256": "6666666666666666666666666666666666666666666666666666666666666666",
+      "evidence_class": "modelled",
+      "description": "Modelled deterministic event transcript"
+    }
+  ],
+  "independent_review": {
+    "review_status": "not_reviewed",
+    "reviewer_id": "none"
+  },
+  "claim_limits": [
+    "Demonstration manifest only; all observations are synthetic or modelled.",
+    "No performance, energy, physical hardware, privacy, attestation or cryptographic correctness claim."
+  ]
+}

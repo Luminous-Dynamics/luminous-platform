@@ -1,0 +1,760 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/benchmarks/sovereign-compute-v0.1/benchmark-run.schema.json",
+  "title": "Luminous Sovereign Compute Benchmark Run Manifest",
+  "description": "Evidence-binding schema for matched sovereign-compute benchmark runs. Structural validation only; it does not verify signatures, hardware claims, data correctness, or truth.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "started_at",
+    "finished_at",
+    "benchmark",
+    "evidence_class",
+    "result_unit",
+    "workload",
+    "comparison",
+    "policy",
+    "environment",
+    "arms",
+    "outcomes",
+    "metrics",
+    "artifacts",
+    "claim_limits"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "sovereign-compute-benchmark-0.1"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,95}$"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "finished_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "benchmark": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "benchmark_id",
+        "title",
+        "revision",
+        "protocol_commit"
+      ],
+      "properties": {
+        "benchmark_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "protocol_commit": {
+          "$ref": "#/$defs/git_commit"
+        }
+      }
+    },
+    "evidence_class": {
+      "enum": [
+        "synthetic",
+        "modelled",
+        "loopback",
+        "emulated_network",
+        "physical_lan",
+        "field"
+      ]
+    },
+    "result_unit": {
+      "const": "independently_accepted_correct_result"
+    },
+    "workload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workload_id",
+        "semantic_version",
+        "input_manifest_sha256",
+        "expected_output_manifest_sha256",
+        "task_semantics",
+        "data_classification"
+      ],
+      "properties": {
+        "workload_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "semantic_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "input_manifest_sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "expected_output_manifest_sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "store_vectors_sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "query_vectors_sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "dimension_bits": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "bytes_per_vector": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "query_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "store_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "top_k": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tie_break": {
+          "type": "string",
+          "minLength": 1
+        },
+        "task_semantics": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data_classification": {
+          "type": "string",
+          "minLength": 1
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "corpus_generator_commit": {
+          "$ref": "#/$defs/git_commit"
+        }
+      }
+    },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "design",
+        "matched_semantics",
+        "matched_policy",
+        "arms",
+        "deviations"
+      ],
+      "properties": {
+        "design": {
+          "enum": [
+            "paired",
+            "randomized_paired",
+            "blocked",
+            "factorial",
+            "single_system",
+            "other"
+          ]
+        },
+        "matched_semantics": {
+          "type": "boolean"
+        },
+        "matched_policy": {
+          "type": "boolean"
+        },
+        "arms": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "deviations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_sha256",
+        "owner_authority_mode",
+        "allowed_destinations",
+        "confidentiality_mode",
+        "verification_strategy",
+        "duplicate_execution_safe",
+        "unknown_is_eligible"
+      ],
+      "properties": {
+        "policy_sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "owner_authority_mode": {
+          "type": "string",
+          "minLength": 1
+        },
+        "allowed_destinations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "confidentiality_mode": {
+          "enum": [
+            "local_only",
+            "plaintext_consented_peer",
+            "tee_attested",
+            "fhe_query_private",
+            "mpc_threshold",
+            "hybrid",
+            "not_applicable"
+          ]
+        },
+        "verification_strategy": {
+          "enum": [
+            "local_recompute",
+            "diverse_reexecution",
+            "attestation_plus_oracle",
+            "proof_carrying",
+            "hybrid",
+            "none",
+            "not_applicable"
+          ]
+        },
+        "duplicate_execution_safe": {
+          "type": "boolean"
+        },
+        "unknown_is_eligible": {
+          "const": false
+        },
+        "required_assurance": {
+          "type": "string"
+        },
+        "maximum_data_egress_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maximum_energy_joules": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "deadline_ms": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "nodes",
+        "network_profile",
+        "measurement_method"
+      ],
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "network_profile": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "topology",
+            "fault_injection"
+          ],
+          "properties": {
+            "topology": {
+              "type": "string",
+              "minLength": 1
+            },
+            "fault_injection": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "round_trip_latency_ms": {
+              "type": "number",
+              "minimum": 0
+            },
+            "bandwidth_mbps": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          }
+        },
+        "measurement_method": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "energy",
+            "latency",
+            "resource_accounting"
+          ],
+          "properties": {
+            "energy": {
+              "type": "string",
+              "minLength": 1
+            },
+            "latency": {
+              "type": "string",
+              "minLength": 1
+            },
+            "resource_accounting": {
+              "type": "string",
+              "minLength": 1
+            },
+            "instrument_calibration_artifact": {
+              "$ref": "#/$defs/sha"
+            }
+          }
+        },
+        "ambient_temperature_c": {
+          "type": "number"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "arms": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/arm"
+      }
+    },
+    "outcomes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "offered",
+        "dispatched",
+        "executed",
+        "accepted",
+        "correct_accepted",
+        "rejected",
+        "deferred",
+        "indeterminate",
+        "unknown"
+      ],
+      "properties": {
+        "offered": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dispatched": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "executed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "accepted": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "correct_accepted": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rejected": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "deferred": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "indeterminate": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unknown": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "duplicate_attempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "false_accepts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "false_rejects": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "metrics": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/metric"
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/artifact"
+      }
+    },
+    "independent_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "review_status",
+        "reviewer_id"
+      ],
+      "properties": {
+        "review_status": {
+          "enum": [
+            "not_reviewed",
+            "pending",
+            "reviewed_with_findings",
+            "reviewed_no_findings"
+          ]
+        },
+        "reviewer_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "review_commit": {
+          "$ref": "#/$defs/git_commit"
+        },
+        "review_artifact": {
+          "$ref": "#/$defs/sha"
+        }
+      }
+    },
+    "claim_limits": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "$defs": {
+    "sha": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "node_id",
+        "role",
+        "owner_domain",
+        "device_profile",
+        "os",
+        "architecture"
+      ],
+      "properties": {
+        "node_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "enum": [
+            "origin",
+            "executor",
+            "verifier",
+            "observer",
+            "coordinator",
+            "other"
+          ]
+        },
+        "owner_domain": {
+          "type": "string",
+          "minLength": 1
+        },
+        "device_profile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "device_profile_sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "evidence_class": {
+          "enum": [
+            "synthetic",
+            "modelled",
+            "vendor_declared",
+            "os_reported",
+            "measured",
+            "independently_qualified",
+            "unknown"
+          ]
+        },
+        "os": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kernel": {
+          "type": "string"
+        },
+        "architecture": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cpu": {
+          "type": "string"
+        },
+        "accelerators": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "memory_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "runtime": {
+          "type": "string"
+        },
+        "runtime_sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "driver_versions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "power_instrument": {
+          "type": "string"
+        },
+        "operator_domain": {
+          "type": "string"
+        }
+      }
+    },
+    "arm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "arm_id",
+        "system",
+        "system_version",
+        "source_commit",
+        "configuration_sha256",
+        "execution_mode",
+        "verification_strategy"
+      ],
+      "properties": {
+        "arm_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "system": {
+          "type": "string",
+          "minLength": 1
+        },
+        "system_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_repository": {
+          "type": "string",
+          "format": "uri"
+        },
+        "source_commit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "configuration_sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "build_profile": {
+          "type": "string"
+        },
+        "execution_mode": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verification_strategy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "node_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "verifier_id": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metric_id",
+        "value",
+        "unit",
+        "statistic",
+        "sample_count",
+        "measurement_boundary",
+        "evidence_class"
+      ],
+      "properties": {
+        "metric_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {
+          "type": "number"
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "statistic": {
+          "enum": [
+            "count",
+            "sum",
+            "mean",
+            "median",
+            "p50",
+            "p90",
+            "p95",
+            "p99",
+            "min",
+            "max",
+            "rate",
+            "ratio",
+            "auc",
+            "other"
+          ]
+        },
+        "sample_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "measurement_boundary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_class": {
+          "enum": [
+            "synthetic",
+            "modelled",
+            "loopback",
+            "emulated_network",
+            "physical_lan",
+            "field"
+          ]
+        },
+        "confidence_interval_95": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "raw_observations_sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "instrument_id": {
+          "type": "string"
+        },
+        "arm_id": {
+          "type": "string"
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_id",
+        "uri",
+        "media_type",
+        "sha256",
+        "evidence_class"
+      ],
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "uri": {
+          "type": "string",
+          "format": "uri-reference"
+        },
+        "media_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "evidence_class": {
+          "enum": [
+            "synthetic",
+            "modelled",
+            "loopback",
+            "emulated_network",
+            "physical_lan",
+            "field"
+          ]
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "git_commit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    }
+  }
+}
