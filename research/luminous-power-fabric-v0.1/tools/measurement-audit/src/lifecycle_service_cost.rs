@@ -85,6 +85,8 @@ impl LifecycleEvidenceClass {
 #[derive(Debug, Clone, PartialEq)]
 pub struct LifecycleCostEntry {
     pub entry_id: String,
+    /// Stable transaction/allocation identity; duplicate economic events are rejected.
+    pub economic_event_id: String,
     pub category: LifecycleCostCategory,
     /// Integer minor currency units (e.g. cents). No floating money arithmetic.
     pub amount_minor_units: u64,
@@ -160,6 +162,7 @@ pub struct StorageHealthObservation {
     pub sensor_status: EvidenceStatus,
     pub evidence_class: LifecycleEvidenceClass,
     pub operating_condition_reference: String,
+    pub timebase_reference: String,
     pub evidence_reference: String,
 }
 
@@ -209,6 +212,12 @@ pub struct StorageHealthTrajectory {
     pub energy_throughput_delta_wh: f64,
     pub calendar_age_delta_hours: f64,
     pub equivalent_full_cycle_delta: f64,
+    pub first_state_of_health_fraction: f64,
+    pub last_state_of_health_fraction: f64,
+    pub first_temperature_c: f64,
+    pub last_temperature_c: f64,
+    pub first_timebase_reference: String,
+    pub last_timebase_reference: String,
     pub first_evidence_reference: String,
     pub last_evidence_reference: String,
 }
@@ -401,8 +410,12 @@ fn validate_input(input: &LifecycleScenarioInput) -> Result<(), AuditError> {
     }
 
     let mut cost_ids: Vec<&str> = Vec::with_capacity(input.cost_entries.len());
+    let mut economic_event_ids: Vec<&str> = Vec::with_capacity(input.cost_entries.len());
     for cost in &input.cost_entries {
-        if !nonblank(&cost.entry_id) || !nonblank(&cost.evidence_reference) {
+        if !nonblank(&cost.entry_id)
+            || !nonblank(&cost.economic_event_id)
+            || !nonblank(&cost.evidence_reference)
+        {
             return Err(AuditError(
                 "cost entry identity and evidence reference must be non-empty".to_string(),
             ));
@@ -414,6 +427,13 @@ fn validate_input(input: &LifecycleScenarioInput) -> Result<(), AuditError> {
             )));
         }
         cost_ids.push(&cost.entry_id);
+        if economic_event_ids.iter().any(|id| *id == cost.economic_event_id.as_str()) {
+            return Err(AuditError(format!(
+                "duplicate lifecycle economic event id {:?}",
+                cost.economic_event_id
+            )));
+        }
+        economic_event_ids.push(&cost.economic_event_id);
         if cost.incurred_at_epoch_s < input.study_start_epoch_s
             || cost.incurred_at_epoch_s > input.study_end_epoch_s
         {
@@ -467,6 +487,7 @@ fn validate_input(input: &LifecycleScenarioInput) -> Result<(), AuditError> {
         if !nonblank(&observation.observation_id)
             || !nonblank(&observation.component_id)
             || !nonblank(&observation.operating_condition_reference)
+            || !nonblank(&observation.timebase_reference)
             || !nonblank(&observation.evidence_reference)
         {
             return Err(AuditError(
@@ -566,7 +587,7 @@ fn storage_health_trajectories(
                     component_id
                 )));
             }
-            previous = point;
+            previous = *point;
         }
 
         let configuration = &first.qualified_configuration_sha256;
@@ -610,9 +631,15 @@ fn storage_health_trajectories(
                 discharge_power_retention_fraction: last_power_lower / first_power_lower,
                 energy_throughput_delta_wh: last.cumulative_energy_throughput_wh
                     - first.cumulative_energy_throughput_wh,
-                calendar_age_delta_hours: last.calendar_age_hours - first.calendar_age_hours,
+                    calendar_age_delta_hours: last.calendar_age_hours - first.calendar_age_hours,
                 equivalent_full_cycle_delta: last.equivalent_full_cycles
                     - first.equivalent_full_cycles,
+                first_state_of_health_fraction: first.state_of_health_fraction,
+                last_state_of_health_fraction: last.state_of_health_fraction,
+                first_temperature_c: first.temperature_c,
+                last_temperature_c: last.temperature_c,
+                first_timebase_reference: first.timebase_reference.clone(),
+                last_timebase_reference: last.timebase_reference.clone(),
                 first_evidence_reference: first.evidence_reference.clone(),
                 last_evidence_reference: last.evidence_reference.clone(),
             });
@@ -999,6 +1026,7 @@ mod tests {
     fn cost(id: &str, category: LifecycleCostCategory, amount: u64) -> LifecycleCostEntry {
         LifecycleCostEntry {
             entry_id: id.to_string(),
+            economic_event_id: format!("economic-event-{id}"),
             category,
             amount_minor_units: amount,
             incurred_at_epoch_s: 1_500,
@@ -1053,6 +1081,7 @@ mod tests {
             sensor_status: EvidenceStatus::Current,
             evidence_class: LifecycleEvidenceClass::IndependentPhysicalMeasurement,
             operating_condition_reference: format!("test-condition:{id}"),
+            timebase_reference: format!("mycelix-timebase:{id}"),
             evidence_reference: format!("battery-test:{id}"),
         }
     }
@@ -1175,6 +1204,8 @@ mod tests {
         assert!((trajectory.usable_capacity_retention_fraction - 4_490.0 / 4_990.0).abs() < 1e-12);
         assert!((trajectory.discharge_power_retention_fraction - 1_795.0 / 1_995.0).abs() < 1e-12);
         assert_eq!(trajectory.energy_throughput_delta_wh, 10_000.0);
+        assert_eq!(trajectory.first_timebase_reference, "mycelix-timebase:initial");
+        assert!((trajectory.last_state_of_health_fraction - 0.9).abs() < 1e-12);
         assert!(report.physical_lifecycle_claim_eligible);
     }
 
@@ -1250,6 +1281,15 @@ mod tests {
     fn duplicate_cost_ids_are_rejected() {
         let mut value = input("duplicate-cost", false);
         let duplicate = value.cost_entries[0].clone();
+        value.cost_entries.push(duplicate);
+        assert!(evaluate_lifecycle_accounting(&value).is_err());
+    }
+
+    #[test]
+    fn duplicate_economic_event_id_is_rejected_even_with_distinct_entry_ids() {
+        let mut value = input("duplicate-economic-event", false);
+        let mut duplicate = cost("second-entry", LifecycleCostCategory::Fuel, 10_000);
+        duplicate.economic_event_id = value.cost_entries[0].economic_event_id.clone();
         value.cost_entries.push(duplicate);
         assert!(evaluate_lifecycle_accounting(&value).is_err());
     }
