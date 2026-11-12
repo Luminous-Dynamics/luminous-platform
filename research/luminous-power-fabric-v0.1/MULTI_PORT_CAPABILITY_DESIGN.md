@@ -195,3 +195,27 @@ These tests are authored, not executed. They are synthetic arithmetic controls, 
 `DECLARED_CONTINGENCY_AND_SHARED_CAPACITY_SCREEN_ONLY_NOT_NETWORK_OR_RELIABILITY_QUALIFICATION`
 
 The module does not switch or control hardware and does not certify the completeness of the dependency graph. Compilation, tests, formatting and Clippy require a Rust-capable runner and remain unverified in this work increment. No energized hardware, fault injection, field, reliability or certification test is claimed.
+
+
+## 10. Topology-aware graph implementation
+
+The follow-on prototype is `tools/measurement-audit/src/topology_capacity_graph.rs` and is tracked by
+[issue #451](https://github.com/Luminous-Dynamics/luminous-platform/issues/451) / draft
+[PR #454](https://github.com/Luminous-Dynamics/luminous-platform/pull/454).
+
+The evaluator uses integer-watt capacities at one exact customer POC, canonical node/arc ordering
+and deterministic Dinic max-flow. It handles multiple declared source nodes and one service sink.
+Every arc's capacity is represented once in the graph, so partially overlapping shared dependencies
+are naturally enforced by shared graph edges. Nodes and arcs are removed for non-current evidence,
+failed component IDs, failed node/arc IDs or failed domains.
+
+The report retains maximum deliverable flow, active minimum-cut arc IDs (whose integer capacity sum
+is checked against max-flow), blocked arc IDs separately from active cut capacity, residual
+source-side nodes, and exact service-boundary identity. It validates identifiers, endpoint/domain/
+source/sink references, digest shape, unit and power-basis identity, duplicate IDs, graph-size
+limits, and integer arithmetic overflow.
+
+The 16 authored Rust tests cover overlapping cooling/control dependencies, source/feeder/bus
+failures, unverified arc exclusion, invalid references, determinism under input permutation, and
+a max-flow/min-cut reconciliation case. These tests are authored, not executed. No Rust
+compiler/test/fmt/Clippy or independent oracle execution occurred in this authoring environment.

@@ -347,3 +347,24 @@ site measurement, data-centre guarantee or OCP compliance test. See the syntheti
 Every accepted output must be combined with the exact manifest, raw-file digest, calibration
 evidence, analysis build identity, test-procedure revision and independent review before it can
 support a declared bench claim.
+
+
+## Topology-aware overlapping shared-capacity graph
+
+The crate exposes `topology_capacity_graph::evaluate_topology_capacity_graph` for a read-only,
+deterministic max-flow/min-cut calculation over an owner-qualified service-side capacity graph.
+Unlike the v0.1 parallel-path arithmetic, a shared feeder/cooling/control resource is represented
+once in the graph, so partially overlapping path dependencies are supported without summing the
+same shared capacity more than once.
+
+The graph uses integer watts normalized at one exact customer POC. Each node and arc retains a
+configuration digest, evidence state, provenance reference and failure-domain labels. Missing,
+expired, invalid or unverified components/arcs contribute no flow. A scenario can withdraw nodes,
+components, arcs or shared failure domains. The report returns maximum service flow, an active
+minimum-cut arc witness whose capacity sum must equal the flow, all blocked arcs, and the residual
+source-side set.
+
+This remains a capacity abstraction, not AC/DC power flow, EMT, voltage/current/impedance modeling,
+reactive-power calculation, protection coordination, thermal coupling, or reliability probability.
+The max-flow result is an upper bound under supplied, already-normalized capacity evidence. See
+`topology_capacity_graph.rs` and [OVERLAPPING_CAPACITY_GRAPH.md](../../OVERLAPPING_CAPACITY_GRAPH.md).

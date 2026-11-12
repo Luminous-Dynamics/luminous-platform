@@ -208,3 +208,18 @@ The graph is normalized to one owner-qualified net active-power basis at the cus
 an AC/DC power-flow model and does not establish physical capability, reliability probability or
 protection behavior. Existing multi-path code remains unchanged until the graph evaluator is proven
 against an independent oracle.
+
+
+## 18. Topology-aware capacity-graph research
+
+The current parallel-path evaluator deliberately rejects partially overlapping shared-resource
+groups. [Issue #451](https://github.com/Luminous-Dynamics/luminous-platform/issues/451) and draft
+[PR #454](https://github.com/Luminous-Dynamics/luminous-platform/pull/454) add a deterministic
+max-flow/min-cut prototype over a directed service-side capacity graph. Shared cooling, control
+power, feeder and service bus are represented once, so overlapping dependencies are not double
+counted. Capacities are integer watts at one exact customer POC and require owner-qualified
+normalization.
+
+The implementation reports a min-cut witness whose active edge-capacity sum must equal max-flow,
+plus blocked evidence/failure arcs separately. This is not electrical network flow, AC/DC power
+flow, EMT, protection coordination or a reliability probability.
