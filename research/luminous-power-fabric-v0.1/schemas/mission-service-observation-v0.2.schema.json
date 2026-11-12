@@ -417,5 +417,33 @@
         "maxLength": 2000
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "storage_usable_capacity_kwh": {
+            "exclusiveMinimum": 0
+          }
+        },
+        "required": [
+          "storage_usable_capacity_kwh"
+        ]
+      },
+      "then": {
+        "properties": {
+          "requirements": {
+            "properties": {
+              "min_terminal_storage_energy_kwh": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "min_terminal_storage_energy_kwh"
+            ]
+          }
+        }
+      }
+    }
+  ]
 }
