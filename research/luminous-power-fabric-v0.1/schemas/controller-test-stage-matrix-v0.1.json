@@ -1,0 +1,512 @@
+{
+  "schema_version": "0.1",
+  "matrix_id": "PF-CONTROLLER-TEST-MATRIX-0.1",
+  "record_class": "research_test_plan",
+  "standards_crosswalk": [
+    {
+      "reference": "IEC TS 62898-3-5:2026",
+      "status": "published",
+      "purpose": "HIL, commissioning and periodic testing of microgrid monitoring/control/energy-management systems",
+      "mapping_status": "research_crosswalk_only"
+    },
+    {
+      "reference": "IEEE 2030.7-2017",
+      "status": "published",
+      "purpose": "Common microgrid-controller functions",
+      "mapping_status": "research_crosswalk_only"
+    },
+    {
+      "reference": "IEEE 2030.8-2018",
+      "status": "published",
+      "purpose": "Microgrid-controller test procedures and comparison metrics",
+      "mapping_status": "research_crosswalk_only"
+    },
+    {
+      "reference": "P2030.7",
+      "status": "active_project",
+      "purpose": "Revision of IEEE 2030.7",
+      "mapping_status": "track_not_normative"
+    },
+    {
+      "reference": "P2030.8",
+      "status": "active_project",
+      "purpose": "Revision of IEEE 2030.8",
+      "mapping_status": "track_not_normative"
+    },
+    {
+      "reference": "IEEE 2800.2-2026",
+      "status": "published",
+      "purpose": "Plant-level IBR conformity assessment for applicable bulk-system interconnections",
+      "mapping_status": "separate_applicability_path"
+    },
+    {
+      "reference": "P2800.1",
+      "status": "active_project",
+      "purpose": "Grid-forming IBR/CBR capability and performance recommended practice",
+      "mapping_status": "track_not_normative"
+    },
+    {
+      "reference": "IEC TS 62898-3-2:2024",
+      "status": "published",
+      "purpose": "Microgrid energy-management systems",
+      "mapping_status": "research_crosswalk_only"
+    },
+    {
+      "reference": "IEC TS 62898-3-4:2023",
+      "status": "published",
+      "purpose": "Microgrid monitoring and control systems",
+      "mapping_status": "research_crosswalk_only"
+    }
+  ],
+  "tests": [
+    {
+      "test_id": "MEMS-01",
+      "system_layer": "MEMS",
+      "function_area": "dispatch_optimization",
+      "applicable_stages": [
+        "hil",
+        "commissioning",
+        "periodic"
+      ],
+      "execution_modes": [
+        "controller_hil",
+        "power_hil",
+        "physical_laboratory",
+        "site_commissioning",
+        "periodic_site_operation"
+      ],
+      "stimulus": [
+        "Matched multi-source demand trajectory with critical/noncritical intervals",
+        "Forecast update, source derating and terminal reserve obligation"
+      ],
+      "required_observables": [
+        "Dispatch setpoints and timestamps",
+        "Critical/unserved service and mission completion",
+        "Source/fuel/storage/auxiliary energy balance",
+        "Reserve trajectory and terminal state",
+        "Decision latency, solver timeout and infeasibility"
+      ],
+      "positive_control": "Feasible dispatch delivers critical service and terminal reserve with complete energy reconciliation.",
+      "negative_control": "Force an infeasible source/storage envelope, stale capability or weakened terminal reserve; the test must fail closed without false pass.",
+      "recovery_control": "Restore a valid source or reduce noncritical load; record re-plan and reserve restoration.",
+      "hard_gates": [
+        "critical_service_preserved",
+        "all_qualified_component_limits_respected",
+        "terminal_reserve_met",
+        "unknown_capability_not_used",
+        "all_failed_runs_retained"
+      ],
+      "claim_ceiling": "Controller schedule and setpoints only; plant behavior claim is limited by the declared simulator/physical plant boundary."
+    },
+    {
+      "test_id": "MEMS-02",
+      "system_layer": "MEMS",
+      "function_area": "forecast",
+      "applicable_stages": [
+        "hil",
+        "commissioning",
+        "periodic"
+      ],
+      "execution_modes": [
+        "controller_hil",
+        "power_hil",
+        "physical_laboratory",
+        "site_commissioning",
+        "periodic_site_operation"
+      ],
+      "stimulus": [
+        "Timestamped load and renewable forecast across short and longer horizons",
+        "Injected bias, delay, missing update and regime shift"
+      ],
+      "required_observables": [
+        "Forecast issue/valid times",
+        "Horizon- and regime-specific error",
+        "Prediction interval/quantile calibration where provided",
+        "Dispatch sensitivity and resulting service/reserve"
+      ],
+      "positive_control": "Correctly timestamped forecast with representative load/renewable trajectory.",
+      "negative_control": "Inject biased, stale, missing and out-of-distribution forecast; no future information leakage and bounded fallback.",
+      "recovery_control": "Publish a corrected forecast; record resynchronization and dispatch recovery without rewriting prior forecasts.",
+      "hard_gates": [
+        "no_future_information_leakage",
+        "stale_forecast_not_current",
+        "forecast_errors_retained",
+        "critical_service_hard_gate"
+      ],
+      "claim_ceiling": "Forecast quality and its dispatch impact under tested data/model boundary only."
+    },
+    {
+      "test_id": "MEMS-03",
+      "system_layer": "MEMS",
+      "function_area": "demand_side_integration",
+      "applicable_stages": [
+        "hil",
+        "commissioning",
+        "periodic"
+      ],
+      "execution_modes": [
+        "controller_hil",
+        "power_hil",
+        "physical_laboratory",
+        "site_commissioning",
+        "periodic_site_operation"
+      ],
+      "stimulus": [
+        "Demand response request with baseline and customer/service limits",
+        "Availability, opt-out, communication delay and rebound"
+      ],
+      "required_observables": [
+        "Requested versus accepted shed/shift",
+        "Metered load response at declared POC",
+        "Baseline and non-compute/non-target load decomposition",
+        "Service/SLO/deadline impact",
+        "Post-event rebound"
+      ],
+      "positive_control": "Eligible demand response accepted and measured against preregistered baseline.",
+      "negative_control": "Reject non-consenting/unavailable resource; baseline manipulation or unmetered unrelated shed cannot earn response credit.",
+      "recovery_control": "End event and verify load rebound and restoration of customer obligation.",
+      "hard_gates": [
+        "customer_constraints_respected",
+        "baseline_preregistered",
+        "response_independently_measured",
+        "rebound_reported"
+      ],
+      "claim_ceiling": "Demand-side response is limited to the measured boundary, contract and test cohort."
+    },
+    {
+      "test_id": "MEMS-04",
+      "system_layer": "MEMS",
+      "function_area": "flexible_resource_management",
+      "applicable_stages": [
+        "hil",
+        "commissioning",
+        "periodic"
+      ],
+      "execution_modes": [
+        "controller_hil",
+        "power_hil",
+        "physical_laboratory",
+        "site_commissioning",
+        "periodic_site_operation"
+      ],
+      "stimulus": [
+        "Battery, generator and flexible load availability windows",
+        "Power/energy/thermal limits, SOC reserve and recovery obligation"
+      ],
+      "required_observables": [
+        "Resource availability and accepted setpoints",
+        "Power/energy delivered",
+        "SOC/thermal/throughput trajectory",
+        "Constraint violations and fallback",
+        "Reserve restoration"
+      ],
+      "positive_control": "Available flexible resources dispatched within qualified limits.",
+      "negative_control": "Inject resource unavailability, stale SoC or derated capability; controller must not rely on unavailable flexibility.",
+      "recovery_control": "Resource returns; controller requalifies capability and restores reserve.",
+      "hard_gates": [
+        "qualified_resource_only",
+        "critical_service_preserved",
+        "reserve_not_borrowed_without_obligation",
+        "recovery_reported"
+      ],
+      "claim_ceiling": "Resource flexibility is conditional on qualified device/model/evidence boundaries."
+    },
+    {
+      "test_id": "MMCS-01",
+      "system_layer": "MMCS",
+      "function_area": "anti_maloperation_lock_alarm",
+      "applicable_stages": [
+        "hil",
+        "commissioning",
+        "periodic"
+      ],
+      "execution_modes": [
+        "controller_hil",
+        "power_hil",
+        "physical_laboratory",
+        "site_commissioning",
+        "periodic_site_operation"
+      ],
+      "stimulus": [
+        "Lockout/interlock active while a conflicting operation request is issued",
+        "Authority or state mismatch and alarm reset sequence"
+      ],
+      "required_observables": [
+        "Received command and rejection reason",
+        "Interlock state and independent contact/protection state",
+        "Alarm timestamp, acknowledgement and reset actor",
+        "No unintended state transition"
+      ],
+      "positive_control": "Permitted operation while interlocks are clear.",
+      "negative_control": "Conflicting or forbidden command is blocked; independent protection state does not depend on EMS/Symthaea response.",
+      "recovery_control": "Authorized reset follows required checks and event remains in audit history.",
+      "hard_gates": [
+        "forbidden_command_blocked",
+        "alarm_recorded",
+        "protection_independent_of_advisory",
+        "no_false_success"
+      ],
+      "claim_ceiling": "Functional interlock evidence only; protection hardware performance requires corresponding physical tests."
+    },
+    {
+      "test_id": "MMCS-02",
+      "system_layer": "MMCS",
+      "function_area": "islanded_voltage_frequency_regulation",
+      "applicable_stages": [
+        "hil",
+        "commissioning",
+        "periodic"
+      ],
+      "execution_modes": [
+        "controller_hil",
+        "power_hil",
+        "physical_laboratory",
+        "site_commissioning",
+        "periodic_site_operation"
+      ],
+      "stimulus": [
+        "Stable isolated microgrid operating points and declared load steps",
+        "Grid-forming/following resource mix and bounded disturbance"
+      ],
+      "required_observables": [
+        "RMS voltage and frequency trajectories",
+        "Nadir/zenith and recovery/settling",
+        "Active/reactive sharing",
+        "Current and power limits",
+        "THD and waveform evidence where physically measured"
+      ],
+      "positive_control": "Stable operation inside product/site-specific declared acceptance bands.",
+      "negative_control": "Apply source loss or load step that challenges qualified limits; instability, constraint breach or protection operation must be retained.",
+      "recovery_control": "Restore source/load and verify stable recovery and reserve constraints.",
+      "hard_gates": [
+        "electrical_limits_respected",
+        "critical_load_continuity_gate",
+        "protection_outcomes_recorded",
+        "waveform_boundary_explicit"
+      ],
+      "claim_ceiling": "Controller HIL cannot prove physical voltage waveform quality where the converter/network are simulated."
+    },
+    {
+      "test_id": "MMCS-03",
+      "system_layer": "MMCS",
+      "function_area": "device_switching",
+      "applicable_stages": [
+        "hil",
+        "commissioning",
+        "periodic"
+      ],
+      "execution_modes": [
+        "controller_hil",
+        "power_hil",
+        "physical_laboratory",
+        "site_commissioning",
+        "periodic_site_operation"
+      ],
+      "stimulus": [
+        "Open/close and transfer sequences with feedback delay",
+        "Failed, stuck, contradictory or reordered device feedback"
+      ],
+      "required_observables": [
+        "Command, acknowledgement and observed state timestamps",
+        "Interlock and permissive states",
+        "Electrical/protection waveform and isolation status where physical",
+        "Sequence timing and failed attempt IDs"
+      ],
+      "positive_control": "Valid device sequence completes with matching physical/status feedback.",
+      "negative_control": "Reject unsafe ordering, stale state, failed permissive or contradictory feedback.",
+      "recovery_control": "Reconcile actual state before any further switching attempt.",
+      "hard_gates": [
+        "no_command_equals_effect_assumption",
+        "interlocks_enforced",
+        "unknown_state_blocks_new_mutation",
+        "attempt_identity_retained"
+      ],
+      "claim_ceiling": "Command logic can be HIL; actual switching/isolation requires the applicable physical device and tests."
+    },
+    {
+      "test_id": "MMCS-04",
+      "system_layer": "MMCS",
+      "function_area": "operating_mode_transition",
+      "applicable_stages": [
+        "hil",
+        "commissioning",
+        "periodic"
+      ],
+      "execution_modes": [
+        "controller_hil",
+        "power_hil",
+        "physical_laboratory",
+        "site_commissioning",
+        "periodic_site_operation"
+      ],
+      "stimulus": [
+        "Grid-connected to islanded transition, resynchronization and reconnection",
+        "Communication loss, grid disturbance and delayed source availability"
+      ],
+      "required_observables": [
+        "Transition state timeline",
+        "PCC breaker and source states",
+        "Voltage/frequency and P/Q trajectory",
+        "Critical load interruption and unserved service",
+        "Resynchronization permissives and outcome"
+      ],
+      "positive_control": "Planned transition completes within declared service and electrical limits.",
+      "negative_control": "Unexpected grid loss, stale sync state or incompatible phase/voltage must not permit unsafe close.",
+      "recovery_control": "Grid conditions become valid; controller restores mode through explicit synchronization checks.",
+      "hard_gates": [
+        "no_unsafe_reconnection",
+        "critical_service_noncompensatory",
+        "transition_trace_complete",
+        "fallback_is_bounded"
+      ],
+      "claim_ceiling": "System behavior is limited to the tested model/physical topology and exact protection implementation."
+    },
+    {
+      "test_id": "MMCS-05",
+      "system_layer": "MMCS",
+      "function_area": "active_reactive_power_control",
+      "applicable_stages": [
+        "hil",
+        "commissioning",
+        "periodic"
+      ],
+      "execution_modes": [
+        "controller_hil",
+        "power_hil",
+        "physical_laboratory",
+        "site_commissioning",
+        "periodic_site_operation"
+      ],
+      "stimulus": [
+        "P/Q setpoint changes and ramp constraints",
+        "Voltage/frequency disturbance and converter current limit"
+      ],
+      "required_observables": [
+        "P/Q tracking error and response time",
+        "Current, voltage, frequency and power-factor traces",
+        "Saturation/limit state and recovery",
+        "Oscillation/hunting indicators"
+      ],
+      "positive_control": "Setpoint tracked inside declared tolerance without exceeding component envelope.",
+      "negative_control": "Conflicting P/Q target, current saturation or weak-grid condition triggers bounded limit/fallback.",
+      "recovery_control": "Disturbance clears and P/Q returns smoothly to a valid setpoint.",
+      "hard_gates": [
+        "qualified_capability_respected",
+        "no_current_or_thermal_limit_violation",
+        "response_and_recovery_measured"
+      ],
+      "claim_ceiling": "GFM converter transient and current-limiting claims require appropriately validated EMT and physical evidence."
+    },
+    {
+      "test_id": "MMCS-06",
+      "system_layer": "MMCS",
+      "function_area": "islanding_detection",
+      "applicable_stages": [
+        "hil",
+        "commissioning",
+        "periodic"
+      ],
+      "execution_modes": [
+        "controller_hil",
+        "power_hil",
+        "physical_laboratory",
+        "site_commissioning",
+        "periodic_site_operation"
+      ],
+      "stimulus": [
+        "Intentional and unintentional islanding patterns",
+        "Ambiguous grid disturbance and communications loss"
+      ],
+      "required_observables": [
+        "Detection time and false/missed detections",
+        "PCC trip/reclose commands and observed breaker state",
+        "Voltage/frequency waveform",
+        "Protection coordination and event record"
+      ],
+      "positive_control": "Intentional islanding follows the declared planned transition.",
+      "negative_control": "Unintentional islanding or non-permissive grid state is detected/handled per applicable requirements; no false state.",
+      "recovery_control": "Grid returns; reconnection requires fresh synchronized conditions.",
+      "hard_gates": [
+        "no_unsafe_island_state",
+        "no_unsafe_reconnection",
+        "detection_claim_boundary_explicit"
+      ],
+      "claim_ceiling": "Detection and protection requirements depend on product class, grid code and local protection scheme."
+    },
+    {
+      "test_id": "MMCS-07",
+      "system_layer": "MMCS",
+      "function_area": "black_start",
+      "applicable_stages": [
+        "hil",
+        "commissioning",
+        "periodic"
+      ],
+      "execution_modes": [
+        "controller_hil",
+        "power_hil",
+        "physical_laboratory",
+        "site_commissioning",
+        "periodic_site_operation"
+      ],
+      "stimulus": [
+        "Dead-bus initial conditions and declared start sequence",
+        "Sequential DER start and staged critical-load pickup"
+      ],
+      "required_observables": [
+        "Bus voltage/frequency formation",
+        "Start and pickup sequence timestamps",
+        "P/Q and current limits",
+        "Failed start and retries",
+        "Critical load served and terminal reserve"
+      ],
+      "positive_control": "Declared grid-forming resource establishes the island and picks up permitted load sequence.",
+      "negative_control": "Failed start, inadequate reserve or inrush challenge does not cause unsafe or false black-start pass.",
+      "recovery_control": "Retry or alternate start path follows bounded safe procedure; final reserve is checked.",
+      "hard_gates": [
+        "no_false_black_start",
+        "inrush_and_power_limits_respected",
+        "critical_service_prioritized",
+        "terminal_reserve_met"
+      ],
+      "claim_ceiling": "Physical black-start claims require actual relevant power equipment and appropriately contained testing."
+    },
+    {
+      "test_id": "SYS-01",
+      "system_layer": "system",
+      "function_area": "end_to_end_precommissioning",
+      "applicable_stages": [
+        "hil",
+        "commissioning"
+      ],
+      "execution_modes": [
+        "controller_hil",
+        "power_hil",
+        "physical_laboratory",
+        "site_commissioning"
+      ],
+      "stimulus": [
+        "End-to-end operation across controller, DER interfaces, protection, communications and operator HMI",
+        "Concurrent disturbances and time-stamped state changes"
+      ],
+      "required_observables": [
+        "Full command/acknowledgement/effect trace",
+        "Clock alignment and communications quality",
+        "Critical service and reserve",
+        "Protection and mode state",
+        "Evidence completeness and unresolved conflicts"
+      ],
+      "positive_control": "All declared interfaces and positive scenarios complete with independently observed postconditions.",
+      "negative_control": "Inject message loss/reorder, stale status, protection lockout and conflicting state; unknown remains unresolved and cannot become green.",
+      "recovery_control": "Restore communications/device state and reconcile before permitted new actions.",
+      "hard_gates": [
+        "all_critical_gates_hold",
+        "authority_and_interlocks_separate",
+        "unknown_not_promoted_to_success",
+        "all_interfaces_versioned"
+      ],
+      "claim_ceiling": "Precommissioning test only; commissioning and periodic site evidence remain separate."
+    }
+  ],
+  "claim_ceiling": "RESEARCH_TEST_PLAN_ONLY_NOT_EXECUTED_OR_CONFORMITY_CLAIM"
+}

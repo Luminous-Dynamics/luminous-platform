@@ -230,3 +230,19 @@ Sources:
 - IEEE 2030.8-2018: https://standards.ieee.org/ieee/2030.8/6169/
 - P2030.7: https://standards.ieee.org/ieee/2030.7/12022/
 - P2030.8: https://standards.ieee.org/ieee/2030.8/12543/
+
+
+## 14. Controller HIL, commissioning and periodic-test matrix
+
+[Issue #445](https://github.com/Luminous-Dynamics/luminous-platform/issues/445) and
+[draft PR #446](https://github.com/Luminous-Dynamics/luminous-platform/pull/446) add a
+machine-readable functional coverage matrix and execution-boundary crosswalk for MEMS and MMCS.
+It covers dispatch optimization, forecasting, demand-side integration, flexible resources,
+anti-maloperation locking/alarms, islanded voltage/frequency regulation, switching, mode transitions,
+P/Q control, islanding detection, black start and pre-commissioning end-to-end tests. Each row has
+positive, negative and recovery controls, observables and hard gates.
+
+The standards crosswalk now includes IEC TS 62898-3-5:2026 for HIL/commissioning/periodic testing,
+IEC TS 62898-3-2:2024 for MEMS, IEC TS 62898-3-4:2023 for MMCS, and IEEE 2030.7/2030.8. HIL/P-HIL,
+physical laboratory, commissioning and periodic/site operation remain distinct test boundaries.
+This is a research plan only; no test has been executed and no conformity claim is made.
