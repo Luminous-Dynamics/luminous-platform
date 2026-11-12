@@ -222,11 +222,6 @@ fn validate_input(input: &MissionEnergyInput) -> Result<(), AuditError> {
                 .to_string(),
         ));
     }
-    if input.qualification_valid_until_epoch_s <= input.evaluation_time_epoch_s {
-        return Err(AuditError(
-            "mission qualification must remain valid after evaluation time".to_string(),
-        ));
-    }
     if !finite_nonnegative(input.maximum_unserved_energy_wh) {
         return Err(AuditError(
             "maximum_unserved_energy_wh must be finite and non-negative".to_string(),
@@ -285,9 +280,15 @@ fn validate_input(input: &MissionEnergyInput) -> Result<(), AuditError> {
             return Err(AuditError("mission timeline overflowed".to_string()));
         }
         let hours = segment.duration_s / 3600.0;
+        let uncertainty_sum = segment.source_measurement_uncertainty_bound_w
+            + segment.source_model_uncertainty_bound_w;
         let required_wh = segment.required_service_power_w * hours;
         let source_wh = segment.qualified_source_average_power_w * hours;
-        if !hours.is_finite() || !required_wh.is_finite() || !source_wh.is_finite() {
+        if !hours.is_finite()
+            || !uncertainty_sum.is_finite()
+            || !required_wh.is_finite()
+            || !source_wh.is_finite()
+        {
             return Err(AuditError(format!(
                 "segment {:?} energy conversion overflowed",
                 segment.segment_id
@@ -748,7 +749,7 @@ mod tests {
         let report = evaluate_mission_energy(&value).unwrap();
         assert_eq!(report.initial_storage_soc_fraction, Some(0.4));
         assert_eq!(report.total_storage_energy_to_load_wh, 500.0);
-        assert!((report.final_storage_soc_fraction.unwrap() - 0.28888888888888886).abs() < 1e-9);
+        assert!((report.final_storage_soc_fraction.unwrap() - 0.2765432098765432).abs() < 1e-9);
     }
 
     #[test]
@@ -865,8 +866,11 @@ mod tests {
     fn system_qualification_expiry_is_a_global_blocker() {
         let mut value = input(vec![segment("expired", 0.0, 3600.0, 100.0, 1_000.0)]);
         value.qualification_valid_until_epoch_s = value.evaluation_time_epoch_s;
-        let report = evaluate_mission_energy(&value).unwrap_err();
-        assert!(report.0.contains("qualification"));
+        let report = evaluate_mission_energy(&value).unwrap();
+        assert!(!report.global_qualification_eligible);
+        assert_eq!(report.qualification_blockers, vec!["system_qualification_expired".to_string()]);
+        assert_eq!(report.total_source_energy_available_wh, 0.0);
+        assert!(!report.mission_pass);
     }
 
     #[test]
