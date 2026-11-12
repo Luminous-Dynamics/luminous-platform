@@ -195,3 +195,31 @@ This document is a dated snapshot. Before each product release or standards revi
 - Treat withdrawn or superseded editions explicitly.
 - Pin exact standard revision in the product compliance matrix.
 - Do not quote purchased standard clause text in public repositories.
+
+
+## 9. Site-operational EES assessment and evidence records
+
+IEC TS 62933-2-3:2025 is directly relevant to post-commissioning site performance assessment. The
+IEC publisher describes it as unit parameters and test methods for validating/assessing EES
+performance after commissioning. Its public preview distinguishes this operational-data assessment
+from precise laboratory testing and identifies representative sampling, preprocessing of missing
+values/anomalies/noise, and operational records such as power, voltage, current, energy, faults,
+maintenance and dispatch logs. It also enumerates performance items including actual storage
+capacity, input/output power, round-trip efficiency, auxiliary consumption, available hours,
+equivalent operation factor and availability/outage indicators.
+
+For Power Fabric this suggests two complementary evidence classes:
+- controlled tests for precise characterization and matched component/system comparisons;
+- site-operational assessments for lifecycle utilization, degradation, outages, availability,
+  auxiliary consumption and real-world duty-cycle performance.
+
+The site passport must preserve the primary POC and any separate auxiliary POC, sample selection,
+time-series processing, data completeness, fault/maintenance/dispatch histories and exact system
+configuration. The public sample preview recommends at least three representative samples as a
+general recommendation; this programme uses a declared minimum (at least three for site-operation
+runs), not as a claim of IEC conformity. Confirm detailed requirements in the licensed standard
+and product applicability before any compliance claim.
+
+Sources:
+- IEC TS 62933-2-3:2025 publisher page: https://webstore.iec.ch/en/publication/77334
+- IEC TS 62933-2-3:2025 public preview: https://cdn.standards.iteh.ai/samples/iec/iec-ts-62933-2-3-2025/8df418d2566940208430adcf448df1ab/iec-ts-62933-2-3-2025.pdf
