@@ -50,13 +50,14 @@ Additional declared scenarios permit N-k and selected common-cause combinations.
 
 The result contains:
 - the shared service-boundary identity;
-- each path's exact configuration digest and upstream capability-evidence reference;
-- baseline sum of currently qualified parallel route bottlenecks;
+- each path's exact configuration digest, upstream capability-evidence reference, current availability, declared power, component IDs and failure-domain IDs;
+- each shared resource's configuration digest, evidence reference, availability state, throughput limit and affected paths;
+- baseline sum of currently qualified parallel route bottlenecks after shared throughput limits;
 - capability remaining after each generated and declared contingency;
 - the minimum surviving (robust) power;
 - the limiting contingency identifier;
 - optional comparison against a required useful-service power threshold;
-- all per-scenario path removals.
+- all per-scenario path and shared-resource removals.
 
 The result is deterministic under path-array permutation; scenario ordering and tie-breaking are stable.
 
@@ -150,7 +151,7 @@ Proposed software targets (not achieved):
 
 ## 7. Test suite
 
-The Rust module currently authors 41 unit tests, including:
+The Rust module currently authors 42 unit tests, including:
 - independent parallel paths and N-1;
 - shared source, cooling, controller and protection-domain failures;
 - independent failure domains;
@@ -172,6 +173,8 @@ The Rust module currently authors 41 unit tests, including:
 - partially overlapping non-identical groups and missing dependency declarations are rejected;
 - duplicate shared-resource IDs and invalid shared capacities are rejected;
 - input permutation preserves the complete report;
+- path component, failure-domain and availability lineage is retained;
+- shared-resource status, capacity and evidence lineage is retained;
 - claim ceiling and deterministic scenario order.
 
 These tests are authored, not executed. They are synthetic arithmetic controls, not physical or reliability evidence.
