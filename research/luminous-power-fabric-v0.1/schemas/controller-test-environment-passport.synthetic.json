@@ -1,0 +1,162 @@
+{
+  "schema_version": "0.1",
+  "passport_id": "PF-CTRL-ENV-SYNTH-CHIL-001",
+  "record_class": "synthetic_fixture",
+  "run_state": "planned_fixture",
+  "evidence_class": "synthetic",
+  "test_stage": "hil",
+  "planned_execution_mode": "controller_hil",
+  "test_case_ids": [
+    "MEMS-01",
+    "MEMS-02",
+    "MMCS-04"
+  ],
+  "components_are_planned_not_observed": true,
+  "component_boundary": [
+    {
+      "component_id": "controller-under-test",
+      "role": "microgrid_controller",
+      "realization": "physical",
+      "configuration_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "evidence_reference": "synthetic://planned-controller-bom",
+      "notes": "Planned physical controller hardware; this fixture is not evidence of a built or tested controller."
+    },
+    {
+      "component_id": "grid-model",
+      "role": "grid",
+      "realization": "simulated",
+      "configuration_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence_reference": "synthetic://grid-model",
+      "notes": "Real-time grid model to be supplied and validated by the plant-model owner."
+    },
+    {
+      "component_id": "network-model",
+      "role": "distribution_network",
+      "realization": "simulated",
+      "configuration_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "evidence_reference": "synthetic://network-model",
+      "notes": "Simulated distribution topology and impedance; validity domain not established in this fixture."
+    },
+    {
+      "component_id": "der-model",
+      "role": "generator",
+      "realization": "simulated",
+      "configuration_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "evidence_reference": "synthetic://der-model",
+      "notes": "Aggregated DER model for controller I/O testing only."
+    },
+    {
+      "component_id": "battery-model",
+      "role": "battery_cells",
+      "realization": "simulated",
+      "configuration_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+      "evidence_reference": "synthetic://battery-model",
+      "notes": "Battery cell, thermal and BMS behavior are not physically tested by this planned controller-HIL boundary."
+    },
+    {
+      "component_id": "pcs-model",
+      "role": "power_conversion_system",
+      "realization": "simulated",
+      "configuration_sha256": "6666666666666666666666666666666666666666666666666666666666666666",
+      "evidence_reference": "synthetic://pcs-model",
+      "notes": "Power-electronic switching and protection behavior remain modeled, not physical."
+    },
+    {
+      "component_id": "critical-and-flexible-loads",
+      "role": "load",
+      "realization": "simulated",
+      "configuration_sha256": "7777777777777777777777777777777777777777777777777777777777777777",
+      "evidence_reference": "synthetic://load-models",
+      "notes": "Load and motor-start profiles are model inputs only."
+    },
+    {
+      "component_id": "protection-logic",
+      "role": "protection_relay",
+      "realization": "simulated",
+      "configuration_sha256": "8888888888888888888888888888888888888888888888888888888888888888",
+      "evidence_reference": "synthetic://protection-model",
+      "notes": "Independent physical protection performance is not established."
+    },
+    {
+      "component_id": "lab-ethernet",
+      "role": "communication_fabric",
+      "realization": "physical",
+      "configuration_sha256": "9999999999999999999999999999999999999999999999999999999999999999",
+      "evidence_reference": "synthetic://planned-ethernet",
+      "notes": "Physical lab network is planned; protocol and impairment conditions remain to be specified."
+    }
+  ],
+  "simulator": {
+    "simulator_id": "planned-real-time-simulator",
+    "platform_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "model_bundle_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "solver_id": "not-selected",
+    "fixed_step_ns": null,
+    "real_time_deadline_ns": null,
+    "declared_real_time_factor": null
+  },
+  "communications": {
+    "protocols": [
+      "Modbus TCP"
+    ],
+    "transport_boundary": "physical_link",
+    "latency_p50_us": null,
+    "latency_p95_us": null,
+    "jitter_p95_us": null,
+    "packet_loss_fraction": null,
+    "reordered_message_count": null
+  },
+  "timebase": {
+    "clock_id": "planned-monotonic-test-clock",
+    "synchronization_method": "not_selected",
+    "maximum_observed_offset_ns": null,
+    "clock_evidence_reference": null
+  },
+  "real_time_execution": {
+    "deadline_miss_count": null,
+    "solver_overrun_count": null,
+    "dropped_sample_count": null,
+    "out_of_order_sample_count": null,
+    "execution_duration_s": null
+  },
+  "model_validity": {
+    "validation_status": "unvalidated",
+    "validation_profile_sha256": null,
+    "intended_domain": "Grid-connected/islanded supervisory control I/O and mission-level dispatch scenarios; exact electrical and transient domain not established.",
+    "independent_reference_count": 0,
+    "residual_summary_reference": null,
+    "out_of_domain_policy": "block_claim"
+  },
+  "interfaces": [
+    {
+      "interface_id": "setpoint-p-active",
+      "source_component_id": "controller-under-test",
+      "destination_component_id": "pcs-model",
+      "signal_name": "active_power_setpoint",
+      "direction": "controller_to_plant",
+      "unit": "kW",
+      "time_semantics": "monotonic test-clock timestamp; sample cadence pending protocol selection"
+    },
+    {
+      "interface_id": "pcc-measurement",
+      "source_component_id": "grid-model",
+      "destination_component_id": "controller-under-test",
+      "signal_name": "pcc_active_power",
+      "direction": "plant_to_controller",
+      "unit": "kW",
+      "time_semantics": "monotonic test-clock timestamp; quality/freshness flags required"
+    },
+    {
+      "interface_id": "soc-measurement",
+      "source_component_id": "battery-model",
+      "destination_component_id": "controller-under-test",
+      "signal_name": "state_of_charge",
+      "direction": "plant_to_controller",
+      "unit": "fraction",
+      "time_semantics": "monotonic test-clock timestamp; quality/freshness flags required"
+    }
+  ],
+  "physical_power_interface_present": false,
+  "site_context": null,
+  "claim_ceiling": "SYNTHETIC_TEST_ENVIRONMENT_PASSPORT_FIXTURE_ONLY_NOT_EXECUTED_HIL_OR_PHYSICAL_CLAIM"
+}
