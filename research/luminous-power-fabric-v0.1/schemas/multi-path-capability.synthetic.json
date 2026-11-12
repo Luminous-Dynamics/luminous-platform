@@ -39,7 +39,7 @@
   ],
   "additional_scenarios": [],
   "required_service_power_w": 50,
-  "claim_ceiling": "DECLARED_CONTINGENCY_CAPABILITY_SCREEN_ONLY_NOT_RELIABILITY_OR_PHYSICAL_QUALIFICATION",
+  "claim_ceiling": "DECLARED_CONTINGENCY_AND_SHARED_CAPACITY_SCREEN_ONLY_NOT_NETWORK_OR_RELIABILITY_QUALIFICATION",
   "limitations": [
     "Synthetic path capacities and shared-bus capacity are illustrative, not equipment ratings.",
     "Both routes share a declared control-power failure domain; its failure removes both paths.",
