@@ -56,6 +56,71 @@ The code does not promote datasheet/model/simulation inputs to measurement evide
 See [LOSS_BUDGET_AND_MODEL_PLAN.md](../../LOSS_BUDGET_AND_MODEL_PLAN.md) for equations, categories,
 anti-double-counting rules and the DAB/CLLC model-to-bench plan.
 
+
+
+## Common-cause-aware multi-path capability
+
+The crate exposes `multi_port_capability::evaluate_multi_path_capability`, a deterministic,
+read-only composition of already-qualified parallel source-to-service paths. All route powers must
+terminate at one exact useful-service boundary. Each path retains its configuration SHA-256 and
+upstream capability-evidence reference.
+
+The evaluator:
+- automatically evaluates every declared component and shared failure-domain loss;
+- supports explicit compound contingencies;
+- removes all routes that depend on a failed, unknown or otherwise unavailable component/domain;
+- applies shared throughput ceilings for declared buses, feeders, cooling resources or other common
+  bottlenecks;
+- recomputes shared capacity after each contingency; and
+- rejects partially overlapping non-identical shared-capacity path groups rather than applying an
+  unsafe arithmetic approximation.
+
+The robust capability is the minimum surviving capacity across the baseline and all enumerated
+scenarios. Shared resources retain their configuration and evidence references in the result.
+
+This is a declared-contingency and shared-capacity arithmetic screen, not an electrical network
+solver, fault-current model, protection coordination test, reliability-probability estimator or
+minimal-cut-set discovery engine. It does not authenticate path evidence, infer missing dependencies,
+calculate serial-component bottlenecks or authorize switching. Each route's input power must already
+be bounded by the upstream capability and engineering assessment. See
+`multi_port_capability.rs`, the `schemas/multi-path-capability-*` contracts and
+[MULTI_PORT_CAPABILITY_DESIGN.md](../../MULTI_PORT_CAPABILITY_DESIGN.md).
+
+## Evidence-gated capability envelope
+
+The crate exposes `capability_envelope::evaluate_capability_envelope`, a read-only evaluator
+for configuration-bound, direction-specific continuous power capability. It requires current
+qualification evidence, exact configuration digests, current calibration/sensor evidence, a ready
+independent-protection state, fresh telemetry and non-expired qualification. It applies a declared
+linear thermal derating interval and an external derating factor, then subtracts explicit conservative
+measurement/model uncertainty bounds. Any hard blocker withdraws both directional capabilities.
+
+This is an evidence-gated software screen only. It does not authenticate the supplied records,
+measure junction temperature, model transient SOA, coordinate cables/busbars, operate a switch,
+authorize dispatch, replace physical protection or qualify a device. Linear thermal derating is a
+declared first-order policy assumption, not a universal component thermal law. See
+`capability_envelope.rs` and [FIELD_POWER_PLATFORM.md](../../FIELD_POWER_PLATFORM.md).
+
+
+## Evidence-gated capability envelope
+
+The crate exposes `capability_envelope::evaluate_capability_envelope`, a read-only screen for
+configuration-bound, direction-specific continuous power capability. It requires exact
+configuration identity, current qualification/calibration/sensor evidence, protection readiness,
+fresh telemetry and an unexpired qualification. It applies a declared linear thermal derating law
+and an external derating factor, then subtracts conservative absolute measurement/model uncertainty
+bounds. A failed hard gate withdraws both directional capability outputs.
+
+The report retains configuration digests, evaluation/expiry/telemetry times and the uncertainty,
+external-derating and thermal evidence references. The v0.1 JSON contract and synthetic fixture are
+in `schemas/capability-envelope-v0.1.schema.json` and `schemas/capability-envelope.synthetic.json`.
+The research design and benchmark programme are in [CAPABILITY_ENVELOPE_DESIGN.md](../../CAPABILITY_ENVELOPE_DESIGN.md).
+
+This evaluator does not authenticate supplied records, estimate junction temperature, model
+transient SOA, coordinate cables/busbars, operate a switch, authorize dispatch, replace physical
+protection or qualify hardware. Linear thermal derating is a transparent first-order screening
+assumption, not a universal component thermal law.
+
 ## Ideal DAB SPS screen
 
 The library also exposes `dab_sps::screen_dab_sps` and

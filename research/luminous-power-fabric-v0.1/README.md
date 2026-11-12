@@ -249,6 +249,71 @@ emissions savings. It keeps source provenance for each stage efficiency, standby
 emissions factor. This enables fairer AC/DC, 48 V and 800 V architecture comparisons than adding
 separate peak-efficiency percentages. It does not replace a site model or measured energy study.
 
+
+## Portable field-power systems and rugged industrial deployment
+
+[Issue #413](https://github.com/Luminous-Dynamics/luminous-platform/issues/413) and
+[PR #414](https://github.com/Luminous-Dynamics/luminous-platform/pull/414) extend the Power Fabric
+PEBB work into portable service nodes, towable/mobile hybrid power systems and later plant-support
+systems. The product architecture and benchmark boundary are documented in
+[FIELD_POWER_PLATFORM.md](./FIELD_POWER_PLATFORM.md). A rights-aware source/load duty-cycle schema
+and synthetic construction profile are in `schemas/field-mission-profile-v0.1.schema.json` and
+`schemas/field-mission-profile.synthetic.json`.
+
+## DC branch power protection
+
+[Issue #415](https://github.com/Luminous-Dynamics/luminous-platform/issues/415) studies a 48 V-class
+solid-state branch controller. The design basis compares integrated eFuses, external-FET controllers,
+discrete SSPCs, conventional fuse/mechanical disconnect and hybrid semiconductor/mechanical
+interruption. See [LV_DC_BRANCH_CONTROLLER_DESIGN_BASIS.md](./LV_DC_BRANCH_CONTROLLER_DESIGN_BASIS.md).
+
+## Evidence-gated capability envelope
+
+[Issue #416](https://github.com/Luminous-Dynamics/luminous-platform/issues/416) introduces a typed,
+read-only Rust evaluator for current, direction-specific continuous-power capability. It binds
+configuration identity, qualification expiry, calibration/sensor status, protection readiness,
+telemetry freshness, thermal derating and conservative uncertainty. It does not control hardware or
+replace independent protection. See [CAPABILITY_ENVELOPE_DESIGN.md](./CAPABILITY_ENVELOPE_DESIGN.md),
+the capability JSON schema and synthetic fixture under `schemas/`, and the measurement-audit crate.
+
+The next multi-port step is common-cause-aware capability and recovery analysis in
+[issue #417](https://github.com/Luminous-Dynamics/luminous-platform/issues/417).
+
+## Standards applicability
+
+The dated standards and conformity workstream is maintained in
+[STANDARDS_APPLICABILITY_RESEARCH.md](./STANDARDS_APPLICABILITY_RESEARCH.md). It distinguishes
+converter safety, breaker/isolator claims, construction-site assemblies, site installations,
+battery/ESS testing, environmental qualification and South African NRCS product-category review.
+A standards reference is not a compliance or certification claim.
+
+
+## Common-cause-aware multi-port capability
+
+[Issues #417 and #418](https://github.com/Luminous-Dynamics/luminous-platform/issues/417) now have a deterministic
+Rust composition slice in `tools/measurement-audit/src/multi_port_capability.rs`. It composes already
+qualified parallel route bottlenecks, automatically evaluates component and shared failure-domain
+losses, supports explicit compound contingencies, and applies shared throughput constraints for
+declared buses/feeders/cooling groups. Shared capacity is recomputed after each contingency; partially
+overlapping non-identical shared-capacity groups are rejected. The typed input/schema and synthetic
+shared-bus fixture are under `schemas/multi-path-capability-*`, with the model and benchmark boundary
+in [MULTI_PORT_CAPABILITY_DESIGN.md](./MULTI_PORT_CAPABILITY_DESIGN.md).
+
+This remains a declared-contingency arithmetic screen. It does not discover missing common causes,
+solve electrical networks, calculate fault current or protection selectivity, estimate failure
+probabilities, solve storage energy/ramp/recovery, or authorize switching. Recovery/requalification
+and physical dependency verification remain separate next stages.
+
+## Matched-service industry benchmark
+
+[Issue #419](https://github.com/Luminous-Dynamics/luminous-platform/issues/419) and
+[INDUSTRY_BENCHMARK_PROGRAMME.md](./INDUSTRY_BENCHMARK_PROGRAMME.md) pin the Cat XES120,
+Atlas Copco ZBC, ABB Infinitus and TI TIDA-050090 vendor baselines and define component,
+source-to-load, useful-service and resilience benchmark tiers. The benchmark reuses the existing
+field-mission-profile contract and composes Symthaea, Symtropy, Sol-Atlas and Mycelix owners.
+Vendor specifications remain separate from independent physical measurements and accredited
+qualification evidence.
+
 ## Current limitations
 
 This package contains analytical screening models and offline data-audit tools; it does **not**

@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/capability-envelope-v0.1.schema.json",
+  "title": "Luminous Power Fabric evidence-gated capability envelope input",
+  "description": "Read-only input contract for a configuration-bound continuous-power capability screen. Valid schema does not establish physical truth, equipment safety, protection functionality or dispatch authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_class",
+    "qualified_configuration_sha256",
+    "observed_configuration_sha256",
+    "qualification_valid_until_epoch_s",
+    "evidence_status",
+    "calibration_status",
+    "sensor_status",
+    "protection_status",
+    "telemetry_observed_at_epoch_s",
+    "telemetry_max_age_s",
+    "evaluation_time_epoch_s",
+    "forward_rated_power_w",
+    "reverse_rated_power_w",
+    "external_derating_factor",
+    "measurement_uncertainty_bound_w",
+    "model_uncertainty_bound_w",
+    "uncertainty_reference",
+    "external_derating_reference",
+    "thermal",
+    "claim_ceiling"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "record_class": {
+      "enum": [
+        "synthetic_fixture",
+        "engineering_input",
+        "physical_measurement_input"
+      ]
+    },
+    "qualified_configuration_sha256": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{64}$"
+    },
+    "observed_configuration_sha256": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{64}$"
+    },
+    "qualification_valid_until_epoch_s": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "evidence_status": {
+      "enum": [
+        "Current",
+        "Missing",
+        "Expired",
+        "Invalid",
+        "Unverified"
+      ]
+    },
+    "calibration_status": {
+      "enum": [
+        "Current",
+        "Missing",
+        "Expired",
+        "Invalid",
+        "Unverified"
+      ]
+    },
+    "sensor_status": {
+      "enum": [
+        "Current",
+        "Missing",
+        "Expired",
+        "Invalid",
+        "Unverified"
+      ]
+    },
+    "protection_status": {
+      "enum": [
+        "Ready",
+        "Tripped",
+        "Faulted",
+        "Bypassed",
+        "Unknown"
+      ]
+    },
+    "telemetry_observed_at_epoch_s": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "telemetry_max_age_s": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "evaluation_time_epoch_s": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "forward_rated_power_w": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "reverse_rated_power_w": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "external_derating_factor": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "measurement_uncertainty_bound_w": {
+      "type": "number",
+      "minimum": 0
+    },
+    "model_uncertainty_bound_w": {
+      "type": "number",
+      "minimum": 0
+    },
+    "uncertainty_reference": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "external_derating_reference": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "thermal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observed_temperature_c",
+        "derate_start_temperature_c",
+        "inhibit_temperature_c",
+        "measurement_boundary",
+        "evidence_reference"
+      ],
+      "properties": {
+        "observed_temperature_c": {
+          "type": "number"
+        },
+        "derate_start_temperature_c": {
+          "type": "number"
+        },
+        "inhibit_temperature_c": {
+          "type": "number"
+        },
+        "measurement_boundary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "evidence_reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        }
+      }
+    },
+    "claim_ceiling": {
+      "const": "EVIDENCE_GATED_CAPABILITY_SCREEN_ONLY_NOT_CONTROL_OR_PHYSICAL_QUALIFICATION"
+    }
+  }
+}
