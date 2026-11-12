@@ -347,3 +347,8 @@ site measurement, data-centre guarantee or OCP compliance test. See the syntheti
 Every accepted output must be combined with the exact manifest, raw-file digest, calibration
 evidence, analysis build identity, test-procedure revision and independent review before it can
 support a declared bench claim.
+
+
+## Causal dispatch trace evaluator
+
+The read-only typed API in `src/dispatch_policy_trace.rs` validates observation availability against decision time, action disposition, complete service-interval coverage, critical-energy reconciliation, per-interval hard gates and matched pair context. It consumes owner-produced plant outcomes; it does not run a controller or simulate electrical physics. See [DISPATCH_TRACE_CONTRACT.md](../DISPATCH_TRACE_CONTRACT.md) and [issue #435](https://github.com/Luminous-Dynamics/luminous-platform/issues/435). The module contains 25 authored unit tests; compile/test execution remains pending.

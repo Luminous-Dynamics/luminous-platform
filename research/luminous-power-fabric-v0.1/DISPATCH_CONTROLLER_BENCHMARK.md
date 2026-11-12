@@ -39,7 +39,11 @@ Use the standards as scoped references, not as a claim of conformity:
 The intended relationship is complementary: IEEE 2030.7-2017 specifies common controller functions; IEEE 2030.8-2018 provides controller test procedures and comparison metrics; IEC TS 62898-3-5:2026 specifically covers HIL, commissioning and periodic tests for MMCS/MEMS. Revision projects P2030.7 and P2030.8 remain active PARs, not published replacements.
 The controller protocol does not replace electrical waveform, power-quality, protection, generator, battery-safety, grid-interconnection or product-conformity testing. The power-duration and evidence-passport workstreams remain separate evidence obligations.
 
-## 3. Benchmark contract
+## 3. Causal dispatch trace
+
+The evidence-bearing trace validator and matched outcome evaluator are defined in [DISPATCH_TRACE_CONTRACT.md](./DISPATCH_TRACE_CONTRACT.md) and tracked by [issue #435](https://github.com/Luminous-Dynamics/luminous-platform/issues/435). They check what information was available to each decision, action disposition, full-horizon service outcomes, per-interval reserve/limit gates and exact paired context. The evaluator consumes owner-produced plant outcomes; it does not execute a controller or duplicate plant physics.
+
+## 4. Benchmark contract
 
 ### Inputs consumed, not re-modelled
 
