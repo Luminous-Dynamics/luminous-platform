@@ -181,5 +181,99 @@
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "execution_modes": {
+            "contains": {
+              "const": "controller_hil"
+            }
+          }
+        },
+        "required": [
+          "execution_modes"
+        ]
+      },
+      "then": {
+        "properties": {
+          "applicable_stages": {
+            "contains": {
+              "const": "hil"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "execution_modes": {
+            "contains": {
+              "const": "power_hil"
+            }
+          }
+        },
+        "required": [
+          "execution_modes"
+        ]
+      },
+      "then": {
+        "properties": {
+          "applicable_stages": {
+            "contains": {
+              "const": "hil"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "execution_modes": {
+            "contains": {
+              "const": "site_commissioning"
+            }
+          }
+        },
+        "required": [
+          "execution_modes"
+        ]
+      },
+      "then": {
+        "properties": {
+          "applicable_stages": {
+            "contains": {
+              "const": "commissioning"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "execution_modes": {
+            "contains": {
+              "const": "periodic_site_operation"
+            }
+          }
+        },
+        "required": [
+          "execution_modes"
+        ]
+      },
+      "then": {
+        "properties": {
+          "applicable_stages": {
+            "contains": {
+              "const": "periodic"
+            }
+          }
+        }
+      }
+    }
+  ]
 }

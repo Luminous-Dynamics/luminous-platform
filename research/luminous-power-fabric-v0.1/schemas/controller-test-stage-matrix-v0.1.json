@@ -483,8 +483,7 @@
         "controller_hil",
         "power_hil",
         "physical_laboratory",
-        "site_commissioning",
-        "periodic_site_operation"
+        "site_commissioning"
       ],
       "stimulus": [
         "End-to-end operation across controller, DER interfaces, protection, communications and operator HMI",
