@@ -360,6 +360,11 @@ measurement eligibility and independent claim eligibility are separate outputs. 
 may test matching logic but cannot support physical SOTA. The comparator does not authenticate raw
 digests/certificates or calculate significance/superiority.
 
+## Vendor baseline configuration discipline
+
+The Atlas Copco ZBC 1000-1200 is now split into separate South African 50 Hz / 400 V and US 60 Hz / 480 V reference records in
+[INDUSTRY_BENCHMARK_PROGRAMME.md](./INDUSTRY_BENCHMARK_PROGRAMME.md). The US sheet's 1,105 kWh net, 800 kW continuous-mode, 35 kW maximum auxiliary and 97% peak inverter-efficiency values are not attributed to the South African 50 Hz configuration. The maximum auxiliary rating is not treated as constant measured consumption, and peak inverter efficiency is not treated as system round-trip efficiency.
+
 ## Matched-service industry benchmark
 
 [Issue #419](https://github.com/Luminous-Dynamics/luminous-platform/issues/419) and

@@ -21,7 +21,8 @@ The current 500 W PEBB-LV-01 laboratory candidate cannot compete with complete m
 | Atlas Copco ZBC 250-575 | 250 kVA; 575 kWh; 400 V AC; 672–864 V DC battery bus; −20 to 50 °C; IP54 | Large construction/industrial configuration |
 | Atlas Copco ZBC 300-300 | 300 kVA; 308 kWh | Higher-power, shorter-energy model |
 | Atlas Copco ZBC 500-250 | 500 kVA; 246 kWh | kVA is not interchangeable with kW; peak and continuous ratings must remain distinct |
-| Atlas Copco ZBC 1000-1200 | 1,000 kVA; 1,200 kWh; vendor table lists 800 kW continuous mode | Container-scale unit, not a portable service-node comparator |
+| Atlas Copco ZBC 1000-1200 — South African / 50 Hz / 400 V brochure | 1,000 kW nominal power; 1,200 kWh nominal energy; 400 V AC at 50 Hz; 672–864 V DC battery bus; LFP; published operating range −20 to +50 °C | Keep this as the 50 Hz reference. Do not import values from the US 60 Hz / 480 V reference sheet. |
+| Atlas Copco ZBC 1000-1200 — US / 60 Hz / 480 V reference sheet | 1,000 kVA / 1,000 kW nominal; 1,232 kWh nominal and 1,105 kWh vendor-stated net storage; 1,100 kW peak for 10 min; 800 kW continuous mode; maximum auxiliary consumption 35 kW; peak inverter efficiency 97%; 90% recommended DoD; 70% EOL; expected 6,000 cycles under the sheet's stated conditions | Separate electrical variant. The 35 kW value is a maximum auxiliary rating, not a constant measured draw; 97% is peak inverter efficiency, not whole-system round-trip efficiency. Conditions and duty-cycle caveats remain attached. |
 | ABB SACE Infinitus | ABB says fully IEC 60947-2-certified solid-state circuit-breaker; semiconductor interruption plus electromechanical isolation; up to 2,500 A / 1,250 V DC; current product overview says fault isolation <25 μs, while its EPD declaration section states down to 15 μs | Mature solid-state breaker benchmark; preserve the two ABB statements as separate claims and confirm test conditions; not an eFuse or a 48 V auxiliary branch module |
 | TI TIDA-050090 | 54 V / 5 kW eFuse reference design; one TPS1689 + five TPS1685; TI reports 100 A RMS at 55 °C without external airflow | Vendor reference board for testing/performance validation, not a commercial breaker or independent Luminous result |
 
@@ -31,7 +32,17 @@ Sources:
 - ABB Infinitus: https://www.abb.com/global/en/areas/electrification/low-voltage/circuit-breakers/solid-state-circuit-breakers/sace-infinitus
 - TI TIDA-050090: https://www.ti.com/tool/TIDA-050090
 
-The Atlas Copco South Africa vendor table also lists LFP batteries, a 672–864 V DC battery bus, recommended 90% depth of discharge, 70% end-of-life capacity, and variant-specific discharge C-rates (0.5C, 1C or 2C). These are vendor-published design values, not independent usable-energy measurements or a guaranteed field life. Preserve variant-specific values: do not combine the maximum power from one model with the maximum energy, C-rate or temperature rating of another. Keep kW/kVA, nominal/peak/continuous duration, battery-side energy and usable AC energy as separate quantities.
+The South African 50 Hz ZBC brochure lists 1,000 kW nominal power, 1,200 kWh nominal energy, 400 V AC at 50 Hz and a 672–864 V DC battery bus. The US 60 Hz / 480 V product reference sheet is a separate configuration and lists 1,232 kWh nominal capacity, 1,105 kWh net storage capacity, 1,100 kW peak for 10 minutes, 800 kW continuous mode, up to 35 kW auxiliary consumption and 97% peak inverter efficiency. It also states 90% recommended DoD, 70% EOL and expected 6,000 cycles under its defined conditions. These are variant-specific vendor figures, not matched independent measurements.
+
+For the US 60 Hz sheet only, 1,105 / 1,232 = 89.7% is the arithmetic ratio of the published net-to-nominal capacity figures; it is not round-trip efficiency, measured customer-POC energy or capacity retention. Likewise, 35 kW / 800 kW = 4.375% is only a ratio of the maximum auxiliary rating to the continuous-mode rating; it is not an observed parasitic-energy fraction. Do not apply either calculation to the South African 50 Hz configuration. The vendor sheet qualifies nominal conditions at 25 °C, 100 kPa and 30% RH, describes PF=1 steady-state values rather than continuous-power operation for nominal values, and cautions about nominal-power duty cycles and derating. Measure auxiliary power and net delivered service over the actual matched load/ambient profile.
+
+Sources:
+- Atlas Copco South Africa launch note (1 July 2025): https://www.atlascopco.com/en-za/construction-equipment/news/atlas-copco-introduces-largest-zbc-energy-storage-system
+- Atlas Copco South Africa container ESS product page: https://www.atlascopco.com/en-za/construction-equipment/products/energy-storage-systems/medium
+- Atlas Copco container ESS brochure (50 Hz / 400 V table): https://www.atlascopco.com/content/dam/atlas-copco/construction-technique/portable-energy/documents/energy-storage-systems/ZBC%20Container%20Energy%20Storage%20System%20Brochure_LR_EN.pdf
+- Atlas Copco US ZBC 1000-1200 reference sheet (60 Hz / 480 V): https://www.atlascopco.com/content/dam/atlas-copco/local-countries/united-states/documents/ptna-usa/energy-storage-systems/datasheets-06-25/ZBC%201000-1200%20Product%20Reference%20Sheet%20US.pdf
+
+Keep kW/kVA, nominal/peak/continuous duration, battery-side energy, vendor-stated net capacity and independently measured customer-POC energy as separate quantities.
 
 ## 3. Grid-forming and conformity baseline
 
