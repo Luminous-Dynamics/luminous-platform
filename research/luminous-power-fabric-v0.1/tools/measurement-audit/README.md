@@ -121,6 +121,28 @@ transient SOA, coordinate cables/busbars, operate a switch, authorize dispatch, 
 protection or qualify hardware. Linear thermal derating is a transparent first-order screening
 assumption, not a universal component thermal law.
 
+## Mission energy and storage reserve envelope
+
+The crate exposes `mission_energy::evaluate_mission_energy`, a deterministic, read-only interval-energy
+accounting screen. It consumes contiguous mission segments with a required service power and an
+owner-qualified interval-average source-power envelope (including source ramp/start constraints
+already modelled upstream). It subtracts explicit source measurement/model uncertainty bounds, gives
+source energy priority for direct service, then charges an aggregate storage bank from surplus or
+discharges it to cover a source deficit.
+
+The evaluator limits storage by conservative capacity, initial-SOC uncertainty, charge/discharge
+power, charge/discharge efficiency, minimum SOC and an explicit end-of-mission reserve. It retains
+per-segment source digest/evidence/uncertainty and the exact storage evidence/configuration/limit
+snapshot. Global system mismatch or expired mission qualification blocks all capability; a stale
+source segment or ineligible storage bank is excluded rather than trusted.
+
+This is interval-energy bookkeeping only, not a dispatch optimizer/controller, BMS, electrochemical
+or thermal model, generator/inverter transient simulator, AC/DC network solver, fuel calculation,
+protection function or hardware qualification. The energy boundary must be identical across all
+inputs. Transient motor-start, power-quality, protection and fault response remain separate tests.
+See [MISSION_ENERGY_ENVELOPE.md](../../MISSION_ENERGY_ENVELOPE.md), the
+`schemas/mission-energy-envelope-v0.1.schema.json` contract and synthetic fixture.
+
 ## Ideal DAB SPS screen
 
 The library also exposes `dab_sps::screen_dab_sps` and
@@ -263,7 +285,8 @@ site measurement, data-centre guarantee or OCP compliance test. See the syntheti
   provenance are not implemented in this first slice.
 - The tool does not determine whether the capture is truly steady-state or whether sampling
   bandwidth/resolution was sufficient.
-- It does not estimate measurement uncertainty.
+- The CSV energy auditor does not estimate measurement uncertainty; the mission-energy evaluator
+  only consumes caller-supplied conservative bounds and does not calculate the uncertainty budget.
 - It does not qualify thermal equilibrium, ripple, transients, protection, insulation, EMC, reliability
   or grid behavior.
 - CSV parsing intentionally accepts only the simple fixed-column format; it is not a general RFC 4180
