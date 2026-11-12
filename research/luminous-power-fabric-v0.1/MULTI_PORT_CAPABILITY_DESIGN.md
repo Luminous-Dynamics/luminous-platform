@@ -35,13 +35,18 @@ Input concepts:
 - `service_boundary_id`: one exact useful-service boundary shared by every route; path powers cannot be added if they terminate at different buses, load groups or measurands.
 - `CapabilityPath`: one already-prequalified source-to-service route, its continuous bottleneck power, availability state, exact configuration SHA-256, capability-evidence reference, component/dependency IDs and shared failure-domain IDs.
 - `DeclaredFailureScenario`: one explicit multi-component and/or multi-domain contingency.
-- `MultiPathCapabilityInput`: service boundary, path set, additional contingencies and optional useful-service threshold.
+- `SharedCapacityConstraint`: an exact shared resource, its configuration/evidence, availability, throughput ceiling and affected path IDs.
+- `MultiPathCapabilityInput`: service boundary, path set, shared constraints, additional contingencies and optional useful-service threshold.
 
 Only paths marked `QualifiedAvailable` contribute baseline capacity. The caller must supply a route bottleneck, not add series-component ratings. A non-available status (evidence blocked, protection not ready, faulted or unknown) contributes zero even if a stale positive power number was passed.
 
 The evaluator automatically creates a deterministic single-failure scenario for every unique component ID and every unique shared failure-domain ID. If a path contains that failed ID, the entire path is removed. A component or domain shared by several paths therefore removes all of them together.
 
-Additional declared scenarios permit N-k and selected common-cause combinations. All scenario references must resolve to IDs in the input graph. Duplicate paths, duplicate IDs, unknown scenario dependencies, missing components, negative/non-finite power and arithmetic overflow are rejected.
+Shared-capacity constraints add a second, distinct rule: even healthy parallel paths cannot exceed the throughput of a shared bus, feeder, cooling resource or other declared bottleneck. For each contingency, surviving path power is first summed within the declared group and then capped by the tightest current shared-resource limit. A shared resource that is failed, unknown or otherwise not qualified withdraws every path that depends on it. Its configuration digest and evidence reference are retained in the result.
+
+For v0.1, shared-capacity groups must be disjoint or identical. Partially overlapping but non-identical groups are rejected instead of being combined with an unsafe arithmetic approximation. Each affected route must also declare the resource ID as a component or failure-domain dependency, so its failure appears in the automatic single-failure sweep.
+
+Additional declared scenarios permit N-k and selected common-cause combinations. All scenario references must resolve to IDs in the input graph. Duplicate paths/resources, duplicate IDs, unknown scenario dependencies, missing components, negative/non-finite power and arithmetic overflow are rejected.
 
 The result contains:
 - the shared service-boundary identity;
@@ -60,14 +65,22 @@ The result is deterministic under path-array permutation; scenario ordering and 
 For path (p), let (P_p) be its already-qualified continuous power bottleneck. Let (A_p) indicate whether the upstream evidence/protection gate marks the path currently available. For contingency (c), a path survives only if it is available and none of its declared components or failure domains are failed by (c).
 
 ```text
-P_base = sum(P_p for every available path p)
+P_group(c) = min(sum(P_p for surviving paths p in group g), limit_g)
 
-P(c) = sum(P_p for every available path p that survives contingency c)
+P(c) = sum(P_p for surviving ungrouped paths)
+       + sum(P_group(c) for each disjoint/identical shared group)
 
+P_base = P(baseline)
 P_robust = min(P_base, P(c) for all evaluated contingencies)
 ```
 
 The evaluator does not assign probabilities to contingencies. This is deterministic contingency analysis. If the system topology contains an undeclared common dependency, the model will not discover it. No reliability probability or safety integrity claim is inferred.
+
+### Shared-resource capacity boundary
+
+The current implementation enforces shared throughput ceilings only for disjoint or identical groups of affected paths. It does not solve a general multi-commodity / electrical network flow problem. If the same set of paths traverses several serial shared resources, their aggregate capacity is the minimum of those resource limits. If partially overlapping groups exist (for example, one cooling group overlaps only part of a common feeder group), the v0.1 evaluator rejects the input. A future topology-aware flow engine must solve those coupled constraints rather than layering independent minima.
+
+The synthetic fixture demonstrates two distinct facts: a naive 100 W + 80 W path sum is capped to 150 W by a shared bus, while a shared control-power failure can still withdraw both paths. These are arithmetic fixture results only, not an electrical-system test.
 
 ## 4. Why this is only a first layer
 
