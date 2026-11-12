@@ -453,9 +453,9 @@ fn validate_input(input: &LifecycleScenarioInput) -> Result<(), AuditError> {
             )));
         }
         let end_s = repair.start_s + repair.system_unavailable_duration_s;
-        if !end_s.is_finite() || end_s > study_window_s + TIME_TOLERANCE_S {
+        if !end_s.is_finite() || end_s > input.operating_window_s + TIME_TOLERANCE_S {
             return Err(AuditError(format!(
-                "repair event {:?} extends beyond lifecycle study window",
+                "repair event {:?} extends beyond lifecycle operating window",
                 repair.repair_id
             )));
         }
