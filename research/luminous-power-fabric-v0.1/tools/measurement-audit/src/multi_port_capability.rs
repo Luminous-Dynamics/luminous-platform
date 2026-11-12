@@ -19,6 +19,10 @@ pub enum PathAvailability {
 #[derive(Debug, Clone, PartialEq)]
 pub struct CapabilityPath {
     pub path_id: String,
+    /// Exact qualified configuration digest for this source-to-service route.
+    pub configuration_sha256: String,
+    /// Reference to the upstream single-path capability/evidence result.
+    pub capability_evidence_reference: String,
     pub available_power_w: f64,
     pub availability: PathAvailability,
     /// Exact component/dependency IDs in this route: source, converter, bus,
@@ -42,6 +46,9 @@ pub struct DeclaredFailureScenario {
 /// Input to the common-cause-aware multi-path capability screen.
 #[derive(Debug, Clone, PartialEq)]
 pub struct MultiPathCapabilityInput {
+    /// All route capacities must terminate at this same useful-service boundary.
+    /// Examples: one protected DC bus, one AC load bus, or one declared load group.
+    pub service_boundary_id: String,
     pub paths: Vec<CapabilityPath>,
     /// Optional N-k / compound scenarios not represented by individual
     /// component or domain failure. These must reference known IDs.
@@ -61,7 +68,16 @@ pub struct ScenarioCapability {
 /// Conservative system-level capability under all enumerated single failures
 /// plus the caller's declared compound contingencies.
 #[derive(Debug, Clone, PartialEq)]
+pub struct PathEvidenceReference {
+    pub path_id: String,
+    pub configuration_sha256: String,
+    pub capability_evidence_reference: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct MultiPathCapabilityReport {
+    pub service_boundary_id: String,
+    pub path_evidence: Vec<PathEvidenceReference>,
     pub baseline_available_power_w: f64,
     pub robust_available_power_w: f64,
     pub required_service_power_w: Option<f64>,
@@ -105,6 +121,10 @@ fn validate_unique_ids(values: &[String], field: &str) -> Result<(), AuditError>
         }
     }
     Ok(())
+}
+
+fn valid_sha256(value: &str) -> bool {
+    value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
 }
 
 fn validate_power(value: f64, field: &str) -> Result<(), AuditError> {
@@ -185,6 +205,7 @@ fn scenario_capacity(
 pub fn evaluate_multi_path_capability(
     input: &MultiPathCapabilityInput,
 ) -> Result<MultiPathCapabilityReport, AuditError> {
+    validate_id(&input.service_boundary_id, "service_boundary_id")?;
     if input.paths.is_empty() {
         return Err(AuditError(
             "at least one capability path is required".to_string(),
@@ -215,6 +236,16 @@ pub fn evaluate_multi_path_capability(
                 path.path_id
             )));
         }
+        if !valid_sha256(&path.configuration_sha256) {
+            return Err(AuditError(format!(
+                "path {:?} has a malformed configuration SHA-256",
+                path.path_id
+            )));
+        }
+        validate_id(
+            &path.capability_evidence_reference,
+            "capability_evidence_reference",
+        )?;
         validate_power(path.available_power_w, "path.available_power_w")?;
         if path.component_ids.is_empty() {
             return Err(AuditError(format!(
@@ -364,7 +395,18 @@ pub fn evaluate_multi_path_capability(
         .required_service_power_w
         .map(|required| robust_available_power_w >= required);
 
+    let path_evidence = ordered_paths
+        .iter()
+        .map(|path| PathEvidenceReference {
+            path_id: path.path_id.clone(),
+            configuration_sha256: path.configuration_sha256.clone(),
+            capability_evidence_reference: path.capability_evidence_reference.clone(),
+        })
+        .collect();
+
     Ok(MultiPathCapabilityReport {
+        service_boundary_id: input.service_boundary_id.clone(),
+        path_evidence,
         baseline_available_power_w,
         robust_available_power_w,
         required_service_power_w: input.required_service_power_w,
@@ -389,6 +431,8 @@ mod tests {
     ) -> CapabilityPath {
         CapabilityPath {
             path_id: id.to_string(),
+            configuration_sha256: "a".repeat(64),
+            capability_evidence_reference: format!("single-path-capability:{id}"),
             available_power_w: power_w,
             availability: PathAvailability::QualifiedAvailable,
             component_ids: components.iter().map(|x| x.to_string()).collect(),
@@ -398,10 +442,61 @@ mod tests {
 
     fn input(paths: Vec<CapabilityPath>) -> MultiPathCapabilityInput {
         MultiPathCapabilityInput {
+            service_boundary_id: "common-useful-service-boundary".to_string(),
             paths,
             additional_scenarios: Vec::new(),
             required_service_power_w: None,
         }
+    }
+
+    #[test]
+    fn all_path_capacities_are_bound_to_one_service_boundary() {
+        let report = evaluate_multi_path_capability(&input(vec![
+            path("path-a", 100.0, &["a"], &[]),
+            path("path-b", 80.0, &["b"], &[]),
+        ]))
+        .unwrap();
+        assert_eq!(
+            report.service_boundary_id,
+            "common-useful-service-boundary"
+        );
+    }
+
+    #[test]
+    fn empty_service_boundary_is_rejected() {
+        let mut value = input(vec![path("path-a", 10.0, &["a"], &[])]);
+        value.service_boundary_id = "  ".to_string();
+        assert!(evaluate_multi_path_capability(&value).is_err());
+    }
+
+    #[test]
+    fn malformed_path_configuration_digest_is_rejected() {
+        let mut value = input(vec![path("path-a", 10.0, &["a"], &[])]);
+        value.paths[0].configuration_sha256 = "not-a-digest".to_string();
+        assert!(evaluate_multi_path_capability(&value).is_err());
+    }
+
+    #[test]
+    fn missing_path_capability_evidence_reference_is_rejected() {
+        let mut value = input(vec![path("path-a", 10.0, &["a"], &[])]);
+        value.paths[0].capability_evidence_reference.clear();
+        assert!(evaluate_multi_path_capability(&value).is_err());
+    }
+
+    #[test]
+    fn report_retains_each_path_configuration_and_capability_reference() {
+        let report = evaluate_multi_path_capability(&input(vec![
+            path("path-b", 80.0, &["b"], &[]),
+            path("path-a", 100.0, &["a"], &[]),
+        ]))
+        .unwrap();
+        assert_eq!(report.path_evidence.len(), 2);
+        assert_eq!(report.path_evidence[0].path_id, "path-a");
+        assert_eq!(report.path_evidence[0].configuration_sha256, "a".repeat(64));
+        assert_eq!(
+            report.path_evidence[0].capability_evidence_reference,
+            "single-path-capability:path-a"
+        );
     }
 
     #[test]
@@ -571,6 +666,8 @@ mod tests {
     fn empty_component_list_is_rejected() {
         assert!(evaluate_multi_path_capability(&input(vec![CapabilityPath {
             path_id: "path-a".to_string(),
+            configuration_sha256: "a".repeat(64),
+            capability_evidence_reference: "single-path-capability:path-a".to_string(),
             available_power_w: 10.0,
             availability: PathAvailability::QualifiedAvailable,
             component_ids: Vec::new(),
