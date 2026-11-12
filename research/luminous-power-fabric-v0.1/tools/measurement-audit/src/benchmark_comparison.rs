@@ -945,6 +945,42 @@ mod tests {
     }
 
     #[test]
+    fn site_operational_assessment_with_three_samples_and_histories_is_eligible() {
+        let mut reference = run("run-ref", BenchmarkEvidenceClass::Measured, '4', 10_000.0);
+        let mut candidate = run("run-candidate", BenchmarkEvidenceClass::Measured, '5', 9_900.0);
+        reference.run_mode = super::BenchmarkRunMode::SiteOperationalAssessment;
+        candidate.run_mode = super::BenchmarkRunMode::SiteOperationalAssessment;
+        reference.fault_log_sha256 = Some(digest('a'));
+        candidate.fault_log_sha256 = Some(digest('b'));
+        reference.maintenance_log_sha256 = Some(digest('c'));
+        candidate.maintenance_log_sha256 = Some(digest('d'));
+        let report = compare_matched_benchmark_runs(MatchedBenchmarkInput {
+            evaluation_time_epoch_s: 100,
+            reference: &reference,
+            candidate: &candidate,
+        })
+        .unwrap();
+        assert!(report.physical_measurement_eligible);
+        assert!(report.reference_fault_log_sha256.is_some());
+        assert!(report.candidate_maintenance_log_sha256.is_some());
+    }
+
+    #[test]
+    fn mismatched_primary_or_auxiliary_poc_blocks_comparison() {
+        let reference = run("run-ref", BenchmarkEvidenceClass::Measured, '4', 10_000.0);
+        let mut candidate = run("run-candidate", BenchmarkEvidenceClass::Measured, '5', 9_900.0);
+        candidate.auxiliary_poc_sha256 = Some(digest('9'));
+        let report = compare_matched_benchmark_runs(MatchedBenchmarkInput {
+            evaluation_time_epoch_s: 100,
+            reference: &reference,
+            candidate: &candidate,
+        })
+        .unwrap();
+        assert!(!report.structural_match);
+        assert!(report.blockers.contains(&"mismatch:auxiliary_poc".to_string()));
+    }
+
+    #[test]
     fn site_operational_assessment_requires_representative_samples_and_history() {
         let mut reference = run("run-ref", BenchmarkEvidenceClass::Measured, '4', 10_000.0);
         reference.run_mode = super::BenchmarkRunMode::SiteOperationalAssessment;
