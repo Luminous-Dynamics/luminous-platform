@@ -48,6 +48,15 @@ pub struct MissionPowerEvent {
     pub qualified_source_minimum_power_w: f64,
     pub source_measurement_uncertainty_bound_w: f64,
     pub source_model_uncertainty_bound_w: f64,
+    /// Qualified lower-bound output-path power after the source/storage join:
+    /// shared bus, inverter, converter, cabling and connector bottleneck.
+    pub qualified_common_path_power_w: f64,
+    pub common_path_uncertainty_bound_w: f64,
+    pub qualified_common_path_configuration_sha256: String,
+    pub observed_common_path_configuration_sha256: String,
+    pub common_path_qualification_valid_until_epoch_s: u64,
+    pub common_path_evidence_status: EvidenceStatus,
+    pub common_path_evidence_reference: String,
     pub qualified_source_configuration_sha256: String,
     pub observed_source_configuration_sha256: String,
     pub source_qualification_valid_until_epoch_s: u64,
@@ -73,6 +82,15 @@ pub struct PowerEventResult {
     pub source_qualification_valid_until_epoch_s: u64,
     pub source_evidence_status: EvidenceStatus,
     pub source_evidence_reference: String,
+    pub common_path_eligible: bool,
+    pub conservative_common_path_power_w: f64,
+    pub qualified_common_path_power_w: f64,
+    pub common_path_uncertainty_bound_w: f64,
+    pub qualified_common_path_configuration_sha256: String,
+    pub observed_common_path_configuration_sha256: String,
+    pub common_path_qualification_valid_until_epoch_s: u64,
+    pub common_path_evidence_status: EvidenceStatus,
+    pub common_path_evidence_reference: String,
     pub storage_eligible: bool,
     pub storage_exclusion_reason: Option<String>,
     pub storage_constraint_snapshot: Option<EventStorageSupport>,
@@ -240,6 +258,13 @@ fn validate_input(input: &PowerEventEnvelopeInput) -> Result<(), AuditError> {
             || !finite_nonnegative(event.qualified_source_minimum_power_w)
             || !finite_nonnegative(event.source_measurement_uncertainty_bound_w)
             || !finite_nonnegative(event.source_model_uncertainty_bound_w)
+            || !finite_nonnegative(event.qualified_common_path_power_w)
+            || !finite_nonnegative(event.common_path_uncertainty_bound_w)
+            || !(event.qualified_common_path_configuration_sha256.len() == 64
+                && event.qualified_common_path_configuration_sha256.bytes().all(|b| b.is_ascii_hexdigit()))
+            || !(event.observed_common_path_configuration_sha256.len() == 64
+                && event.observed_common_path_configuration_sha256.bytes().all(|b| b.is_ascii_hexdigit()))
+            || !nonblank(&event.common_path_evidence_reference)
         {
             return Err(AuditError(format!(
                 "event {:?} contains invalid time, power or uncertainty values",
@@ -249,11 +274,14 @@ fn validate_input(input: &PowerEventEnvelopeInput) -> Result<(), AuditError> {
         let end_s = event.start_s + event.duration_s;
         let uncertainty_sum = event.source_measurement_uncertainty_bound_w
             + event.source_model_uncertainty_bound_w;
+        let common_uncertainty_sum = event.common_path_uncertainty_bound_w;
         let duration_h = event.duration_s / 3600.0;
         let required_energy_wh = event.required_peak_power_w * duration_h;
         if !end_s.is_finite()
             || !uncertainty_sum.is_finite()
+            || !common_uncertainty_sum.is_finite()
             || !duration_h.is_finite()
+            || duration_h <= 0.0
             || !required_energy_wh.is_finite()
         {
             return Err(AuditError(format!(
@@ -347,6 +375,17 @@ pub fn evaluate_power_event_envelope(
                 == event.observed_source_configuration_sha256
             && event.source_qualification_valid_until_epoch_s > input.evaluation_time_epoch_s
             && event.source_evidence_status == EvidenceStatus::Current;
+        let common_path_eligible = global_qualification_eligible
+            && event.qualified_common_path_configuration_sha256
+                == event.observed_common_path_configuration_sha256
+            && event.common_path_qualification_valid_until_epoch_s > input.evaluation_time_epoch_s
+            && event.common_path_evidence_status == EvidenceStatus::Current;
+        let conservative_common_path_power_w = if common_path_eligible {
+            (event.qualified_common_path_power_w - event.common_path_uncertainty_bound_w)
+                .max(0.0)
+        } else {
+            0.0
+        };
 
         let conservative_source_power_w = if source_eligible {
             (event.qualified_source_minimum_power_w
@@ -383,8 +422,13 @@ pub fn evaluate_power_event_envelope(
             }
         }
 
-        let combined_support_power_w =
+        let unconstrained_support_power_w =
             conservative_source_power_w + conservative_storage_power_w;
+        let combined_support_power_w = if common_path_eligible {
+            unconstrained_support_power_w.min(conservative_common_path_power_w)
+        } else {
+            0.0
+        };
         let peak_power_shortfall_w =
             (event.required_peak_power_w - combined_support_power_w).max(0.0);
         let event_unserved_energy_wh =
@@ -425,6 +469,20 @@ pub fn evaluate_power_event_envelope(
                 .source_qualification_valid_until_epoch_s,
             source_evidence_status: event.source_evidence_status,
             source_evidence_reference: event.source_evidence_reference.clone(),
+            common_path_eligible,
+            conservative_common_path_power_w,
+            qualified_common_path_power_w: event.qualified_common_path_power_w,
+            common_path_uncertainty_bound_w: event.common_path_uncertainty_bound_w,
+            qualified_common_path_configuration_sha256: event
+                .qualified_common_path_configuration_sha256
+                .clone(),
+            observed_common_path_configuration_sha256: event
+                .observed_common_path_configuration_sha256
+                .clone(),
+            common_path_qualification_valid_until_epoch_s: event
+                .common_path_qualification_valid_until_epoch_s,
+            common_path_evidence_status: event.common_path_evidence_status,
+            common_path_evidence_reference: event.common_path_evidence_reference.clone(),
             storage_eligible,
             storage_exclusion_reason: storage_exclusion_reason_value,
             storage_constraint_snapshot: event.storage_support.clone(),
@@ -496,6 +554,13 @@ mod tests {
             qualified_source_minimum_power_w: source_w,
             source_measurement_uncertainty_bound_w: 0.0,
             source_model_uncertainty_bound_w: 0.0,
+            qualified_common_path_power_w: 7_500.0,
+            common_path_uncertainty_bound_w: 0.0,
+            qualified_common_path_configuration_sha256: digest('d'),
+            observed_common_path_configuration_sha256: digest('d'),
+            common_path_qualification_valid_until_epoch_s: 1_000,
+            common_path_evidence_status: EvidenceStatus::Current,
+            common_path_evidence_reference: format!("platform:common-path-{id}"),
             qualified_source_configuration_sha256: digest('b'),
             observed_source_configuration_sha256: digest('b'),
             source_qualification_valid_until_epoch_s: 1_000,
@@ -572,6 +637,47 @@ mod tests {
             report.event_results[0].storage_exclusion_reason,
             Some("storage_event_duration_exceeded".to_string())
         );
+        assert!(!report.mission_event_pass);
+    }
+
+    #[test]
+    fn common_output_path_caps_source_plus_storage_sum() {
+        let mut item = event("shared-output-limit", 10.0, 1.0, 8_000.0, 5_000.0);
+        item.storage_support = Some(storage());
+        item.qualified_common_path_power_w = 6_500.0;
+        let report = evaluate_power_event_envelope(&input(vec![item])).unwrap();
+        assert_eq!(report.event_results[0].conservative_source_power_w, 5_000.0);
+        assert_eq!(report.event_results[0].conservative_storage_power_w, 3_000.0);
+        assert_eq!(report.event_results[0].combined_support_power_w, 6_500.0);
+        assert_eq!(report.event_results[0].peak_power_shortfall_w, 1_500.0);
+        assert!(!report.mission_event_pass);
+    }
+
+    #[test]
+    fn stale_common_path_evidence_withdraws_all_event_support() {
+        let mut item = event("stale-common-path", 10.0, 1.0, 1_000.0, 5_000.0);
+        item.common_path_evidence_status = EvidenceStatus::Unverified;
+        let report = evaluate_power_event_envelope(&input(vec![item])).unwrap();
+        assert!(!report.event_results[0].common_path_eligible);
+        assert_eq!(report.event_results[0].combined_support_power_w, 0.0);
+        assert!(!report.mission_event_pass);
+    }
+
+    #[test]
+    fn common_path_configuration_mismatch_withdraws_all_event_support() {
+        let mut item = event("changed-common-path", 10.0, 1.0, 1_000.0, 5_000.0);
+        item.observed_common_path_configuration_sha256 = digest('e');
+        let report = evaluate_power_event_envelope(&input(vec![item])).unwrap();
+        assert!(!report.event_results[0].common_path_eligible);
+        assert!(!report.mission_event_pass);
+    }
+
+    #[test]
+    fn common_path_expiry_withdraws_all_event_support() {
+        let mut item = event("expired-common-path", 10.0, 1.0, 1_000.0, 5_000.0);
+        item.common_path_qualification_valid_until_epoch_s = 100;
+        let report = evaluate_power_event_envelope(&input(vec![item])).unwrap();
+        assert!(!report.event_results[0].common_path_eligible);
         assert!(!report.mission_event_pass);
     }
 
@@ -672,7 +778,9 @@ mod tests {
         let mut first = event("critical", 10.0, 3600.0, 1_000.0, 900.0);
         first.maximum_unserved_energy_wh = 0.0;
         let second = event("later", 3_700.0, 1.0, 1_000.0, 1_000.0);
-        let report = evaluate_power_event_envelope(&input(vec![second, first])).unwrap();
+        let mut value = input(vec![second, first]);
+        value.mission_duration_s = 3_700.0;
+        let report = evaluate_power_event_envelope(&value).unwrap();
         assert_eq!(report.failed_event_ids, vec!["critical".to_string()]);
         assert!(!report.mission_event_pass);
     }
