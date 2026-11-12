@@ -361,24 +361,19 @@ pub fn evaluate_mission_energy(
     });
 
     let storage_eligible = input.storage.is_some() && storage_exclusion_reason.is_none();
-    let effective_capacity_wh = if storage_eligible {
-        input.storage.as_ref().map(|storage| {
-            storage.capacity_wh - storage.capacity_uncertainty_bound_wh
-        })
-    } else {
-        None
-    };
-    let mut stored_energy_wh = if storage_eligible {
-        let storage = input.storage.as_ref().expect("eligible storage exists");
-        let capacity = effective_capacity_wh.expect("eligible capacity exists");
-        Some(
+    let effective_capacity_wh = input
+        .storage
+        .as_ref()
+        .filter(|_| storage_eligible)
+        .map(|storage| storage.capacity_wh - storage.capacity_uncertainty_bound_wh);
+    let mut stored_energy_wh = match (input.storage.as_ref(), effective_capacity_wh) {
+        (Some(storage), Some(capacity)) if storage_eligible => Some(
             ((storage.initial_soc_fraction - storage.initial_soc_uncertainty_fraction)
                 .max(0.0)
                 * capacity)
                 .min(storage.maximum_soc_fraction * capacity),
-        )
-    } else {
-        None
+        ),
+        _ => None,
     };
     let initial_storage_soc_fraction = stored_energy_wh
         .zip(effective_capacity_wh)
@@ -560,7 +555,7 @@ pub fn evaluate_mission_energy(
     // A configured store is part of the evaluated mission configuration. If it
     // cannot be qualified, the mission cannot claim success with an unknown
     // final SOC/reserve. A generator-only comparison should omit storage entirely.
-    let storage_requirement_pass = match input.storage {
+    let storage_requirement_pass = match input.storage.as_ref() {
         Some(_) => end_reserve_pass == Some(true),
         None => true,
     };
