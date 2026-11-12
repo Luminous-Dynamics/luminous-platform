@@ -17,16 +17,17 @@ The current 500 W PEBB-LV-01 laboratory candidate cannot compete with complete m
 
 | Product | Published configuration in this snapshot | Important distinction |
 |---|---|---|
-| Caterpillar XES120 (50 Hz) | 72 kW / 90 kVA; 127.9 kWh; IP55; 400/230 V, 50 Hz inverter; 0–50 °C operating range; variable-speed forced-air cooling | Compact, mobile hybrid ESS reference; published ratings are vendor specifications, not matched independent measurements |
-| Atlas Copco ZBC 250-575 | 250 kVA; 575 kWh; 400 V AC; 672–864 V DC battery bus; −20 to 50 °C; IP54 | Large construction/industrial configuration |
+| Caterpillar XES120 (50 Hz) | 72 kW / 90 kVA at 25 °C; 127.9 kWh LFP / 48 Vdc; 400/230 V, 50 Hz; 1.5× rated overload for 30 s; 2× rated current short-circuit rating; inverter derate 96% at 30 °C / 90% at 40 °C / 82% at 50 °C; IP55 | Compact mobile hybrid ESS. Vendor settings allow genset-start thresholds around 57.6–64.8 kW fast (0–30 s) and 54.0–61.2 kW slow (60–600 s); these are control settings, not measured service guarantees |
+| Atlas Copco ZBC 250-575 | 250 kVA nominal; 575 kWh nominal; 250 kW continuous mode; 400 V AC; 672–864 V DC battery bus; LFP, 0.5C; recommended 90% DoD / 70% EOL; 2 h discharge autonomy at rated power; IP54 | Large construction/industrial configuration. kVA rating is not the continuous kW rating; autonomy is vendor-published, not matched POC field measurement |
 | Atlas Copco ZBC 300-300 | 300 kVA; 308 kWh | Higher-power, shorter-energy model |
 | Atlas Copco ZBC 500-250 | 500 kVA; 246 kWh | kVA is not interchangeable with kW; peak and continuous ratings must remain distinct |
-| Atlas Copco ZBC 1000-1200 | 1,000 kVA; 1,200 kWh; vendor table lists 800 kW continuous mode | Container-scale unit, not a portable service-node comparator |
-| ABB SACE Infinitus | ABB says fully IEC 60947-2-certified solid-state circuit-breaker; semiconductor interruption plus electromechanical isolation; up to 2,500 A / 1,250 V DC; current product overview says fault isolation <25 μs, while its EPD declaration section states down to 15 μs | Mature solid-state breaker benchmark; preserve the two ABB statements as separate claims and confirm test conditions; not an eFuse or a 48 V auxiliary branch module |
+| Atlas Copco ZBC 1000-1200 | 1,000 kVA nominal; 1,200 kWh nominal; 800 kW continuous mode; 400 V AC; 672–864 V DC; LFP, 1C; 90% recommended DoD / 70% EOL; 1 h at rated power, 1.3 h at 75%, 2 h at 50%, 4 h at 25% in the vendor autonomy table; IP54 | Container-scale product, not a portable service-node comparator. Use the technical table units; do not repeat the web-page marketing phrase “1.2 MW energy capacity” as an energy unit |
+| ABB SACE Infinitus | Fully IEC 60947-2-certified solid-state circuit-breaker; up to 2,500 A / 1,250 V DC; solid-state interruption plus electromechanical isolation; S/H/V variants distinguish di/dt regimes (<80 A/µs, <100 A/µs, and unlimited with external rise-time limiter) | Mature industrial DC breaker reference. Preserve variant/test conditions; not an eFuse or a 48 V auxiliary branch module |
 | TI TIDA-050090 | 54 V / 5 kW eFuse reference design; one TPS1689 + five TPS1685; TI reports 100 A RMS at 55 °C without external airflow | Vendor reference board for testing/performance validation, not a commercial breaker or independent Luminous result |
 
 Sources:
-- Cat XES120 (South Africa): https://www.cat.com/en_ZA/products/new/power-systems/electric-power/battery-energy-storage-systems/119844.html
+- Cat XES120 South Africa product: https://www.cat.com/en_ZA/products/new/power-systems/electric-power/battery-energy-storage-systems/119844.html
+- Cat XES120 (50 Hz) technical sheet LEHE21362-03: https://emc.cat.com/n/api/pubdirect?media_string_id=LEHE21362-
 - Atlas Copco ZBC South Africa: https://www.atlascopco.com/en-za/construction-equipment/products/energy-storage-systems/medium
 - ABB Infinitus: https://www.abb.com/global/en/areas/electrification/low-voltage/circuit-breakers/solid-state-circuit-breakers/sace-infinitus
 - TI TIDA-050090: https://www.ti.com/tool/TIDA-050090
@@ -237,3 +238,30 @@ Sources:
 The controller crosswalk now enumerates the MEMS HIL families (dispatch optimisation, forecasts, demand-side integration, flexible-resource management) separately from MMCS HIL functions (anti-maloperation, voltage/frequency regulation, switching, mode transition, P/Q control, islanding, black start and end-to-end HIL before commissioning) listed in the public contents of IEC TS 62898-3-5:2026. See [DISPATCH_CONTROLLER_BENCHMARK.md](./DISPATCH_CONTROLLER_BENCHMARK.md). Detailed test conditions and acceptance values require licensed-text review.
 
 The metrology crosswalk also records JCGM 100:2008/Amd.1:2026 and JCGM GUM-5:2026 from the BIPM/JCGM catalogue. Passport PR #430's conservative uncertainty-bound sum remains diagnostic only; nonlinear/correlated uncertainty calculation and method receipts remain Mycelix-owned (#6048). Platform consumes that result and does not create a second uncertainty engine.
+
+
+## 14. Vendor baseline refresh — 12 November 2026
+
+A current manufacturer-source check adds operating-envelope details that should shape the matched benchmark rather than being collapsed into nameplate numbers.
+
+### Cat XES120 50 Hz
+
+The Cat technical sheet lists a 72 kW / 90 kVA inverter rating at 25 °C, 127.9 kWh LFP at 48 Vdc, 1.5× rated overload for 30 seconds, 2× rated current short-circuit rating, and inverter derating of 96% at 30 °C, 90% at 40 °C and 82% at 50 °C. It also lists configurable generator-start thresholds (fast and slow) and their delays. These settings are useful controller-test inputs, not independently measured guarantees of delivered customer service.
+
+Source: Cat XES120 50 Hz technical sheet LEHE21362-03: https://emc.cat.com/n/api/pubdirect?media_string_id=LEHE21362-
+
+### Atlas Copco ZBC container range
+
+The South African manufacturer table distinguishes nominal kVA, nominal kWh and continuous kW. For the ZBC 1000-1200 it lists 1,000 kVA nominal, 1,200 kWh nominal and 800 kW continuous mode; the autonomy table lists 1 h at rated power, 1.3 h at 75%, 2 h at 50% and 4 h at 25%. The same table lists 90% recommended DoD and 70% EOL. For the ZBC 250-575 it lists 250 kVA nominal, 575 kWh nominal and 250 kW continuous mode. The webpage's marketing phrase “1.2 MW energy capacity” is not an energy unit; use the technical table's 1,200 kWh.
+
+Source: Atlas Copco South Africa ZBC technical table: https://www.atlascopco.com/en-za/construction-equipment/products/energy-storage-systems/medium
+
+### Benchmark implications
+
+1. Match the inverter/continuous kW mode and event-duration envelope separately from nominal kVA.
+2. Test at the manufacturer-declared ambient/derating breakpoints and measure delivered POC service; do not assume the 25 °C rating at 50 °C.
+3. Compare controller generator-start threshold, delay and service continuity under identical load ramps and forecast information.
+4. Request auxiliary/HVAC energy and net AC output data from vendors where the public table does not disclose them; do not infer auxiliary consumption from container ratings.
+5. Reconcile actual discharge energy, start/stop events, final SOC/reserve, thermal state and recovery rather than dividing nominal kWh by rated kW and calling it field autonomy.
+
+All figures above remain vendor-published technical claims. They are test-design references, not independent matched measurements or evidence that Power Fabric is better or worse.
