@@ -147,6 +147,27 @@ inputs. Transient motor-start, power-quality, protection and fault response rema
 See [MISSION_ENERGY_ENVELOPE.md](../../MISSION_ENERGY_ENVELOPE.md), the
 `schemas/mission-energy-envelope-v0.1.schema.json` contract and synthetic fixture.
 
+## Power-duration event envelope
+
+The crate exposes `power_event_envelope::evaluate_power_event_envelope`, a deterministic, read-only
+screen for duration-bounded transient service. Each event carries its required peak power and window,
+source's guaranteed minimum power over that window, independent measurement/model uncertainty,
+qualified/observed source digests and expiry, plus a separately qualified common output-path power
+limit and evidence. Optional storage support includes event-time SOC/SOH/temperature, usable
+battery-side energy and uncertainty, qualified event power/duration, discharge efficiency and
+calibration/sensor/protection evidence.
+
+The evaluator subtracts conservative source/common-path uncertainty, caps storage power by both its
+qualified power and usable energy over the event duration, then caps the source-plus-storage sum by
+the common output path. Events must be non-overlapping; critical event shortfall is tested against a
+local unserved-energy limit. The storage energy snapshot must already account for earlier commitments.
+
+This is a screening contract, not a waveform/motor/inverter model, BMS, dispatch controller,
+protection function or ride-through qualification. Event energy is part of the aggregate mission load
+exactly once; the event-unserved output is diagnostic only. See
+[POWER_DURATION_EVENT_ENVELOPE.md](../../POWER_DURATION_EVENT_ENVELOPE.md), the
+`schemas/power-event-envelope-v0.1.schema.json` and its synthetic fixture.
+
 ## Ideal DAB SPS screen
 
 The library also exposes `dab_sps::screen_dab_sps` and
