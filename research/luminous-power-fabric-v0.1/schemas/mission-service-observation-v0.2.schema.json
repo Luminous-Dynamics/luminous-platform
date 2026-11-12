@@ -20,7 +20,6 @@
     "requirements",
     "lineage",
     "claim_ceiling",
-    "minimum_demanded_energy_kwh",
     "limitations"
   ],
   "properties": {
