@@ -1,0 +1,43 @@
+{
+  "schema_version": "0.1",
+  "record_class": "synthetic_fixture",
+  "paths": [
+    {
+      "path_id": "path_a",
+      "available_power_w": 100,
+      "availability": "QualifiedAvailable",
+      "component_ids": [
+        "source_a",
+        "converter_a",
+        "branch_a"
+      ],
+      "failure_domain_ids": [
+        "shared_control_power",
+        "cooling_a"
+      ]
+    },
+    {
+      "path_id": "path_b",
+      "available_power_w": 80,
+      "availability": "QualifiedAvailable",
+      "component_ids": [
+        "source_b",
+        "converter_b",
+        "branch_b"
+      ],
+      "failure_domain_ids": [
+        "shared_control_power",
+        "cooling_b"
+      ]
+    }
+  ],
+  "additional_scenarios": [],
+  "required_service_power_w": 50,
+  "claim_ceiling": "DECLARED_CONTINGENCY_CAPABILITY_SCREEN_ONLY_NOT_RELIABILITY_OR_PHYSICAL_QUALIFICATION",
+  "limitations": [
+    "Synthetic path capacities are illustrative and not equipment ratings.",
+    "Both routes share a declared control-power failure domain; its failure removes both paths.",
+    "The evaluator does not prove the dependency graph is complete.",
+    "No electrical fault current, voltage stability, transient, protection clearing, reliability probability or certification is represented."
+  ]
+}
