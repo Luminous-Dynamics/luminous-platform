@@ -1,0 +1,692 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/field-mission-profile-v0.1.schema.json",
+  "title": "Luminous Power Fabric field mission profile",
+  "description": "Rights-aware, versioned source/load duty-cycle contract for portable industrial power research. It specifies a scenario; it does not qualify equipment or authenticate measurements.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_class",
+    "profile_id",
+    "name",
+    "application",
+    "site",
+    "environment",
+    "sources",
+    "loads",
+    "segments",
+    "events",
+    "requirements",
+    "data_rights",
+    "provenance",
+    "claim_ceiling"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "record_class": {
+      "enum": [
+        "synthetic_fixture",
+        "modelled_profile",
+        "measured_profile"
+      ]
+    },
+    "profile_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "application": {
+      "enum": [
+        "construction_site",
+        "industrial_maintenance",
+        "plant_auxiliary",
+        "remote_operations",
+        "emergency_response",
+        "other"
+      ]
+    },
+    "site": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "country_code",
+        "jurisdiction",
+        "hazardous_area"
+      ],
+      "properties": {
+        "country_code": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
+        },
+        "jurisdiction": {
+          "type": "string",
+          "minLength": 1
+        },
+        "site_type": {
+          "enum": [
+            "indoor",
+            "outdoor",
+            "mixed",
+            "unknown"
+          ]
+        },
+        "hazardous_area": {
+          "type": "boolean"
+        },
+        "hazardous_area_classification": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 256
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ambient_min_c",
+        "ambient_max_c",
+        "altitude_m",
+        "dust_exposure",
+        "moisture_exposure",
+        "transported_between_runs"
+      ],
+      "properties": {
+        "ambient_min_c": {
+          "type": "number",
+          "minimum": -50,
+          "maximum": 100
+        },
+        "ambient_max_c": {
+          "type": "number",
+          "minimum": -50,
+          "maximum": 125
+        },
+        "altitude_m": {
+          "type": "number",
+          "minimum": -500,
+          "maximum": 10000
+        },
+        "dust_exposure": {
+          "enum": [
+            "low",
+            "moderate",
+            "high",
+            "very_high",
+            "unknown"
+          ]
+        },
+        "moisture_exposure": {
+          "enum": [
+            "dry",
+            "intermittent_splash",
+            "rain_exposure",
+            "washdown",
+            "unknown"
+          ]
+        },
+        "corrosive_exposure": {
+          "enum": [
+            "none_expected",
+            "coastal",
+            "chemical",
+            "industrial_atmosphere",
+            "unknown"
+          ]
+        },
+        "vibration_exposure": {
+          "enum": [
+            "low",
+            "transportable",
+            "vehicle_mounted",
+            "heavy_equipment_adjacent",
+            "unknown"
+          ]
+        },
+        "transported_between_runs": {
+          "type": "boolean"
+        },
+        "ingress_target_ip": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^IP[0-6X][0-9X]$"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "source_type",
+          "interface",
+          "nominal_voltage_v",
+          "rated_power_kw",
+          "evidence_class",
+          "reference"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "source_type": {
+            "enum": [
+              "grid",
+              "generator",
+              "battery_inverter",
+              "pv_inverter",
+              "fuel_cell",
+              "vehicle_to_load",
+              "other"
+            ]
+          },
+          "interface": {
+            "enum": [
+              "AC_SINGLE_PHASE",
+              "AC_THREE_PHASE",
+              "DC",
+              "UNKNOWN"
+            ]
+          },
+          "nominal_voltage_v": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "nominal_frequency_hz": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "exclusiveMinimum": 0
+          },
+          "rated_power_kw": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "bidirectional": {
+            "type": "boolean"
+          },
+          "evidence_class": {
+            "enum": [
+              "physical_measurement",
+              "vendor_specification",
+              "analytical_model",
+              "assumption"
+            ]
+          },
+          "reference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        }
+      }
+    },
+    "loads": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "load_id",
+          "category",
+          "interface",
+          "nominal_voltage_v",
+          "rated_active_power_kw",
+          "criticality",
+          "start_profile"
+        ],
+        "properties": {
+          "load_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "category": {
+            "enum": [
+              "motor_pump",
+              "compressor",
+              "welding",
+              "power_tool",
+              "lighting",
+              "controls_instrumentation",
+              "communications",
+              "compute_network",
+              "hvac",
+              "other"
+            ]
+          },
+          "interface": {
+            "enum": [
+              "AC_SINGLE_PHASE",
+              "AC_THREE_PHASE",
+              "DC",
+              "UNKNOWN"
+            ]
+          },
+          "nominal_voltage_v": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "nominal_frequency_hz": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "exclusiveMinimum": 0
+          },
+          "rated_active_power_kw": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "rated_apparent_power_kva": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "exclusiveMinimum": 0
+          },
+          "power_factor": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "exclusiveMinimum": 0,
+            "maximum": 1
+          },
+          "criticality": {
+            "enum": [
+              "critical",
+              "important",
+              "deferrable",
+              "noncritical"
+            ]
+          },
+          "start_profile": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "inrush_multiple",
+              "inrush_duration_ms",
+              "starts_per_hour"
+            ],
+            "properties": {
+              "inrush_multiple": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 30
+              },
+              "inrush_duration_ms": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 600000
+              },
+              "starts_per_hour": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 3600
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 1000
+              }
+            }
+          },
+          "harmonic_profile_reference": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2048
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        }
+      }
+    },
+    "segments": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "segment_id",
+          "start_s",
+          "duration_s",
+          "available_source_ids",
+          "load_states"
+        ],
+        "properties": {
+          "segment_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "start_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "duration_s": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "available_source_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "load_states": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "load_id",
+                "enabled",
+                "active_power_kw"
+              ],
+              "properties": {
+                "load_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "active_power_kw": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "reactive_power_kvar": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "notes": {
+                  "type": "string",
+                  "maxLength": 1000
+                }
+              }
+            }
+          },
+          "ambient_c": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": -50,
+            "maximum": 125
+          }
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "time_s",
+          "event_type",
+          "target_id"
+        ],
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "time_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "event_type": {
+            "enum": [
+              "motor_start",
+              "load_step",
+              "load_rejection",
+              "source_loss",
+              "source_return",
+              "source_transfer",
+              "black_start",
+              "load_shed",
+              "other"
+            ]
+          },
+          "target_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "delta_active_power_kw": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "duration_ms": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        }
+      }
+    },
+    "requirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_unserved_energy_kwh",
+        "max_recovery_time_s",
+        "max_voltage_deviation_percent",
+        "max_frequency_deviation_hz",
+        "max_voltage_thd_percent"
+      ],
+      "properties": {
+        "max_unserved_energy_kwh": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "max_recovery_time_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "max_voltage_deviation_percent": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "max_frequency_deviation_hz": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "max_voltage_thd_percent": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_noise_dba": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 200
+        },
+        "max_fuel_l_per_delivered_kwh": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 3000
+        }
+      }
+    },
+    "data_rights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "data_owner",
+        "license",
+        "commercial_use",
+        "redistribution",
+        "attribution_required",
+        "rights_reference"
+      ],
+      "properties": {
+        "data_owner": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "license": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "commercial_use": {
+          "enum": [
+            "allowed",
+            "prohibited",
+            "permission_required",
+            "unknown"
+          ]
+        },
+        "redistribution": {
+          "enum": [
+            "allowed",
+            "prohibited",
+            "permission_required",
+            "unknown"
+          ]
+        },
+        "attribution_required": {
+          "type": "boolean"
+        },
+        "rights_reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_kind",
+        "source_reference",
+        "sampling_interval_s",
+        "raw_data_sha256"
+      ],
+      "properties": {
+        "source_kind": {
+          "enum": [
+            "synthetic",
+            "measured",
+            "modelled",
+            "mixed"
+          ]
+        },
+        "source_reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "sampling_interval_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "raw_data_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        "instrument_run_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "timebase_reference": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 512
+        }
+      }
+    },
+    "claim_ceiling": {
+      "const": "DUTY_CYCLE_SPECIFICATION_ONLY_NOT_POWER_SYSTEM_SAFETY_OR_PERFORMANCE_QUALIFICATION"
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 2000
+      }
+    }
+  }
+}
