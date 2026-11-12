@@ -146,6 +146,10 @@ pub struct MatchedMetricDelta {
 pub struct MatchedBenchmarkReport {
     pub reference_run_id: String,
     pub candidate_run_id: String,
+    /// Complete declared run snapshots are retained with the comparison result
+    /// so match context and evidence references are not reconstructed from IDs.
+    pub reference_run_snapshot: BenchmarkRun,
+    pub candidate_run_snapshot: BenchmarkRun,
     pub reference_evidence_bundle_sha256: String,
     pub candidate_evidence_bundle_sha256: String,
     pub reference_raw_data_sha256: Option<String>,
@@ -647,6 +651,8 @@ pub fn compare_matched_benchmark_runs(
     Ok(MatchedBenchmarkReport {
         reference_run_id: reference.run_id.clone(),
         candidate_run_id: candidate.run_id.clone(),
+        reference_run_snapshot: reference.clone(),
+        candidate_run_snapshot: candidate.clone(),
         reference_evidence_bundle_sha256: reference.evidence_bundle_sha256.clone(),
         candidate_evidence_bundle_sha256: candidate.evidence_bundle_sha256.clone(),
         reference_raw_data_sha256: reference.raw_data_sha256.clone(),
@@ -1084,6 +1090,32 @@ mod tests {
             candidate: &candidate,
         })
         .is_err());
+    }
+
+    #[test]
+    fn comparison_report_retains_complete_run_snapshots_and_match_context() {
+        let reference = run("run-ref", BenchmarkEvidenceClass::Measured, '4', 10_000.0);
+        let candidate = run("run-candidate", BenchmarkEvidenceClass::Measured, '5', 9_900.0);
+        let report = compare_matched_benchmark_runs(MatchedBenchmarkInput {
+            evaluation_time_epoch_s: 100,
+            reference: &reference,
+            candidate: &candidate,
+        })
+        .unwrap();
+        assert_eq!(report.reference_run_snapshot, reference);
+        assert_eq!(report.candidate_run_snapshot, candidate);
+        assert_eq!(
+            report.reference_run_snapshot.primary_poc_sha256,
+            report.candidate_run_snapshot.primary_poc_sha256
+        );
+        assert_ne!(
+            report.reference_run_snapshot.product_configuration_sha256,
+            report.candidate_run_snapshot.product_configuration_sha256
+        );
+        assert_eq!(
+            report.candidate_run_snapshot.metrics[0].evidence_reference,
+            "mycelix:sample-delivered_energy"
+        );
     }
 
     #[test]
