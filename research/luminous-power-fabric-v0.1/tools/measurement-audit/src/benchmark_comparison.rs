@@ -58,7 +58,10 @@ pub struct BenchmarkMetricObservation {
 pub struct BenchmarkRun {
     pub run_id: String,
     pub evidence_class: BenchmarkEvidenceClass,
+    pub run_mode: BenchmarkRunMode,
     pub product_configuration_sha256: String,
+    /// Digest of the canonical run manifest and its referenced evidence bundle.
+    pub evidence_bundle_sha256: String,
     pub test_protocol_sha256: String,
     pub service_boundary_sha256: String,
     pub service_profile_sha256: String,
@@ -68,14 +71,23 @@ pub struct BenchmarkRun {
     pub initial_storage_condition_sha256: String,
     pub reserve_policy_sha256: String,
     pub data_treatment_policy_sha256: String,
+    pub sample_selection_policy_sha256: String,
+    pub time_series_preprocessing_sha256: String,
     pub mission_duration_s: f64,
     pub reporting_window_start_s: f64,
     pub reporting_window_end_s: f64,
     pub sample_coverage_fraction: f64,
     pub minimum_required_sample_coverage_fraction: f64,
+    pub sample_event_count: u32,
+    pub minimum_required_sample_event_count: u32,
     pub missing_sample_count: u64,
     pub maximum_missing_sample_count: u64,
     pub raw_data_sha256: Option<String>,
+    /// Optional site-operation history digests; these identify the source
+    /// records, not an interpretation of the events.
+    pub fault_log_sha256: Option<String>,
+    pub maintenance_log_sha256: Option<String>,
+    pub dispatch_log_sha256: Option<String>,
     pub timebase_method_sha256: String,
     pub timebase_status: EvidenceStatus,
     pub timebase_valid_until_epoch_s: u64,
@@ -106,6 +118,16 @@ pub struct MatchedMetricDelta {
 pub struct MatchedBenchmarkReport {
     pub reference_run_id: String,
     pub candidate_run_id: String,
+    pub reference_evidence_bundle_sha256: String,
+    pub candidate_evidence_bundle_sha256: String,
+    pub reference_raw_data_sha256: Option<String>,
+    pub candidate_raw_data_sha256: Option<String>,
+    pub reference_fault_log_sha256: Option<String>,
+    pub candidate_fault_log_sha256: Option<String>,
+    pub reference_maintenance_log_sha256: Option<String>,
+    pub candidate_maintenance_log_sha256: Option<String>,
+    pub reference_dispatch_log_sha256: Option<String>,
+    pub candidate_dispatch_log_sha256: Option<String>,
     pub structural_match: bool,
     pub physical_measurement_eligible: bool,
     pub independent_claim_evidence_eligible: bool,
@@ -147,7 +169,10 @@ fn validate_run(run: &BenchmarkRun) -> Result<(), AuditError> {
 
     let digests = [
         ("product configuration", run.product_configuration_sha256.as_str()),
+        ("evidence bundle", run.evidence_bundle_sha256.as_str()),
         ("test protocol", run.test_protocol_sha256.as_str()),
+        ("sample selection policy", run.sample_selection_policy_sha256.as_str()),
+        ("time-series preprocessing", run.time_series_preprocessing_sha256.as_str()),
         ("service boundary", run.service_boundary_sha256.as_str()),
         ("service profile", run.service_profile_sha256.as_str()),
         ("event schedule", run.event_schedule_sha256.as_str()),
@@ -186,13 +211,38 @@ fn validate_run(run: &BenchmarkRun) -> Result<(), AuditError> {
         || run.minimum_required_sample_coverage_fraction > 1.0
         || run.sample_coverage_fraction < run.minimum_required_sample_coverage_fraction
         || run.missing_sample_count > run.maximum_missing_sample_count
+        || run.minimum_required_sample_event_count == 0
+        || run.sample_event_count < run.minimum_required_sample_event_count
     {
         return Err(AuditError(
             "sample coverage or missing-sample acceptance is invalid".to_string(),
         ));
     }
 
-    if run.evidence_class.is_physical_measurement() {
+    if run.run_mode == BenchmarkRunMode::SiteOperationalAssessment
+        && (run.minimum_required_sample_event_count < 3
+            || run.fault_log_sha256.is_none()
+            || run.maintenance_log_sha256.is_none())
+    {
+        return Err(AuditError(
+            "site operational assessment requires at least three representative sample events and fault/maintenance log digests"
+                .to_string(),
+        ));
+    }
+
+    for (label, digest) in [
+        ("fault log", run.fault_log_sha256.as_deref()),
+        ("maintenance log", run.maintenance_log_sha256.as_deref()),
+        ("dispatch log", run.dispatch_log_sha256.as_deref()),
+    ] {
+        if let Some(digest) = digest {
+            if !valid_sha256(digest) {
+                return Err(AuditError(format!("{label} digest must be SHA-256")));
+            }
+        }
+    }
+
+    if run.evidence_class.is_physical_measurement() && run.run_mode.is_physical() {
         let raw_digest = run.raw_data_sha256.as_deref().ok_or_else(|| {
             AuditError("physical benchmark run requires a raw-data SHA-256 digest".to_string())
         })?;
@@ -350,6 +400,16 @@ pub fn compare_matched_benchmark_runs(
     compare_key(&mut blockers, &reference.data_treatment_policy_sha256, &candidate.data_treatment_policy_sha256, "data_treatment_policy");
     compare_key(&mut blockers, &reference.timebase_method_sha256, &candidate.timebase_method_sha256, "timebase_method");
 
+    if reference.run_mode != candidate.run_mode {
+        blockers.push("mismatch:run_mode".to_string());
+    }
+    compare_key(&mut blockers, &reference.sample_selection_policy_sha256, &candidate.sample_selection_policy_sha256, "sample_selection_policy");
+    compare_key(&mut blockers, &reference.time_series_preprocessing_sha256, &candidate.time_series_preprocessing_sha256, "time_series_preprocessing");
+    if reference.minimum_required_sample_event_count
+        != candidate.minimum_required_sample_event_count
+    {
+        blockers.push("mismatch:minimum_sample_event_count".to_string());
+    }
     if reference.mission_duration_s != candidate.mission_duration_s {
         blockers.push("mismatch:mission_duration_s".to_string());
     }
@@ -365,8 +425,10 @@ pub fn compare_matched_benchmark_runs(
         blockers.push("mismatch:data_completeness_policy".to_string());
     }
 
-    let reference_is_physical = reference.evidence_class.is_physical_measurement();
-    let candidate_is_physical = candidate.evidence_class.is_physical_measurement();
+    let reference_is_physical = reference.evidence_class.is_physical_measurement()
+        && reference.run_mode.is_physical();
+    let candidate_is_physical = candidate.evidence_class.is_physical_measurement()
+        && candidate.run_mode.is_physical();
     if !reference_is_physical {
         blockers.push("reference_not_physical_measurement".to_string());
     }
@@ -511,6 +573,7 @@ pub fn compare_matched_benchmark_runs(
             || blocker.starts_with("reference_metric_missing:")
             || blocker.starts_with("metric_unit_mismatch:")
             || blocker.starts_with("metric_method_mismatch:")
+            || blocker.starts_with("metric_calibration_method_mismatch:")
             || blocker.starts_with("metric_measurand_scope_mismatch:")
             || blocker.ends_with("_calibration_scope_mismatch")
     });
@@ -534,6 +597,16 @@ pub fn compare_matched_benchmark_runs(
     Ok(MatchedBenchmarkReport {
         reference_run_id: reference.run_id.clone(),
         candidate_run_id: candidate.run_id.clone(),
+        reference_evidence_bundle_sha256: reference.evidence_bundle_sha256.clone(),
+        candidate_evidence_bundle_sha256: candidate.evidence_bundle_sha256.clone(),
+        reference_raw_data_sha256: reference.raw_data_sha256.clone(),
+        candidate_raw_data_sha256: candidate.raw_data_sha256.clone(),
+        reference_fault_log_sha256: reference.fault_log_sha256.clone(),
+        candidate_fault_log_sha256: candidate.fault_log_sha256.clone(),
+        reference_maintenance_log_sha256: reference.maintenance_log_sha256.clone(),
+        candidate_maintenance_log_sha256: candidate.maintenance_log_sha256.clone(),
+        reference_dispatch_log_sha256: reference.dispatch_log_sha256.clone(),
+        candidate_dispatch_log_sha256: candidate.dispatch_log_sha256.clone(),
         structural_match,
         physical_measurement_eligible,
         independent_claim_evidence_eligible,
@@ -583,7 +656,13 @@ mod tests {
         BenchmarkRun {
             run_id: id.to_string(),
             evidence_class: class,
+            run_mode: if class == BenchmarkEvidenceClass::Synthetic {
+                super::BenchmarkRunMode::Synthetic
+            } else {
+                super::BenchmarkRunMode::ControlledLaboratory
+            },
             product_configuration_sha256: digest(config),
+            evidence_bundle_sha256: digest(if config == '4' { '7' } else { '8' }),
             test_protocol_sha256: digest('a'),
             service_boundary_sha256: digest('b'),
             service_profile_sha256: digest('c'),
@@ -593,14 +672,21 @@ mod tests {
             initial_storage_condition_sha256: digest('1'),
             reserve_policy_sha256: digest('2'),
             data_treatment_policy_sha256: digest('3'),
+            sample_selection_policy_sha256: digest('9'),
+            time_series_preprocessing_sha256: digest('0'),
             mission_duration_s: 3_600.0,
             reporting_window_start_s: 0.0,
             reporting_window_end_s: 3_600.0,
             sample_coverage_fraction: 1.0,
             minimum_required_sample_coverage_fraction: 0.999,
+            sample_event_count: 3,
+            minimum_required_sample_event_count: 3,
             missing_sample_count: 0,
             maximum_missing_sample_count: 0,
             raw_data_sha256: Some(digest(if config == '4' { '4' } else { '5' })),
+            fault_log_sha256: Some(digest('a')),
+            maintenance_log_sha256: Some(digest('b')),
+            dispatch_log_sha256: Some(digest('c')),
             timebase_method_sha256: digest('6'),
             timebase_status: EvidenceStatus::Current,
             timebase_valid_until_epoch_s: 1_000,
@@ -827,6 +913,20 @@ mod tests {
         .unwrap();
         assert!(!report.physical_measurement_eligible);
         assert!(report.blockers.contains(&"candidate_timebase_evidence_not_current".to_string()));
+    }
+
+    #[test]
+    fn site_operational_assessment_requires_representative_samples_and_history() {
+        let mut reference = run("run-ref", BenchmarkEvidenceClass::Measured, '4', 10_000.0);
+        reference.run_mode = super::BenchmarkRunMode::SiteOperationalAssessment;
+        reference.minimum_required_sample_event_count = 2;
+        let candidate = run("run-candidate", BenchmarkEvidenceClass::Measured, '5', 9_900.0);
+        assert!(compare_matched_benchmark_runs(MatchedBenchmarkInput {
+            evaluation_time_epoch_s: 100,
+            reference: &reference,
+            candidate: &candidate,
+        })
+        .is_err());
     }
 
     #[test]
