@@ -23,7 +23,8 @@ A standard is relevant only when its scope and the actual product / installation
 |---|---|---|---|
 | IEC 62477-1:2022 | General safety requirements for power electronic converter systems and accessories, including control/protection/monitoring, rated up to 1,000 V AC or 1,500 V DC | PEBB-LV-01, DC/DC converters, later 800 VDC conversion and relevant converter accessories | Safety reference for PECS; does not itself qualify a complete installation, breaker or field assembly |
 | IEC 60947-2:2024, Ed. 6 | Low-voltage circuit-breakers up to 1,000 V AC / 1,500 V DC; 2024 revision includes suitability-for-isolation changes, dielectric testing in tripped position and DC dielectric test changes | Mandatory study if a Luminous product is intended to be claimed as a circuit-breaker or isolation-capable breaker | An eFuse / SSPC does not become a circuit-breaker by using a MOSFET; full product construction and prescribed tests matter |
-| IEC 61439-4:2023 | Particular requirements for low-voltage assemblies for construction sites, including transportable (semi-fixed) or mobile enclosed assemblies; up to 1,000 V AC / 1,500 V DC | PF-FIELD-MOBILE construction-site assemblies and relevant temporary/site distribution products | Applies to the assembly boundary, not merely the converter module inside it |
+| IEC 61439-4:2023 | International IEC edition: particular requirements for low-voltage assemblies for construction sites, including transportable (semi-fixed) or mobile enclosed assemblies; up to 1,000 V AC / 1,500 V DC | PF-FIELD-MOBILE construction-site assemblies and relevant temporary/site distribution products | Applies to the assembly boundary, not merely the converter module inside it; do not confuse with regional EN/SANS adoptions |
+| EN IEC 61439-4:2026 (CENELEC) | Regional European adoption of the IEC 61439-4:2023 technical text, published 2026-10-29; national implementation date 2027-10-31 in the cited CENELEC foreword | Important current European market update for construction-site assemblies; monitor for products intended for EU markets | This is a European regional adoption, not a new international IEC edition and not automatically the applicable South African SANS edition. Confirm the national adoption and transition dates in each target market |
 | IEC 60364-7-704:2017 | Requirements for electrical installations at construction and demolition sites; scope includes fixed or moveable installations | Site installation, connection, distribution and temporary construction-site wiring | Installation requirements are distinct from equipment assembly product requirements |
 | IEC 62933-5-1:2024 | Safety considerations for grid-integrated electrical energy storage systems | Later integrated BESS / grid-connected energy storage system architecture | Use only where the storage system and grid-integration context fit |
 | IEC 62933-5-4:2026 | Representative safety test methods and procedures specifically for grid-integrated EES using lithium-ion battery subsystems; published 2026-05-11 | Battery subsystem test-method research if a grid-integrated lithium-ion ESS is later selected | IEC describes representative methods and says the publication does not include all test methods; not a universal portable-power certificate |
@@ -41,6 +42,23 @@ Primary publisher references:
 - IEC 60068-2-64:2026: https://webstore.iec.ch/en/publication/104354
 - IEC 60204-1:2016 + AMD1:2021: https://webstore.iec.ch/en/publication/71256
 
+## 3A. October/November 2026 regional update: EN IEC 61439-4:2026
+
+CENELEC approved EN IEC 61439-4:2026 as a regional European standard for construction-site assemblies. The cited European foreword gives a latest national implementation date of 2027-10-31 and a latest withdrawal date for conflicting national standards of 2029-10-31. The NBN catalogue records its publication on 2026-11-01 and replacement of EN 61439-4:2013.
+
+This does **not** mean IEC published a new international IEC 61439-4 edition in October 2026. The IEC Webstore page still identifies IEC 61439-4:2023 as its base publication. The CENELEC text is a regional adoption of that international edition. In addition, the cited scope material distinguishes the complete construction-site assembly from individual self-contained components and devices, which remain subject to their respective product standards.
+
+For Luminous:
+- Maintain IEC 61439-4:2023 as the international assembly reference unless the IEC publisher reports a new edition.
+- Add EN IEC 61439-4:2026 to the EU market-access checklist and monitor national transition/adoption.
+- Do not apply the regional EN adoption automatically to a South African product.
+- Ask NRCS / the relevant SANS standards owner which national edition and compulsory-specification status apply to the exact equipment category and intended market.
+
+Sources:
+- IEC base publication: https://webstore.iec.ch/en/publication/69748
+- CENELEC foreword / transition dates: https://standards.iteh.ai/catalog/standards/clc/08941488-da48-4734-9a5a-582a1670abff/en-iec-61439-4-2026
+- Belgian national standards catalogue publication record: https://app.nbn.be/data/r/platform/frontend/detail?p40_id=3597438
+
 ## 3. Important scope exclusion: HVDC breaker standard is not a 48 V component standard
 
 IEC TS 62271-313:2025 covers DC circuit-breakers for indoor or outdoor use with direct voltages of **100 kV and above**, for DC transmission and distribution systems. It includes mechanical switching devices, power-electronic switches, auxiliary circuits, energy dissipation and controls; unidirectional and bidirectional operation are possible depending on design.
@@ -48,6 +66,26 @@ IEC TS 62271-313:2025 covers DC circuit-breakers for indoor or outdoor use with 
 This is useful future context for very-high-voltage DC transmission protection, but it is **not** the applicable product standard for a 48 V SSPC, a 400/800 VDC field product or a low-voltage data-centre bus.
 
 Source: https://webstore.iec.ch/en/publication/64996
+
+## 3B. Grid-forming interoperability is a separate performance qualification
+
+IEEE 2800-2022 is an active transmission/sub-transmission interconnection and performance standard for inverter-based resources. It addresses ride-through, active/reactive power control, dynamic support, power quality and protection. It is not, by itself, a complete grid-forming (GFM) performance specification and does not prove autonomous island formation, GFM/GFL transitions or black-start behavior.
+
+A recent 2026 review of GFM testing emphasizes a multi-layer test path: RMS/EMT simulation, real-time digital simulation, controller-HIL, power-HIL, laboratory tests and field demonstrations. It highlights model fidelity, current/energy limits, multi-vendor interaction and harmonized acceptance criteria as open challenges.
+
+Power Fabric's grid-interactive product roadmap should therefore maintain separate evidence claims for:
+- grid-following interconnection performance;
+- grid-forming voltage-source behavior;
+- islanding and resynchronization;
+- black-start and staged restoration;
+- fault ride-through and protection coordination;
+- multi-vendor interoperability and communication loss.
+
+Do not use an IEEE 2800 reference as a blanket statement that a portable unit is grid-forming or black-start capable.
+
+Sources:
+- IEEE 2800-2022 official scope: https://standards.ieee.org/ieee/7003/10453/
+- 2026 GFM testing review: https://www.mdpi.com/1996-1073/19/20/4966
 
 ## 4. Competitive protection benchmark and its implications
 
