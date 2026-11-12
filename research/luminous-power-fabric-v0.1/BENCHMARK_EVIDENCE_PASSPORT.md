@@ -105,7 +105,7 @@ The first Power Fabric competitive claim should be **better measured service per
 | Symthaea | Adversarial benchmark-case generation and experiment selection; no evidence authority |
 | Luminous Platform | Canonical passport, pairwise comparability gate, energy/event evidence composition and claim ceiling |
 
-The comparator only checks declared evidence status and digest shape. It does not authenticate certificates or hash files itself, and it does not create a second metrology registry.
+The comparator only checks declared evidence status and digest shape. It does not authenticate certificates or hash files itself, and it does not create a second metrology registry. The cryptographic closure, signature/revocation and deterministic replay interface is deliberately deferred to [issue #431](https://github.com/Luminous-Dynamics/luminous-platform/issues/431), with Mycelix as owner.
 
 ## 7. Implementation and synthetic fixture
 
