@@ -323,4 +323,4 @@ The new \`reserve_risk\` Rust module builds on the paired scenario tournament an
 
 The total-variation ambiguity set reweights only the observed scenario support; it does not create unseen events or claim a calibrated real-world ambiguity region. The current module is a reserve-risk subsystem, not the full joint workload/cooling/storage/generation optimization used in current Bit-Watt research. The benchmark and next-stage design are in [RESERVE_RISK_CVAR_DRO_BENCHMARK_2026-11-12.md](./RESERVE_RISK_CVAR_DRO_BENCHMARK_2026-11-12.md).
 
-Twenty-two synthetic Rust tests are authored but not executed. Per-episode measured-horizon replay is implemented; policy-level cluster inference remains a required next gate. No compilation, runtime comparison, measured performance, physical reserve delivery or grid-service qualification is claimed.
+Twenty-three synthetic Rust tests are authored but not executed. Per-episode measured-horizon replay is implemented; policy-level cluster inference remains a required next gate. No compilation, runtime comparison, measured performance, physical reserve delivery or grid-service qualification is claimed.
