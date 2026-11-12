@@ -79,6 +79,11 @@ pub struct BenchmarkRun {
     /// Digest of the canonical run manifest and its referenced evidence bundle.
     pub evidence_bundle_sha256: String,
     pub test_protocol_sha256: String,
+    /// Digest for the primary point of connection / useful-service boundary.
+    pub primary_poc_sha256: String,
+    /// Optional separate auxiliary feeder boundary; None means auxiliaries
+    /// are measured within the primary POC boundary.
+    pub auxiliary_poc_sha256: Option<String>,
     pub service_boundary_sha256: String,
     pub service_profile_sha256: String,
     pub event_schedule_sha256: String,
@@ -189,6 +194,7 @@ fn validate_run(run: &BenchmarkRun) -> Result<(), AuditError> {
         ("test protocol", run.test_protocol_sha256.as_str()),
         ("sample selection policy", run.sample_selection_policy_sha256.as_str()),
         ("time-series preprocessing", run.time_series_preprocessing_sha256.as_str()),
+        ("primary POC", run.primary_poc_sha256.as_str()),
         ("service boundary", run.service_boundary_sha256.as_str()),
         ("service profile", run.service_profile_sha256.as_str()),
         ("event schedule", run.event_schedule_sha256.as_str()),
@@ -247,6 +253,7 @@ fn validate_run(run: &BenchmarkRun) -> Result<(), AuditError> {
     }
 
     for (label, digest) in [
+        ("auxiliary POC", run.auxiliary_poc_sha256.as_deref()),
         ("fault log", run.fault_log_sha256.as_deref()),
         ("maintenance log", run.maintenance_log_sha256.as_deref()),
         ("dispatch log", run.dispatch_log_sha256.as_deref()),
@@ -406,6 +413,10 @@ pub fn compare_matched_benchmark_runs(
     let mut blockers = Vec::new();
 
     compare_key(&mut blockers, &reference.test_protocol_sha256, &candidate.test_protocol_sha256, "test_protocol");
+    compare_key(&mut blockers, &reference.primary_poc_sha256, &candidate.primary_poc_sha256, "primary_poc");
+    if reference.auxiliary_poc_sha256 != candidate.auxiliary_poc_sha256 {
+        blockers.push("mismatch:auxiliary_poc".to_string());
+    }
     compare_key(&mut blockers, &reference.service_boundary_sha256, &candidate.service_boundary_sha256, "service_boundary");
     compare_key(&mut blockers, &reference.service_profile_sha256, &candidate.service_profile_sha256, "service_profile");
     compare_key(&mut blockers, &reference.event_schedule_sha256, &candidate.event_schedule_sha256, "event_schedule");
@@ -680,6 +691,8 @@ mod tests {
             product_configuration_sha256: digest(config),
             evidence_bundle_sha256: digest(if config == '4' { '7' } else { '8' }),
             test_protocol_sha256: digest('a'),
+            primary_poc_sha256: digest('a'),
+            auxiliary_poc_sha256: None,
             service_boundary_sha256: digest('b'),
             service_profile_sha256: digest('c'),
             event_schedule_sha256: digest('d'),
