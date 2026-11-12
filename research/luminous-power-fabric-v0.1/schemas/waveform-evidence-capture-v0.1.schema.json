@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Power Fabric waveform evidence capture v0.1",
+  "title": "Power Fabric PQ assessment and high-speed transient evidence manifest v0.1",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -25,157 +25,254 @@
       "const": "synthetic"
     },
     "claim_ceiling": {
-      "const": "WAVEFORM_CAPTURE_METADATA_AND_METRIC_LINEAGE_ONLY_NOT_PQ_CONFORMITY_OR_PROTECTION_QUALIFICATION"
+      "const": "PQ_AND_TRANSIENT_EVIDENCE_METADATA_ONLY_NOT_SIGNAL_PROCESSING_CONFORMITY_OR_PROTECTION_QUALIFICATION"
     },
     "cases": {
       "type": "array",
       "minItems": 1,
       "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "case_id",
-          "expected_state",
-          "capture"
-        ],
-        "properties": {
-          "case_id": {
-            "type": "string",
-            "minLength": 1
-          },
-          "expected_state": {
-            "enum": [
-              "valid",
-              "blocked"
-            ]
-          },
-          "capture": {
+        "oneOf": [
+          {
             "type": "object",
             "additionalProperties": false,
             "required": [
-              "capture_id",
-              "event_id",
-              "event_profile_sha256",
-              "hardware_configuration_sha256",
-              "wiring_revision_sha256",
-              "test_protocol_sha256",
-              "raw_waveform_sha256",
-              "evidence_status",
-              "capture_class",
-              "nominal_frequency_hz",
-              "measurement_window_start_epoch_ns",
-              "measurement_window_end_epoch_ns",
-              "sample_rate_hz",
-              "sample_count",
-              "analog_bandwidth_hz",
-              "anti_alias_cutoff_hz",
-              "anti_alias_filter_sha256",
-              "trigger_offset_ns",
-              "pre_trigger_ns",
-              "post_trigger_ns",
-              "event_marker_offset_ns",
-              "missing_sample_count",
-              "dropped_sample_count",
-              "clipped_sample_count",
-              "saturated_sample_count",
-              "timebase_sha256",
-              "clock_epoch_id",
-              "synchronization_uncertainty_ns",
-              "maximum_allowed_channel_skew_ns",
-              "evaluation_time_epoch_s",
-              "channels",
-              "metrics"
+              "case_id",
+              "record_type",
+              "expected_state",
+              "payload"
             ],
             "properties": {
-              "capture_id": {
+              "case_id": {
                 "type": "string",
                 "minLength": 1
               },
-              "event_id": {
+              "record_type": {
+                "const": "pq_assessment"
+              },
+              "expected_state": {
+                "enum": [
+                  "valid",
+                  "blocked"
+                ]
+              },
+              "payload": {
+                "$ref": "#/$defs/pqAssessment"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "case_id",
+              "record_type",
+              "expected_state",
+              "payload"
+            ],
+            "properties": {
+              "case_id": {
                 "type": "string",
                 "minLength": 1
               },
-              "event_profile_sha256": {
-                "$ref": "#/$defs/sha"
+              "record_type": {
+                "const": "high_speed_transient"
               },
-              "hardware_configuration_sha256": {
-                "$ref": "#/$defs/sha"
-              },
-              "wiring_revision_sha256": {
-                "$ref": "#/$defs/sha"
-              },
-              "test_protocol_sha256": {
-                "$ref": "#/$defs/sha"
-              },
-              "raw_waveform_sha256": {
-                "$ref": "#/$defs/sha"
-              },
-              "capture_class": {
+              "expected_state": {
                 "enum": [
-                  "power_quality_class_a",
-                  "power_quality_class_s",
-                  "high_speed_transient"
+                  "valid",
+                  "blocked"
                 ]
               },
-              "nominal_frequency_hz": {
-                "type": [
-                  "integer",
-                  "null"
-                ],
+              "payload": {
+                "$ref": "#/$defs/transientCapture"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "pqAssessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assessment_id",
+        "event_id",
+        "event_profile_sha256",
+        "hardware_configuration_sha256",
+        "wiring_revision_sha256",
+        "test_protocol_sha256",
+        "source_dataset_sha256",
+        "processed_result_sha256",
+        "measurement_method_standard_id",
+        "measurement_class",
+        "nominal_frequency_hz",
+        "aggregation_interval_s",
+        "measurement_window_start_epoch_ns",
+        "measurement_window_end_epoch_ns",
+        "timebase_sha256",
+        "clock_epoch_id",
+        "synchronization_uncertainty_ns",
+        "evaluation_time_epoch_s",
+        "evidence_status",
+        "data_coverage_fraction",
+        "missing_aggregation_interval_count",
+        "channels",
+        "metrics"
+      ],
+      "properties": {
+        "assessment_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "event_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "event_profile_sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "hardware_configuration_sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "wiring_revision_sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "test_protocol_sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "source_dataset_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "processed_result_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "measurement_method_standard_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "measurement_class": {
+          "enum": [
+            "class_a",
+            "class_s"
+          ]
+        },
+        "nominal_frequency_hz": {
+          "type": "integer",
+          "enum": [
+            50,
+            60
+          ]
+        },
+        "aggregation_interval_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "measurement_window_start_epoch_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "measurement_window_end_epoch_ns": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "timebase_sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "clock_epoch_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "synchronization_uncertainty_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "evaluation_time_epoch_s": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "evidence_status": {
+          "enum": [
+            "current",
+            "missing",
+            "expired",
+            "invalid",
+            "unverified"
+          ]
+        },
+        "data_coverage_fraction": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "missing_aggregation_interval_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "channels": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "channel_id",
+              "instrument_id",
+              "transducer_id",
+              "measurand",
+              "measurement_plane_id",
+              "unit",
+              "polarity_convention",
+              "transfer_function_sha256",
+              "calibration_scope_sha256",
+              "calibration_status",
+              "calibration_valid_until_epoch_s",
+              "timebase_sha256",
+              "clock_epoch_id",
+              "channel_skew_bound_ns"
+            ],
+            "properties": {
+              "channel_id": {
+                "type": "string"
+              },
+              "instrument_id": {
+                "type": "string"
+              },
+              "transducer_id": {
+                "type": "string"
+              },
+              "measurand": {
                 "enum": [
-                  50,
-                  60,
-                  null
+                  "voltage",
+                  "current"
                 ]
               },
-              "sample_rate_hz": {
-                "type": "number",
-                "exclusiveMinimum": 0
+              "measurement_plane_id": {
+                "type": "string"
               },
-              "sample_count": {
-                "type": "integer",
-                "minimum": 2
+              "unit": {
+                "type": "string"
               },
-              "analog_bandwidth_hz": {
-                "type": "number",
-                "exclusiveMinimum": 0
+              "polarity_convention": {
+                "type": "string"
               },
-              "anti_alias_cutoff_hz": {
-                "type": "number",
-                "exclusiveMinimum": 0
-              },
-              "anti_alias_filter_sha256": {
+              "transfer_function_sha256": {
                 "$ref": "#/$defs/sha"
               },
-              "trigger_offset_ns": {
-                "type": "integer",
-                "minimum": 0
+              "calibration_scope_sha256": {
+                "$ref": "#/$defs/sha"
               },
-              "pre_trigger_ns": {
-                "type": "integer",
-                "minimum": 0
+              "calibration_status": {
+                "enum": [
+                  "current",
+                  "missing",
+                  "expired",
+                  "invalid",
+                  "unverified"
+                ]
               },
-              "post_trigger_ns": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "event_marker_offset_ns": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "missing_sample_count": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "dropped_sample_count": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "clipped_sample_count": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "saturated_sample_count": {
+              "calibration_valid_until_epoch_s": {
                 "type": "integer",
                 "minimum": 0
               },
@@ -183,185 +280,69 @@
                 "$ref": "#/$defs/sha"
               },
               "clock_epoch_id": {
-                "type": "string",
-                "minLength": 1
+                "type": "string"
               },
-              "synchronization_uncertainty_ns": {
+              "channel_skew_bound_ns": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "metrics": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "metric_id",
+              "unit",
+              "value",
+              "absolute_uncertainty_bound",
+              "method_sha256",
+              "measurement_plane_id",
+              "window_start_ns",
+              "window_end_ns",
+              "channel_ids",
+              "evidence_status",
+              "evidence_reference"
+            ],
+            "properties": {
+              "metric_id": {
+                "type": "string"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "value": {
+                "type": "number"
+              },
+              "absolute_uncertainty_bound": {
+                "type": "number",
+                "minimum": 0
+              },
+              "method_sha256": {
+                "$ref": "#/$defs/sha"
+              },
+              "measurement_plane_id": {
+                "type": "string"
+              },
+              "window_start_ns": {
                 "type": "integer",
                 "minimum": 0
               },
-              "maximum_allowed_channel_skew_ns": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "evaluation_time_epoch_s": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "channels": {
-                "type": "array",
-                "minItems": 2,
-                "items": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": [
-                    "channel_id",
-                    "instrument_id",
-                    "transducer_id",
-                    "measurand",
-                    "measurement_plane_id",
-                    "unit",
-                    "polarity_convention",
-                    "transfer_function_sha256",
-                    "calibration_scope_sha256",
-                    "calibration_status",
-                    "calibration_valid_until_epoch_s",
-                    "timebase_sha256",
-                    "clock_epoch_id",
-                    "channel_skew_bound_ns"
-                  ],
-                  "properties": {
-                    "channel_id": {
-                      "type": "string"
-                    },
-                    "instrument_id": {
-                      "type": "string"
-                    },
-                    "transducer_id": {
-                      "type": "string"
-                    },
-                    "measurand": {
-                      "enum": [
-                        "voltage",
-                        "current"
-                      ]
-                    },
-                    "measurement_plane_id": {
-                      "type": "string"
-                    },
-                    "unit": {
-                      "type": "string"
-                    },
-                    "polarity_convention": {
-                      "type": "string"
-                    },
-                    "transfer_function_sha256": {
-                      "$ref": "#/$defs/sha"
-                    },
-                    "calibration_scope_sha256": {
-                      "$ref": "#/$defs/sha"
-                    },
-                    "calibration_status": {
-                      "enum": [
-                        "current",
-                        "missing",
-                        "expired",
-                        "invalid",
-                        "unverified"
-                      ]
-                    },
-                    "calibration_valid_until_epoch_s": {
-                      "type": "integer",
-                      "minimum": 0
-                    },
-                    "timebase_sha256": {
-                      "$ref": "#/$defs/sha"
-                    },
-                    "clock_epoch_id": {
-                      "type": "string"
-                    },
-                    "channel_skew_bound_ns": {
-                      "type": "integer",
-                      "minimum": 0
-                    }
-                  }
-                }
-              },
-              "metrics": {
-                "type": "array",
-                "minItems": 1,
-                "items": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": [
-                    "metric_id",
-                    "unit",
-                    "value",
-                    "absolute_uncertainty_bound",
-                    "method_sha256",
-                    "measurement_plane_id",
-                    "window_start_ns",
-                    "window_end_ns",
-                    "channel_ids",
-                    "evidence_status",
-                    "evidence_reference"
-                  ],
-                  "properties": {
-                    "metric_id": {
-                      "type": "string"
-                    },
-                    "unit": {
-                      "type": "string"
-                    },
-                    "value": {
-                      "type": "number"
-                    },
-                    "absolute_uncertainty_bound": {
-                      "type": "number",
-                      "minimum": 0
-                    },
-                    "method_sha256": {
-                      "$ref": "#/$defs/sha"
-                    },
-                    "measurement_plane_id": {
-                      "type": "string"
-                    },
-                    "window_start_ns": {
-                      "type": "integer",
-                      "minimum": 0
-                    },
-                    "window_end_ns": {
-                      "type": "integer",
-                      "minimum": 1
-                    },
-                    "channel_ids": {
-                      "type": "array",
-                      "minItems": 1,
-                      "uniqueItems": true,
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "evidence_status": {
-                      "enum": [
-                        "current",
-                        "missing",
-                        "expired",
-                        "invalid",
-                        "unverified"
-                      ]
-                    },
-                    "evidence_reference": {
-                      "type": "string",
-                      "minLength": 1
-                    }
-                  }
-                }
-              },
-              "measurement_window_start_epoch_ns": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "measurement_window_end_epoch_ns": {
+              "window_end_ns": {
                 "type": "integer",
                 "minimum": 1
               },
-              "independent_assessment_reference": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "maxLength": 2048
+              "channel_ids": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string"
+                }
               },
               "evidence_status": {
                 "enum": [
@@ -371,17 +352,343 @@
                   "invalid",
                   "unverified"
                 ]
+              },
+              "evidence_reference": {
+                "type": "string",
+                "minLength": 1
               }
             }
           }
+        },
+        "independent_assessment_reference": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 2048
         }
       }
-    }
-  },
-  "$defs": {
-    "sha": {
-      "type": "string",
-      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "transientCapture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "capture_id",
+        "event_id",
+        "event_profile_sha256",
+        "hardware_configuration_sha256",
+        "wiring_revision_sha256",
+        "test_protocol_sha256",
+        "raw_waveform_sha256",
+        "evidence_status",
+        "capture_class",
+        "nominal_frequency_hz",
+        "measurement_window_start_epoch_ns",
+        "measurement_window_end_epoch_ns",
+        "sample_rate_hz",
+        "sample_count",
+        "analog_bandwidth_hz",
+        "anti_alias_cutoff_hz",
+        "anti_alias_filter_sha256",
+        "trigger_offset_ns",
+        "pre_trigger_ns",
+        "post_trigger_ns",
+        "event_marker_offset_ns",
+        "missing_sample_count",
+        "dropped_sample_count",
+        "clipped_sample_count",
+        "saturated_sample_count",
+        "timebase_sha256",
+        "clock_epoch_id",
+        "synchronization_uncertainty_ns",
+        "maximum_allowed_channel_skew_ns",
+        "evaluation_time_epoch_s",
+        "channels",
+        "metrics"
+      ],
+      "properties": {
+        "capture_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "event_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "event_profile_sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "hardware_configuration_sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "wiring_revision_sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "test_protocol_sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "raw_waveform_sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "capture_class": {
+          "const": "high_speed_transient"
+        },
+        "nominal_frequency_hz": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "enum": [
+            50,
+            60,
+            null
+          ]
+        },
+        "sample_rate_hz": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "sample_count": {
+          "type": "integer",
+          "minimum": 2
+        },
+        "analog_bandwidth_hz": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "anti_alias_cutoff_hz": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "anti_alias_filter_sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "trigger_offset_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pre_trigger_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "post_trigger_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "event_marker_offset_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "missing_sample_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dropped_sample_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "clipped_sample_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "saturated_sample_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "timebase_sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "clock_epoch_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "synchronization_uncertainty_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maximum_allowed_channel_skew_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "evaluation_time_epoch_s": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "channels": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "channel_id",
+              "instrument_id",
+              "transducer_id",
+              "measurand",
+              "measurement_plane_id",
+              "unit",
+              "polarity_convention",
+              "transfer_function_sha256",
+              "calibration_scope_sha256",
+              "calibration_status",
+              "calibration_valid_until_epoch_s",
+              "timebase_sha256",
+              "clock_epoch_id",
+              "channel_skew_bound_ns"
+            ],
+            "properties": {
+              "channel_id": {
+                "type": "string"
+              },
+              "instrument_id": {
+                "type": "string"
+              },
+              "transducer_id": {
+                "type": "string"
+              },
+              "measurand": {
+                "enum": [
+                  "voltage",
+                  "current"
+                ]
+              },
+              "measurement_plane_id": {
+                "type": "string"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "polarity_convention": {
+                "type": "string"
+              },
+              "transfer_function_sha256": {
+                "$ref": "#/$defs/sha"
+              },
+              "calibration_scope_sha256": {
+                "$ref": "#/$defs/sha"
+              },
+              "calibration_status": {
+                "enum": [
+                  "current",
+                  "missing",
+                  "expired",
+                  "invalid",
+                  "unverified"
+                ]
+              },
+              "calibration_valid_until_epoch_s": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "timebase_sha256": {
+                "$ref": "#/$defs/sha"
+              },
+              "clock_epoch_id": {
+                "type": "string"
+              },
+              "channel_skew_bound_ns": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "metrics": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "metric_id",
+              "unit",
+              "value",
+              "absolute_uncertainty_bound",
+              "method_sha256",
+              "measurement_plane_id",
+              "window_start_ns",
+              "window_end_ns",
+              "channel_ids",
+              "evidence_status",
+              "evidence_reference"
+            ],
+            "properties": {
+              "metric_id": {
+                "type": "string"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "value": {
+                "type": "number"
+              },
+              "absolute_uncertainty_bound": {
+                "type": "number",
+                "minimum": 0
+              },
+              "method_sha256": {
+                "$ref": "#/$defs/sha"
+              },
+              "measurement_plane_id": {
+                "type": "string"
+              },
+              "window_start_ns": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "window_end_ns": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "channel_ids": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string"
+                }
+              },
+              "evidence_status": {
+                "enum": [
+                  "current",
+                  "missing",
+                  "expired",
+                  "invalid",
+                  "unverified"
+                ]
+              },
+              "evidence_reference": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "measurement_window_start_epoch_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "measurement_window_end_epoch_ns": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "independent_assessment_reference": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 2048
+        },
+        "evidence_status": {
+          "enum": [
+            "current",
+            "missing",
+            "expired",
+            "invalid",
+            "unverified"
+          ]
+        }
+      }
     }
   }
 }

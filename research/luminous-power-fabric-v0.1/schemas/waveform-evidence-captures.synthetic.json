@@ -3,12 +3,13 @@
   "record_class": "synthetic_fixture",
   "evidence_class": "synthetic",
   "run_mode": "synthetic",
-  "claim_ceiling": "WAVEFORM_CAPTURE_METADATA_AND_METRIC_LINEAGE_ONLY_NOT_PQ_CONFORMITY_OR_PROTECTION_QUALIFICATION",
+  "claim_ceiling": "PQ_AND_TRANSIENT_EVIDENCE_METADATA_ONLY_NOT_SIGNAL_PROCESSING_CONFORMITY_OR_PROTECTION_QUALIFICATION",
   "cases": [
     {
       "case_id": "valid-high-speed-transient",
+      "record_type": "high_speed_transient",
       "expected_state": "valid",
-      "capture": {
+      "payload": {
         "capture_id": "cap-transient",
         "event_id": "motor-start",
         "event_profile_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
@@ -89,43 +90,35 @@
             "evidence_reference": "synthetic-metric"
           }
         ],
-        "independent_assessment_reference": null,
         "evidence_status": "current"
       }
     },
     {
       "case_id": "valid-pq-class-a",
+      "record_type": "pq_assessment",
       "expected_state": "valid",
-      "capture": {
-        "capture_id": "cap-pq-a",
+      "payload": {
+        "assessment_id": "cap-pq-a",
         "event_id": "motor-start",
         "event_profile_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
         "hardware_configuration_sha256": "6666666666666666666666666666666666666666666666666666666666666666",
         "wiring_revision_sha256": "7777777777777777777777777777777777777777777777777777777777777777",
         "test_protocol_sha256": "8888888888888888888888888888888888888888888888888888888888888888",
-        "raw_waveform_sha256": "9999999999999999999999999999999999999999999999999999999999999999",
-        "capture_class": "power_quality_class_a",
+        "source_dataset_sha256": "9999999999999999999999999999999999999999999999999999999999999999",
+        "processed_result_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "measurement_method_standard_id": "IEC 61000-4-30:2025 corrected 2026-07",
+        "measurement_class": "class_a",
         "nominal_frequency_hz": 50,
+        "aggregation_interval_s": 10,
         "measurement_window_start_epoch_ns": 2000000,
         "measurement_window_end_epoch_ns": 102000000,
-        "sample_rate_hz": 512000,
-        "sample_count": 51201,
-        "analog_bandwidth_hz": 150000,
-        "anti_alias_cutoff_hz": 200000,
-        "anti_alias_filter_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        "trigger_offset_ns": 10000000,
-        "pre_trigger_ns": 10000000,
-        "post_trigger_ns": 90000000,
-        "event_marker_offset_ns": 10000000,
-        "missing_sample_count": 0,
-        "dropped_sample_count": 0,
-        "clipped_sample_count": 0,
-        "saturated_sample_count": 0,
         "timebase_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
         "clock_epoch_id": "boot-epoch-1",
         "synchronization_uncertainty_ns": 100,
-        "maximum_allowed_channel_skew_ns": 200,
         "evaluation_time_epoch_s": 100,
+        "evidence_status": "current",
+        "data_coverage_fraction": 1,
+        "missing_aggregation_interval_count": 0,
         "channels": [
           {
             "channel_id": "v1",
@@ -177,43 +170,35 @@
             "evidence_reference": "synthetic-metric"
           }
         ],
-        "independent_assessment_reference": null,
-        "evidence_status": "current"
+        "independent_assessment_reference": null
       }
     },
     {
       "case_id": "valid-pq-class-s",
+      "record_type": "pq_assessment",
       "expected_state": "valid",
-      "capture": {
-        "capture_id": "cap-pq-s",
+      "payload": {
+        "assessment_id": "cap-pq-s",
         "event_id": "motor-start",
         "event_profile_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
         "hardware_configuration_sha256": "6666666666666666666666666666666666666666666666666666666666666666",
         "wiring_revision_sha256": "7777777777777777777777777777777777777777777777777777777777777777",
         "test_protocol_sha256": "8888888888888888888888888888888888888888888888888888888888888888",
-        "raw_waveform_sha256": "9999999999999999999999999999999999999999999999999999999999999999",
-        "capture_class": "power_quality_class_s",
+        "source_dataset_sha256": "9999999999999999999999999999999999999999999999999999999999999999",
+        "processed_result_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "measurement_method_standard_id": "IEC 61000-4-30:2025 corrected 2026-07",
+        "measurement_class": "class_s",
         "nominal_frequency_hz": 50,
+        "aggregation_interval_s": 10,
         "measurement_window_start_epoch_ns": 2000000,
         "measurement_window_end_epoch_ns": 102000000,
-        "sample_rate_hz": 12800,
-        "sample_count": 1281,
-        "analog_bandwidth_hz": 3000,
-        "anti_alias_cutoff_hz": 4000,
-        "anti_alias_filter_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        "trigger_offset_ns": 10000000,
-        "pre_trigger_ns": 10000000,
-        "post_trigger_ns": 90000000,
-        "event_marker_offset_ns": 10000000,
-        "missing_sample_count": 0,
-        "dropped_sample_count": 0,
-        "clipped_sample_count": 0,
-        "saturated_sample_count": 0,
         "timebase_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
         "clock_epoch_id": "boot-epoch-1",
         "synchronization_uncertainty_ns": 100,
-        "maximum_allowed_channel_skew_ns": 200,
         "evaluation_time_epoch_s": 100,
+        "evidence_status": "current",
+        "data_coverage_fraction": 1,
+        "missing_aggregation_interval_count": 0,
         "channels": [
           {
             "channel_id": "v1",
@@ -265,14 +250,14 @@
             "evidence_reference": "synthetic-metric"
           }
         ],
-        "independent_assessment_reference": null,
-        "evidence_status": "current"
+        "independent_assessment_reference": null
       }
     },
     {
       "case_id": "reject-channel-skew",
+      "record_type": "high_speed_transient",
       "expected_state": "blocked",
-      "capture": {
+      "payload": {
         "capture_id": "cap-skew",
         "event_id": "motor-start",
         "event_profile_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
@@ -353,14 +338,14 @@
             "evidence_reference": "synthetic-metric"
           }
         ],
-        "independent_assessment_reference": null,
         "evidence_status": "current"
       }
     },
     {
       "case_id": "reject-clipped-capture",
+      "record_type": "high_speed_transient",
       "expected_state": "blocked",
-      "capture": {
+      "payload": {
         "capture_id": "cap-clipped",
         "event_id": "motor-start",
         "event_profile_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
@@ -441,14 +426,14 @@
             "evidence_reference": "synthetic-metric"
           }
         ],
-        "independent_assessment_reference": null,
         "evidence_status": "current"
       }
     },
     {
       "case_id": "reject-expired-calibration",
+      "record_type": "high_speed_transient",
       "expected_state": "blocked",
-      "capture": {
+      "payload": {
         "capture_id": "cap-stale-cal",
         "event_id": "motor-start",
         "event_profile_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
@@ -529,7 +514,6 @@
             "evidence_reference": "synthetic-metric"
           }
         ],
-        "independent_assessment_reference": null,
         "evidence_status": "current"
       }
     }
