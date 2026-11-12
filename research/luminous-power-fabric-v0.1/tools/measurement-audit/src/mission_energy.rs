@@ -513,7 +513,6 @@ pub fn evaluate_mission_energy(
             source_measurement_uncertainty_bound_w: segment.source_measurement_uncertainty_bound_w,
             source_model_uncertainty_bound_w: segment.source_model_uncertainty_bound_w,
             conservative_source_average_power_w,
-            source_evidence_status: segment.source_evidence_status,
             source_energy_available_wh,
             source_energy_to_load_wh,
             storage_energy_to_load_wh,
