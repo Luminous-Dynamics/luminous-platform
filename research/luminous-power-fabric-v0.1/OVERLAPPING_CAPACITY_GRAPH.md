@@ -65,7 +65,7 @@ A graph flow is a deterministic capacity upper-bound under declared inputs. It i
 Authoring-time arithmetic recomputation on this small topology must verify the expected source sums and serial bottlenecks. A future Rust implementation must additionally compare against an independent max-flow/min-cut oracle and exhaustively enumerate small graphs. No SOTA, network, product, safety or reliability claim follows from this fixture.
 
 
-## 6. Executable evaluator boundary (draft PR #454)
+## 6. Executable evaluator boundary (draft PR #452)
 
 The registered Rust module `tools/measurement-audit/src/topology_capacity_graph.rs` implements a
 per-scenario deterministic Dinic max-flow/min-cut calculation over the typed graph. It uses integer

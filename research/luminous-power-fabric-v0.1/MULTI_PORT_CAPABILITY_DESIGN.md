@@ -201,7 +201,7 @@ The module does not switch or control hardware and does not certify the complete
 
 The follow-on prototype is `tools/measurement-audit/src/topology_capacity_graph.rs` and is tracked by
 [issue #451](https://github.com/Luminous-Dynamics/luminous-platform/issues/451) / draft
-[PR #454](https://github.com/Luminous-Dynamics/luminous-platform/pull/454).
+[PR #452](https://github.com/Luminous-Dynamics/luminous-platform/pull/454).
 
 The evaluator uses integer-watt capacities at one exact customer POC, canonical node/arc ordering
 and deterministic Dinic max-flow. It handles multiple declared source nodes and one service sink.
