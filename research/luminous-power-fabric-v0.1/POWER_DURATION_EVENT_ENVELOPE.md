@@ -85,7 +85,7 @@ Record synchronized peak/RMS voltage and current, voltage/frequency nadir, DC-bu
 
 ## 7. Standards applicability
 
-- **IEC 61000-4-11:2020, Edition 3:** voltage-dip, short-interruption and voltage-variation immunity methods for equipment with rated mains current up to 16 A per phase on 50/60 Hz low-voltage AC networks.
+- **IEC 61000-4-11:2020, Edition 3:** voltage-dip, short-interruption and voltage-variation immunity methods for equipment with rated input current up to 16 A per phase on 50/60 Hz low-voltage AC networks.
 - **IEC 61000-4-34:2005+AMD1:2009+AMD2:2025, consolidated Edition 1.2:** corresponding immunity methods for equipment with mains current above 16 A per phase. The 2025 amendment changes the wording from input current to mains current.
 - **IEC 61000-4-4:2012, Edition 3:** electrical fast transient/burst immunity tests on supply, signal, control and earth ports.
 - **ISO 8528-5:2025, Edition 6:** design and performance criteria for an RIC engine and AC generator operating as a generating set.
