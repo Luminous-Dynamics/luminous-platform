@@ -1,0 +1,365 @@
+{
+  "schema_version": "0.1",
+  "record_class": "synthetic_fixture",
+  "profile_id": "PF-REMOTE-COMMS-WATER-SYN-001",
+  "name": "Remote communications and water service endurance",
+  "application": "remote_operations",
+  "site": {
+    "country_code": "ZA",
+    "jurisdiction": "South Africa (illustrative only)",
+    "site_type": "mixed",
+    "hazardous_area": false,
+    "hazardous_area_classification": null
+  },
+  "environment": {
+    "ambient_min_c": 2,
+    "ambient_max_c": 42,
+    "altitude_m": 1600,
+    "dust_exposure": "high",
+    "moisture_exposure": "rain_exposure",
+    "corrosive_exposure": "unknown",
+    "vibration_exposure": "low",
+    "transported_between_runs": false,
+    "ingress_target_ip": null,
+    "notes": "Illustrative synthetic environment only; no real site, enclosure rating or hazardous-area classification is asserted."
+  },
+  "sources": [
+    {
+      "source_id": "pv_array_inverter",
+      "source_type": "pv_inverter",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_power_kw": 8,
+      "bidirectional": false,
+      "evidence_class": "assumption",
+      "reference": "Synthetic illustrative assumption; no supplier rating or physical measurement."
+    },
+    {
+      "source_id": "battery_inverter",
+      "source_type": "battery_inverter",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_power_kw": 12,
+      "bidirectional": true,
+      "evidence_class": "assumption",
+      "reference": "Synthetic illustrative assumption; no supplier rating or physical measurement."
+    },
+    {
+      "source_id": "backup_genset",
+      "source_type": "generator",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_power_kw": 10,
+      "bidirectional": false,
+      "evidence_class": "assumption",
+      "reference": "Synthetic illustrative assumption; no supplier rating or physical measurement."
+    }
+  ],
+  "loads": [
+    {
+      "load_id": "telecoms_rack",
+      "category": "communications",
+      "interface": "AC_SINGLE_PHASE",
+      "nominal_voltage_v": 230,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 0.65,
+      "rated_apparent_power_kva": 0.6842105263157895,
+      "power_factor": 0.95,
+      "criticality": "critical",
+      "start_profile": {
+        "inrush_multiple": 1,
+        "inrush_duration_ms": 0,
+        "starts_per_hour": 1
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    },
+    {
+      "load_id": "water_borehole_pump",
+      "category": "motor_pump",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 2.2,
+      "rated_apparent_power_kva": 2.4444444444444446,
+      "power_factor": 0.9,
+      "criticality": "critical",
+      "start_profile": {
+        "inrush_multiple": 5,
+        "inrush_duration_ms": 600,
+        "starts_per_hour": 2
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    },
+    {
+      "load_id": "security_lighting",
+      "category": "lighting",
+      "interface": "AC_SINGLE_PHASE",
+      "nominal_voltage_v": 230,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 0.35,
+      "rated_apparent_power_kva": 0.3684210526315789,
+      "power_factor": 0.95,
+      "criticality": "important",
+      "start_profile": {
+        "inrush_multiple": 1.2,
+        "inrush_duration_ms": 20,
+        "starts_per_hour": 1
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    },
+    {
+      "load_id": "site_controls",
+      "category": "controls_instrumentation",
+      "interface": "AC_SINGLE_PHASE",
+      "nominal_voltage_v": 230,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 0.25,
+      "rated_apparent_power_kva": 0.2631578947368421,
+      "power_factor": 0.95,
+      "criticality": "critical",
+      "start_profile": {
+        "inrush_multiple": 1,
+        "inrush_duration_ms": 0,
+        "starts_per_hour": 1
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    },
+    {
+      "load_id": "battery_room_fan",
+      "category": "other",
+      "interface": "AC_SINGLE_PHASE",
+      "nominal_voltage_v": 230,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 0.4,
+      "rated_apparent_power_kva": 0.4444444444444445,
+      "power_factor": 0.9,
+      "criticality": "important",
+      "start_profile": {
+        "inrush_multiple": 1.5,
+        "inrush_duration_ms": 100,
+        "starts_per_hour": 1
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    }
+  ],
+  "segments": [
+    {
+      "segment_id": "night_endurance",
+      "start_s": 0,
+      "duration_s": 21600,
+      "available_source_ids": [
+        "battery_inverter"
+      ],
+      "load_states": [
+        {
+          "load_id": "telecoms_rack",
+          "enabled": true,
+          "active_power_kw": 0.65
+        },
+        {
+          "load_id": "water_borehole_pump",
+          "enabled": false,
+          "active_power_kw": 0
+        },
+        {
+          "load_id": "security_lighting",
+          "enabled": true,
+          "active_power_kw": 0.2
+        },
+        {
+          "load_id": "site_controls",
+          "enabled": true,
+          "active_power_kw": 0.25
+        },
+        {
+          "load_id": "battery_room_fan",
+          "enabled": true,
+          "active_power_kw": 0.4
+        }
+      ],
+      "ambient_c": 18
+    },
+    {
+      "segment_id": "morning_pump_window",
+      "start_s": 21600,
+      "duration_s": 7200,
+      "available_source_ids": [
+        "pv_array_inverter",
+        "battery_inverter"
+      ],
+      "load_states": [
+        {
+          "load_id": "telecoms_rack",
+          "enabled": true,
+          "active_power_kw": 0.65
+        },
+        {
+          "load_id": "water_borehole_pump",
+          "enabled": true,
+          "active_power_kw": 2.2
+        },
+        {
+          "load_id": "security_lighting",
+          "enabled": true,
+          "active_power_kw": 0.35
+        },
+        {
+          "load_id": "site_controls",
+          "enabled": true,
+          "active_power_kw": 0.25
+        },
+        {
+          "load_id": "battery_room_fan",
+          "enabled": true,
+          "active_power_kw": 0.4
+        }
+      ],
+      "ambient_c": 27
+    },
+    {
+      "segment_id": "solar_charge_and_service",
+      "start_s": 28800,
+      "duration_s": 28800,
+      "available_source_ids": [
+        "pv_array_inverter",
+        "battery_inverter"
+      ],
+      "load_states": [
+        {
+          "load_id": "telecoms_rack",
+          "enabled": true,
+          "active_power_kw": 0.65
+        },
+        {
+          "load_id": "water_borehole_pump",
+          "enabled": false,
+          "active_power_kw": 0
+        },
+        {
+          "load_id": "security_lighting",
+          "enabled": true,
+          "active_power_kw": 0.2
+        },
+        {
+          "load_id": "site_controls",
+          "enabled": true,
+          "active_power_kw": 0.25
+        },
+        {
+          "load_id": "battery_room_fan",
+          "enabled": true,
+          "active_power_kw": 0.4
+        }
+      ],
+      "ambient_c": 36
+    },
+    {
+      "segment_id": "evening_backup_window",
+      "start_s": 57600,
+      "duration_s": 28800,
+      "available_source_ids": [
+        "battery_inverter",
+        "backup_genset"
+      ],
+      "load_states": [
+        {
+          "load_id": "telecoms_rack",
+          "enabled": true,
+          "active_power_kw": 0.65
+        },
+        {
+          "load_id": "water_borehole_pump",
+          "enabled": true,
+          "active_power_kw": 2.2
+        },
+        {
+          "load_id": "security_lighting",
+          "enabled": true,
+          "active_power_kw": 0.35
+        },
+        {
+          "load_id": "site_controls",
+          "enabled": true,
+          "active_power_kw": 0.25
+        },
+        {
+          "load_id": "battery_room_fan",
+          "enabled": true,
+          "active_power_kw": 0.4
+        }
+      ],
+      "ambient_c": 23
+    }
+  ],
+  "events": [
+    {
+      "event_id": "morning-pump-start",
+      "time_s": 21600,
+      "event_type": "motor_start",
+      "target_id": "water_borehole_pump",
+      "delta_active_power_kw": 2.2,
+      "duration_ms": 600,
+      "notes": "Synthetic event; no transient waveform capture is included."
+    },
+    {
+      "event_id": "pv-output-loss",
+      "time_s": 57600,
+      "event_type": "source_loss",
+      "target_id": "pv_array_inverter",
+      "delta_active_power_kw": null,
+      "duration_ms": null,
+      "notes": "Synthetic event; no transient waveform capture is included."
+    },
+    {
+      "event_id": "backup-generator-start",
+      "time_s": 57600,
+      "event_type": "source_transfer",
+      "target_id": "backup_genset",
+      "delta_active_power_kw": null,
+      "duration_ms": null,
+      "notes": "Synthetic event; no transient waveform capture is included."
+    }
+  ],
+  "requirements": {
+    "max_unserved_energy_kwh": null,
+    "max_recovery_time_s": null,
+    "max_voltage_deviation_percent": null,
+    "max_frequency_deviation_hz": null,
+    "max_voltage_thd_percent": null,
+    "max_noise_dba": null,
+    "max_fuel_l_per_delivered_kwh": null,
+    "notes": "Customer acceptance limits must be set from the actual service contract and applicable installation requirements before benchmarking."
+  },
+  "data_rights": {
+    "data_owner": "Luminous Dynamics (synthetic fixture author)",
+    "license": "CC0-1.0",
+    "commercial_use": "allowed",
+    "redistribution": "allowed",
+    "attribution_required": false,
+    "rights_reference": "Synthetic authored example; contains no measured customer or vendor data."
+  },
+  "provenance": {
+    "source_kind": "synthetic",
+    "source_reference": "Authored deterministic synthetic fixture; not field data.",
+    "sampling_interval_s": null,
+    "raw_data_sha256": null,
+    "instrument_run_ids": [],
+    "timebase_reference": null
+  },
+  "claim_ceiling": "DUTY_CYCLE_SPECIFICATION_ONLY_NOT_POWER_SYSTEM_SAFETY_OR_PERFORMANCE_QUALIFICATION",
+  "limitations": [
+    "Synthetic demand and source availability only; no physical site was measured.",
+    "Source ratings and load profiles are illustrative assumptions, not supplier specifications.",
+    "No raw voltage/current waveform, harmonics, fault-current or protection evidence is included.",
+    "Cannot substantiate efficiency, fuel savings, power quality, safety, runtime, lifecycle or field readiness.",
+    "Battery SOC, autonomy, PV resource and generator fuel are illustrative assumptions only; no battery capacity or solar resource study is supplied."
+  ]
+}

@@ -1,0 +1,377 @@
+{
+  "schema_version": "0.1",
+  "record_class": "synthetic_fixture",
+  "profile_id": "PF-PORT-CRANE-SYN-001",
+  "name": "Port crane, reefer and terminal support duty",
+  "application": "other",
+  "site": {
+    "country_code": "ZA",
+    "jurisdiction": "South Africa (illustrative only)",
+    "site_type": "mixed",
+    "hazardous_area": false,
+    "hazardous_area_classification": null
+  },
+  "environment": {
+    "ambient_min_c": 8,
+    "ambient_max_c": 42,
+    "altitude_m": 20,
+    "dust_exposure": "moderate",
+    "moisture_exposure": "rain_exposure",
+    "corrosive_exposure": "coastal",
+    "vibration_exposure": "heavy_equipment_adjacent",
+    "transported_between_runs": false,
+    "ingress_target_ip": null,
+    "notes": "Illustrative synthetic environment only; no real site, enclosure rating or hazardous-area classification is asserted."
+  },
+  "sources": [
+    {
+      "source_id": "shore_grid",
+      "source_type": "grid",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_power_kw": 450,
+      "bidirectional": false,
+      "evidence_class": "assumption",
+      "reference": "Synthetic illustrative assumption; no supplier rating or physical measurement."
+    },
+    {
+      "source_id": "standby_genset",
+      "source_type": "generator",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_power_kw": 220,
+      "bidirectional": false,
+      "evidence_class": "assumption",
+      "reference": "Synthetic illustrative assumption; no supplier rating or physical measurement."
+    },
+    {
+      "source_id": "bess_power",
+      "source_type": "battery_inverter",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_power_kw": 300,
+      "bidirectional": true,
+      "evidence_class": "assumption",
+      "reference": "Synthetic illustrative assumption; no supplier rating or physical measurement."
+    }
+  ],
+  "loads": [
+    {
+      "load_id": "crane_hoist",
+      "category": "other",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 120,
+      "rated_apparent_power_kva": 133.33333333333334,
+      "power_factor": 0.9,
+      "criticality": "critical",
+      "start_profile": {
+        "inrush_multiple": 6,
+        "inrush_duration_ms": 800,
+        "starts_per_hour": 12
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    },
+    {
+      "load_id": "crane_travel",
+      "category": "other",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 55,
+      "rated_apparent_power_kva": 61.11111111111111,
+      "power_factor": 0.9,
+      "criticality": "important",
+      "start_profile": {
+        "inrush_multiple": 3.5,
+        "inrush_duration_ms": 500,
+        "starts_per_hour": 12
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    },
+    {
+      "load_id": "reefer_bank",
+      "category": "compressor",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 85,
+      "rated_apparent_power_kva": 94.44444444444444,
+      "power_factor": 0.9,
+      "criticality": "critical",
+      "start_profile": {
+        "inrush_multiple": 2,
+        "inrush_duration_ms": 250,
+        "starts_per_hour": 4
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    },
+    {
+      "load_id": "yard_lighting",
+      "category": "lighting",
+      "interface": "AC_SINGLE_PHASE",
+      "nominal_voltage_v": 230,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 12,
+      "rated_apparent_power_kva": 12.631578947368421,
+      "power_factor": 0.95,
+      "criticality": "important",
+      "start_profile": {
+        "inrush_multiple": 1.2,
+        "inrush_duration_ms": 40,
+        "starts_per_hour": 1
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    },
+    {
+      "load_id": "terminal_comms",
+      "category": "communications",
+      "interface": "AC_SINGLE_PHASE",
+      "nominal_voltage_v": 230,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 2,
+      "rated_apparent_power_kva": 2.1052631578947367,
+      "power_factor": 0.95,
+      "criticality": "critical",
+      "start_profile": {
+        "inrush_multiple": 1,
+        "inrush_duration_ms": 0,
+        "starts_per_hour": 1
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    }
+  ],
+  "segments": [
+    {
+      "segment_id": "standby_reefers",
+      "start_s": 0,
+      "duration_s": 1800,
+      "available_source_ids": [
+        "shore_grid",
+        "bess_power"
+      ],
+      "load_states": [
+        {
+          "load_id": "crane_hoist",
+          "enabled": false,
+          "active_power_kw": 0
+        },
+        {
+          "load_id": "crane_travel",
+          "enabled": false,
+          "active_power_kw": 0
+        },
+        {
+          "load_id": "reefer_bank",
+          "enabled": true,
+          "active_power_kw": 85
+        },
+        {
+          "load_id": "yard_lighting",
+          "enabled": true,
+          "active_power_kw": 5
+        },
+        {
+          "load_id": "terminal_comms",
+          "enabled": true,
+          "active_power_kw": 2
+        }
+      ],
+      "ambient_c": 25
+    },
+    {
+      "segment_id": "crane_cycle_peak",
+      "start_s": 1800,
+      "duration_s": 1800,
+      "available_source_ids": [
+        "shore_grid",
+        "standby_genset",
+        "bess_power"
+      ],
+      "load_states": [
+        {
+          "load_id": "crane_hoist",
+          "enabled": true,
+          "active_power_kw": 120
+        },
+        {
+          "load_id": "crane_travel",
+          "enabled": true,
+          "active_power_kw": 55
+        },
+        {
+          "load_id": "reefer_bank",
+          "enabled": true,
+          "active_power_kw": 85
+        },
+        {
+          "load_id": "yard_lighting",
+          "enabled": true,
+          "active_power_kw": 12
+        },
+        {
+          "load_id": "terminal_comms",
+          "enabled": true,
+          "active_power_kw": 2
+        }
+      ],
+      "ambient_c": 34
+    },
+    {
+      "segment_id": "shore_loss_transfer",
+      "start_s": 3600,
+      "duration_s": 900,
+      "available_source_ids": [
+        "standby_genset",
+        "bess_power"
+      ],
+      "load_states": [
+        {
+          "load_id": "crane_hoist",
+          "enabled": true,
+          "active_power_kw": 60
+        },
+        {
+          "load_id": "crane_travel",
+          "enabled": true,
+          "active_power_kw": 20
+        },
+        {
+          "load_id": "reefer_bank",
+          "enabled": true,
+          "active_power_kw": 85
+        },
+        {
+          "load_id": "yard_lighting",
+          "enabled": true,
+          "active_power_kw": 8
+        },
+        {
+          "load_id": "terminal_comms",
+          "enabled": true,
+          "active_power_kw": 2
+        }
+      ],
+      "ambient_c": 36
+    },
+    {
+      "segment_id": "post_transfer_operations",
+      "start_s": 4500,
+      "duration_s": 2700,
+      "available_source_ids": [
+        "shore_grid",
+        "standby_genset",
+        "bess_power"
+      ],
+      "load_states": [
+        {
+          "load_id": "crane_hoist",
+          "enabled": true,
+          "active_power_kw": 90
+        },
+        {
+          "load_id": "crane_travel",
+          "enabled": true,
+          "active_power_kw": 35
+        },
+        {
+          "load_id": "reefer_bank",
+          "enabled": true,
+          "active_power_kw": 85
+        },
+        {
+          "load_id": "yard_lighting",
+          "enabled": true,
+          "active_power_kw": 10
+        },
+        {
+          "load_id": "terminal_comms",
+          "enabled": true,
+          "active_power_kw": 2
+        }
+      ],
+      "ambient_c": 32
+    }
+  ],
+  "events": [
+    {
+      "event_id": "hoist-motor-start",
+      "time_s": 1800,
+      "event_type": "motor_start",
+      "target_id": "crane_hoist",
+      "delta_active_power_kw": 120,
+      "duration_ms": 800,
+      "notes": "Synthetic event; no transient waveform capture is included."
+    },
+    {
+      "event_id": "crane-travel-step",
+      "time_s": 2400,
+      "event_type": "load_step",
+      "target_id": "crane_travel",
+      "delta_active_power_kw": 55,
+      "duration_ms": 500,
+      "notes": "Synthetic event; no transient waveform capture is included."
+    },
+    {
+      "event_id": "shore-grid-loss",
+      "time_s": 3600,
+      "event_type": "source_loss",
+      "target_id": "shore_grid",
+      "delta_active_power_kw": null,
+      "duration_ms": null,
+      "notes": "Synthetic event; no transient waveform capture is included."
+    },
+    {
+      "event_id": "shore-grid-return",
+      "time_s": 4500,
+      "event_type": "source_return",
+      "target_id": "shore_grid",
+      "delta_active_power_kw": null,
+      "duration_ms": null,
+      "notes": "Synthetic event; no transient waveform capture is included."
+    }
+  ],
+  "requirements": {
+    "max_unserved_energy_kwh": null,
+    "max_recovery_time_s": null,
+    "max_voltage_deviation_percent": null,
+    "max_frequency_deviation_hz": null,
+    "max_voltage_thd_percent": null,
+    "max_noise_dba": null,
+    "max_fuel_l_per_delivered_kwh": null,
+    "notes": "Customer acceptance limits must be set from the actual service contract and applicable installation requirements before benchmarking."
+  },
+  "data_rights": {
+    "data_owner": "Luminous Dynamics (synthetic fixture author)",
+    "license": "CC0-1.0",
+    "commercial_use": "allowed",
+    "redistribution": "allowed",
+    "attribution_required": false,
+    "rights_reference": "Synthetic authored example; contains no measured customer or vendor data."
+  },
+  "provenance": {
+    "source_kind": "synthetic",
+    "source_reference": "Authored deterministic synthetic fixture; not field data.",
+    "sampling_interval_s": null,
+    "raw_data_sha256": null,
+    "instrument_run_ids": [],
+    "timebase_reference": null
+  },
+  "claim_ceiling": "DUTY_CYCLE_SPECIFICATION_ONLY_NOT_POWER_SYSTEM_SAFETY_OR_PERFORMANCE_QUALIFICATION",
+  "limitations": [
+    "Synthetic demand and source availability only; no physical site was measured.",
+    "Source ratings and load profiles are illustrative assumptions, not supplier specifications.",
+    "No raw voltage/current waveform, harmonics, fault-current or protection evidence is included.",
+    "Cannot substantiate efficiency, fuel savings, power quality, safety, runtime, lifecycle or field readiness.",
+    "Crane regeneration, DC-link behavior, hoist drive control and terminal process logic are not modeled; crane loads are represented as positive consumption only."
+  ]
+}

@@ -1,0 +1,372 @@
+{
+  "schema_version": "0.1",
+  "record_class": "synthetic_fixture",
+  "profile_id": "PF-WATER-PUMP-SYN-001",
+  "name": "Municipal water pumping and transfer duty",
+  "application": "plant_auxiliary",
+  "site": {
+    "country_code": "ZA",
+    "jurisdiction": "South Africa (illustrative only)",
+    "site_type": "mixed",
+    "hazardous_area": false,
+    "hazardous_area_classification": null
+  },
+  "environment": {
+    "ambient_min_c": 12,
+    "ambient_max_c": 38,
+    "altitude_m": 1200,
+    "dust_exposure": "moderate",
+    "moisture_exposure": "intermittent_splash",
+    "corrosive_exposure": "unknown",
+    "vibration_exposure": "low",
+    "transported_between_runs": false,
+    "ingress_target_ip": null,
+    "notes": "Illustrative synthetic environment only; no real site, enclosure rating or hazardous-area classification is asserted."
+  },
+  "sources": [
+    {
+      "source_id": "grid_1",
+      "source_type": "grid",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_power_kw": 60,
+      "bidirectional": false,
+      "evidence_class": "assumption",
+      "reference": "Synthetic illustrative assumption; no supplier rating or physical measurement."
+    },
+    {
+      "source_id": "genset_1",
+      "source_type": "generator",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_power_kw": 35,
+      "bidirectional": false,
+      "evidence_class": "assumption",
+      "reference": "Synthetic illustrative assumption; no supplier rating or physical measurement."
+    },
+    {
+      "source_id": "bess_1",
+      "source_type": "battery_inverter",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_power_kw": 25,
+      "bidirectional": true,
+      "evidence_class": "assumption",
+      "reference": "Synthetic illustrative assumption; no supplier rating or physical measurement."
+    }
+  ],
+  "loads": [
+    {
+      "load_id": "raw_water_pump_a",
+      "category": "motor_pump",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 15,
+      "rated_apparent_power_kva": 16.666666666666668,
+      "power_factor": 0.9,
+      "criticality": "critical",
+      "start_profile": {
+        "inrush_multiple": 5,
+        "inrush_duration_ms": 700,
+        "starts_per_hour": 3
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    },
+    {
+      "load_id": "transfer_pump_b",
+      "category": "motor_pump",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 11,
+      "rated_apparent_power_kva": 12.222222222222221,
+      "power_factor": 0.9,
+      "criticality": "important",
+      "start_profile": {
+        "inrush_multiple": 4.5,
+        "inrush_duration_ms": 650,
+        "starts_per_hour": 3
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    },
+    {
+      "load_id": "dosing_pump",
+      "category": "motor_pump",
+      "interface": "AC_SINGLE_PHASE",
+      "nominal_voltage_v": 230,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 1.5,
+      "rated_apparent_power_kva": 1.7647058823529411,
+      "power_factor": 0.85,
+      "criticality": "important",
+      "start_profile": {
+        "inrush_multiple": 2,
+        "inrush_duration_ms": 200,
+        "starts_per_hour": 6
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    },
+    {
+      "load_id": "controls_comms",
+      "category": "controls_instrumentation",
+      "interface": "AC_SINGLE_PHASE",
+      "nominal_voltage_v": 230,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 0.6,
+      "rated_apparent_power_kva": 0.631578947368421,
+      "power_factor": 0.95,
+      "criticality": "critical",
+      "start_profile": {
+        "inrush_multiple": 1,
+        "inrush_duration_ms": 0,
+        "starts_per_hour": 1
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    }
+  ],
+  "segments": [
+    {
+      "segment_id": "standby_and_controls",
+      "start_s": 0,
+      "duration_s": 600,
+      "available_source_ids": [
+        "grid_1",
+        "bess_1"
+      ],
+      "load_states": [
+        {
+          "load_id": "raw_water_pump_a",
+          "enabled": false,
+          "active_power_kw": 0
+        },
+        {
+          "load_id": "transfer_pump_b",
+          "enabled": false,
+          "active_power_kw": 0
+        },
+        {
+          "load_id": "dosing_pump",
+          "enabled": false,
+          "active_power_kw": 0
+        },
+        {
+          "load_id": "controls_comms",
+          "enabled": true,
+          "active_power_kw": 0.6
+        }
+      ],
+      "ambient_c": 22
+    },
+    {
+      "segment_id": "primary_pump",
+      "start_s": 600,
+      "duration_s": 1200,
+      "available_source_ids": [
+        "grid_1",
+        "genset_1",
+        "bess_1"
+      ],
+      "load_states": [
+        {
+          "load_id": "raw_water_pump_a",
+          "enabled": true,
+          "active_power_kw": 15
+        },
+        {
+          "load_id": "transfer_pump_b",
+          "enabled": false,
+          "active_power_kw": 0
+        },
+        {
+          "load_id": "dosing_pump",
+          "enabled": true,
+          "active_power_kw": 1
+        },
+        {
+          "load_id": "controls_comms",
+          "enabled": true,
+          "active_power_kw": 0.6
+        }
+      ],
+      "ambient_c": 28
+    },
+    {
+      "segment_id": "dual_pump_peak",
+      "start_s": 1800,
+      "duration_s": 1800,
+      "available_source_ids": [
+        "grid_1",
+        "genset_1",
+        "bess_1"
+      ],
+      "load_states": [
+        {
+          "load_id": "raw_water_pump_a",
+          "enabled": true,
+          "active_power_kw": 15
+        },
+        {
+          "load_id": "transfer_pump_b",
+          "enabled": true,
+          "active_power_kw": 11
+        },
+        {
+          "load_id": "dosing_pump",
+          "enabled": true,
+          "active_power_kw": 1.5
+        },
+        {
+          "load_id": "controls_comms",
+          "enabled": true,
+          "active_power_kw": 0.6
+        }
+      ],
+      "ambient_c": 34
+    },
+    {
+      "segment_id": "grid_loss_reduced_service",
+      "start_s": 3600,
+      "duration_s": 1800,
+      "available_source_ids": [
+        "genset_1",
+        "bess_1"
+      ],
+      "load_states": [
+        {
+          "load_id": "raw_water_pump_a",
+          "enabled": true,
+          "active_power_kw": 15
+        },
+        {
+          "load_id": "transfer_pump_b",
+          "enabled": false,
+          "active_power_kw": 0
+        },
+        {
+          "load_id": "dosing_pump",
+          "enabled": true,
+          "active_power_kw": 0.8
+        },
+        {
+          "load_id": "controls_comms",
+          "enabled": true,
+          "active_power_kw": 0.6
+        }
+      ],
+      "ambient_c": 36
+    },
+    {
+      "segment_id": "recovery_and_reserve",
+      "start_s": 5400,
+      "duration_s": 1800,
+      "available_source_ids": [
+        "grid_1",
+        "genset_1",
+        "bess_1"
+      ],
+      "load_states": [
+        {
+          "load_id": "raw_water_pump_a",
+          "enabled": true,
+          "active_power_kw": 15
+        },
+        {
+          "load_id": "transfer_pump_b",
+          "enabled": false,
+          "active_power_kw": 0
+        },
+        {
+          "load_id": "dosing_pump",
+          "enabled": true,
+          "active_power_kw": 1
+        },
+        {
+          "load_id": "controls_comms",
+          "enabled": true,
+          "active_power_kw": 0.6
+        }
+      ],
+      "ambient_c": 30
+    }
+  ],
+  "events": [
+    {
+      "event_id": "pump-a-start",
+      "time_s": 600,
+      "event_type": "motor_start",
+      "target_id": "raw_water_pump_a",
+      "delta_active_power_kw": 15,
+      "duration_ms": 700,
+      "notes": "Synthetic event; no transient waveform capture is included."
+    },
+    {
+      "event_id": "pump-b-start",
+      "time_s": 1800,
+      "event_type": "motor_start",
+      "target_id": "transfer_pump_b",
+      "delta_active_power_kw": 11,
+      "duration_ms": 650,
+      "notes": "Synthetic event; no transient waveform capture is included."
+    },
+    {
+      "event_id": "grid-loss",
+      "time_s": 3600,
+      "event_type": "source_loss",
+      "target_id": "grid_1",
+      "delta_active_power_kw": null,
+      "duration_ms": null,
+      "notes": "Synthetic event; no transient waveform capture is included."
+    },
+    {
+      "event_id": "grid-return",
+      "time_s": 5400,
+      "event_type": "source_return",
+      "target_id": "grid_1",
+      "delta_active_power_kw": null,
+      "duration_ms": null,
+      "notes": "Synthetic event; no transient waveform capture is included."
+    }
+  ],
+  "requirements": {
+    "max_unserved_energy_kwh": null,
+    "max_recovery_time_s": null,
+    "max_voltage_deviation_percent": null,
+    "max_frequency_deviation_hz": null,
+    "max_voltage_thd_percent": null,
+    "max_noise_dba": null,
+    "max_fuel_l_per_delivered_kwh": null,
+    "notes": "Customer acceptance limits must be set from the actual service contract and applicable installation requirements before benchmarking."
+  },
+  "data_rights": {
+    "data_owner": "Luminous Dynamics (synthetic fixture author)",
+    "license": "CC0-1.0",
+    "commercial_use": "allowed",
+    "redistribution": "allowed",
+    "attribution_required": false,
+    "rights_reference": "Synthetic authored example; contains no measured customer or vendor data."
+  },
+  "provenance": {
+    "source_kind": "synthetic",
+    "source_reference": "Authored deterministic synthetic fixture; not field data.",
+    "sampling_interval_s": null,
+    "raw_data_sha256": null,
+    "instrument_run_ids": [],
+    "timebase_reference": null
+  },
+  "claim_ceiling": "DUTY_CYCLE_SPECIFICATION_ONLY_NOT_POWER_SYSTEM_SAFETY_OR_PERFORMANCE_QUALIFICATION",
+  "limitations": [
+    "Synthetic demand and source availability only; no physical site was measured.",
+    "Source ratings and load profiles are illustrative assumptions, not supplier specifications.",
+    "No raw voltage/current waveform, harmonics, fault-current or protection evidence is included.",
+    "Cannot substantiate efficiency, fuel savings, power quality, safety, runtime, lifecycle or field readiness.",
+    "Water storage, hydraulic head, pump curves and variable-speed drive behavior are not modeled."
+  ]
+}
