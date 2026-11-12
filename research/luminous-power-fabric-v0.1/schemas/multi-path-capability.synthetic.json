@@ -9,7 +9,8 @@
       "component_ids": [
         "source_a",
         "converter_a",
-        "branch_a"
+        "branch_a",
+        "shared_bus"
       ],
       "failure_domain_ids": [
         "shared_control_power",
@@ -25,7 +26,8 @@
       "component_ids": [
         "source_b",
         "converter_b",
-        "branch_b"
+        "branch_b",
+        "shared_bus"
       ],
       "failure_domain_ids": [
         "shared_control_power",
@@ -39,10 +41,24 @@
   "required_service_power_w": 50,
   "claim_ceiling": "DECLARED_CONTINGENCY_CAPABILITY_SCREEN_ONLY_NOT_RELIABILITY_OR_PHYSICAL_QUALIFICATION",
   "limitations": [
-    "Synthetic path capacities are illustrative and not equipment ratings.",
+    "Synthetic path capacities and shared-bus capacity are illustrative, not equipment ratings.",
     "Both routes share a declared control-power failure domain; its failure removes both paths.",
+    "The shared bus caps the 180 W nameplate sum at 150 W before contingencies.",
     "The evaluator does not prove the dependency graph is complete.",
     "No electrical fault current, voltage stability, transient, protection clearing, reliability probability or certification is represented."
   ],
-  "service_boundary_id": "protected-48v-dc-service-bus"
+  "service_boundary_id": "protected-48v-dc-service-bus",
+  "shared_capacity_constraints": [
+    {
+      "resource_id": "shared_bus",
+      "configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "evidence_reference": "shared-resource-evidence:shared_bus",
+      "availability": "QualifiedAvailable",
+      "capacity_power_w": 150,
+      "affected_path_ids": [
+        "path_a",
+        "path_b"
+      ]
+    }
+  ]
 }
