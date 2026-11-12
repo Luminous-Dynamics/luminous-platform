@@ -33,7 +33,7 @@ The typed comparator in tools/measurement-audit/src/benchmark_comparison.rs chec
 - current timebase, current calibration, calibration expiry, calibration scope and calibration method;
 - raw-data digest for physical runs and evidence references for every metric.
 
-It retains the reference and candidate evidence-bundle/raw-data/history digests. Metric deltas are candidate minus reference, and the first-order combined uncertainty is the conservative sum of absolute uncertainty bounds. The comparator does not assume independence or use an RSS calculation.
+It retains the complete reference and candidate run snapshots alongside the evidence-bundle/raw-data/history digests, so all match keys, calibration references, POC identities, run classifications and data rights remain attached to the report. Metric deltas are candidate minus reference, and the first-order combined uncertainty is the conservative sum of absolute uncertainty bounds. The comparator does not assume independence or use an RSS calculation.
 
 A structural match is separate from physical-measurement eligibility. A synthetic pair may match every scenario key and still be ineligible as physical evidence. A physical measurement pair can be comparison-eligible without being independently witnessed. The stronger independent-claim evidence eligibility additionally requires both evidence classes to be independently witnessed/accredited and an independent-assessment reference for each run.
 
