@@ -1,0 +1,97 @@
+{
+  "schema_version": "0.2",
+  "record_class": "synthetic_fixture",
+  "mission_id": "PF-FIELD-SYNTHETIC-SHIFT-001",
+  "evaluated_at_epoch_s": 8300,
+  "qualification_valid_until_epoch_s": 9000,
+  "mission_start_epoch_s": 1000,
+  "mission_end_epoch_s": 8200,
+  "qualified_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "observed_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "storage_usable_capacity_kwh": 10,
+  "intervals": [
+    {
+      "start_epoch_s": 1000,
+      "duration_s": 3600,
+      "demanded_energy_kwh": 5,
+      "delivered_energy_kwh": 4.5,
+      "unserved_energy_kwh": 0.5,
+      "source_energy_kwh": 4,
+      "storage_discharge_energy_kwh": 1,
+      "storage_charge_energy_kwh": 0,
+      "auxiliary_and_loss_energy_kwh": 0.5,
+      "stored_energy_start_kwh": 8,
+      "stored_energy_end_kwh": 6.9,
+      "fuel_liters": 0.35
+    },
+    {
+      "start_epoch_s": 4600,
+      "duration_s": 3600,
+      "demanded_energy_kwh": 4,
+      "delivered_energy_kwh": 4,
+      "unserved_energy_kwh": 0,
+      "source_energy_kwh": 6,
+      "storage_discharge_energy_kwh": 0,
+      "storage_charge_energy_kwh": 1.3,
+      "auxiliary_and_loss_energy_kwh": 0.7,
+      "stored_energy_start_kwh": 6.9,
+      "stored_energy_end_kwh": 8,
+      "fuel_liters": 0.4
+    }
+  ],
+  "disturbances": [
+    {
+      "event_id": "source_step_001",
+      "event_time_epoch_s": 1200,
+      "recovery_time_s": 3,
+      "peak_voltage_deviation_percent": 7,
+      "peak_frequency_deviation_hz": 0.6,
+      "quality_and_recovery_evidence_reference": "synthetic-quality-event-001"
+    },
+    {
+      "event_id": "motor_start_001",
+      "event_time_epoch_s": 6000,
+      "recovery_time_s": 2,
+      "peak_voltage_deviation_percent": 6,
+      "peak_frequency_deviation_hz": 0.5,
+      "quality_and_recovery_evidence_reference": "synthetic-quality-event-002"
+    }
+  ],
+  "requirements": {
+    "max_unserved_energy_kwh": 0.6,
+    "max_unserved_fraction": 0.07,
+    "energy_balance_tolerance_kwh": 0.02,
+    "service_balance_tolerance_kwh": 0.02,
+    "storage_state_tolerance_kwh": 0.02,
+    "min_terminal_storage_energy_kwh": 8,
+    "max_fuel_l_per_delivered_kwh": 0.1,
+    "max_recovery_time_s": 5,
+    "max_voltage_deviation_percent": 10,
+    "max_frequency_deviation_hz": 1,
+    "minimum_disturbance_observations": 2,
+    "minimum_demanded_energy_kwh": 8
+  },
+  "lineage": {
+    "measurement_run_id": "synthetic-run-001",
+    "raw_capture_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "channel_manifest_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "qualified_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "observed_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "timebase_reference": "synthetic-timebase-001",
+    "calibration_evidence_reference": "synthetic-calibration-001",
+    "uncertainty_evidence_reference": "synthetic-uncertainty-001",
+    "measurement_status": "current",
+    "calibration_status": "current",
+    "timebase_status": "current",
+    "channel_status": "current",
+    "completeness_status": "current"
+  },
+  "claim_ceiling": "MEASURED_MISSION_SERVICE_AUDIT_ONLY_NOT_DISPATCH_SAFETY_OR_PHYSICAL_QUALIFICATION",
+  "limitations": [
+    "Illustrative synthetic records only; no physical site or device was measured.",
+    "All energy flows are assumed to be measured at the declared common service-bus boundary, except stored energy which is measured at the storage-internal boundary.",
+    "No raw waveform, calibration certificate, meter authentication, battery electrochemistry or control behavior is represented.",
+    "The synthetic thresholds are not customer acceptance limits, standards limits or product ratings.",
+    "No efficiency, fuel-savings, safety, reliability, field-readiness or superiority claim can be inferred."
+  ]
+}
