@@ -123,7 +123,8 @@ Compare the following methods on frozen synthetic and later independently measur
 3. **Component-ID N-1:** removes every route that uses the failed component ID.
 4. **Shared-domain N-1:** removes every route sharing a declared common-cause domain.
 5. **N-k / compound contingencies:** includes caller-declared combinations such as source + cooling loss or bus + protection unavailability.
-6. **Recovery-aware system contract:** future extension incorporating fault detection, verified isolation, repair, requalification, restart, SOC recovery and rebound.
+6. **Shared-throughput constraints:** enforce bus, feeder, cooling or other resource capacity after surviving paths are composed; capacity is recomputed after each contingency.
+7. **Recovery-aware system contract:** future extension incorporating fault detection, verified isolation, repair, requalification, restart, SOC recovery and rebound.
 
 Report:
 - baseline versus robust available capacity;
@@ -140,31 +141,38 @@ Report:
 Proposed software targets (not achieved):
 - Zero non-zero robust capacity when every path is removed by a declared single failure or common-cause cut set.
 - Zero false-available outputs across a frozen deterministic contingency corpus.
-- 100% path, configuration, capability-reference, component and domain lineage in every result.
+- 100% path, configuration, capability-reference, component, domain and shared-capacity evidence lineage in every result.
+- Zero overstatement against a declared shared bus/feeder/cooling throughput limit in frozen arithmetic fixtures.
+- Reject every partially overlapping non-identical capacity group until a correctly bounded network-flow method is implemented.
 - Deterministic output under input permutation.
 - Batch runtime target under 100 ms at p99 for 10,000 paths and 100,000 declared/generated scenarios on a pinned reference host; test and publish the actual scaling curve instead of treating the target as a pass.
 - No probability-weighted reliability score without a separately qualified probability model and empirical evidence.
 
 ## 7. Test suite
 
-The Rust module currently authors 24 unit tests, including:
+The Rust module currently authors 41 unit tests, including:
 - independent parallel paths and N-1;
-- shared source failure;
-- shared cooling domain;
+- shared source, cooling, controller and protection-domain failures;
 - independent failure domains;
 - path blocked by unavailable protection/evidence;
-- shared controller failure;
-- declared compound cooling failure;
+- declared compound contingencies;
 - useful-service threshold compared against robust—not baseline—power;
-- unavailable path excluded from baseline;
+- unavailable paths excluded from baseline;
 - empty/duplicate paths and duplicate component references;
 - missing component IDs;
-- invalid/negative/non-finite power and summation overflow;
+- invalid/negative/non-finite path power and summation overflow;
 - unknown component/domain references;
 - empty/duplicate scenarios;
 - invalid required-service threshold;
-- claim ceiling;
-- deterministic scenario order under path permutation.
+- shared bus capacity caps the parallel sum;
+- shared capacity is recomputed after a component failure;
+- multiple constraints on an identical path group use the minimum capacity;
+- unavailable shared resources withdraw affected paths;
+- shared resource identity is included in N-1;
+- partially overlapping non-identical groups and missing dependency declarations are rejected;
+- duplicate shared-resource IDs and invalid shared capacities are rejected;
+- input permutation preserves the complete report;
+- claim ceiling and deterministic scenario order.
 
 These tests are authored, not executed. They are synthetic arithmetic controls, not physical or reliability evidence.
 
@@ -181,6 +189,6 @@ These tests are authored, not executed. They are synthetic arithmetic controls, 
 
 ## 9. Claim ceiling and validation state
 
-`DECLARED_CONTINGENCY_CAPABILITY_SCREEN_ONLY_NOT_RELIABILITY_OR_PHYSICAL_QUALIFICATION`
+`DECLARED_CONTINGENCY_AND_SHARED_CAPACITY_SCREEN_ONLY_NOT_NETWORK_OR_RELIABILITY_QUALIFICATION`
 
 The module does not switch or control hardware and does not certify the completeness of the dependency graph. Compilation, tests, formatting and Clippy require a Rust-capable runner and remain unverified in this work increment. No energized hardware, fault injection, field, reliability or certification test is claimed.
