@@ -323,6 +323,25 @@ capability; sub-second events remain separate dynamic and physical-test obligati
 retains source and storage evidence/configuration lineage and fails closed on global configuration
 mismatch or expired mission qualification.
 
+## Lifecycle service accounting and observed storage health
+
+[Issue #427](https://github.com/Luminous-Dynamics/luminous-platform/issues/427) introduces
+`tools/measurement-audit/src/lifecycle_service_cost.rs`, a read-only lifecycle accountant.
+It calculates matched cost per delivered critical kWh and per completed mission from integer
+minor-currency ledgers, requires unique economic-event IDs, unions overlapping system-unavailable
+repair intervals, and tracks labour, requalification and component replacement identity.
+
+For storage, the accountant reports capacity and discharge-power retention only from repeated
+independent, calibrated measurements of the same component and unchanged configuration, with
+monotonic throughput/calendar/EFC history and timebase references. It never fits an ageing curve or
+predicts RUL. A complete repair-history record is mandatory: an empty repair list without evidence
+that the maintenance history is complete is not evidence of zero repairs.
+
+The schema and explicitly synthetic comparator fixture are under `schemas/lifecycle-service-accounting-*`;
+equations, ownership and claim ceilings are in
+[LIFECYCLE_SERVICE_ACCOUNTING.md](./LIFECYCLE_SERVICE_ACCOUNTING.md). Synthetic records demonstrate
+the arithmetic but are deliberately ineligible for physical lifecycle claims.
+
 ## Matched-service industry benchmark
 
 [Issue #419](https://github.com/Luminous-Dynamics/luminous-platform/issues/419) and
