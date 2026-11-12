@@ -1,3 +1,7 @@
+## Newly published controller test standard
+
+[IEC TS 62898-3-5:2026](https://webstore.iec.ch/en/publication/84175) covers HIL, commissioning and periodic testing of microgrid monitoring, control and energy-management systems. It is added to the controller-benchmark crosswalk in [DISPATCH_CONTROLLER_BENCHMARK.md](./DISPATCH_CONTROLLER_BENCHMARK.md). This supplements IEEE 2030.7/2030.8 and does not establish conformity.
+
 # Luminous Power Fabric v0.1
 
 **Issue:** [#364 — Luminous Power Fabric](https://github.com/Luminous-Dynamics/luminous-platform/issues/364)  

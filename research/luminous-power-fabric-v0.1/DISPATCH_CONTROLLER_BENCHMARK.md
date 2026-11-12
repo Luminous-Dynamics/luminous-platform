@@ -33,6 +33,10 @@ Use the standards as scoped references, not as a claim of conformity:
 - [IEC TS 62933-2-2:2022](https://webstore.iec.ch/en/publication/64570) supplies application-specific EES duty-cycle and performance-test context.
 - [IEC TS 62933-2-3:2025](https://webstore.iec.ch/en/publication/77334) supplies post-commissioning site-operation assessment context.
 
+
+- [IEC TS 62898-3-5:2026](https://webstore.iec.ch/en/publication/84175) is the direct, newly published microgrid MMCS/MEMS test anchor for hardware-in-the-loop, commissioning and periodic testing of grid-connected and isolated microgrid monitoring, control and energy-management systems. It was published 11 June 2026. Use the licensed text to map exact HIL setup, test conditions and acceptance requirements; a reference to the specification is not a conformity claim.
+
+The intended relationship is complementary: IEEE 2030.7-2017 specifies common controller functions; IEEE 2030.8-2018 provides controller test procedures and comparison metrics; IEC TS 62898-3-5:2026 specifically covers HIL, commissioning and periodic tests for MMCS/MEMS. Revision projects P2030.7 and P2030.8 remain active PARs, not published replacements.
 The controller protocol does not replace electrical waveform, power-quality, protection, generator, battery-safety, grid-interconnection or product-conformity testing. The power-duration and evidence-passport workstreams remain separate evidence obligations.
 
 ## 3. Benchmark contract
