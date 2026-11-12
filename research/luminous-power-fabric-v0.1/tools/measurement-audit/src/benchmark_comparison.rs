@@ -760,6 +760,34 @@ mod tests {
     }
 
     #[test]
+    fn vendor_published_specification_is_not_physical_measurement() {
+        let reference = run("vendor-reference", BenchmarkEvidenceClass::VendorAssertion, '4', 10_000.0);
+        let candidate = run("vendor-candidate", BenchmarkEvidenceClass::VendorAssertion, '5', 9_900.0);
+        let report = compare_matched_benchmark_runs(MatchedBenchmarkInput {
+            evaluation_time_epoch_s: 100,
+            reference: &reference,
+            candidate: &candidate,
+        })
+        .unwrap();
+        assert!(report.structural_match);
+        assert!(!report.physical_measurement_eligible);
+        assert!(report.blockers.contains(&"reference_not_physical_measurement".to_string()));
+    }
+
+    #[test]
+    fn synthetic_evidence_cannot_be_labelled_as_controlled_laboratory() {
+        let mut reference = run("synthetic-reference", BenchmarkEvidenceClass::Synthetic, '4', 10_000.0);
+        reference.run_mode = super::BenchmarkRunMode::ControlledLaboratory;
+        let candidate = run("synthetic-candidate", BenchmarkEvidenceClass::Synthetic, '5', 9_900.0);
+        assert!(compare_matched_benchmark_runs(MatchedBenchmarkInput {
+            evaluation_time_epoch_s: 100,
+            reference: &reference,
+            candidate: &candidate,
+        })
+        .is_err());
+    }
+
+    #[test]
     fn vendor_assertion_cannot_be_labelled_as_field_measurement() {
         let mut value = run("vendor-run", BenchmarkEvidenceClass::VendorAssertion, '4', 10_000.0);
         value.run_mode = super::BenchmarkRunMode::FieldMission;
