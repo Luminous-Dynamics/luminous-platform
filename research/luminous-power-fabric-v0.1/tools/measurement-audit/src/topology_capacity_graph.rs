@@ -146,6 +146,9 @@ pub fn validate_topology_capacity_graph(graph: &TopologyCapacityGraph) -> Result
         }
     }
 
+    if graph.failure_domains.len() > MAX_SCENARIO_FAILURES {
+        return Err(AuditError("failure-domain count exceeds the supported limit".to_string()));
+    }
     let mut domains = BTreeSet::new();
     for domain in &graph.failure_domains {
         nonblank(&domain.domain_id, "failure_domain_id")?;
@@ -372,10 +375,14 @@ pub fn evaluate_topology_capacity_graph(
     }
 
     let mut network = Dinic::new(nodes.len() + 1);
-    for source_id in &graph.source_node_ids {
+    let mut ordered_source_ids = graph.source_node_ids.clone();
+    ordered_source_ids.sort();
+    for source_id in &ordered_source_ids {
         let i = *indices.get(source_id.as_str()).ok_or_else(|| AuditError("validated source lookup failed".to_string()))?;
         if node_is_available(nodes[i], scenario) && i != sink {
-            network.add_edge(super_source, i, total_capacity);
+            // This connector must never become the reported minimum cut. The
+            // checked sum of real arc capacities above bounds total possible flow.
+            network.add_edge(super_source, i, u64::MAX);
         }
     }
 
@@ -746,6 +753,28 @@ mod tests {
     fn n1_suite_rejects_empty_and_duplicate_scenarios() {
         assert!(evaluate_topology_capacity_n1_suite(&graph(), &[scenario("empty")]).is_err());
         assert!(evaluate_topology_capacity_n1_suite(&graph(), &[scenario("baseline")]).is_err());
+    }
+
+
+    #[test]
+    fn single_source_single_edge_cut_witness_excludes_super_source_connector() {
+        let g = TopologyCapacityGraph {
+            graph_id: "single-edge".into(),
+            service_boundary_sha256: digest('1'),
+            power_basis: "NET_ACTIVE_POWER_AT_CUSTOMER_POC".into(),
+            unit: "W".into(),
+            source_node_ids: vec!["source".into()],
+            sink_node_id: "sink".into(),
+            nodes: vec![
+                node("source", CapacityNodeType::Source, "source-component", &[]),
+                node("sink", CapacityNodeType::ServiceSink, "sink-component", &[]),
+            ],
+            failure_domains: vec![],
+            arcs: vec![arc("only-arc", "source", "sink", 100, "only-converter", &[])],
+        };
+        let report = evaluate_topology_capacity_graph(&g, &scenario("single-edge")).unwrap();
+        assert_eq!(report.scenario.max_flow_power_w, 100);
+        assert_eq!(report.scenario.min_cut_witness_arc_ids, vec!["only-arc".to_string()]);
     }
 
 }
