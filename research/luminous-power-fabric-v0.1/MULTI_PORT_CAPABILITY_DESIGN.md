@@ -32,9 +32,10 @@ Public API:
 - `evaluate_multi_path_capability`
 
 Input concepts:
-- `CapabilityPath`: one already-prequalified source-to-load route, its continuous bottleneck power, availability state, component/dependency IDs and shared failure-domain IDs.
+- `service_boundary_id`: one exact useful-service boundary shared by every route; path powers cannot be added if they terminate at different buses, load groups or measurands.
+- `CapabilityPath`: one already-prequalified source-to-service route, its continuous bottleneck power, availability state, exact configuration SHA-256, capability-evidence reference, component/dependency IDs and shared failure-domain IDs.
 - `DeclaredFailureScenario`: one explicit multi-component and/or multi-domain contingency.
-- `MultiPathCapabilityInput`: path set, additional contingencies and optional useful-service threshold.
+- `MultiPathCapabilityInput`: service boundary, path set, additional contingencies and optional useful-service threshold.
 
 Only paths marked `QualifiedAvailable` contribute baseline capacity. The caller must supply a route bottleneck, not add series-component ratings. A non-available status (evidence blocked, protection not ready, faulted or unknown) contributes zero even if a stale positive power number was passed.
 
@@ -43,6 +44,8 @@ The evaluator automatically creates a deterministic single-failure scenario for 
 Additional declared scenarios permit N-k and selected common-cause combinations. All scenario references must resolve to IDs in the input graph. Duplicate paths, duplicate IDs, unknown scenario dependencies, missing components, negative/non-finite power and arithmetic overflow are rejected.
 
 The result contains:
+- the shared service-boundary identity;
+- each path's exact configuration digest and upstream capability-evidence reference;
 - baseline sum of currently qualified parallel route bottlenecks;
 - capability remaining after each generated and declared contingency;
 - the minimum surviving (robust) power;
@@ -78,7 +81,7 @@ v0.1 is a parallel-route capacity screen. It does not yet:
 - compute component failure probabilities, reliability, availability or confidence intervals;
 - decide whether an operator is permitted to switch, isolate, reclose or maintain hardware.
 
-Those are distinct owners and future integration tasks. The caller must provide a complete, reviewed declared dependency list and route capacities already bounded by the upstream port capability and engineering analysis.
+Those are distinct owners and future integration tasks. The caller must provide a complete, reviewed declared dependency list and route capacities already bounded by the upstream port capability and engineering analysis. All route powers must be expressed at the same declared useful-service boundary. Each route must bind the exact upstream configuration digest and capability-evidence reference; the evaluator validates digest shape and preserves identity but does not authenticate the evidence.
 
 ## 5. Required common-cause identifiers
 
@@ -124,7 +127,7 @@ Report:
 Proposed software targets (not achieved):
 - Zero non-zero robust capacity when every path is removed by a declared single failure or common-cause cut set.
 - Zero false-available outputs across a frozen deterministic contingency corpus.
-- 100% path, component and domain lineage in every result.
+- 100% path, configuration, capability-reference, component and domain lineage in every result.
 - Deterministic output under input permutation.
 - Batch runtime target under 100 ms at p99 for 10,000 paths and 100,000 declared/generated scenarios on a pinned reference host; test and publish the actual scaling curve instead of treating the target as a pass.
 - No probability-weighted reliability score without a separately qualified probability model and empirical evidence.
