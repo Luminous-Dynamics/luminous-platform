@@ -246,3 +246,14 @@ The standards crosswalk now includes IEC TS 62898-3-5:2026 for HIL/commissioning
 IEC TS 62898-3-2:2024 for MEMS, IEC TS 62898-3-4:2023 for MMCS, and IEEE 2030.7/2030.8. HIL/P-HIL,
 physical laboratory, commissioning and periodic/site operation remain distinct test boundaries.
 This is a research plan only; no test has been executed and no conformity claim is made.
+
+
+## 15. Controller test-environment passport
+
+[Issue #445](https://github.com/Luminous-Dynamics/luminous-platform/issues/445) and
+[draft PR #447](https://github.com/Luminous-Dynamics/luminous-platform/pull/447) add a strict
+controller-test environment passport. It identifies each component as planned physical, simulated,
+emulated or absent; records simulator/model identity, communications and timebase; and reserves
+fields for real-time deadline/overrun, model-validity and channel evidence. The checked-in record is
+a planned synthetic controller-HIL fixture. Null timing/model-validation observations are unknown,
+not zero, and no test result or hardware claim is made.
