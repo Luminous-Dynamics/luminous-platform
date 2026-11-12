@@ -142,3 +142,10 @@ Standards/test-method references newly added for this work:
 These references do not by themselves qualify a portable hybrid product. Product classification, South
 African SANS/NRCS applicability, battery safety, converter safety, protection, installation and
 accredited physical testing remain separate release gates.
+
+
+## 11. Lifecycle-adjusted service cost and repairability
+
+[Issue #424](https://github.com/Luminous-Dynamics/luminous-platform/issues/424) opens the next benchmark layer: repeated matched missions across battery capacity/power fade, calendar/cycle ageing, fuel and energy costs, replacement, maintenance, repair turnaround and requalification. The comparison denominator remains delivered critical service and completed missions—not nominal battery kWh or one-cycle efficiency.
+
+This work consumes qualified state-of-health/capacity/power trajectories from the appropriate battery model and Mycelix evidence; it does not create a new electrochemical ageing model. Unknown degradation is not zero degradation. Beginning-, mid- and end-of-life service are reported with replacements, downtime, repair labour, spares and uncertainty retained. No lifecycle advantage is claimed until a repeated, matched and independently measured mission dataset exists.
