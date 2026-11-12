@@ -1,7 +1,9 @@
 use crate::temporal_scenarios::{
-    validate_scenario_set, ForecastScenarioSet, ScenarioGenerationContract,
+    validate_scenario_set, ForecastScenarioSet, MeasuredForecastHorizon,
+    SampleQuality, ScenarioGenerationContract,
 };
 use crate::AuditError;
+use std::collections::HashSet;
 
 /// This module qualifies an offline modelled reserve decision only. It does not
 /// establish physical reserve delivery, PCC capability or grid-service eligibility.
@@ -183,6 +185,159 @@ pub struct ReserveRiskReport {
     pub total_variation_dro_cvar: Option<ReservePolicyDecision>,
     pub frontier: Vec<ReserveRiskFrontierPoint>,
     pub claim_ceiling: &'static str,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ReservePolicyMeasuredOutcome {
+    pub policy: ReservePolicyKind,
+    pub reserve_power_mw: u64,
+    pub actual_horizon_surplus_mw: u64,
+    pub measured_shortfall_mw: u64,
+    pub shortfall_occurred: bool,
+    /// Modelled reserve-plus-shortfall cost evaluated against measured power.
+    /// This is not a market settlement amount.
+    pub measured_horizon_normalized_cost_ratio_units: f64,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ReservePolicyReplayReport {
+    pub risk_contract_id: String,
+    pub risk_contract_revision: String,
+    pub forecast_id: String,
+    pub forecast_origin_id: String,
+    pub forecast_origin_timestamp_ns: u64,
+    pub forecast_evidence_id: String,
+    pub scenario_generation_contract: ScenarioGenerationContract,
+    pub scenario_ids: Vec<String>,
+    pub measurement_run_id: String,
+    pub measurement_evidence_id: String,
+    pub measurement_time_alignment_evidence_id: String,
+    pub measurement_source_timeline_digest_reference: String,
+    pub measured_sample_evidence_ids: Vec<String>,
+    pub actual_horizon_surplus_mw: u64,
+    pub outcomes: Vec<ReservePolicyMeasuredOutcome>,
+    pub claim_ceiling: &'static str,
+}
+
+const RESERVE_POLICY_REPLAY_CLAIM_CEILING: &str =
+    "MEASURED_HORIZON_OFFLINE_POLICY_REPLAY_NOT_GRID_RESERVE_QUALIFICATION";
+
+fn score_measured_policy(
+    decision: &ReservePolicyDecision,
+    actual_horizon_surplus_mw: u64,
+    reserve_cost_ratio: f64,
+) -> ReservePolicyMeasuredOutcome {
+    let measured_shortfall_mw =
+        actual_horizon_surplus_mw.saturating_sub(decision.reserve_power_mw);
+    ReservePolicyMeasuredOutcome {
+        policy: decision.policy,
+        reserve_power_mw: decision.reserve_power_mw,
+        actual_horizon_surplus_mw,
+        measured_shortfall_mw,
+        shortfall_occurred: measured_shortfall_mw > 0,
+        measured_horizon_normalized_cost_ratio_units: reserve_cost_ratio
+            * decision.reserve_power_mw as f64
+            + measured_shortfall_mw as f64,
+    }
+}
+
+/// Replay each selected reserve policy against the subsequently measured
+/// horizon for the exact forecast origin. The function recomputes the complete
+/// risk report from its source scenario set before accepting the decisions,
+/// preventing a caller from substituting a hand-edited reserve or summary.
+pub fn evaluate_reserve_policy_replay(
+    scenarios: &ForecastScenarioSet,
+    risk_report: &ReserveRiskReport,
+    actual: &MeasuredForecastHorizon,
+) -> Result<ReservePolicyReplayReport, AuditError> {
+    validate_scenario_set(scenarios)?;
+    let recomputed = evaluate_reserve_risk(scenarios, &risk_report.contract)?;
+    if &recomputed != risk_report {
+        return Err(AuditError(
+            "reserve-risk report does not exactly match deterministic recomputation from the supplied scenario set"
+                .to_string(),
+        ));
+    }
+
+    if actual.forecast_id != scenarios.forecast_id
+        || actual.clock_id != scenarios.contract.clock_id
+        || actual.time_origin_id != scenarios.contract.time_origin_id
+        || actual.model_contract != scenarios.contract.model_contract
+        || actual.measurement_run_id.trim().is_empty()
+        || actual.measurement_evidence_id.trim().is_empty()
+        || actual.time_alignment_evidence_id.trim().is_empty()
+        || actual.source_timeline_digest_reference.trim().is_empty()
+        || actual.samples.len() != scenarios.contract.horizon_steps
+    {
+        return Err(AuditError(
+            "measured horizon does not match the exact forecast, model, clock or scenario contract"
+                .to_string(),
+        ));
+    }
+
+    let mut sample_ids = HashSet::new();
+    let mut measured_power = Vec::with_capacity(actual.samples.len());
+    let mut measured_evidence_ids = Vec::with_capacity(actual.samples.len());
+    for (index, sample) in actual.samples.iter().enumerate() {
+        if sample.timestamp_ns != scenarios.step_timestamps_ns[index]
+            || sample.quality != SampleQuality::Good
+            || sample.source_evidence_id.trim().is_empty()
+            || !sample_ids.insert(sample.source_evidence_id.as_str())
+        {
+            return Err(AuditError(format!(
+                "measured replay sample {index} is invalid, duplicated or not exactly aligned"
+            )));
+        }
+        measured_power.push(sample.power_mw);
+        measured_evidence_ids.push(sample.source_evidence_id.clone());
+    }
+
+    let actual_horizon_surplus_mw =
+        horizon_surplus(&measured_power, &scenarios.scheduled_median_power_mw)?;
+    let mut outcomes = vec![score_measured_policy(
+        &risk_report.empirical_critical_fractile,
+        actual_horizon_surplus_mw,
+        risk_report.contract.reserve_cost_ratio,
+    )];
+    if let Some(decision) = &risk_report.empirical_cvar_constrained {
+        outcomes.push(score_measured_policy(
+            decision,
+            actual_horizon_surplus_mw,
+            risk_report.contract.reserve_cost_ratio,
+        ));
+    }
+    if let Some(decision) = &risk_report.total_variation_dro_cvar {
+        outcomes.push(score_measured_policy(
+            decision,
+            actual_horizon_surplus_mw,
+            risk_report.contract.reserve_cost_ratio,
+        ));
+    }
+
+    Ok(ReservePolicyReplayReport {
+        risk_contract_id: risk_report.contract.contract_id.clone(),
+        risk_contract_revision: risk_report.contract.contract_revision.clone(),
+        forecast_id: scenarios.forecast_id.clone(),
+        forecast_origin_id: scenarios.forecast_origin_id.clone(),
+        forecast_origin_timestamp_ns: scenarios.forecast_origin_timestamp_ns,
+        forecast_evidence_id: scenarios.forecast_evidence_id.clone(),
+        scenario_generation_contract: scenarios.contract.clone(),
+        scenario_ids: scenarios
+            .scenarios
+            .iter()
+            .map(|scenario| scenario.scenario_id.clone())
+            .collect(),
+        measurement_run_id: actual.measurement_run_id.clone(),
+        measurement_evidence_id: actual.measurement_evidence_id.clone(),
+        measurement_time_alignment_evidence_id: actual.time_alignment_evidence_id.clone(),
+        measurement_source_timeline_digest_reference: actual
+            .source_timeline_digest_reference
+            .clone(),
+        measured_sample_evidence_ids: measured_evidence_ids,
+        actual_horizon_surplus_mw,
+        outcomes,
+        claim_ceiling: RESERVE_POLICY_REPLAY_CLAIM_CEILING,
+    })
 }
 
 fn validate_nonnegative_samples(values: &[f64]) -> Result<(), AuditError> {
@@ -592,6 +747,44 @@ mod tests {
             (left - right).abs() < 1.0e-8,
             "expected {right}, received {left}"
         );
+    }
+
+    #[test]
+    fn measured_policy_score_reports_shortfall_and_normalized_cost() {
+        let decision = ReservePolicyDecision {
+            policy: ReservePolicyKind::EmpiricalCriticalFractile,
+            reserve_power_mw: 10,
+            empirical_expected_cost_ratio_units: 0.0,
+            worst_case_expected_cost_ratio_units: 0.0,
+            empirical_shortfall_probability: 0.0,
+            worst_case_shortfall_probability: 0.0,
+            empirical_cvar_shortfall_mw: 0.0,
+            worst_case_cvar_shortfall_mw: 0.0,
+            qualified_under_declared_risk_contract: true,
+        };
+        let result = score_measured_policy(&decision, 16, 0.2);
+        assert_eq!(result.measured_shortfall_mw, 6);
+        assert!(result.shortfall_occurred);
+        close(result.measured_horizon_normalized_cost_ratio_units, 8.0);
+    }
+
+    #[test]
+    fn measured_policy_score_has_zero_shortfall_when_reserve_covers_event() {
+        let decision = ReservePolicyDecision {
+            policy: ReservePolicyKind::TotalVariationDroCvar,
+            reserve_power_mw: 20,
+            empirical_expected_cost_ratio_units: 0.0,
+            worst_case_expected_cost_ratio_units: 0.0,
+            empirical_shortfall_probability: 0.0,
+            worst_case_shortfall_probability: 0.0,
+            empirical_cvar_shortfall_mw: 0.0,
+            worst_case_cvar_shortfall_mw: 0.0,
+            qualified_under_declared_risk_contract: true,
+        };
+        let result = score_measured_policy(&decision, 16, 0.2);
+        assert_eq!(result.measured_shortfall_mw, 0);
+        assert!(!result.shortfall_occurred);
+        close(result.measured_horizon_normalized_cost_ratio_units, 4.0);
     }
 
     #[test]
