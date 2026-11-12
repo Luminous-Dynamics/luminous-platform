@@ -316,3 +316,11 @@ The statistical unit is a fixed-exposure operating cluster. Episodes inside a cl
 The internal research target is at least 7.4% lower normalized reserve cost than the independent-marginal negative control while satisfying the same preregistered shortfall ceiling and cluster-level reliability requirement. The published 7.4–10.6% study result motivates the target; no improvement has been demonstrated by Luminous.
 
 See [Paired, Cluster-Aware Scenario Decision Tournament](./SCENARIO_DECISION_TOURNAMENT_2026-11-11.md). Twenty-one synthetic Rust tests are authored but not executed; no compilation, physical measurement or grid reserve qualification is claimed.
+
+## Tail-risk-aware reserve decisions: CVaR and finite-support DRO
+
+The new \`reserve_risk\` Rust module builds on the paired scenario tournament and evaluates three reserve policies on the same validated scenario paths: an empirical critical-fractile baseline, empirical CVaR-constrained reserve selection, and finite-support total-variation distributionally robust CVaR. It retains the complete forecast/scenario provenance, reports empirical and worst-case shortage probability and tail shortfall, and exposes a cost-risk Pareto frontier. It fails closed when scenario support, effective tail-path mass, or the reserve candidate grid does not satisfy the frozen contract.
+
+The total-variation ambiguity set reweights only the observed scenario support; it does not create unseen events or claim a calibrated real-world ambiguity region. The current module is a reserve-risk subsystem, not the full joint workload/cooling/storage/generation optimization used in current Bit-Watt research. The benchmark and next-stage design are in [RESERVE_RISK_CVAR_DRO_BENCHMARK_2026-11-12.md](./RESERVE_RISK_CVAR_DRO_BENCHMARK_2026-11-12.md).
+
+Twenty Rust tests are authored but not executed. No compilation, runtime comparison, measured performance, physical reserve delivery or grid-service qualification is claimed.
