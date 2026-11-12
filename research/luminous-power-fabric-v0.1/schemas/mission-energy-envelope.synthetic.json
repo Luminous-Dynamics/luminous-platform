@@ -15,7 +15,9 @@
       "qualified_source_average_power_w": 2000,
       "source_measurement_uncertainty_bound_w": 0,
       "source_model_uncertainty_bound_w": 0,
-      "source_configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "qualified_source_configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "observed_source_configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "source_qualification_valid_until_epoch_s": 1000,
       "source_evidence_status": "current",
       "source_evidence_reference": "synthetic:symtropy-source-segment-001"
     },
@@ -27,7 +29,9 @@
       "qualified_source_average_power_w": 0,
       "source_measurement_uncertainty_bound_w": 0,
       "source_model_uncertainty_bound_w": 0,
-      "source_configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "qualified_source_configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "observed_source_configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "source_qualification_valid_until_epoch_s": 1000,
       "source_evidence_status": "current",
       "source_evidence_reference": "synthetic:symtropy-source-segment-002"
     }
