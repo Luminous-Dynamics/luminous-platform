@@ -194,6 +194,7 @@ pub struct ReservePolicyMeasuredOutcome {
     pub actual_horizon_surplus_mw: u64,
     pub measured_shortfall_mw: u64,
     pub shortfall_occurred: bool,
+    pub qualified_under_declared_risk_contract: bool,
     /// Modelled reserve-plus-shortfall cost evaluated against measured power.
     /// This is not a market settlement amount.
     pub measured_horizon_normalized_cost_ratio_units: f64,
@@ -235,6 +236,7 @@ fn score_measured_policy(
         actual_horizon_surplus_mw,
         measured_shortfall_mw,
         shortfall_occurred: measured_shortfall_mw > 0,
+        qualified_under_declared_risk_contract: decision.qualified_under_declared_risk_contract,
         measured_horizon_normalized_cost_ratio_units: reserve_cost_ratio
             * decision.reserve_power_mw as f64
             + measured_shortfall_mw as f64,
@@ -634,7 +636,12 @@ fn select_decision(
         empirical_cvar_shortfall_mw: point.empirical_cvar_shortfall_mw,
         worst_case_cvar_shortfall_mw: point.worst_case_cvar_shortfall_mw,
         qualified_under_declared_risk_contract: match policy {
-            ReservePolicyKind::EmpiricalCriticalFractile => true,
+            ReservePolicyKind::EmpiricalCriticalFractile => {
+                point.empirical_cvar_gate_met
+                    && point.empirical_chance_gate_met
+                    && point.robust_cvar_gate_met
+                    && point.robust_chance_gate_met
+            }
             ReservePolicyKind::EmpiricalCvarConstrained => {
                 point.empirical_cvar_gate_met && point.empirical_chance_gate_met
             }
@@ -939,6 +946,19 @@ mod tests {
         let robust = select_decision(&frontier, ReservePolicyKind::TotalVariationDroCvar);
         assert_eq!(empirical.unwrap().reserve_power_mw, 15);
         assert_eq!(robust.unwrap().reserve_power_mw, 15);
+    }
+
+    #[test]
+    fn empirical_critical_fractile_baseline_does_not_claim_failed_risk_gates() {
+        let mut value = contract();
+        value.maximum_empirical_cvar_shortfall_mw = 0;
+        value.maximum_robust_cvar_shortfall_mw = 0;
+        value.maximum_shortfall_probability = 0.0;
+        value.maximum_reserve_mw = 0;
+        let (frontier, _) = evaluate_distribution(&[1, 2, 3, 4], &value).unwrap();
+        let baseline =
+            select_decision(&frontier, ReservePolicyKind::EmpiricalCriticalFractile).unwrap();
+        assert!(!baseline.qualified_under_declared_risk_contract);
     }
 
     #[test]
