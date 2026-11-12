@@ -249,6 +249,44 @@ emissions savings. It keeps source provenance for each stage efficiency, standby
 emissions factor. This enables fairer AC/DC, 48 V and 800 V architecture comparisons than adding
 separate peak-efficiency percentages. It does not replace a site model or measured energy study.
 
+
+## Portable field-power systems and rugged industrial deployment
+
+[Issue #413](https://github.com/Luminous-Dynamics/luminous-platform/issues/413) and
+[PR #414](https://github.com/Luminous-Dynamics/luminous-platform/pull/414) extend the Power Fabric
+PEBB work into portable service nodes, towable/mobile hybrid power systems and later plant-support
+systems. The product architecture and benchmark boundary are documented in
+[FIELD_POWER_PLATFORM.md](./FIELD_POWER_PLATFORM.md). A rights-aware source/load duty-cycle schema
+and synthetic construction profile are in `schemas/field-mission-profile-v0.1.schema.json` and
+`schemas/field-mission-profile.synthetic.json`.
+
+## DC branch power protection
+
+[Issue #415](https://github.com/Luminous-Dynamics/luminous-platform/issues/415) studies a 48 V-class
+solid-state branch controller. The design basis compares integrated eFuses, external-FET controllers,
+discrete SSPCs, conventional fuse/mechanical disconnect and hybrid semiconductor/mechanical
+interruption. See [LV_DC_BRANCH_CONTROLLER_DESIGN_BASIS.md](./LV_DC_BRANCH_CONTROLLER_DESIGN_BASIS.md).
+
+## Evidence-gated capability envelope
+
+[Issue #416](https://github.com/Luminous-Dynamics/luminous-platform/issues/416) introduces a typed,
+read-only Rust evaluator for current, direction-specific continuous-power capability. It binds
+configuration identity, qualification expiry, calibration/sensor status, protection readiness,
+telemetry freshness, thermal derating and conservative uncertainty. It does not control hardware or
+replace independent protection. See [CAPABILITY_ENVELOPE_DESIGN.md](./CAPABILITY_ENVELOPE_DESIGN.md),
+the capability JSON schema and synthetic fixture under `schemas/`, and the measurement-audit crate.
+
+The next multi-port step is common-cause-aware capability and recovery analysis in
+[issue #417](https://github.com/Luminous-Dynamics/luminous-platform/issues/417).
+
+## Standards applicability
+
+The dated standards and conformity workstream is maintained in
+[STANDARDS_APPLICABILITY_RESEARCH.md](./STANDARDS_APPLICABILITY_RESEARCH.md). It distinguishes
+converter safety, breaker/isolator claims, construction-site assemblies, site installations,
+battery/ESS testing, environmental qualification and South African NRCS product-category review.
+A standards reference is not a compliance or certification claim.
+
 ## Current limitations
 
 This package contains analytical screening models and offline data-audit tools; it does **not**
