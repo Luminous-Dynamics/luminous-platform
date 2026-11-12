@@ -230,3 +230,10 @@ Sources:
 - IEEE 2030.8-2018: https://standards.ieee.org/ieee/2030.8/6169/
 - P2030.7: https://standards.ieee.org/ieee/2030.7/12022/
 - P2030.8: https://standards.ieee.org/ieee/2030.8/12543/
+
+
+### Controller test families and measurement uncertainty update
+
+The controller crosswalk now enumerates the MEMS HIL families (dispatch optimisation, forecasts, demand-side integration, flexible-resource management) separately from MMCS HIL functions (anti-maloperation, voltage/frequency regulation, switching, mode transition, P/Q control, islanding, black start and end-to-end HIL before commissioning) listed in the public contents of IEC TS 62898-3-5:2026. See [DISPATCH_CONTROLLER_BENCHMARK.md](./DISPATCH_CONTROLLER_BENCHMARK.md). Detailed test conditions and acceptance values require licensed-text review.
+
+The metrology crosswalk also records JCGM 100:2008/Amd.1:2026 and JCGM GUM-5:2026 from the BIPM/JCGM catalogue. Passport PR #430's conservative uncertainty-bound sum remains diagnostic only; nonlinear/correlated uncertainty calculation and method receipts remain Mycelix-owned (#6048). Platform consumes that result and does not create a second uncertainty engine.
