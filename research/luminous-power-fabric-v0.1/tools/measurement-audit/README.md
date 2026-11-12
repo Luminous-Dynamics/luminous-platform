@@ -60,36 +60,31 @@ anti-double-counting rules and the DAB/CLLC model-to-bench plan.
 
 ## Common-cause-aware multi-path capability
 
-The crate exposes `multi_port_capability::evaluate_multi_path_capability`, a read-only
-deterministic composition of already-qualified parallel source-to-service paths. All route powers
-must terminate at one exact shared service boundary. Every path also retains its configuration
-SHA-256 and upstream capability-evidence reference. The evaluator calculates a baseline sum,
-automatically evaluates failure of every declared component and shared failure domain, and accepts
-explicit compound contingencies. The robust capability is the minimum surviving path capacity
-over the baseline and all enumerated scenarios. A shared source, bus, cooling loop, controller or
-other dependency ID removes every path that declares that dependency.
+The crate exposes `multi_port_capability::evaluate_multi_path_capability`, a deterministic,
+read-only composition of already-qualified parallel source-to-service paths. All route powers must
+terminate at one exact useful-service boundary. Each path retains its configuration SHA-256 and
+upstream capability-evidence reference.
 
-This is not an electrical network solver, fault-current model, protection coordination test,
-reliability-probability estimator or minimal-cut-set discovery engine. It does not authenticate
-path evidence, infer missing dependencies, calculate serial-component bottlenecks or authorize
-switching. Each route's input power must already be bounded by the upstream capability and engineering
-assessment. See `multi_port_capability.rs`, the `schemas/multi-path-capability-*` contract fixtures
-and [MULTI_PORT_CAPABILITY_DESIGN.md](../../MULTI_PORT_CAPABILITY_DESIGN.md).
+The evaluator:
+- automatically evaluates every declared component and shared failure-domain loss;
+- supports explicit compound contingencies;
+- removes all routes that depend on a failed, unknown or otherwise unavailable component/domain;
+- applies shared throughput ceilings for declared buses, feeders, cooling resources or other common
+  bottlenecks;
+- recomputes shared capacity after each contingency; and
+- rejects partially overlapping non-identical shared-capacity path groups rather than applying an
+  unsafe arithmetic approximation.
 
+The robust capability is the minimum surviving capacity across the baseline and all enumerated
+scenarios. Shared resources retain their configuration and evidence references in the result.
 
-## Common-cause-aware multi-path capability
-
-The crate exposes `multi_port_capability::evaluate_multi_path_capability`. It consumes already
-qualified source-to-load route bottlenecks, removes routes affected by each unique component or
-shared failure-domain loss, and evaluates caller-declared compound contingencies. The robust
-capacity is the minimum surviving route capacity across the baseline and all declared scenarios.
-
-This prevents additive N-1 credit for paths that share a source, bus, cooling system, controller,
-protection device or other declared dependency. It does not discover undeclared dependencies,
-calculate serial path bottlenecks, solve electrical networks, calculate fault current, infer failure
-probabilities or operate equipment. See
-[MULTI_PORT_CAPABILITY_DESIGN.md](../../MULTI_PORT_CAPABILITY_DESIGN.md) and
-[issue #417](https://github.com/Luminous-Dynamics/luminous-platform/issues/417).
+This is a declared-contingency and shared-capacity arithmetic screen, not an electrical network
+solver, fault-current model, protection coordination test, reliability-probability estimator or
+minimal-cut-set discovery engine. It does not authenticate path evidence, infer missing dependencies,
+calculate serial-component bottlenecks or authorize switching. Each route's input power must already
+be bounded by the upstream capability and engineering assessment. See
+`multi_port_capability.rs`, the `schemas/multi-path-capability-*` contracts and
+[MULTI_PORT_CAPABILITY_DESIGN.md](../../MULTI_PORT_CAPABILITY_DESIGN.md).
 
 ## Evidence-gated capability envelope
 
