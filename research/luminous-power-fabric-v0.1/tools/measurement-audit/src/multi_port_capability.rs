@@ -199,12 +199,15 @@ pub fn evaluate_multi_path_capability(
         }
     }
 
+    let mut ordered_paths = input.paths.clone();
+    ordered_paths.sort_by(|left, right| left.path_id.cmp(&right.path_id));
+
     let mut path_ids = BTreeSet::new();
     let mut component_ids = BTreeSet::new();
     let mut domain_ids = BTreeSet::new();
     let mut baseline_available_power_w = 0.0_f64;
 
-    for path in &input.paths {
+    for path in &ordered_paths {
         validate_id(&path.path_id, "path_id")?;
         if !path_ids.insert(path.path_id.clone()) {
             return Err(AuditError(format!(
@@ -267,8 +270,12 @@ pub fn evaluate_multi_path_capability(
         });
     }
 
-    let mut scenario_ids: BTreeSet<String> =
-        normalized.iter().map(|scenario| scenario.scenario_id.clone()).collect();
+    let mut scenario_ids: BTreeSet<String> = normalized
+        .iter()
+        .map(|scenario| scenario.scenario_id.clone())
+        .collect();
+    // Reserve baseline so caller-defined contingencies cannot shadow it.
+    scenario_ids.insert("baseline".to_string());
 
     for scenario in &input.additional_scenarios {
         validate_id(&scenario.scenario_id, "scenario_id")?;
@@ -325,8 +332,7 @@ pub fn evaluate_multi_path_capability(
     scenario_results.push(ScenarioCapability {
         scenario_id: "baseline".to_string(),
         available_power_w: baseline_available_power_w,
-        unavailable_path_ids: input
-            .paths
+        unavailable_path_ids: ordered_paths
             .iter()
             .filter(|path| !path_is_eligible(path))
             .map(|path| path.path_id.clone())
@@ -334,7 +340,7 @@ pub fn evaluate_multi_path_capability(
     });
 
     for scenario in &normalized {
-        scenario_results.push(scenario_capacity(scenario, &input.paths)?);
+        scenario_results.push(scenario_capacity(scenario, &ordered_paths)?);
     }
 
     let mut limiting = scenario_results
@@ -654,6 +660,17 @@ mod tests {
     }
 
     #[test]
+    fn baseline_scenario_identifier_is_reserved() {
+        let mut value = input(vec![path("path-a", 10.0, &["a"], &[])]);
+        value.additional_scenarios.push(DeclaredFailureScenario {
+            scenario_id: "baseline".to_string(),
+            failed_component_ids: vec!["a".to_string()],
+            failed_domain_ids: Vec::new(),
+        });
+        assert!(evaluate_multi_path_capability(&value).is_err());
+    }
+
+    #[test]
     fn zero_power_requirement_is_rejected() {
         let mut value = input(vec![path("path-a", 10.0, &["a"], &[])]);
         value.required_service_power_w = Some(0.0);
@@ -700,9 +717,6 @@ mod tests {
                 .map(|scenario| scenario.scenario_id.clone())
                 .collect::<Vec<_>>()
         );
-        assert_eq!(
-            first.robust_available_power_w,
-            second.robust_available_power_w
-        );
+        assert_eq!(first, second);
     }
 }
