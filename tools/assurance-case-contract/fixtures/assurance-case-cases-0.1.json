@@ -1,0 +1,32 @@
+{
+  "schema": "luminous.assurance-case-public-conformance/0.1",
+  "status": "PUBLIC_SYNTHETIC_SOFTWARE_CONFORMANCE",
+  "claim_ceiling": "These cases test graph mechanics and declared evidence obligations. They do not prove physical truth, independent custody, source authentication, safety certification or regulatory conformity.",
+  "case_ids": [
+    "AC-001-complete-supported-claim",
+    "AC-002-missing-required-evidence",
+    "AC-003-open-critical-assumption",
+    "AC-004-bounded-assumption-with-evidence",
+    "AC-005-refuted-critical-assumption",
+    "AC-006-open-critical-defeater",
+    "AC-007-fresh-targeted-rebuttal",
+    "AC-008-stale-rebuttal-evidence",
+    "AC-009-wrong-rebuttal-target",
+    "AC-010-unbound-assumption-evidence",
+    "AC-011-shared-dependency-defeats-independence",
+    "AC-012-unknown-dependency-abstains",
+    "AC-013-scoped-no-common-domain",
+    "AC-014-no-common-domain-not-physical-independence",
+    "AC-015-incomplete-inventory-abstains",
+    "AC-016-expired-evidence",
+    "AC-017-out-of-scope-evidence",
+    "AC-018-dangling-edge",
+    "AC-019-invalid-endpoint-type",
+    "AC-020-dependency-cycle",
+    "AC-021-argument-only-support",
+    "AC-022-argument-defeater-propagation",
+    "AC-023-argument-assumption-propagation",
+    "AC-024-exact-byte-report-binding",
+    "AC-025-closed-contract-unknown-field"
+  ]
+}
