@@ -99,6 +99,29 @@ Sources:
 - IEEE 2800.2-2026 official publication and scope: https://standards.ieee.org/ieee/2800.2/10616/
 - 2026 GFM testing review: https://www.mdpi.com/1996-1073/19/20/4966
 
+## 3C. Transient event and voltage-dip immunity references
+
+The mission/event model uses separate source event capability, storage event capability and common
+output-path capability. This distinction prevents a static "surge" number or an arithmetic sum of
+source and battery ratings from being mistaken for delivered motor-start or ride-through service.
+
+| Standard | Current published snapshot | Relevance | Boundary |
+|---|---|---|---|
+| IEC 61000-4-11:2020, Ed. 3 | Voltage-dip, short-interruption and voltage-variation immunity methods for equipment with rated input current up to 16 A per phase on 50/60 Hz LV AC networks | Immunity of relevant connected equipment to defined supply disturbances | Does not certify generator load acceptance, motor start, source ride-through or the output capability of a hybrid power plant |
+| IEC 61000-4-34:2005+AMD1:2009+AMD2:2025, consolidated Ed. 1.2 | Same disturbance class for equipment with mains current greater than 16 A per phase; the 2025 amendment updates the term from input current to mains current | Immunity test method for higher-current equipment | Not a generator/motor-start capability standard |
+| IEC 61000-4-4:2012, Ed. 3 | Electrical fast transient/burst immunity for supply, signal, control and earth ports | EMC immunity for relevant electronics and equipment | Does not establish power-stage transient output capability |
+| ISO 8528-5:2025, Ed. 6 | Performance criteria for an RIC engine and AC generator operating as a generating set | Generator-set source subsystem load acceptance/dynamic performance programme | Does not qualify the whole hybrid system or battery support |
+| IEC TS 62933-2-2:2022 | Application-specific EES duty cycles and performance testing | Storage duty-cycle and energy performance programme | Not a complete transient waveform or battery safety qualification |
+
+Publisher sources:
+- IEC 61000-4-11:2020: https://webstore.iec.ch/en/publication/63503
+- IEC 61000-4-34 consolidated 2025: https://webstore.iec.ch/en/publication/109082
+- IEC 61000-4-4:2012: https://webstore.iec.ch/en/publication/4222
+- ISO 8528-5:2025: https://www.iso.org/standard/85960.html
+- IEC TS 62933-2-2:2022: https://webstore.iec.ch/en/publication/64570
+
+The IEC 61000 methods above are equipment immunity tests against specified disturbances. They are not direct motor-start or generator transient performance certificates. Product boundary, current class, installation and jurisdiction determine applicability.
+
 ## 4. Competitive protection benchmark and its implications
 
 ABB states that SACE Infinitus is a solid-state circuit breaker with IEC 60947-2 certification, combining semiconductor interruption and electromechanical isolation. ABB publishes figures up to 2,500 A / 1,250 V DC and interruption times down to 15 microseconds for the platform. This is a mature high-current commercial benchmark, not a fair same-class comparator for a 48 V auxiliary branch controller.

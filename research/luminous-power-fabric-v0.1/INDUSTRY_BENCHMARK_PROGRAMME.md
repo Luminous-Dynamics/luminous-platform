@@ -149,3 +149,23 @@ accredited physical testing remain separate release gates.
 [Issue #424](https://github.com/Luminous-Dynamics/luminous-platform/issues/424) opens the next benchmark layer: repeated matched missions across battery capacity/power fade, calendar/cycle ageing, fuel and energy costs, replacement, maintenance, repair turnaround and requalification. The comparison denominator remains delivered critical service and completed missions—not nominal battery kWh or one-cycle efficiency.
 
 This work consumes qualified state-of-health/capacity/power trajectories from the appropriate battery model and Mycelix evidence; it does not create a new electrochemical ageing model. Unknown degradation is not zero degradation. Beginning-, mid- and end-of-life service are reported with replacements, downtime, repair labour, spares and uncertainty retained. No lifecycle advantage is claimed until a repeated, matched and independently measured mission dataset exists.
+## 12. Power-duration event / motor-start benchmark
+
+[Issue #425](https://github.com/Luminous-Dynamics/luminous-platform/issues/425) and
+[POWER_DURATION_EVENT_ENVELOPE.md](./POWER_DURATION_EVENT_ENVELOPE.md) add a peak-power/time-window
+comparison beside the interval-energy mission comparison. The benchmark must include motor starts,
+load steps/rejections, source loss/transfer, storage bursts, repeated events and the common bus/output
+path. Record power support by duration, event SOC/SOH/temperature, peak/RMS voltage/current, voltage
+and frequency nadir, recovery/settling, process outcome, and independent protection behaviour.
+
+The new evaluator does not use one large surge multiplier: the source's guaranteed event-window power
+is combined with state-bound storage support, then capped by a separately qualified common-path
+limit. A critical event has its own local unserved-energy limit. It is a software screen, not a
+waveform/motor model or proof of voltage/frequency quality.
+
+For test-method selection, screen IEC 61000-4-11:2020 (up to 16 A mains current/phase) or IEC
+61000-4-34:2005+A1:2009+A2:2025 (above 16 A/phase) for equipment immunity to specified voltage dips
+and interruptions; IEC 61000-4-4:2012 for EFT/burst immunity. These do not certify motor-start or
+generator-source performance. Use ISO 8528-5:2025 for the applicable RIC-engine/AC-generator-set
+subsystem. Apply only where the product boundary fits.
+

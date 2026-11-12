@@ -323,6 +323,27 @@ capability; sub-second events remain separate dynamic and physical-test obligati
 retains source and storage evidence/configuration lineage and fails closed on global configuration
 mismatch or expired mission qualification.
 
+## Power-duration event and transient service envelope
+
+[Issue #425](https://github.com/Luminous-Dynamics/luminous-platform/issues/425) adds a separate,
+read-only event evaluator in `tools/measurement-audit/src/power_event_envelope.rs`. It evaluates
+motor-start, load-step and source-transfer peak demand over an exact duration. It consumes
+Symtropy's guaranteed minimum source power for that complete window, optional event-time battery
+power/usable-energy evidence, and a separately qualified common output-path limit. Source plus
+storage is never assumed to equal load delivery unless the shared inverter/bus/cable/output-path
+limit also supports it.
+
+The event model requires qualified/observed configuration digests, current evidence and independent
+expiry for source and common path. Storage snapshots are state-bound (SOC/SOH/temperature), duration
+matched and limited by both qualified power and conservative usable energy. v0.1 rejects overlapping
+events; later event storage snapshots must account for earlier commitments.
+
+This is a power-duration screen only, not a waveform, motor, inverter-current-limit, protection,
+ride-through or conformity test. Event energy is already counted exactly once in the mission energy
+profile (#422); event unserved energy is a diagnostic and must not be added to the aggregate ledger
+again. See [POWER_DURATION_EVENT_ENVELOPE.md](./POWER_DURATION_EVENT_ENVELOPE.md) and
+the schema/synthetic event fixture under `schemas/power-event-envelope-*`.
+
 ## Matched-service industry benchmark
 
 [Issue #419](https://github.com/Luminous-Dynamics/luminous-platform/issues/419) and
