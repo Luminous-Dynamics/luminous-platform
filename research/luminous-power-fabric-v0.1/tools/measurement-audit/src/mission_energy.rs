@@ -887,6 +887,44 @@ mod tests {
     }
 
     #[test]
+    fn report_retains_storage_and_source_evidence_lineage() {
+        let mut value = input(vec![segment("lineage", 0.0, 3600.0, 500.0, 700.0)]);
+        value.storage = Some(storage());
+        let report = evaluate_mission_energy(&value).unwrap();
+        let bank = report.storage_constraint_snapshot.as_ref().unwrap();
+        assert!(report.storage_eligible);
+        assert_eq!(bank.storage_id, "aggregate-battery");
+        assert_eq!(bank.evidence_reference, "mycelix:storage-passport-001");
+        assert_eq!(report.segment_results[0].source_evidence_reference, "symtropy:source-run-lineage");
+        assert_eq!(report.segment_results[0].source_configuration_sha256, digest('b'));
+        assert_eq!(report.segment_results[0].source_evidence_status, EvidenceStatus::Current);
+        assert_eq!(report.segment_results[0].source_measurement_uncertainty_bound_w, 0.0);
+        assert_eq!(report.segment_results[0].source_model_uncertainty_bound_w, 0.0);
+    }
+
+    #[test]
+    fn hybrid_energy_ledgers_balance_exactly() {
+        let mut value = input(vec![
+            segment("charge", 0.0, 3600.0, 1_000.0, 2_000.0),
+            segment("discharge", 3600.0, 3600.0, 800.0, 0.0),
+        ]);
+        let mut bank = storage();
+        bank.initial_soc_fraction = 0.2;
+        value.storage = Some(bank);
+        let report = evaluate_mission_energy(&value).unwrap();
+        let source_residual = report.total_source_energy_available_wh
+            - report.total_source_energy_to_load_wh
+            - report.total_storage_charge_input_wh
+            - report.total_curtailed_source_energy_wh;
+        let service_residual = report.total_required_energy_wh
+            - report.total_source_energy_to_load_wh
+            - report.total_storage_energy_to_load_wh
+            - report.total_unserved_energy_wh;
+        assert!(source_residual.abs() <= 1e-9);
+        assert!(service_residual.abs() <= 1e-9);
+    }
+
+    #[test]
     fn claim_ceiling_is_not_physical_qualification() {
         let report = evaluate_mission_energy(&input(vec![segment("claim", 0.0, 100.0, 0.0, 0.0)]))
             .unwrap();
