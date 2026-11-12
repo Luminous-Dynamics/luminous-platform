@@ -119,6 +119,7 @@ A service-complete run that misses its final reserve is a **mission failure**. T
 - The exact top-level qualified and observed system configuration SHA-256 digests must match.
 - The mission qualification must be current at evaluation time; mismatch or expiry withdraws all source and storage capability.
 - Each segment has qualified and observed source configuration SHA-256 digests that must match, a source-specific qualification expiry later than evaluation time, a source evidence status of Current and an evidence reference. Any mismatch, expiry or non-current status excludes that segment's source power.
+- If a storage bank is included in the evaluated mission, it must be evidence-eligible and its final reserve must be verifiable for the mission to pass. A deliberately generator-only comparator should omit the storage object rather than attach an unqualified store.
 - Storage is eligible only when its configuration digests match, its qualification is current, capability/calibration/sensor statuses are Current, and independent protection is Ready.
 - Storage capacity and initial SOC uncertainty reduce the available energy. Power and efficiency inputs must be conservative qualified values, not optimistic nominal maxima.
 - Missing, invalid, expired, unverified or non-ready evidence cannot increase capability.
