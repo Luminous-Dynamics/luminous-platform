@@ -550,32 +550,47 @@ pub fn compare_dispatch_outcome_campaigns(
         blockers.push("mismatch:scenario_corpus".to_string());
     }
     let mut paired_episodes = Vec::new();
-    let ref_map = reference.episodes.iter().map(|episode| (episode.scenario_id.as_str(), episode))
-        .collect::<std::collections::HashMap<_, _>>();
-    let cand_map = candidate.episodes.iter().map(|episode| (episode.scenario_id.as_str(), episode))
-        .collect::<std::collections::HashMap<_, _>>();
 
-    for scenario_id in ref_map.keys() {
-        let Some(candidate_episode) = cand_map.get(scenario_id) else {
-            blockers.push(format!("candidate_scenario_missing:{scenario_id}"));
+    for reference_episode in &reference.episodes {
+        let Some(candidate_episode) = candidate
+            .episodes
+            .iter()
+            .find(|episode| episode.scenario_id == reference_episode.scenario_id)
+        else {
+            blockers.push(format!(
+                "candidate_scenario_missing:{}",
+                reference_episode.scenario_id
+            ));
             continue;
         };
-        let reference_episode = ref_map[scenario_id];
         if reference_episode.scenario_sha256 != candidate_episode.scenario_sha256 {
-            blockers.push(format!("mismatch:scenario_digest:{scenario_id}"));
+            blockers.push(format!(
+                "mismatch:scenario_digest:{}",
+                reference_episode.scenario_id
+            ));
         }
         if reference_episode.matched_input_sha256 != candidate_episode.matched_input_sha256 {
-            blockers.push(format!("mismatch:matched_input:{scenario_id}"));
+            blockers.push(format!(
+                "mismatch:matched_input:{}",
+                reference_episode.scenario_id
+            ));
         }
         paired_episodes.push(DispatchPairedEpisode {
-            scenario_id: (*scenario_id).to_string(),
-            reference: reference_episode.clone(),
+            scenario_id: reference_episode.scenario_id.clone(),
+            reference: (*reference_episode).clone(),
             candidate: (*candidate_episode).clone(),
         });
     }
-    for scenario_id in cand_map.keys() {
-        if !ref_map.contains_key(scenario_id) {
-            blockers.push(format!("reference_scenario_missing:{scenario_id}"));
+    for candidate_episode in &candidate.episodes {
+        if !reference
+            .episodes
+            .iter()
+            .any(|episode| episode.scenario_id == candidate_episode.scenario_id)
+        {
+            blockers.push(format!(
+                "reference_scenario_missing:{}",
+                candidate_episode.scenario_id
+            ));
         }
     }
     paired_episodes.sort_by(|a, b| a.scenario_id.cmp(&b.scenario_id));
