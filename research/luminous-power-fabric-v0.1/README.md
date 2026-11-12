@@ -1,3 +1,7 @@
+## 2026 controller test and metrology references
+
+The Power Fabric controller benchmark now maps IEC TS 62898-3-5:2026 MEMS/MMCS HIL test families separately, including dispatch optimisation, forecasts, demand-side/flexible-resource management, voltage/frequency regulation, mode transitions and black start. The public standards crosswalk also records JCGM 100:2008/Amd.1:2026 and GUM-5:2026; Mycelix owns nonlinear/correlated uncertainty evaluation. See [DISPATCH_CONTROLLER_BENCHMARK.md](./DISPATCH_CONTROLLER_BENCHMARK.md) and [STANDARDS_APPLICABILITY_RESEARCH.md](./STANDARDS_APPLICABILITY_RESEARCH.md).
+
 ## Newly published controller test standard
 
 [IEC TS 62898-3-5:2026](https://webstore.iec.ch/en/publication/84175) covers HIL, commissioning and periodic testing of microgrid monitoring, control and energy-management systems. It is added to the controller-benchmark crosswalk in [DISPATCH_CONTROLLER_BENCHMARK.md](./DISPATCH_CONTROLLER_BENCHMARK.md). This supplements IEEE 2030.7/2030.8 and does not establish conformity.

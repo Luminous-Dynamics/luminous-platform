@@ -236,3 +236,23 @@ This is directly relevant to the Power Fabric controller test ladder. Use it alo
 The IEEE revision projects P2030.7 and P2030.8 are active PARs in this snapshot, not published replacement editions. Confirm all detailed requirements in the licensed standards and with qualified test laboratories. This applicability map is not a conformity assessment.
 
 Source: https://webstore.iec.ch/en/publication/84175
+
+
+## 11. Measurement uncertainty and nonlinear models — 2026 update
+
+The BIPM/JCGM catalogue now lists [JCGM 100:2008/Amd.1:2026](https://www.bipm.org/en/web/guest/publications/guides), an amendment addressing nonlinearity in measurement models, and [JCGM GUM-5:2026](https://www.bipm.org/en/committees/jc/jcgm/publications), alongside:
+- JCGM 101:2008 — propagation of distributions using Monte Carlo;
+- JCGM 102:2011 — multiple output quantities;
+- JCGM 106:2012 — role of measurement uncertainty in conformity assessment;
+- JCGM GUM-6:2020 — developing and using measurement models.
+
+Power Fabric's passport/comparator PR #430 stores declared absolute uncertainty bounds and uses a conservative sum for pairwise diagnostic deltas. That is a deliberately limited screen, not a complete uncertainty budget or proof of statistical significance. It must not silently imply that inputs are independent, linear, Gaussian or free from common-reference correlation.
+
+Mycelix owns the measurement model, covariance/correlation, nonlinear propagation, calibration applicability, uncertainty receipt and invalidation semantics (notably issues #6034, #6042 and #6048). Platform binds and consumes the exact model/result receipt. Where nonlinearity is material, the uncertainty owner should justify an applicable higher-order or distribution-propagation method and bind the implementation, input distributions, correlation model, random algorithm/seed where relevant, convergence and coverage semantics.
+
+Sources:
+- BIPM Guides in Metrology: https://www.bipm.org/en/web/guest/publications/guides
+- JCGM publications: https://www.bipm.org/en/committees/jc/jcgm/publications
+- ISO/IEC Guide 98-3:2008/Amd.1:2026: https://www.iso.org/standard/92716.html
+
+This standards/method crosswalk is not a claim that Power Fabric performs accredited uncertainty evaluation or conformity assessment.

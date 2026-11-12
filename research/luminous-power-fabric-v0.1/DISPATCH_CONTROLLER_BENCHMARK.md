@@ -37,9 +37,32 @@ Use the standards as scoped references, not as a claim of conformity:
 - [IEC TS 62898-3-5:2026](https://webstore.iec.ch/en/publication/84175) is the direct, newly published microgrid MMCS/MEMS test anchor for hardware-in-the-loop, commissioning and periodic testing of grid-connected and isolated microgrid monitoring, control and energy-management systems. It was published 11 June 2026. Use the licensed text to map exact HIL setup, test conditions and acceptance requirements; a reference to the specification is not a conformity claim.
 
 The intended relationship is complementary: IEEE 2030.7-2017 specifies common controller functions; IEEE 2030.8-2018 provides controller test procedures and comparison metrics; IEC TS 62898-3-5:2026 specifically covers HIL, commissioning and periodic tests for MMCS/MEMS. Revision projects P2030.7 and P2030.8 remain active PARs, not published replacements.
+### IEC TS 62898-3-5:2026 function-to-benchmark crosswalk
+
+The IEC public contents index identifies distinct test families. The following is a research crosswalk, not a substitute for the licensed procedure, test tolerances or acceptance criteria.
+
+| IEC test family | Power Fabric benchmark representation | Additional result evidence |
+|---|---|---|
+| MEMS dispatch optimisation (HIL / commissioning / periodic) | Matched policy trace, scheduling curve, policy version, dispatch command/effect timing | Expected vs observed dispatch, response delay and deviation; economic outputs only under matched tariff and cost boundaries |
+| MEMS forecast (HIL / commissioning / periodic) | Forecast issue-time, availability-time and horizon records; frozen forecast truth/measurement trace | Bias, error by horizon/operating regime, late/missing forecast handling and downstream service impact |
+| Demand-side integration | Load flexibility and customer-service contract | Demand response, work retention, deadlines, comfort/process limits and rebound |
+| Flexible-resource management | Source/storage/DER capability envelopes and terminal-reserve obligations | Availability, feasible dispatch, curtailment, reserve and recovery |
+| MMCS anti-maloperation locking and alarm | Forbidden-operation and interlock negative controls | Correct lockout/alarm, no unsafe command acceptance, event log |
+| Isolated-mode voltage/frequency regulation | Controller-HIL plus separate instrumented electrical waveform tests | Voltage/frequency steady-state and transient evidence; never inferred from dispatch-energy arithmetic |
+| Device switching and operating-mode transition | State-transition trace and explicit event timestamps | Switching success, sequence, transition latency and failed/unknown states |
+| Active/reactive power control | Separate active/reactive setpoint tracking cases | Tracking error, response, oscillation/settling and instrumented P/Q evidence |
+| Islanding detection and black start | Source-loss/islanding and black-start scenario families | Detection, sequencing, energization, restoration and service evidence under the correct lab/field tier |
+| End-to-end HIL before commissioning | Exact controller build + plant simulator + I/O bridge + scenario and replay manifest | HIL model revision, interface/configuration, timing, repeatability, fault injection and limitations |
+
+The standard's public scope distinguishes MEMS scheduling/forecast/flexible-resource functions from MMCS electrical and transition functions. The evaluation ladder should therefore keep energy-management policy metrics separate from electrical control/protection metrics, while binding both to the same scenario and equipment identity. Detailed test conditions, simulator fidelity, I/O interfaces and pass criteria must be mapped from the licensed specification before claiming conformity.
+
 The controller protocol does not replace electrical waveform, power-quality, protection, generator, battery-safety, grid-interconnection or product-conformity testing. The power-duration and evidence-passport workstreams remain separate evidence obligations.
 
-## 3. Benchmark contract
+## 3. Causal dispatch trace
+
+The evidence-bearing trace validator and matched outcome evaluator are defined in [DISPATCH_TRACE_CONTRACT.md](./DISPATCH_TRACE_CONTRACT.md) and tracked by [issue #435](https://github.com/Luminous-Dynamics/luminous-platform/issues/435). They check what information was available to each decision, action disposition, full-horizon service outcomes, per-interval reserve/limit gates and exact paired context. The evaluator consumes owner-produced plant outcomes; it does not execute a controller or duplicate plant physics.
+
+## 4. Benchmark contract
 
 ### Inputs consumed, not re-modelled
 
@@ -68,9 +91,27 @@ A first evaluation should compare distinctly identified policy arms:
 4. Constrained optimisation reference (MILP/CP-SAT where tractable).
 5. Receding-horizon model predictive control (MPC).
 6. Uncertainty-aware or robust MPC.
-7. Future Symthaea advisory policy, only after its interface, information budget and abstention semantics are frozen.
+7. Event-triggered residual/forecast-driven re-optimization, consuming Symtropy [ENERGY-REOPT-VALUE-001 #2805 / draft PR #2808](https://github.com/Luminous-Dynamics/symtropy/pull/2808).
+8. Future Symthaea advisory policy, only after its interface, information budget and abstention semantics are frozen.
 
 The optimisation reference is a bound, not automatically a deployable policy. Record its formulation, solver version, optimality gap and timeout. A clairvoyant solution with future knowledge must be labelled as such and must not be compared as though it had the same information as an operational controller.
+
+
+
+### Existing adaptive-reoptimization comparator (synthetic)
+
+Symtropy's [#2805 / draft PR #2808](https://github.com/Luminous-Dynamics/symtropy/pull/2808) supplies a useful owner-native exact panel: four synthetic scenarios, three intervals each, with fixed-cadence, event-triggered, no-reoptimization and too-high-trigger policies. The frozen fixture reports:
+
+| Policy | Modelled solver calls | Essential unserved | Flexible unserved |
+|---|---:|---:|---:|
+| Fixed cadence | 12 | 0 | 1 |
+| Event-triggered | 5 | 0 | 1 |
+| No re-optimization | 4 | 1 | 0 |
+| Too-high trigger threshold | 4 | 1 | 0 |
+
+On this constructed panel, residual-triggered re-optimization uses 58.333% fewer modelled solver calls than fixed cadence while matching its service vector. This is not a measured runtime speedup, controller-energy saving, field result or general regret guarantee. Power Fabric will reuse the frozen case/trigger evidence and extend it to matched physical/modelled plant traces rather than clone the Symtropy oracle.
+
+The causal trace in [DISPATCH_TRACE_CONTRACT.md](./DISPATCH_TRACE_CONTRACT.md) now records optimization invocations per decision, total controller compute time and maximum decision compute duration. These are separate from service and energy metrics; fewer solver calls do not automatically mean lower controller energy or better service.
 
 For operational policy arms, match:
 - observed inputs and forecast issue times;
