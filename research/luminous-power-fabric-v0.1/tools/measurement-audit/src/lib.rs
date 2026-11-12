@@ -15,6 +15,7 @@ pub mod mission_energy;
 pub mod power_event_envelope;
 pub mod benchmark_comparison;
 pub mod dispatch_controller_corpus;
+pub mod dispatch_outcomes;
 
 const EXPECTED_HEADER: &str =
     "time_s,port_a_voltage_v,port_a_current_a,port_b_voltage_v,port_b_current_a,case_temp_c";

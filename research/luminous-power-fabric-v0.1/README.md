@@ -388,6 +388,20 @@ evidence eligibility are hard gates; service, resilience, resource/lifecycle, co
 replay remain separate scoreboards. It adds no hardware control path and makes no physical or
 conformity claim.
 
+## Dispatch episode outcome contract
+
+[Issue #440](https://github.com/Luminous-Dynamics/luminous-platform/issues/440) and
+[DISPATCH_EPISODE_OUTCOMES.md](./DISPATCH_EPISODE_OUTCOMES.md) add an evidence-bound outcome vector
+for every controller episode and structural comparison of paired policy campaigns. Hard-gate
+disposition is non-compensatory: any failure means FAIL; unknown without a failure means
+INCONCLUSIVE; PASS requires all six gates to pass. Critical-service energy must reconcile, and a
+negative terminal-reserve margin cannot be marked PASS.
+
+The schema and synthetic campaign fixture are in `schemas/dispatch-outcome-*`; the typed,
+read-only validator/comparator is registered as `measurement-audit/src/dispatch_outcomes.rs`.
+It preserves every episode and reports per-gate counts; it emits no weighted rank, significance or
+superiority claim. Sampling adequacy remains in [issue #434](https://github.com/Luminous-Dynamics/luminous-platform/issues/434).
+
 ## Current limitations
 
 This package contains analytical screening models and offline data-audit tools; it does **not**
