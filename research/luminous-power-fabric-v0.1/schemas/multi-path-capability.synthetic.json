@@ -14,7 +14,9 @@
       "failure_domain_ids": [
         "shared_control_power",
         "cooling_a"
-      ]
+      ],
+      "configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "capability_evidence_reference": "single-path-capability:path_a"
     },
     {
       "path_id": "path_b",
@@ -28,7 +30,9 @@
       "failure_domain_ids": [
         "shared_control_power",
         "cooling_b"
-      ]
+      ],
+      "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "capability_evidence_reference": "single-path-capability:path_b"
     }
   ],
   "additional_scenarios": [],
@@ -39,5 +43,6 @@
     "Both routes share a declared control-power failure domain; its failure removes both paths.",
     "The evaluator does not prove the dependency graph is complete.",
     "No electrical fault current, voltage stability, transient, protection clearing, reliability probability or certification is represented."
-  ]
+  ],
+  "service_boundary_id": "protected-48v-dc-service-bus"
 }
