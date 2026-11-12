@@ -68,7 +68,8 @@
     "max_recovery_time_s": 5,
     "max_voltage_deviation_percent": 10,
     "max_frequency_deviation_hz": 1,
-    "minimum_disturbance_observations": 2
+    "minimum_disturbance_observations": 2,
+    "minimum_demanded_energy_kwh": 8
   },
   "lineage": {
     "measurement_run_id": "synthetic-run-001",
