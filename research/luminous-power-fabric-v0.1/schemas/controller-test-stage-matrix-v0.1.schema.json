@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/controller-test-stage-matrix-v0.1.schema.json",
+  "title": "Power Fabric microgrid controller test-stage matrix",
+  "description": "Research crosswalk for controller test coverage and evidence boundaries. Not a test result or standards-conformity declaration.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "matrix_id",
+    "record_class",
+    "standards_crosswalk",
+    "tests",
+    "claim_ceiling"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "matrix_id": {
+      "const": "PF-CONTROLLER-TEST-MATRIX-0.1"
+    },
+    "record_class": {
+      "const": "research_test_plan"
+    },
+    "claim_ceiling": {
+      "const": "RESEARCH_TEST_PLAN_ONLY_NOT_EXECUTED_OR_CONFORMITY_CLAIM"
+    },
+    "standards_crosswalk": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reference",
+          "status",
+          "purpose",
+          "mapping_status"
+        ],
+        "properties": {
+          "reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "enum": [
+              "published",
+              "active_project"
+            ]
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mapping_status": {
+            "enum": [
+              "research_crosswalk_only",
+              "track_not_normative",
+              "separate_applicability_path"
+            ]
+          }
+        }
+      }
+    },
+    "tests": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "test_id",
+          "system_layer",
+          "function_area",
+          "applicable_stages",
+          "execution_modes",
+          "stimulus",
+          "required_observables",
+          "positive_control",
+          "negative_control",
+          "recovery_control",
+          "hard_gates",
+          "claim_ceiling"
+        ],
+        "properties": {
+          "test_id": {
+            "type": "string",
+            "pattern": "^(MEMS|MMCS|SYS)-[0-9]{2}$"
+          },
+          "system_layer": {
+            "enum": [
+              "MEMS",
+              "MMCS",
+              "system"
+            ]
+          },
+          "function_area": {
+            "enum": [
+              "dispatch_optimization",
+              "forecast",
+              "demand_side_integration",
+              "flexible_resource_management",
+              "anti_maloperation_lock_alarm",
+              "islanded_voltage_frequency_regulation",
+              "device_switching",
+              "operating_mode_transition",
+              "active_reactive_power_control",
+              "islanding_detection",
+              "black_start",
+              "end_to_end_precommissioning"
+            ]
+          },
+          "applicable_stages": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "hil",
+                "commissioning",
+                "periodic"
+              ]
+            }
+          },
+          "execution_modes": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "controller_hil",
+                "power_hil",
+                "physical_laboratory",
+                "site_commissioning",
+                "periodic_site_operation"
+              ]
+            }
+          },
+          "stimulus": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required_observables": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "positive_control": {
+            "type": "string",
+            "minLength": 1
+          },
+          "negative_control": {
+            "type": "string",
+            "minLength": 1
+          },
+          "recovery_control": {
+            "type": "string",
+            "minLength": 1
+          },
+          "hard_gates": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "claim_ceiling": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}
