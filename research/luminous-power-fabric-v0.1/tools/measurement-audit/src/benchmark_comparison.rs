@@ -33,13 +33,20 @@ pub enum BenchmarkRunMode {
     ProductionAcceptance,
     SiteOperationalAssessment,
     FieldMission,
+    VendorPublishedSpecification,
     Simulation,
     Synthetic,
 }
 
 impl BenchmarkRunMode {
     const fn is_physical(self) -> bool {
-        !matches!(self, Self::Simulation | Self::Synthetic)
+        matches!(
+            self,
+            Self::ControlledLaboratory
+                | Self::ProductionAcceptance
+                | Self::SiteOperationalAssessment
+                | Self::FieldMission
+        )
     }
 }
 
@@ -182,6 +189,22 @@ fn finite_nonnegative(value: f64) -> bool {
 }
 
 fn validate_run(run: &BenchmarkRun) -> Result<(), AuditError> {
+    let evidence_mode_consistent = match run.evidence_class {
+        BenchmarkEvidenceClass::VendorAssertion => {
+            run.run_mode == BenchmarkRunMode::VendorPublishedSpecification
+        }
+        BenchmarkEvidenceClass::Synthetic => run.run_mode == BenchmarkRunMode::Synthetic,
+        BenchmarkEvidenceClass::Modelled => run.run_mode == BenchmarkRunMode::Simulation,
+        BenchmarkEvidenceClass::Measured
+        | BenchmarkEvidenceClass::IndependentlyWitnessed
+        | BenchmarkEvidenceClass::Accredited => run.run_mode.is_physical(),
+    };
+    if !evidence_mode_consistent {
+        return Err(AuditError(
+            "benchmark evidence class and run mode are contradictory".to_string(),
+        ));
+    }
+
     if !nonblank(&run.run_id) || !nonblank(&run.data_rights_reference) {
         return Err(AuditError(
             "benchmark run identity and data-rights reference must be non-empty".to_string(),
@@ -683,10 +706,15 @@ mod tests {
         BenchmarkRun {
             run_id: id.to_string(),
             evidence_class: class,
-            run_mode: if class == BenchmarkEvidenceClass::Synthetic {
-                super::BenchmarkRunMode::Synthetic
-            } else {
-                super::BenchmarkRunMode::ControlledLaboratory
+            run_mode: match class {
+                BenchmarkEvidenceClass::VendorAssertion =>
+                    super::BenchmarkRunMode::VendorPublishedSpecification,
+                BenchmarkEvidenceClass::Synthetic => super::BenchmarkRunMode::Synthetic,
+                BenchmarkEvidenceClass::Modelled => super::BenchmarkRunMode::Simulation,
+                BenchmarkEvidenceClass::Measured
+                | BenchmarkEvidenceClass::IndependentlyWitnessed
+                | BenchmarkEvidenceClass::Accredited =>
+                    super::BenchmarkRunMode::ControlledLaboratory,
             },
             product_configuration_sha256: digest(config),
             evidence_bundle_sha256: digest(if config == '4' { '7' } else { '8' }),
@@ -729,6 +757,42 @@ mod tests {
             },
             data_rights_reference: "rights:fixture".to_string(),
         }
+    }
+
+    #[test]
+    fn vendor_assertion_cannot_be_labelled_as_field_measurement() {
+        let mut value = run("vendor-run", BenchmarkEvidenceClass::VendorAssertion, '4', 10_000.0);
+        value.run_mode = super::BenchmarkRunMode::FieldMission;
+        assert!(compare_matched_benchmark_runs(MatchedBenchmarkInput {
+            evaluation_time_epoch_s: 100,
+            reference: &value,
+            candidate: &run("synthetic-run", BenchmarkEvidenceClass::Synthetic, '5', 9_900.0),
+        })
+        .is_err());
+    }
+
+    #[test]
+    fn modelled_run_cannot_be_labelled_as_physical_field_mission() {
+        let mut value = run("model-run", BenchmarkEvidenceClass::Modelled, '4', 10_000.0);
+        value.run_mode = super::BenchmarkRunMode::FieldMission;
+        assert!(compare_matched_benchmark_runs(MatchedBenchmarkInput {
+            evaluation_time_epoch_s: 100,
+            reference: &value,
+            candidate: &run("candidate-model", BenchmarkEvidenceClass::Modelled, '5', 9_900.0),
+        })
+        .is_err());
+    }
+
+    #[test]
+    fn physical_measurement_cannot_be_labelled_as_synthetic_or_simulation() {
+        let mut value = run("measured-run", BenchmarkEvidenceClass::Measured, '4', 10_000.0);
+        value.run_mode = super::BenchmarkRunMode::Simulation;
+        assert!(compare_matched_benchmark_runs(MatchedBenchmarkInput {
+            evaluation_time_epoch_s: 100,
+            reference: &value,
+            candidate: &run("candidate-measured", BenchmarkEvidenceClass::Measured, '5', 9_900.0),
+        })
+        .is_err());
     }
 
     #[test]
