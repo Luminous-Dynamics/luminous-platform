@@ -189,7 +189,8 @@ fn validate_context(t: &DispatchPolicyTrace) -> Result<(), AuditError> {
     if !nonblank(&t.clock_epoch_id) || t.mission_horizon_ns == 0 || t.decision_cadence_ns == 0 {
         return Err(AuditError("clock epoch, mission horizon and decision cadence must be valid".to_string()));
     }
-    if t.observations.len() > MAX_TRACE_RECORDS || t.decisions.len() > MAX_TRACE_RECORDS
+    if t.observations.len() > MAX_TRACE_RECORDS || t.decisions.is_empty()
+        || t.decisions.len() > MAX_TRACE_RECORDS
         || t.intervals.is_empty() || t.intervals.len() > MAX_TRACE_RECORDS {
         return Err(AuditError("trace record counts are empty or exceed supported bounds".to_string()));
     }
@@ -431,6 +432,7 @@ mod tests {
         intervals:vec![interval()],independent_assessment_reference:None}}
 
     #[test] fn accepts_matched_trace(){let r=evaluate_dispatch_policy_trace(&trace()).unwrap();assert!(r.overall_hard_gates_pass);assert_eq!(r.critical_delivered_wh,100.0);assert_eq!(r.optimization_invocation_count,1);assert_eq!(r.total_controller_compute_time_ns,5);assert_eq!(r.maximum_decision_compute_time_ns,5);}
+    #[test] fn rejects_trace_without_any_decision(){let mut t=trace();t.decisions.clear();assert!(evaluate_dispatch_policy_trace(&t).is_err());}
     #[test] fn no_reoptimization_is_reported_as_zero_solver_calls(){let mut t=trace();t.decisions[0].optimization_invocations=0;let r=evaluate_dispatch_policy_trace(&t).unwrap();assert_eq!(r.optimization_invocation_count,0);assert!(r.overall_hard_gates_pass);}
     #[test] fn repeated_reoptimization_calls_are_counted(){let mut t=trace();t.decisions[0].optimization_invocations=4;let r=evaluate_dispatch_policy_trace(&t).unwrap();assert_eq!(r.optimization_invocation_count,4);}
     #[test] fn rejects_future_information(){let mut t=trace();t.observations[0].available_time_ns=26;assert!(evaluate_dispatch_policy_trace(&t).is_err());}
