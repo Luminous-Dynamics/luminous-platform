@@ -1,0 +1,416 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/research/power-fabric-mission-service-v0.2/research/luminous-power-fabric-v0.1/schemas/mission-service-observation-v0.2.schema.json",
+  "title": "Measured mission-service observation v0.2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_class",
+    "mission_id",
+    "evaluated_at_epoch_s",
+    "qualification_valid_until_epoch_s",
+    "mission_start_epoch_s",
+    "mission_end_epoch_s",
+    "qualified_configuration_sha256",
+    "observed_configuration_sha256",
+    "storage_usable_capacity_kwh",
+    "intervals",
+    "disturbances",
+    "requirements",
+    "lineage",
+    "claim_ceiling",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.2"
+    },
+    "record_class": {
+      "enum": [
+        "measured_mission_service_observation",
+        "synthetic_fixture"
+      ]
+    },
+    "mission_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "evaluated_at_epoch_s": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "qualification_valid_until_epoch_s": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "mission_start_epoch_s": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "mission_end_epoch_s": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "qualified_configuration_sha256": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{64}$"
+    },
+    "observed_configuration_sha256": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{64}$"
+    },
+    "storage_usable_capacity_kwh": {
+      "type": "number",
+      "minimum": 0
+    },
+    "intervals": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "start_epoch_s",
+          "duration_s",
+          "demanded_energy_kwh",
+          "delivered_energy_kwh",
+          "unserved_energy_kwh",
+          "source_energy_kwh",
+          "storage_discharge_energy_kwh",
+          "storage_charge_energy_kwh",
+          "auxiliary_and_loss_energy_kwh",
+          "stored_energy_start_kwh",
+          "stored_energy_end_kwh",
+          "fuel_liters"
+        ],
+        "properties": {
+          "start_epoch_s": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "duration_s": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "demanded_energy_kwh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "delivered_energy_kwh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "unserved_energy_kwh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "source_energy_kwh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "storage_discharge_energy_kwh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "storage_charge_energy_kwh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "auxiliary_and_loss_energy_kwh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "stored_energy_start_kwh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "stored_energy_end_kwh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "fuel_liters": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "disturbances": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "event_time_epoch_s",
+          "recovery_time_s",
+          "peak_voltage_deviation_percent",
+          "peak_frequency_deviation_hz",
+          "quality_and_recovery_evidence_reference"
+        ],
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "event_time_epoch_s": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "recovery_time_s": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "peak_voltage_deviation_percent": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "peak_frequency_deviation_hz": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quality_and_recovery_evidence_reference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        }
+      }
+    },
+    "requirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_unserved_energy_kwh",
+        "max_unserved_fraction",
+        "energy_balance_tolerance_kwh",
+        "service_balance_tolerance_kwh",
+        "storage_state_tolerance_kwh",
+        "min_terminal_storage_energy_kwh",
+        "max_fuel_l_per_delivered_kwh",
+        "max_recovery_time_s",
+        "max_voltage_deviation_percent",
+        "max_frequency_deviation_hz",
+        "minimum_disturbance_observations"
+      ],
+      "properties": {
+        "max_unserved_energy_kwh": {
+          "type": "number",
+          "minimum": 0
+        },
+        "max_unserved_fraction": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "energy_balance_tolerance_kwh": {
+          "type": "number",
+          "minimum": 0
+        },
+        "service_balance_tolerance_kwh": {
+          "type": "number",
+          "minimum": 0
+        },
+        "storage_state_tolerance_kwh": {
+          "type": "number",
+          "minimum": 0
+        },
+        "min_terminal_storage_energy_kwh": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "max_fuel_l_per_delivered_kwh": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "max_recovery_time_s": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "max_voltage_deviation_percent": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "max_frequency_deviation_hz": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "minimum_disturbance_observations": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "lineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "measurement_run_id",
+        "raw_capture_sha256",
+        "channel_manifest_sha256",
+        "qualified_configuration_sha256",
+        "observed_configuration_sha256",
+        "timebase_reference",
+        "calibration_evidence_reference",
+        "uncertainty_evidence_reference",
+        "measurement_status",
+        "calibration_status",
+        "timebase_status",
+        "channel_status",
+        "completeness_status"
+      ],
+      "properties": {
+        "measurement_run_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "raw_capture_sha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        "channel_manifest_sha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        "qualified_configuration_sha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        "observed_configuration_sha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        "timebase_reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "calibration_evidence_reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "uncertainty_evidence_reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "measurement_status": {
+          "enum": [
+            "current",
+            "missing",
+            "unverified",
+            "invalid",
+            "expired"
+          ]
+        },
+        "calibration_status": {
+          "enum": [
+            "current",
+            "missing",
+            "unverified",
+            "invalid",
+            "expired"
+          ]
+        },
+        "timebase_status": {
+          "enum": [
+            "current",
+            "missing",
+            "unverified",
+            "invalid",
+            "expired"
+          ]
+        },
+        "channel_status": {
+          "enum": [
+            "current",
+            "missing",
+            "unverified",
+            "invalid",
+            "expired"
+          ]
+        },
+        "completeness_status": {
+          "enum": [
+            "current",
+            "missing",
+            "unverified",
+            "invalid",
+            "expired"
+          ]
+        }
+      }
+    },
+    "claim_ceiling": {
+      "const": "MEASURED_MISSION_SERVICE_AUDIT_ONLY_NOT_DISPATCH_SAFETY_OR_PHYSICAL_QUALIFICATION"
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 2000
+      }
+    }
+  }
+}
