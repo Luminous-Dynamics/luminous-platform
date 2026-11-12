@@ -185,6 +185,11 @@ fn validate_storage(storage: &EventStorageSupport) -> Result<(), AuditError> {
         || !storage.state_of_health_fraction.is_finite()
         || !(0.0..=1.0).contains(&storage.state_of_health_fraction)
         || !storage.temperature_c.is_finite()
+        || (storage.state_of_charge_fraction == 0.0
+            && storage.usable_energy_wh_at_event > 0.0)
+        || (storage.state_of_health_fraction == 0.0
+            && (storage.usable_energy_wh_at_event > 0.0
+                || storage.maximum_event_discharge_power_w > 0.0))
     {
         return Err(AuditError(
             "event storage efficiency, SOC, SOH or temperature is invalid".to_string(),
@@ -856,6 +861,26 @@ mod tests {
     }
 
     #[test]
+    fn zero_soc_cannot_claim_positive_usable_event_energy() {
+        let mut item = event("contradictory-soc", 10.0, 1.0, 1_000.0, 0.0);
+        let mut bank = storage();
+        bank.state_of_charge_fraction = 0.0;
+        item.storage_support = Some(bank);
+        assert!(evaluate_power_event_envelope(&input(vec![item])).is_err());
+    }
+
+    #[test]
+    fn common_path_uncertainty_is_subtracted() {
+        let mut item = event("common-path-uncertainty", 10.0, 1.0, 5_000.0, 5_500.0);
+        item.common_path_uncertainty_bound_w = 1_000.0;
+        let report = evaluate_power_event_envelope(&input(vec![item])).unwrap();
+        assert_eq!(report.event_results[0].conservative_source_power_w, 5_500.0);
+        assert_eq!(report.event_results[0].conservative_common_path_power_w, 6_500.0);
+        assert_eq!(report.event_results[0].combined_support_power_w, 5_500.0);
+        assert!(report.mission_event_pass);
+    }
+
+    #[test]
     fn event_input_order_does_not_change_result() {
         let mut a = event("a", 10.0, 1.0, 5_000.0, 4_000.0);
         a.storage_support = Some(storage());
@@ -877,6 +902,9 @@ mod tests {
         assert_eq!(result.observed_source_configuration_sha256, digest('b'));
         assert_eq!(bank.evidence_reference, "mycelix:storage-event-passport-1");
         assert_eq!(bank.operating_condition_reference, "synthetic:soc-soh-thermal-point-1");
+        assert_eq!(result.common_path_evidence_reference, "platform:common-path-lineage");
+        assert_eq!(result.qualified_common_path_configuration_sha256, digest('d'));
+        assert!(result.common_path_eligible);
         assert!(result.storage_eligible);
     }
 
