@@ -26,12 +26,12 @@ The current 500 W PEBB-LV-01 laboratory candidate cannot compete with complete m
 | TI TIDA-050090 | 54 V / 5 kW eFuse reference design; one TPS1689 + five TPS1685; TI reports 100 A RMS at 55 °C without external airflow | Vendor reference board for testing/performance validation, not a commercial breaker or independent Luminous result |
 
 Sources:
-- Cat XES120: https://www.cat.com/en_US/products/new/power-systems/electric-power/battery-energy-storage-systems/119844.html
+- Cat XES120 (South Africa): https://www.cat.com/en_ZA/products/new/power-systems/electric-power/battery-energy-storage-systems/119844.html
 - Atlas Copco ZBC South Africa: https://www.atlascopco.com/en-za/construction-equipment/products/energy-storage-systems/medium
 - ABB Infinitus: https://www.abb.com/global/en/areas/electrification/low-voltage/circuit-breakers/solid-state-circuit-breakers/sace-infinitus
 - TI TIDA-050090: https://www.ti.com/tool/TIDA-050090
 
-Atlas ZBC values vary by exact model. Do not combine the maximum power from one model with the maximum energy or temperature rating of another. Preserve kW/kVA, nominal/peak/continuous duration, battery-side energy and usable AC energy as separate quantities.
+The Atlas Copco South Africa vendor table also lists LFP batteries, a 672–864 V DC battery bus, recommended 90% depth of discharge, 70% end-of-life capacity, and variant-specific discharge C-rates (0.5C, 1C or 2C). These are vendor-published design values, not independent usable-energy measurements or a guaranteed field life. Preserve variant-specific values: do not combine the maximum power from one model with the maximum energy, C-rate or temperature rating of another. Keep kW/kVA, nominal/peak/continuous duration, battery-side energy and usable AC energy as separate quantities.
 
 ## 3. Grid-forming and conformity baseline
 
