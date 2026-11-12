@@ -488,7 +488,7 @@ pub fn evaluate_mission_service(
                 "interval {index} unserved energy exceeds demanded energy"
             )));
         }
-        if interval.storage_energy_start_kwh > input.storage_usable_capacity_kwh
+        if interval.stored_energy_start_kwh > input.storage_usable_capacity_kwh
             + requirements.storage_state_tolerance_kwh
             || interval.stored_energy_end_kwh > input.storage_usable_capacity_kwh
                 + requirements.storage_state_tolerance_kwh
@@ -529,7 +529,7 @@ pub fn evaluate_mission_service(
             }
         } else if is_discharging {
             if stored_delta > state_tolerance
-                || -stored_delta > interval.storage_discharge_energy_kwh + state_tolerance
+                || interval.storage_discharge_energy_kwh > -stored_delta + state_tolerance
             {
                 return Err(MissionServiceError(format!(
                     "interval {index} stored-energy decrease is inconsistent with bus-side discharge energy"
@@ -718,7 +718,7 @@ pub fn evaluate_mission_service(
         && unserved_fraction <= requirements.max_unserved_fraction + EPSILON
         && requirements
             .min_terminal_storage_energy_kwh
-            .is_none_or(|minimum| terminal_stored_energy + EPSILON >= minimum)
+            .is_none_or(|minimum| terminal_stored_energy + requirements.storage_state_tolerance_kwh + EPSILON >= minimum)
         && requirements.max_fuel_l_per_delivered_kwh.is_none_or(|maximum| {
             fuel_intensity.is_some_and(|actual| actual <= maximum + EPSILON)
         })
@@ -1022,10 +1022,10 @@ mod tests {
     }
 
     #[test]
-    fn storage_cannot_lose_more_internal_energy_than_bus_discharge() {
+    fn bus_discharge_cannot_exceed_measured_internal_energy_depletion() {
         let mut input = valid_input();
-        input.intervals[0].stored_energy_end_kwh = 6.0;
-        input.intervals[1].stored_energy_start_kwh = 6.0;
+        input.intervals[0].stored_energy_end_kwh = 7.5;
+        input.intervals[1].stored_energy_start_kwh = 7.5;
         input.intervals[1].stored_energy_end_kwh = 6.4;
         assert!(evaluate_mission_service(&input).is_err());
     }
