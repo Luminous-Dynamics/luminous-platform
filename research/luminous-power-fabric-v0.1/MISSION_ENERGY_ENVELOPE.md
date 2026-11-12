@@ -33,11 +33,11 @@ The evaluator deliberately does not recreate the plant models already owned else
 | Symthaea | Experiment selection and information-gain ranking | Candidate experiments only; no safety, evidence or dispatch authority |
 | Luminous Platform | Mission profile, capability composition, cross-system configuration identity and auditable service result | Owner-native contracts and evidence references |
 
-The key source interface is **qualified_source_average_power_w**. Symtropy must calculate the interval average from its time-dependent source model, including any ramp, start delay, fuel/control derating and source availability represented in that model. This evaluator does not interpolate generator physics from a static nameplate rating.
+The key source interface is **qualified_source_average_power_w**, bound to a qualified/observed source configuration pair and source-specific expiry. Symtropy must calculate the interval average from its time-dependent source model, including any ramp, start delay, fuel/control derating and source availability represented in that model. This evaluator does not interpolate generator physics from a static nameplate rating.
 
 ## 3. Model boundary and units
 
-One mission comprises contiguous, piecewise-constant intervals. Every power and energy value is referred to one declared electrical boundary for the entire comparison: for example, the 48 V DC service bus or the AC customer outlet. Do not mix generator terminals, battery DC terminals and delivered AC energy without explicitly accounting for intervening conversion losses upstream.
+One mission comprises contiguous, piecewise-constant intervals. Required service power, qualified source-average power and the storage charge/discharge power limits are referred to one declared useful-service boundary for the entire comparison: for example, the 48 V DC service bus or the AC customer outlet. Storage capacity and SOC are battery-side energy state; charge efficiency maps useful-boundary input energy to battery-side stored energy, while discharge efficiency maps battery-side withdrawn energy to useful-boundary output. Do not mix generator terminals, battery DC terminals and delivered AC energy without explicitly accounting for intervening conversion losses upstream.
 
 For interval duration Δt_h, required average service power P_d, qualified interval-average source power P_s, measurement uncertainty bound U_m, and model uncertainty bound U_r:
 
@@ -118,7 +118,7 @@ A service-complete run that misses its final reserve is a **mission failure**. T
 
 - The exact top-level qualified and observed system configuration SHA-256 digests must match.
 - The mission qualification must be current at evaluation time; mismatch or expiry withdraws all source and storage capability.
-- Each segment has an exact source configuration digest, source evidence status and evidence reference. Any status other than Current excludes that segment's source power.
+- Each segment has qualified and observed source configuration SHA-256 digests that must match, a source-specific qualification expiry later than evaluation time, a source evidence status of Current and an evidence reference. Any mismatch, expiry or non-current status excludes that segment's source power.
 - Storage is eligible only when its configuration digests match, its qualification is current, capability/calibration/sensor statuses are Current, and independent protection is Ready.
 - Storage capacity and initial SOC uncertainty reduce the available energy. Power and efficiency inputs must be conservative qualified values, not optimistic nominal maxima.
 - Missing, invalid, expired, unverified or non-ready evidence cannot increase capability.
