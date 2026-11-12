@@ -1,0 +1,309 @@
+{
+  "schema_version": "0.1",
+  "record_class": "synthetic_fixture",
+  "profile_id": "PF-FIELD-CONSTRUCTION-SYNTHETIC-001",
+  "name": "Illustrative mixed-load construction service shift",
+  "application": "construction_site",
+  "site": {
+    "country_code": "ZA",
+    "jurisdiction": "South Africa (illustrative only)",
+    "site_type": "outdoor",
+    "hazardous_area": false,
+    "hazardous_area_classification": null
+  },
+  "environment": {
+    "ambient_min_c": 10,
+    "ambient_max_c": 40,
+    "altitude_m": 1500,
+    "dust_exposure": "high",
+    "moisture_exposure": "intermittent_splash",
+    "corrosive_exposure": "unknown",
+    "vibration_exposure": "transportable",
+    "transported_between_runs": true,
+    "ingress_target_ip": null,
+    "notes": "Synthetic scenario only; no site was measured and no enclosure rating is selected."
+  },
+  "sources": [
+    {
+      "source_id": "genset_a",
+      "source_type": "generator",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_power_kw": 20,
+      "bidirectional": false,
+      "evidence_class": "assumption",
+      "reference": "Synthetic scenario assumption; not a product rating."
+    },
+    {
+      "source_id": "bess_inverter_b",
+      "source_type": "battery_inverter",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_power_kw": 10,
+      "bidirectional": true,
+      "evidence_class": "assumption",
+      "reference": "Synthetic scenario assumption; not a product rating."
+    }
+  ],
+  "loads": [
+    {
+      "load_id": "pump_1",
+      "category": "motor_pump",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 4,
+      "rated_apparent_power_kva": 5,
+      "power_factor": 0.8,
+      "criticality": "important",
+      "start_profile": {
+        "inrush_multiple": 4,
+        "inrush_duration_ms": 500,
+        "starts_per_hour": 4,
+        "notes": "Illustrative inrush envelope only."
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic pump load."
+    },
+    {
+      "load_id": "tools_1",
+      "category": "power_tool",
+      "interface": "AC_SINGLE_PHASE",
+      "nominal_voltage_v": 230,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 3,
+      "rated_apparent_power_kva": 3.5,
+      "power_factor": 0.9,
+      "criticality": "deferrable",
+      "start_profile": {
+        "inrush_multiple": 1.5,
+        "inrush_duration_ms": 100,
+        "starts_per_hour": 20
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic intermittent tool load."
+    },
+    {
+      "load_id": "lighting_1",
+      "category": "lighting",
+      "interface": "AC_SINGLE_PHASE",
+      "nominal_voltage_v": 230,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 1.2,
+      "rated_apparent_power_kva": 1.3,
+      "power_factor": 0.92,
+      "criticality": "important",
+      "start_profile": {
+        "inrush_multiple": 1.2,
+        "inrush_duration_ms": 20,
+        "starts_per_hour": 1
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic lighting load."
+    },
+    {
+      "load_id": "controls_1",
+      "category": "controls_instrumentation",
+      "interface": "AC_SINGLE_PHASE",
+      "nominal_voltage_v": 230,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 0.3,
+      "rated_apparent_power_kva": 0.35,
+      "power_factor": 0.95,
+      "criticality": "critical",
+      "start_profile": {
+        "inrush_multiple": 1,
+        "inrush_duration_ms": 0,
+        "starts_per_hour": 1
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic controls / telemetry auxiliary load."
+    }
+  ],
+  "segments": [
+    {
+      "segment_id": "idle_and_setup",
+      "start_s": 0,
+      "duration_s": 600,
+      "available_source_ids": [
+        "genset_a",
+        "bess_inverter_b"
+      ],
+      "load_states": [
+        {
+          "load_id": "pump_1",
+          "enabled": false,
+          "active_power_kw": 0
+        },
+        {
+          "load_id": "tools_1",
+          "enabled": false,
+          "active_power_kw": 0
+        },
+        {
+          "load_id": "lighting_1",
+          "enabled": false,
+          "active_power_kw": 0
+        },
+        {
+          "load_id": "controls_1",
+          "enabled": true,
+          "active_power_kw": 0.3
+        }
+      ],
+      "ambient_c": 25
+    },
+    {
+      "segment_id": "pump_and_lighting",
+      "start_s": 600,
+      "duration_s": 1200,
+      "available_source_ids": [
+        "genset_a",
+        "bess_inverter_b"
+      ],
+      "load_states": [
+        {
+          "load_id": "pump_1",
+          "enabled": true,
+          "active_power_kw": 4
+        },
+        {
+          "load_id": "tools_1",
+          "enabled": false,
+          "active_power_kw": 0
+        },
+        {
+          "load_id": "lighting_1",
+          "enabled": true,
+          "active_power_kw": 1.2
+        },
+        {
+          "load_id": "controls_1",
+          "enabled": true,
+          "active_power_kw": 0.3
+        }
+      ],
+      "ambient_c": 30
+    },
+    {
+      "segment_id": "mixed_work",
+      "start_s": 1800,
+      "duration_s": 1800,
+      "available_source_ids": [
+        "genset_a",
+        "bess_inverter_b"
+      ],
+      "load_states": [
+        {
+          "load_id": "pump_1",
+          "enabled": true,
+          "active_power_kw": 4
+        },
+        {
+          "load_id": "tools_1",
+          "enabled": true,
+          "active_power_kw": 2
+        },
+        {
+          "load_id": "lighting_1",
+          "enabled": true,
+          "active_power_kw": 1.2
+        },
+        {
+          "load_id": "controls_1",
+          "enabled": true,
+          "active_power_kw": 0.3
+        }
+      ],
+      "ambient_c": 35
+    },
+    {
+      "segment_id": "reduced_operation",
+      "start_s": 3600,
+      "duration_s": 1800,
+      "available_source_ids": [
+        "genset_a",
+        "bess_inverter_b"
+      ],
+      "load_states": [
+        {
+          "load_id": "pump_1",
+          "enabled": false,
+          "active_power_kw": 0
+        },
+        {
+          "load_id": "tools_1",
+          "enabled": true,
+          "active_power_kw": 1
+        },
+        {
+          "load_id": "lighting_1",
+          "enabled": true,
+          "active_power_kw": 1.2
+        },
+        {
+          "load_id": "controls_1",
+          "enabled": true,
+          "active_power_kw": 0.3
+        }
+      ],
+      "ambient_c": 32
+    }
+  ],
+  "events": [
+    {
+      "event_id": "pump_start_001",
+      "time_s": 600,
+      "event_type": "motor_start",
+      "target_id": "pump_1",
+      "delta_active_power_kw": 4,
+      "duration_ms": 500,
+      "notes": "Synthetic event; transient waveforms are not included in this duty-cycle fixture."
+    },
+    {
+      "event_id": "tools_step_001",
+      "time_s": 1800,
+      "event_type": "load_step",
+      "target_id": "tools_1",
+      "delta_active_power_kw": 2,
+      "duration_ms": 100,
+      "notes": "Synthetic load-step event."
+    }
+  ],
+  "requirements": {
+    "max_unserved_energy_kwh": null,
+    "max_recovery_time_s": null,
+    "max_voltage_deviation_percent": null,
+    "max_frequency_deviation_hz": null,
+    "max_voltage_thd_percent": null,
+    "max_noise_dba": null,
+    "max_fuel_l_per_delivered_kwh": null,
+    "notes": "No customer acceptance limits are specified. Set these from the selected customer and applicable installation requirements before benchmarking."
+  },
+  "data_rights": {
+    "data_owner": "Luminous Dynamics (synthetic fixture author)",
+    "license": "CC0-1.0",
+    "commercial_use": "allowed",
+    "redistribution": "allowed",
+    "attribution_required": false,
+    "rights_reference": "Synthetic authored example; contains no measured customer or vendor data."
+  },
+  "provenance": {
+    "source_kind": "synthetic",
+    "source_reference": "Authored deterministic synthetic fixture; not field data.",
+    "sampling_interval_s": null,
+    "raw_data_sha256": null,
+    "instrument_run_ids": [],
+    "timebase_reference": null
+  },
+  "claim_ceiling": "DUTY_CYCLE_SPECIFICATION_ONLY_NOT_POWER_SYSTEM_SAFETY_OR_PERFORMANCE_QUALIFICATION",
+  "limitations": [
+    "Synthetic demand only; no physical site was measured.",
+    "Does not contain voltage/current waveform, harmonics or fault-current data.",
+    "Source ratings are illustrative assumptions, not supplier specifications.",
+    "Does not select a converter, bus voltage, protection device, grounding scheme or product rating.",
+    "Cannot substantiate efficiency, fuel savings, power quality, safety, runtime or field readiness."
+  ]
+}
