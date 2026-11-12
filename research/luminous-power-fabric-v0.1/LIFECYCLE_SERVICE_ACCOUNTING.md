@@ -94,9 +94,9 @@ Reference and candidate must match:
 - site-profile digest and useful-service boundary;
 - calendar study horizon and scheduled operating window;
 - mission IDs and mission-profile digests;
-- each mission's start/duration, critical-service demand, permitted local unserved-energy allowance and terminal-state-obligation digest.
+- each mission's start/duration, critical-service demand, permitted local unserved-energy allowance, initial-state-obligation digest and terminal-state-obligation digest.
 
-Their product configurations, costs, fuel, repairs, replacements and measured health trajectories are allowed to differ; those are the variables being compared. A mismatch in the requested service or final reserve contract rejects the comparison before calculating a candidate delta.
+Their product configurations, costs, fuel, repairs, replacements and measured health trajectories are allowed to differ; those are the variables being compared. Initial state and terminal reserve obligations are separately bound to different digests and both must match. A mismatch in the requested service or final reserve contract rejects the comparison before calculating a candidate delta.
 
 The output's claim eligibility is intentionally stricter than its ability to calculate arithmetic. A physical lifecycle comparison requires:
 - eligible exact system configuration and current qualification;
