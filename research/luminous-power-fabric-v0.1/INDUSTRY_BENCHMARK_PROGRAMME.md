@@ -22,7 +22,7 @@ The current 500 W PEBB-LV-01 laboratory candidate cannot compete with complete m
 | Atlas Copco ZBC 300-300 | 300 kVA; 308 kWh | Higher-power, shorter-energy model |
 | Atlas Copco ZBC 500-250 | 500 kVA; 246 kWh | kVA is not interchangeable with kW; peak and continuous ratings must remain distinct |
 | Atlas Copco ZBC 1000-1200 | 1,000 kVA; 1,200 kWh; vendor table lists 800 kW continuous mode | Container-scale unit, not a portable service-node comparator |
-| ABB SACE Infinitus | ABB says fully IEC 60947-2-certified solid-state circuit-breaker; semiconductor interruption plus electromechanical isolation; up to 2,500 A / 1,250 V DC; interruption down to 15 μs | Mature solid-state breaker benchmark; not an eFuse or a 48 V auxiliary branch module |
+| ABB SACE Infinitus | ABB says fully IEC 60947-2-certified solid-state circuit-breaker; semiconductor interruption plus electromechanical isolation; up to 2,500 A / 1,250 V DC; current product overview says fault isolation <25 μs, while its EPD declaration section states down to 15 μs | Mature solid-state breaker benchmark; preserve the two ABB statements as separate claims and confirm test conditions; not an eFuse or a 48 V auxiliary branch module |
 | TI TIDA-050090 | 54 V / 5 kW eFuse reference design; one TPS1689 + five TPS1685; TI reports 100 A RMS at 55 °C without external airflow | Vendor reference board for testing/performance validation, not a commercial breaker or independent Luminous result |
 
 Sources:
