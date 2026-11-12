@@ -184,7 +184,7 @@
                   "minLength": 1
                 },
                 "capacity_power_w_at_service_poc": {
-                  "type": "number",
+                  "type": "integer",
                   "minimum": 0
                 },
                 "component_id": {
@@ -232,7 +232,8 @@
                 "failed_domain_ids",
                 "failed_arc_ids",
                 "expected_max_flow_power_w",
-                "expected_min_cut_witness_arc_ids"
+                "expected_min_cut_witness_arc_ids",
+                "expected_blocked_arc_ids"
               ],
               "properties": {
                 "scenario_id": {
@@ -278,6 +279,14 @@
                 "expected_min_cut_witness_arc_ids": {
                   "type": "array",
                   "minItems": 1,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "expected_blocked_arc_ids": {
+                  "type": "array",
                   "uniqueItems": true,
                   "items": {
                     "type": "string",

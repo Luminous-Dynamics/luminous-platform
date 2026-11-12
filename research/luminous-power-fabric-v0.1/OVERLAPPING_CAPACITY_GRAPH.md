@@ -40,6 +40,8 @@ The naive path sum is 210 W. The baseline maximum flow is 160 W. This is not a m
 
 The second graph makes arc C's evidence state `unverified`. That arc is non-contributing even though its declared capacity is positive; the expected maximum flow falls to 150 W. Unknown evidence is not a usable capacity.
 
+The fixture now keeps active minimum-cut witnesses separate from blocked arcs. For a zero-flow common-feeder or service-bus failure, the active min-cut witness is empty (capacity sum = 0); the failed edge is retained in `expected_blocked_arc_ids`. An evidence-blocked arc is likewise reported separately from the active cut. This avoids calling a failed edge with no contributing capacity part of the numeric min-cut.
+
 ## 3. Why max-flow/min-cut is the next mathematical step
 
 The graph represents each shared resource once. Multiple paths that traverse the same feeder consume that same edge capacity, so the algorithm cannot count the same physical shared capacity multiple times. Partially overlapping dependency sets are represented by paths that traverse overlapping graph edges/domains rather than by disjoint/identical path-group annotations.
@@ -61,3 +63,18 @@ A graph flow is a deterministic capacity upper-bound under declared inputs. It i
 - Existing `multi_port_capability.rs` is not modified.
 
 Authoring-time arithmetic recomputation on this small topology must verify the expected source sums and serial bottlenecks. A future Rust implementation must additionally compare against an independent max-flow/min-cut oracle and exhaustively enumerate small graphs. No SOTA, network, product, safety or reliability claim follows from this fixture.
+
+
+## 6. Executable evaluator boundary (draft PR #454)
+
+The registered Rust module `tools/measurement-audit/src/topology_capacity_graph.rs` implements a
+per-scenario deterministic Dinic max-flow/min-cut calculation over the typed graph. It uses integer
+watts at the declared customer POC, validates IDs/configuration digests/endpoints/failure domains,
+and treats non-current node/arc evidence as unavailable. The report includes the active cut witness
+(whose capacity sum is checked against max-flow) and a separate list of blocked arcs.
+
+`evaluate_topology_capacity_n1_suite` generates a baseline plus a single-failure scenario for every
+unique node/arc component ID and declared failure domain, then appends caller-supplied compound
+scenarios. It does not infer probabilities. Twenty Rust tests are authored, including an exhaustive
+cut enumeration over the tiny synthetic topology. They have not been compiled or executed in this
+authoring environment.

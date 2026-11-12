@@ -57,9 +57,7 @@
           "component_id": "feeder-1",
           "configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
           "evidence_status": "current",
-          "failure_domain_ids": [
-            "common-feeder"
-          ],
+          "failure_domain_ids": [],
           "evidence_reference": "synthetic://feeder"
         },
         {
@@ -170,7 +168,8 @@
           "expected_max_flow_power_w": 160,
           "expected_min_cut_witness_arc_ids": [
             "arc-service-bus"
-          ]
+          ],
+          "expected_blocked_arc_ids": []
         },
         {
           "scenario_id": "cooling-ab-failure",
@@ -183,6 +182,10 @@
           "expected_max_flow_power_w": 60,
           "expected_min_cut_witness_arc_ids": [
             "arc-source-c"
+          ],
+          "expected_blocked_arc_ids": [
+            "arc-source-a",
+            "arc-source-b"
           ]
         },
         {
@@ -196,6 +199,10 @@
           "expected_max_flow_power_w": 80,
           "expected_min_cut_witness_arc_ids": [
             "arc-source-a"
+          ],
+          "expected_blocked_arc_ids": [
+            "arc-source-b",
+            "arc-source-c"
           ]
         },
         {
@@ -210,6 +217,9 @@
           "expected_min_cut_witness_arc_ids": [
             "arc-source-b",
             "arc-source-c"
+          ],
+          "expected_blocked_arc_ids": [
+            "arc-source-a"
           ]
         },
         {
@@ -221,7 +231,8 @@
           ],
           "failed_arc_ids": [],
           "expected_max_flow_power_w": 0,
-          "expected_min_cut_witness_arc_ids": [
+          "expected_min_cut_witness_arc_ids": [],
+          "expected_blocked_arc_ids": [
             "arc-shared-feeder"
           ]
         },
@@ -234,7 +245,8 @@
           ],
           "failed_arc_ids": [],
           "expected_max_flow_power_w": 0,
-          "expected_min_cut_witness_arc_ids": [
+          "expected_min_cut_witness_arc_ids": [],
+          "expected_blocked_arc_ids": [
             "arc-service-bus"
           ]
         }
@@ -294,9 +306,7 @@
           "component_id": "feeder-1",
           "configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
           "evidence_status": "current",
-          "failure_domain_ids": [
-            "common-feeder"
-          ],
+          "failure_domain_ids": [],
           "evidence_reference": "synthetic://feeder"
         },
         {
@@ -408,6 +418,9 @@
           "expected_min_cut_witness_arc_ids": [
             "arc-source-a",
             "arc-source-b"
+          ],
+          "expected_blocked_arc_ids": [
+            "arc-source-c"
           ]
         }
       ]
