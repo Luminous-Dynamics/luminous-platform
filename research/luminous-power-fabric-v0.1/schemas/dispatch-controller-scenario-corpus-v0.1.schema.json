@@ -87,16 +87,10 @@
           ]
         },
         "evidence_class": {
-          "enum": [
-            "synthetic",
-            "modelled"
-          ]
+          "const": "synthetic"
         },
         "run_mode": {
-          "enum": [
-            "synthetic",
-            "simulation"
-          ]
+          "const": "synthetic"
         },
         "seed": {
           "type": "integer",
@@ -376,44 +370,6 @@
         }
       },
       "allOf": [
-        {
-          "if": {
-            "properties": {
-              "evidence_class": {
-                "const": "synthetic"
-              }
-            },
-            "required": [
-              "evidence_class"
-            ]
-          },
-          "then": {
-            "properties": {
-              "run_mode": {
-                "const": "synthetic"
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "evidence_class": {
-                "const": "modelled"
-              }
-            },
-            "required": [
-              "evidence_class"
-            ]
-          },
-          "then": {
-            "properties": {
-              "run_mode": {
-                "const": "simulation"
-              }
-            }
-          }
-        },
         {
           "if": {
             "properties": {

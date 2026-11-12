@@ -84,7 +84,7 @@ Policy code and parameters are expected to differ. The conditions under which th
 
 ## 4. Scenario programme
 
-The initial synthetic corpus is at [schemas/dispatch-controller-scenarios.synthetic.json](./schemas/dispatch-controller-scenarios.synthetic.json), governed by [schemas/dispatch-controller-scenario-corpus-v0.1.schema.json](./schemas/dispatch-controller-scenario-corpus-v0.1.schema.json).
+The initial synthetic corpus is at [schemas/dispatch-controller-scenarios.synthetic.json](./schemas/dispatch-controller-scenarios.synthetic.json), governed by [schemas/dispatch-controller-scenario-corpus-v0.1.schema.json](./schemas/dispatch-controller-scenario-corpus-v0.1.schema.json). The dependency-free typed semantic validator is registered as tools/measurement-audit/src/dispatch_controller_corpus.rs; it checks in-memory case pairing, IDs, digests, disturbance windows and negative-control semantics. It is not a JSON parser or a policy runner.
 
 Required scenario families:
 
@@ -197,7 +197,7 @@ Keep **evidence class** separate from **test environment**:
 
 Every promotion requires new evidence and a fresh eligibility assessment. A Mycelix verification receipt authenticates the declared evidence lineage; it does not by itself prove model validity, physical accuracy or safety.
 
-The v0.1 schema currently labels every checked-in case as synthetic. There is no live controller, HIL runner or production action path in this tranche.
+The v0.1 corpus and schema are restricted to synthetic evidence and synthetic run mode. Modelled, controller-HIL, power-HIL, commissioning and site records must be represented as separately typed evidence records, not smuggled into the synthetic fixture class. There is no live controller, HIL runner or production action path in this tranche.
 
 ## 9. Ownership and claim ceiling
 

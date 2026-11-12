@@ -210,10 +210,12 @@ resource/lifecycle, controller quality and evidence/replay remain separate score
 service, qualified-envelope, telemetry and terminal-reserve failures are non-compensatory.
 
 The versioned schema and synthetic positive/negative corpus are under
-`schemas/dispatch-controller-*`. These are offline fixtures, not controller results or physical
-measurements. The published IEEE 2030.7-2017 and 2030.8-2018 editions remain the current published
-anchors in this snapshot; revision projects P2030.7 and P2030.8 are tracked separately. No
-standards-conformity or dispatch-superiority claim is made.
+`schemas/dispatch-controller-*`; the typed in-memory semantic validator is registered in
+`measurement-audit/src/dispatch_controller_corpus.rs`. These are offline fixtures, not controller
+results or physical measurements. Alongside IEEE 2030.7-2017 and IEEE 2030.8-2018, the programme
+includes IEC TS 62898-3-5:2026 for HIL, commissioning and periodic testing of MMCS/MEMS.
+The IEEE P2030.7/P2030.8 revisions remain active projects in this snapshot. No standards-conformity
+or dispatch-superiority claim is made.
 
 
 ### IEC TS 62898-3-5:2026 — newly published controller test reference
