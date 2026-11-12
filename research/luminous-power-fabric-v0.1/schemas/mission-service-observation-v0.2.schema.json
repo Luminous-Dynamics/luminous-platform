@@ -20,6 +20,7 @@
     "requirements",
     "lineage",
     "claim_ceiling",
+    "minimum_demanded_energy_kwh",
     "limitations"
   ],
   "properties": {
@@ -205,6 +206,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "minimum_demanded_energy_kwh",
         "max_unserved_energy_kwh",
         "max_unserved_fraction",
         "energy_balance_tolerance_kwh",
@@ -297,6 +299,10 @@
         "minimum_disturbance_observations": {
           "type": "integer",
           "minimum": 0
+        },
+        "minimum_demanded_energy_kwh": {
+          "type": "number",
+          "exclusiveMinimum": 0
         }
       }
     },
