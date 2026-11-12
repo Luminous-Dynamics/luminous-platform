@@ -1,0 +1,294 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/overlapping-capacity-graph-corpus-v0.1.schema.json",
+  "title": "Power Fabric overlapping shared-capacity graph corpus",
+  "description": "Synthetic directed service-side capacity graph fixtures for testing partially overlapping shared-resource and common-cause semantics; not network physics or reliability evidence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "corpus_id",
+    "record_class",
+    "graphs",
+    "claim_ceiling"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "corpus_id": {
+      "const": "PF-OVERLAPPING-CAPACITY-GRAPH-SYNTH-0.1"
+    },
+    "record_class": {
+      "const": "synthetic_fixture"
+    },
+    "claim_ceiling": {
+      "const": "SYNTHETIC_CAPACITY_GRAPH_FIXTURE_ONLY_NOT_NETWORK_PHYSICS_OR_RELIABILITY_CLAIM"
+    },
+    "graphs": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "graph_id",
+          "service_boundary_sha256",
+          "power_basis",
+          "unit",
+          "source_node_ids",
+          "sink_node_id",
+          "nodes",
+          "failure_domains",
+          "arcs",
+          "expected_scenarios"
+        ],
+        "properties": {
+          "graph_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "service_boundary_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "power_basis": {
+            "const": "NET_ACTIVE_POWER_AT_CUSTOMER_POC"
+          },
+          "unit": {
+            "const": "W"
+          },
+          "source_node_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "sink_node_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "nodes": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "node_id",
+                "node_type",
+                "component_id",
+                "configuration_sha256",
+                "evidence_status",
+                "failure_domain_ids",
+                "evidence_reference"
+              ],
+              "properties": {
+                "node_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "node_type": {
+                  "enum": [
+                    "source",
+                    "junction",
+                    "bus",
+                    "converter_boundary",
+                    "service_sink"
+                  ]
+                },
+                "component_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "configuration_sha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                },
+                "evidence_status": {
+                  "enum": [
+                    "current",
+                    "missing",
+                    "expired",
+                    "invalid",
+                    "unverified"
+                  ]
+                },
+                "failure_domain_ids": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "evidence_reference": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "failure_domains": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "domain_id",
+                "description"
+              ],
+              "properties": {
+                "domain_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "arcs": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "arc_id",
+                "from_node_id",
+                "to_node_id",
+                "capacity_power_w_at_service_poc",
+                "component_id",
+                "configuration_sha256",
+                "evidence_status",
+                "failure_domain_ids",
+                "evidence_reference"
+              ],
+              "properties": {
+                "arc_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "from_node_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "to_node_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "capacity_power_w_at_service_poc": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "component_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "configuration_sha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                },
+                "evidence_status": {
+                  "enum": [
+                    "current",
+                    "missing",
+                    "expired",
+                    "invalid",
+                    "unverified"
+                  ]
+                },
+                "failure_domain_ids": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "evidence_reference": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "expected_scenarios": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "scenario_id",
+                "failed_node_ids",
+                "failed_component_ids",
+                "failed_domain_ids",
+                "failed_arc_ids",
+                "expected_max_flow_power_w",
+                "expected_min_cut_witness_arc_ids"
+              ],
+              "properties": {
+                "scenario_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "failed_node_ids": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "failed_component_ids": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "failed_domain_ids": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "failed_arc_ids": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "expected_max_flow_power_w": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "expected_min_cut_witness_arc_ids": {
+                  "type": "array",
+                  "minItems": 1,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

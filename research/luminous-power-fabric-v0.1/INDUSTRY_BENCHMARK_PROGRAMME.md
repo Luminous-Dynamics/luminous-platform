@@ -194,3 +194,17 @@ controlled tests when accurate numeric characterization is needed.
 The code returns three distinct gates—structural match, physical measurement eligibility and
 independent claim eligibility. A synthetic pair can test the first gate but not the latter two.
 No physical superiority claim is made.
+
+
+## 17. Topology-aware overlapping shared-capacity graph
+
+[Issue #451](https://github.com/Luminous-Dynamics/luminous-platform/issues/451) and
+[OVERLAPPING_CAPACITY_GRAPH.md](./OVERLAPPING_CAPACITY_GRAPH.md) define the next step beyond the
+current v0.1 multi-path evaluator, which correctly rejects partially overlapping shared-resource
+groups. The new synthetic fixture represents overlapping cooling, control-power, common-feeder and
+service-bus dependencies as shared graph edges and supplies expected max-flow/min-cut outcomes.
+
+The graph is normalized to one owner-qualified net active-power basis at the customer POC. It is not
+an AC/DC power-flow model and does not establish physical capability, reliability probability or
+protection behavior. Existing multi-path code remains unchanged until the graph evaluator is proven
+against an independent oracle.
