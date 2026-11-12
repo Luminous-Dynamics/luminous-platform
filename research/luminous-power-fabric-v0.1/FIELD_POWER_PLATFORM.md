@@ -30,11 +30,13 @@ Two commercial product families make the power-and-energy scale concrete:
 | Comparator | Published specification | Implication for Luminous |
 |---|---|---|
 | Caterpillar XES120, 50 Hz | 72 kW / 90 kVA; 127.9 kWh; IP55; 400 V-class mobile ESS; designed to hybridize with generators and renewable sources | A portable field node must be benchmarked against actual hybrid generator operation and the load boundary—not just battery capacity |
-| Atlas Copco ZBC family | Published range includes 250–1,000 kVA and 246–1,200 kWh; 400 V AC; LiFePO4 container systems | Large construction/industrial BESS is an established product category; competing on containerized kWh alone is not a defensible entry point |
+| Atlas Copco ZBC family | South Africa page lists ZBC 250-575 (250 kVA / 575 kWh), ZBC 300-300 (300 kVA / 308 kWh), ZBC 500-250 (500 kVA / 246 kWh) and ZBC 1000-1200 (1,000 kVA / 1,200 kWh); 400 V AC, 672–864 V battery system, 600–900 V DC inverter input, IP54. Vendor states up to 6,000 cycles at its stated DoD/EOL/temperature conditions and up to 90% daily fuel savings in some hybrid applications. | Large construction/industrial BESS is an established product category; the fuel-saving and life figures are vendor claims tied to conditions and need matched independent trials; competing on containerized kWh alone is not a defensible entry point |
 
 Sources:
 - https://www.cat.com/en_ZA/products/new/power-systems/electric-power/battery-energy-storage-systems/119844.html
 - https://www.atlascopco.com/en-za/construction-equipment/products/energy-storage-systems/medium
+
+The manufacturer lists the four configurations above, gives 672–864 V battery-system voltage, 600–900 V inverter input, IP54 enclosure, 6,000 expected cycles at the stated test point, and claims up to 90% daily fuel reduction in some hybrid applications. The fuel-reduction claim is explicitly application/load-profile dependent and must be compared against a matched generator-only run, with equal delivered service. Source: - https://www.atlascopco.com/en-za/construction-equipment/products/energy-storage-systems/medium
 
 Solid-state protection is also a commercial market, not a blank slate. ABB's SACE Infinitus combines semiconductor interruption with electromechanical isolation and publishes ratings up to 2,500 A / 1,250 V DC with interruption below 25 μs. Siemens announced semiconductor breaker and solid-state switching products for DC distribution in April 2026.
 
