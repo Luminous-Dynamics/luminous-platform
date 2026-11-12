@@ -19,7 +19,7 @@
       "qualified_common_path_power_w": 6500,
       "common_path_uncertainty_bound_w": 100,
       "qualified_common_path_configuration_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-      "observed_common_path_configuration_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "observed_common_path_configuration_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
       "common_path_qualification_valid_until_epoch_s": 1000,
       "common_path_evidence_status": "current",
       "common_path_evidence_reference": "synthetic:common-output-path-event-001",
