@@ -194,3 +194,16 @@ controlled tests when accurate numeric characterization is needed.
 The code returns three distinct gates—structural match, physical measurement eligibility and
 independent claim eligibility. A synthetic pair can test the first gate but not the latter two.
 No physical superiority claim is made.
+
+
+## 16. Rights-aware cross-application mission-profile corpus
+
+[Issue #449](https://github.com/Luminous-Dynamics/luminous-platform/issues/449) and
+[MISSION_PROFILE_CORPUS.md](./MISSION_PROFILE_CORPUS.md) define a six-profile synthetic workload
+portfolio reusing the existing `field-mission-profile-v0.1` contract. It adds water pumping, mine
+dewatering/ventilation, port crane/terminal, industrial shutdown and remote communications/water
+profiles alongside the original construction-shift fixture.
+
+All profiles are synthetic assumptions under CC0-1.0, not customer data or measured duty cycles.
+Whole application families are suggested as holdouts; confirmatory splits must be preregistered and
+sampling/cluster adequacy follows issue #434. No measured or commercial performance claim is made.

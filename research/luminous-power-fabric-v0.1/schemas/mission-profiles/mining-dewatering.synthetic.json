@@ -1,0 +1,377 @@
+{
+  "schema_version": "0.1",
+  "record_class": "synthetic_fixture",
+  "profile_id": "PF-MINING-DEWATER-VENT-SYN-001",
+  "name": "Mine dewatering, ventilation and support duty",
+  "application": "remote_operations",
+  "site": {
+    "country_code": "ZA",
+    "jurisdiction": "South Africa (illustrative only)",
+    "site_type": "mixed",
+    "hazardous_area": false,
+    "hazardous_area_classification": null
+  },
+  "environment": {
+    "ambient_min_c": 5,
+    "ambient_max_c": 45,
+    "altitude_m": 2100,
+    "dust_exposure": "very_high",
+    "moisture_exposure": "intermittent_splash",
+    "corrosive_exposure": "industrial_atmosphere",
+    "vibration_exposure": "heavy_equipment_adjacent",
+    "transported_between_runs": false,
+    "ingress_target_ip": null,
+    "notes": "Illustrative synthetic environment only; no real site, enclosure rating or hazardous-area classification is asserted."
+  },
+  "sources": [
+    {
+      "source_id": "genset_main",
+      "source_type": "generator",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_power_kw": 250,
+      "bidirectional": false,
+      "evidence_class": "assumption",
+      "reference": "Synthetic illustrative assumption; no supplier rating or physical measurement."
+    },
+    {
+      "source_id": "bess_main",
+      "source_type": "battery_inverter",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_power_kw": 110,
+      "bidirectional": true,
+      "evidence_class": "assumption",
+      "reference": "Synthetic illustrative assumption; no supplier rating or physical measurement."
+    },
+    {
+      "source_id": "pv_inverter",
+      "source_type": "pv_inverter",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_power_kw": 55,
+      "bidirectional": false,
+      "evidence_class": "assumption",
+      "reference": "Synthetic illustrative assumption; no supplier rating or physical measurement."
+    }
+  ],
+  "loads": [
+    {
+      "load_id": "dewatering_pump_a",
+      "category": "motor_pump",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 55,
+      "rated_apparent_power_kva": 61.11111111111111,
+      "power_factor": 0.9,
+      "criticality": "critical",
+      "start_profile": {
+        "inrush_multiple": 5.5,
+        "inrush_duration_ms": 900,
+        "starts_per_hour": 2
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    },
+    {
+      "load_id": "ventilation_fan",
+      "category": "other",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 90,
+      "rated_apparent_power_kva": 100,
+      "power_factor": 0.9,
+      "criticality": "critical",
+      "start_profile": {
+        "inrush_multiple": 3.5,
+        "inrush_duration_ms": 700,
+        "starts_per_hour": 2
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    },
+    {
+      "load_id": "air_compressor",
+      "category": "compressor",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 45,
+      "rated_apparent_power_kva": 50,
+      "power_factor": 0.9,
+      "criticality": "important",
+      "start_profile": {
+        "inrush_multiple": 4,
+        "inrush_duration_ms": 600,
+        "starts_per_hour": 4
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    },
+    {
+      "load_id": "workshop_lighting",
+      "category": "lighting",
+      "interface": "AC_SINGLE_PHASE",
+      "nominal_voltage_v": 230,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 8,
+      "rated_apparent_power_kva": 8.421052631578947,
+      "power_factor": 0.95,
+      "criticality": "important",
+      "start_profile": {
+        "inrush_multiple": 1.2,
+        "inrush_duration_ms": 40,
+        "starts_per_hour": 1
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    },
+    {
+      "load_id": "mine_comms_controls",
+      "category": "communications",
+      "interface": "AC_SINGLE_PHASE",
+      "nominal_voltage_v": 230,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 1.2,
+      "rated_apparent_power_kva": 1.263157894736842,
+      "power_factor": 0.95,
+      "criticality": "critical",
+      "start_profile": {
+        "inrush_multiple": 1,
+        "inrush_duration_ms": 0,
+        "starts_per_hour": 1
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    }
+  ],
+  "segments": [
+    {
+      "segment_id": "night_ventilation",
+      "start_s": 0,
+      "duration_s": 3600,
+      "available_source_ids": [
+        "genset_main",
+        "bess_main"
+      ],
+      "load_states": [
+        {
+          "load_id": "dewatering_pump_a",
+          "enabled": true,
+          "active_power_kw": 35
+        },
+        {
+          "load_id": "ventilation_fan",
+          "enabled": true,
+          "active_power_kw": 90
+        },
+        {
+          "load_id": "air_compressor",
+          "enabled": true,
+          "active_power_kw": 20
+        },
+        {
+          "load_id": "workshop_lighting",
+          "enabled": true,
+          "active_power_kw": 3
+        },
+        {
+          "load_id": "mine_comms_controls",
+          "enabled": true,
+          "active_power_kw": 1.2
+        }
+      ],
+      "ambient_c": 28
+    },
+    {
+      "segment_id": "day_shift_full",
+      "start_s": 3600,
+      "duration_s": 3600,
+      "available_source_ids": [
+        "genset_main",
+        "bess_main",
+        "pv_inverter"
+      ],
+      "load_states": [
+        {
+          "load_id": "dewatering_pump_a",
+          "enabled": true,
+          "active_power_kw": 55
+        },
+        {
+          "load_id": "ventilation_fan",
+          "enabled": true,
+          "active_power_kw": 90
+        },
+        {
+          "load_id": "air_compressor",
+          "enabled": true,
+          "active_power_kw": 45
+        },
+        {
+          "load_id": "workshop_lighting",
+          "enabled": true,
+          "active_power_kw": 8
+        },
+        {
+          "load_id": "mine_comms_controls",
+          "enabled": true,
+          "active_power_kw": 1.2
+        }
+      ],
+      "ambient_c": 40
+    },
+    {
+      "segment_id": "generator_contingency",
+      "start_s": 7200,
+      "duration_s": 1800,
+      "available_source_ids": [
+        "bess_main",
+        "pv_inverter"
+      ],
+      "load_states": [
+        {
+          "load_id": "dewatering_pump_a",
+          "enabled": true,
+          "active_power_kw": 35
+        },
+        {
+          "load_id": "ventilation_fan",
+          "enabled": true,
+          "active_power_kw": 70
+        },
+        {
+          "load_id": "air_compressor",
+          "enabled": false,
+          "active_power_kw": 0
+        },
+        {
+          "load_id": "workshop_lighting",
+          "enabled": true,
+          "active_power_kw": 3
+        },
+        {
+          "load_id": "mine_comms_controls",
+          "enabled": true,
+          "active_power_kw": 1.2
+        }
+      ],
+      "ambient_c": 43
+    },
+    {
+      "segment_id": "restoration",
+      "start_s": 9000,
+      "duration_s": 3600,
+      "available_source_ids": [
+        "genset_main",
+        "bess_main",
+        "pv_inverter"
+      ],
+      "load_states": [
+        {
+          "load_id": "dewatering_pump_a",
+          "enabled": true,
+          "active_power_kw": 45
+        },
+        {
+          "load_id": "ventilation_fan",
+          "enabled": true,
+          "active_power_kw": 90
+        },
+        {
+          "load_id": "air_compressor",
+          "enabled": true,
+          "active_power_kw": 25
+        },
+        {
+          "load_id": "workshop_lighting",
+          "enabled": true,
+          "active_power_kw": 5
+        },
+        {
+          "load_id": "mine_comms_controls",
+          "enabled": true,
+          "active_power_kw": 1.2
+        }
+      ],
+      "ambient_c": 38
+    }
+  ],
+  "events": [
+    {
+      "event_id": "vent-fan-start",
+      "time_s": 0,
+      "event_type": "motor_start",
+      "target_id": "ventilation_fan",
+      "delta_active_power_kw": 90,
+      "duration_ms": 700,
+      "notes": "Synthetic event; no transient waveform capture is included."
+    },
+    {
+      "event_id": "compressor-start",
+      "time_s": 3600,
+      "event_type": "motor_start",
+      "target_id": "air_compressor",
+      "delta_active_power_kw": 45,
+      "duration_ms": 600,
+      "notes": "Synthetic event; no transient waveform capture is included."
+    },
+    {
+      "event_id": "generator-trip",
+      "time_s": 7200,
+      "event_type": "source_loss",
+      "target_id": "genset_main",
+      "delta_active_power_kw": null,
+      "duration_ms": null,
+      "notes": "Synthetic event; no transient waveform capture is included."
+    },
+    {
+      "event_id": "generator-return",
+      "time_s": 9000,
+      "event_type": "source_return",
+      "target_id": "genset_main",
+      "delta_active_power_kw": null,
+      "duration_ms": null,
+      "notes": "Synthetic event; no transient waveform capture is included."
+    }
+  ],
+  "requirements": {
+    "max_unserved_energy_kwh": null,
+    "max_recovery_time_s": null,
+    "max_voltage_deviation_percent": null,
+    "max_frequency_deviation_hz": null,
+    "max_voltage_thd_percent": null,
+    "max_noise_dba": null,
+    "max_fuel_l_per_delivered_kwh": null,
+    "notes": "Customer acceptance limits must be set from the actual service contract and applicable installation requirements before benchmarking."
+  },
+  "data_rights": {
+    "data_owner": "Luminous Dynamics (synthetic fixture author)",
+    "license": "CC0-1.0",
+    "commercial_use": "allowed",
+    "redistribution": "allowed",
+    "attribution_required": false,
+    "rights_reference": "Synthetic authored example; contains no measured customer or vendor data."
+  },
+  "provenance": {
+    "source_kind": "synthetic",
+    "source_reference": "Authored deterministic synthetic fixture; not field data.",
+    "sampling_interval_s": null,
+    "raw_data_sha256": null,
+    "instrument_run_ids": [],
+    "timebase_reference": null
+  },
+  "claim_ceiling": "DUTY_CYCLE_SPECIFICATION_ONLY_NOT_POWER_SYSTEM_SAFETY_OR_PERFORMANCE_QUALIFICATION",
+  "limitations": [
+    "Synthetic demand and source availability only; no physical site was measured.",
+    "Source ratings and load profiles are illustrative assumptions, not supplier specifications.",
+    "No raw voltage/current waveform, harmonics, fault-current or protection evidence is included.",
+    "Cannot substantiate efficiency, fuel savings, power quality, safety, runtime, lifecycle or field readiness.",
+    "Mine ventilation safety requirements, hazardous-area classification, gas monitoring and mine-specific electrical rules are outside this synthetic duty-cycle profile."
+  ]
+}

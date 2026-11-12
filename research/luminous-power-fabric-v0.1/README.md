@@ -370,6 +370,15 @@ field-mission-profile contract and composes Symthaea, Symtropy, Sol-Atlas and My
 Vendor specifications remain separate from independent physical measurements and accredited
 qualification evidence.
 
+## Rights-aware mission-profile corpus
+
+[Issue #449](https://github.com/Luminous-Dynamics/luminous-platform/issues/449) and
+[MISSION_PROFILE_CORPUS.md](./MISSION_PROFILE_CORPUS.md) extend the canonical field mission profile
+contract with six synthetic application families: construction, municipal water pumping, mining,
+port/crane operations, industrial maintenance and remote communications/water. Each is a separate
+profile file and remains explicitly synthetic. Whole-application holdouts are suggested for future
+preregistered controller and architecture comparisons.
+
 ## Current limitations
 
 This package contains analytical screening models and offline data-audit tools; it does **not**

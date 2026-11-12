@@ -1,0 +1,378 @@
+{
+  "schema_version": "0.1",
+  "record_class": "synthetic_fixture",
+  "profile_id": "PF-INDUSTRIAL-SHUTDOWN-SYN-001",
+  "name": "Industrial maintenance and shutdown work pack",
+  "application": "industrial_maintenance",
+  "site": {
+    "country_code": "ZA",
+    "jurisdiction": "South Africa (illustrative only)",
+    "site_type": "mixed",
+    "hazardous_area": false,
+    "hazardous_area_classification": null
+  },
+  "environment": {
+    "ambient_min_c": 10,
+    "ambient_max_c": 40,
+    "altitude_m": 900,
+    "dust_exposure": "moderate",
+    "moisture_exposure": "intermittent_splash",
+    "corrosive_exposure": "industrial_atmosphere",
+    "vibration_exposure": "transportable",
+    "transported_between_runs": true,
+    "ingress_target_ip": null,
+    "notes": "Illustrative synthetic environment only; no real site, enclosure rating or hazardous-area classification is asserted."
+  },
+  "sources": [
+    {
+      "source_id": "site_grid",
+      "source_type": "grid",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_power_kw": 120,
+      "bidirectional": false,
+      "evidence_class": "assumption",
+      "reference": "Synthetic illustrative assumption; no supplier rating or physical measurement."
+    },
+    {
+      "source_id": "rental_genset",
+      "source_type": "generator",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_power_kw": 90,
+      "bidirectional": false,
+      "evidence_class": "assumption",
+      "reference": "Synthetic illustrative assumption; no supplier rating or physical measurement."
+    },
+    {
+      "source_id": "rental_bess",
+      "source_type": "battery_inverter",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_power_kw": 60,
+      "bidirectional": true,
+      "evidence_class": "assumption",
+      "reference": "Synthetic illustrative assumption; no supplier rating or physical measurement."
+    }
+  ],
+  "loads": [
+    {
+      "load_id": "air_compressor",
+      "category": "compressor",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 22,
+      "rated_apparent_power_kva": 24.444444444444443,
+      "power_factor": 0.9,
+      "criticality": "important",
+      "start_profile": {
+        "inrush_multiple": 4,
+        "inrush_duration_ms": 500,
+        "starts_per_hour": 5
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    },
+    {
+      "load_id": "maintenance_pump",
+      "category": "motor_pump",
+      "interface": "AC_THREE_PHASE",
+      "nominal_voltage_v": 400,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 12,
+      "rated_apparent_power_kva": 13.333333333333332,
+      "power_factor": 0.9,
+      "criticality": "important",
+      "start_profile": {
+        "inrush_multiple": 4.5,
+        "inrush_duration_ms": 600,
+        "starts_per_hour": 3
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    },
+    {
+      "load_id": "welding_set",
+      "category": "welding",
+      "interface": "AC_SINGLE_PHASE",
+      "nominal_voltage_v": 230,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 18,
+      "rated_apparent_power_kva": 21.176470588235293,
+      "power_factor": 0.85,
+      "criticality": "deferrable",
+      "start_profile": {
+        "inrush_multiple": 2,
+        "inrush_duration_ms": 100,
+        "starts_per_hour": 8
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    },
+    {
+      "load_id": "temporary_lighting",
+      "category": "lighting",
+      "interface": "AC_SINGLE_PHASE",
+      "nominal_voltage_v": 230,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 4,
+      "rated_apparent_power_kva": 4.2105263157894735,
+      "power_factor": 0.95,
+      "criticality": "important",
+      "start_profile": {
+        "inrush_multiple": 1.2,
+        "inrush_duration_ms": 30,
+        "starts_per_hour": 1
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    },
+    {
+      "load_id": "instrument_air_controls",
+      "category": "controls_instrumentation",
+      "interface": "AC_SINGLE_PHASE",
+      "nominal_voltage_v": 230,
+      "nominal_frequency_hz": 50,
+      "rated_active_power_kw": 1,
+      "rated_apparent_power_kva": 1.0526315789473684,
+      "power_factor": 0.95,
+      "criticality": "critical",
+      "start_profile": {
+        "inrush_multiple": 1,
+        "inrush_duration_ms": 0,
+        "starts_per_hour": 1
+      },
+      "harmonic_profile_reference": null,
+      "notes": "Synthetic illustrative load envelope; not a customer or product rating."
+    }
+  ],
+  "segments": [
+    {
+      "segment_id": "site_setup",
+      "start_s": 0,
+      "duration_s": 1800,
+      "available_source_ids": [
+        "site_grid",
+        "rental_bess"
+      ],
+      "load_states": [
+        {
+          "load_id": "air_compressor",
+          "enabled": false,
+          "active_power_kw": 0
+        },
+        {
+          "load_id": "maintenance_pump",
+          "enabled": false,
+          "active_power_kw": 0
+        },
+        {
+          "load_id": "welding_set",
+          "enabled": false,
+          "active_power_kw": 0
+        },
+        {
+          "load_id": "temporary_lighting",
+          "enabled": true,
+          "active_power_kw": 2
+        },
+        {
+          "load_id": "instrument_air_controls",
+          "enabled": true,
+          "active_power_kw": 1
+        }
+      ],
+      "ambient_c": 22
+    },
+    {
+      "segment_id": "compressor_pump_work",
+      "start_s": 1800,
+      "duration_s": 3600,
+      "available_source_ids": [
+        "site_grid",
+        "rental_genset",
+        "rental_bess"
+      ],
+      "load_states": [
+        {
+          "load_id": "air_compressor",
+          "enabled": true,
+          "active_power_kw": 22
+        },
+        {
+          "load_id": "maintenance_pump",
+          "enabled": true,
+          "active_power_kw": 12
+        },
+        {
+          "load_id": "welding_set",
+          "enabled": false,
+          "active_power_kw": 0
+        },
+        {
+          "load_id": "temporary_lighting",
+          "enabled": true,
+          "active_power_kw": 4
+        },
+        {
+          "load_id": "instrument_air_controls",
+          "enabled": true,
+          "active_power_kw": 1
+        }
+      ],
+      "ambient_c": 32
+    },
+    {
+      "segment_id": "welding_and_maintenance",
+      "start_s": 5400,
+      "duration_s": 3600,
+      "available_source_ids": [
+        "site_grid",
+        "rental_genset",
+        "rental_bess"
+      ],
+      "load_states": [
+        {
+          "load_id": "air_compressor",
+          "enabled": true,
+          "active_power_kw": 22
+        },
+        {
+          "load_id": "maintenance_pump",
+          "enabled": true,
+          "active_power_kw": 12
+        },
+        {
+          "load_id": "welding_set",
+          "enabled": true,
+          "active_power_kw": 18
+        },
+        {
+          "load_id": "temporary_lighting",
+          "enabled": true,
+          "active_power_kw": 4
+        },
+        {
+          "load_id": "instrument_air_controls",
+          "enabled": true,
+          "active_power_kw": 1
+        }
+      ],
+      "ambient_c": 38
+    },
+    {
+      "segment_id": "reduced_finish",
+      "start_s": 9000,
+      "duration_s": 1800,
+      "available_source_ids": [
+        "site_grid",
+        "rental_genset",
+        "rental_bess"
+      ],
+      "load_states": [
+        {
+          "load_id": "air_compressor",
+          "enabled": true,
+          "active_power_kw": 10
+        },
+        {
+          "load_id": "maintenance_pump",
+          "enabled": false,
+          "active_power_kw": 0
+        },
+        {
+          "load_id": "welding_set",
+          "enabled": true,
+          "active_power_kw": 6
+        },
+        {
+          "load_id": "temporary_lighting",
+          "enabled": true,
+          "active_power_kw": 3
+        },
+        {
+          "load_id": "instrument_air_controls",
+          "enabled": true,
+          "active_power_kw": 1
+        }
+      ],
+      "ambient_c": 30
+    }
+  ],
+  "events": [
+    {
+      "event_id": "compressor-start",
+      "time_s": 1800,
+      "event_type": "motor_start",
+      "target_id": "air_compressor",
+      "delta_active_power_kw": 22,
+      "duration_ms": 500,
+      "notes": "Synthetic event; no transient waveform capture is included."
+    },
+    {
+      "event_id": "pump-start",
+      "time_s": 1800,
+      "event_type": "motor_start",
+      "target_id": "maintenance_pump",
+      "delta_active_power_kw": 12,
+      "duration_ms": 600,
+      "notes": "Synthetic event; no transient waveform capture is included."
+    },
+    {
+      "event_id": "welding-step",
+      "time_s": 5400,
+      "event_type": "load_step",
+      "target_id": "welding_set",
+      "delta_active_power_kw": 18,
+      "duration_ms": 100,
+      "notes": "Synthetic event; no transient waveform capture is included."
+    },
+    {
+      "event_id": "generator-transfer",
+      "time_s": 7200,
+      "event_type": "source_transfer",
+      "target_id": "rental_genset",
+      "delta_active_power_kw": null,
+      "duration_ms": null,
+      "notes": "Synthetic event; no transient waveform capture is included."
+    }
+  ],
+  "requirements": {
+    "max_unserved_energy_kwh": null,
+    "max_recovery_time_s": null,
+    "max_voltage_deviation_percent": null,
+    "max_frequency_deviation_hz": null,
+    "max_voltage_thd_percent": null,
+    "max_noise_dba": null,
+    "max_fuel_l_per_delivered_kwh": null,
+    "notes": "Customer acceptance limits must be set from the actual service contract and applicable installation requirements before benchmarking."
+  },
+  "data_rights": {
+    "data_owner": "Luminous Dynamics (synthetic fixture author)",
+    "license": "CC0-1.0",
+    "commercial_use": "allowed",
+    "redistribution": "allowed",
+    "attribution_required": false,
+    "rights_reference": "Synthetic authored example; contains no measured customer or vendor data."
+  },
+  "provenance": {
+    "source_kind": "synthetic",
+    "source_reference": "Authored deterministic synthetic fixture; not field data.",
+    "sampling_interval_s": null,
+    "raw_data_sha256": null,
+    "instrument_run_ids": [],
+    "timebase_reference": null
+  },
+  "claim_ceiling": "DUTY_CYCLE_SPECIFICATION_ONLY_NOT_POWER_SYSTEM_SAFETY_OR_PERFORMANCE_QUALIFICATION",
+  "limitations": [
+    "Synthetic demand and source availability only; no physical site was measured.",
+    "Source ratings and load profiles are illustrative assumptions, not supplier specifications.",
+    "No raw voltage/current waveform, harmonics, fault-current or protection evidence is included.",
+    "Cannot substantiate efficiency, fuel savings, power quality, safety, runtime, lifecycle or field readiness.",
+    "Permit-to-work, hazardous area, earthing, temporary distribution and isolation requirements are outside this synthetic load profile."
+  ]
+}

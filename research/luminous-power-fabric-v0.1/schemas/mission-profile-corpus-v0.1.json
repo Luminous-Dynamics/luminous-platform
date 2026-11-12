@@ -1,0 +1,90 @@
+{
+  "schema_version": "0.1",
+  "corpus_id": "PF-MISSION-PROFILE-CORPUS-SYNTH-0.1",
+  "record_class": "synthetic_fixture",
+  "profiles": [
+    {
+      "profile_id": "PF-FIELD-CONSTRUCTION-SYNTHETIC-001",
+      "profile_file": "schemas/field-mission-profile.synthetic.json",
+      "application_family": "construction_site",
+      "evidence_class": "synthetic",
+      "suggested_holdout_group": "construction-holdout",
+      "coverage_tags": [
+        "construction",
+        "pump",
+        "tools",
+        "lighting",
+        "motor-start"
+      ]
+    },
+    {
+      "profile_id": "PF-WATER-PUMP-SYN-001",
+      "profile_file": "schemas/mission-profiles/water-pumping.synthetic.json",
+      "application_family": "plant_auxiliary",
+      "evidence_class": "synthetic",
+      "suggested_holdout_group": "water-pumping-holdout",
+      "coverage_tags": [
+        "pumping",
+        "critical-controls",
+        "source-loss",
+        "staged-motor-start"
+      ]
+    },
+    {
+      "profile_id": "PF-MINING-DEWATER-VENT-SYN-001",
+      "profile_file": "schemas/mission-profiles/mining-dewatering.synthetic.json",
+      "application_family": "remote_operations",
+      "evidence_class": "synthetic",
+      "suggested_holdout_group": "mining-holdout",
+      "coverage_tags": [
+        "dewatering",
+        "ventilation",
+        "altitude",
+        "high-dust",
+        "source-trip"
+      ]
+    },
+    {
+      "profile_id": "PF-PORT-CRANE-SYN-001",
+      "profile_file": "schemas/mission-profiles/port-crane.synthetic.json",
+      "application_family": "other",
+      "evidence_class": "synthetic",
+      "suggested_holdout_group": "port-holdout",
+      "coverage_tags": [
+        "crane-cycles",
+        "reefer",
+        "coastal",
+        "high-inrush",
+        "source-transfer"
+      ]
+    },
+    {
+      "profile_id": "PF-INDUSTRIAL-SHUTDOWN-SYN-001",
+      "profile_file": "schemas/mission-profiles/industrial-shutdown.synthetic.json",
+      "application_family": "industrial_maintenance",
+      "evidence_class": "synthetic",
+      "suggested_holdout_group": "industrial-maintenance-holdout",
+      "coverage_tags": [
+        "compressor",
+        "welding",
+        "pump",
+        "temporary-supply"
+      ]
+    },
+    {
+      "profile_id": "PF-REMOTE-COMMS-WATER-SYN-001",
+      "profile_file": "schemas/mission-profiles/remote-comms-water.synthetic.json",
+      "application_family": "remote_operations",
+      "evidence_class": "synthetic",
+      "suggested_holdout_group": "remote-infrastructure-holdout",
+      "coverage_tags": [
+        "long-duration",
+        "critical-auxiliary",
+        "pv-battery-generator",
+        "outage-endurance"
+      ]
+    }
+  ],
+  "rights_policy": "All v0.1 records are synthetic fixtures authored by Luminous Dynamics and declared CC0-1.0. No measured customer, site or vendor data is included.",
+  "claim_ceiling": "SYNTHETIC_MISSION_PROFILE_CORPUS_ONLY_NOT_MEASURED_DUTY_OR_POWER_SYSTEM_QUALIFICATION"
+}
