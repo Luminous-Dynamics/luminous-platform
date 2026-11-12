@@ -130,8 +130,10 @@ already modelled upstream). It subtracts explicit source measurement/model uncer
 source energy priority for direct service, then charges an aggregate storage bank from surplus or
 discharges it to cover a source deficit.
 
-The evaluator limits storage by conservative capacity, initial-SOC uncertainty, charge/discharge
-power, charge/discharge efficiency, minimum SOC and an explicit end-of-mission reserve. It retains
+The evaluator enforces both a mission-wide unserved-energy budget and a non-compensatory
+per-segment limit (set zero for a segment that must be fully served). It limits storage by
+conservative capacity, initial-SOC uncertainty, charge/discharge power, charge/discharge efficiency,
+minimum SOC and an explicit end-of-mission reserve. It retains
 qualified/observed source digests, source-specific expiry, evidence status and uncertainty bounds per
 segment, plus the exact storage evidence/configuration/limit snapshot. Global system mismatch or expired mission qualification blocks all capability; a stale
 source segment is excluded rather than trusted. If a storage bank is configured but is ineligible,
