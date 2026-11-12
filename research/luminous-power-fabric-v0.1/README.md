@@ -388,6 +388,16 @@ evidence eligibility are hard gates; service, resilience, resource/lifecycle, co
 replay remain separate scoreboards. It adds no hardware control path and makes no physical or
 conformity claim.
 
+## Controller HIL, commissioning and periodic-test matrix
+
+[Issue #445](https://github.com/Luminous-Dynamics/luminous-platform/issues/445) and
+[draft PR #446](https://github.com/Luminous-Dynamics/luminous-platform/pull/446) add a versioned
+test-stage crosswalk for MEMS dispatch/forecast/flexible-resource functions and MMCS switching,
+mode transitions, P/Q control, islanding and black start. The matrix is a planned research coverage
+artifact, not an executed HIL test or standards-conformity result. It records positive/negative/
+recovery controls and distinguishes controller-HIL, power-HIL, physical laboratory, commissioning
+and periodic/site-operation boundaries.
+
 ## Current limitations
 
 This package contains analytical screening models and offline data-audit tools; it does **not**

@@ -26,7 +26,7 @@ This matrix maps those public topic headings into a Luminous research coverage p
 | IEEE 2800.2-2026 | Plant-level conformity assessment for applicable bulk-system IBR plants | Separate grid-interconnection/IBR path, not a substitute for controller HIL tests |
 | P2800.1 | Active project on grid-forming IBR/CBR functional capabilities and performance | Future GFM-specific extension when product scope warrants it |
 
-Sources: [IEC TS 62898-3-5:2026](https://webstore.iec.ch/en/publication/84175), [IEC TS 62898-3-2](https://webstore.iec.ch/en/publication/77331), [IEC TS 62898-3-4](https://webstore.iec.ch/en/publication/77333), [IEEE 2030.7-2017](https://standards.ieee.org/ieee/2030.7/5941/), [IEEE 2030.8-2018](https://standards.ieee.org/ieee/2030.8/6169/), [P2030.8](https://standards.ieee.org/ieee/2030.8/12543/), [IEEE 2800.2-2026](https://standards.ieee.org/ieee/2800.2/10616/), [P2800.1](https://standards.ieee.org/ieee/2800.1/12387/).
+Sources: [IEC TS 62898-3-5:2026](https://webstore.iec.ch/en/publication/84175), [IEC TS 62898-3-2](https://webstore.iec.ch/en/publication/61960), [IEC TS 62898-3-4](https://webstore.iec.ch/en/publication/67711), [IEEE 2030.7-2017](https://standards.ieee.org/ieee/2030.7/5941/), [IEEE 2030.8-2018](https://standards.ieee.org/ieee/2030.8/6169/), [P2030.8](https://standards.ieee.org/ieee/2030.8/12543/), [IEEE 2800.2-2026](https://standards.ieee.org/ieee/2800.2/10616/), [P2800.1](https://standards.ieee.org/ieee/2800.1/12387/).
 
 ## 3. Functional coverage matrix
 
@@ -47,7 +47,7 @@ The machine-readable research matrix is [controller-test-stage-matrix-v0.1.json]
 | MMCS-07 | MMCS | Black start | Can the declared black-start sequence form and recover the intended island safely? |
 | SYS-01 | System | End-to-end pre-commissioning | Do controller, model, protection, comms, DER and operator interfaces work as one configured system? |
 
-Each entry specifies planned HIL/commissioning/periodic stages, admissible execution boundaries, positive and negative controls, required observables, hard gates and a claim ceiling. The exact test set must be narrowed to the actual product and microgrid boundary. A test that is not applicable should be marked not applicable with a documented rationale—not silently omitted.
+Each entry specifies planned HIL/commissioning/periodic stages, admissible execution boundaries, positive and negative controls, required observables, hard gates and a claim ceiling. The exact test set must be narrowed to the actual product and microgrid boundary. A test that is not applicable should be marked not applicable with a documented rationale—not silently omitted. IEC TS 62898-3-2:2024 is the MEMS functional anchor and IEC TS 62898-3-4:2023 is the MMCS functional anchor; their correct IEC publisher pages are linked above.
 
 ## 4. Execution stages and physical boundaries
 

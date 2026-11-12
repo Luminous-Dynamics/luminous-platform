@@ -44,6 +44,18 @@
       "status": "active_project",
       "purpose": "Grid-forming IBR/CBR capability and performance recommended practice",
       "mapping_status": "track_not_normative"
+    },
+    {
+      "reference": "IEC TS 62898-3-2:2024",
+      "status": "published",
+      "purpose": "Microgrid energy-management systems",
+      "mapping_status": "research_crosswalk_only"
+    },
+    {
+      "reference": "IEC TS 62898-3-4:2023",
+      "status": "published",
+      "purpose": "Microgrid monitoring and control systems",
+      "mapping_status": "research_crosswalk_only"
     }
   ],
   "tests": [
@@ -465,8 +477,7 @@
       "function_area": "end_to_end_precommissioning",
       "applicable_stages": [
         "hil",
-        "commissioning",
-        "periodic"
+        "commissioning"
       ],
       "execution_modes": [
         "controller_hil",
