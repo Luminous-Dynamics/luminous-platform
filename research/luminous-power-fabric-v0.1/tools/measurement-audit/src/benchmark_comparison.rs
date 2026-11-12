@@ -365,6 +365,16 @@ fn validate_run(run: &BenchmarkRun) -> Result<(), AuditError> {
                 metric.metric_id
             )));
         }
+        let mut metric_instrument_ids: Vec<&str> = Vec::with_capacity(metric.instrument_ids.len());
+        for instrument_id in &metric.instrument_ids {
+            if metric_instrument_ids.contains(&instrument_id.as_str()) {
+                return Err(AuditError(format!(
+                    "metric {:?} contains duplicate instrument reference {:?}",
+                    metric.metric_id, instrument_id
+                )));
+            }
+            metric_instrument_ids.push(instrument_id);
+        }
         if metric_ids.contains(&metric.metric_id.as_str()) {
             return Err(AuditError(format!(
                 "duplicate metric id {:?}",
@@ -1005,6 +1015,20 @@ mod tests {
     fn duplicate_metric_ids_are_rejected() {
         let mut reference = run("run-ref", BenchmarkEvidenceClass::Measured, '4', 10_000.0);
         reference.metrics.push(reference.metrics[0].clone());
+        let candidate = run("run-candidate", BenchmarkEvidenceClass::Measured, '5', 9_900.0);
+        assert!(compare_matched_benchmark_runs(MatchedBenchmarkInput {
+            evaluation_time_epoch_s: 100,
+            reference: &reference,
+            candidate: &candidate,
+        })
+        .is_err());
+    }
+
+    #[test]
+    fn duplicate_instrument_references_within_metric_are_rejected() {
+        let mut reference = run("run-ref", BenchmarkEvidenceClass::Measured, '4', 10_000.0);
+        reference.metrics[0].instrument_ids =
+            vec!["meter-1".to_string(), "meter-1".to_string()];
         let candidate = run("run-candidate", BenchmarkEvidenceClass::Measured, '5', 9_900.0);
         assert!(compare_matched_benchmark_runs(MatchedBenchmarkInput {
             evaluation_time_epoch_s: 100,
