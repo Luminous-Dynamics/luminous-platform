@@ -14,7 +14,7 @@ The benchmark unit is therefore the **causal dispatch trace**:
 
 ## 2. Causal timing contract
 
-Each observation distinguishes event/acquisition time from availability time to the controller. Each decision binds its trigger, computation start/completion, deadline, policy-action digest, disposition and observations actually used.
+Each observation distinguishes event/acquisition time from availability time to the controller. Each decision binds its trigger, computation start/completion, deadline, policy-action digest, disposition, exact observations used, optimizer invocation count and compute duration. The report aggregates total optimizer invocations, total compute time and maximum per-decision compute duration.
 
 The validator rejects observations that became available after computation started. A stale, missing, invalid, unknown or unverified observation may appear and may be handled by fallback, but cannot be represented as current. The v0.1 trace uses one monotonic clock epoch; a reboot, clock correction or epoch change must be qualified by the Mycelix stream/timebase owner, not inferred locally.
 

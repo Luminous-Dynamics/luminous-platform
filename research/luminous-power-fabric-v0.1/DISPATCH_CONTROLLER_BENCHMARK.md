@@ -91,9 +91,27 @@ A first evaluation should compare distinctly identified policy arms:
 4. Constrained optimisation reference (MILP/CP-SAT where tractable).
 5. Receding-horizon model predictive control (MPC).
 6. Uncertainty-aware or robust MPC.
-7. Future Symthaea advisory policy, only after its interface, information budget and abstention semantics are frozen.
+7. Event-triggered residual/forecast-driven re-optimization, consuming Symtropy [ENERGY-REOPT-VALUE-001 #2805 / draft PR #2808](https://github.com/Luminous-Dynamics/symtropy/pull/2808).
+8. Future Symthaea advisory policy, only after its interface, information budget and abstention semantics are frozen.
 
 The optimisation reference is a bound, not automatically a deployable policy. Record its formulation, solver version, optimality gap and timeout. A clairvoyant solution with future knowledge must be labelled as such and must not be compared as though it had the same information as an operational controller.
+
+
+
+### Existing adaptive-reoptimization comparator (synthetic)
+
+Symtropy's [#2805 / draft PR #2808](https://github.com/Luminous-Dynamics/symtropy/pull/2808) supplies a useful owner-native exact panel: four synthetic scenarios, three intervals each, with fixed-cadence, event-triggered, no-reoptimization and too-high-trigger policies. The frozen fixture reports:
+
+| Policy | Modelled solver calls | Essential unserved | Flexible unserved |
+|---|---:|---:|---:|
+| Fixed cadence | 12 | 0 | 1 |
+| Event-triggered | 5 | 0 | 1 |
+| No re-optimization | 4 | 1 | 0 |
+| Too-high trigger threshold | 4 | 1 | 0 |
+
+On this constructed panel, residual-triggered re-optimization uses 58.333% fewer modelled solver calls than fixed cadence while matching its service vector. This is not a measured runtime speedup, controller-energy saving, field result or general regret guarantee. Power Fabric will reuse the frozen case/trigger evidence and extend it to matched physical/modelled plant traces rather than clone the Symtropy oracle.
+
+The causal trace in [DISPATCH_TRACE_CONTRACT.md](./DISPATCH_TRACE_CONTRACT.md) now records optimization invocations per decision, total controller compute time and maximum decision compute duration. These are separate from service and energy metrics; fewer solver calls do not automatically mean lower controller energy or better service.
 
 For operational policy arms, match:
 - observed inputs and forecast issue times;
