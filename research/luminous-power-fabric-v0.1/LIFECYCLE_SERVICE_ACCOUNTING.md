@@ -63,7 +63,7 @@ Availability = (scheduled_operating_time - union(system_unavailable_intervals)) 
 
 Overlapping repairs are merged before downtime is summed. Two concurrent module repairs that disable the same system for 30 minutes count as 30 minutes of system downtime, not 60 minutes. Repair labour and requalification labour are separately summed, since two technicians can work simultaneously while system downtime is counted once.
 
-The study must also carry an explicit repair-history-complete flag, evidence status/class and reference. An empty repair-event list without a complete maintenance/service record is not evidence that there were no repairs. Replacement requires a distinct incoming component identity and explicit pre/post configuration digests. A replacement module starts a new physical health history; it is never spliced into the outgoing module's trajectory.
+The study must also carry an explicit repair-history-complete flag, evidence status/class and reference. An empty repair-event list without a complete maintenance/service record is not evidence that there were no repairs. Replacement requires a distinct incoming component identity, unique across the study, and explicit pre/post configuration digests. A replacement module starts a new physical health history; it is never spliced into the outgoing module's trajectory.
 
 ## 5. Storage health is observed, not forecast
 
@@ -94,9 +94,9 @@ Reference and candidate must match:
 - site-profile digest and useful-service boundary;
 - calendar study horizon and scheduled operating window;
 - mission IDs and mission-profile digests;
-- each mission's start/duration, critical-service demand, permitted local unserved-energy allowance, initial-state-obligation digest and terminal-state-obligation digest.
+- each mission's start/duration, critical-service demand, permitted local unserved-energy allowance, initial-state-obligation digest and terminal-state-obligation digest, plus explicit references to the actual initial and final state observations.
 
-Their product configurations, costs, fuel, repairs, replacements and measured health trajectories are allowed to differ; those are the variables being compared. Initial state and terminal reserve obligations are separately bound to different digests and both must match. A mismatch in the requested service or final reserve contract rejects the comparison before calculating a candidate delta.
+Their product configurations, costs, fuel, repairs, replacements and measured health trajectories are allowed to differ; those are the variables being compared. Initial state and terminal reserve obligations are separately bound to different digests and both must match. Each mission also retains distinct references to the observed initial state and observed final state; an obligation hash alone is not a measurement. A mismatch in the requested service or final reserve contract rejects the comparison before calculating a candidate delta.
 
 The output's claim eligibility is intentionally stricter than its ability to calculate arithmetic. A physical lifecycle comparison requires:
 - eligible exact system configuration and current qualification;
