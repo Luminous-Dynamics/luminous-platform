@@ -431,3 +431,12 @@ The library exposes pdn_frequency::audit_pdn_frequency_response for an explicit 
 The caller must provide a valid, orthogonal/non-overlapping RMS spectral decomposition and impedance data at the same reference plane. The frequency vectors must match exactly; v0.1 does not interpolate, extrapolate, smooth, de-embed or parse S-parameters. Evidence class, calibration-reference presence, instrument bandwidth, configuration and de-embedding state remain explicit. A numerical screen is not loop-stability, package or product qualification.
 
 **Validation:** nine new Rust tests are authored but not executed. No compile, format, Clippy, field solver, Touchstone parser, de-embedding, physical measurement or certification is claimed. See [PDN_FREQUENCY_DOMAIN_TARGET_AND_ANTIRESONANCE_2026-11-10.md](../../PDN_FREQUENCY_DOMAIN_TARGET_AND_ANTIRESONANCE_2026-11-10.md).
+
+
+## Multiresolution sampling adequacy
+
+The library exposes sampling_adequacy::audit_sampling_adequacy for a timestamp vector, declared measurement bandwidth, claimed signal bandwidth, samples-per-cycle requirement and anti-alias filter contract. It uses the largest observed timestamp gap to calculate a conservative equivalent sample rate and Nyquist frequency, reports maximum interval jitter and explicitly rejects claims that exceed sample density, instrument bandwidth or declared anti-alias filter limits.
+
+This is a sampling/bandwidth metadata screen. It does not validate a physical sensor, calibration, probe loading or actual analog-filter response. The 50 Hz AI workload trace fixtures deliberately fail when used to support a sub-microsecond VRM transient claim.
+
+**Validation:** eight Rust tests are authored but not executed. No workload dataset adapter, archive parsing, field measurement, physical test or certification is claimed. See [MULTIRESOLUTION_AI_WORKLOAD_TRACE_AND_SAMPLING_ADEQUACY_2026-11-10.md](../../MULTIRESOLUTION_AI_WORKLOAD_TRACE_AND_SAMPLING_ADEQUACY_2026-11-10.md).

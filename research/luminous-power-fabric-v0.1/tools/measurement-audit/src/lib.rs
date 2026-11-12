@@ -10,6 +10,7 @@ pub mod transient_audit;
 pub mod storage_buffer;
 pub mod compute_power_benchmark;
 pub mod pdn_frequency;
+pub mod sampling_adequacy;
 pub mod loss_budget;
 pub mod energy_chain;
 pub mod dab_sps;
