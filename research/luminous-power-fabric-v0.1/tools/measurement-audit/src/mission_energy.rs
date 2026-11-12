@@ -4,7 +4,7 @@ use crate::AuditError;
 const TIME_TOLERANCE_S: f64 = 1.0e-6;
 const ENERGY_TOLERANCE_WH: f64 = 1.0e-9;
 
-/// One contiguous mission interval at a single useful-service boundary.
+/// One contiguous mission interval at a single declared useful-service boundary.
 ///
 /// The source power is an interval-average capability supplied by the owner
 /// model (for example Symtropy). Any source ramp, start delay and time-varying
@@ -28,11 +28,15 @@ pub struct MissionEnergySegment {
     pub source_evidence_reference: String,
 }
 
-/// A single aggregate storage bank at the same energy boundary as the mission.
+/// A single aggregate storage bank with battery-side energy state and a declared
+/// useful-service power boundary.
 ///
-/// Capacity, power and efficiencies are conservative qualified lower bounds;
-/// capacity_uncertainty_bound_wh and initial_soc_uncertainty_fraction are
-/// additional absolute uncertainty bounds. This is not a cell-level BMS model.
+/// Capacity/SOC are battery-side quantities. maximum_charge_power_w is the
+/// input power admitted at the useful-service boundary; maximum_discharge_power_w
+/// is the output power delivered at that boundary. charge_efficiency maps input
+/// energy to stored energy; discharge_efficiency maps battery-side withdrawal to
+/// useful-boundary delivery. Limits and efficiencies are conservative qualified
+/// values. This is not a cell-level BMS model.
 #[derive(Debug, Clone, PartialEq)]
 pub struct StorageEnergyEnvelope {
     pub storage_id: String,
