@@ -9,6 +9,7 @@ pub mod dab_mission_sweep;
 pub mod cllc_fha;
 pub mod cllc_t_network;
 pub mod cllc_design;
+pub mod capability_envelope;
 
 const EXPECTED_HEADER: &str =
     "time_s,port_a_voltage_v,port_a_current_a,port_b_voltage_v,port_b_current_a,case_temp_c";
