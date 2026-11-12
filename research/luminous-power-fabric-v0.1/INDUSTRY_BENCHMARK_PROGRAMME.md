@@ -22,16 +22,16 @@ The current 500 W PEBB-LV-01 laboratory candidate cannot compete with complete m
 | Atlas Copco ZBC 300-300 | 300 kVA; 308 kWh | Higher-power, shorter-energy model |
 | Atlas Copco ZBC 500-250 | 500 kVA; 246 kWh | kVA is not interchangeable with kW; peak and continuous ratings must remain distinct |
 | Atlas Copco ZBC 1000-1200 | 1,000 kVA; 1,200 kWh; vendor table lists 800 kW continuous mode | Container-scale unit, not a portable service-node comparator |
-| ABB SACE Infinitus | ABB says fully IEC 60947-2-certified solid-state circuit-breaker; semiconductor interruption plus electromechanical isolation; up to 2,500 A / 1,250 V DC; interruption down to 15 μs | Mature solid-state breaker benchmark; not an eFuse or a 48 V auxiliary branch module |
+| ABB SACE Infinitus | ABB says fully IEC 60947-2-certified solid-state circuit-breaker; semiconductor interruption plus electromechanical isolation; up to 2,500 A / 1,250 V DC; current product overview says fault isolation <25 μs, while its EPD declaration section states down to 15 μs | Mature solid-state breaker benchmark; preserve the two ABB statements as separate claims and confirm test conditions; not an eFuse or a 48 V auxiliary branch module |
 | TI TIDA-050090 | 54 V / 5 kW eFuse reference design; one TPS1689 + five TPS1685; TI reports 100 A RMS at 55 °C without external airflow | Vendor reference board for testing/performance validation, not a commercial breaker or independent Luminous result |
 
 Sources:
-- Cat XES120: https://www.cat.com/en_US/products/new/power-systems/electric-power/battery-energy-storage-systems/119844.html
+- Cat XES120 (South Africa): https://www.cat.com/en_ZA/products/new/power-systems/electric-power/battery-energy-storage-systems/119844.html
 - Atlas Copco ZBC South Africa: https://www.atlascopco.com/en-za/construction-equipment/products/energy-storage-systems/medium
 - ABB Infinitus: https://www.abb.com/global/en/areas/electrification/low-voltage/circuit-breakers/solid-state-circuit-breakers/sace-infinitus
 - TI TIDA-050090: https://www.ti.com/tool/TIDA-050090
 
-Atlas ZBC values vary by exact model. Do not combine the maximum power from one model with the maximum energy or temperature rating of another. Preserve kW/kVA, nominal/peak/continuous duration, battery-side energy and usable AC energy as separate quantities.
+The Atlas Copco South Africa vendor table also lists LFP batteries, a 672–864 V DC battery bus, recommended 90% depth of discharge, 70% end-of-life capacity, and variant-specific discharge C-rates (0.5C, 1C or 2C). These are vendor-published design values, not independent usable-energy measurements or a guaranteed field life. Preserve variant-specific values: do not combine the maximum power from one model with the maximum energy, C-rate or temperature rating of another. Keep kW/kVA, nominal/peak/continuous duration, battery-side energy and usable AC energy as separate quantities.
 
 ## 3. Grid-forming and conformity baseline
 
@@ -102,8 +102,8 @@ Publish outcomes together: useful delivered energy, unserved energy, fuel, power
 
 ## 8. Immediate execution
 
-1. Keep the existing field-mission-profile schema as the mission input contract.
-2. Add generator-only and generator+BESS synthetic matched episodes with independent arithmetic oracles.
+1. Keep the existing field-mission-profile schema as the site/load mission input contract.
+2. Use the mission-energy envelope (#422) to compose owner-qualified interval-average source capability, storage limits, conservative uncertainty and end-of-mission reserve.
 3. Bind each replay to Symtropy model/trace revisions and each measured observation to Mycelix instrument/timebase/calibration evidence.
 4. Use Symthaea's decision-impact selector to prioritize specialist laboratory tests.
 5. Bind package, connectors, harness, cooling and service-access revisions through Sol-Atlas's product engineering thread.
@@ -112,3 +112,40 @@ Publish outcomes together: useful delivered energy, unserved energy, fuel, power
 ## 9. Claim boundary
 
 The competitor values above are vendor-published specifications, not independent measurements. The Power Fabric branch currently contains research documents, schemas, synthetic fixtures and software screening tools; it does not contain a fabricated PCB, qualified power stage, field product, accredited test result, protection certificate or independently reproduced performance advantage. CI/test runners have not verified the current exact head. No energized battery, mains/grid, high-energy fault or field test is authorized by this benchmark document.
+
+
+## 10. Mission energy, storage and reserve comparison
+
+[Issue #422](https://github.com/Luminous-Dynamics/luminous-platform/issues/422) and
+[MISSION_ENERGY_ENVELOPE.md](./MISSION_ENERGY_ENVELOPE.md) introduce an interval-energy contract
+for mission-level service comparison. This does not duplicate Symtropy's generator, inverter or
+hybrid-plant physics. It consumes the time-weighted interval-average output from that owner, applies
+conservative source measurement/model uncertainty, and accounts for one aggregate store's capacity,
+SOC, charge/discharge power and efficiencies.
+
+The key competitive control is the **equal terminal-state obligation**: compare generator-only,
+generator+BESS and BESS-only against the same useful load, environment, outage schedule, initial SOC
+and final reserve. A hybrid system cannot claim fuel/efficiency superiority by discharging a battery
+and leaving the next operator with a depleted system. Report the SOC trace, source energy, battery
+energy withdrawn/added, curtailed energy, delivered service and every unserved segment.
+
+The synthetic two-segment fixture demonstrates arithmetic only (1,000 Wh source surplus charged at
+90%, followed by 800 Wh of storage-delivered service at 90% discharge efficiency). It is not a
+measured system or performance result.
+
+Standards/test-method references newly added for this work:
+- [ISO 8528-5:2025](https://www.iso.org/standard/85960.html) for the RIC-engine/AC-generator-set subsystem.
+- [IEC TS 62933-2-2:2022](https://webstore.iec.ch/en/publication/64570) for EES application duty cycles/performance testing.
+- [IEC TS 62933-2-3:2025](https://webstore.iec.ch/en/publication/77334) for site-operation performance assessment after commissioning.
+- [IEEE 2030.3-2016](https://standards.ieee.org/ieee/2030.3/5076/) and [IEEE 1679-2020](https://standards.ieee.org/ieee/1679/7716/) as scoped storage test/characterization references.
+
+These references do not by themselves qualify a portable hybrid product. Product classification, South
+African SANS/NRCS applicability, battery safety, converter safety, protection, installation and
+accredited physical testing remain separate release gates.
+
+
+## 11. Lifecycle-adjusted service cost and repairability
+
+[Issue #424](https://github.com/Luminous-Dynamics/luminous-platform/issues/424) opens the next benchmark layer: repeated matched missions across battery capacity/power fade, calendar/cycle ageing, fuel and energy costs, replacement, maintenance, repair turnaround and requalification. The comparison denominator remains delivered critical service and completed missions—not nominal battery kWh or one-cycle efficiency.
+
+This work consumes qualified state-of-health/capacity/power trajectories from the appropriate battery model and Mycelix evidence; it does not create a new electrochemical ageing model. Unknown degradation is not zero degradation. Beginning-, mid- and end-of-life service are reported with replacements, downtime, repair labour, spares and uncertainty retained. No lifecycle advantage is claimed until a repeated, matched and independently measured mission dataset exists.

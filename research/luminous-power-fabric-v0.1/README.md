@@ -299,10 +299,29 @@ overlapping non-identical shared-capacity groups are rejected. The typed input/s
 shared-bus fixture are under `schemas/multi-path-capability-*`, with the model and benchmark boundary
 in [MULTI_PORT_CAPABILITY_DESIGN.md](./MULTI_PORT_CAPABILITY_DESIGN.md).
 
-This remains a declared-contingency arithmetic screen. It does not discover missing common causes,
-solve electrical networks, calculate fault current or protection selectivity, estimate failure
-probabilities, solve storage energy/ramp/recovery, or authorize switching. Recovery/requalification
-and physical dependency verification remain separate next stages.
+This remains a declared-contingency and shared-throughput arithmetic screen. It does not discover
+missing common causes, solve electrical networks, calculate fault current or protection selectivity,
+estimate failure probabilities, model electrochemical/thermal storage dynamics, simulate source ramp
+or transients, solve recovery/requalification, or authorize switching. The separate mission-energy
+screen accounts for interval energy and reserve only; dynamic storage and recovery remain owner-native
+model and physical-test work.
+
+## Time-dependent mission energy and storage reserve
+
+[Issue #422](https://github.com/Luminous-Dynamics/luminous-platform/issues/422) adds a read-only
+mission-energy evaluator in `tools/measurement-audit/src/mission_energy.rs`. It composes
+Symtropy's qualified interval-average source capability with a single aggregate storage envelope,
+subtracts supplied source uncertainty bounds, applies charge/discharge power and efficiency limits,
+tracks SOC, and enforces an end-of-mission reserve. The schema and synthetic two-segment hybrid
+fixture are under `schemas/mission-energy-envelope-*`; the design, equations and benchmark tiers
+are in [MISSION_ENERGY_ENVELOPE.md](./MISSION_ENERGY_ENVELOPE.md).
+
+This is an interval-energy accounting screen, not a dispatch controller, electrochemical/thermal
+storage model, generator/inverter transient simulator, fuel model, network solver or physical
+qualification. Source ramps/start delays must be reflected in owner-qualified interval-average source
+capability; sub-second events remain separate dynamic and physical-test obligations. The evaluator
+retains source and storage evidence/configuration lineage and fails closed on global configuration
+mismatch or expired mission qualification.
 
 ## Matched-service industry benchmark
 
