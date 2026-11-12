@@ -779,7 +779,7 @@ mod tests {
         first.maximum_unserved_energy_wh = 0.0;
         let second = event("later", 3_700.0, 1.0, 1_000.0, 1_000.0);
         let mut value = input(vec![second, first]);
-        value.mission_duration_s = 3_700.0;
+        value.mission_duration_s = 3_800.0;
         let report = evaluate_power_event_envelope(&value).unwrap();
         assert_eq!(report.failed_event_ids, vec!["critical".to_string()]);
         assert!(!report.mission_event_pass);
