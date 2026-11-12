@@ -349,6 +349,21 @@ pub fn evaluate_mission_service(
             "terminal storage minimum exceeds a zero-capacity storage boundary".to_string(),
         ));
     }
+    if input.storage_usable_capacity_kwh > 0.0
+        && requirements.min_terminal_storage_energy_kwh.is_none()
+    {
+        return Err(MissionServiceError(
+            "storage-equipped missions must declare a terminal energy floor".to_string(),
+        ));
+    }
+    if requirements
+        .min_terminal_storage_energy_kwh
+        .is_some_and(|minimum| minimum > input.storage_usable_capacity_kwh + requirements.storage_state_tolerance_kwh)
+    {
+        return Err(MissionServiceError(
+            "terminal storage energy floor exceeds usable storage capacity".to_string(),
+        ));
+    }
 
     let mut blockers = Vec::new();
     let add_blocker = |items: &mut Vec<MissionServiceBlocker>, blocker| {
@@ -594,6 +609,15 @@ pub fn evaluate_mission_service(
             "initial or terminal storage state exceeds usable capacity".to_string(),
         ));
     }
+    if let Some(minimum_terminal_energy) = requirements.min_terminal_storage_energy_kwh {
+        if minimum_terminal_energy + requirements.storage_state_tolerance_kwh
+            < initial_stored_energy
+        {
+            return Err(MissionServiceError(
+                "terminal storage floor must be at least the measured initial stored energy; explicit depletion accounting is a separate benchmark".to_string(),
+            ));
+        }
+    }
 
     let mut seen_event_ids = HashSet::new();
     let mut max_recovery = None;
@@ -796,7 +820,7 @@ mod tests {
                 // 4.0 source + 1.0 storage = 4.5 delivered + 0.5 loss.
                 interval(1_000, 8.0, 7.2, 5.0, 4.5, 0.5, 4.0, 1.0, 0.0, 0.5, 0.35),
                 // 5.2 source = 4.0 delivered + 0.5 charge + 0.7 loss.
-                interval(4_600, 7.2, 7.6, 4.0, 4.0, 0.0, 5.2, 0.0, 0.5, 0.7, 0.40),
+                interval(4_600, 7.2, 8.0, 4.0, 4.0, 0.0, 5.7, 0.0, 1.0, 0.7, 0.40),
             ],
             disturbances: vec![
                 DisturbanceObservation {
@@ -823,7 +847,7 @@ mod tests {
                 energy_balance_tolerance_kwh: 0.02,
                 service_balance_tolerance_kwh: 0.02,
                 storage_state_tolerance_kwh: 0.02,
-                min_terminal_storage_energy_kwh: Some(7.5),
+                min_terminal_storage_energy_kwh: Some(8.0),
                 max_fuel_l_per_delivered_kwh: Some(0.10),
                 max_recovery_time_s: Some(5.0),
                 max_voltage_deviation_percent: Some(10.0),
@@ -1016,7 +1040,7 @@ mod tests {
     #[test]
     fn terminal_storage_obligation_is_not_hidden_by_fuel_savings() {
         let mut input = valid_input();
-        input.requirements.min_terminal_storage_energy_kwh = Some(7.8);
+        input.intervals[1].stored_energy_end_kwh = 7.6;
         let report = evaluate_mission_service(&input).unwrap();
         assert!(report.evidence_eligible);
         assert_eq!(report.service_requirements_met, Some(false));
