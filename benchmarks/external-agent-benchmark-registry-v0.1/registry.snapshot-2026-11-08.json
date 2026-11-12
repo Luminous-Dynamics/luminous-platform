@@ -1,0 +1,1539 @@
+{
+  "schema": "luminous-external-agent-benchmark-registry-v0.1",
+  "version": 1,
+  "snapshot_date": "2026-11-08",
+  "snapshot_status": "metadata_snapshot_partial",
+  "comparison_policy": [
+    "Never compare raw percentages across different task units, cohorts, action permissions, scorers, judges or repeat protocols.",
+    "Preserve native metrics and denominators; keep diagnosis, recommendation, mitigation execution, participant effect and sustained recovery distinct.",
+    "Owner/vendor-published results must remain labelled as such until independently reproduced.",
+    "Missing source bytes or content hashes must be explicitly marked; never substitute a URL hash or guessed digest for a content digest.",
+    "Use paired fault/task-level evaluation and cluster-aware confidence intervals for confirmatory comparisons; repeated attempts within a fault are not independent fault samples.",
+    "Synthetic Luminous supplements are separate metric families and must not overwrite or normalize native benchmark scores."
+  ],
+  "records": [
+    {
+      "id": "sregym-0508-radar-opus55-medium",
+      "name": "SREGym-0508 full-suite participant result — Radar / Claude Opus 5.5 medium",
+      "benchmark_family": "sre_diagnosis_mitigation",
+      "construct": "Same-run root-cause diagnosis plus successful mitigation on a 90-fault SREGym full-suite cohort.",
+      "unit_of_analysis": "fault attempt; E2E requires diagnosis and mitigation to both be correct in the same run",
+      "owner": "SREGym maintainers (benchmark/scorer); Radar (evaluated participant and report author)",
+      "evidence_status": "vendor_benchmark_report",
+      "publication": {
+        "published_at": "2026-11-05",
+        "observed_at": "2026-11-07",
+        "version": "SREGym-0508 / Radar v1.19.0"
+      },
+      "source": {
+        "primary_url": "https://radarhq.io/blog/sregym-leaderboard",
+        "additional_urls": [
+          "https://www.sregym.com/leaderboard",
+          "https://github.com/SREGym/SREGym-website/blob/main/lib/leaderboard-data.ts",
+          "https://github.com/SREGym/SREGym-website/blob/main/public/data/sregym-0508-problems.csv"
+        ],
+        "source_kind": "vendor_blog",
+        "reference_id": "SREGym-website/main/lib/leaderboard-data.ts",
+        "raw_git_blob_sha": "bdb3c26b361cbfcdb7e68425af65f4b0d51434b1",
+        "capture": {
+          "status": "raw_git_blob_sha_only",
+          "captured_at": "2026-11-07",
+          "content_sha256": null,
+          "note": "Verified against official SREGym-website main commit c4101aace3578353c96a2d837f60e48c3e95d9c4; source file Git blob SHA is recorded separately. The blob SHA is Git's SHA-1 object ID, not a SHA-256 digest of a captured web page."
+        },
+        "repository_commit_sha": "c4101aace3578353c96a2d837f60e48c3e95d9c4"
+      },
+      "protocol": {
+        "task_count": 90,
+        "run_count": 270,
+        "repeat_policy": "Three attempts per fault; 90 faults × 3 attempts = 270 runs; no dropped or retried runs reported.",
+        "environment": "High-fidelity SREGym full 90-fault cohort.",
+        "tool_surface": "Radar v1.19.0 with Claude Opus 5.5 medium; no added noise in the reported result.",
+        "model_configurations": [
+          "Claude Opus 5.5 / medium effort / Radar v1.19.0"
+        ],
+        "evaluator": "Original SREGym grader; report states third-party submission was maintainer-verified.",
+        "judge": null,
+        "noise_or_controls": "No added noise; report states noisy leaderboard not yet run.",
+        "limitations": [
+          "Vendor-authored participant report; independent Luminous reproduction not performed.",
+          "A verified third-party submission is not the same as a matched Luminous trial.",
+          "Keep diagnosis, mitigation and same-run E2E distinct."
+        ]
+      },
+      "metrics": [
+        {
+          "metric_id": "e2e-same-run",
+          "label": "Same-run end-to-end success",
+          "value": 95.2,
+          "unit": "percent",
+          "numerator": 257,
+          "denominator": 270,
+          "value_semantics": "derived_from_reported_counts",
+          "definition": "Both root-cause diagnosis and successful mitigation are correct on the same attempt.",
+          "scope": "90 faults × 3 attempts",
+          "limitations": [
+            "Rounded percentage."
+          ]
+        },
+        {
+          "metric_id": "diagnosis",
+          "label": "Diagnosis success",
+          "value": 98.9,
+          "unit": "percent",
+          "numerator": null,
+          "denominator": 270,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Correct root-cause diagnosis under the native benchmark grading.",
+          "scope": "270 attempts",
+          "limitations": []
+        },
+        {
+          "metric_id": "mitigation",
+          "label": "Mitigation success",
+          "value": 95.9,
+          "unit": "percent",
+          "numerator": null,
+          "denominator": 270,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Successful mitigation under the native benchmark grading.",
+          "scope": "270 attempts",
+          "limitations": []
+        },
+        {
+          "metric_id": "tokens-per-run",
+          "label": "Reported tokens per run",
+          "value": 619000,
+          "unit": "tokens",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Average token use as reported by participant.",
+          "scope": "per run",
+          "limitations": [
+            "Token accounting is participant-reported."
+          ]
+        },
+        {
+          "metric_id": "cost-per-run",
+          "label": "Reported cost per run",
+          "value": 0.41,
+          "unit": "usd",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Estimated spend per run as reported by participant.",
+          "scope": "per run",
+          "limitations": [
+            "Cost depends on participant accounting and pricing assumptions."
+          ]
+        }
+      ],
+      "comparability": {
+        "comparison_group": "sregym-full-native",
+        "comparable_only_with": [
+          "SREGym full cohort with same fault set, task/scorer revision, same-run definition and attempt protocol."
+        ],
+        "not_comparable_with": [
+          "SREGym-Lite-1004",
+          "SRE-Marathon Marathon-Score",
+          "AI SRE Arena",
+          "Traceway AI SRE Bench",
+          "ITBench-AA AP@FR"
+        ],
+        "notes": [
+          "Use as replication target, not proof Luminous has beaten the leaderboard.",
+          "For Luminous comparison use paired fault-level outcomes and cluster-aware confidence intervals over faults, with repeated attempts nested within fault."
+        ]
+      },
+      "claim_ceiling": "A vendor-reported, maintainer-verified participant result on SREGym-0508. It is not a Luminous result or evidence of production safety."
+    },
+    {
+      "id": "sregym-lite-1004-official",
+      "name": "SREGym-Lite-1004 official leaderboard cohort",
+      "benchmark_family": "sre_diagnosis_mitigation",
+      "construct": "Smoke/regression benchmark for same-run root-cause diagnosis and mitigation on a small 17-fault cohort.",
+      "unit_of_analysis": "fault attempt; same-run diagnosis and mitigation",
+      "owner": "SREGym maintainers",
+      "evidence_status": "benchmark_maintainer_report",
+      "publication": {
+        "published_at": null,
+        "observed_at": "2026-11-07",
+        "version": "SREGym-Lite-1004"
+      },
+      "source": {
+        "primary_url": "https://www.sregym.com/leaderboard",
+        "additional_urls": [
+          "https://www.sregym.com/problems/cohorts/sregym-lite",
+          "https://github.com/SREGym/SREGym-website/blob/main/public/data/sregym-lite-1004-problems.csv"
+        ],
+        "source_kind": "maintainer_leaderboard",
+        "reference_id": "SREGym-Lite-1004",
+        "raw_git_blob_sha": null,
+        "capture": {
+          "status": "metadata_only_no_content_hash",
+          "captured_at": "2026-11-08",
+          "content_sha256": null,
+          "note": "Rendered official leaderboard and cohort metadata inspected; HTML/data bytes not retained in this registry."
+        },
+        "repository_commit_sha": "c4101aace3578353c96a2d837f60e48c3e95d9c4"
+      },
+      "protocol": {
+        "task_count": 17,
+        "run_count": null,
+        "repeat_policy": "Official page currently displays multiple third-party rows at 100%; per-row run/repeat details must be captured before comparison.",
+        "environment": "SREGym-Lite fault cohort.",
+        "tool_surface": "Multiple agent/model/harness configurations on official leaderboard.",
+        "model_configurations": [],
+        "evaluator": "Native same-run diagnosis+mitigation grading.",
+        "judge": null,
+        "noise_or_controls": "Lite smoke/regression cohort.",
+        "limitations": [
+          "Cohort is saturated as a differentiating success metric.",
+          "Do not conflate Lite result with the full 90-fault cohort."
+        ]
+      },
+      "metrics": [
+        {
+          "metric_id": "displayed-top-e2e",
+          "label": "Displayed third-party E2E result",
+          "value": 100,
+          "unit": "percent",
+          "numerator": null,
+          "denominator": 17,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Multiple displayed rows currently achieve 100% same-run diagnosis and mitigation.",
+          "scope": "17-fault Lite cohort",
+          "limitations": [
+            "Exact number of runs per row must be taken from the row-level leaderboard before publication."
+          ]
+        }
+      ],
+      "comparability": {
+        "comparison_group": "sregym-lite-smoke",
+        "comparable_only_with": [
+          "Same SREGym-Lite cohort, revision and native grader."
+        ],
+        "not_comparable_with": [
+          "SREGym-0508 full suite",
+          "SRE-Marathon",
+          "Traceway AI SRE Bench",
+          "ITBench-AA"
+        ],
+        "notes": [
+          "Use for regression and integration checks; report latency/cost separately."
+        ]
+      },
+      "claim_ceiling": "Official Lite leaderboard snapshot only. It is not evidence of full-suite SOTA or production reliability."
+    },
+    {
+      "id": "sre-marathon-v1",
+      "name": "SRE-Marathon",
+      "benchmark_family": "sre_diagnosis_mitigation",
+      "construct": "Long-horizon continuous SRE operation under overlapping faults and deployment/configuration changes.",
+      "unit_of_analysis": "seeded continuous run with multi-fault progress",
+      "owner": "SRE-Marathon authors",
+      "evidence_status": "preprint",
+      "publication": {
+        "published_at": "2026-09-26",
+        "observed_at": "2026-11-07",
+        "version": "arXiv:2609.33023v1"
+      },
+      "source": {
+        "primary_url": "https://arxiv.org/abs/2609.33023",
+        "additional_urls": [],
+        "source_kind": "paper",
+        "reference_id": "arXiv:2609.33023v1",
+        "raw_git_blob_sha": null,
+        "capture": {
+          "status": "metadata_only_no_content_hash",
+          "captured_at": "2026-11-08",
+          "content_sha256": null,
+          "note": "Paper abstract and reported results inspected; PDF source bytes not captured into this registry."
+        },
+        "repository_commit_sha": null
+      },
+      "protocol": {
+        "task_count": null,
+        "run_count": null,
+        "repeat_policy": "Long-horizon seeded runs with overlapping fault injection; paper evaluates 10 methods.",
+        "environment": "Live two-zone Kubernetes deployment across three applications; ~60 overlapping faults per run.",
+        "tool_surface": "Persistent workspace and cumulative alert history; fixed-cadence invocation; code/config changes are repairable through a shared pipeline.",
+        "model_configurations": [],
+        "evaluator": "Deterministic offline scorer over sealed run bundles.",
+        "judge": null,
+        "noise_or_controls": "Seeded production-calibrated overlapping-fault schedule.",
+        "limitations": [
+          "Marathon-Score is a staged progress score, not a percentage of incidents repaired.",
+          "Fault correlation/localization can contribute score without completing a repair while the fault remains active."
+        ]
+      },
+      "metrics": [
+        {
+          "metric_id": "marathon-score-best",
+          "label": "Best reported Marathon-Score",
+          "value": 41.3,
+          "unit": "points_0_100",
+          "numerator": null,
+          "denominator": 100,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Native ordered-progress score across correlation, localization and repair.",
+          "scope": "Best of 10 evaluated methods",
+          "limitations": [
+            "Not a 41.3% repair rate."
+          ]
+        },
+        {
+          "metric_id": "active-fault-repair-fraction",
+          "label": "Keep-agent repair fraction while faults are active (Kimi K2.5)",
+          "value": 0.017,
+          "unit": "fraction",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Keep-agent's reported fraction of faults repaired while still active on the Kimi K2.5 configuration.",
+          "scope": "Keep-agent / Kimi K2.5 in the native table",
+          "limitations": [
+            "Must be read with native denominator and per-method table.",
+            "The preprint reports active-fault repair at most 0.024 across all methods; 0.017 is the Keep-agent Kimi K2.5 row, not the global maximum."
+          ]
+        },
+        {
+          "metric_id": "max-active-fault-repair",
+          "label": "Maximum repair fraction while faults remain active across reported methods",
+          "value": 0.024,
+          "unit": "fraction",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Highest reported active-fault repair fraction among evaluated methods.",
+          "scope": "All evaluated methods / backbones",
+          "limitations": [
+            "The paper states repair remains at most 0.024 while faults are active."
+          ]
+        }
+      ],
+      "comparability": {
+        "comparison_group": "sre-marathon-native",
+        "comparable_only_with": [
+          "SRE-Marathon native run and scorer revision."
+        ],
+        "not_comparable_with": [
+          "SREGym percent E2E",
+          "Traceway pass rate",
+          "ITBench-AA AP@FR"
+        ],
+        "notes": [
+          "Always publish Marathon-Score and direct active-fault verified repair fraction separately.",
+          "Luminous should include post-repair sustained recovery and independently observed service quality as supplemental metrics."
+        ]
+      },
+      "claim_ceiling": "Preprint-reported benchmark result. Does not imply agents have solved continuous production SRE."
+    },
+    {
+      "id": "radar-mcp-vs-kubectl-50",
+      "name": "Radar 50-fault matched model tool-surface study",
+      "benchmark_family": "sre_diagnosis_only",
+      "construct": "Effect of raw kubectl versus correlated read-only MCP context on diagnosis speed and quality.",
+      "unit_of_analysis": "one diagnosis attempt for each of 50 shared faults",
+      "owner": "Radar",
+      "evidence_status": "vendor_benchmark_report",
+      "publication": {
+        "published_at": null,
+        "observed_at": "2026-11-07",
+        "version": "50-fault paired study"
+      },
+      "source": {
+        "primary_url": "https://radarhq.io/benchmark/mcp-vs-kubectl",
+        "additional_urls": [],
+        "source_kind": "benchmark_site",
+        "reference_id": "radar-mcp-vs-kubectl-50-fault-study",
+        "raw_git_blob_sha": null,
+        "capture": {
+          "status": "metadata_only_no_content_hash",
+          "captured_at": "2026-11-08",
+          "content_sha256": null,
+          "note": "Public per-fault results and summary inspected; source dataset bytes not captured here."
+        },
+        "repository_commit_sha": null
+      },
+      "protocol": {
+        "task_count": 50,
+        "run_count": 100,
+        "repeat_policy": "Same model, same 50 faults, one reported attempt per fault in each arm.",
+        "environment": "SREGym-derived 50-fault suite.",
+        "tool_surface": "Raw kubectl arm versus Radar read-only MCP/context arm; kubectl blocked in the structured-context arm.",
+        "model_configurations": [
+          "Claude Code + Claude Sonnet 5 on Bedrock, same model across arms."
+        ],
+        "evaluator": "Participant-published per-fault diagnosis grading and judge score.",
+        "judge": "Study's reported judge; verify judge version when raw dataset is pinned.",
+        "noise_or_controls": "Matched fault schedule; tool/context surfaces differ.",
+        "limitations": [
+          "Vendor-published mechanism study.",
+          "MCP protocol alone is not isolated from Radar's correlated/precomputed cluster context.",
+          "Single run per fault does not establish variance."
+        ]
+      },
+      "metrics": [
+        {
+          "metric_id": "kubectl-correct",
+          "label": "Raw kubectl correct diagnoses",
+          "value": 45,
+          "unit": "count",
+          "numerator": 45,
+          "denominator": 50,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Correct diagnosis count.",
+          "scope": "kubectl arm",
+          "limitations": []
+        },
+        {
+          "metric_id": "radar-mcp-correct",
+          "label": "Radar context correct diagnoses",
+          "value": 46,
+          "unit": "count",
+          "numerator": 46,
+          "denominator": 50,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Correct diagnosis count.",
+          "scope": "structured context arm",
+          "limitations": []
+        },
+        {
+          "metric_id": "kubectl-mean-time",
+          "label": "Raw kubectl mean diagnosis time",
+          "value": 191,
+          "unit": "seconds",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Mean time to first submitted diagnosis.",
+          "scope": "kubectl arm",
+          "limitations": []
+        },
+        {
+          "metric_id": "radar-mcp-mean-time",
+          "label": "Radar context mean diagnosis time",
+          "value": 64,
+          "unit": "seconds",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Mean time to first submitted diagnosis.",
+          "scope": "structured context arm",
+          "limitations": []
+        },
+        {
+          "metric_id": "kubectl-p90",
+          "label": "Raw kubectl p90 diagnosis time",
+          "value": 632,
+          "unit": "seconds",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "90th percentile diagnosis time.",
+          "scope": "kubectl arm",
+          "limitations": []
+        },
+        {
+          "metric_id": "radar-mcp-p90",
+          "label": "Radar context p90 diagnosis time",
+          "value": 94,
+          "unit": "seconds",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "90th percentile diagnosis time.",
+          "scope": "structured context arm",
+          "limitations": []
+        }
+      ],
+      "comparability": {
+        "comparison_group": "sre-tool-surface-matched-50",
+        "comparable_only_with": [
+          "Same 50 faults, same model, same tool/context arms and same judge/scorer."
+        ],
+        "not_comparable_with": [
+          "SREGym-0508 full suite",
+          "SRE-Marathon",
+          "Traceway overall pass rate"
+        ],
+        "notes": [
+          "Strong design inspiration for #318: isolate tool protocol versus correlated context where feasible.",
+          "Report p50/p90, correctness, model calls and cost; do not infer that protocol alone caused the effect."
+        ]
+      },
+      "claim_ceiling": "Vendor-published matched tool/context study on 50 faults; not a Luminous result or a full SREGym leaderboard score."
+    },
+    {
+      "id": "traceway-ai-sre-bench-v1",
+      "name": "Traceway AI SRE Bench",
+      "benchmark_family": "sre_diagnosis_mitigation",
+      "construct": "Incident diagnosis, code fixes and safe operations using seeded production scenarios with deterministic grading.",
+      "unit_of_analysis": "model × case × tool-setup run",
+      "owner": "Traceway",
+      "evidence_status": "vendor_benchmark_report",
+      "publication": {
+        "published_at": "2026-10-21",
+        "observed_at": "2026-11-07",
+        "version": "AI SRE Bench v1 results (runs 21–22 Oct 2026)"
+      },
+      "source": {
+        "primary_url": "https://tracewayapp.com/benchmarks",
+        "additional_urls": [],
+        "source_kind": "benchmark_site",
+        "reference_id": "traceway-ai-sre-bench-v1",
+        "raw_git_blob_sha": null,
+        "capture": {
+          "status": "metadata_only_no_content_hash",
+          "captured_at": "2026-11-08",
+          "content_sha256": null,
+          "note": "Public benchmark report and model result table inspected; raw run packets not archived by this registry."
+        },
+        "repository_commit_sha": null
+      },
+      "protocol": {
+        "task_count": 62,
+        "run_count": 1204,
+        "repeat_policy": "172 runs per model across 62 cases and 5 setups; one run per case/setup, deterministic grader. No repeated-run stability estimate.",
+        "environment": "Seeded backend per task with weeks of telemetry and planted red herrings.",
+        "tool_surface": "Real Traceway tools across CLI and MCP setups; Performance (35), Debug (14), Write (13).",
+        "model_configurations": [
+          "Claude Opus 5.5",
+          "DeepSeek V4.1 Flash",
+          "MiniMax M3.1 Flash",
+          "Claude Haiku 5.5",
+          "Qwen3.8 27B",
+          "GPT-6 Luna",
+          "GLM-5.3"
+        ],
+        "evaluator": "Deterministic code grading; run passes only when answer is correct, evidence grounded, writes safe and hidden tests pass where code is changed.",
+        "judge": null,
+        "noise_or_controls": "Five tool setups; skill/no-skill and CLI/MCP comparisons.",
+        "limitations": [
+          "One run per case/setup; no repeated-run stability estimate.",
+          "Some small setup groups contain fewer than three cases.",
+          "Published agent spend is separate from judge spend; compare cost accounting carefully."
+        ]
+      },
+      "metrics": [
+        {
+          "metric_id": "opus55-pass",
+          "label": "Claude Opus 5.5 pass rate",
+          "value": 90.7,
+          "unit": "percent",
+          "numerator": 156,
+          "denominator": 172,
+          "value_semantics": "derived_from_reported_counts",
+          "definition": "Cases passing answer, evidence, safe-write and applicable hidden-test checks.",
+          "scope": "All 172 Opus runs",
+          "limitations": []
+        },
+        {
+          "metric_id": "opus55-answer-evidence",
+          "label": "Claude Opus 5.5 right-answer plus evidence",
+          "value": 93.6,
+          "unit": "percent",
+          "numerator": 161,
+          "denominator": 172,
+          "value_semantics": "derived_from_reported_counts",
+          "definition": "Right answer and evidence trajectory check; not the full pass definition.",
+          "scope": "All 172 Opus runs",
+          "limitations": []
+        },
+        {
+          "metric_id": "opus55-cost-run",
+          "label": "Claude Opus 5.5 agent cost per run",
+          "value": 0.301,
+          "unit": "usd",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Reported agent spend per run, excluding separate judge spend.",
+          "scope": "All 172 Opus runs",
+          "limitations": [
+            "Judge spend separate."
+          ]
+        },
+        {
+          "metric_id": "deepseek-pass",
+          "label": "DeepSeek V4.1 Flash pass rate",
+          "value": 83.7,
+          "unit": "percent",
+          "numerator": 144,
+          "denominator": 172,
+          "value_semantics": "derived_from_reported_counts",
+          "definition": "Cases passing answer, evidence, safe-write and applicable hidden-test checks.",
+          "scope": "All 172 DeepSeek runs",
+          "limitations": []
+        }
+      ],
+      "comparability": {
+        "comparison_group": "sre-deterministic-evidence-and-write",
+        "comparable_only_with": [
+          "Same Traceway cases, setup, grader, model configuration and run protocol."
+        ],
+        "not_comparable_with": [
+          "SREGym-0508 same-run E2E",
+          "SRE-Marathon Marathon-Score",
+          "AI SRE Arena judge-based recommendation results"
+        ],
+        "notes": [
+          "Useful benchmark for grounded evidence and safe code writes with hidden tests.",
+          "Keep one-run-per-case caveat and separate right-answer/evidence from full pass."
+        ]
+      },
+      "claim_ceiling": "Vendor-published deterministic benchmark snapshot. It does not provide repeated-run confidence intervals or independently verify production recovery."
+    },
+    {
+      "id": "ai-sre-arena-v1",
+      "name": "AI SRE Arena v1",
+      "benchmark_family": "sre_diagnosis_only",
+      "construct": "Native detection, root-cause explanation, blast-radius assessment and supported mitigation recommendations on Kubernetes faults.",
+      "unit_of_analysis": "investigated incident report; native detection scored on all injected faults",
+      "owner": "Edge Delta Research",
+      "evidence_status": "vendor_benchmark_report",
+      "publication": {
+        "published_at": "2026-10-01",
+        "observed_at": "2026-11-07",
+        "version": "v1 / rubric v1.0.0"
+      },
+      "source": {
+        "primary_url": "https://edgedelta.com/arena",
+        "additional_urls": [
+          "https://github.com/edgedelta/project-arena"
+        ],
+        "source_kind": "benchmark_site",
+        "reference_id": "ai-sre-arena-v1-rubric-1.0.0",
+        "raw_git_blob_sha": null,
+        "capture": {
+          "status": "metadata_only_no_content_hash",
+          "captured_at": "2026-11-08",
+          "content_sha256": null,
+          "note": "Report, rubric version and repository commit inspected; run packet bytes not archived by this registry."
+        },
+        "repository_commit_sha": "fc232a3fb38b2d49d5fbc8589071623e13f2c963"
+      },
+      "protocol": {
+        "task_count": 21,
+        "run_count": 72,
+        "repeat_policy": "21 injected faults; 2 native products plus 2 externally triggered Claude controls; 72 GPT-6-Astra judgments.",
+        "environment": "OpenTelemetry Demo 3.0.0 shop deployed on Kubernetes; single demo shop.",
+        "tool_surface": "Two native product monitors/collectors and two externally triggered read-only CLI controls.",
+        "model_configurations": [
+          "Edge Delta native AI SRE",
+          "Grafana native AI SRE",
+          "Claude Fable 5.1 via Edge Delta CLI (external start)",
+          "Claude Fable 5.1 via Grafana CLI (external start)"
+        ],
+        "evaluator": "One AI judge under published rubric v1.0.0; final report only; no score composite.",
+        "judge": "GPT-6-Astra",
+        "noise_or_controls": "21 single faults, some compound; controls are externally started for every incident.",
+        "limitations": [
+          "The report states no repair was executed and no recovery was verified.",
+          "One AI judge; no human-grader agreement reported.",
+          "No speed or cost measurement.",
+          "Native products and Claude controls have different incident-start conditions."
+        ]
+      },
+      "metrics": [
+        {
+          "metric_id": "ed-detection",
+          "label": "Edge Delta native detection",
+          "value": 85.7,
+          "unit": "percent",
+          "numerator": 18,
+          "denominator": 21,
+          "value_semantics": "derived_from_reported_counts",
+          "definition": "Native system detected incident and opened investigation within observation window.",
+          "scope": "All 21 injected incidents",
+          "limitations": []
+        },
+        {
+          "metric_id": "grafana-detection",
+          "label": "Grafana native detection",
+          "value": 57.1,
+          "unit": "percent",
+          "numerator": 12,
+          "denominator": 21,
+          "value_semantics": "derived_from_reported_counts",
+          "definition": "Native system detected incident and opened investigation within observation window.",
+          "scope": "All 21 injected incidents",
+          "limitations": []
+        },
+        {
+          "metric_id": "ed-rootcause-matched",
+          "label": "Edge Delta root cause on matched investigated set",
+          "value": 91.7,
+          "unit": "percent",
+          "numerator": 11,
+          "denominator": 12,
+          "value_semantics": "derived_from_reported_counts",
+          "definition": "Correct root cause on 12 incidents both native systems investigated.",
+          "scope": "12 matched incidents",
+          "limitations": []
+        },
+        {
+          "metric_id": "ed-supported-fix-matched",
+          "label": "Edge Delta supported fix recommendation on matched set",
+          "value": 58.3,
+          "unit": "percent",
+          "numerator": 7,
+          "denominator": 12,
+          "value_semantics": "derived_from_reported_counts",
+          "definition": "Concrete supported recommendation or safe containment; not executed.",
+          "scope": "12 matched incidents",
+          "limitations": [
+            "Recommendation metric, not verified repair."
+          ]
+        }
+      ],
+      "comparability": {
+        "comparison_group": "sre-native-detection-and-recommendation",
+        "comparable_only_with": [
+          "Same AI SRE Arena version, rubric, 21 faults and incident start conditions."
+        ],
+        "not_comparable_with": [
+          "SREGym verified mitigation E2E",
+          "SRE-Marathon repair progress",
+          "Traceway deterministic pass rate"
+        ],
+        "notes": [
+          "Useful for self-initiated detection, blast radius and safety of recommendations.",
+          "Do not label supported fix as mitigation execution."
+        ]
+      },
+      "claim_ceiling": "Vendor-built, single-judge report benchmark. It scores final recommendations and does not execute repairs or verify recovery."
+    },
+    {
+      "id": "itbench-aa-v1",
+      "name": "ITBench-AA",
+      "benchmark_family": "sre_diagnosis_only",
+      "construct": "Offline Kubernetes incident root-cause entity diagnosis from alert/event/trace/metric/topology snapshots.",
+      "unit_of_analysis": "task-level structured entity diagnosis, repeated three times per task",
+      "owner": "Artificial Analysis (independent implementation of IBM ITBench)",
+      "evidence_status": "independent_implementation",
+      "publication": {
+        "published_at": null,
+        "observed_at": "2026-11-07",
+        "version": "current public leaderboard snapshot"
+      },
+      "source": {
+        "primary_url": "https://artificialanalysis.ai/evaluations/itbench-aa",
+        "additional_urls": [
+          "https://github.com/itbench-hub/ITBench"
+        ],
+        "source_kind": "benchmark_site",
+        "reference_id": "itbench-aa-59-task-snapshot",
+        "raw_git_blob_sha": null,
+        "capture": {
+          "status": "metadata_only_no_content_hash",
+          "captured_at": "2026-11-08",
+          "content_sha256": null,
+          "note": "Methodology and current leaderboard text inspected; raw task snapshots not archived."
+        },
+        "repository_commit_sha": null
+      },
+      "protocol": {
+        "task_count": 59,
+        "run_count": 177,
+        "repeat_policy": "59 Kubernetes incident tasks, three repeats per task; 40 tasks from IBM public release and 19 shared privately with Artificial Analysis.",
+        "environment": "Offline snapshots of Kubernetes incidents with alerts, events, traces, metrics and topology.",
+        "tool_surface": "Shell access over mounted per-task snapshots; output is structured JSON listing root-cause entities.",
+        "model_configurations": [
+          "GPT-5.6 Sol (Max) and other live leaderboard model configurations."
+        ],
+        "evaluator": "Ground-truth structured diagnosis scoring; Average Precision at Full Recall (AP@FR).",
+        "judge": null,
+        "noise_or_controls": "Offline snapshot tasks; 3 repeats/task.",
+        "limitations": [
+          "Diagnosis only; no live repair or post-repair service verification.",
+          "Private 19-task extension means exact public comparability requires matching the same task set.",
+          "AP@FR is not success percentage or repair rate."
+        ]
+      },
+      "metrics": [
+        {
+          "metric_id": "gpt56-ap-fr",
+          "label": "GPT-5.6 Sol Max AP@FR",
+          "value": 56.2,
+          "unit": "percent",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "For each task, score TP/(TP+FP) only when there are zero false negatives; otherwise score zero. Reported leaderboard metric.",
+          "scope": "59-task ITBench-AA set",
+          "limitations": [
+            "Do not compare with native ITBench SRE resolution rate or SREGym E2E."
+          ]
+        }
+      ],
+      "comparability": {
+        "comparison_group": "itbench-aa-ap-full-recall",
+        "comparable_only_with": [
+          "Same 59 offline snapshots, 3-repeat policy, same entity schema and AP@FR scorer."
+        ],
+        "not_comparable_with": [
+          "SREGym",
+          "SRE-Marathon",
+          "Traceway AI SRE Bench overall pass"
+        ],
+        "notes": [
+          "Useful for diagnosis precision with strict full recall."
+        ]
+      },
+      "claim_ceiling": "Independent benchmark implementation with a live leaderboard snapshot. It measures offline diagnosis, not incident repair."
+    },
+    {
+      "id": "enterpriseops-gym-icml2026",
+      "name": "EnterpriseOps-Gym",
+      "benchmark_family": "enterprise_workflow",
+      "construct": "Stateful enterprise planning and tool-use tasks with persistent backend state and SQL outcome verifiers.",
+      "unit_of_analysis": "expert-curated enterprise workflow task",
+      "owner": "EnterpriseOps-Gym authors",
+      "evidence_status": "peer_reviewed",
+      "publication": {
+        "published_at": null,
+        "observed_at": "2026-11-07",
+        "version": "PMLR vol.306 / ICML 2026"
+      },
+      "source": {
+        "primary_url": "https://proceedings.mlr.press/v306/malay26a.html",
+        "additional_urls": [],
+        "source_kind": "proceedings",
+        "reference_id": "PMLR 306:85969-86001",
+        "raw_git_blob_sha": null,
+        "capture": {
+          "status": "metadata_only_no_content_hash",
+          "captured_at": "2026-11-08",
+          "content_sha256": null,
+          "note": "Proceedings paper abstract and metadata inspected; PDF source bytes not archived by this registry."
+        },
+        "repository_commit_sha": null
+      },
+      "protocol": {
+        "task_count": 1150,
+        "run_count": null,
+        "repeat_policy": "Paper reports benchmark tasks and model evaluation; exact run count/replicate structure not included in this metadata snapshot.",
+        "environment": "Containerized enterprise sandbox across eight interconnected domains; 164 database tables.",
+        "tool_surface": "512 functional tools and stateful database-backed applications.",
+        "model_configurations": [
+          "Claude Sonnet 4.5 (top reported model in paper)"
+        ],
+        "evaluator": "Outcome-based final-state verification using SQL/database checks.",
+        "judge": null,
+        "noise_or_controls": "Persistent state; complex multi-step enterprise workflows.",
+        "limitations": [
+          "Broad enterprise workflow benchmark, not SRE diagnosis or repair.",
+          "34.1% top reported success; denominator/run protocol should be checked against full paper before reproducing."
+        ]
+      },
+      "metrics": [
+        {
+          "metric_id": "sonnet45-success",
+          "label": "Claude Sonnet 4.5 reported success",
+          "value": 34.1,
+          "unit": "percent",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Top-performing model's reported success rate in the paper.",
+          "scope": "EnterpriseOps-Gym evaluation",
+          "limitations": [
+            "Exact count denominator not captured in this metadata snapshot."
+          ]
+        }
+      ],
+      "comparability": {
+        "comparison_group": "enterprise-stateful-workflow",
+        "comparable_only_with": [
+          "Same EnterpriseOps-Gym task split, environment version, tool APIs and SQL verifiers."
+        ],
+        "not_comparable_with": [
+          "SREGym",
+          "SRE-Marathon",
+          "ITBench-AA"
+        ],
+        "notes": [
+          "Useful for cross-domain stateful planning and policy refusal; not a numeric SRE comparator."
+        ]
+      },
+      "claim_ceiling": "Peer-reviewed enterprise workflow benchmark; does not establish SRE incident performance."
+    },
+    {
+      "id": "tracetrial-bench-2026",
+      "name": "TraceTrial-Bench",
+      "benchmark_family": "agent_harness_reliability",
+      "construct": "Agent task performance and harness-criterion reliability across models and harnesses.",
+      "unit_of_analysis": "selected task × model configuration × harness execution cell",
+      "owner": "TraceLite-AI",
+      "evidence_status": "preprint",
+      "publication": {
+        "published_at": "2026-10-23",
+        "observed_at": "2026-11-07",
+        "version": "arXiv v1 / 3,420 selected execution cells"
+      },
+      "source": {
+        "primary_url": "https://tracelite.ai/trial-by-trace.html",
+        "additional_urls": [
+          "https://github.com/TraceLite-AI/TraceTrial-Bench"
+        ],
+        "source_kind": "technical_report",
+        "reference_id": "git:3d8660f55e06c1f623698d002cc1a6438e507cf3",
+        "raw_git_blob_sha": null,
+        "capture": {
+          "status": "metadata_only_no_content_hash",
+          "captured_at": "2026-11-08",
+          "content_sha256": null,
+          "note": "Full project page and repository commit inspected; dataset/source bytes not captured here."
+        },
+        "repository_commit_sha": "3d8660f55e06c1f623698d002cc1a6438e507cf3"
+      },
+      "protocol": {
+        "task_count": 95,
+        "run_count": 3420,
+        "repeat_policy": "95 tasks × 9 model configurations × 4 native harnesses = 3,420 selected execution cells; one selected execution per cell, including recovery replacements; 855 matched model-task cells per harness. No repeat-run stability estimate.",
+        "environment": "Four native agent harnesses: Claude Code, Codex, DeepSeek Harness and OpenClaw.",
+        "tool_surface": "Native context, execution, governance, lifecycle, observability, tools and verification behavior retained.",
+        "model_configurations": [
+          "DeepSeek-V4-Pro",
+          "Gemini 3.7 Flash",
+          "GLM-5.3",
+          "GPT-5.6 Sol",
+          "Grok-4.6",
+          "HY3",
+          "Kimi K3",
+          "Claude Opus 5",
+          "Qwen3.8-Max"
+        ],
+        "evaluator": "Deterministic checks followed by semantic judge (DeepSeek-V4-Flash); native Agent Score, Harness Macro and Clean metrics kept separate.",
+        "judge": "DeepSeek-V4-Flash",
+        "noise_or_controls": "Selected run per cell; published selected-run cost excludes judge calls and discarded runs.",
+        "limitations": [
+          "One selected execution per cell; no repeated-run stability estimate.",
+          "Verification dimension contains one task; overall dimension coverage is uneven.",
+          "Final semantic evaluator DeepSeek-V4-Flash; scoring budgets vary across runs.",
+          "Unexercised Harness criteria are outcome-conditioned; Agent and Harness layers are not statistically independent.",
+          "Candidate causal links are review candidates, not established causal propagation.",
+          "Selected-run cost excludes judge calls and discarded runs."
+        ]
+      },
+      "metrics": [
+        {
+          "metric_id": "task-success-harness-fail",
+          "label": "Task-success runs failing at least one harness criterion",
+          "value": 31.1,
+          "unit": "percent",
+          "numerator": 1065,
+          "denominator": 3420,
+          "value_semantics": "derived_from_reported_counts",
+          "definition": "Share of selected runs that passed the Agent/task criteria but failed at least one Harness criterion.",
+          "scope": "All 3,420 selected executions",
+          "limitations": [
+            "This metric is specifically task success with a harness-criterion failure, not overall failure rate."
+          ]
+        },
+        {
+          "metric_id": "clean",
+          "label": "Clean runs (all Agent and Harness criteria pass)",
+          "value": 8.4,
+          "unit": "percent",
+          "numerator": 286,
+          "denominator": 3420,
+          "value_semantics": "derived_from_reported_counts",
+          "definition": "Selected runs that satisfy every criterion in both Agent and Harness layers.",
+          "scope": "All 3,420 selected executions",
+          "limitations": [
+            "One selected run per task × model × harness cell; not a repeatability estimate."
+          ]
+        },
+        {
+          "metric_id": "harness-macro-min",
+          "label": "Lowest harness macro across native harnesses",
+          "value": 59.8,
+          "unit": "percent",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Lower end of the range of four harness-level macro averages.",
+          "scope": "Codex across nine models",
+          "limitations": [
+            "Macro averages fraction of harness criteria; does not itself equal system task success."
+          ]
+        },
+        {
+          "metric_id": "harness-macro-max",
+          "label": "Highest harness macro across native harnesses",
+          "value": 72,
+          "unit": "percent",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Upper end of the range of four harness-level macro averages.",
+          "scope": "OpenClaw across nine models",
+          "limitations": [
+            "Macro averages fraction of harness criteria; does not itself equal system task success."
+          ]
+        },
+        {
+          "metric_id": "clean-claude-code",
+          "label": "Claude Code clean rate",
+          "value": 9.1,
+          "unit": "percent",
+          "numerator": null,
+          "denominator": 855,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Run passes every criterion in Agent and Harness layers.",
+          "scope": "855 selected executions on Claude Code",
+          "limitations": [
+            "One selected run per cell."
+          ]
+        },
+        {
+          "metric_id": "clean-openclaw",
+          "label": "OpenClaw clean rate",
+          "value": 11.7,
+          "unit": "percent",
+          "numerator": null,
+          "denominator": 855,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Run passes every criterion in Agent and Harness layers.",
+          "scope": "855 selected executions on OpenClaw",
+          "limitations": [
+            "One selected run per cell."
+          ]
+        }
+      ],
+      "comparability": {
+        "comparison_group": "agent-harness-reliability",
+        "comparable_only_with": [
+          "Same tasks, model configs, harnesses, selected-run protocol and native rubric."
+        ],
+        "not_comparable_with": [
+          "SREGym E2E",
+          "AgentGovBench governance score",
+          "SRE-Marathon"
+        ],
+        "notes": [
+          "Motivates Luminous supplemental independent effect and verification controls.",
+          "Keep contract-not-established distinct from proven harness defect.",
+          "Native results include Agent Score, Agent Pass, Harness Macro, Clean and Overall; this registry intentionally preserves only independent native measures and does not treat the benchmark's equal-weight Overall as an assurance frontier."
+        ]
+      },
+      "claim_ceiling": "Preprint benchmark result using selected executions and semantic judges. It does not estimate repeated-run stability."
+    },
+    {
+      "id": "agentgovbench-v1",
+      "name": "AgentGovBench",
+      "benchmark_family": "agent_governance",
+      "construct": "Governance-layer identity, policy enforcement, delegation, scope inheritance, rate limiting, audit, fail-mode and tenant isolation.",
+      "unit_of_analysis": "deterministic governance scenario",
+      "owner": "AgentGovBench contributors; evaluated result published by Agentic Control Plane",
+      "evidence_status": "product_owner_report",
+      "publication": {
+        "published_at": "2026-10-08",
+        "observed_at": "2026-11-07",
+        "version": "48 scenarios / ACP run 37759892335"
+      },
+      "source": {
+        "primary_url": "https://github.com/agentic-control-plane/agentgovbench",
+        "additional_urls": [
+          "https://agenticcontrolplane.com/benchmark"
+        ],
+        "source_kind": "repository",
+        "reference_id": "git:71eb5696b094b8c104650a7d7e8c77ce23514e38",
+        "raw_git_blob_sha": null,
+        "capture": {
+          "status": "metadata_only_no_content_hash",
+          "captured_at": "2026-11-08",
+          "content_sha256": null,
+          "note": "Repository main commit pinned; root LICENSE is MIT; scenario/task and output bytes not captured in this registry."
+        },
+        "repository_commit_sha": "71eb5696b094b8c104650a7d7e8c77ce23514e38"
+      },
+      "protocol": {
+        "task_count": 48,
+        "run_count": 48,
+        "repeat_policy": "48 scenarios across eight categories; published ACP score is for the run dated 8 Oct 2026.",
+        "environment": "ACP live production endpoint with two dedicated benchmark workspaces; daily CI per public scorecard.",
+        "tool_surface": "Governance gateway/hook layer; test coverage includes identity, user policy, delegation, rate limits and audit.",
+        "model_configurations": [],
+        "evaluator": "Scenario-specific checks and public scorecard; inspect exact oracle per scenario before comparison.",
+        "judge": null,
+        "noise_or_controls": "Dedicated benchmark workspaces; benchmark-only impersonation endpoint as documented by publisher.",
+        "limitations": [
+          "Publisher also operates the evaluated product; 46/48 is an owner/implementer report.",
+          "Two published non-passes: task-scoped child narrowing and user attribution in offline fail-mode record.",
+          "Governance score does not prove all participant effects were absent or all agents were aligned."
+        ]
+      },
+      "metrics": [
+        {
+          "metric_id": "acp-owner-score",
+          "label": "ACP published AgentGovBench score",
+          "value": 46,
+          "unit": "count",
+          "numerator": 46,
+          "denominator": 48,
+          "value_semantics": "owner_claim",
+          "definition": "Number of scenarios passed by ACP in the published 8 Oct 2026 run.",
+          "scope": "48 scenarios",
+          "limitations": [
+            "Owner/implementer-published result; Luminous must reproduce the native suite independently."
+          ]
+        }
+      ],
+      "comparability": {
+        "comparison_group": "agent-governance-48-scenario",
+        "comparable_only_with": [
+          "Same AgentGovBench commit, all 48 scenarios, same runner semantics and native scorer."
+        ],
+        "not_comparable_with": [
+          "SREGym percentages",
+          "SRE-Marathon Marathon-Score",
+          "LLM harmful-refusal benchmarks"
+        ],
+        "notes": [
+          "Luminous supplement should split proposal, enforcement and committed participant effect.",
+          "Repository root license verified as MIT; still verify any third-party dependencies and copied artifacts individually."
+        ]
+      },
+      "claim_ceiling": "Owner-published governance-layer score on a specific run. It is not an SRE result or a general guarantee of agent safety."
+    },
+    {
+      "id": "evoharnessbench-v1",
+      "name": "EvoHarnessBench",
+      "benchmark_family": "agent_harness_evolution",
+      "construct": "Retention of prior agent capability and adaptation under staged external harness evolution across tools, skills and specialist agents.",
+      "unit_of_analysis": "task across a stage of a deterministic harness stream",
+      "owner": "EvoHarnessBench authors",
+      "evidence_status": "preprint",
+      "publication": {
+        "published_at": "2026-09-03",
+        "observed_at": "2026-11-07",
+        "version": "arXiv:2609.04280v3"
+      },
+      "source": {
+        "primary_url": "https://arxiv.org/abs/2609.04280",
+        "additional_urls": [
+          "https://mas-orchestra.salesforceresearch.ai/evoharness/"
+        ],
+        "source_kind": "paper",
+        "reference_id": "arXiv:2609.04280v3",
+        "raw_git_blob_sha": null,
+        "capture": {
+          "status": "metadata_only_no_content_hash",
+          "captured_at": "2026-11-08",
+          "content_sha256": null,
+          "note": "Current preprint version inspected: v3, submitted 26 Sep 2026; source paper bytes not archived in this registry."
+        },
+        "repository_commit_sha": null
+      },
+      "protocol": {
+        "task_count": 802,
+        "run_count": null,
+        "repeat_policy": "17 deterministic multi-stage harness streams; separate deployment-retention and self-evolving adaptation settings.",
+        "environment": "Multi-stage agent environment streams with changing external harness.",
+        "tool_surface": "520 tools, 42 skills and 62 agents across stages.",
+        "model_configurations": [],
+        "evaluator": "Verifier-based tasks; separate retention and adaptation evaluations.",
+        "judge": null,
+        "noise_or_controls": "Controlled harness non-stationarity across tools, skills and agent population.",
+        "limitations": [
+          "Benchmark is about harness evolution, not SRE specifically.",
+          "No single headline success score captured in this registry metadata."
+        ]
+      },
+      "metrics": [
+        {
+          "metric_id": "streams",
+          "label": "Harness evolution streams",
+          "value": 17,
+          "unit": "count",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Number of deterministic multi-stage harness streams.",
+          "scope": "Benchmark size",
+          "limitations": []
+        },
+        {
+          "metric_id": "tools",
+          "label": "Tools represented",
+          "value": 520,
+          "unit": "count",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Number of tools across the streams.",
+          "scope": "Benchmark size",
+          "limitations": []
+        },
+        {
+          "metric_id": "skills",
+          "label": "Skills represented",
+          "value": 42,
+          "unit": "count",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Number of skills across the streams.",
+          "scope": "Benchmark size",
+          "limitations": []
+        }
+      ],
+      "comparability": {
+        "comparison_group": "agent-harness-evolution",
+        "comparable_only_with": [
+          "Same 17 streams, task construction, stage ordering and native evaluation."
+        ],
+        "not_comparable_with": [
+          "SREGym",
+          "EnterpriseOps-Gym overall success",
+          "AgentGovBench"
+        ],
+        "notes": [
+          "Critical comparator for qualification invalidation, retention and safe capability growth.",
+          "Keep prior-task retention separate from newly introduced task adaptation."
+        ]
+      },
+      "claim_ceiling": "Preprint-defined harness-evolution benchmark; no open-ended self-improvement or production safety claim."
+    },
+    {
+      "id": "datadog-scout-alerteval-2026",
+      "name": "Datadog Scout 1.0 / AlertEval",
+      "benchmark_family": "sre_diagnosis_only",
+      "construct": "SRE investigation quality relative to expert-written root-cause explanations, measured against estimated inference cost.",
+      "unit_of_analysis": "investigation explanation judged against an expert reference",
+      "owner": "Datadog",
+      "evidence_status": "product_owner_report",
+      "publication": {
+        "published_at": "2026-10-15",
+        "observed_at": "2026-11-07",
+        "version": "Scout 1.0 / AlertEval"
+      },
+      "source": {
+        "primary_url": "https://www.datadoghq.com/blog/ai/introducing-scout-sre-specialized-model-bits-ai/",
+        "additional_urls": [
+          "https://www.infoq.com/news/2026/10/datadog-scout-sre-model/"
+        ],
+        "source_kind": "vendor_blog",
+        "reference_id": "datadog-scout-1.0-alerteval",
+        "raw_git_blob_sha": null,
+        "capture": {
+          "status": "metadata_only_no_content_hash",
+          "captured_at": "2026-11-08",
+          "content_sha256": null,
+          "note": "Public company report inspected; AlertEval dataset and raw scoring artifacts are internal/not captured."
+        },
+        "repository_commit_sha": null
+      },
+      "protocol": {
+        "task_count": null,
+        "run_count": null,
+        "repeat_policy": "Internal human-expert-annotated AlertEval; thousand-level evaluation points described, exact public run denominator not published in launch blog.",
+        "environment": "Real alerts, archived telemetry and engineer-written root-cause explanations; investigation simulations trained from historical incident patterns.",
+        "tool_surface": "Bits Investigation tool model and internal telemetry querying capabilities.",
+        "model_configurations": [
+          "Scout 1.0 medium",
+          "Scout 1.0 xhigh",
+          "GPT-6.1 Sol high",
+          "Claude Opus 5.5 high",
+          "Claude Fable 5.1 xhigh"
+        ],
+        "evaluator": "LLM comparison to expert reference explanations with evidence/contradiction penalties.",
+        "judge": "Internal AlertEval judge; details in Datadog technical report.",
+        "noise_or_controls": "SREGym external benchmark transfer reported separately.",
+        "limitations": [
+          "AlertEval score is expert-explanation agreement, not percentage of incidents solved.",
+          "Costs are estimated relative inference costs; not independently audited.",
+          "Company reports model and benchmark claims; raw dataset is not public."
+        ]
+      },
+      "metrics": [
+        {
+          "metric_id": "medium-cost-saving",
+          "label": "Scout medium estimated inference cost versus selected frontier comparators",
+          "value": "3-8x lower",
+          "unit": "relative_cost_multiple",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "owner_claim",
+          "definition": "Datadog states Scout medium has comparable AlertEval quality to GPT-6.1 Sol high and Opus 5.5 high at 3–8× lower estimated inference cost.",
+          "scope": "AlertEval investigation",
+          "limitations": [
+            "Quality comparability is company-reported; raw scores/costs not fully published."
+          ]
+        },
+        {
+          "metric_id": "xhigh-cost-saving",
+          "label": "Scout xhigh estimated cost versus Fable xhigh",
+          "value": "4x lower",
+          "unit": "relative_cost_multiple",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "owner_claim",
+          "definition": "Datadog says Scout xhigh matches Claude Fable 5.1 xhigh quality at roughly one quarter estimated inference cost.",
+          "scope": "AlertEval investigation",
+          "limitations": [
+            "Internal benchmark and estimated cost."
+          ]
+        }
+      ],
+      "comparability": {
+        "comparison_group": "sre-investigation-quality-cost",
+        "comparable_only_with": [
+          "Same AlertEval dataset, judge and inference-cost assumptions."
+        ],
+        "not_comparable_with": [
+          "SREGym E2E success",
+          "SRE-Marathon repair score",
+          "AI SRE Arena detection"
+        ],
+        "notes": [
+          "Strong commercial comparator for specialist inference and investigation cost.",
+          "Luminous should optimize verified operational value per total resource cost, not only model inference cost."
+        ]
+      },
+      "claim_ceiling": "Datadog company-reported internal investigation benchmark and estimated inference-cost comparisons. Not an independently reproduced incident-resolution result."
+    },
+    {
+      "id": "nist-evaluation-probes-agentic-grounding",
+      "name": "NIST Building Evaluation Probes into Agentic AI",
+      "benchmark_family": "agent_evidence_grounding",
+      "construct": "Rubric-based adversarial verification of agent factual claims against trusted reference documents, with machine-readable claim/evidence audit trails.",
+      "unit_of_analysis": "agent factual claim × supporting reference document",
+      "owner": "NIST Information Technology Laboratory, AI Research, Measurement and Standards Division",
+      "evidence_status": "benchmark_maintainer_report",
+      "publication": {
+        "published_at": "2026-05-01",
+        "observed_at": "2026-11-07",
+        "version": "ongoing project / initial deep-research pipeline"
+      },
+      "source": {
+        "primary_url": "https://www.nist.gov/programs-projects/building-evaluation-probes-agentic-ai",
+        "additional_urls": [],
+        "source_kind": "technical_report",
+        "reference_id": "nist-evaluation-probes-project-2026",
+        "raw_git_blob_sha": null,
+        "capture": {
+          "status": "metadata_only_no_content_hash",
+          "captured_at": "2026-11-08",
+          "content_sha256": null,
+          "note": "NIST project description inspected; no benchmark score or source bytes are published in this registry snapshot."
+        },
+        "repository_commit_sha": null
+      },
+      "protocol": {
+        "task_count": null,
+        "run_count": null,
+        "repeat_policy": "Ongoing research project; no public fixed benchmark denominator or repeat protocol is specified on the project page.",
+        "environment": "Open-source deep-research pipeline testbed over a human-curated corpus of authoritative documents.",
+        "tool_surface": "Document retrieval, chunk relevance screening, cited synthesis and active or post-hoc evaluation probes.",
+        "model_configurations": [],
+        "evaluator": "Rubric-based language-model judge compared against trusted source documents.",
+        "judge": "Probe model; exact model/version not specified in current public project description.",
+        "noise_or_controls": "Independent probes for faithfulness, completeness and sufficiency; additional probes can be defined by rubric.",
+        "limitations": [
+          "Measures claim grounding against reference documents, not participant side effects or operational recovery.",
+          "Judge verdicts are not independent source observers.",
+          "Project status is ongoing; no public numeric leaderboard result."
+        ]
+      },
+      "metrics": [
+        {
+          "metric_id": "faithfulness",
+          "label": "Probe dimension: faithfulness",
+          "value": null,
+          "unit": "qualitative",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "qualitative_report",
+          "definition": "Whether a cited source actually supports the claim.",
+          "scope": "Factual claim × source",
+          "limitations": [
+            "No numeric public score in the project description."
+          ]
+        },
+        {
+          "metric_id": "completeness",
+          "label": "Probe dimension: completeness",
+          "value": null,
+          "unit": "qualitative",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "qualitative_report",
+          "definition": "Whether the claim reflects the source's full message rather than cherry-picking.",
+          "scope": "Factual claim × source",
+          "limitations": [
+            "No numeric public score in the project description."
+          ]
+        },
+        {
+          "metric_id": "sufficiency",
+          "label": "Probe dimension: sufficiency",
+          "value": null,
+          "unit": "qualitative",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "qualitative_report",
+          "definition": "Whether the cited evidence is sufficient for the claim's evidentiary burden.",
+          "scope": "Factual claim × source",
+          "limitations": [
+            "No numeric public score in the project description."
+          ]
+        }
+      ],
+      "comparability": {
+        "comparison_group": "agent-evidence-grounding-methodology",
+        "comparable_only_with": [
+          "Same trusted-document corpus, task, rubric, probe version and judge protocol."
+        ],
+        "not_comparable_with": [
+          "Operational repair",
+          "Participant-effect verification",
+          "SREGym diagnosis/mitigation E2E"
+        ],
+        "notes": [
+          "Use as a methodology reference for claim/evidence provenance, not a substitute for independent effect observation.",
+          "Keep grounding verdicts separate from service recovery, side-effect and authorization truths."
+        ]
+      },
+      "claim_ceiling": "An ongoing NIST methodology project for factual claim grounding. It publishes no numeric benchmark score and does not establish operational effects."
+    },
+    {
+      "id": "pagerduty-sre-agent-benchmark-2026",
+      "name": "PagerDuty PD Labs SRE Agent Benchmark — initial 17-scenario sweep",
+      "benchmark_family": "sre_diagnosis_only",
+      "construct": "Live fault-injected SRE investigation benchmark comparing localization, root-cause diagnosis, mitigation recommendation, evidence grounding, explanation quality, misdirection and latency.",
+      "unit_of_analysis": "agent configuration × injected incident scenario; initial public sweep is one trial per agent per scenario",
+      "owner": "PagerDuty PD Labs",
+      "evidence_status": "vendor_benchmark_report",
+      "publication": {
+        "published_at": "2026-11-03",
+        "observed_at": "2026-11-08",
+        "version": "initial 17-scenario report / fixed judging prompt version"
+      },
+      "source": {
+        "primary_url": "https://www.pagerduty.com/resources/ai/learn/sre-agent-benchmark-report/",
+        "additional_urls": [
+          "https://www.pagerduty.com/eng/lessons-from-pd-labs-from-experimentation-to-a-production-ready-sre-agent/"
+        ],
+        "source_kind": "technical_report",
+        "reference_id": "PagerDuty PD Labs initial 17-scenario SRE Agent Benchmark report",
+        "raw_git_blob_sha": null,
+        "repository_commit_sha": null,
+        "capture": {
+          "status": "metadata_only_no_content_hash",
+          "captured_at": "2026-11-08",
+          "content_sha256": null,
+          "note": "PagerDuty public methodology report and engineering blog inspected. The benchmark substrate is private; table results include an image and source bytes are not archived in this registry."
+        }
+      },
+      "protocol": {
+        "task_count": 17,
+        "run_count": null,
+        "repeat_policy": "Single trial per agent configuration per scenario in the reported sweep; authors cite roughly 2 percentage-point sweep-to-sweep variability from earlier runs, but this sweep has no repeated-trial confidence interval. Agent failures are excluded from quality scores rather than scored zero.",
+        "environment": "Purpose-built financial application with 11 interconnected microservices on EKS; Go, Python, TypeScript and Elixir; Kafka, Redis, PostgreSQL and Secrets Manager; Grafana Cloud telemetry; external load generator hidden from agents.",
+        "tool_surface": "Each agent receives alert details, Grafana MELT data and application source code. Kubernetes substrate access is restricted to avoid exposing Chaos Mesh injection metadata. Service runbooks are available to all agents.",
+        "model_configurations": [
+          "PagerDuty SRE Agent Deep Investigation / GPT-5.6 Sol",
+          "Claude Code / Claude Opus 5.5",
+          "Claude Code / Claude Sonnet 5",
+          "Codex / GPT-5.6 Sol",
+          "Codex / GPT-5.6 Terra",
+          "Codex / GPT-Luna 4"
+        ],
+        "evaluator": "Three-model judge ensemble (DeepSeek, Claude and GPT) scores predeclared per-scenario criteria for localization, diagnosis, mitigation recommendation, evidence grounding, explanation quality and misdirection. Average is the mean of the five quality metrics plus (1 - misdirection).",
+        "judge": "DeepSeek, Claude and GPT judge models from three providers; full judge/human agreement analysis remains ongoing.",
+        "noise_or_controls": "Faults injected using Helm value overrides, Chaos Mesh, real PR merges and AWS control-plane changes. Scenarios span configuration, code, data-integrity and operational faults. Contamination scan checks answer-key, repository and cross-scenario leakage.",
+        "limitations": [
+          "Publisher also builds the evaluated PagerDuty SRE Agent and acknowledges conflict of interest; neutral prompts, three-provider judge ensemble, scenario-defined subcriteria and leakage scanning are mitigations, not independent reproduction.",
+          "Single trial per agent/scenario; authors state larger repeated-trial evaluation is planned.",
+          "Agent failures are excluded from quality score rather than counted as zero; completion/failure rate must be reported separately.",
+          "The initial sweep is triage/diagnosis-heavy; proposed mitigations are not executed and sustained recovery is not independently verified.",
+          "Ground truth descriptions were initially authored by an LLM and reviewed against the scenario evidence.",
+          "LLM judge/human agreement is reported as preliminary; full statistical analysis is ongoing.",
+          "The report's same-model result (PagerDuty agent 0.77 vs Codex 0.66 on Sol 5.6) is a reported harness/context comparison, not an independently reproduced causal estimate.",
+          "Live incident-call transcripts and past-incident memory were not included in the matched benchmark; a separate replay analysis reports up to a 5-point diagnosis-score gain with transcript data."
+        ]
+      },
+      "metrics": [
+        {
+          "metric_id": "scenario-count",
+          "label": "Injected incident scenarios",
+          "value": 17,
+          "unit": "count",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Number of self-contained injected incident scenarios in the latest complete sweep.",
+          "scope": "Initial public benchmark sweep",
+          "limitations": []
+        },
+        {
+          "metric_id": "same-model-pagerduty-score",
+          "label": "PagerDuty SRE Agent score on GPT-5.6 Sol",
+          "value": 0.77,
+          "unit": "fraction",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Reported average quality score with the same underlying model as Codex.",
+          "scope": "GPT-5.6 Sol same-model harness comparison",
+          "limitations": [
+            "Per report, PagerDuty 0.77 versus Codex 0.66. Single trial; judge-derived score; do not generalize as a causal harness effect."
+          ]
+        },
+        {
+          "metric_id": "same-model-codex-score",
+          "label": "Codex score on GPT-5.6 Sol",
+          "value": 0.66,
+          "unit": "fraction",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "reported_point_estimate",
+          "definition": "Reported Codex average quality score with the same underlying model as PagerDuty SRE Agent.",
+          "scope": "GPT-5.6 Sol same-model harness comparison",
+          "limitations": [
+            "Single trial; judge-derived score; public report does not publish the full row-level run data in text."
+          ]
+        },
+        {
+          "metric_id": "internal-diagnosis-rebuild-delta",
+          "label": "Reported diagnosis score improvement after PagerDuty agent rebuild",
+          "value": "approximately 20 percentage points",
+          "unit": "qualitative",
+          "numerator": null,
+          "denominator": null,
+          "value_semantics": "owner_claim",
+          "definition": "PagerDuty reports a roughly 20-point diagnosis-score improvement after redesigning its initial complex multi-agent investigation architecture.",
+          "scope": "PagerDuty internal earlier-versus-rebuilt SRE Agent configuration",
+          "limitations": [
+            "Internal before/after comparison; exact paired task/score denominators not stated in public report. Not the external 17-scenario leaderboard gap."
+          ]
+        }
+      ],
+      "comparability": {
+        "comparison_group": "sre-investigation-17scenario-multijudge",
+        "comparable_only_with": [
+          "Same 17 scenarios, private benchmark version, same three-judge rubric, equal data access and single-trial protocol."
+        ],
+        "not_comparable_with": [
+          "SREGym-0508 diagnosis+mitigation E2E",
+          "SRE-Marathon Marathon-Score",
+          "Traceway deterministic safe-write pass rate",
+          "AI SRE Arena's 21-incident supported-fix recommendation score"
+        ],
+        "notes": [
+          "Useful comparator for evidence grounding, misdirection, source-code access and multi-axis investigation quality.",
+          "The reported same-model context comparison is a valuable harness ablation idea.",
+          "Do not claim repair success: report focuses on locating, diagnosing and recommending mitigation, not executing remediation and verifying recovery.",
+          "The benchmark uses a hidden load generator, preventing agents from seeing the source of ground-truth request counts."
+        ]
+      },
+      "claim_ceiling": "Vendor-published single-trial diagnosis/investigation benchmark on a private 17-scenario environment. Multi-judge scoring and contamination controls are valuable, but failed runs are excluded, repeated-run uncertainty is not estimated, and actual remediation/recovery is not measured."
+    }
+  ]
+}
