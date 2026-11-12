@@ -45,7 +45,7 @@ Unserved energy is lost service, not energy supplied to the bus. Service-ledger 
 The fields stored_energy_start_kwh and stored_energy_end_kwh are measured at the storage-internal state boundary; charge and discharge energy are measured at the common bus boundary. The evaluator enforces only conservative direction/bounds:
 
 - Charging interval: stored energy cannot fall beyond tolerance and the internal stored-energy increase cannot exceed bus-side charge energy plus tolerance.
-- Discharging interval: stored energy cannot rise beyond tolerance and the internal stored-energy decrease cannot exceed bus-side discharge energy plus tolerance.
+- Discharging interval: stored energy cannot rise beyond tolerance, and bus-side discharged energy cannot exceed the observed internal stored-energy decrease plus tolerance. Internal depletion may be larger than bus output because of storage/conversion losses; estimating that efficiency is outside this evaluator.
 - Idle interval: stored energy cannot drift beyond its declared tolerance.
 - A single aggregate interval may not contain both charge and discharge; split the interval at the direction change.
 - Adjacent interval storage state must reconcile; the mission must have full, contiguous time coverage.
