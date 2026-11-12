@@ -1,0 +1,58 @@
+{
+  "schema_version": "0.1",
+  "mission_id": "PF-HYBRID-MISSION-SYNTHETIC-001",
+  "qualified_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "observed_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "evaluation_time_epoch_s": 100,
+  "qualification_valid_until_epoch_s": 1000,
+  "maximum_unserved_energy_wh": 0,
+  "segments": [
+    {
+      "segment_id": "source-surplus-and-charge",
+      "start_s": 0,
+      "duration_s": 3600,
+      "required_service_power_w": 1000,
+      "qualified_source_average_power_w": 2000,
+      "source_measurement_uncertainty_bound_w": 0,
+      "source_model_uncertainty_bound_w": 0,
+      "source_configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "source_evidence_status": "current",
+      "source_evidence_reference": "synthetic:symtropy-source-segment-001"
+    },
+    {
+      "segment_id": "source-outage-and-storage-service",
+      "start_s": 3600,
+      "duration_s": 3600,
+      "required_service_power_w": 800,
+      "qualified_source_average_power_w": 0,
+      "source_measurement_uncertainty_bound_w": 0,
+      "source_model_uncertainty_bound_w": 0,
+      "source_configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "source_evidence_status": "current",
+      "source_evidence_reference": "synthetic:symtropy-source-segment-002"
+    }
+  ],
+  "storage": {
+    "storage_id": "aggregate-battery",
+    "qualified_configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "observed_configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "qualification_valid_until_epoch_s": 1000,
+    "capability_status": "current",
+    "calibration_status": "current",
+    "sensor_status": "current",
+    "protection_status": "ready",
+    "capacity_wh": 5000,
+    "capacity_uncertainty_bound_wh": 0,
+    "initial_soc_fraction": 0.2,
+    "initial_soc_uncertainty_fraction": 0,
+    "minimum_soc_fraction": 0.1,
+    "maximum_soc_fraction": 0.9,
+    "end_of_mission_minimum_soc_fraction": 0.2,
+    "maximum_charge_power_w": 2000,
+    "maximum_discharge_power_w": 1000,
+    "charge_efficiency": 0.9,
+    "discharge_efficiency": 0.9,
+    "evidence_reference": "synthetic:mycelix-storage-passport-001"
+  },
+  "claim_ceiling": "MISSION_ENERGY_ACCOUNTING_SCREEN_ONLY_NOT_DISPATCH_CONTROL_OR_PHYSICAL_QUALIFICATION"
+}
