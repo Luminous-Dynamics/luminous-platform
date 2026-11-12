@@ -294,10 +294,10 @@ Design for repair must not undermine safety: no exposed live service access, no 
 
 | System | Role | Must not become |
 |---|---|---|
-| Symthaea | Literature synthesis, topology/design-space exploration, duty-cycle inference, test selection | Safety certifier or real-time protection authority |
-| Symtropy | Electrical/thermal/mechanical models, fault replay, system simulation and HIL scenario generation | A substitute for calibrated physical tests |
-| Sol-Atlas | 3D packaging, clearances, cooling, wiring, BOM/revision and manufacturing digital thread | Proof that physical insulation or thermal design is qualified |
-| Mycelix | Supplier/lot provenance, configuration identity, calibration and test evidence lineage, independent verification | An oracle of physical truth or a source of actuation authority |
+| Symthaea | Literature synthesis, candidate architecture and decision-value-driven test selection; compose [SE-OPT-BENCH-001 #7803](https://github.com/Luminous-Dynamics/symthaea/issues/7803) | Safety certifier or real-time protection authority |
+| Symtropy | Compose [POWER-SYSTEM-DIGITAL-TWIN-001 #3400](https://github.com/Luminous-Dynamics/symtropy/issues/3400), [POWER-SYSTEM-RESILIENCE-001 #3418](https://github.com/Luminous-Dynamics/symtropy/issues/3418), topology #3409 and matched-service FFER #3417 for generator/storage/load dynamics, fault replay, islanding, black-start and restoration | A substitute for calibrated physical tests |
+| Sol-Atlas | Compose [ENERGY-GEN-PORTFOLIO-001 #293](https://github.com/Luminous-Dynamics/sol-atlas-leptos/issues/293), [ENERGY-RESOURCE-SITE-001 #662](https://github.com/Luminous-Dynamics/sol-atlas-leptos/issues/662) and [GMD-RESILIENCE-001 #692](https://github.com/Luminous-Dynamics/sol-atlas-leptos/issues/692) for site, source, spatial exposure and dependency context; bind equipment/cable/busbar/connector and enclosure revisions | Proof that physical insulation or thermal design is qualified |
+| Mycelix | Compose [MYC-BUILD-METROLOGY-002 #6034](https://github.com/Luminous-Dynamics/mycelix/issues/6034), [MYC-BUILD-UQ-001 #6048](https://github.com/Luminous-Dynamics/mycelix/issues/6048) and [MYC-BUILD-METROLOGY-003 #6042](https://github.com/Luminous-Dynamics/mycelix/issues/6042) for instrument capability, calibration, correlated uncertainty and dependency invalidation | An oracle of physical truth or a source of actuation authority |
 | Local controller | Deterministic source/load state machine and bounded control loops | A network-dependent or AI-only protection system |
 | Independent electrical protection | Hardware current/voltage/temperature limits and rated protective isolation | A function implemented only in application software |
 
