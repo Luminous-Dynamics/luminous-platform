@@ -100,6 +100,7 @@ pub struct DisturbanceObservation {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct MissionServiceRequirements {
+    pub minimum_demanded_energy_kwh: f64,
     pub max_unserved_energy_kwh: f64,
     pub max_unserved_fraction: f64,
     pub energy_balance_tolerance_kwh: f64,
@@ -249,6 +250,15 @@ pub fn evaluate_mission_service(
         "storage_usable_capacity_kwh",
     )?;
     let requirements = &input.requirements;
+    require_non_negative_finite(
+        requirements.minimum_demanded_energy_kwh,
+        "minimum_demanded_energy_kwh",
+    )?;
+    if requirements.minimum_demanded_energy_kwh <= 0.0 {
+        return Err(MissionServiceError(
+            "minimum_demanded_energy_kwh must be positive to prevent empty-service passes".to_string(),
+        ));
+    }
     require_non_negative_finite(
         requirements.max_unserved_energy_kwh,
         "max_unserved_energy_kwh",
@@ -538,7 +548,7 @@ pub fn evaluate_mission_service(
         worst_energy_residual = worst_energy_residual.max(energy_residual);
         add_finite(
             &mut total_energy_residual,
-            supplied - accounted,
+            energy_residual,
             "total energy residual",
         )?;
         if energy_residual > requirements.energy_balance_tolerance_kwh {
@@ -679,7 +689,8 @@ pub fn evaluate_mission_service(
     };
     let evidence_eligible = blockers.is_empty();
 
-    let service_gates_met = unserved <= requirements.max_unserved_energy_kwh + EPSILON
+    let service_gates_met = demanded + EPSILON >= requirements.minimum_demanded_energy_kwh
+        && unserved <= requirements.max_unserved_energy_kwh + EPSILON
         && unserved_fraction <= requirements.max_unserved_fraction + EPSILON
         && requirements
             .min_terminal_storage_energy_kwh
@@ -806,6 +817,7 @@ mod tests {
                 },
             ],
             requirements: MissionServiceRequirements {
+                minimum_demanded_energy_kwh: 8.0,
                 max_unserved_energy_kwh: 0.6,
                 max_unserved_fraction: 0.07,
                 energy_balance_tolerance_kwh: 0.02,
@@ -866,6 +878,7 @@ mod tests {
         let input = valid_input();
         let report = evaluate_mission_service(&input).unwrap();
         assert_eq!(report.lineage, input.lineage);
+        assert_eq!(report.disturbances, input.disturbances);
         assert_eq!(
             report.claim_ceiling(),
             "MEASURED_MISSION_SERVICE_AUDIT_ONLY_NOT_DISPATCH_SAFETY_OR_PHYSICAL_QUALIFICATION"
@@ -1014,6 +1027,30 @@ mod tests {
     fn excessive_unserved_energy_fails_service_without_invalidating_evidence() {
         let mut input = valid_input();
         input.requirements.max_unserved_energy_kwh = 0.4;
+        let report = evaluate_mission_service(&input).unwrap();
+        assert!(report.evidence_eligible);
+        assert_eq!(report.service_requirements_met, Some(false));
+    }
+
+    #[test]
+    fn zero_service_cannot_pass_a_mission_minimum() {
+        let mut input = valid_input();
+        input.intervals[0].demanded_energy_kwh = 0.0;
+        input.intervals[0].delivered_energy_kwh = 0.0;
+        input.intervals[0].unserved_energy_kwh = 0.0;
+        input.intervals[0].source_energy_kwh = 0.0;
+        input.intervals[0].storage_discharge_energy_kwh = 0.0;
+        input.intervals[0].auxiliary_and_loss_energy_kwh = 0.0;
+        input.intervals[0].stored_energy_end_kwh = 8.0;
+        input.intervals[0].fuel_liters = 0.0;
+        input.intervals[1].demanded_energy_kwh = 0.0;
+        input.intervals[1].delivered_energy_kwh = 0.0;
+        input.intervals[1].source_energy_kwh = 0.0;
+        input.intervals[1].storage_charge_energy_kwh = 0.0;
+        input.intervals[1].auxiliary_and_loss_energy_kwh = 0.0;
+        input.intervals[1].stored_energy_start_kwh = 8.0;
+        input.intervals[1].stored_energy_end_kwh = 8.0;
+        input.intervals[1].fuel_liters = 0.0;
         let report = evaluate_mission_service(&input).unwrap();
         assert!(report.evidence_eligible);
         assert_eq!(report.service_requirements_met, Some(false));
