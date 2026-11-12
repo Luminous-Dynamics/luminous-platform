@@ -366,13 +366,12 @@ pub fn evaluate_topology_capacity_graph(
 
     let super_source = nodes.len();
     let sink = *indices.get(graph.sink_node_id.as_str()).ok_or_else(|| AuditError("validated sink lookup failed".to_string()))?;
-    let mut total_capacity = 0_u64;
-    for arc in &arcs {
-        if arc.evidence_status == GraphEvidenceStatus::Current {
-            total_capacity = total_capacity.checked_add(arc.capacity_power_w_at_service_poc)
-                .ok_or_else(|| AuditError("sum of graph capacities overflowed u64".to_string()))?;
-        }
-    }
+    let _total_capacity_bound = arcs.iter()
+        .filter(|arc| arc.evidence_status == GraphEvidenceStatus::Current)
+        .try_fold(0_u64, |sum, arc| {
+            sum.checked_add(arc.capacity_power_w_at_service_poc)
+                .ok_or_else(|| AuditError("sum of graph capacities overflowed u64".to_string()))
+        })?;
 
     let mut network = Dinic::new(nodes.len() + 1);
     let mut ordered_source_ids = graph.source_node_ids.clone();
