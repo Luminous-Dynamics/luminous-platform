@@ -27,6 +27,22 @@ impl BenchmarkEvidenceClass {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BenchmarkRunMode {
+    ControlledLaboratory,
+    ProductionAcceptance,
+    SiteOperationalAssessment,
+    FieldMission,
+    Simulation,
+    Synthetic,
+}
+
+impl BenchmarkRunMode {
+    const fn is_physical(self) -> bool {
+        !matches!(self, Self::Simulation | Self::Synthetic)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct BenchmarkInstrumentEvidence {
     pub instrument_id: String,
