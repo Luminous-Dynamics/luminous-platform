@@ -114,12 +114,13 @@ The registered Rust module \`reserve_risk\`:
 - binds the report to forecast ID/origin/time, forecast evidence, clock, time-origin, state mapping, time alignment, timeline digest and complete scenario-generation contract;
 - computes empirical expected cost, empirical shortage probability, worst-case shortage probability, empirical mean shortfall, worst-case mean shortfall, empirical CVaR and worst-case CVaR for every reserve candidate;
 - selects the empirical critical-fractile baseline, empirical CVaR-constrained policy and TV-DRO/CVaR policy;
-- replays each available policy against the exact subsequently measured horizon, after deterministic recomputation of the full risk report; it retains the physical measurement-run/evidence IDs, timestamp alignment, source timeline and each measured sample ID;
+- replays each available policy against the exact subsequently measured horizon, after deterministic recomputation of the full risk report; it retains the measurement-run/evidence IDs, timestamp alignment, source timeline and each measured sample ID;
+- keeps the critical-fractile baseline visible even when it violates the declared empirical or robust risk gates; its qualification flag is false rather than silently treating the baseline as safe;
 - emits a three-objective Pareto frontier over worst-case expected cost, worst-case CVaR and worst-case shortage probability;
 - reports a constrained policy as absent when no reserve candidate meets its frozen gates, rather than silently weakening a threshold;
 - rejects insufficient scenario support, insufficient effective tail-path mass, invalid reserve grids, blank decision evidence and invalid probability/risk parameters.
 
-Twenty-two synthetic Rust tests are authored for fractional-tail calculations, TV reweighting, robust-CVaR ordering, shortage-probability stress, horizon-surplus derivation, support checks, grid validation, Pareto/frontier generation, infeasibility and policy selection.
+Twenty-three synthetic Rust tests are authored for fractional-tail calculations, TV reweighting, robust-CVaR ordering, shortage-probability stress, horizon-surplus derivation, support checks, grid validation, Pareto/frontier generation, infeasibility and policy selection.
 
 **Tests are authored but not executed.** No Rust compilation, Cargo test, rustfmt, Clippy, runtime benchmark or measured performance result is claimed.
 
