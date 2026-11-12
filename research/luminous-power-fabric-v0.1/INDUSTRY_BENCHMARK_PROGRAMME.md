@@ -169,3 +169,28 @@ and interruptions; IEC 61000-4-4:2012 for EFT/burst immunity. These do not certi
 generator-source performance. Use ISO 8528-5:2025 for the applicable RIC-engine/AC-generator-set
 subsystem. Apply only where the product boundary fits.
 
+
+
+## 12. Benchmark evidence passport and site-operation follow-up
+
+[Issue #429](https://github.com/Luminous-Dynamics/luminous-platform/issues/429) and
+[BENCHMARK_EVIDENCE_PASSPORT.md](./BENCHMARK_EVIDENCE_PASSPORT.md) add an evidence-bearing run
+manifest and pairwise matched-comparison gate. The comparison keys bind exact primary/auxiliary
+POCs, useful-service boundary, demand/event/environment/source/fuel context, initial storage/reserve,
+test/data-processing/timebase methods, mission/reporting windows, calibration method and metric
+measurand scope. Product configuration digests are preserved separately because comparators are
+expected to differ.
+
+IEC TS 62933-2-3:2025 is an important site-operation reference. Its public preview distinguishes
+operational-data assessment from precise laboratory testing; it recommends representative sample
+events and records, and includes power/voltage/current/energy, fault/maintenance and dispatch
+history in the operational data picture. It also lists actual storage capacity, input/output power,
+round-trip efficiency, auxiliary consumption, available hours, equivalent operation factor and
+availability/outage indicators among relevant performance items. Accordingly, Power Fabric's run
+passport keeps sample selection, preprocessing, operational history, auxiliary POC and timebase
+provenance explicit. Site-assessment evidence is a field-performance view, not a substitute for
+controlled tests when accurate numeric characterization is needed.
+
+The code returns three distinct gates—structural match, physical measurement eligibility and
+independent claim eligibility. A synthetic pair can test the first gate but not the latter two.
+No physical superiority claim is made.
