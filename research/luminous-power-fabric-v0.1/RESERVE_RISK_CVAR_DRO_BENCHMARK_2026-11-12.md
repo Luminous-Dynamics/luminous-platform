@@ -206,11 +206,11 @@ Stress correlated loss of grid supply, cooling, UPS strings, generators, network
 
 Every reserve commitment should include the exact scenario set, risk contract, constraints, solver/version, optimization gap, selected action, fallback, measurement boundary, authority and expiry. Unknown execution outcome should block a new mutation until reconciled.
 
-## 9. Explicit non-claims
+## 9. Next qualification step
 
 The replay evaluates a selected reserve against one measured horizon and reports the corresponding modelled cost and shortfall. The next validation increment must aggregate these per-episode outcomes by independently reviewed operating clusters, using the fixed-exposure design in #410, before making a policy-level reliability claim.
 
-## 9. Explicit non-claims
+## 10. Explicit non-claims
 
 This increment does **not** demonstrate:
 - a statistically calibrated TV ambiguity radius;
