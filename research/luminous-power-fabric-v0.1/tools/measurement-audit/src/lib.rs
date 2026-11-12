@@ -12,6 +12,7 @@ pub mod cllc_design;
 pub mod capability_envelope;
 pub mod multi_port_capability;
 pub mod mission_energy;
+pub mod lifecycle_service_cost;
 
 const EXPECTED_HEADER: &str =
     "time_s,port_a_voltage_v,port_a_current_a,port_b_voltage_v,port_b_current_a,case_temp_c";

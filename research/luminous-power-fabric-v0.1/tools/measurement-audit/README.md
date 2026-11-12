@@ -147,6 +147,27 @@ inputs. Transient motor-start, power-quality, protection and fault response rema
 See [MISSION_ENERGY_ENVELOPE.md](../../MISSION_ENERGY_ENVELOPE.md), the
 `schemas/mission-energy-envelope-v0.1.schema.json` contract and synthetic fixture.
 
+## Lifecycle service accounting
+
+The crate exposes `lifecycle_service_cost::evaluate_lifecycle_accounting` and
+`compare_lifecycle_scenarios`. It uses integer minor-currency cost entries with unique economic
+event IDs, matched mission/service and terminal-state obligations, non-compensatory mission pass
+outcomes, repair downtime interval union, labour/requalification hours, replacement identity and
+pre/post configuration digests.
+
+When storage is in scope, repeated capacity/power retention is calculated only for the same physical
+component and exact unchanged configuration using at least two current, calibrated, sensor-valid,
+independent physical measurements with monotonic cumulative throughput, calendar age and EFC.
+SOC/SOH/temperature/timebase/operating-condition evidence references are retained. It does not fit
+an ageing curve or estimate remaining useful life. A complete repair-history evidence record is
+required even when there are no repair events.
+
+This is nominal lifecycle accounting only: no FX, inflation, NPV/discounting, future-price or life
+forecast; no battery electrochemistry or fuel modelling; and no safety, product or field qualification.
+See [LIFECYCLE_SERVICE_ACCOUNTING.md](../../LIFECYCLE_SERVICE_ACCOUNTING.md), the
+`schemas/lifecycle-service-accounting-v0.1.schema.json` contract and the
+explicitly synthetic comparator fixture.
+
 ## Ideal DAB SPS screen
 
 The library also exposes `dab_sps::screen_dab_sps` and
