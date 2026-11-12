@@ -17,10 +17,10 @@ The comparison unit is therefore a **complete, measured mission episode**:
 - Same service boundary, electrical boundary and metrology method.
 - Metered source energy, storage charge/discharge, delivered energy, losses/auxiliaries and fuel.
 - Explicit unserved energy and disturbance/recovery evidence.
-- Explicit terminal storage-energy floor—preferably equal to the starting energy for a fair generator-only versus hybrid comparison.
+- For storage-equipped v0.2 missions, a terminal storage-energy floor is mandatory and must be at least the measured starting stored energy within the declared state tolerance; explicit depletion accounting is a separate benchmark contract.
 - Frozen acceptance limits and evidence lineage before the run.
 
-This blocks a common comparison error: a hybrid system can appear to save fuel by consuming energy already stored in its battery. The test must restore that energy or debit the depleted energy under a separately agreed accounting method. This evaluator implements the terminal-state floor; the paired benchmark harness will bind baseline and candidate missions to the same service contract.
+This blocks a common comparison error: a hybrid system can appear to save fuel by consuming energy already stored in its battery. The test must restore that energy or debit the depleted energy under a separately agreed accounting method. This evaluator enforces a terminal-state floor at or above the measured initial stored energy for storage-equipped missions. The paired benchmark harness must bind baseline and candidate missions to the same service contract.
 
 ## 2. Energy-boundary contract
 
@@ -86,7 +86,7 @@ For generator-only versus generator+BESS (and later other configurations), pair 
 - Identical load demand, interval boundaries, mission duration and criticality.
 - Identical service boundary, site/environmental stratum and load-start events.
 - Equivalent source/load power-quality acceptance limits.
-- Equivalent initial and terminal usable storage energy. If no storage is present in the baseline, candidate storage energy must be restored to its initial level or be explicitly costed; do not silently discard it.
+- Equivalent initial and terminal usable storage energy. This evaluator requires a storage-equipped candidate to finish with at least its initial measured stored energy (within tolerance). A depletion-debit study requires a separate, preregistered accounting contract/version; it must not silently bypass this gate.
 - Identical fuel measurement boundary and treatment of auxiliaries.
 - Frozen data-quality, uncertainty and missing-data rules.
 
