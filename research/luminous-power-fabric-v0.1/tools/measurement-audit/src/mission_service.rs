@@ -160,6 +160,8 @@ pub struct MissionServiceReport {
     pub max_voltage_deviation_percent: Option<f64>,
     pub max_frequency_deviation_hz: Option<f64>,
     pub lineage: MissionMeasurementLineage,
+    /// Original event-level records and their evidence references are retained.
+    pub disturbances: Vec<DisturbanceObservation>,
 }
 
 impl MissionServiceReport {
@@ -727,6 +729,7 @@ pub fn evaluate_mission_service(
         max_voltage_deviation_percent: max_voltage_deviation,
         max_frequency_deviation_hz: max_frequency_deviation,
         lineage: input.lineage.clone(),
+        disturbances: input.disturbances.clone(),
     })
 }
 
