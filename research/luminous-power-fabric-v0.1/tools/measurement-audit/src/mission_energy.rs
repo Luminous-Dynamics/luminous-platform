@@ -77,7 +77,11 @@ pub struct MissionSegmentEnergyResult {
     pub duration_s: f64,
     pub required_energy_wh: f64,
     pub source_evidence_eligible: bool,
+    pub qualified_source_average_power_w: f64,
+    pub source_measurement_uncertainty_bound_w: f64,
+    pub source_model_uncertainty_bound_w: f64,
     pub conservative_source_average_power_w: f64,
+    pub source_evidence_status: EvidenceStatus,
     pub source_energy_available_wh: f64,
     pub source_energy_to_load_wh: f64,
     pub storage_energy_to_load_wh: f64,
@@ -103,6 +107,9 @@ pub struct MissionEnergyReport {
     pub qualification_blockers: Vec<String>,
     pub excluded_source_segment_ids: Vec<String>,
     pub storage_exclusion_reason: Option<String>,
+    /// Exact storage input snapshot, including evidence state, digests and limits.
+    pub storage_constraint_snapshot: Option<StorageEnergyEnvelope>,
+    pub storage_eligible: bool,
     pub total_required_energy_wh: f64,
     pub total_source_energy_available_wh: f64,
     pub total_source_energy_to_load_wh: f64,
@@ -241,7 +248,7 @@ fn validate_input(input: &MissionEnergyInput) -> Result<(), AuditError> {
                 "segment identity and source evidence reference must be non-empty".to_string(),
             ));
         }
-        if seen_ids.iter().any(|id| *id == segment.segment_id) {
+        if seen_ids.iter().any(|id| *id == segment.segment_id.as_str()) {
             return Err(AuditError(format!(
                 "duplicate mission segment id {:?}",
                 segment.segment_id
@@ -489,7 +496,11 @@ pub fn evaluate_mission_energy(
             duration_s: segment.duration_s,
             required_energy_wh,
             source_evidence_eligible,
+            qualified_source_average_power_w: segment.qualified_source_average_power_w,
+            source_measurement_uncertainty_bound_w: segment.source_measurement_uncertainty_bound_w,
+            source_model_uncertainty_bound_w: segment.source_model_uncertainty_bound_w,
             conservative_source_average_power_w,
+            source_evidence_status: segment.source_evidence_status,
             source_energy_available_wh,
             source_energy_to_load_wh,
             storage_energy_to_load_wh,
@@ -543,6 +554,8 @@ pub fn evaluate_mission_energy(
         qualification_blockers,
         excluded_source_segment_ids,
         storage_exclusion_reason,
+        storage_constraint_snapshot: input.storage.clone(),
+        storage_eligible,
         total_required_energy_wh,
         total_source_energy_available_wh,
         total_source_energy_to_load_wh,
