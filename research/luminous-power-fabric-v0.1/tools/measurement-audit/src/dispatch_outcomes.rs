@@ -807,7 +807,8 @@ mod tests {
     #[test]
     fn rejects_duplicate_scenario_ids_in_campaign() {
         let mut value = campaign("fixed", "r");
-        value.episodes[1].scenario_id = value.episodes[0].scenario_id.clone();
+        let duplicate_id = value.episodes[0].scenario_id.clone();
+        value.episodes[1].scenario_id = duplicate_id;
         assert!(validate_dispatch_outcome_campaign(&value).is_err());
     }
 
@@ -858,5 +859,65 @@ mod tests {
         assert_eq!(report.candidate_campaign, candidate);
         assert_eq!(report.paired_episodes[0].reference.run_id, "r-1");
         assert_eq!(report.paired_episodes[0].candidate.run_id, "c-1");
+    } 
+    #[test]
+    fn rejects_duplicate_run_ids_in_campaign() {
+        let mut value = campaign("fixed", "r");
+        let duplicate_run_id = value.episodes[0].run_id.clone();
+        value.episodes[1].run_id = duplicate_run_id;
+        assert!(validate_dispatch_outcome_campaign(&value).is_err());
     }
+
+    #[test]
+    fn campaign_summary_retains_failed_and_inconclusive_episodes() {
+        let mut reference = campaign("fixed", "r");
+        let mut failed = reference.episodes[1].clone();
+        failed.metrics.delivered_critical_service_wh = 800.0;
+        failed.metrics.unserved_critical_service_wh = 200.0;
+        failed.metrics.maximum_unserved_critical_service_wh = 20.0;
+        failed.metrics.terminal_reserve_margin_wh = -15.0;
+        failed.hard_gates.critical_service = DispatchGateState::Fail;
+        failed.hard_gates.terminal_reserve = DispatchGateState::Fail;
+        failed.hard_gates.required_power_events = DispatchGateState::Fail;
+        reference.episodes[1] = failed;
+        let mut inconclusive = episode("telemetry", "fixed", "r-3", '8');
+        inconclusive.hard_gates.telemetry_integrity = DispatchGateState::Unknown;
+        reference.episodes.push(inconclusive);
+
+        let mut candidate = campaign("mpc", "c");
+        let mut candidate_failed = candidate.episodes[1].clone();
+        candidate_failed.metrics.delivered_critical_service_wh = 850.0;
+        candidate_failed.metrics.unserved_critical_service_wh = 150.0;
+        candidate_failed.metrics.maximum_unserved_critical_service_wh = 20.0;
+        candidate_failed.metrics.terminal_reserve_margin_wh = -5.0;
+        candidate_failed.hard_gates.critical_service = DispatchGateState::Fail;
+        candidate_failed.hard_gates.terminal_reserve = DispatchGateState::Fail;
+        candidate_failed.hard_gates.required_power_events = DispatchGateState::Fail;
+        candidate.episodes[1] = candidate_failed;
+        let mut candidate_inconclusive = episode("telemetry", "mpc", "c-3", '8');
+        candidate_inconclusive.hard_gates.telemetry_integrity = DispatchGateState::Unknown;
+        candidate.episodes.push(candidate_inconclusive);
+
+        let report = compare_dispatch_outcome_campaigns(&reference, &candidate).unwrap();
+        assert!(report.structural_match);
+        assert_eq!(report.reference_summary.episode_count, 3);
+        assert_eq!(report.reference_summary.pass_count, 1);
+        assert_eq!(report.reference_summary.fail_count, 1);
+        assert_eq!(report.reference_summary.inconclusive_count, 1);
+        assert_eq!(report.reference_summary.critical_service.total(), 3);
+        assert_eq!(report.reference_summary.critical_service.fail, 1);
+        assert_eq!(report.reference_summary.telemetry_integrity.unknown, 1);
+        assert_eq!(report.paired_episodes.len(), 3);
+    }
+
+    #[test]
+    fn rejects_comparison_with_different_scenario_corpus() {
+        let reference = campaign("fixed", "r");
+        let mut candidate = campaign("mpc", "c");
+        candidate.scenario_corpus_sha256 = digest('f');
+        let report = compare_dispatch_outcome_campaigns(&reference, &candidate).unwrap();
+        assert!(!report.structural_match);
+        assert!(report.blockers.iter().any(|item| item == "mismatch:scenario_corpus"));
+    }
+
 }
