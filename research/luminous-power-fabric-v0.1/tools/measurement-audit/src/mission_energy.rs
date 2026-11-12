@@ -21,7 +21,9 @@ pub struct MissionEnergySegment {
     /// capability before converting it to available interval energy.
     pub source_measurement_uncertainty_bound_w: f64,
     pub source_model_uncertainty_bound_w: f64,
-    pub source_configuration_sha256: String,
+    pub qualified_source_configuration_sha256: String,
+    pub observed_source_configuration_sha256: String,
+    pub source_qualification_valid_until_epoch_s: u64,
     pub source_evidence_status: EvidenceStatus,
     pub source_evidence_reference: String,
 }
@@ -94,7 +96,10 @@ pub struct MissionSegmentEnergyResult {
     pub unserved_energy_wh: f64,
     pub storage_soc_start_fraction: Option<f64>,
     pub storage_soc_end_fraction: Option<f64>,
-    pub source_configuration_sha256: String,
+    pub qualified_source_configuration_sha256: String,
+    pub observed_source_configuration_sha256: String,
+    pub source_qualification_valid_until_epoch_s: u64,
+    pub source_evidence_status: EvidenceStatus,
     pub source_evidence_reference: String,
 }
 
@@ -255,9 +260,11 @@ fn validate_input(input: &MissionEnergyInput) -> Result<(), AuditError> {
             )));
         }
         seen_ids.push(&segment.segment_id);
-        if !valid_sha256(&segment.source_configuration_sha256) {
+        if !valid_sha256(&segment.qualified_source_configuration_sha256)
+            || !valid_sha256(&segment.observed_source_configuration_sha256)
+        {
             return Err(AuditError(format!(
-                "segment {:?} source configuration digest must be SHA-256",
+                "segment {:?} qualified and observed source digests must be SHA-256",
                 segment.segment_id
             )));
         }
@@ -388,6 +395,9 @@ pub fn evaluate_mission_energy(
 
     for segment in &input.segments {
         let source_evidence_eligible = global_qualification_eligible
+            && segment.qualified_source_configuration_sha256
+                == segment.observed_source_configuration_sha256
+            && segment.source_qualification_valid_until_epoch_s > input.evaluation_time_epoch_s
             && segment.source_evidence_status == EvidenceStatus::Current;
         if !source_evidence_eligible && segment.qualified_source_average_power_w > 0.0 {
             excluded_source_segment_ids.push(segment.segment_id.clone());
@@ -510,7 +520,10 @@ pub fn evaluate_mission_energy(
             unserved_energy_wh,
             storage_soc_start_fraction,
             storage_soc_end_fraction,
-            source_configuration_sha256: segment.source_configuration_sha256.clone(),
+            qualified_source_configuration_sha256: segment.qualified_source_configuration_sha256.clone(),
+            observed_source_configuration_sha256: segment.observed_source_configuration_sha256.clone(),
+            source_qualification_valid_until_epoch_s: segment.source_qualification_valid_until_epoch_s,
+            source_evidence_status: segment.source_evidence_status,
             source_evidence_reference: segment.source_evidence_reference.clone(),
         });
     }
@@ -601,7 +614,9 @@ mod tests {
             qualified_source_average_power_w: source_w,
             source_measurement_uncertainty_bound_w: 0.0,
             source_model_uncertainty_bound_w: 0.0,
-            source_configuration_sha256: digest('b'),
+            qualified_source_configuration_sha256: digest('b'),
+            observed_source_configuration_sha256: digest('b'),
+            source_qualification_valid_until_epoch_s: 100,
             source_evidence_status: EvidenceStatus::Current,
             source_evidence_reference: format!("symtropy:source-run-{id}"),
         }
@@ -790,6 +805,27 @@ mod tests {
     }
 
     #[test]
+    fn source_configuration_mismatch_excludes_that_source_segment() {
+        let mut item = segment("changed-source", 0.0, 3600.0, 500.0, 1_000.0);
+        item.observed_source_configuration_sha256 = digest('d');
+        let report = evaluate_mission_energy(&input(vec![item])).unwrap();
+        assert_eq!(report.total_source_energy_available_wh, 0.0);
+        assert_eq!(report.total_unserved_energy_wh, 500.0);
+        assert_eq!(report.excluded_source_segment_ids, vec!["changed-source".to_string()]);
+        assert!(!report.segment_results[0].source_evidence_eligible);
+    }
+
+    #[test]
+    fn expired_source_qualification_excludes_that_source_segment() {
+        let mut item = segment("expired-source", 0.0, 3600.0, 500.0, 1_000.0);
+        item.source_qualification_valid_until_epoch_s = 10;
+        let report = evaluate_mission_energy(&input(vec![item])).unwrap();
+        assert_eq!(report.total_source_energy_available_wh, 0.0);
+        assert_eq!(report.total_unserved_energy_wh, 500.0);
+        assert_eq!(report.excluded_source_segment_ids, vec!["expired-source".to_string()]);
+    }
+
+    #[test]
     fn non_current_storage_evidence_excludes_the_bank() {
         let mut value = input(vec![segment("generator", 0.0, 3600.0, 1_000.0, 1_000.0)]);
         let mut bank = storage();
@@ -896,7 +932,9 @@ mod tests {
         assert_eq!(bank.storage_id, "aggregate-battery");
         assert_eq!(bank.evidence_reference, "mycelix:storage-passport-001");
         assert_eq!(report.segment_results[0].source_evidence_reference, "symtropy:source-run-lineage");
-        assert_eq!(report.segment_results[0].source_configuration_sha256, digest('b'));
+        assert_eq!(report.segment_results[0].qualified_source_configuration_sha256, digest('b'));
+        assert_eq!(report.segment_results[0].observed_source_configuration_sha256, digest('b'));
+        assert_eq!(report.segment_results[0].source_qualification_valid_until_epoch_s, 100);
         assert_eq!(report.segment_results[0].source_evidence_status, EvidenceStatus::Current);
         assert_eq!(report.segment_results[0].source_measurement_uncertainty_bound_w, 0.0);
         assert_eq!(report.segment_results[0].source_model_uncertainty_bound_w, 0.0);
