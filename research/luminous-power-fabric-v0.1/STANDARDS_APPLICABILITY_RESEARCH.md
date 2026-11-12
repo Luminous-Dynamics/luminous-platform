@@ -107,7 +107,7 @@ source and battery ratings from being mistaken for delivered motor-start or ride
 
 | Standard | Current published snapshot | Relevance | Boundary |
 |---|---|---|---|
-| IEC 61000-4-11:2020, Ed. 3 | Voltage-dip, short-interruption and voltage-variation immunity methods for equipment with rated mains current up to 16 A per phase on 50/60 Hz LV AC networks | Immunity of relevant connected equipment to defined supply disturbances | Does not certify generator load acceptance, motor start, source ride-through or the output capability of a hybrid power plant |
+| IEC 61000-4-11:2020, Ed. 3 | Voltage-dip, short-interruption and voltage-variation immunity methods for equipment with rated input current up to 16 A per phase on 50/60 Hz LV AC networks | Immunity of relevant connected equipment to defined supply disturbances | Does not certify generator load acceptance, motor start, source ride-through or the output capability of a hybrid power plant |
 | IEC 61000-4-34:2005+AMD1:2009+AMD2:2025, consolidated Ed. 1.2 | Same disturbance class for equipment with mains current greater than 16 A per phase; the 2025 amendment updates the term from input current to mains current | Immunity test method for higher-current equipment | Not a generator/motor-start capability standard |
 | IEC 61000-4-4:2012, Ed. 3 | Electrical fast transient/burst immunity for supply, signal, control and earth ports | EMC immunity for relevant electronics and equipment | Does not establish power-stage transient output capability |
 | ISO 8528-5:2025, Ed. 6 | Performance criteria for an RIC engine and AC generator operating as a generating set | Generator-set source subsystem load acceptance/dynamic performance programme | Does not qualify the whole hybrid system or battery support |
