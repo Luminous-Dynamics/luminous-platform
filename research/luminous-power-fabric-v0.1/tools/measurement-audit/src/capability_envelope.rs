@@ -104,6 +104,15 @@ pub struct CapabilityEnvelopeReport {
     pub total_uncertainty_bound_w: f64,
     pub eligible: bool,
     pub blockers: Vec<CapabilityBlocker>,
+    /// Input identity retained so a caller can bind this result to its source snapshot.
+    pub qualified_configuration_sha256: String,
+    pub observed_configuration_sha256: String,
+    pub evaluation_time_epoch_s: u64,
+    pub qualification_valid_until_epoch_s: u64,
+    pub telemetry_observed_at_epoch_s: u64,
+    pub uncertainty_reference: String,
+    pub external_derating_reference: String,
+    pub thermal_evidence_reference: String,
 }
 
 impl CapabilityEnvelopeReport {
@@ -298,6 +307,14 @@ pub fn evaluate_capability_envelope(
             total_uncertainty_bound_w,
             eligible: false,
             blockers,
+            qualified_configuration_sha256: input.qualified_configuration_sha256.clone(),
+            observed_configuration_sha256: input.observed_configuration_sha256.clone(),
+            evaluation_time_epoch_s: input.evaluation_time_epoch_s,
+            qualification_valid_until_epoch_s: input.qualification_valid_until_epoch_s,
+            telemetry_observed_at_epoch_s: input.telemetry_observed_at_epoch_s,
+            uncertainty_reference: input.uncertainty_reference.clone(),
+            external_derating_reference: input.external_derating_reference.clone(),
+            thermal_evidence_reference: input.thermal.evidence_reference.clone(),
         });
     }
 
@@ -329,6 +346,14 @@ pub fn evaluate_capability_envelope(
         total_uncertainty_bound_w,
         eligible,
         blockers,
+        qualified_configuration_sha256: input.qualified_configuration_sha256.clone(),
+        observed_configuration_sha256: input.observed_configuration_sha256.clone(),
+        evaluation_time_epoch_s: input.evaluation_time_epoch_s,
+        qualification_valid_until_epoch_s: input.qualification_valid_until_epoch_s,
+        telemetry_observed_at_epoch_s: input.telemetry_observed_at_epoch_s,
+        uncertainty_reference: input.uncertainty_reference.clone(),
+        external_derating_reference: input.external_derating_reference.clone(),
+        thermal_evidence_reference: input.thermal.evidence_reference.clone(),
     })
 }
 
@@ -616,6 +641,38 @@ mod tests {
         input.measurement_uncertainty_bound_w = f64::MAX;
         input.model_uncertainty_bound_w = f64::MAX;
         assert!(evaluate_capability_envelope(&input).is_err());
+    }
+
+    #[test]
+    fn report_retains_configuration_and_evidence_lineage() {
+        let input = valid_input();
+        let report = evaluate_capability_envelope(&input).unwrap();
+        assert_eq!(
+            report.qualified_configuration_sha256,
+            input.qualified_configuration_sha256
+        );
+        assert_eq!(
+            report.observed_configuration_sha256,
+            input.observed_configuration_sha256
+        );
+        assert_eq!(report.evaluation_time_epoch_s, input.evaluation_time_epoch_s);
+        assert_eq!(
+            report.qualification_valid_until_epoch_s,
+            input.qualification_valid_until_epoch_s
+        );
+        assert_eq!(
+            report.telemetry_observed_at_epoch_s,
+            input.telemetry_observed_at_epoch_s
+        );
+        assert_eq!(report.uncertainty_reference, input.uncertainty_reference);
+        assert_eq!(
+            report.external_derating_reference,
+            input.external_derating_reference
+        );
+        assert_eq!(
+            report.thermal_evidence_reference,
+            input.thermal.evidence_reference
+        );
     }
 
     #[test]
