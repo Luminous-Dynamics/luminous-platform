@@ -16,6 +16,9 @@ pub struct MissionEnergySegment {
     pub start_s: f64,
     pub duration_s: f64,
     pub required_service_power_w: f64,
+    /// Maximum energy shortfall permitted in this exact service interval.
+    /// Use zero for a critical interval that must be fully served.
+    pub maximum_unserved_energy_wh: f64,
     pub qualified_source_average_power_w: f64,
     /// Conservative absolute power uncertainty bounds, subtracted from source
     /// capability before converting it to available interval energy.
@@ -82,6 +85,8 @@ pub struct MissionSegmentEnergyResult {
     pub start_s: f64,
     pub duration_s: f64,
     pub required_energy_wh: f64,
+    pub maximum_unserved_energy_wh: f64,
+    pub segment_service_pass: bool,
     pub source_evidence_eligible: bool,
     pub qualified_source_average_power_w: f64,
     pub source_measurement_uncertainty_bound_w: f64,
@@ -277,6 +282,7 @@ fn validate_input(input: &MissionEnergyInput) -> Result<(), AuditError> {
             || segment.duration_s <= 0.0
             || !segment.required_service_power_w.is_finite()
             || segment.required_service_power_w < 0.0
+            || !finite_nonnegative(segment.maximum_unserved_energy_wh)
             || !finite_nonnegative(segment.qualified_source_average_power_w)
             || !finite_nonnegative(segment.source_measurement_uncertainty_bound_w)
             || !finite_nonnegative(segment.source_model_uncertainty_bound_w)
@@ -498,11 +504,16 @@ pub fn evaluate_mission_energy(
         total_curtailed_source_energy_wh += curtailed_source_energy_wh;
         total_unserved_energy_wh += unserved_energy_wh;
 
+        let segment_service_pass =
+            unserved_energy_wh <= segment.maximum_unserved_energy_wh + ENERGY_TOLERANCE_WH;
+
         segment_results.push(MissionSegmentEnergyResult {
             segment_id: segment.segment_id.clone(),
             start_s: segment.start_s,
             duration_s: segment.duration_s,
             required_energy_wh,
+            maximum_unserved_energy_wh: segment.maximum_unserved_energy_wh,
+            segment_service_pass,
             source_evidence_eligible,
             qualified_source_average_power_w: segment.qualified_source_average_power_w,
             source_measurement_uncertainty_bound_w: segment.source_measurement_uncertainty_bound_w,
@@ -550,8 +561,9 @@ pub fn evaluate_mission_energy(
         ),
         _ => None,
     };
-    let service_pass =
-        total_unserved_energy_wh <= input.maximum_unserved_energy_wh + ENERGY_TOLERANCE_WH;
+    let service_pass = total_unserved_energy_wh
+        <= input.maximum_unserved_energy_wh + ENERGY_TOLERANCE_WH
+        && segment_results.iter().all(|segment| segment.segment_service_pass);
     // A configured store is part of the evaluated mission configuration. If it
     // cannot be qualified, the mission cannot claim success with an unknown
     // final SOC/reserve. A generator-only comparison should omit storage entirely.
@@ -613,6 +625,7 @@ mod tests {
             start_s,
             duration_s,
             required_service_power_w: demand_w,
+            maximum_unserved_energy_wh: 0.0,
             qualified_source_average_power_w: source_w,
             source_measurement_uncertainty_bound_w: 0.0,
             source_model_uncertainty_bound_w: 0.0,
@@ -746,6 +759,24 @@ mod tests {
         assert_eq!(report.total_storage_energy_to_load_wh, 500.0);
         assert_eq!(report.total_unserved_energy_wh, 1_500.0);
         assert!(!report.service_pass);
+    }
+
+    #[test]
+    fn critical_segment_limit_fails_even_when_global_budget_allows_shortfall() {
+        let mut value = input(vec![
+            segment("critical-window", 0.0, 3600.0, 1_000.0, 900.0),
+            segment("later-window", 3600.0, 3600.0, 1_000.0, 1_000.0),
+        ]);
+        value.maximum_unserved_energy_wh = 100.0;
+        let mut later = value.segments[1].clone();
+        later.maximum_unserved_energy_wh = 100.0;
+        value.segments[1] = later;
+        let report = evaluate_mission_energy(&value).unwrap();
+        assert_eq!(report.total_unserved_energy_wh, 100.0);
+        assert!(!report.segment_results[0].segment_service_pass);
+        assert!(report.segment_results[1].segment_service_pass);
+        assert!(!report.service_pass);
+        assert!(!report.mission_pass);
     }
 
     #[test]
