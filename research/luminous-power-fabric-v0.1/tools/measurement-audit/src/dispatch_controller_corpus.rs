@@ -371,13 +371,17 @@ mod tests {
 
     #[test]
     fn rejects_duplicate_case_ids() {
-        let mut c = corpus(); c.cases[1].case_id = c.cases[0].case_id.clone();
+        let mut c = corpus();
+        let duplicate_id = c.cases[0].case_id.clone();
+        c.cases[1].case_id = duplicate_id;
         assert!(validate_dispatch_controller_scenario_corpus(&c).is_err());
     }
 
     #[test]
     fn rejects_duplicate_event_ids() {
-        let mut c = corpus(); c.cases[0].disturbances.push(c.cases[0].disturbances[0].clone());
+        let mut c = corpus();
+        let duplicate_event = c.cases[0].disturbances[0].clone();
+        c.cases[0].disturbances.push(duplicate_event);
         assert!(validate_dispatch_controller_scenario_corpus(&c).is_err());
     }
 
@@ -402,7 +406,9 @@ mod tests {
 
     #[test]
     fn rejects_identical_policy_revisions() {
-        let mut c = corpus(); c.cases[0].candidate_policy_sha256 = c.cases[0].reference_policy_sha256.clone();
+        let mut c = corpus();
+        let same_policy = c.cases[0].reference_policy_sha256.clone();
+        c.cases[0].candidate_policy_sha256 = same_policy;
         assert!(validate_dispatch_controller_scenario_corpus(&c).is_err());
     }
 
