@@ -11,6 +11,7 @@ pub mod cllc_t_network;
 pub mod cllc_design;
 pub mod capability_envelope;
 pub mod multi_port_capability;
+pub mod topology_capacity_graph;
 pub mod mission_energy;
 pub mod power_event_envelope;
 pub mod benchmark_comparison;

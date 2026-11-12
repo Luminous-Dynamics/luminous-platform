@@ -370,6 +370,15 @@ field-mission-profile contract and composes Symthaea, Symtropy, Sol-Atlas and My
 Vendor specifications remain separate from independent physical measurements and accredited
 qualification evidence.
 
+## Topology-aware overlapping shared-capacity graph
+
+[Issue #451](https://github.com/Luminous-Dynamics/luminous-platform/issues/451) and
+[OVERLAPPING_CAPACITY_GRAPH.md](./OVERLAPPING_CAPACITY_GRAPH.md) add synthetic max-flow/min-cut
+fixtures for partially overlapping cooling, control-power, feeder and service-bus dependencies.
+The registered `topology_capacity_graph` module now provides a read-only max-flow/min-cut prototype
+and N-1 scenario generator over owner-qualified service-side capacities. It is not electrical network
+physics or a physical capability claim.
+
 ## Current limitations
 
 This package contains analytical screening models and offline data-audit tools; it does **not**

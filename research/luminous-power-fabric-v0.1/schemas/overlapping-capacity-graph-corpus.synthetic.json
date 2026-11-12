@@ -1,0 +1,454 @@
+{
+  "schema_version": "0.1",
+  "corpus_id": "PF-OVERLAPPING-CAPACITY-GRAPH-SYNTH-0.1",
+  "record_class": "synthetic_fixture",
+  "graphs": [
+    {
+      "graph_id": "PF-CAPACITY-GRAPH-OVERLAP-001",
+      "service_boundary_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "power_basis": "NET_ACTIVE_POWER_AT_CUSTOMER_POC",
+      "unit": "W",
+      "source_node_ids": [
+        "source_a",
+        "source_b",
+        "source_c"
+      ],
+      "sink_node_id": "customer_poc",
+      "nodes": [
+        {
+          "node_id": "source_a",
+          "node_type": "source",
+          "component_id": "source-A",
+          "configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "evidence_status": "current",
+          "failure_domain_ids": [],
+          "evidence_reference": "synthetic://source-A",
+          "evidence_class": "synthetic"
+        },
+        {
+          "node_id": "source_b",
+          "node_type": "source",
+          "component_id": "source-B",
+          "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "evidence_status": "current",
+          "failure_domain_ids": [],
+          "evidence_reference": "synthetic://source-B",
+          "evidence_class": "synthetic"
+        },
+        {
+          "node_id": "source_c",
+          "node_type": "source",
+          "component_id": "source-C",
+          "configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "evidence_status": "current",
+          "failure_domain_ids": [],
+          "evidence_reference": "synthetic://source-C",
+          "evidence_class": "synthetic"
+        },
+        {
+          "node_id": "junction",
+          "node_type": "junction",
+          "component_id": "junction-1",
+          "configuration_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "evidence_status": "current",
+          "failure_domain_ids": [],
+          "evidence_reference": "synthetic://junction",
+          "evidence_class": "synthetic"
+        },
+        {
+          "node_id": "feeder_out",
+          "node_type": "bus",
+          "component_id": "feeder-1",
+          "configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "evidence_status": "current",
+          "failure_domain_ids": [],
+          "evidence_reference": "synthetic://feeder",
+          "evidence_class": "synthetic"
+        },
+        {
+          "node_id": "customer_poc",
+          "node_type": "service_sink",
+          "component_id": "poc-1",
+          "configuration_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "evidence_status": "current",
+          "failure_domain_ids": [
+            "service-bus"
+          ],
+          "evidence_reference": "synthetic://poc",
+          "evidence_class": "synthetic"
+        }
+      ],
+      "failure_domains": [
+        {
+          "domain_id": "cooling-ab",
+          "description": "One cooling loop shared by source paths A and B."
+        },
+        {
+          "domain_id": "control-bc",
+          "description": "One control-power/communications dependency shared by source paths B and C."
+        },
+        {
+          "domain_id": "common-feeder",
+          "description": "One upstream feeder shared by all source paths."
+        },
+        {
+          "domain_id": "service-bus",
+          "description": "One downstream service bus shared by all source paths."
+        }
+      ],
+      "arcs": [
+        {
+          "arc_id": "arc-source-a",
+          "from_node_id": "source_a",
+          "to_node_id": "junction",
+          "capacity_power_w_at_service_poc": 80,
+          "component_id": "converter-A",
+          "configuration_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "evidence_status": "current",
+          "failure_domain_ids": [
+            "cooling-ab"
+          ],
+          "evidence_reference": "synthetic://arc-A",
+          "evidence_class": "synthetic"
+        },
+        {
+          "arc_id": "arc-source-b",
+          "from_node_id": "source_b",
+          "to_node_id": "junction",
+          "capacity_power_w_at_service_poc": 70,
+          "component_id": "converter-B",
+          "configuration_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+          "evidence_status": "current",
+          "failure_domain_ids": [
+            "cooling-ab",
+            "control-bc"
+          ],
+          "evidence_reference": "synthetic://arc-B",
+          "evidence_class": "synthetic"
+        },
+        {
+          "arc_id": "arc-source-c",
+          "from_node_id": "source_c",
+          "to_node_id": "junction",
+          "capacity_power_w_at_service_poc": 60,
+          "component_id": "converter-C",
+          "configuration_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "evidence_status": "current",
+          "failure_domain_ids": [
+            "control-bc"
+          ],
+          "evidence_reference": "synthetic://arc-C",
+          "evidence_class": "synthetic"
+        },
+        {
+          "arc_id": "arc-shared-feeder",
+          "from_node_id": "junction",
+          "to_node_id": "feeder_out",
+          "capacity_power_w_at_service_poc": 170,
+          "component_id": "shared-feeder-1",
+          "configuration_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "evidence_status": "current",
+          "failure_domain_ids": [
+            "common-feeder"
+          ],
+          "evidence_reference": "synthetic://shared-feeder",
+          "evidence_class": "synthetic"
+        },
+        {
+          "arc_id": "arc-service-bus",
+          "from_node_id": "feeder_out",
+          "to_node_id": "customer_poc",
+          "capacity_power_w_at_service_poc": 160,
+          "component_id": "service-bus-1",
+          "configuration_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+          "evidence_status": "current",
+          "failure_domain_ids": [
+            "service-bus"
+          ],
+          "evidence_reference": "synthetic://service-bus",
+          "evidence_class": "synthetic"
+        }
+      ],
+      "expected_scenarios": [
+        {
+          "scenario_id": "baseline",
+          "failed_node_ids": [],
+          "failed_component_ids": [],
+          "failed_domain_ids": [],
+          "failed_arc_ids": [],
+          "expected_max_flow_power_w": 160,
+          "expected_min_cut_witness_arc_ids": [
+            "arc-service-bus"
+          ],
+          "expected_blocked_arc_ids": []
+        },
+        {
+          "scenario_id": "cooling-ab-failure",
+          "failed_node_ids": [],
+          "failed_component_ids": [],
+          "failed_domain_ids": [
+            "cooling-ab"
+          ],
+          "failed_arc_ids": [],
+          "expected_max_flow_power_w": 60,
+          "expected_min_cut_witness_arc_ids": [
+            "arc-source-c"
+          ],
+          "expected_blocked_arc_ids": [
+            "arc-source-a",
+            "arc-source-b"
+          ]
+        },
+        {
+          "scenario_id": "control-bc-failure",
+          "failed_node_ids": [],
+          "failed_component_ids": [],
+          "failed_domain_ids": [
+            "control-bc"
+          ],
+          "failed_arc_ids": [],
+          "expected_max_flow_power_w": 80,
+          "expected_min_cut_witness_arc_ids": [
+            "arc-source-a"
+          ],
+          "expected_blocked_arc_ids": [
+            "arc-source-b",
+            "arc-source-c"
+          ]
+        },
+        {
+          "scenario_id": "source-a-component-failure",
+          "failed_node_ids": [],
+          "failed_component_ids": [
+            "source-A"
+          ],
+          "failed_domain_ids": [],
+          "failed_arc_ids": [],
+          "expected_max_flow_power_w": 130,
+          "expected_min_cut_witness_arc_ids": [
+            "arc-source-b",
+            "arc-source-c"
+          ],
+          "expected_blocked_arc_ids": [
+            "arc-source-a"
+          ]
+        },
+        {
+          "scenario_id": "common-feeder-failure",
+          "failed_node_ids": [],
+          "failed_component_ids": [],
+          "failed_domain_ids": [
+            "common-feeder"
+          ],
+          "failed_arc_ids": [],
+          "expected_max_flow_power_w": 0,
+          "expected_min_cut_witness_arc_ids": [],
+          "expected_blocked_arc_ids": [
+            "arc-shared-feeder"
+          ]
+        },
+        {
+          "scenario_id": "service-bus-failure",
+          "failed_node_ids": [],
+          "failed_component_ids": [],
+          "failed_domain_ids": [
+            "service-bus"
+          ],
+          "failed_arc_ids": [],
+          "expected_max_flow_power_w": 0,
+          "expected_min_cut_witness_arc_ids": [],
+          "expected_blocked_arc_ids": [
+            "arc-service-bus"
+          ]
+        }
+      ],
+      "graph_manifest_sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    {
+      "graph_id": "PF-CAPACITY-GRAPH-EVIDENCE-BLOCK-001",
+      "service_boundary_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "power_basis": "NET_ACTIVE_POWER_AT_CUSTOMER_POC",
+      "unit": "W",
+      "source_node_ids": [
+        "source_a",
+        "source_b",
+        "source_c"
+      ],
+      "sink_node_id": "customer_poc",
+      "nodes": [
+        {
+          "node_id": "source_a",
+          "node_type": "source",
+          "component_id": "source-A",
+          "configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "evidence_status": "current",
+          "failure_domain_ids": [],
+          "evidence_reference": "synthetic://source-A",
+          "evidence_class": "synthetic"
+        },
+        {
+          "node_id": "source_b",
+          "node_type": "source",
+          "component_id": "source-B",
+          "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "evidence_status": "current",
+          "failure_domain_ids": [],
+          "evidence_reference": "synthetic://source-B",
+          "evidence_class": "synthetic"
+        },
+        {
+          "node_id": "source_c",
+          "node_type": "source",
+          "component_id": "source-C",
+          "configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "evidence_status": "current",
+          "failure_domain_ids": [],
+          "evidence_reference": "synthetic://source-C",
+          "evidence_class": "synthetic"
+        },
+        {
+          "node_id": "junction",
+          "node_type": "junction",
+          "component_id": "junction-1",
+          "configuration_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "evidence_status": "current",
+          "failure_domain_ids": [],
+          "evidence_reference": "synthetic://junction",
+          "evidence_class": "synthetic"
+        },
+        {
+          "node_id": "feeder_out",
+          "node_type": "bus",
+          "component_id": "feeder-1",
+          "configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "evidence_status": "current",
+          "failure_domain_ids": [],
+          "evidence_reference": "synthetic://feeder",
+          "evidence_class": "synthetic"
+        },
+        {
+          "node_id": "customer_poc",
+          "node_type": "service_sink",
+          "component_id": "poc-1",
+          "configuration_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "evidence_status": "current",
+          "failure_domain_ids": [
+            "service-bus"
+          ],
+          "evidence_reference": "synthetic://poc",
+          "evidence_class": "synthetic"
+        }
+      ],
+      "failure_domains": [
+        {
+          "domain_id": "cooling-ab",
+          "description": "One cooling loop shared by source paths A and B."
+        },
+        {
+          "domain_id": "control-bc",
+          "description": "One control-power/communications dependency shared by source paths B and C."
+        },
+        {
+          "domain_id": "common-feeder",
+          "description": "One upstream feeder shared by all source paths."
+        },
+        {
+          "domain_id": "service-bus",
+          "description": "One downstream service bus shared by all source paths."
+        }
+      ],
+      "arcs": [
+        {
+          "arc_id": "arc-source-a",
+          "from_node_id": "source_a",
+          "to_node_id": "junction",
+          "capacity_power_w_at_service_poc": 80,
+          "component_id": "converter-A",
+          "configuration_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "evidence_status": "current",
+          "failure_domain_ids": [
+            "cooling-ab"
+          ],
+          "evidence_reference": "synthetic://arc-A",
+          "evidence_class": "synthetic"
+        },
+        {
+          "arc_id": "arc-source-b",
+          "from_node_id": "source_b",
+          "to_node_id": "junction",
+          "capacity_power_w_at_service_poc": 70,
+          "component_id": "converter-B",
+          "configuration_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+          "evidence_status": "current",
+          "failure_domain_ids": [
+            "cooling-ab",
+            "control-bc"
+          ],
+          "evidence_reference": "synthetic://arc-B",
+          "evidence_class": "synthetic"
+        },
+        {
+          "arc_id": "arc-source-c",
+          "from_node_id": "source_c",
+          "to_node_id": "junction",
+          "capacity_power_w_at_service_poc": 60,
+          "component_id": "converter-C",
+          "configuration_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "evidence_status": "unverified",
+          "failure_domain_ids": [
+            "control-bc"
+          ],
+          "evidence_reference": "synthetic://arc-C",
+          "evidence_class": "synthetic"
+        },
+        {
+          "arc_id": "arc-shared-feeder",
+          "from_node_id": "junction",
+          "to_node_id": "feeder_out",
+          "capacity_power_w_at_service_poc": 170,
+          "component_id": "shared-feeder-1",
+          "configuration_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "evidence_status": "current",
+          "failure_domain_ids": [
+            "common-feeder"
+          ],
+          "evidence_reference": "synthetic://shared-feeder",
+          "evidence_class": "synthetic"
+        },
+        {
+          "arc_id": "arc-service-bus",
+          "from_node_id": "feeder_out",
+          "to_node_id": "customer_poc",
+          "capacity_power_w_at_service_poc": 160,
+          "component_id": "service-bus-1",
+          "configuration_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+          "evidence_status": "current",
+          "failure_domain_ids": [
+            "service-bus"
+          ],
+          "evidence_reference": "synthetic://service-bus",
+          "evidence_class": "synthetic"
+        }
+      ],
+      "expected_scenarios": [
+        {
+          "scenario_id": "unverified-source-c-arc",
+          "failed_node_ids": [],
+          "failed_component_ids": [],
+          "failed_domain_ids": [],
+          "failed_arc_ids": [],
+          "expected_max_flow_power_w": 150,
+          "expected_min_cut_witness_arc_ids": [
+            "arc-source-a",
+            "arc-source-b"
+          ],
+          "expected_blocked_arc_ids": [
+            "arc-source-c"
+          ]
+        }
+      ],
+      "graph_manifest_sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+    }
+  ],
+  "claim_ceiling": "SYNTHETIC_CAPACITY_GRAPH_FIXTURE_ONLY_NOT_NETWORK_PHYSICS_OR_RELIABILITY_CLAIM"
+}
