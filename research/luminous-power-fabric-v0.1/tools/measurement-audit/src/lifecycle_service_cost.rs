@@ -80,6 +80,13 @@ impl LifecycleEvidenceClass {
     const fn is_independent_physical(self) -> bool {
         matches!(self, Self::IndependentPhysicalMeasurement)
     }
+
+    const fn is_actual_repair_record(self) -> bool {
+        matches!(
+            self,
+            Self::IndependentPhysicalMeasurement | Self::PayrollOrWorkOrder
+        )
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -257,7 +264,7 @@ pub struct LifecycleScenarioReport {
     pub mission_evidence_current: bool,
     pub mission_evidence_physical: bool,
     pub repair_evidence_current: bool,
-    pub repair_evidence_physical: bool,
+    pub repair_evidence_actual: bool,
     pub storage_health_evidence_complete: bool,
     pub storage_health_trajectories: Vec<StorageHealthTrajectory>,
     pub configuration_eligible: bool,
@@ -799,9 +806,9 @@ pub fn evaluate_lifecycle_accounting(
 
     let mut repair_evidence_current = input.repair_history_complete
         && input.repair_history_evidence_status == EvidenceStatus::Current;
-    let mut repair_evidence_physical = input.repair_history_complete
+    let mut repair_evidence_actual = input.repair_history_complete
         && input.repair_history_evidence_status == EvidenceStatus::Current
-        && input.repair_history_evidence_class.is_independent_physical();
+        && input.repair_history_evidence_class.is_actual_repair_record();
     let mut repair_labor_hours = 0.0_f64;
     let mut requalification_hours = 0.0_f64;
     let mut replacement_count = 0_usize;
@@ -815,8 +822,8 @@ pub fn evaluate_lifecycle_accounting(
         if repair.evidence_status != EvidenceStatus::Current {
             repair_evidence_current = false;
         }
-        if !repair.evidence_class.is_independent_physical() {
-            repair_evidence_physical = false;
+        if !repair.evidence_class.is_actual_repair_record() {
+            repair_evidence_actual = false;
         }
     }
 
@@ -871,7 +878,7 @@ pub fn evaluate_lifecycle_accounting(
         && all_missions_pass
         && cost_evidence_actual
         && mission_evidence_physical
-        && repair_evidence_physical
+        && repair_evidence_actual
         && storage_health_evidence_complete;
 
     Ok(LifecycleScenarioReport {
@@ -899,7 +906,7 @@ pub fn evaluate_lifecycle_accounting(
         mission_evidence_current,
         mission_evidence_physical,
         repair_evidence_current,
-        repair_evidence_physical,
+        repair_evidence_actual,
         storage_health_evidence_complete,
         storage_health_trajectories,
         configuration_eligible,
@@ -1194,13 +1201,24 @@ mod tests {
     }
 
     #[test]
+    fn actual_work_order_repairs_are_eligible_repair_evidence() {
+        let mut value = input("work-order-evidence", false);
+        value.repair_history_evidence_class = LifecycleEvidenceClass::PayrollOrWorkOrder;
+        value.repair_events.push(repair("work-order", 100.0, 10.0));
+        value.repair_events[0].evidence_class = LifecycleEvidenceClass::PayrollOrWorkOrder;
+        let report = evaluate_lifecycle_accounting(&value).unwrap();
+        assert!(report.repair_evidence_actual);
+        assert!(report.physical_lifecycle_claim_eligible);
+    }
+
+    #[test]
     fn incomplete_repair_history_blocks_physical_lifecycle_claim() {
         let mut value = input("unknown-repairs", false);
         value.repair_history_complete = false;
         value.repair_history_evidence_status = EvidenceStatus::Unverified;
         let report = evaluate_lifecycle_accounting(&value).unwrap();
         assert!(!report.repair_evidence_current);
-        assert!(!report.repair_evidence_physical);
+        assert!(!report.repair_evidence_actual);
         assert!(!report.physical_lifecycle_claim_eligible);
     }
 
