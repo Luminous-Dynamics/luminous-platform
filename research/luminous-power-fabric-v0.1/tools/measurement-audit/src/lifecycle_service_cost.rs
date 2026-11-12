@@ -125,6 +125,9 @@ pub struct LifecycleMissionRecord {
 pub struct LifecycleRepairEvent {
     pub repair_id: String,
     pub component_id: String,
+    pub replacement_component_id: Option<String>,
+    pub pre_repair_configuration_sha256: String,
+    pub post_repair_configuration_sha256: String,
     /// Study-window-relative interval during which the system cannot deliver
     /// its declared service. Overlapping intervals are unioned, not summed.
     pub start_s: f64,
@@ -187,6 +190,10 @@ pub struct LifecycleScenarioInput {
     pub storage_in_scope: bool,
     pub mission_records: Vec<LifecycleMissionRecord>,
     pub cost_entries: Vec<LifecycleCostEntry>,
+    pub repair_history_complete: bool,
+    pub repair_history_evidence_status: EvidenceStatus,
+    pub repair_history_evidence_class: LifecycleEvidenceClass,
+    pub repair_history_evidence_reference: String,
     pub repair_events: Vec<LifecycleRepairEvent>,
     pub storage_health_observations: Vec<StorageHealthObservation>,
 }
@@ -445,10 +452,15 @@ fn validate_input(input: &LifecycleScenarioInput) -> Result<(), AuditError> {
     }
 
     let mut repair_ids: Vec<&str> = Vec::with_capacity(input.repair_events.len());
+    if !nonblank(&input.repair_history_evidence_reference) {
+        return Err(AuditError("repair-history evidence reference must be non-empty".to_string()));
+    }
     for repair in &input.repair_events {
         if !nonblank(&repair.repair_id)
             || !nonblank(&repair.component_id)
             || !nonblank(&repair.evidence_reference)
+            || !valid_sha256(&repair.pre_repair_configuration_sha256)
+            || !valid_sha256(&repair.post_repair_configuration_sha256)
         {
             return Err(AuditError(
                 "repair event identity and evidence references must be non-empty".to_string(),
@@ -461,6 +473,17 @@ fn validate_input(input: &LifecycleScenarioInput) -> Result<(), AuditError> {
             )));
         }
         repair_ids.push(&repair.repair_id);
+        match (&repair.replacement_component_id, repair.replacement_required) {
+            (Some(new_component_id), true)
+                if nonblank(new_component_id) && new_component_id != &repair.component_id => {}
+            (None, false) => {}
+            _ => {
+                return Err(AuditError(format!(
+                    "repair event {:?} has inconsistent replacement identity",
+                    repair.repair_id
+                )));
+            }
+        }
         if !repair.start_s.is_finite()
             || !finite_nonnegative(repair.system_unavailable_duration_s)
             || !finite_nonnegative(repair.repair_labor_hours)
@@ -774,8 +797,11 @@ pub fn evaluate_lifecycle_accounting(
         ));
     }
 
-    let mut repair_evidence_current = true;
-    let mut repair_evidence_physical = true;
+    let mut repair_evidence_current = input.repair_history_complete
+        && input.repair_history_evidence_status == EvidenceStatus::Current;
+    let mut repair_evidence_physical = input.repair_history_complete
+        && input.repair_history_evidence_status == EvidenceStatus::Current
+        && input.repair_history_evidence_class.is_independent_physical();
     let mut repair_labor_hours = 0.0_f64;
     let mut requalification_hours = 0.0_f64;
     let mut replacement_count = 0_usize;
@@ -1040,6 +1066,9 @@ mod tests {
         LifecycleRepairEvent {
             repair_id: id.to_string(),
             component_id: format!("module-{id}"),
+            replacement_component_id: None,
+            pre_repair_configuration_sha256: digest('f'),
+            post_repair_configuration_sha256: digest('f'),
             start_s,
             system_unavailable_duration_s: down_s,
             repair_labor_hours: 2.0,
@@ -1104,6 +1133,10 @@ mod tests {
             storage_in_scope,
             mission_records: vec![mission("shift-001")],
             cost_entries: vec![cost("fuel-1", LifecycleCostCategory::Fuel, 10_000)],
+            repair_history_complete: true,
+            repair_history_evidence_status: EvidenceStatus::Current,
+            repair_history_evidence_class: LifecycleEvidenceClass::IndependentPhysicalMeasurement,
+            repair_history_evidence_reference: "maintenance:complete-history-window-001".to_string(),
             repair_events: Vec::new(),
             storage_health_observations: Vec::new(),
         }
@@ -1161,10 +1194,33 @@ mod tests {
     }
 
     #[test]
+    fn incomplete_repair_history_blocks_physical_lifecycle_claim() {
+        let mut value = input("unknown-repairs", false);
+        value.repair_history_complete = false;
+        value.repair_history_evidence_status = EvidenceStatus::Unverified;
+        let report = evaluate_lifecycle_accounting(&value).unwrap();
+        assert!(!report.repair_evidence_current);
+        assert!(!report.repair_evidence_physical);
+        assert!(!report.physical_lifecycle_claim_eligible);
+    }
+
+    #[test]
+    fn replacement_requires_a_new_component_identity() {
+        let mut value = input("replacement-id", false);
+        let mut item = repair("replacement", 100.0, 10.0);
+        item.replacement_required = true;
+        // Deliberately missing a distinct replacement identity.
+        value.repair_events.push(item);
+        assert!(evaluate_lifecycle_accounting(&value).is_err());
+    }
+
+    #[test]
     fn replacement_count_is_explicit() {
         let mut value = input("replace", false);
         let mut item = repair("replacement", 100.0, 10.0);
         item.replacement_required = true;
+        item.replacement_component_id = Some("battery-new-serial-002".to_string());
+        item.post_repair_configuration_sha256 = digest('g');
         value.repair_events.push(item);
         let report = evaluate_lifecycle_accounting(&value).unwrap();
         assert_eq!(report.replacement_count, 1);
