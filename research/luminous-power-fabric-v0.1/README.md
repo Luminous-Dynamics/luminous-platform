@@ -290,18 +290,19 @@ A standards reference is not a compliance or certification claim.
 
 ## Common-cause-aware multi-port capability
 
-[Issue #417](https://github.com/Luminous-Dynamics/luminous-platform/issues/417) now has a first deterministic
-Rust implementation in `tools/measurement-audit/src/multi_port_capability.rs`. It composes already
-qualified parallel route bottlenecks, automatically evaluates every declared component and shared
-failure-domain loss, and supports explicit compound contingencies. It withdraws capacity when paths
-share a failed source, bus, controller, cooling loop or other declared dependency. The model and test
-boundary are in [MULTI_PORT_CAPABILITY_DESIGN.md](./MULTI_PORT_CAPABILITY_DESIGN.md), with a JSON Schema
-and synthetic shared-control example under `schemas/multi-path-capability-*`.
+[Issues #417 and #418](https://github.com/Luminous-Dynamics/luminous-platform/issues/417) now have a deterministic
+Rust composition slice in `tools/measurement-audit/src/multi_port_capability.rs`. It composes already
+qualified parallel route bottlenecks, automatically evaluates component and shared failure-domain
+losses, supports explicit compound contingencies, and applies shared throughput constraints for
+declared buses/feeders/cooling groups. Shared capacity is recomputed after each contingency; partially
+overlapping non-identical shared-capacity groups are rejected. The typed input/schema and synthetic
+shared-bus fixture are under `schemas/multi-path-capability-*`, with the model and benchmark boundary
+in [MULTI_PORT_CAPABILITY_DESIGN.md](./MULTI_PORT_CAPABILITY_DESIGN.md).
 
 This remains a declared-contingency arithmetic screen. It does not discover missing common causes,
 solve electrical networks, calculate fault current or protection selectivity, estimate failure
-probabilities, or authorize switching. The next system model needs verified physical dependencies,
-recovery and requalification evidence.
+probabilities, solve storage energy/ramp/recovery, or authorize switching. Recovery/requalification
+and physical dependency verification remain separate next stages.
 
 ## Current limitations
 
