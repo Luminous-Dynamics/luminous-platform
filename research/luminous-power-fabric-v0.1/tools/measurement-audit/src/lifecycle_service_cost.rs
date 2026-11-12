@@ -178,6 +178,9 @@ pub struct LifecycleScenarioInput {
     pub minor_unit_scale: u8,
     pub study_start_epoch_s: u64,
     pub study_end_epoch_s: u64,
+    /// Cumulative scheduled service time in seconds. Mission and outage
+    /// intervals use this operating-time axis, not wall-clock elapsed time.
+    pub operating_window_s: f64,
     pub storage_in_scope: bool,
     pub mission_records: Vec<LifecycleMissionRecord>,
     pub cost_entries: Vec<LifecycleCostEntry>,
@@ -337,8 +340,13 @@ fn validate_input(input: &LifecycleScenarioInput) -> Result<(), AuditError> {
     }
 
     let study_window_s = (input.study_end_epoch_s - input.study_start_epoch_s) as f64;
-    if !study_window_s.is_finite() || study_window_s <= 0.0 {
-        return Err(AuditError("lifecycle study window is invalid".to_string()));
+    if !study_window_s.is_finite()
+        || study_window_s <= 0.0
+        || !input.operating_window_s.is_finite()
+        || input.operating_window_s <= 0.0
+        || input.operating_window_s > study_window_s + TIME_TOLERANCE_S
+    {
+        return Err(AuditError("lifecycle study/operating window is invalid".to_string()));
     }
 
     let mut mission_ids: Vec<&str> = Vec::with_capacity(input.mission_records.len());
@@ -384,7 +392,7 @@ fn validate_input(input: &LifecycleScenarioInput) -> Result<(), AuditError> {
             )));
         }
         let end_s = mission.start_s + mission.duration_s;
-        if !end_s.is_finite() || end_s > study_window_s + TIME_TOLERANCE_S {
+        if !end_s.is_finite() || end_s > input.operating_window_s + TIME_TOLERANCE_S {
             return Err(AuditError(format!(
                 "mission {:?} extends beyond the lifecycle study window",
                 mission.mission_id
@@ -763,16 +771,16 @@ pub fn evaluate_lifecycle_accounting(
         return Err(AuditError("repair labour totals overflowed".to_string()));
     }
 
-    let study_window_s = (input.study_end_epoch_s - input.study_start_epoch_s) as f64;
+    let operating_window_s = input.operating_window_s;
     let unavailable_s = system_unavailable_union_seconds(&input.repair_events)?;
-    if unavailable_s > study_window_s + TIME_TOLERANCE_S {
+    if unavailable_s > operating_window_s + TIME_TOLERANCE_S {
         return Err(AuditError(
             "system-unavailable intervals exceed the study window".to_string(),
         ));
     }
     let system_unavailable_hours = unavailable_s / 3600.0;
     let availability_percent =
-        100.0 * (study_window_s - unavailable_s).max(0.0) / study_window_s;
+        100.0 * (operating_window_s - unavailable_s).max(0.0) / operating_window_s;
 
     let (storage_health_evidence_complete, storage_health_trajectories) =
         storage_health_trajectories(
@@ -858,6 +866,8 @@ fn validate_matched_service(
         || reference.minor_unit_scale != candidate.minor_unit_scale
         || reference.study_start_epoch_s != candidate.study_start_epoch_s
         || reference.study_end_epoch_s != candidate.study_end_epoch_s
+        || (reference.operating_window_s - candidate.operating_window_s).abs()
+            > TIME_TOLERANCE_S
     {
         return Err(AuditError(
             "lifecycle comparator set, service boundary, site, currency or study horizon differs"
@@ -1061,6 +1071,7 @@ mod tests {
             minor_unit_scale: 2,
             study_start_epoch_s: 1_000,
             study_end_epoch_s: 4_600,
+            operating_window_s: 3_600.0,
             storage_in_scope,
             mission_records: vec![mission("shift-001")],
             cost_entries: vec![cost("fuel-1", LifecycleCostCategory::Fuel, 10_000)],
@@ -1220,7 +1231,7 @@ mod tests {
         ];
         // Input order is not material: sorted observations remain monotonic.
         assert!(evaluate_lifecycle_accounting(&value).is_ok());
-        value.storage_health_observations[0].cumulative_energy_throughput_wh = 1_000.0;
+        value.storage_health_observations[1].cumulative_energy_throughput_wh = 15_000.0;
         assert!(evaluate_lifecycle_accounting(&value).is_err());
     }
 
@@ -1238,7 +1249,8 @@ mod tests {
     #[test]
     fn duplicate_cost_ids_are_rejected() {
         let mut value = input("duplicate-cost", false);
-        value.cost_entries.push(value.cost_entries[0].clone());
+        let duplicate = value.cost_entries[0].clone();
+        value.cost_entries.push(duplicate);
         assert!(evaluate_lifecycle_accounting(&value).is_err());
     }
 
@@ -1280,6 +1292,7 @@ mod tests {
         let result = compare_lifecycle_scenarios(&reference, &candidate).unwrap();
         assert!(result.matched_service_contract);
         assert!(result.comparison_claim_eligible);
+        assert!(result.reference.storage_health_evidence_complete);
         assert!((result.candidate_cost_change_percent.unwrap() + 20.0).abs() < 1e-12);
     }
 
