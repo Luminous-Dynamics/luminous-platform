@@ -57,7 +57,7 @@ These checks are intentionally not an efficiency model. They do not estimate bat
 The output has two distinct decisions:
 
 1. **evidence_eligible**: configuration digest, qualification currency, measurement status, calibration, timebase, channel manifest and capture completeness are current; service and bus ledgers close within their frozen tolerances; required disturbance observations are present.
-2. **service_requirements_met**: only populated when evidence is eligible. It compares unserved energy/fraction, terminal storage energy, fuel intensity and configured disturbance/recovery/power-quality observations against the predeclared limits.
+2. **service_requirements_met**: only populated when evidence is eligible. It compares minimum demanded service, unserved energy/fraction, terminal storage energy, fuel intensity and configured disturbance/recovery/power-quality observations against the predeclared limits.
 
 An ineligible measurement run receives no service verdict (null), not a false "pass" and not a score that could be mistaken for acceptable operation. A well-evidenced run can be service-failing; that is a meaningful result and remains visible.
 
@@ -68,7 +68,7 @@ The report retains the measurement-run ID, raw-capture digest, channel-manifest 
 The current Rust evaluator computes:
 
 - Mission duration and interval/event counts.
-- Demanded, delivered and unserved energy; unserved fraction.
+- Demanded, delivered and unserved energy; unserved fraction; a positive minimum demanded-energy gate prevents zero-load 'passes'.
 - Source, storage discharge and charge, and auxiliary/loss energy.
 - Initial, terminal and net-change stored energy.
 - Fuel consumed and fuel per delivered kWh when delivered energy is non-zero.
