@@ -393,5 +393,5 @@ engineering review, fault/energy analysis, suitable laboratory containment and a
 The topology-aware graph module also exposes `evaluate_topology_capacity_n1_suite`, which creates a
 baseline, single-failure cases for every unique component and failure domain, and appends explicitly
 declared compound contingencies. Reports are deterministic and include a numeric min-cut witness
-separate from unavailable/blocked arcs. The v0.1 prototype is covered by 21 authored Rust tests,
+separate from unavailable/blocked arcs. The v0.1 prototype is covered by 22 authored Rust tests,
 including an exhaustive small-graph cut oracle; these have not been executed here.

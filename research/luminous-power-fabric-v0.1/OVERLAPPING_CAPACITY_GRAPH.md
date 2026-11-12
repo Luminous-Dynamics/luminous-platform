@@ -70,11 +70,10 @@ Authoring-time arithmetic recomputation verifies the expected source sums and se
 The registered Rust module `tools/measurement-audit/src/topology_capacity_graph.rs` implements a
 per-scenario deterministic Dinic max-flow/min-cut calculation over the typed graph. It uses integer
 watts at the declared customer POC, validates IDs/configuration digests/endpoints/failure domains,
-and treats non-current node/arc evidence as unavailable. The report includes the active cut witness
-(whose capacity sum is checked against max-flow) and a separate list of blocked arcs.
+and treats non-current node/arc evidence as unavailable. The report binds the caller-supplied graph-manifest SHA-256, retains declared evidence class separately from freshness/validity status, includes the active cut witness (whose capacity sum is checked against max-flow), and returns blocked arcs separately. The manifest digest is a lineage binding supplied by the caller; this evaluator does not hash or authenticate serialized graph bytes.
 
 `evaluate_topology_capacity_n1_suite` generates a baseline plus a single-failure scenario for every
 unique node/arc component ID and declared failure domain, then appends caller-supplied compound
-scenarios. It does not infer probabilities. Twenty-one Rust tests are authored, including an exhaustive
+scenarios. It does not infer probabilities. Twenty-two Rust tests are authored, including an exhaustive
 cut enumeration over the tiny synthetic topology. They have not been compiled or executed in this
 authoring environment.

@@ -7,6 +7,9 @@ const MAX_SCENARIO_FAILURES: usize = 65536;
 const POWER_BASIS: &str = "NET_ACTIVE_POWER_AT_CUSTOMER_POC";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GraphEvidenceClass { Synthetic, VendorAssertion, Modelled, Measured, IndependentlyVerified, Accredited }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GraphEvidenceStatus { Current, Missing, Expired, Invalid, Unverified }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -19,6 +22,7 @@ pub struct CapacityGraphNode {
     pub component_id: String,
     pub configuration_sha256: String,
     pub evidence_status: GraphEvidenceStatus,
+    pub evidence_class: GraphEvidenceClass,
     pub failure_domain_ids: Vec<String>,
     pub evidence_reference: String,
 }
@@ -33,6 +37,7 @@ pub struct CapacityGraphArc {
     pub component_id: String,
     pub configuration_sha256: String,
     pub evidence_status: GraphEvidenceStatus,
+    pub evidence_class: GraphEvidenceClass,
     pub failure_domain_ids: Vec<String>,
     pub evidence_reference: String,
 }
@@ -43,6 +48,7 @@ pub struct CapacityFailureDomain { pub domain_id: String, pub description: Strin
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TopologyCapacityGraph {
     pub graph_id: String,
+    pub graph_manifest_sha256: String,
     pub service_boundary_sha256: String,
     pub power_basis: String,
     pub unit: String,
@@ -77,6 +83,7 @@ pub struct CapacityGraphScenarioReport {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CapacityGraphReport {
     pub graph_id: String,
+    pub graph_manifest_sha256: String,
     pub service_boundary_sha256: String,
     pub power_basis: String,
     pub unit: String,
@@ -114,6 +121,9 @@ fn unique_nonblank(values: &[String], field: &str) -> Result<(), AuditError> {
 
 pub fn validate_topology_capacity_graph(graph: &TopologyCapacityGraph) -> Result<(), AuditError> {
     nonblank(&graph.graph_id, "graph_id")?;
+    if !valid_sha256(&graph.graph_manifest_sha256) {
+        return Err(AuditError("graph manifest root must be a valid SHA-256 digest".to_string()));
+    }
     if !valid_sha256(&graph.service_boundary_sha256) {
         return Err(AuditError("service boundary must be a valid SHA-256 digest".to_string()));
     }
@@ -429,6 +439,7 @@ pub fn evaluate_topology_capacity_graph(
 
     Ok(CapacityGraphReport {
         graph_id: graph.graph_id.clone(),
+        graph_manifest_sha256: graph.graph_manifest_sha256.clone(),
         service_boundary_sha256: graph.service_boundary_sha256.clone(),
         power_basis: graph.power_basis.clone(),
         unit: graph.unit.clone(),
@@ -506,6 +517,7 @@ mod tests {
         CapacityGraphNode {
             node_id: id.into(), node_type: kind, component_id: component.into(),
             configuration_sha256: digest('a'), evidence_status: GraphEvidenceStatus::Current,
+            evidence_class: GraphEvidenceClass::Synthetic,
             failure_domain_ids: domains.iter().map(|x| x.to_string()).collect(),
             evidence_reference: format!("synthetic://{id}"),
         }
@@ -516,6 +528,7 @@ mod tests {
             arc_id: id.into(), from_node_id: from.into(), to_node_id: to.into(),
             capacity_power_w_at_service_poc: capacity, component_id: component.into(),
             configuration_sha256: digest('b'), evidence_status: GraphEvidenceStatus::Current,
+            evidence_class: GraphEvidenceClass::Synthetic,
             failure_domain_ids: domains.iter().map(|x| x.to_string()).collect(),
             evidence_reference: format!("synthetic://{id}"),
         }
@@ -524,6 +537,7 @@ mod tests {
     fn graph() -> TopologyCapacityGraph {
         TopologyCapacityGraph {
             graph_id: "PF-CAPACITY-GRAPH-OVERLAP-001".into(),
+            graph_manifest_sha256: digest('2'),
             service_boundary_sha256: digest('1'),
             power_basis: "NET_ACTIVE_POWER_AT_CUSTOMER_POC".into(), unit: "W".into(),
             source_node_ids: vec!["source_a".into(), "source_b".into(), "source_c".into()],
@@ -759,6 +773,7 @@ mod tests {
     fn single_source_single_edge_cut_witness_excludes_super_source_connector() {
         let g = TopologyCapacityGraph {
             graph_id: "single-edge".into(),
+            graph_manifest_sha256: digest('2'),
             service_boundary_sha256: digest('1'),
             power_basis: "NET_ACTIVE_POWER_AT_CUSTOMER_POC".into(),
             unit: "W".into(),
@@ -774,6 +789,14 @@ mod tests {
         let report = evaluate_topology_capacity_graph(&g, &scenario("single-edge")).unwrap();
         assert_eq!(report.scenario.max_flow_power_w, 100);
         assert_eq!(report.scenario.min_cut_witness_arc_ids, vec!["only-arc".to_string()]);
+    }
+
+
+    #[test]
+    fn report_retains_the_exact_graph_manifest_root() {
+        let g = graph();
+        let report = evaluate_topology_capacity_graph(&g, &scenario("root-binding")).unwrap();
+        assert_eq!(report.graph_manifest_sha256, g.graph_manifest_sha256);
     }
 
 }

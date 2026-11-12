@@ -41,7 +41,8 @@
           "nodes",
           "failure_domains",
           "arcs",
-          "expected_scenarios"
+          "expected_scenarios",
+          "graph_manifest_sha256"
         ],
         "properties": {
           "graph_id": {
@@ -84,7 +85,8 @@
                 "configuration_sha256",
                 "evidence_status",
                 "failure_domain_ids",
-                "evidence_reference"
+                "evidence_reference",
+                "evidence_class"
               ],
               "properties": {
                 "node_id": {
@@ -128,6 +130,16 @@
                 "evidence_reference": {
                   "type": "string",
                   "minLength": 1
+                },
+                "evidence_class": {
+                  "enum": [
+                    "synthetic",
+                    "vendor_assertion",
+                    "modelled",
+                    "measured",
+                    "independently_verified",
+                    "accredited"
+                  ]
                 }
               }
             }
@@ -168,7 +180,8 @@
                 "configuration_sha256",
                 "evidence_status",
                 "failure_domain_ids",
-                "evidence_reference"
+                "evidence_reference",
+                "evidence_class"
               ],
               "properties": {
                 "arc_id": {
@@ -215,6 +228,16 @@
                 "evidence_reference": {
                   "type": "string",
                   "minLength": 1
+                },
+                "evidence_class": {
+                  "enum": [
+                    "synthetic",
+                    "vendor_assertion",
+                    "modelled",
+                    "measured",
+                    "independently_verified",
+                    "accredited"
+                  ]
                 }
               }
             }
@@ -295,6 +318,10 @@
                 }
               }
             }
+          },
+          "graph_manifest_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
           }
         }
       }

@@ -22,7 +22,8 @@
           "configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           "evidence_status": "current",
           "failure_domain_ids": [],
-          "evidence_reference": "synthetic://source-A"
+          "evidence_reference": "synthetic://source-A",
+          "evidence_class": "synthetic"
         },
         {
           "node_id": "source_b",
@@ -31,7 +32,8 @@
           "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
           "evidence_status": "current",
           "failure_domain_ids": [],
-          "evidence_reference": "synthetic://source-B"
+          "evidence_reference": "synthetic://source-B",
+          "evidence_class": "synthetic"
         },
         {
           "node_id": "source_c",
@@ -40,7 +42,8 @@
           "configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
           "evidence_status": "current",
           "failure_domain_ids": [],
-          "evidence_reference": "synthetic://source-C"
+          "evidence_reference": "synthetic://source-C",
+          "evidence_class": "synthetic"
         },
         {
           "node_id": "junction",
@@ -49,7 +52,8 @@
           "configuration_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
           "evidence_status": "current",
           "failure_domain_ids": [],
-          "evidence_reference": "synthetic://junction"
+          "evidence_reference": "synthetic://junction",
+          "evidence_class": "synthetic"
         },
         {
           "node_id": "feeder_out",
@@ -58,7 +62,8 @@
           "configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
           "evidence_status": "current",
           "failure_domain_ids": [],
-          "evidence_reference": "synthetic://feeder"
+          "evidence_reference": "synthetic://feeder",
+          "evidence_class": "synthetic"
         },
         {
           "node_id": "customer_poc",
@@ -69,7 +74,8 @@
           "failure_domain_ids": [
             "service-bus"
           ],
-          "evidence_reference": "synthetic://poc"
+          "evidence_reference": "synthetic://poc",
+          "evidence_class": "synthetic"
         }
       ],
       "failure_domains": [
@@ -102,7 +108,8 @@
           "failure_domain_ids": [
             "cooling-ab"
           ],
-          "evidence_reference": "synthetic://arc-A"
+          "evidence_reference": "synthetic://arc-A",
+          "evidence_class": "synthetic"
         },
         {
           "arc_id": "arc-source-b",
@@ -116,7 +123,8 @@
             "cooling-ab",
             "control-bc"
           ],
-          "evidence_reference": "synthetic://arc-B"
+          "evidence_reference": "synthetic://arc-B",
+          "evidence_class": "synthetic"
         },
         {
           "arc_id": "arc-source-c",
@@ -129,7 +137,8 @@
           "failure_domain_ids": [
             "control-bc"
           ],
-          "evidence_reference": "synthetic://arc-C"
+          "evidence_reference": "synthetic://arc-C",
+          "evidence_class": "synthetic"
         },
         {
           "arc_id": "arc-shared-feeder",
@@ -142,7 +151,8 @@
           "failure_domain_ids": [
             "common-feeder"
           ],
-          "evidence_reference": "synthetic://shared-feeder"
+          "evidence_reference": "synthetic://shared-feeder",
+          "evidence_class": "synthetic"
         },
         {
           "arc_id": "arc-service-bus",
@@ -155,7 +165,8 @@
           "failure_domain_ids": [
             "service-bus"
           ],
-          "evidence_reference": "synthetic://service-bus"
+          "evidence_reference": "synthetic://service-bus",
+          "evidence_class": "synthetic"
         }
       ],
       "expected_scenarios": [
@@ -250,7 +261,8 @@
             "arc-service-bus"
           ]
         }
-      ]
+      ],
+      "graph_manifest_sha256": "2222222222222222222222222222222222222222222222222222222222222222"
     },
     {
       "graph_id": "PF-CAPACITY-GRAPH-EVIDENCE-BLOCK-001",
@@ -271,7 +283,8 @@
           "configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           "evidence_status": "current",
           "failure_domain_ids": [],
-          "evidence_reference": "synthetic://source-A"
+          "evidence_reference": "synthetic://source-A",
+          "evidence_class": "synthetic"
         },
         {
           "node_id": "source_b",
@@ -280,7 +293,8 @@
           "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
           "evidence_status": "current",
           "failure_domain_ids": [],
-          "evidence_reference": "synthetic://source-B"
+          "evidence_reference": "synthetic://source-B",
+          "evidence_class": "synthetic"
         },
         {
           "node_id": "source_c",
@@ -289,7 +303,8 @@
           "configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
           "evidence_status": "current",
           "failure_domain_ids": [],
-          "evidence_reference": "synthetic://source-C"
+          "evidence_reference": "synthetic://source-C",
+          "evidence_class": "synthetic"
         },
         {
           "node_id": "junction",
@@ -298,7 +313,8 @@
           "configuration_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
           "evidence_status": "current",
           "failure_domain_ids": [],
-          "evidence_reference": "synthetic://junction"
+          "evidence_reference": "synthetic://junction",
+          "evidence_class": "synthetic"
         },
         {
           "node_id": "feeder_out",
@@ -307,7 +323,8 @@
           "configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
           "evidence_status": "current",
           "failure_domain_ids": [],
-          "evidence_reference": "synthetic://feeder"
+          "evidence_reference": "synthetic://feeder",
+          "evidence_class": "synthetic"
         },
         {
           "node_id": "customer_poc",
@@ -318,7 +335,8 @@
           "failure_domain_ids": [
             "service-bus"
           ],
-          "evidence_reference": "synthetic://poc"
+          "evidence_reference": "synthetic://poc",
+          "evidence_class": "synthetic"
         }
       ],
       "failure_domains": [
@@ -351,7 +369,8 @@
           "failure_domain_ids": [
             "cooling-ab"
           ],
-          "evidence_reference": "synthetic://arc-A"
+          "evidence_reference": "synthetic://arc-A",
+          "evidence_class": "synthetic"
         },
         {
           "arc_id": "arc-source-b",
@@ -365,7 +384,8 @@
             "cooling-ab",
             "control-bc"
           ],
-          "evidence_reference": "synthetic://arc-B"
+          "evidence_reference": "synthetic://arc-B",
+          "evidence_class": "synthetic"
         },
         {
           "arc_id": "arc-source-c",
@@ -378,7 +398,8 @@
           "failure_domain_ids": [
             "control-bc"
           ],
-          "evidence_reference": "synthetic://arc-C"
+          "evidence_reference": "synthetic://arc-C",
+          "evidence_class": "synthetic"
         },
         {
           "arc_id": "arc-shared-feeder",
@@ -391,7 +412,8 @@
           "failure_domain_ids": [
             "common-feeder"
           ],
-          "evidence_reference": "synthetic://shared-feeder"
+          "evidence_reference": "synthetic://shared-feeder",
+          "evidence_class": "synthetic"
         },
         {
           "arc_id": "arc-service-bus",
@@ -404,7 +426,8 @@
           "failure_domain_ids": [
             "service-bus"
           ],
-          "evidence_reference": "synthetic://service-bus"
+          "evidence_reference": "synthetic://service-bus",
+          "evidence_class": "synthetic"
         }
       ],
       "expected_scenarios": [
@@ -423,7 +446,8 @@
             "arc-source-c"
           ]
         }
-      ]
+      ],
+      "graph_manifest_sha256": "2222222222222222222222222222222222222222222222222222222222222222"
     }
   ],
   "claim_ceiling": "SYNTHETIC_CAPACITY_GRAPH_FIXTURE_ONLY_NOT_NETWORK_PHYSICS_OR_RELIABILITY_CLAIM"
