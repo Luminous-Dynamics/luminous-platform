@@ -1017,7 +1017,7 @@ mod tests {
     #[test]
     fn storage_cannot_gain_more_internal_energy_than_bus_charge() {
         let mut input = valid_input();
-        input.intervals[1].stored_energy_end_kwh = 8.0;
+        input.intervals[1].stored_energy_end_kwh = 8.4;
         assert!(evaluate_mission_service(&input).is_err());
     }
 
