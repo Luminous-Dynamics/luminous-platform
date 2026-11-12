@@ -149,3 +149,23 @@ accredited physical testing remain separate release gates.
 [Issue #424](https://github.com/Luminous-Dynamics/luminous-platform/issues/424) opens the next benchmark layer: repeated matched missions across battery capacity/power fade, calendar/cycle ageing, fuel and energy costs, replacement, maintenance, repair turnaround and requalification. The comparison denominator remains delivered critical service and completed missions—not nominal battery kWh or one-cycle efficiency.
 
 This work consumes qualified state-of-health/capacity/power trajectories from the appropriate battery model and Mycelix evidence; it does not create a new electrochemical ageing model. Unknown degradation is not zero degradation. Beginning-, mid- and end-of-life service are reported with replacements, downtime, repair labour, spares and uncertainty retained. No lifecycle advantage is claimed until a repeated, matched and independently measured mission dataset exists.
+## 13. Lifecycle cost, repairability and observed storage retention
+
+[Issue #424](https://github.com/Luminous-Dynamics/luminous-platform/issues/424) and its bounded first
+implementation [issue #427](https://github.com/Luminous-Dynamics/luminous-platform/issues/427) /
+[Lifecycle service accounting](./LIFECYCLE_SERVICE_ACCOUNTING.md) extend matched missions across
+actual costs, system downtime, repair/requalification, replacement and observed storage health.
+
+Compare cost per delivered critical kWh and per completed mission, not nominal storage kWh. Report
+critical-service shortfall, end-reserve failures, downtime union, repair/requalification hours,
+replacement identity/count, labour, cost category ledger, usable capacity and output-power retention,
+throughput, EFC, temperature, SOC/SOH and evidence status together. Overlapping component repairs are
+one system outage interval if they jointly make the system unavailable.
+
+The platform does not forecast cell ageing or remaining useful life. Capacity/power retention is
+reported only from repeated independent calibrated observations of the same physical component and
+unchanged configuration with timebase/condition references. Unknown or incomplete repair/health
+history remains unknown—not zero. The synthetic comparison in
+`schemas/lifecycle-service-accounting.synthetic.json` demonstrates arithmetic only and is not a
+physical or commercial claim.
+
