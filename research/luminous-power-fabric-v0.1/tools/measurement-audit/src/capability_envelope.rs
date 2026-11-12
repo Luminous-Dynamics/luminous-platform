@@ -257,6 +257,10 @@ pub fn evaluate_capability_envelope(
         && input.thermal.inhibit_temperature_c
             > input.thermal.derate_start_temperature_c;
 
+    let thermal_span_c =
+        input.thermal.inhibit_temperature_c - input.thermal.derate_start_temperature_c;
+    let thermal_values_valid = thermal_values_valid && thermal_span_c.is_finite();
+
     let thermal_derating_factor = if !thermal_values_valid {
         blockers.push(CapabilityBlocker::ThermalInputInvalid);
         0.0
@@ -278,6 +282,11 @@ pub fn evaluate_capability_envelope(
 
     let total_uncertainty_bound_w =
         input.measurement_uncertainty_bound_w + input.model_uncertainty_bound_w;
+    if !total_uncertainty_bound_w.is_finite() {
+        return Err(AuditError(
+            "combined uncertainty bound must remain finite".to_string(),
+        ));
+    }
 
     let eligible = blockers.is_empty();
     if !eligible {
@@ -303,6 +312,14 @@ pub fn evaluate_capability_envelope(
         * input.external_derating_factor
         - total_uncertainty_bound_w)
         .max(0.0);
+
+    if !forward_available_power_w.is_finite()
+        || !reverse_available_power_w.is_finite()
+    {
+        return Err(AuditError(
+            "derived capability must remain finite".to_string(),
+        ));
+    }
 
     Ok(CapabilityEnvelopeReport {
         forward_available_power_w,
@@ -591,6 +608,27 @@ mod tests {
         assert_eq!(report.forward_available_power_w, 0.0);
         assert_eq!(report.reverse_available_power_w, 0.0);
         assert!(!report.eligible);
+    }
+
+    #[test]
+    fn combined_uncertainty_overflow_is_rejected() {
+        let mut input = valid_input();
+        input.measurement_uncertainty_bound_w = f64::MAX;
+        input.model_uncertainty_bound_w = f64::MAX;
+        assert!(evaluate_capability_envelope(&input).is_err());
+    }
+
+    #[test]
+    fn derived_power_overflow_is_rejected() {
+        let mut input = valid_input();
+        input.forward_rated_power_w = f64::MAX;
+        input.thermal.inhibit_temperature_c = 90.0;
+        input.thermal.derate_start_temperature_c = 60.0;
+        input.thermal.observed_temperature_c = 60.0;
+        input.external_derating_factor = 1.0;
+        input.measurement_uncertainty_bound_w = 0.0;
+        input.model_uncertainty_bound_w = 0.0;
+        assert!(evaluate_capability_envelope(&input).is_err());
     }
 
     #[test]
