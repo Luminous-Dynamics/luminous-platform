@@ -39,7 +39,9 @@
           "qualified_source_average_power_w",
           "source_measurement_uncertainty_bound_w",
           "source_model_uncertainty_bound_w",
-          "source_configuration_sha256",
+          "qualified_source_configuration_sha256",
+          "observed_source_configuration_sha256",
+          "source_qualification_valid_until_epoch_s",
           "source_evidence_status",
           "source_evidence_reference"
         ],
@@ -51,7 +53,9 @@
           "qualified_source_average_power_w": { "type": "number", "minimum": 0 },
           "source_measurement_uncertainty_bound_w": { "type": "number", "minimum": 0 },
           "source_model_uncertainty_bound_w": { "type": "number", "minimum": 0 },
-          "source_configuration_sha256": { "type": "string", "pattern": "^[A-Fa-f0-9]{64}$" },
+          "qualified_source_configuration_sha256": { "type": "string", "pattern": "^[A-Fa-f0-9]{64}$" },
+          "observed_source_configuration_sha256": { "type": "string", "pattern": "^[A-Fa-f0-9]{64}$" },
+          "source_qualification_valid_until_epoch_s": { "type": "integer", "minimum": 0 },
           "source_evidence_status": {
             "enum": ["current", "missing", "expired", "invalid", "unverified"]
           },
