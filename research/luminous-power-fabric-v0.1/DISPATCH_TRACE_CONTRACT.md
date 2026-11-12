@@ -42,7 +42,7 @@ Policy identity/revision is expected to differ. Exact matched conditions are:
 - clock epoch/timebase;
 - mission horizon and decision cadence.
 
-A mismatched pair receives no metric deltas. Reports keep service, component-limit, reserve, causal-integrity and evidence-current gates separate. No weighted composite winner is produced.
+A mismatched pair receives no metric deltas. Reports keep service, component-limit, reserve, causal-integrity, evidence-current, decision-deadline and action-finality gates separate. A timeout/unknown action is not mislabeled as stale evidence; it independently blocks the overall hard gate. A missed declared decision deadline is also an explicit hard-gate failure. No weighted composite winner is produced.
 
 ## 6. Ownership and claim ceiling
 
