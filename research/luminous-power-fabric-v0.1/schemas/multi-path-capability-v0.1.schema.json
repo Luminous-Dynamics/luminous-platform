@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/multi-path-capability-v0.1.schema.json",
   "title": "Luminous Power Fabric multi-path capability input",
-  "description": "Read-only declared-dependency input contract for parallel path capacity and common-cause contingency screening. It does not authenticate topology completeness or qualify electrical equipment.",
+  "description": "Read-only declared-dependency input contract for parallel path capacity, shared throughput constraints and common-cause contingency screening. It does not authenticate topology completeness or qualify electrical equipment.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -12,6 +12,7 @@
     "paths",
     "additional_scenarios",
     "required_service_power_w",
+    "shared_capacity_constraints",
     "claim_ceiling"
   ],
   "properties": {
@@ -131,19 +132,73 @@
       "exclusiveMinimum": 0
     },
     "claim_ceiling": {
-      "const": "DECLARED_CONTINGENCY_CAPABILITY_SCREEN_ONLY_NOT_RELIABILITY_OR_PHYSICAL_QUALIFICATION"
+      "const": "DECLARED_CONTINGENCY_AND_SHARED_CAPACITY_SCREEN_ONLY_NOT_NETWORK_OR_RELIABILITY_QUALIFICATION"
     },
     "limitations": {
       "type": "array",
       "items": {
         "type": "string",
         "maxLength": 2048
-      }
+      },
+      "description": "The v0.1 shared-capacity composition accepts disjoint or identical affected-path groups only; partially overlapping groups are rejected."
     },
     "service_boundary_id": {
       "type": "string",
       "minLength": 1,
       "maxLength": 256
+    },
+    "shared_capacity_constraints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "resource_id",
+          "configuration_sha256",
+          "evidence_reference",
+          "availability",
+          "capacity_power_w",
+          "affected_path_ids"
+        ],
+        "properties": {
+          "resource_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "configuration_sha256": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{64}$"
+          },
+          "evidence_reference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          },
+          "availability": {
+            "enum": [
+              "QualifiedAvailable",
+              "EvidenceBlocked",
+              "ProtectionNotReady",
+              "Faulted",
+              "Unknown"
+            ]
+          },
+          "capacity_power_w": {
+            "type": "number",
+            "minimum": 0
+          },
+          "affected_path_ids": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        }
+      }
     }
   }
 }
