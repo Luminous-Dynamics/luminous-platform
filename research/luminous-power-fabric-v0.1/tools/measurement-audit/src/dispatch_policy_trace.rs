@@ -42,6 +42,9 @@ pub struct DispatchDecision {
     pub completion_time_ns: u64,
     pub deadline_time_ns: u64,
     pub compute_duration_ns: u64,
+    /// Number of optimizer/re-solver invocations attributed to this decision.
+    /// Rule-based/no-reoptimization checks may legitimately report zero.
+    pub optimization_invocations: u32,
     pub action_sha256: String,
     pub disposition: ActionDisposition,
     pub effect_observed_time_ns: Option<u64>,
@@ -127,6 +130,9 @@ pub struct DispatchPolicyTraceReport {
     pub storage_discharge_output_wh: f64,
     pub minimum_reserve_margin_wh: f64,
     pub missed_decision_deadlines: usize,
+    pub optimization_invocation_count: u64,
+    pub total_controller_compute_time_ns: u128,
+    pub maximum_decision_compute_time_ns: u64,
     pub fallback_count: usize,
     pub rejected_action_count: usize,
     pub unknown_action_count: usize,
@@ -209,10 +215,13 @@ fn validate_observations(t: &DispatchPolicyTrace) -> Result<(), AuditError> {
     Ok(())
 }
 
-fn validate_decisions(t: &DispatchPolicyTrace) -> Result<(usize,usize,usize,usize,usize), AuditError> {
+fn validate_decisions(t: &DispatchPolicyTrace) -> Result<(usize,usize,usize,usize,usize,u64,u128,u64), AuditError> {
     let mut decision_ids=HashSet::new();
     let mut deadline_misses=0; let mut fallbacks=0; let mut rejected=0;
     let mut unknown=0; let mut noncurrent=0; let mut prior_completion=None;
+    let mut optimization_invocations=0u64;
+    let mut total_compute_time=0u128;
+    let mut maximum_compute_time=0u64;
     for d in &t.decisions {
         if !nonblank(&d.id) || !decision_ids.insert(d.id.as_str()) || !valid_sha256(&d.action_sha256) {
             return Err(AuditError("decision identity or action digest is invalid".to_string()));
@@ -228,6 +237,11 @@ fn validate_decisions(t: &DispatchPolicyTrace) -> Result<(usize,usize,usize,usiz
         }
         prior_completion=Some(d.completion_time_ns);
         if d.completion_time_ns>d.deadline_time_ns { deadline_misses+=1; }
+        optimization_invocations=optimization_invocations.checked_add(d.optimization_invocations as u64)
+            .ok_or_else(|| AuditError("optimization invocation count overflowed".to_string()))?;
+        total_compute_time=total_compute_time.checked_add(d.compute_duration_ns as u128)
+            .ok_or_else(|| AuditError("controller compute time overflowed".to_string()))?;
+        maximum_compute_time=maximum_compute_time.max(d.compute_duration_ns);
         if d.fallback_entered { fallbacks+=1; }
         let mut used=HashSet::new();
         for u in &d.observations_used {
@@ -261,7 +275,8 @@ fn validate_decisions(t: &DispatchPolicyTrace) -> Result<(usize,usize,usize,usiz
         if d.disposition==ActionDisposition::Rejected { rejected+=1; }
         if d.disposition==ActionDisposition::Unknown { unknown+=1; }
     }
-    Ok((deadline_misses,fallbacks,rejected,unknown,noncurrent))
+    Ok((deadline_misses,fallbacks,rejected,unknown,noncurrent,
+        optimization_invocations,total_compute_time,maximum_compute_time))
 }
 
 /// Validate and summarize an already-produced policy/plant trace. No controller
@@ -269,7 +284,8 @@ fn validate_decisions(t: &DispatchPolicyTrace) -> Result<(usize,usize,usize,usiz
 pub fn evaluate_dispatch_policy_trace(t: &DispatchPolicyTrace) -> Result<DispatchPolicyTraceReport, AuditError> {
     validate_context(t)?;
     validate_observations(t)?;
-    let (misses,fallbacks,rejected,unknown,noncurrent)=validate_decisions(t)?;
+    let (misses,fallbacks,rejected,unknown,noncurrent,optimization_invocations,
+        total_compute_time,maximum_compute_time)=validate_decisions(t)?;
 
     let mut ids=HashSet::new();
     let mut expected_start=0u64;
@@ -339,6 +355,9 @@ pub fn evaluate_dispatch_policy_trace(t: &DispatchPolicyTrace) -> Result<Dispatc
         primary_source_input_wh:primary,auxiliary_energy_wh:auxiliary,
         storage_charge_input_wh:charge,storage_discharge_output_wh:discharge,
         minimum_reserve_margin_wh:min_reserve_margin,missed_decision_deadlines:misses,
+        optimization_invocation_count:optimization_invocations,
+        total_controller_compute_time_ns:total_compute_time,
+        maximum_decision_compute_time_ns:maximum_compute_time,
         fallback_count:fallbacks,rejected_action_count:rejected,unknown_action_count:unknown,
         noncurrent_observation_use_count:noncurrent,blockers,claim_ceiling:TRACE_CLAIM_CEILING,
     })
@@ -389,7 +408,7 @@ mod tests {
         event_time_ns:10,available_time_ns:20,clock_epoch_id:"epoch".into(),timebase_sha256:h('b'),
         quality:ObservationQuality::Current,evidence_status:EvidenceStatus::Current}}
     fn decision()->DispatchDecision{DispatchDecision{id:"d1".into(),trigger_time_ns:20,start_time_ns:25,
-        completion_time_ns:30,deadline_time_ns:40,compute_duration_ns:5,action_sha256:h('c'),
+        completion_time_ns:30,deadline_time_ns:40,compute_duration_ns:5,optimization_invocations:1,action_sha256:h('c'),
         disposition:ActionDisposition::Applied,effect_observed_time_ns:Some(35),
         observations_used:vec![ObservationUse{observation_id:"o1".into(),interpreted_as_current:true}],
         fallback_entered:false}}
@@ -411,7 +430,9 @@ mod tests {
         plant_evidence_status:EvidenceStatus::Current,observations:vec![obs()],decisions:vec![decision()],
         intervals:vec![interval()],independent_assessment_reference:None}}
 
-    #[test] fn accepts_matched_trace(){let r=evaluate_dispatch_policy_trace(&trace()).unwrap();assert!(r.overall_hard_gates_pass);assert_eq!(r.critical_delivered_wh,100.0);}
+    #[test] fn accepts_matched_trace(){let r=evaluate_dispatch_policy_trace(&trace()).unwrap();assert!(r.overall_hard_gates_pass);assert_eq!(r.critical_delivered_wh,100.0);assert_eq!(r.optimization_invocation_count,1);assert_eq!(r.total_controller_compute_time_ns,5);assert_eq!(r.maximum_decision_compute_time_ns,5);}
+    #[test] fn no_reoptimization_is_reported_as_zero_solver_calls(){let mut t=trace();t.decisions[0].optimization_invocations=0;let r=evaluate_dispatch_policy_trace(&t).unwrap();assert_eq!(r.optimization_invocation_count,0);assert!(r.overall_hard_gates_pass);}
+    #[test] fn repeated_reoptimization_calls_are_counted(){let mut t=trace();t.decisions[0].optimization_invocations=4;let r=evaluate_dispatch_policy_trace(&t).unwrap();assert_eq!(r.optimization_invocation_count,4);}
     #[test] fn rejects_future_information(){let mut t=trace();t.observations[0].available_time_ns=26;assert!(evaluate_dispatch_policy_trace(&t).is_err());}
     #[test] fn rejects_stale_marked_current(){let mut t=trace();t.observations[0].quality=ObservationQuality::Stale;assert!(evaluate_dispatch_policy_trace(&t).is_err());}
     #[test] fn records_stale_used_as_stale(){let mut t=trace();t.observations[0].quality=ObservationQuality::Stale;t.decisions[0].observations_used[0].interpreted_as_current=false;let r=evaluate_dispatch_policy_trace(&t).unwrap();assert_eq!(r.noncurrent_observation_use_count,1);}
