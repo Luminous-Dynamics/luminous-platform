@@ -1180,7 +1180,7 @@ mod tests {
         .unwrap();
         assert_eq!(
             report.claim_ceiling(),
-            "DECLARED_CONTINGENCY_CAPABILITY_SCREEN_ONLY_NOT_RELIABILITY_OR_PHYSICAL_QUALIFICATION"
+            "DECLARED_CONTINGENCY_AND_SHARED_CAPACITY_SCREEN_ONLY_NOT_NETWORK_OR_RELIABILITY_QUALIFICATION"
         );
     }
 
