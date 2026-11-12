@@ -17,7 +17,10 @@
       "const": "0.1"
     },
     "record_class": {
-      "const": "synthetic_fixture"
+      "enum": [
+        "synthetic_fixture",
+        "campaign_result"
+      ]
     },
     "claim_ceiling": {
       "const": "DISPATCH_EPISODE_OUTCOME_AND_PAIRED_STRUCTURE_ONLY_NOT_SUPERIORITY_OR_CONFORMITY"
@@ -194,7 +197,6 @@
             "delivered_critical_service_wh",
             "unserved_critical_service_wh",
             "maximum_unserved_critical_service_wh",
-            "energy_reconciliation_tolerance_wh",
             "terminal_reserve_margin_wh",
             "fuel_input_energy_wh",
             "grid_import_energy_wh",
@@ -225,10 +227,6 @@
               "minimum": 0
             },
             "maximum_unserved_critical_service_wh": {
-              "type": "number",
-              "minimum": 0
-            },
-            "energy_reconciliation_tolerance_wh": {
               "type": "number",
               "minimum": 0
             },
@@ -445,6 +443,53 @@
           }
         }
       }
+    },
+    "syntheticCampaign": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/campaign"
+        },
+        {
+          "properties": {
+            "episodes": {
+              "items": {
+                "properties": {
+                  "evidence_class": {
+                    "const": "synthetic"
+                  },
+                  "test_environment": {
+                    "const": "synthetic"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "record_class": {
+            "const": "synthetic_fixture"
+          }
+        },
+        "required": [
+          "record_class"
+        ]
+      },
+      "then": {
+        "properties": {
+          "reference": {
+            "$ref": "#/$defs/syntheticCampaign"
+          },
+          "candidate": {
+            "$ref": "#/$defs/syntheticCampaign"
+          }
+        }
+      }
+    }
+  ]
 }

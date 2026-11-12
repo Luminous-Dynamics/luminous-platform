@@ -52,7 +52,9 @@ Evidence class and test environment are not interchangeable. Synthetic evidence 
 ### Service and energy reconciliation
 Record required critical service energy, delivered critical service, unserved critical energy and the maximum allowed unserved amount. Require:
 
-`required = delivered + unserved ± declared tolerance`
+`required = delivered + unserved ± max(10⁻⁶ Wh, 10⁻⁹ × required)`
+
+This is a fixed numerical accounting tolerance, not a user-selected measurement uncertainty. Metrological uncertainty remains separately bound to the raw data and calibration evidence in the benchmark passport.
 
 If the critical-service gate is PASS, unserved energy cannot exceed its declared allowance.
 

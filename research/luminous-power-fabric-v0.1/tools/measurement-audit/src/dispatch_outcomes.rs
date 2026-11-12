@@ -4,7 +4,12 @@ use std::collections::HashSet;
 const CLAIM_CEILING: &str =
     "DISPATCH_EPISODE_OUTCOME_AND_PAIRED_STRUCTURE_ONLY_NOT_SUPERIORITY_OR_CONFORMITY";
 const MAX_CAMPAIGN_EPISODES: usize = 100_000;
-const ENERGY_TOLERANCE_FLOOR_WH: f64 = 1.0e-9;
+const ENERGY_ABSOLUTE_TOLERANCE_WH: f64 = 1.0e-6;
+const ENERGY_RELATIVE_TOLERANCE: f64 = 1.0e-9;
+
+fn energy_reconciliation_tolerance_wh(required_wh: f64) -> f64 {
+    ENERGY_ABSOLUTE_TOLERANCE_WH.max(required_wh.abs() * ENERGY_RELATIVE_TOLERANCE)
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DispatchEvidenceClass {
@@ -93,7 +98,6 @@ pub struct DispatchEpisodeMetrics {
     pub delivered_critical_service_wh: f64,
     pub unserved_critical_service_wh: f64,
     pub maximum_unserved_critical_service_wh: f64,
-    pub energy_reconciliation_tolerance_wh: f64,
     /// Positive means reserve remains above the terminal obligation.
     /// Negative means the terminal reserve obligation was breached.
     pub terminal_reserve_margin_wh: f64,
@@ -258,8 +262,6 @@ fn validate_metrics(metrics: &DispatchEpisodeMetrics) -> Result<(), AuditError> 
     let delivered = metrics.delivered_critical_service_wh;
     let unserved = metrics.unserved_critical_service_wh;
     let max_unserved = metrics.maximum_unserved_critical_service_wh;
-    let tolerance = metrics.energy_reconciliation_tolerance_wh;
-
     if !finite_nonnegative(required)
         || !finite_nonnegative(delivered)
         || !finite_nonnegative(unserved)
@@ -272,14 +274,15 @@ fn validate_metrics(metrics: &DispatchEpisodeMetrics) -> Result<(), AuditError> 
         ));
     }
     let reconciled = delivered + unserved;
-    if !reconciled.is_finite() || (reconciled - required).abs() > tolerance.max(ENERGY_TOLERANCE_FLOOR_WH) {
+    let tolerance = energy_reconciliation_tolerance_wh(required);
+    if !reconciled.is_finite() || (reconciled - required).abs() > tolerance {
         return Err(AuditError(
             "required critical energy must reconcile to delivered plus unserved energy within the declared tolerance"
                 .to_string(),
         ));
     }
-    if unserved > required + tolerance.max(ENERGY_TOLERANCE_FLOOR_WH)
-        || max_unserved > required + tolerance.max(ENERGY_TOLERANCE_FLOOR_WH)
+    if unserved > required + tolerance
+        || max_unserved > required + tolerance
     {
         return Err(AuditError(
             "unserved critical energy or its allowance cannot exceed required service energy"
@@ -414,7 +417,7 @@ pub fn validate_dispatch_episode_outcome(
     if outcome.hard_gates.critical_service == DispatchGateState::Pass
         && outcome.metrics.unserved_critical_service_wh
             > outcome.metrics.maximum_unserved_critical_service_wh
-                + outcome.metrics.energy_reconciliation_tolerance_wh.max(ENERGY_TOLERANCE_FLOOR_WH)
+                + energy_reconciliation_tolerance_wh(outcome.metrics.required_critical_service_wh)
     {
         return Err(AuditError(
             "critical-service gate cannot pass when unserved energy exceeds its allowance"
@@ -422,7 +425,7 @@ pub fn validate_dispatch_episode_outcome(
         ));
     }
     if outcome.hard_gates.terminal_reserve == DispatchGateState::Pass
-        && outcome.metrics.terminal_reserve_margin_wh < -ENERGY_TOLERANCE_FLOOR_WH
+        && outcome.metrics.terminal_reserve_margin_wh < -ENERGY_ABSOLUTE_TOLERANCE_WH
     {
         return Err(AuditError(
             "terminal-reserve gate cannot pass with a negative reserve margin".to_string(),
@@ -637,7 +640,6 @@ mod tests {
             delivered_critical_service_wh: 1_000.0,
             unserved_critical_service_wh: 0.0,
             maximum_unserved_critical_service_wh: 0.0,
-            energy_reconciliation_tolerance_wh: 1.0e-6,
             terminal_reserve_margin_wh: 50.0,
             fuel_input_energy_wh: 1_200.0,
             grid_import_energy_wh: 0.0,
