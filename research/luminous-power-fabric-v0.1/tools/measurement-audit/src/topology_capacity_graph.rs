@@ -437,6 +437,59 @@ pub fn evaluate_topology_capacity_graph(
     })
 }
 
+
+/// Evaluate baseline, each unique component/domain single failure, and caller-declared
+/// compound scenarios. Reports are returned in stable scenario-ID order.
+pub fn evaluate_topology_capacity_n1_suite(
+    graph: &TopologyCapacityGraph,
+    additional_scenarios: &[CapacityFailureScenario],
+) -> Result<Vec<CapacityGraphReport>, AuditError> {
+    validate_topology_capacity_graph(graph)?;
+    let mut scenarios = BTreeMap::<String, CapacityFailureScenario>::new();
+    scenarios.insert("baseline".to_string(), CapacityFailureScenario {
+        scenario_id: "baseline".to_string(),
+        ..CapacityFailureScenario::default()
+    });
+
+    let mut component_ids = BTreeSet::new();
+    for node in &graph.nodes { component_ids.insert(node.component_id.clone()); }
+    for arc in &graph.arcs { component_ids.insert(arc.component_id.clone()); }
+    for id in component_ids {
+        let scenario_id = format!("component:{id}");
+        scenarios.insert(scenario_id.clone(), CapacityFailureScenario {
+            scenario_id,
+            failed_component_ids: vec![id],
+            ..CapacityFailureScenario::default()
+        });
+    }
+    for domain in &graph.failure_domains {
+        let scenario_id = format!("domain:{}", domain.domain_id);
+        scenarios.insert(scenario_id.clone(), CapacityFailureScenario {
+            scenario_id,
+            failed_domain_ids: vec![domain.domain_id.clone()],
+            ..CapacityFailureScenario::default()
+        });
+    }
+    for scenario in additional_scenarios {
+        if scenario.failed_node_ids.is_empty() && scenario.failed_component_ids.is_empty()
+            && scenario.failed_domain_ids.is_empty() && scenario.failed_arc_ids.is_empty() {
+            return Err(AuditError(format!(
+                "additional scenario {:?} must declare at least one failure", scenario.scenario_id
+            )));
+        }
+        if scenarios.contains_key(&scenario.scenario_id) {
+            return Err(AuditError(format!("duplicate or reserved scenario ID {:?}", scenario.scenario_id)));
+        }
+        scenarios.insert(scenario.scenario_id.clone(), scenario.clone());
+    }
+    if scenarios.len() > MAX_SCENARIO_FAILURES {
+        return Err(AuditError("scenario suite exceeds the supported scenario count".to_string()));
+    }
+    scenarios.values()
+        .map(|scenario| evaluate_topology_capacity_graph(graph, scenario))
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -474,7 +527,7 @@ mod tests {
                 node("source_b", CapacityNodeType::Source, "source-B", &[]),
                 node("source_c", CapacityNodeType::Source, "source-C", &[]),
                 node("junction", CapacityNodeType::Junction, "junction-1", &[]),
-                node("feeder_out", CapacityNodeType::Bus, "feeder-1", &["common-feeder"]),
+                node("feeder_out", CapacityNodeType::Bus, "feeder-1", &[]),
                 node("customer_poc", CapacityNodeType::ServiceSink, "poc-1", &["service-bus"]),
             ],
             failure_domains: vec![
@@ -495,6 +548,37 @@ mod tests {
 
     fn scenario(id: &str) -> CapacityFailureScenario {
         CapacityFailureScenario { scenario_id: id.into(), ..CapacityFailureScenario::default() }
+    }
+
+    fn exhaustive_min_cut(graph: &TopologyCapacityGraph, scenario: &CapacityFailureScenario) -> u64 {
+        let source_ids: BTreeSet<String> = graph.source_node_ids.iter().cloned().collect();
+        let mut optional: Vec<String> = graph.nodes.iter()
+            .filter(|node| node.node_id != graph.sink_node_id && !source_ids.contains(&node.node_id))
+            .map(|node| node.node_id.clone())
+            .collect();
+        optional.sort();
+        assert!(optional.len() <= 16);
+        let combinations = 1_usize << optional.len();
+        let mut best = u64::MAX;
+        for mask in 0..combinations {
+            let mut source_side = source_ids.clone();
+            for (index, node_id) in optional.iter().enumerate() {
+                if mask & (1_usize << index) != 0 { source_side.insert(node_id.clone()); }
+            }
+            assert!(!source_side.contains(&graph.sink_node_id));
+            let mut cut = 0_u64;
+            for arc in &graph.arcs {
+                let from = graph.nodes.iter().find(|node| node.node_id == arc.from_node_id).unwrap();
+                let to = graph.nodes.iter().find(|node| node.node_id == arc.to_node_id).unwrap();
+                if source_side.contains(&arc.from_node_id)
+                    && !source_side.contains(&arc.to_node_id)
+                    && arc_is_available(arc, from, to, scenario) {
+                    cut = cut.checked_add(arc.capacity_power_w_at_service_poc).unwrap();
+                }
+            }
+            best = best.min(cut);
+        }
+        best
     }
 
     #[test]
@@ -617,7 +701,7 @@ mod tests {
     #[test]
     fn min_cut_capacity_matches_flow_with_parallel_and_directed_edges() {
         let mut g = graph();
-        g.arcs.push(arc("arc-detour", "source_a", "customer_poc", 9, "detour", &[]));
+        g.arcs.push(arc("arc-detour", "source_a", "junction", 9, "detour", &[]));
         let r = evaluate_topology_capacity_graph(&g, &scenario("detour")).unwrap();
         let cut: u64 = r.scenario.min_cut_witness_arc_ids.iter()
             .map(|id| g.arcs.iter().find(|a| &a.arc_id == id).unwrap().capacity_power_w_at_service_poc)
@@ -625,4 +709,43 @@ mod tests {
         assert_eq!(cut, r.scenario.max_flow_power_w);
         assert_eq!(r.scenario.max_flow_power_w, 160);
     }
+
+    #[test]
+    fn exhaustive_cut_enumerator_matches_flow_for_all_declared_failure_examples() {
+        let g = graph();
+        let mut cases = vec![scenario("baseline")];
+        let mut cooling = scenario("cooling"); cooling.failed_domain_ids.push("cooling-ab".into()); cases.push(cooling);
+        let mut control = scenario("control"); control.failed_domain_ids.push("control-bc".into()); cases.push(control);
+        let mut source = scenario("source-a"); source.failed_component_ids.push("source-A".into()); cases.push(source);
+        let mut feeder = scenario("feeder"); feeder.failed_domain_ids.push("common-feeder".into()); cases.push(feeder);
+        let mut bus = scenario("bus"); bus.failed_domain_ids.push("service-bus".into()); cases.push(bus);
+        for case in cases {
+            let report = evaluate_topology_capacity_graph(&g, &case).unwrap();
+            assert_eq!(report.scenario.max_flow_power_w, exhaustive_min_cut(&g, &case));
+        }
+    }
+
+    #[test]
+    fn n1_suite_generates_components_domains_and_keeps_compound_cases() {
+        let compound = CapacityFailureScenario {
+            scenario_id: "double-fault-a-b".into(),
+            failed_component_ids: vec!["source-A".into(), "source-B".into()],
+            ..CapacityFailureScenario::default()
+        };
+        let reports = evaluate_topology_capacity_n1_suite(&graph(), &[compound]).unwrap();
+        let ids: BTreeSet<String> = reports.iter().map(|r| r.scenario.scenario_id.clone()).collect();
+        assert!(ids.contains("baseline"));
+        assert!(ids.contains("component:source-A"));
+        assert!(ids.contains("component:converter-A"));
+        assert!(ids.contains("domain:cooling-ab"));
+        assert!(ids.contains("domain:control-bc"));
+        assert!(ids.contains("double-fault-a-b"));
+    }
+
+    #[test]
+    fn n1_suite_rejects_empty_and_duplicate_scenarios() {
+        assert!(evaluate_topology_capacity_n1_suite(&graph(), &[scenario("empty")]).is_err());
+        assert!(evaluate_topology_capacity_n1_suite(&graph(), &[scenario("baseline")]).is_err());
+    }
+
 }
