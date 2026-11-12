@@ -83,7 +83,6 @@ pub struct MissionSegmentEnergyResult {
     pub source_measurement_uncertainty_bound_w: f64,
     pub source_model_uncertainty_bound_w: f64,
     pub conservative_source_average_power_w: f64,
-    pub source_evidence_status: EvidenceStatus,
     pub source_energy_available_wh: f64,
     pub source_energy_to_load_wh: f64,
     pub storage_energy_to_load_wh: f64,
