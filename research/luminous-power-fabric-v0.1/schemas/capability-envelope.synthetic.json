@@ -1,0 +1,36 @@
+{
+  "schema_version": "0.1",
+  "record_class": "synthetic_fixture",
+  "qualified_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "observed_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "qualification_valid_until_epoch_s": 2000,
+  "evidence_status": "Current",
+  "calibration_status": "Current",
+  "sensor_status": "Current",
+  "protection_status": "Ready",
+  "telemetry_observed_at_epoch_s": 990,
+  "telemetry_max_age_s": 30,
+  "evaluation_time_epoch_s": 1000,
+  "forward_rated_power_w": 1000,
+  "reverse_rated_power_w": 800,
+  "external_derating_factor": 1,
+  "measurement_uncertainty_bound_w": 10,
+  "model_uncertainty_bound_w": 20,
+  "uncertainty_reference": "Synthetic conservative absolute bounds; not measured uncertainty.",
+  "external_derating_reference": "Synthetic full-availability factor; not an installation assessment.",
+  "thermal": {
+    "observed_temperature_c": 75,
+    "derate_start_temperature_c": 60,
+    "inhibit_temperature_c": 90,
+    "measurement_boundary": "Illustrative module case sensor",
+    "evidence_reference": "Synthetic thermal example; not a component limit."
+  },
+  "claim_ceiling": "EVIDENCE_GATED_CAPABILITY_SCREEN_ONLY_NOT_CONTROL_OR_PHYSICAL_QUALIFICATION",
+  "expected_output": {
+    "forward_available_power_w": 470,
+    "reverse_available_power_w": 370,
+    "thermal_derating_factor": 0.5,
+    "eligible": true,
+    "note": "Expected arithmetic for the illustrative input only; not hardware capacity."
+  }
+}
