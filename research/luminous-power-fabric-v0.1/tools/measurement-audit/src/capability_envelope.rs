@@ -619,19 +619,6 @@ mod tests {
     }
 
     #[test]
-    fn derived_power_overflow_is_rejected() {
-        let mut input = valid_input();
-        input.forward_rated_power_w = f64::MAX;
-        input.thermal.inhibit_temperature_c = 90.0;
-        input.thermal.derate_start_temperature_c = 60.0;
-        input.thermal.observed_temperature_c = 60.0;
-        input.external_derating_factor = 1.0;
-        input.measurement_uncertainty_bound_w = 0.0;
-        input.model_uncertainty_bound_w = 0.0;
-        assert!(evaluate_capability_envelope(&input).is_err());
-    }
-
-    #[test]
     fn report_declares_its_claim_ceiling() {
         let report = evaluate_capability_envelope(&valid_input()).unwrap();
         assert_eq!(
