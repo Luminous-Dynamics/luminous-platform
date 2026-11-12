@@ -214,7 +214,7 @@ fn add_finite(total: &mut f64, value: f64, field: &str) -> Result<(), MissionSer
 
 fn max_optional(current: &mut Option<f64>, value: Option<f64>) {
     if let Some(value) = value {
-        *current = Some(current.map_or(value, |previous| previous.max(value)));
+        *current = Some((*current).map_or(value, |previous| previous.max(value)));
     }
 }
 
