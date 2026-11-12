@@ -201,7 +201,7 @@ The module does not switch or control hardware and does not certify the complete
 
 The follow-on prototype is `tools/measurement-audit/src/topology_capacity_graph.rs` and is tracked by
 [issue #451](https://github.com/Luminous-Dynamics/luminous-platform/issues/451) / draft
-[PR #452](https://github.com/Luminous-Dynamics/luminous-platform/pull/454).
+[PR #452](https://github.com/Luminous-Dynamics/luminous-platform/pull/452).
 
 The evaluator uses integer-watt capacities at one exact customer POC, canonical node/arc ordering
 and deterministic Dinic max-flow. It handles multiple declared source nodes and one service sink.
@@ -215,7 +215,8 @@ source-side nodes, and exact service-boundary identity. It validates identifiers
 source/sink references, digest shape, unit and power-basis identity, duplicate IDs, graph-size
 limits, and integer arithmetic overflow.
 
-The 16 authored Rust tests cover overlapping cooling/control dependencies, source/feeder/bus
-failures, unverified arc exclusion, invalid references, determinism under input permutation, and
-a max-flow/min-cut reconciliation case. These tests are authored, not executed. No Rust
-compiler/test/fmt/Clippy or independent oracle execution occurred in this authoring environment.
+Twenty-one Rust tests are authored for the graph evaluator, covering overlapping cooling/control
+dependencies, source/feeder/bus failures, unverified arc exclusion, invalid references, deterministic
+input permutation, N-1 generation, a single-edge corner case and exhaustive small-graph cut
+reconciliation. They are authored, not executed. No Rust compiler/test/fmt/Clippy or independent
+external solver execution occurred in this authoring environment.

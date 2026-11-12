@@ -375,8 +375,9 @@ qualification evidence.
 [Issue #451](https://github.com/Luminous-Dynamics/luminous-platform/issues/451) and
 [OVERLAPPING_CAPACITY_GRAPH.md](./OVERLAPPING_CAPACITY_GRAPH.md) add synthetic max-flow/min-cut
 fixtures for partially overlapping cooling, control-power, feeder and service-bus dependencies.
-This is a future read-only capacity-network research direction, not electrical network physics or
-a physical capability claim.
+The registered `topology_capacity_graph` module now provides a read-only max-flow/min-cut prototype
+and N-1 scenario generator over owner-qualified service-side capacities. It is not electrical network
+physics or a physical capability claim.
 
 ## Current limitations
 

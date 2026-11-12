@@ -62,7 +62,7 @@ A graph flow is a deterministic capacity upper-bound under declared inputs. It i
 - `schemas/overlapping-capacity-graph-corpus.synthetic.json`: two graph fixtures and seven expected scenarios.
 - Existing `multi_port_capability.rs` is not modified.
 
-Authoring-time arithmetic recomputation on this small topology must verify the expected source sums and serial bottlenecks. A future Rust implementation must additionally compare against an independent max-flow/min-cut oracle and exhaustively enumerate small graphs. No SOTA, network, product, safety or reliability claim follows from this fixture.
+Authoring-time arithmetic recomputation verifies the expected source sums and serial bottlenecks. The registered Rust implementation computes max-flow/min-cut and includes a small-graph exhaustive cut-enumeration test oracle. Those Rust tests remain authored, not executed, because no Rust compiler/Cargo is available in this environment. No SOTA, network, product, safety or reliability claim follows from this fixture.
 
 
 ## 6. Executable evaluator boundary (draft PR #452)
@@ -75,6 +75,6 @@ and treats non-current node/arc evidence as unavailable. The report includes the
 
 `evaluate_topology_capacity_n1_suite` generates a baseline plus a single-failure scenario for every
 unique node/arc component ID and declared failure domain, then appends caller-supplied compound
-scenarios. It does not infer probabilities. Twenty Rust tests are authored, including an exhaustive
+scenarios. It does not infer probabilities. Twenty-one Rust tests are authored, including an exhaustive
 cut enumeration over the tiny synthetic topology. They have not been compiled or executed in this
 authoring environment.

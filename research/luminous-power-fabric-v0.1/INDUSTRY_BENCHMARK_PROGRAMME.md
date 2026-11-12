@@ -212,7 +212,7 @@ against an independent oracle.
 
 ## 19. Executable topology-aware capacity graph
 
-Draft [PR #452](https://github.com/Luminous-Dynamics/luminous-platform/pull/454) now adds a
+Draft [PR #452](https://github.com/Luminous-Dynamics/luminous-platform/pull/452) now adds a
 registered, read-only Rust Dinic max-flow/min-cut evaluator for owner-qualified integer-watt edge
 capacities normalized at a single customer POC. It handles partially overlapping common domains by
 representing each shared resource as one graph edge/domain. The result carries an active min-cut
