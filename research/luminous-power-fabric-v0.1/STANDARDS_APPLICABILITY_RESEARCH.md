@@ -69,22 +69,28 @@ Source: https://webstore.iec.ch/en/publication/64996
 
 ## 3B. Grid-forming interoperability is a separate performance qualification
 
-IEEE 2800-2022 is an active transmission/sub-transmission interconnection and performance standard for inverter-based resources. It addresses ride-through, active/reactive power control, dynamic support, power quality and protection. It is not, by itself, a complete grid-forming (GFM) performance specification and does not prove autonomous island formation, GFM/GFL transitions or black-start behavior.
+**IEEE 2800-2022** is an active transmission/sub-transmission interconnection and performance standard for inverter-based resources. It addresses ride-through, active/reactive power control, dynamic support, power quality and protection.
 
-A recent 2026 review of GFM testing emphasizes a multi-layer test path: RMS/EMT simulation, real-time digital simulation, controller-HIL, power-HIL, laboratory tests and field demonstrations. It highlights model fidelity, current/energy limits, multi-vendor interaction and harmonized acceptance criteria as open challenges.
+**IEEE 2800.2-2026** is now a published, active IEEE recommended practice (published 2026-06-30). It provides plant-level conformity-assessment practices for demonstrating conformity with IEEE 2800, including equipment, conditions, tests, modelling methods and verification procedures. Its scope is transmission/sub-transmission-connected IBR plants; it is not a product certificate for a portable field power unit.
+
+Neither IEEE 2800-2022 nor 2800.2-2026, by itself, proves every GFM-specific behavior. A 2026 review notes that IEEE 2800 conformity does not necessarily demonstrate phase-angle-jump response, GFM-specific inertia behavior, autonomous island formation, GFM/GFL mode switching or black start. Those require supplementary GFM-specific or project-specific criteria.
+
+A sound GFM test programme composes RMS/EMT simulation, real-time digital simulation, controller-HIL, power-HIL, laboratory tests and field demonstrations. It must address model fidelity, current/energy limits, multi-vendor interaction and harmonized acceptance criteria.
 
 Power Fabric's grid-interactive product roadmap should therefore maintain separate evidence claims for:
-- grid-following interconnection performance;
-- grid-forming voltage-source behavior;
+- grid-following interconnection performance under applicable connection requirements;
+- plant-level conformity evidence using IEEE 2800 / 2800.2 where that transmission-level scope actually applies;
+- grid-forming voltage-source behavior and weak-grid operation;
 - islanding and resynchronization;
 - black-start and staged restoration;
 - fault ride-through and protection coordination;
 - multi-vendor interoperability and communication loss.
 
-Do not use an IEEE 2800 reference as a blanket statement that a portable unit is grid-forming or black-start capable.
+Do not use an IEEE 2800 / 2800.2 reference as a blanket statement that a portable unit is grid-forming or black-start capable.
 
 Sources:
 - IEEE 2800-2022 official scope: https://standards.ieee.org/ieee/7003/10453/
+- IEEE 2800.2-2026 official publication and scope: https://standards.ieee.org/ieee/2800.2/10616/
 - 2026 GFM testing review: https://www.mdpi.com/1996-1073/19/20/4966
 
 ## 4. Competitive protection benchmark and its implications
