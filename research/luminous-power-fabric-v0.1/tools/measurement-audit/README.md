@@ -168,6 +168,29 @@ exactly once; the event-unserved output is diagnostic only. See
 [POWER_DURATION_EVENT_ENVELOPE.md](../../POWER_DURATION_EVENT_ENVELOPE.md), the
 `schemas/power-event-envelope-v0.1.schema.json` and its synthetic fixture.
 
+## Replayable benchmark evidence comparison
+
+The crate exposes `benchmark_comparison::compare_matched_benchmark_runs`, a dependency-free,
+read-only eligibility gate for two typed benchmark run records. It checks identical comparison
+context (test protocol, primary/auxiliary POC, useful-service/load/event/environment/source/fuel
+conditions, initial storage/reserve, reporting window, sample policy, data processing and timebase),
+matching metric units/method/measurand scope, current calibration/timebase status and expiry, and
+raw-data digest presence for physical measurement runs.
+
+Each metric requires instrument references; the instrument calibration scope must cover that
+measurand, and the calibration method must match across the pair. Site-operational assessments
+require at least three declared representative sample events and fault/maintenance history
+digests; the sample-selection and time-series preprocessing policies are bound by digest. The
+result retains both run evidence-bundle and raw/history digests, matched metric deltas, and a
+conservative sum of absolute uncertainty bounds.
+
+Three gates are separate: structural matching, physical measurement eligibility and independent
+claim-evidence eligibility. Synthetic/modelled/vendor runs never become physical evidence merely
+because their scenario keys match. This is not a performance score, authenticity verifier, schema
+parser, certificate validator, uncertainty budget or SOTA/significance test. The 0.1 JSON contract
+and fixtures are under `schemas/benchmark-evidence-*`; see
+[BENCHMARK_EVIDENCE_PASSPORT.md](../../BENCHMARK_EVIDENCE_PASSPORT.md).
+
 ## Ideal DAB SPS screen
 
 The library also exposes `dab_sps::screen_dab_sps` and
@@ -306,8 +329,11 @@ site measurement, data-centre guarantee or OCP compliance test. See the syntheti
 
 - The CLI direction is supplied as an argument; it is not yet bound to or cross-checked against the
   JSON run manifest.
-- SHA-256 digest verification, JSON Schema validation, calibration verification and instrument
-  provenance are not implemented in this first slice.
+- The CSV auditor does not verify file digests or certificates. The separate benchmark comparator
+  checks declared SHA-256 string shape and evidence status only; it does not hash/authenticate the
+  underlying files or validate calibration certificates.
+- The JSON Schema is a separate external data contract; the typed Rust comparator does not parse or
+  serialize JSON.
 - The tool does not determine whether the capture is truly steady-state or whether sampling
   bandwidth/resolution was sufficient.
 - The CSV energy auditor does not estimate measurement uncertainty; the mission-energy evaluator
