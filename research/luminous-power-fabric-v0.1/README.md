@@ -287,6 +287,22 @@ converter safety, breaker/isolator claims, construction-site assemblies, site in
 battery/ESS testing, environmental qualification and South African NRCS product-category review.
 A standards reference is not a compliance or certification claim.
 
+
+## Common-cause-aware multi-port capability
+
+[Issue #417](https://github.com/Luminous-Dynamics/luminous-platform/issues/417) now has a first deterministic
+Rust implementation in `tools/measurement-audit/src/multi_port_capability.rs`. It composes already
+qualified parallel route bottlenecks, automatically evaluates every declared component and shared
+failure-domain loss, and supports explicit compound contingencies. It withdraws capacity when paths
+share a failed source, bus, controller, cooling loop or other declared dependency. The model and test
+boundary are in [MULTI_PORT_CAPABILITY_DESIGN.md](./MULTI_PORT_CAPABILITY_DESIGN.md), with a JSON Schema
+and synthetic shared-control example under `schemas/multi-path-capability-*`.
+
+This remains a declared-contingency arithmetic screen. It does not discover missing common causes,
+solve electrical networks, calculate fault current or protection selectivity, estimate failure
+probabilities, or authorize switching. The next system model needs verified physical dependencies,
+recovery and requalification evidence.
+
 ## Current limitations
 
 This package contains analytical screening models and offline data-audit tools; it does **not**
