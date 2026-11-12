@@ -25,12 +25,5 @@
     "measurement_boundary": "Illustrative module case sensor",
     "evidence_reference": "Synthetic thermal example; not a component limit."
   },
-  "claim_ceiling": "EVIDENCE_GATED_CAPABILITY_SCREEN_ONLY_NOT_CONTROL_OR_PHYSICAL_QUALIFICATION",
-  "expected_output": {
-    "forward_available_power_w": 470,
-    "reverse_available_power_w": 370,
-    "thermal_derating_factor": 0.5,
-    "eligible": true,
-    "note": "Expected arithmetic for the illustrative input only; not hardware capacity."
-  }
+  "claim_ceiling": "EVIDENCE_GATED_CAPABILITY_SCREEN_ONLY_NOT_CONTROL_OR_PHYSICAL_QUALIFICATION"
 }
