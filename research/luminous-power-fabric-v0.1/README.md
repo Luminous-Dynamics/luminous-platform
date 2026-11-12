@@ -398,6 +398,14 @@ artifact, not an executed HIL test or standards-conformity result. It records po
 recovery controls and distinguishes controller-HIL, power-HIL, physical laboratory, commissioning
 and periodic/site-operation boundaries.
 
+## Controller test-environment passport
+
+[Issue #445](https://github.com/Luminous-Dynamics/luminous-platform/issues/445) and the staged
+[draft PR #447](https://github.com/Luminous-Dynamics/luminous-platform/pull/447) add a synthetic
+passport contract for component-by-component physical/simulated/emulated boundaries, simulator
+identity and real-time deadlines, communications, timebase, model validity and controller I/O.
+It is a planned fixture only; no HIL or physical test is represented as executed.
+
 ## Current limitations
 
 This package contains analytical screening models and offline data-audit tools; it does **not**

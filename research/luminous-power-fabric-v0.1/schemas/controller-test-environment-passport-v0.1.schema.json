@@ -1,0 +1,604 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/controller-test-environment-passport-v0.1.schema.json",
+  "title": "Power Fabric controller test-environment passport",
+  "description": "Evidence-bound test-environment identity and physical/model boundary. The checked-in example is synthetic and planned; it is not an executed test.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "passport_id",
+    "record_class",
+    "run_state",
+    "evidence_class",
+    "test_stage",
+    "planned_execution_mode",
+    "test_case_ids",
+    "components_are_planned_not_observed",
+    "component_boundary",
+    "simulator",
+    "communications",
+    "timebase",
+    "real_time_execution",
+    "model_validity",
+    "interfaces",
+    "physical_power_interface_present",
+    "site_context",
+    "claim_ceiling"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "passport_id": {
+      "type": "string",
+      "pattern": "^PF-CTRL-ENV-[A-Za-z0-9._-]+$"
+    },
+    "record_class": {
+      "const": "synthetic_fixture"
+    },
+    "run_state": {
+      "const": "planned_fixture"
+    },
+    "evidence_class": {
+      "const": "synthetic"
+    },
+    "test_stage": {
+      "enum": [
+        "hil",
+        "commissioning",
+        "periodic"
+      ]
+    },
+    "planned_execution_mode": {
+      "enum": [
+        "controller_hil",
+        "power_hil",
+        "physical_laboratory",
+        "site_commissioning",
+        "periodic_site_operation"
+      ]
+    },
+    "test_case_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^(MEMS|MMCS|SYS)-[0-9]{2}$"
+      }
+    },
+    "components_are_planned_not_observed": {
+      "const": true
+    },
+    "component_boundary": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "component_id",
+          "role",
+          "realization",
+          "configuration_sha256",
+          "evidence_reference",
+          "notes"
+        ],
+        "properties": {
+          "component_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "role": {
+            "enum": [
+              "microgrid_controller",
+              "grid",
+              "distribution_network",
+              "generator",
+              "photovoltaic",
+              "battery_cells",
+              "power_conversion_system",
+              "load",
+              "protection_relay",
+              "meter",
+              "communication_fabric",
+              "power_interface",
+              "sensor",
+              "actuator"
+            ]
+          },
+          "realization": {
+            "enum": [
+              "physical",
+              "simulated",
+              "emulated",
+              "not_in_test"
+            ]
+          },
+          "configuration_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "evidence_reference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          },
+          "notes": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        }
+      }
+    },
+    "simulator": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "simulator_id",
+        "platform_sha256",
+        "model_bundle_sha256",
+        "solver_id",
+        "fixed_step_ns",
+        "real_time_deadline_ns",
+        "declared_real_time_factor"
+      ],
+      "properties": {
+        "simulator_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "platform_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "model_bundle_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "solver_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fixed_step_ns": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "real_time_deadline_ns": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "declared_real_time_factor": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        }
+      }
+    },
+    "communications": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocols",
+        "transport_boundary",
+        "latency_p50_us",
+        "latency_p95_us",
+        "jitter_p95_us",
+        "packet_loss_fraction",
+        "reordered_message_count"
+      ],
+      "properties": {
+        "protocols": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "transport_boundary": {
+          "enum": [
+            "physical_link",
+            "emulated_link",
+            "simulated_network",
+            "mixed",
+            "not_applicable"
+          ]
+        },
+        "latency_p50_us": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "latency_p95_us": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "jitter_p95_us": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "packet_loss_fraction": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "reordered_message_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "timebase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "clock_id",
+        "synchronization_method",
+        "maximum_observed_offset_ns",
+        "clock_evidence_reference"
+      ],
+      "properties": {
+        "clock_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "synchronization_method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "maximum_observed_offset_ns": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "clock_evidence_reference": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 2048
+        }
+      }
+    },
+    "real_time_execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deadline_miss_count",
+        "solver_overrun_count",
+        "dropped_sample_count",
+        "out_of_order_sample_count",
+        "execution_duration_s"
+      ],
+      "properties": {
+        "deadline_miss_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "solver_overrun_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "dropped_sample_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "out_of_order_sample_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "execution_duration_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        }
+      }
+    },
+    "model_validity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "validation_status",
+        "validation_profile_sha256",
+        "intended_domain",
+        "independent_reference_count",
+        "residual_summary_reference",
+        "out_of_domain_policy"
+      ],
+      "properties": {
+        "validation_status": {
+          "enum": [
+            "not_started",
+            "unvalidated",
+            "validated_in_declared_domain",
+            "expired",
+            "invalid"
+          ]
+        },
+        "validation_profile_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "intended_domain": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "independent_reference_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "residual_summary_reference": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 2048
+        },
+        "out_of_domain_policy": {
+          "enum": [
+            "block_claim",
+            "degrade_to_model_only",
+            "bounded_fallback",
+            "not_defined"
+          ]
+        }
+      }
+    },
+    "interfaces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "interface_id",
+          "source_component_id",
+          "destination_component_id",
+          "signal_name",
+          "direction",
+          "unit",
+          "time_semantics"
+        ],
+        "properties": {
+          "interface_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_component_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "destination_component_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "signal_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "direction": {
+            "enum": [
+              "controller_to_plant",
+              "plant_to_controller",
+              "bidirectional"
+            ]
+          },
+          "unit": {
+            "type": "string",
+            "minLength": 1
+          },
+          "time_semantics": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "physical_power_interface_present": {
+      "type": "boolean"
+    },
+    "site_context": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "site_profile_sha256",
+        "installed_configuration_sha256",
+        "environment_evidence_reference"
+      ],
+      "properties": {
+        "site_profile_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "installed_configuration_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "environment_evidence_reference": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "claim_ceiling": {
+      "const": "SYNTHETIC_TEST_ENVIRONMENT_PASSPORT_FIXTURE_ONLY_NOT_EXECUTED_HIL_OR_PHYSICAL_CLAIM"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "planned_execution_mode": {
+            "const": "controller_hil"
+          }
+        },
+        "required": [
+          "planned_execution_mode"
+        ]
+      },
+      "then": {
+        "properties": {
+          "simulator": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "simulator"
+        ],
+        "allOf": [
+          {
+            "properties": {
+              "component_boundary": {
+                "contains": {
+                  "properties": {
+                    "role": {
+                      "const": "microgrid_controller"
+                    },
+                    "realization": {
+                      "const": "physical"
+                    }
+                  },
+                  "required": [
+                    "role",
+                    "realization"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "component_boundary": {
+                "contains": {
+                  "properties": {
+                    "realization": {
+                      "const": "simulated"
+                    }
+                  },
+                  "required": [
+                    "realization"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "planned_execution_mode": {
+            "const": "power_hil"
+          }
+        },
+        "required": [
+          "planned_execution_mode"
+        ]
+      },
+      "then": {
+        "properties": {
+          "physical_power_interface_present": {
+            "const": true
+          },
+          "component_boundary": {
+            "contains": {
+              "properties": {
+                "role": {
+                  "const": "power_interface"
+                },
+                "realization": {
+                  "const": "physical"
+                }
+              },
+              "required": [
+                "role",
+                "realization"
+              ]
+            }
+          }
+        },
+        "required": [
+          "physical_power_interface_present"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "planned_execution_mode": {
+            "enum": [
+              "site_commissioning",
+              "periodic_site_operation"
+            ]
+          }
+        },
+        "required": [
+          "planned_execution_mode"
+        ]
+      },
+      "then": {
+        "properties": {
+          "site_context": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "site_context"
+        ]
+      }
+    }
+  ]
+}
