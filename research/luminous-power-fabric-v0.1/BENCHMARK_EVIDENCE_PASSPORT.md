@@ -41,11 +41,18 @@ This output is only an **eligibility gate**. It does not decide which metric is 
 
 ## 3. Laboratory tests versus site-operational assessment
 
-The run mode is explicit:
+The evidence class and run mode are both explicit and must be consistent:
+- vendor assertion → vendor-published specification;
+- modelled → simulation;
+- synthetic → synthetic;
+- measured / independently witnessed / accredited → controlled laboratory, production acceptance, site-operational assessment or field mission.
+
+The run mode distinguishes:
 - controlled laboratory;
 - production acceptance;
 - site-operational assessment;
 - field mission;
+- vendor-published specification;
 - simulation;
 - synthetic.
 
