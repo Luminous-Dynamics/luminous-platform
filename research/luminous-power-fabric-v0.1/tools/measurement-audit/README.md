@@ -73,6 +73,21 @@ dependencies, calculate serial-component bottlenecks or authorize switching. Eac
 power must already be bounded by the upstream capability and engineering assessment. See
 `multi_port_capability.rs` and [MULTI_PORT_CAPABILITY_DESIGN.md](../../MULTI_PORT_CAPABILITY_DESIGN.md).
 
+
+## Common-cause-aware multi-path capability
+
+The crate exposes `multi_port_capability::evaluate_multi_path_capability`. It consumes already
+qualified source-to-load route bottlenecks, removes routes affected by each unique component or
+shared failure-domain loss, and evaluates caller-declared compound contingencies. The robust
+capacity is the minimum surviving route capacity across the baseline and all declared scenarios.
+
+This prevents additive N-1 credit for paths that share a source, bus, cooling system, controller,
+protection device or other declared dependency. It does not discover undeclared dependencies,
+calculate serial path bottlenecks, solve electrical networks, calculate fault current, infer failure
+probabilities or operate equipment. See
+[MULTI_PORT_CAPABILITY_DESIGN.md](../../MULTI_PORT_CAPABILITY_DESIGN.md) and
+[issue #417](https://github.com/Luminous-Dynamics/luminous-platform/issues/417).
+
 ## Evidence-gated capability envelope
 
 The crate exposes `capability_envelope::evaluate_capability_envelope`, a read-only evaluator
