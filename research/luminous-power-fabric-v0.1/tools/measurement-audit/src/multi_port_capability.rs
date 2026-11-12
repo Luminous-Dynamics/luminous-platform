@@ -63,6 +63,7 @@ pub struct SharedResourceEvidenceReference {
     pub resource_id: String,
     pub configuration_sha256: String,
     pub evidence_reference: String,
+    pub availability: PathAvailability,
     pub capacity_power_w: f64,
     pub affected_path_ids: Vec<String>,
 }
@@ -100,6 +101,10 @@ pub struct PathEvidenceReference {
     pub path_id: String,
     pub configuration_sha256: String,
     pub capability_evidence_reference: String,
+    pub available_power_w: f64,
+    pub availability: PathAvailability,
+    pub component_ids: Vec<String>,
+    pub failure_domain_ids: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -557,10 +562,20 @@ pub fn evaluate_multi_path_capability(
 
     let path_evidence = ordered_paths
         .iter()
-        .map(|path| PathEvidenceReference {
-            path_id: path.path_id.clone(),
-            configuration_sha256: path.configuration_sha256.clone(),
-            capability_evidence_reference: path.capability_evidence_reference.clone(),
+        .map(|path| {
+            let mut component_ids = path.component_ids.clone();
+            component_ids.sort();
+            let mut failure_domain_ids = path.failure_domain_ids.clone();
+            failure_domain_ids.sort();
+            PathEvidenceReference {
+                path_id: path.path_id.clone(),
+                configuration_sha256: path.configuration_sha256.clone(),
+                capability_evidence_reference: path.capability_evidence_reference.clone(),
+                available_power_w: path.available_power_w,
+                availability: path.availability,
+                component_ids,
+                failure_domain_ids,
+            }
         })
         .collect();
 
@@ -570,6 +585,7 @@ pub fn evaluate_multi_path_capability(
             resource_id: resource.resource_id.clone(),
             configuration_sha256: resource.configuration_sha256.clone(),
             evidence_reference: resource.evidence_reference.clone(),
+            availability: resource.availability,
             capacity_power_w: resource.capacity_power_w,
             affected_path_ids: {
                 let mut ids = resource.affected_path_ids.clone();
@@ -674,6 +690,16 @@ mod tests {
             report.path_evidence[0].capability_evidence_reference,
             "single-path-capability:path-a"
         );
+        assert_eq!(report.path_evidence[0].available_power_w, 100.0);
+        assert_eq!(
+            report.path_evidence[0].availability,
+            PathAvailability::QualifiedAvailable
+        );
+        assert_eq!(
+            report.path_evidence[0].component_ids,
+            vec!["a".to_string()]
+        );
+        assert!(report.path_evidence[0].failure_domain_ids.is_empty());
     }
 
     #[test]
@@ -1044,6 +1070,27 @@ mod tests {
             .find(|item| item.scenario_id == "component:bus").unwrap();
         assert_eq!(scenario.available_power_w, 0.0);
         assert_eq!(scenario.unavailable_shared_resource_ids, vec!["bus".to_string()]);
+    }
+
+    #[test]
+    fn report_retains_shared_resource_status_and_throughput_lineage() {
+        let mut value = input(vec![
+            path("path-a", 100.0, &["source-a", "bus"], &[]),
+            path("path-b", 80.0, &["source-b", "bus"], &[]),
+        ]);
+        let mut resource = shared_constraint("bus", 150.0, &["path-a", "path-b"]);
+        resource.availability = PathAvailability::QualifiedAvailable;
+        value.shared_capacity_constraints = vec![resource];
+        let report = evaluate_multi_path_capability(&value).unwrap();
+        assert_eq!(report.shared_resource_evidence.len(), 1);
+        let evidence = &report.shared_resource_evidence[0];
+        assert_eq!(evidence.resource_id, "bus");
+        assert_eq!(evidence.capacity_power_w, 150.0);
+        assert_eq!(evidence.availability, PathAvailability::QualifiedAvailable);
+        assert_eq!(
+            evidence.affected_path_ids,
+            vec!["path-a".to_string(), "path-b".to_string()]
+        );
     }
 
     #[test]
