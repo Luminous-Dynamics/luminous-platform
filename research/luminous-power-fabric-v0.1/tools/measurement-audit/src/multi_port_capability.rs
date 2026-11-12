@@ -1,5 +1,5 @@
 use crate::AuditError;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// Current evidence and availability state for one already-evaluated power path.
 ///
@@ -43,6 +43,30 @@ pub struct DeclaredFailureScenario {
     pub failed_domain_ids: Vec<String>,
 }
 
+/// A shared-throughput resource traversed by a declared set of parallel paths.
+///
+/// The same resource identity must appear in every affected path's component
+/// or failure-domain list, so its loss is also represented in the N-1 sweep.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SharedCapacityConstraint {
+    pub resource_id: String,
+    pub configuration_sha256: String,
+    pub evidence_reference: String,
+    pub availability: PathAvailability,
+    pub capacity_power_w: f64,
+    pub affected_path_ids: Vec<String>,
+}
+
+/// Lineage retained for one shared throughput constraint.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SharedResourceEvidenceReference {
+    pub resource_id: String,
+    pub configuration_sha256: String,
+    pub evidence_reference: String,
+    pub capacity_power_w: f64,
+    pub affected_path_ids: Vec<String>,
+}
+
 /// Input to the common-cause-aware multi-path capability screen.
 #[derive(Debug, Clone, PartialEq)]
 pub struct MultiPathCapabilityInput {
@@ -50,6 +74,9 @@ pub struct MultiPathCapabilityInput {
     /// Examples: one protected DC bus, one AC load bus, or one declared load group.
     pub service_boundary_id: String,
     pub paths: Vec<CapabilityPath>,
+    /// Shared serial throughput limits. In v0.1, affected path groups must be
+    /// disjoint or identical; partially overlapping groups are rejected.
+    pub shared_capacity_constraints: Vec<SharedCapacityConstraint>,
     /// Optional N-k / compound scenarios not represented by individual
     /// component or domain failure. These must reference known IDs.
     pub additional_scenarios: Vec<DeclaredFailureScenario>,
@@ -63,6 +90,7 @@ pub struct ScenarioCapability {
     pub scenario_id: String,
     pub available_power_w: f64,
     pub unavailable_path_ids: Vec<String>,
+    pub unavailable_shared_resource_ids: Vec<String>,
 }
 
 /// Conservative system-level capability under all enumerated single failures
@@ -78,6 +106,7 @@ pub struct PathEvidenceReference {
 pub struct MultiPathCapabilityReport {
     pub service_boundary_id: String,
     pub path_evidence: Vec<PathEvidenceReference>,
+    pub shared_resource_evidence: Vec<SharedResourceEvidenceReference>,
     pub baseline_available_power_w: f64,
     pub robust_available_power_w: f64,
     pub required_service_power_w: Option<f64>,
@@ -144,8 +173,27 @@ fn path_is_eligible(path: &CapabilityPath) -> bool {
 fn scenario_capacity(
     scenario: &NormalizedScenario,
     paths: &[CapabilityPath],
+    constraints: &[SharedCapacityConstraint],
 ) -> Result<ScenarioCapability, AuditError> {
-    let mut available_power_w = 0.0_f64;
+    let mut unavailable_shared_resource_ids = BTreeSet::new();
+    let mut blocked_path_ids = BTreeSet::new();
+
+    for constraint in constraints {
+        let scenario_failed = scenario
+            .failed_component_ids
+            .contains(&constraint.resource_id)
+            || scenario.failed_domain_ids.contains(&constraint.resource_id);
+        if constraint.availability != PathAvailability::QualifiedAvailable
+            || scenario_failed
+        {
+            unavailable_shared_resource_ids.insert(constraint.resource_id.clone());
+            for path_id in &constraint.affected_path_ids {
+                blocked_path_ids.insert(path_id.clone());
+            }
+        }
+    }
+
+    let mut available_by_path = BTreeMap::new();
     let mut unavailable_path_ids = Vec::new();
 
     for path in paths {
@@ -157,11 +205,63 @@ fn scenario_capacity(
             .failure_domain_ids
             .iter()
             .any(|id| scenario.failed_domain_ids.contains(id));
+        let shared_resource_failed = blocked_path_ids.contains(&path.path_id);
 
-        if !path_is_eligible(path) || component_failed || domain_failed {
+        if !path_is_eligible(path)
+            || component_failed
+            || domain_failed
+            || shared_resource_failed
+        {
             unavailable_path_ids.push(path.path_id.clone());
         } else {
-            available_power_w += path.available_power_w;
+            available_by_path.insert(path.path_id.clone(), path.available_power_w);
+        }
+    }
+
+    // Shared capacity constraints compose only over disjoint or identical
+    // path groups. Overlapping non-identical groups are rejected by validation
+    // because a simple sum/min calculation would otherwise double-count flow.
+    let mut group_limits: BTreeMap<BTreeSet<String>, f64> = BTreeMap::new();
+    for constraint in constraints {
+        if constraint.availability != PathAvailability::QualifiedAvailable
+            || scenario
+                .failed_component_ids
+                .contains(&constraint.resource_id)
+            || scenario.failed_domain_ids.contains(&constraint.resource_id)
+        {
+            continue;
+        }
+        let group: BTreeSet<String> =
+            constraint.affected_path_ids.iter().cloned().collect();
+        group_limits
+            .entry(group)
+            .and_modify(|limit| *limit = limit.min(constraint.capacity_power_w))
+            .or_insert(constraint.capacity_power_w);
+    }
+
+    let mut grouped_path_ids = BTreeSet::new();
+    let mut available_power_w = 0.0_f64;
+
+    for (group, limit) in group_limits {
+        let mut group_power_w = 0.0_f64;
+        for path_id in &group {
+            grouped_path_ids.insert(path_id.clone());
+            if let Some(power_w) = available_by_path.get(path_id) {
+                group_power_w += *power_w;
+            }
+        }
+        if !group_power_w.is_finite() {
+            return Err(AuditError(format!(
+                "shared group power overflow in scenario {:?}",
+                scenario.scenario_id
+            )));
+        }
+        available_power_w += group_power_w.min(limit);
+    }
+
+    for (path_id, power_w) in &available_by_path {
+        if !grouped_path_ids.contains(path_id) {
+            available_power_w += *power_w;
         }
     }
 
@@ -177,6 +277,9 @@ fn scenario_capacity(
         scenario_id: scenario.scenario_id.clone(),
         available_power_w,
         unavailable_path_ids,
+        unavailable_shared_resource_ids: unavailable_shared_resource_ids
+            .into_iter()
+            .collect(),
     })
 }
 
@@ -226,7 +329,6 @@ pub fn evaluate_multi_path_capability(
     let mut path_ids = BTreeSet::new();
     let mut component_ids = BTreeSet::new();
     let mut domain_ids = BTreeSet::new();
-    let mut baseline_available_power_w = 0.0_f64;
 
     for path in &ordered_paths {
         validate_id(&path.path_id, "path_id")?;
@@ -262,29 +364,102 @@ pub fn evaluate_multi_path_capability(
         for id in &path.failure_domain_ids {
             domain_ids.insert(id.clone());
         }
+    }
 
-        match path.availability {
-            PathAvailability::QualifiedAvailable => {
-                baseline_available_power_w += path.available_power_w;
+    let mut ordered_constraints = input.shared_capacity_constraints.clone();
+    ordered_constraints.sort_by(|left, right| left.resource_id.cmp(&right.resource_id));
+    let mut shared_resource_ids = BTreeSet::new();
+    let mut path_groups: Vec<BTreeSet<String>> = Vec::new();
+
+    for constraint in &ordered_constraints {
+        validate_id(&constraint.resource_id, "shared_resource.resource_id")?;
+        if !shared_resource_ids.insert(constraint.resource_id.clone()) {
+            return Err(AuditError(format!(
+                "duplicate shared resource ID {:?}",
+                constraint.resource_id
+            )));
+        }
+        if !valid_sha256(&constraint.configuration_sha256) {
+            return Err(AuditError(format!(
+                "shared resource {:?} has a malformed configuration SHA-256",
+                constraint.resource_id
+            )));
+        }
+        validate_id(
+            &constraint.evidence_reference,
+            "shared_resource.evidence_reference",
+        )?;
+        validate_power(
+            constraint.capacity_power_w,
+            "shared_resource.capacity_power_w",
+        )?;
+        validate_unique_ids(
+            &constraint.affected_path_ids,
+            "shared_resource.affected_path_ids",
+        )?;
+        if constraint.affected_path_ids.is_empty() {
+            return Err(AuditError(format!(
+                "shared resource {:?} must affect at least one path",
+                constraint.resource_id
+            )));
+        }
+
+        let group: BTreeSet<String> =
+            constraint.affected_path_ids.iter().cloned().collect();
+        for previous in &path_groups {
+            let intersects = !previous.is_disjoint(&group);
+            if intersects && previous != &group {
+                return Err(AuditError(format!(
+                    "shared resource {:?} has a partially overlapping path group; v0.1 requires groups to be disjoint or identical",
+                    constraint.resource_id
+                )));
             }
-            PathAvailability::EvidenceBlocked
-            | PathAvailability::ProtectionNotReady
-            | PathAvailability::Faulted
-            | PathAvailability::Unknown => {
-                // Blocked paths cannot contribute any capability, even if a
-                // stale caller supplied a positive available_power_w.
+        }
+        if !path_groups.iter().any(|existing| existing == &group) {
+            path_groups.push(group);
+        }
+
+        for path_id in &constraint.affected_path_ids {
+            if !path_ids.contains(path_id) {
+                return Err(AuditError(format!(
+                    "shared resource {:?} references unknown path {:?}",
+                    constraint.resource_id, path_id
+                )));
+            }
+            let path = ordered_paths
+                .iter()
+                .find(|path| path.path_id == *path_id)
+                .ok_or_else(|| AuditError("validated path lookup failed".to_string()))?;
+            let declares_resource = path
+                .component_ids
+                .iter()
+                .any(|id| id == &constraint.resource_id)
+                || path
+                    .failure_domain_ids
+                    .iter()
+                    .any(|id| id == &constraint.resource_id);
+            if !declares_resource {
+                return Err(AuditError(format!(
+                    "path {:?} does not declare shared resource {:?} as a component or failure domain",
+                    path_id, constraint.resource_id
+                )));
             }
         }
     }
 
-    if !baseline_available_power_w.is_finite() {
-        return Err(AuditError(
-            "baseline available power overflow".to_string(),
-        ));
-    }
+    let baseline_scenario = NormalizedScenario {
+        scenario_id: "baseline".to_string(),
+        failed_component_ids: BTreeSet::new(),
+        failed_domain_ids: BTreeSet::new(),
+    };
+    let baseline_result = scenario_capacity(
+        &baseline_scenario,
+        &ordered_paths,
+        &ordered_constraints,
+    )?;
+    let baseline_available_power_w = baseline_result.available_power_w;
 
     let mut normalized = Vec::new();
-
     for id in &component_ids {
         normalized.push(NormalizedScenario {
             scenario_id: format!("component:{id}"),
@@ -292,7 +467,6 @@ pub fn evaluate_multi_path_capability(
             failed_domain_ids: BTreeSet::new(),
         });
     }
-
     for id in &domain_ids {
         normalized.push(NormalizedScenario {
             scenario_id: format!("domain:{id}"),
@@ -305,7 +479,6 @@ pub fn evaluate_multi_path_capability(
         .iter()
         .map(|scenario| scenario.scenario_id.clone())
         .collect();
-    // Reserve baseline so caller-defined contingencies cannot shadow it.
     scenario_ids.insert("baseline".to_string());
 
     for scenario in &input.additional_scenarios {
@@ -316,9 +489,7 @@ pub fn evaluate_multi_path_capability(
                 scenario.scenario_id
             )));
         }
-        if scenario.failed_component_ids.is_empty()
-            && scenario.failed_domain_ids.is_empty()
-        {
+        if scenario.failed_component_ids.is_empty() && scenario.failed_domain_ids.is_empty() {
             return Err(AuditError(format!(
                 "scenario {:?} must fail at least one component or domain",
                 scenario.scenario_id
@@ -360,21 +531,16 @@ pub fn evaluate_multi_path_capability(
     normalized.sort_by(|left, right| left.scenario_id.cmp(&right.scenario_id));
 
     let mut scenario_results = Vec::with_capacity(normalized.len() + 1);
-    scenario_results.push(ScenarioCapability {
-        scenario_id: "baseline".to_string(),
-        available_power_w: baseline_available_power_w,
-        unavailable_path_ids: ordered_paths
-            .iter()
-            .filter(|path| !path_is_eligible(path))
-            .map(|path| path.path_id.clone())
-            .collect(),
-    });
-
+    scenario_results.push(baseline_result);
     for scenario in &normalized {
-        scenario_results.push(scenario_capacity(scenario, &ordered_paths)?);
+        scenario_results.push(scenario_capacity(
+            scenario,
+            &ordered_paths,
+            &ordered_constraints,
+        )?);
     }
 
-    let mut limiting = scenario_results
+    let limiting = scenario_results
         .iter()
         .min_by(|left, right| {
             left.available_power_w
@@ -383,12 +549,6 @@ pub fn evaluate_multi_path_capability(
         })
         .ok_or_else(|| AuditError("no scenarios were evaluated".to_string()))?
         .clone();
-
-    // Baseline is always included. This also handles a topology with no
-    // declared dependency IDs without inventing a failure scenario.
-    if limiting.scenario_id.is_empty() {
-        limiting.scenario_id = "baseline".to_string();
-    }
 
     let robust_available_power_w = limiting.available_power_w;
     let meets_required_service = input
@@ -404,9 +564,25 @@ pub fn evaluate_multi_path_capability(
         })
         .collect();
 
+    let shared_resource_evidence = ordered_constraints
+        .iter()
+        .map(|resource| SharedResourceEvidenceReference {
+            resource_id: resource.resource_id.clone(),
+            configuration_sha256: resource.configuration_sha256.clone(),
+            evidence_reference: resource.evidence_reference.clone(),
+            capacity_power_w: resource.capacity_power_w,
+            affected_path_ids: {
+                let mut ids = resource.affected_path_ids.clone();
+                ids.sort();
+                ids
+            },
+        })
+        .collect();
+
     Ok(MultiPathCapabilityReport {
         service_boundary_id: input.service_boundary_id.clone(),
         path_evidence,
+        shared_resource_evidence,
         baseline_available_power_w,
         robust_available_power_w,
         required_service_power_w: input.required_service_power_w,
@@ -415,7 +591,7 @@ pub fn evaluate_multi_path_capability(
         scenarios_evaluated: scenario_results.len(),
         scenario_results,
         claim_ceiling:
-            "DECLARED_CONTINGENCY_CAPABILITY_SCREEN_ONLY_NOT_RELIABILITY_OR_PHYSICAL_QUALIFICATION",
+            "DECLARED_CONTINGENCY_AND_SHARED_CAPACITY_SCREEN_ONLY_NOT_NETWORK_OR_RELIABILITY_QUALIFICATION",
     })
 }
 
@@ -444,6 +620,7 @@ mod tests {
         MultiPathCapabilityInput {
             service_boundary_id: "common-useful-service-boundary".to_string(),
             paths,
+            shared_capacity_constraints: Vec::new(),
             additional_scenarios: Vec::new(),
             required_service_power_w: None,
         }
@@ -771,6 +948,177 @@ mod tests {
     fn zero_power_requirement_is_rejected() {
         let mut value = input(vec![path("path-a", 10.0, &["a"], &[])]);
         value.required_service_power_w = Some(0.0);
+        assert!(evaluate_multi_path_capability(&value).is_err());
+    }
+
+
+    fn shared_constraint(
+        resource_id: &str,
+        capacity_power_w: f64,
+        affected_path_ids: &[&str],
+    ) -> SharedCapacityConstraint {
+        SharedCapacityConstraint {
+            resource_id: resource_id.to_string(),
+            configuration_sha256: "c".repeat(64),
+            evidence_reference: format!("shared-resource-evidence:{resource_id}"),
+            availability: PathAvailability::QualifiedAvailable,
+            capacity_power_w,
+            affected_path_ids: affected_path_ids.iter().map(|x| x.to_string()).collect(),
+        }
+    }
+
+    #[test]
+    fn shared_bus_capacity_caps_parallel_path_sum() {
+        let mut value = input(vec![
+            path("path-a", 100.0, &["source-a", "bus"], &[]),
+            path("path-b", 80.0, &["source-b", "bus"], &[]),
+        ]);
+        value.shared_capacity_constraints = vec![shared_constraint("bus", 120.0, &["path-a", "path-b"])];
+        let report = evaluate_multi_path_capability(&value).unwrap();
+        assert_eq!(report.baseline_available_power_w, 120.0);
+        assert_eq!(report.robust_available_power_w, 0.0);
+        assert_eq!(report.shared_resource_evidence.len(), 1);
+        assert_eq!(report.shared_resource_evidence[0].resource_id, "bus");
+    }
+
+    #[test]
+    fn shared_capacity_is_recomputed_after_one_path_failure() {
+        let mut value = input(vec![
+            path("path-a", 100.0, &["source-a", "bus"], &[]),
+            path("path-b", 80.0, &["source-b", "bus"], &[]),
+        ]);
+        value.shared_capacity_constraints = vec![shared_constraint("bus", 120.0, &["path-a", "path-b"])];
+        value.additional_scenarios.push(DeclaredFailureScenario {
+            scenario_id: "source-a-outage".to_string(),
+            failed_component_ids: vec!["source-a".to_string()],
+            failed_domain_ids: Vec::new(),
+        });
+        let report = evaluate_multi_path_capability(&value).unwrap();
+        let scenario = report.scenario_results.iter()
+            .find(|item| item.scenario_id == "source-a-outage").unwrap();
+        assert_eq!(scenario.available_power_w, 80.0);
+        assert_eq!(report.baseline_available_power_w, 120.0);
+    }
+
+    #[test]
+    fn multiple_limits_on_same_path_group_use_the_minimum() {
+        let mut value = input(vec![
+            path("path-a", 100.0, &["source-a", "bus", "cooling"], &[]),
+            path("path-b", 80.0, &["source-b", "bus", "cooling"], &[]),
+        ]);
+        value.shared_capacity_constraints = vec![
+            shared_constraint("bus", 150.0, &["path-a", "path-b"]),
+            shared_constraint("cooling", 110.0, &["path-a", "path-b"]),
+        ];
+        let report = evaluate_multi_path_capability(&value).unwrap();
+        assert_eq!(report.baseline_available_power_w, 110.0);
+    }
+
+    #[test]
+    fn non_ready_shared_resource_withdraws_affected_paths() {
+        let mut value = input(vec![
+            path("path-a", 100.0, &["source-a", "bus"], &[]),
+            path("path-b", 80.0, &["source-b", "bus"], &[]),
+            path("path-c", 50.0, &["source-c"], &[]),
+        ]);
+        let mut resource = shared_constraint("bus", 150.0, &["path-a", "path-b"]);
+        resource.availability = PathAvailability::Unknown;
+        value.shared_capacity_constraints = vec![resource];
+        let report = evaluate_multi_path_capability(&value).unwrap();
+        assert_eq!(report.baseline_available_power_w, 50.0);
+        let baseline = report.scenario_results.iter()
+            .find(|item| item.scenario_id == "baseline").unwrap();
+        assert_eq!(baseline.unavailable_shared_resource_ids, vec!["bus".to_string()]);
+        assert_eq!(baseline.unavailable_path_ids, vec!["path-a".to_string(), "path-b".to_string()]);
+    }
+
+    #[test]
+    fn shared_resource_failure_is_reflected_in_n_minus_one_sweep() {
+        let mut value = input(vec![
+            path("path-a", 100.0, &["source-a", "bus"], &[]),
+            path("path-b", 80.0, &["source-b", "bus"], &[]),
+        ]);
+        value.shared_capacity_constraints = vec![shared_constraint("bus", 250.0, &["path-a", "path-b"])];
+        let report = evaluate_multi_path_capability(&value).unwrap();
+        let scenario = report.scenario_results.iter()
+            .find(|item| item.scenario_id == "component:bus").unwrap();
+        assert_eq!(scenario.available_power_w, 0.0);
+        assert_eq!(scenario.unavailable_shared_resource_ids, vec!["bus".to_string()]);
+    }
+
+    #[test]
+    fn partially_overlapping_shared_capacity_groups_are_rejected() {
+        let mut value = input(vec![
+            path("path-a", 100.0, &["source-a", "bus-a", "cooling-ab"], &[]),
+            path("path-b", 80.0, &["source-b", "bus-a", "cooling-ab", "cooling-bc"], &[]),
+            path("path-c", 60.0, &["source-c", "cooling-bc"], &[]),
+        ]);
+        value.shared_capacity_constraints = vec![
+            shared_constraint("cooling-ab", 150.0, &["path-a", "path-b"]),
+            shared_constraint("cooling-bc", 100.0, &["path-b", "path-c"]),
+        ];
+        assert!(evaluate_multi_path_capability(&value).is_err());
+    }
+
+    #[test]
+    fn shared_capacity_resource_must_be_declared_by_each_affected_path() {
+        let mut value = input(vec![
+            path("path-a", 100.0, &["source-a", "bus"], &[]),
+            path("path-b", 80.0, &["source-b"], &[]),
+        ]);
+        value.shared_capacity_constraints = vec![shared_constraint("bus", 150.0, &["path-a", "path-b"])];
+        assert!(evaluate_multi_path_capability(&value).is_err());
+    }
+
+    #[test]
+    fn duplicate_shared_resource_ids_are_rejected() {
+        let mut value = input(vec![
+            path("path-a", 100.0, &["source-a", "bus"], &[]),
+            path("path-b", 80.0, &["source-b", "bus"], &[]),
+        ]);
+        value.shared_capacity_constraints = vec![
+            shared_constraint("bus", 150.0, &["path-a", "path-b"]),
+            shared_constraint("bus", 120.0, &["path-a", "path-b"]),
+        ];
+        assert!(evaluate_multi_path_capability(&value).is_err());
+    }
+
+    #[test]
+    fn shared_capacity_input_order_does_not_change_report() {
+        let paths = vec![
+            path("path-a", 100.0, &["source-a", "bus", "cooling"], &[]),
+            path("path-b", 80.0, &["source-b", "bus", "cooling"], &[]),
+        ];
+        let mut a = input(paths.clone());
+        a.shared_capacity_constraints = vec![
+            shared_constraint("bus", 150.0, &["path-a", "path-b"]),
+            shared_constraint("cooling", 110.0, &["path-a", "path-b"]),
+        ];
+        let mut b = input(paths.into_iter().rev().collect());
+        b.shared_capacity_constraints = vec![
+            shared_constraint("cooling", 110.0, &["path-b", "path-a"]),
+            shared_constraint("bus", 150.0, &["path-b", "path-a"]),
+        ];
+        let report_a = evaluate_multi_path_capability(&a).unwrap();
+        let report_b = evaluate_multi_path_capability(&b).unwrap();
+        assert_eq!(report_a, report_b);
+    }
+
+    #[test]
+    fn negative_shared_capacity_is_rejected() {
+        let mut value = input(vec![
+            path("path-a", 100.0, &["source-a", "bus"], &[]),
+        ]);
+        value.shared_capacity_constraints = vec![shared_constraint("bus", -1.0, &["path-a"])];
+        assert!(evaluate_multi_path_capability(&value).is_err());
+    }
+
+    #[test]
+    fn non_finite_shared_capacity_is_rejected() {
+        let mut value = input(vec![
+            path("path-a", 100.0, &["source-a", "bus"], &[]),
+        ]);
+        value.shared_capacity_constraints = vec![shared_constraint("bus", f64::INFINITY, &["path-a"])];
         assert!(evaluate_multi_path_capability(&value).is_err());
     }
 
