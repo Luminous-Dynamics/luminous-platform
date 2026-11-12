@@ -249,3 +249,16 @@ under `measurement-audit/src/dispatch_outcomes.rs` and `schemas/dispatch-outcome
 adequacy remains separate in issue #434. IEC TS 62898-3-5:2026 is the direct HIL/commissioning/
 periodic-test reference; IEEE 2030.8-2018 and NREL/EPRI controller HIL/PHIL methodology are retained
 as comparison anchors. No physical performance or conformity claim is made.
+
+
+## 15. Vendor-neutral controller industry crosswalk
+
+[Issue #442](https://github.com/Luminous-Dynamics/luminous-platform/issues/442) and
+[CONTROLLER_INDUSTRY_CROSSWALK.md](./CONTROLLER_INDUSTRY_CROSSWALK.md) register public controller
+references (SEL, Schneider, Siemens, Eaton, OpenEMS and HOMER) and separate them from measured
+benchmark results. The programme now distinguishes fast electrical/protection, edge supervisory
+and EMS dispatch timescales; it proposes architecture-aware comparisons of the same policy across
+centralized, hierarchical and distributed control. The one-second OpenEMS control-cycle reference
+and sub-100-ms controller-logic recommendation are used only as an internal comparison target, not
+a universal requirement. IEC TS 62898-3-5:2026, IEEE 2030.8 and the NREL/EPRI HIL/PHIL methodology
+anchor the test ladder. No product ranking or superiority claim is made.
