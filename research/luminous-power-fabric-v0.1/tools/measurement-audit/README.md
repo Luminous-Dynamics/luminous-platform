@@ -56,6 +56,22 @@ The code does not promote datasheet/model/simulation inputs to measurement evide
 See [LOSS_BUDGET_AND_MODEL_PLAN.md](../../LOSS_BUDGET_AND_MODEL_PLAN.md) for equations, categories,
 anti-double-counting rules and the DAB/CLLC model-to-bench plan.
 
+
+## Evidence-gated capability envelope
+
+The crate exposes `capability_envelope::evaluate_capability_envelope`, a read-only evaluator
+for configuration-bound, direction-specific continuous power capability. It requires current
+qualification evidence, exact configuration digests, current calibration/sensor evidence, a ready
+independent-protection state, fresh telemetry and non-expired qualification. It applies a declared
+linear thermal derating interval and an external derating factor, then subtracts explicit conservative
+measurement/model uncertainty bounds. Any hard blocker withdraws both directional capabilities.
+
+This is an evidence-gated software screen only. It does not authenticate the supplied records,
+measure junction temperature, model transient SOA, coordinate cables/busbars, operate a switch,
+authorize dispatch, replace physical protection or qualify a device. Linear thermal derating is a
+declared first-order policy assumption, not a universal component thermal law. See
+`capability_envelope.rs` and [FIELD_POWER_PLATFORM.md](../../FIELD_POWER_PLATFORM.md).
+
 ## Ideal DAB SPS screen
 
 The library also exposes `dab_sps::screen_dab_sps` and
