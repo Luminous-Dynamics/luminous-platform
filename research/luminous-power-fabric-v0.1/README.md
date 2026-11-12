@@ -370,6 +370,20 @@ field-mission-profile contract and composes Symthaea, Symtropy, Sol-Atlas and My
 Vendor specifications remain separate from independent physical measurements and accredited
 qualification evidence.
 
+## Dispatch-controller benchmark
+
+[Issue #432](https://github.com/Luminous-Dynamics/luminous-platform/issues/432) defines the next
+offline, read-only qualification layer: compare fixed schedules, deterministic rules, constrained
+optimisation and MPC-style dispatch over matched mission trajectories, including forecast error,
+source/storage faults, auxiliary/cooling common causes, telemetry loss and full recovery.
+
+The protocol and versioned synthetic scenario corpus are in
+[DISPATCH_CONTROLLER_BENCHMARK.md](./DISPATCH_CONTROLLER_BENCHMARK.md) and
+`schemas/dispatch-controller-*`. Critical service, component feasibility, terminal reserve and
+evidence eligibility are hard gates; service, resilience, resource/lifecycle, controller quality and
+replay remain separate scoreboards. It adds no hardware control path and makes no physical or
+conformity claim.
+
 ## Current limitations
 
 This package contains analytical screening models and offline data-audit tools; it does **not**

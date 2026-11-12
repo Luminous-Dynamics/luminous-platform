@@ -1,0 +1,492 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/dispatch-controller-scenario-corpus-v0.1.schema.json",
+  "title": "Power Fabric dispatch-controller synthetic scenario corpus",
+  "description": "Versioned offline scenario and pairing-integrity fixture contract. A structurally valid fixture is not a controller result or physical performance claim.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "corpus_id",
+    "corpus_class",
+    "cases",
+    "claim_ceiling"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "corpus_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^PF-DISPATCH-[A-Za-z0-9._-]+$"
+    },
+    "corpus_class": {
+      "const": "synthetic_fixture"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    },
+    "claim_ceiling": {
+      "const": "OFFLINE_CONTROLLER_BENCHMARK_PROTOCOL_ONLY_NOT_PHYSICAL_OR_CONFORMITY_CLAIM"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "case_id",
+        "case_type",
+        "scenario_class",
+        "evidence_class",
+        "run_mode",
+        "seed",
+        "mission_horizon_s",
+        "decision_cadence_s",
+        "policy_pair",
+        "matched_conditions",
+        "disturbances",
+        "required_invariants",
+        "expected_gate",
+        "mismatch_dimension",
+        "expected_behavior",
+        "rationale"
+      ],
+      "properties": {
+        "case_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "case_type": {
+          "enum": [
+            "operational_episode",
+            "pairing_negative_control"
+          ]
+        },
+        "scenario_class": {
+          "enum": [
+            "baseline",
+            "forecast_uncertainty",
+            "source_contingency",
+            "storage_contingency",
+            "auxiliary_common_cause",
+            "telemetry_integrity",
+            "recovery",
+            "pairing_integrity"
+          ]
+        },
+        "evidence_class": {
+          "enum": [
+            "synthetic",
+            "modelled"
+          ]
+        },
+        "run_mode": {
+          "enum": [
+            "synthetic",
+            "simulation"
+          ]
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "mission_horizon_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "decision_cadence_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "policy_pair": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "reference_policy_sha256",
+            "candidate_policy_sha256"
+          ],
+          "properties": {
+            "reference_policy_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "candidate_policy_sha256": {
+              "$ref": "#/$defs/sha256"
+            }
+          }
+        },
+        "matched_conditions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "reference_mission_profile_sha256",
+            "candidate_mission_profile_sha256",
+            "reference_environment_profile_sha256",
+            "candidate_environment_profile_sha256",
+            "reference_plant_model_profile_sha256",
+            "candidate_plant_model_profile_sha256",
+            "reference_initial_state_sha256",
+            "candidate_initial_state_sha256",
+            "reference_terminal_obligation_sha256",
+            "candidate_terminal_obligation_sha256",
+            "reference_auxiliary_boundary_sha256",
+            "candidate_auxiliary_boundary_sha256",
+            "reference_information_budget_sha256",
+            "candidate_information_budget_sha256",
+            "reference_compute_budget_sha256",
+            "candidate_compute_budget_sha256",
+            "reference_mission_horizon_s",
+            "candidate_mission_horizon_s",
+            "reference_decision_cadence_s",
+            "candidate_decision_cadence_s"
+          ],
+          "properties": {
+            "reference_mission_profile_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "candidate_mission_profile_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "reference_environment_profile_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "candidate_environment_profile_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "reference_plant_model_profile_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "candidate_plant_model_profile_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "reference_initial_state_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "candidate_initial_state_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "reference_terminal_obligation_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "candidate_terminal_obligation_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "reference_auxiliary_boundary_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "candidate_auxiliary_boundary_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "reference_information_budget_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "candidate_information_budget_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "reference_compute_budget_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "candidate_compute_budget_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "reference_mission_horizon_s": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "candidate_mission_horizon_s": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "reference_decision_cadence_s": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "candidate_decision_cadence_s": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          }
+        },
+        "disturbances": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "event_id",
+              "domain",
+              "at_s",
+              "duration_s",
+              "severity",
+              "effect",
+              "parameters_sha256",
+              "common_cause_group"
+            ],
+            "properties": {
+              "event_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "domain": {
+                "enum": [
+                  "forecast",
+                  "load",
+                  "grid",
+                  "generator",
+                  "fuel",
+                  "storage",
+                  "auxiliary",
+                  "cooling",
+                  "telemetry",
+                  "timebase",
+                  "communications",
+                  "repair",
+                  "power_event",
+                  "price"
+                ]
+              },
+              "at_s": {
+                "type": "number",
+                "minimum": 0
+              },
+              "duration_s": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "severity": {
+                "enum": [
+                  "nominal",
+                  "moderate",
+                  "severe",
+                  "hard_fault"
+                ]
+              },
+              "effect": {
+                "enum": [
+                  "forecast_bias",
+                  "forecast_delay",
+                  "load_ramp",
+                  "availability_loss",
+                  "availability_restore",
+                  "start_delay",
+                  "start_failure",
+                  "fuel_limit",
+                  "power_derate",
+                  "energy_derate",
+                  "capacity_derate",
+                  "auxiliary_increase",
+                  "cooling_degradation",
+                  "stale_data",
+                  "missing_data",
+                  "measurement_bias",
+                  "clock_offset",
+                  "partition",
+                  "repair_outage",
+                  "repeated_event",
+                  "price_spike",
+                  "recharge_recovery"
+                ]
+              },
+              "parameters_sha256": {
+                "$ref": "#/$defs/sha256"
+              },
+              "common_cause_group": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 128
+              }
+            }
+          }
+        },
+        "required_invariants": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "critical_service_noncompensatory",
+              "all_component_limits_respected",
+              "initial_state_matched",
+              "terminal_reserve_obligation_met",
+              "auxiliary_load_accounted_once",
+              "stale_or_unknown_telemetry_not_fresh",
+              "bounded_safe_fallback",
+              "no_future_information_leakage",
+              "recovery_and_reserve_restoration_reported",
+              "failures_remain_in_denominator",
+              "replay_inputs_and_outputs_digest_bound",
+              "common_cause_not_assumed_independent",
+              "pairing_mismatch_rejected_before_scoring"
+            ]
+          }
+        },
+        "expected_gate": {
+          "enum": [
+            "execute_offline_episode",
+            "reject_pair_before_execution"
+          ]
+        },
+        "mismatch_dimension": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "mission_profile",
+            "environment_profile",
+            "plant_model_profile",
+            "initial_state",
+            "terminal_obligation",
+            "auxiliary_boundary",
+            "information_budget",
+            "compute_budget",
+            "mission_horizon",
+            "decision_cadence",
+            null
+          ]
+        },
+        "expected_behavior": {
+          "enum": [
+            "preserve_critical_service_and_terminal_reserve",
+            "degrade_without_false_pass",
+            "enter_bounded_safe_fallback",
+            "recover_and_restore_terminal_obligation",
+            "reject_mismatched_arm_pair"
+          ]
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "evidence_class": {
+                "const": "synthetic"
+              }
+            },
+            "required": [
+              "evidence_class"
+            ]
+          },
+          "then": {
+            "properties": {
+              "run_mode": {
+                "const": "synthetic"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "evidence_class": {
+                "const": "modelled"
+              }
+            },
+            "required": [
+              "evidence_class"
+            ]
+          },
+          "then": {
+            "properties": {
+              "run_mode": {
+                "const": "simulation"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "case_type": {
+                "const": "operational_episode"
+              }
+            },
+            "required": [
+              "case_type"
+            ]
+          },
+          "then": {
+            "properties": {
+              "expected_gate": {
+                "const": "execute_offline_episode"
+              },
+              "mismatch_dimension": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "expected_gate",
+              "mismatch_dimension"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "case_type": {
+                "const": "pairing_negative_control"
+              }
+            },
+            "required": [
+              "case_type"
+            ]
+          },
+          "then": {
+            "properties": {
+              "scenario_class": {
+                "const": "pairing_integrity"
+              },
+              "expected_gate": {
+                "const": "reject_pair_before_execution"
+              },
+              "mismatch_dimension": {
+                "type": "string",
+                "enum": [
+                  "mission_profile",
+                  "environment_profile",
+                  "plant_model_profile",
+                  "initial_state",
+                  "terminal_obligation",
+                  "auxiliary_boundary",
+                  "information_budget",
+                  "compute_budget",
+                  "mission_horizon",
+                  "decision_cadence"
+                ]
+              },
+              "expected_behavior": {
+                "const": "reject_mismatched_arm_pair"
+              }
+            },
+            "required": [
+              "scenario_class",
+              "expected_gate",
+              "mismatch_dimension",
+              "expected_behavior"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

@@ -194,3 +194,23 @@ controlled tests when accurate numeric characterization is needed.
 The code returns three distinct gates—structural match, physical measurement eligibility and
 independent claim eligibility. A synthetic pair can test the first gate but not the latter two.
 No physical superiority claim is made.
+
+
+## 13. Dispatch-controller benchmark
+
+[Issue #432](https://github.com/Luminous-Dynamics/luminous-platform/issues/432) and
+[DISPATCH_CONTROLLER_BENCHMARK.md](./DISPATCH_CONTROLLER_BENCHMARK.md) open the controller-policy
+qualification layer. It compares fixed schedules, transparent rules, constrained optimisation and
+MPC/robust-MPC policies over complete matched mission trajectories, including forecast error, source
+loss/start failure, storage derating, auxiliary/cooling common causes, stale telemetry and recovery.
+
+The controller benchmark consumes source, storage, common-path and mission constraints from their
+owners; it does not create a competing physical plant model. Service, feasibility/safety, resilience,
+resource/lifecycle, controller quality and evidence/replay remain separate scoreboards. Critical
+service, qualified-envelope, telemetry and terminal-reserve failures are non-compensatory.
+
+The versioned schema and synthetic positive/negative corpus are under
+`schemas/dispatch-controller-*`. These are offline fixtures, not controller results or physical
+measurements. The published IEEE 2030.7-2017 and 2030.8-2018 editions remain the current published
+anchors in this snapshot; revision projects P2030.7 and P2030.8 are tracked separately. No
+standards-conformity or dispatch-superiority claim is made.
