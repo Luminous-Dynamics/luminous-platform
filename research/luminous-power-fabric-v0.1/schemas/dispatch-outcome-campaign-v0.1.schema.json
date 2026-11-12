@@ -1,0 +1,450 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/dispatch-outcome-campaign-v0.1.schema.json",
+  "title": "Power Fabric paired dispatch outcome campaign",
+  "description": "Evidence-bound per-episode result vectors and matched campaign structure. No weighted score or superiority inference.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_class",
+    "claim_ceiling",
+    "reference",
+    "candidate"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "record_class": {
+      "const": "synthetic_fixture"
+    },
+    "claim_ceiling": {
+      "const": "DISPATCH_EPISODE_OUTCOME_AND_PAIRED_STRUCTURE_ONLY_NOT_SUPERIORITY_OR_CONFORMITY"
+    },
+    "reference": {
+      "$ref": "#/$defs/campaign"
+    },
+    "candidate": {
+      "$ref": "#/$defs/campaign"
+    }
+  },
+  "$defs": {
+    "evidenceClass": {
+      "enum": [
+        "synthetic",
+        "modelled",
+        "measured",
+        "independently_witnessed",
+        "accredited"
+      ]
+    },
+    "environment": {
+      "enum": [
+        "synthetic",
+        "simulation",
+        "controller_hil",
+        "power_hil",
+        "controlled_laboratory",
+        "commissioning",
+        "periodic",
+        "site_operational",
+        "field_mission"
+      ]
+    },
+    "episode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario_id",
+        "scenario_sha256",
+        "matched_input_sha256",
+        "policy_id",
+        "policy_sha256",
+        "run_id",
+        "evidence_class",
+        "test_environment",
+        "evidence_bundle_sha256",
+        "raw_trace_sha256",
+        "analysis_build_sha256",
+        "independent_assessment_reference",
+        "data_rights_reference",
+        "hard_gates",
+        "metrics"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "scenario_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "matched_input_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "policy_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "policy_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "evidence_class": {
+          "$ref": "#/$defs/evidenceClass"
+        },
+        "test_environment": {
+          "$ref": "#/$defs/environment"
+        },
+        "evidence_bundle_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "raw_trace_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "analysis_build_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "independent_assessment_reference": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 2048
+        },
+        "data_rights_reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "hard_gates": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "critical_service",
+            "qualified_capability",
+            "terminal_reserve",
+            "telemetry_integrity",
+            "protection_readiness",
+            "required_power_events"
+          ],
+          "properties": {
+            "critical_service": {
+              "enum": [
+                "pass",
+                "fail",
+                "unknown"
+              ]
+            },
+            "qualified_capability": {
+              "enum": [
+                "pass",
+                "fail",
+                "unknown"
+              ]
+            },
+            "terminal_reserve": {
+              "enum": [
+                "pass",
+                "fail",
+                "unknown"
+              ]
+            },
+            "telemetry_integrity": {
+              "enum": [
+                "pass",
+                "fail",
+                "unknown"
+              ]
+            },
+            "protection_readiness": {
+              "enum": [
+                "pass",
+                "fail",
+                "unknown"
+              ]
+            },
+            "required_power_events": {
+              "enum": [
+                "pass",
+                "fail",
+                "unknown"
+              ]
+            }
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "required_critical_service_wh",
+            "delivered_critical_service_wh",
+            "unserved_critical_service_wh",
+            "maximum_unserved_critical_service_wh",
+            "energy_reconciliation_tolerance_wh",
+            "terminal_reserve_margin_wh",
+            "fuel_input_energy_wh",
+            "grid_import_energy_wh",
+            "auxiliary_energy_wh",
+            "storage_energy_throughput_wh",
+            "generator_start_count",
+            "decision_count",
+            "missed_decision_deadline_count",
+            "decision_latency_sample_count",
+            "decision_latency_p50_ms",
+            "decision_latency_p95_ms",
+            "decision_latency_p99_ms",
+            "time_to_safe_state_ms",
+            "recovery_duration_s",
+            "time_to_terminal_reserve_restoration_s"
+          ],
+          "properties": {
+            "required_critical_service_wh": {
+              "type": "number",
+              "minimum": 0
+            },
+            "delivered_critical_service_wh": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unserved_critical_service_wh": {
+              "type": "number",
+              "minimum": 0
+            },
+            "maximum_unserved_critical_service_wh": {
+              "type": "number",
+              "minimum": 0
+            },
+            "energy_reconciliation_tolerance_wh": {
+              "type": "number",
+              "minimum": 0
+            },
+            "terminal_reserve_margin_wh": {
+              "type": "number"
+            },
+            "fuel_input_energy_wh": {
+              "type": "number",
+              "minimum": 0
+            },
+            "grid_import_energy_wh": {
+              "type": "number",
+              "minimum": 0
+            },
+            "auxiliary_energy_wh": {
+              "type": "number",
+              "minimum": 0
+            },
+            "storage_energy_throughput_wh": {
+              "type": "number",
+              "minimum": 0
+            },
+            "generator_start_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "decision_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "missed_decision_deadline_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "decision_latency_sample_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "decision_latency_p50_ms": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "decision_latency_p95_ms": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "decision_latency_p99_ms": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "time_to_safe_state_ms": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "recovery_duration_s": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "time_to_terminal_reserve_restoration_s": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "evidence_class": {
+                "const": "synthetic"
+              }
+            },
+            "required": [
+              "evidence_class"
+            ]
+          },
+          "then": {
+            "properties": {
+              "test_environment": {
+                "const": "synthetic"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "evidence_class": {
+                "const": "modelled"
+              }
+            },
+            "required": [
+              "evidence_class"
+            ]
+          },
+          "then": {
+            "properties": {
+              "test_environment": {
+                "const": "simulation"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "evidence_class": {
+                "enum": [
+                  "measured",
+                  "independently_witnessed",
+                  "accredited"
+                ]
+              }
+            },
+            "required": [
+              "evidence_class"
+            ]
+          },
+          "then": {
+            "properties": {
+              "test_environment": {
+                "enum": [
+                  "controller_hil",
+                  "power_hil",
+                  "controlled_laboratory",
+                  "commissioning",
+                  "periodic",
+                  "site_operational",
+                  "field_mission"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "evidence_class": {
+                "enum": [
+                  "independently_witnessed",
+                  "accredited"
+                ]
+              }
+            },
+            "required": [
+              "evidence_class"
+            ]
+          },
+          "then": {
+            "properties": {
+              "independent_assessment_reference": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "campaign": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "campaign_id",
+        "scenario_corpus_sha256",
+        "policy_id",
+        "policy_sha256",
+        "episodes"
+      ],
+      "properties": {
+        "campaign_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "scenario_corpus_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "policy_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "policy_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "episodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100000,
+          "items": {
+            "$ref": "#/$defs/episode"
+          }
+        }
+      }
+    }
+  }
+}

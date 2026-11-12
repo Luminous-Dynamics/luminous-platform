@@ -236,3 +236,27 @@ This is directly relevant to the Power Fabric controller test ladder. Use it alo
 The IEEE revision projects P2030.7 and P2030.8 are active PARs in this snapshot, not published replacement editions. Confirm all detailed requirements in the licensed standards and with qualified test laboratories. This applicability map is not a conformity assessment.
 
 Source: https://webstore.iec.ch/en/publication/84175
+
+
+## 11. Dispatch episode outcome and controller campaign evidence
+
+The Power Fabric controller benchmark now binds each tested policy episode to an explicit result
+vector: six mandatory hard gates (critical service, qualified capability, terminal reserve,
+telemetry integrity, protection readiness and required power events), reconciled critical-service
+energy, signed terminal reserve margin, separately counted fuel/grid/auxiliary/storage channels,
+and controller/recovery observations. Episode disposition is non-compensatory; a cost or efficiency
+advantage cannot offset a hard failure or unknown required state.
+
+The paired comparison requires identical scenario-corpus, scenario and matched-input digests across
+policy arms and retains every outcome in the report. It does not calculate a weighted rank or
+statistical significance. For test-method mapping, use IEC TS 62898-3-5:2026 (HIL, commissioning,
+periodic tests), IEEE 2030.8-2018 (controller test procedures/metrics) and NREL/EPRI's published
+controller HIL/PHIL methodology. Detailed standard requirements must be checked against licensed
+texts; this map is not conformity assessment.
+
+Sources:
+- IEC TS 62898-3-5:2026: https://webstore.iec.ch/en/publication/84175
+- IEEE 2030.8-2018: https://standards.ieee.org/ieee/2030.8/6169/
+- IEEE P2030.8 active PAR: https://standards.ieee.org/ieee/2030.8/12543/
+- NREL/EPRI controller HIL/PHIL testbed method: https://www.nrel.gov/docs/fy20osti/71338.pdf
+- 2026 EMS decision-method review: https://www.mdpi.com/1996-1073/19/15/3560

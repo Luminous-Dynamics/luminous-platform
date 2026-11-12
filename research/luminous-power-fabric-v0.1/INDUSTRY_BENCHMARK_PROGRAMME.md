@@ -230,3 +230,22 @@ Sources:
 - IEEE 2030.8-2018: https://standards.ieee.org/ieee/2030.8/6169/
 - P2030.7: https://standards.ieee.org/ieee/2030.7/12022/
 - P2030.8: https://standards.ieee.org/ieee/2030.8/12543/
+
+
+## 14. Dispatch episode outcomes and campaign comparison
+
+[Issue #440](https://github.com/Luminous-Dynamics/luminous-platform/issues/440) and
+[DISPATCH_EPISODE_OUTCOMES.md](./DISPATCH_EPISODE_OUTCOMES.md) bind every controller run to a
+scenario/input/policy/evidence identity and a six-gate hard outcome vector. Episode disposition is
+FAIL on any hard-gate failure, INCONCLUSIVE if any required state is unknown without a failure,
+and PASS only when all gates pass. Critical-service energy reconciles to delivered plus unserved;
+a negative terminal-reserve margin cannot be PASS. Fuel, grid import, auxiliary energy, storage
+throughput and controller/recovery timing remain distinct measurements.
+
+Paired campaigns require the same scenario corpus, scenario digests and per-case input roots. The
+report preserves complete run snapshots and per-gate counts, with no weighted scalar or statistical
+superiority inference. The typed validator, schema and deliberately synthetic paired fixture live
+under `measurement-audit/src/dispatch_outcomes.rs` and `schemas/dispatch-outcome-*`. Statistical
+adequacy remains separate in issue #434. IEC TS 62898-3-5:2026 is the direct HIL/commissioning/
+periodic-test reference; IEEE 2030.8-2018 and NREL/EPRI controller HIL/PHIL methodology are retained
+as comparison anchors. No physical performance or conformity claim is made.
