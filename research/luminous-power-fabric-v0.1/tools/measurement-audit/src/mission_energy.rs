@@ -558,9 +558,14 @@ pub fn evaluate_mission_energy(
     };
     let service_pass =
         total_unserved_energy_wh <= input.maximum_unserved_energy_wh + ENERGY_TOLERANCE_WH;
-    let mission_pass = global_qualification_eligible
-        && service_pass
-        && end_reserve_pass.unwrap_or(true);
+    // A configured store is part of the evaluated mission configuration. If it
+    // cannot be qualified, the mission cannot claim success with an unknown
+    // final SOC/reserve. A generator-only comparison should omit storage entirely.
+    let storage_requirement_pass = match input.storage {
+        Some(_) => end_reserve_pass == Some(true),
+        None => true,
+    };
+    let mission_pass = global_qualification_eligible && service_pass && storage_requirement_pass;
 
     Ok(MissionEnergyReport {
         mission_id: input.mission_id.clone(),
@@ -840,7 +845,19 @@ mod tests {
             Some("storage_sensor_evidence_not_current".to_string())
         );
         assert_eq!(report.final_storage_soc_fraction, None);
-        assert!(report.mission_pass);
+        assert!(!report.mission_pass);
+    }
+
+    #[test]
+    fn unqualified_configured_storage_cannot_claim_a_successful_mission() {
+        let mut value = input(vec![segment("generator", 0.0, 3600.0, 500.0, 1_000.0)]);
+        let mut bank = storage();
+        bank.protection_status = ProtectionStatus::Unknown;
+        value.storage = Some(bank);
+        let report = evaluate_mission_energy(&value).unwrap();
+        assert!(report.service_pass);
+        assert_eq!(report.end_reserve_pass, None);
+        assert!(!report.mission_pass);
     }
 
     #[test]
@@ -867,7 +884,7 @@ mod tests {
             report.storage_exclusion_reason,
             Some("storage_qualification_expired".to_string())
         );
-        assert!(report.mission_pass);
+        assert!(!report.mission_pass);
     }
 
     #[test]
