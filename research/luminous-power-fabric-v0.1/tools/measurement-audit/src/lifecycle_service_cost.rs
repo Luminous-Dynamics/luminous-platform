@@ -109,6 +109,8 @@ pub struct LifecycleMissionRecord {
     pub mission_profile_sha256: String,
     pub initial_state_obligation_sha256: String,
     pub terminal_state_obligation_sha256: String,
+    pub initial_state_observation_reference: String,
+    pub terminal_state_observation_reference: String,
     pub qualified_configuration_sha256: String,
     pub observed_configuration_sha256: String,
     pub qualification_valid_until_epoch_s: u64,
@@ -375,7 +377,11 @@ fn validate_input(input: &LifecycleScenarioInput) -> Result<(), AuditError> {
 
     let mut mission_ids: Vec<&str> = Vec::with_capacity(input.mission_records.len());
     for mission in &input.mission_records {
-        if !nonblank(&mission.mission_id) || !nonblank(&mission.evidence_reference) {
+        if !nonblank(&mission.mission_id)
+            || !nonblank(&mission.evidence_reference)
+            || !nonblank(&mission.initial_state_observation_reference)
+            || !nonblank(&mission.terminal_state_observation_reference)
+        {
             return Err(AuditError(
                 "lifecycle mission identity and evidence reference must be non-empty"
                     .to_string(),
@@ -484,7 +490,18 @@ fn validate_input(input: &LifecycleScenarioInput) -> Result<(), AuditError> {
         repair_ids.push(&repair.repair_id);
         match (&repair.replacement_component_id, repair.replacement_required) {
             (Some(new_component_id), true)
-                if nonblank(new_component_id) && new_component_id != &repair.component_id => {}
+                if nonblank(new_component_id) && new_component_id != &repair.component_id => {
+                    if replacement_component_ids
+                        .iter()
+                        .any(|id| *id == new_component_id.as_str())
+                    {
+                        return Err(AuditError(format!(
+                            "replacement component identity {:?} is duplicated",
+                            new_component_id
+                        )));
+                    }
+                    replacement_component_ids.push(new_component_id);
+                }
             (None, false) => {}
             _ => {
                 return Err(AuditError(format!(
@@ -1044,6 +1061,8 @@ mod tests {
             mission_profile_sha256: digest('b'),
             initial_state_obligation_sha256: digest('9'),
             terminal_state_obligation_sha256: digest('c'),
+            initial_state_observation_reference: format!("metrology:initial-state-{id}"),
+            terminal_state_observation_reference: format!("metrology:terminal-state-{id}"),
             qualified_configuration_sha256: digest('a'),
             observed_configuration_sha256: digest('a'),
             qualification_valid_until_epoch_s: 10_000,
@@ -1225,6 +1244,19 @@ mod tests {
         assert!(!report.repair_evidence_current);
         assert!(!report.repair_evidence_actual);
         assert!(!report.physical_lifecycle_claim_eligible);
+    }
+
+    #[test]
+    fn duplicate_incoming_replacement_component_is_rejected() {
+        let mut value = input("duplicate-replacement-component", false);
+        let mut first = repair("replacement-a", 100.0, 10.0);
+        first.replacement_required = true;
+        first.replacement_component_id = Some("new-battery-serial".to_string());
+        let mut second = repair("replacement-b", 200.0, 10.0);
+        second.replacement_required = true;
+        second.replacement_component_id = Some("new-battery-serial".to_string());
+        value.repair_events = vec![first, second];
+        assert!(evaluate_lifecycle_accounting(&value).is_err());
     }
 
     #[test]
