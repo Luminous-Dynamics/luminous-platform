@@ -107,6 +107,7 @@ pub struct LifecycleCostEntry {
 pub struct LifecycleMissionRecord {
     pub mission_id: String,
     pub mission_profile_sha256: String,
+    pub initial_state_obligation_sha256: String,
     pub terminal_state_obligation_sha256: String,
     pub qualified_configuration_sha256: String,
     pub observed_configuration_sha256: String,
@@ -388,6 +389,7 @@ fn validate_input(input: &LifecycleScenarioInput) -> Result<(), AuditError> {
         }
         mission_ids.push(&mission.mission_id);
         if !valid_sha256(&mission.mission_profile_sha256)
+            || !valid_sha256(&mission.initial_state_obligation_sha256)
             || !valid_sha256(&mission.terminal_state_obligation_sha256)
             || !valid_sha256(&mission.qualified_configuration_sha256)
             || !valid_sha256(&mission.observed_configuration_sha256)
@@ -952,6 +954,8 @@ fn validate_matched_service(
                 ))
             })?;
         if reference_mission.mission_profile_sha256 != candidate_mission.mission_profile_sha256
+            || reference_mission.initial_state_obligation_sha256
+                != candidate_mission.initial_state_obligation_sha256
             || reference_mission.terminal_state_obligation_sha256
                 != candidate_mission.terminal_state_obligation_sha256
             || (reference_mission.start_s - candidate_mission.start_s).abs()
@@ -1038,6 +1042,7 @@ mod tests {
         LifecycleMissionRecord {
             mission_id: id.to_string(),
             mission_profile_sha256: digest('b'),
+            initial_state_obligation_sha256: digest('9'),
             terminal_state_obligation_sha256: digest('c'),
             qualified_configuration_sha256: digest('a'),
             observed_configuration_sha256: digest('a'),
@@ -1387,6 +1392,14 @@ mod tests {
         let reference = input("reference", false);
         let mut candidate = input("candidate", false);
         candidate.service_boundary_id = "dc-bus".to_string();
+        assert!(compare_lifecycle_scenarios(&reference, &candidate).is_err());
+    }
+
+    #[test]
+    fn comparison_rejects_mismatched_initial_state_obligation() {
+        let reference = input("reference", false);
+        let mut candidate = input("candidate", false);
+        candidate.mission_records[0].initial_state_obligation_sha256 = digest('8');
         assert!(compare_lifecycle_scenarios(&reference, &candidate).is_err());
     }
 
