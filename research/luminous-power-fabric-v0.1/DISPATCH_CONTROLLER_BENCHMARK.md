@@ -213,3 +213,16 @@ The v0.1 corpus and schema are restricted to synthetic evidence and synthetic ru
 Claim ceiling: **OFFLINE_CONTROLLER_BENCHMARK_PROTOCOL_ONLY_NOT_PHYSICAL_OR_CONFORMITY_CLAIM**.
 
 This document does not authorize dispatch, connect to hardware, energize a battery or grid, participate in energy markets, certify a microgrid controller, or establish product conformity.
+
+
+## Industry crosswalk and time-scale alignment
+
+A vendor-neutral product/software crosswalk is maintained in
+[CONTROLLER_INDUSTRY_CROSSWALK.md](./CONTROLLER_INDUSTRY_CROSSWALK.md) for SEL powerMAX,
+Schneider EcoStruxure, Siemens SICAM, Eaton Power Xpert, OpenEMS and HOMER dispatch strategies.
+It separates product descriptions from test results and establishes fast electrical/protection,
+edge supervisory and EMS dispatch tiers. The same dispatch policy should be compared across
+centralized, hierarchical and distributed architectures under matched plant, load, information
+and compute conditions. This responds to 2026 EMS literature gaps in architecture-aware comparison,
+islanded/offshore scenarios, online re-optimization, battery degradation economics and hardware
+validation. No vendor ranking or physical SOTA claim is made.

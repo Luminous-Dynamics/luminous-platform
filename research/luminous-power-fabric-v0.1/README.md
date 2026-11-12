@@ -411,3 +411,13 @@ CLLC models remain bounded by their documented ideal/FHA/equation assumptions. N
 physical ZVS guarantee or permission to energize hardware. High-voltage and grid-connected product
 families remain architecture/research tracks only. Hardware energization remains gated on qualified
 engineering review, fault/energy analysis, suitable laboratory containment and a reviewed procedure.
+
+
+## Controller industry crosswalk
+
+The vendor-neutral controller baseline and three-timescale test plan (SEL, Schneider, Siemens, Eaton,
+OpenEMS and HOMER) are documented in
+[CONTROLLER_INDUSTRY_CROSSWALK.md](./CONTROLLER_INDUSTRY_CROSSWALK.md), tracked by [issue #442](https://github.com/Luminous-Dynamics/luminous-platform/issues/442).
+It distinguishes vendor feature descriptions from independently tested results and separates fast
+protection, edge supervisory control and mission dispatch. No vendor ranking or physical SOTA claim
+is made.
