@@ -117,6 +117,7 @@ impl SeverityProfile {
             self.environmental,
             self.service_interruption,
             self.equipment_damage,
+            self.regulatory_reportability,
         ]
         .iter()
         .all(|value| *value != Severity::NotAssessed)
@@ -415,10 +416,10 @@ fn validate_exposure(window: &ExposureWindow) -> Result<(), AuditError> {
     Ok(())
 }
 
-fn validate_event(
+fn validate_event<'a>(
     event: &ReliabilityEvent,
-    windows: &BTreeMap<&str, &ExposureWindow>,
-) -> Result<&ExposureWindow, AuditError> {
+    windows: &BTreeMap<&str, &'a ExposureWindow>,
+) -> Result<&'a ExposureWindow, AuditError> {
     if !nonblank(&event.event_id)
         || !nonblank(&event.incident_group_id)
         || !nonblank(&event.exposure_window_id)
@@ -449,7 +450,7 @@ fn validate_event(
         return Err(AuditError(format!("reliability event {:?} is invalid", event.event_id)));
     }
 
-    let window = windows.get(event.exposure_window_id.as_str())
+    let window = *windows.get(event.exposure_window_id.as_str())
         .ok_or_else(|| AuditError(format!("event {:?} references an unknown exposure window", event.event_id)))?;
     if event.exposure_population_id != window.exposure_population_id
         || event.asset_id != window.asset_id
@@ -480,7 +481,7 @@ fn validate_event(
 fn validate_exposure_non_overlap(windows: &[ExposureWindow]) -> Result<(), AuditError> {
     let mut grouped: BTreeMap<(&str, &str), Vec<&ExposureWindow>> = BTreeMap::new();
     for window in windows {
-        grouped.entry((&window.exposure_population_id, &window.asset_id))
+        grouped.entry((window.exposure_population_id.as_str(), window.asset_id.as_str()))
             .or_default().push(window);
     }
     for (_, values) in grouped.iter_mut() {
@@ -539,8 +540,16 @@ pub fn evaluate_reliability_accounting(input: &ReliabilityAccountingInput) -> Re
 
     let mut window_ids = BTreeSet::new();
     let mut windows_by_id: BTreeMap<&str, &ExposureWindow> = BTreeMap::new();
+    let cohort = &input.exposure_windows[0];
     for window in &input.exposure_windows {
         validate_exposure(window)?;
+        if window.exposure_population_id != cohort.exposure_population_id
+            || window.topology_sha256 != cohort.topology_sha256
+            || window.configuration_sha256 != cohort.configuration_sha256
+            || window.site_profile_sha256 != cohort.site_profile_sha256
+        {
+            return Err(AuditError("one reliability report cannot pool different populations, topologies, configurations or site profiles".to_string()));
+        }
         if !window_ids.insert(window.exposure_window_id.as_str()) {
             return Err(AuditError(format!("duplicate exposure window ID {:?}", window.exposure_window_id)));
         }
@@ -585,12 +594,6 @@ pub fn evaluate_reliability_accounting(input: &ReliabilityAccountingInput) -> Re
             return Err(AuditError(format!("duplicate reliability event ID {:?}", event.event_id)));
         }
         let window = validate_event(event, &windows_by_id)?;
-        if input.evaluation_time_tai.lower_bound_ns < window.start_tai.upper_bound_ns
-            || input.evaluation_time_tai.upper_bound_ns > window.end_tai.lower_bound_ns
-        {
-            return Err(AuditError("evaluation time is outside an exposure window".to_string()));
-        }
-
         if let Some(previous) = incident_classes.insert(&event.incident_group_id, event.event_class) {
             if previous != event.event_class {
                 return Err(AuditError(format!(
@@ -621,7 +624,7 @@ pub fn evaluate_reliability_accounting(input: &ReliabilityAccountingInput) -> Re
         }
         for dimension in severity_dimensions() {
             let value = event.severity.value(dimension);
-            severity_by_incident.entry((&event.incident_group_id, dimension))
+            severity_by_incident.entry((event.incident_group_id.as_str(), dimension))
                 .and_modify(|existing| *existing = (*existing).max(value))
                 .or_insert(value);
         }
@@ -673,7 +676,36 @@ pub fn evaluate_reliability_accounting(input: &ReliabilityAccountingInput) -> Re
                     }
                 }
             } else {
+                if !within_interval(&input.evaluation_time_tai, &window.start_tai, &window.end_tai) {
+                    return Err(AuditError("open outage evaluation time is outside its exposure window".to_string()));
+                }
+                let bounds = duration_bounds(&event.onset_tai, &input.evaluation_time_tai)?;
+                let inner = if input.evaluation_time_tai.lower_bound_ns > event.onset_tai.upper_bound_ns {
+                    Some(Span { start_ns: event.onset_tai.upper_bound_ns, end_ns: input.evaluation_time_tai.lower_bound_ns })
+                } else { None };
+                let outer = if input.evaluation_time_tai.upper_bound_ns > event.onset_tai.lower_bound_ns {
+                    Some(Span { start_ns: event.onset_tai.lower_bound_ns, end_ns: input.evaluation_time_tai.upper_bound_ns })
+                } else { None };
+                if let Some(span) = inner {
+                    all_lower.entry(event.asset_id.as_str()).or_default().push(span);
+                    match event.outage_class {
+                        OutageClass::Planned => planned_lower.entry(event.asset_id.as_str()).or_default().push(span),
+                        OutageClass::Unplanned => unplanned_lower.entry(event.asset_id.as_str()).or_default().push(span),
+                        OutageClass::None => {}
+                    }
+                }
+                if let Some(span) = outer {
+                    all_upper.entry(event.asset_id.as_str()).or_default().push(span);
+                    match event.outage_class {
+                        OutageClass::Planned => planned_upper.entry(event.asset_id.as_str()).or_default().push(span),
+                        OutageClass::Unplanned => unplanned_upper.entry(event.asset_id.as_str()).or_default().push(span),
+                        OutageClass::None => {}
+                    }
+                }
                 open_outage_incidents.insert(event.incident_group_id.as_str());
+                if bounds.upper_ns == 0 {
+                    return Err(AuditError("open outage has no positive duration bound".to_string()));
+                }
             }
         }
     }
@@ -889,7 +921,7 @@ mod tests {
                 environmental: Severity::None,
                 service_interruption: if outage == OutageClass::Unplanned { Severity::Moderate } else { Severity::None },
                 equipment_damage: Severity::Minor,
-                regulatory_reportability: Severity::NotAssessed,
+                regulatory_reportability: Severity::None,
             },
             root_cause_confidence: RootCauseConfidence::Probable,
             common_cause_group_id: Some("common-control-power-01".into()),
@@ -1049,4 +1081,36 @@ mod tests {
         assert!(!report.physical_reliability_claim_eligible);
         assert!(report.claim_ceiling().contains("NOT_FAILURE_PROBABILITY"));
     }
+
+    #[test]
+    fn open_outage_contributes_elapsed_unavailability_to_evaluation_time() {
+        let mut value = input();
+        value.events[0].restored_tai = None;
+        let report = evaluate_reliability_accounting(&value).unwrap();
+        assert_eq!(report.open_outage_incident_count, 1);
+        assert!(report.unplanned_asset_unavailable_hours_upper > 400.0);
+    }
+
+    #[test]
+    fn rejects_configuration_or_site_profile_mixing_in_one_cohort() {
+        let mut value = input();
+        let mut next = window();
+        next.exposure_window_id = "window-2".into();
+        next.asset_id = "system-02".into();
+        next.configuration_sha256 = h('d');
+        value.exposure_windows.push(next);
+        assert!(evaluate_reliability_accounting(&value).is_err());
+    }
+
+    #[test]
+    fn overlapping_outage_records_are_unioned_per_asset() {
+        let mut value = input();
+        let second = event("event-5", "incident-4", EventClass::ConfirmedFailure, OutageClass::Unplanned,
+            1_000_000_000 + 10 * 86_400_000_000_000 + 3_600_000_000_000);
+        value.events.push(second);
+        let report = evaluate_reliability_accounting(&value).unwrap();
+        assert!(report.unplanned_asset_unavailable_hours_upper < 4.0);
+        assert!(report.unplanned_asset_unavailable_hours_lower < report.unplanned_asset_unavailable_hours_upper);
+    }
+
 }
