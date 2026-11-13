@@ -321,3 +321,10 @@ site measurement, data-centre guarantee or OCP compliance test. See the syntheti
 Every accepted output must be combined with the exact manifest, raw-file digest, calibration
 evidence, analysis build identity, test-procedure revision and independent review before it can
 support a declared bench claim.
+
+
+Storage-health retention now requires every observation for a component to share exact
+measurement-protocol and condition-profile digests, in addition to the unchanged component
+configuration, independent metrology and chronological checks. Unmatched tests do not produce a
+retention trajectory. Those digests bind declared protocol/condition versions, not proof of actual
+condition compliance.

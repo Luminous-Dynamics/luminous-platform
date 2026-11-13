@@ -77,13 +77,13 @@ Each event-time storage observation binds:
 - evidence, calibration and sensor states;
 - operating-condition and measurement evidence references.
 
-For the same component and unchanged configuration, with at least two chronologically ordered, current, calibrated, sensor-valid, independently measured observations, the accountant computes conservative lower-bound retention:
+For the same component and unchanged configuration, with at least two chronologically ordered, current, calibrated, sensor-valid, independently measured observations that share exact measurement-protocol and condition-profile digests, the accountant computes conservative lower-bound retention:
 
 Capacity retention = last(usable capacity - capacity uncertainty) / first(usable capacity - capacity uncertainty)
 
 Power retention = last(max discharge power - power uncertainty) / first(max discharge power - power uncertainty)
 
-Throughput, calendar-age and equivalent-full-cycle deltas are reported with first/last SOC/SOH/temperature, timebase and evidence references. Throughput, calendar age and cycle counts must be non-decreasing. A configuration change, expired/invalid calibration, vendor-only report, missing point or replaced component prevents an independent retention trajectory from being claimed.
+Throughput, calendar-age and equivalent-full-cycle deltas are reported with first/last SOC/SOH/temperature, timebase and evidence references. Throughput, calendar age and cycle counts must be non-decreasing. A configuration, measurement-protocol or condition-profile change, expired/invalid calibration, vendor-only report, missing point or replaced component prevents an independent retention trajectory from being claimed. The digests bind declared comparability; they do not prove actual test-condition compliance. Preserve per-run condition references for independent verification.
 
 This is a first-to-last observed ratio, **not a forecast**, degradation curve, chemistry model, remaining useful life or warranty estimate. Different temperature/SOC/C-rate test conditions must not be treated as a controlled degradation comparison unless the measurement programme declares and controls them.
 
