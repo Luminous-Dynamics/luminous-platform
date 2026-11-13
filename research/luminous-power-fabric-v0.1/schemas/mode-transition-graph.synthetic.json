@@ -676,6 +676,1045 @@
   ],
   "test_cases": [
     {
+      "test_case_id": "NEG-F01-MEMS-DIRECT-SWITCH-mems_has_no_switchgear_authority",
+      "transition_id": "F01-MEMS-DIRECT-SWITCH",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "protection_ready"
+      ],
+      "violated_guard_ids": [
+        "mems_has_no_switchgear_authority"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-F01-MEMS-DIRECT-SWITCH-protection_ready",
+      "transition_id": "F01-MEMS-DIRECT-SWITCH",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "mems_has_no_switchgear_authority"
+      ],
+      "violated_guard_ids": [
+        "protection_ready"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-F02-RECONNECT-WITHOUT-SYNC-grid_quality_valid",
+      "transition_id": "F02-RECONNECT-WITHOUT-SYNC",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "protection_ready",
+        "sync_check_passed",
+        "sync_close_permissive"
+      ],
+      "violated_guard_ids": [
+        "grid_quality_valid"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-F02-RECONNECT-WITHOUT-SYNC-protection_ready",
+      "transition_id": "F02-RECONNECT-WITHOUT-SYNC",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_quality_valid",
+        "sync_check_passed",
+        "sync_close_permissive"
+      ],
+      "violated_guard_ids": [
+        "protection_ready"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-F02-RECONNECT-WITHOUT-SYNC-sync_check_passed",
+      "transition_id": "F02-RECONNECT-WITHOUT-SYNC",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_quality_valid",
+        "protection_ready",
+        "sync_close_permissive"
+      ],
+      "violated_guard_ids": [
+        "sync_check_passed"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-F02-RECONNECT-WITHOUT-SYNC-sync_close_permissive",
+      "transition_id": "F02-RECONNECT-WITHOUT-SYNC",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_quality_valid",
+        "protection_ready",
+        "sync_check_passed"
+      ],
+      "violated_guard_ids": [
+        "sync_close_permissive"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-F03-BYPASS-PROTECTION-LOCKOUT-inspection_complete",
+      "transition_id": "F03-BYPASS-PROTECTION-LOCKOUT",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "no_protection_lockout",
+        "trip_clear_verified"
+      ],
+      "violated_guard_ids": [
+        "inspection_complete"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-F03-BYPASS-PROTECTION-LOCKOUT-no_protection_lockout",
+      "transition_id": "F03-BYPASS-PROTECTION-LOCKOUT",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "trip_clear_verified",
+        "inspection_complete"
+      ],
+      "violated_guard_ids": [
+        "no_protection_lockout"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-F03-BYPASS-PROTECTION-LOCKOUT-trip_clear_verified",
+      "transition_id": "F03-BYPASS-PROTECTION-LOCKOUT",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "no_protection_lockout",
+        "inspection_complete"
+      ],
+      "violated_guard_ids": [
+        "trip_clear_verified"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T01-GRID-PREPARE-grid_former_ready",
+      "transition_id": "T01-GRID-PREPARE",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_quality_valid",
+        "telemetry_fresh",
+        "protection_ready",
+        "reserve_sufficient"
+      ],
+      "violated_guard_ids": [
+        "grid_former_ready"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T01-GRID-PREPARE-grid_quality_valid",
+      "transition_id": "T01-GRID-PREPARE",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "protection_ready",
+        "grid_former_ready",
+        "reserve_sufficient"
+      ],
+      "violated_guard_ids": [
+        "grid_quality_valid"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T01-GRID-PREPARE-protection_ready",
+      "transition_id": "T01-GRID-PREPARE",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_quality_valid",
+        "telemetry_fresh",
+        "grid_former_ready",
+        "reserve_sufficient"
+      ],
+      "violated_guard_ids": [
+        "protection_ready"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T01-GRID-PREPARE-reserve_sufficient",
+      "transition_id": "T01-GRID-PREPARE",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_quality_valid",
+        "telemetry_fresh",
+        "protection_ready",
+        "grid_former_ready"
+      ],
+      "violated_guard_ids": [
+        "reserve_sufficient"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T01-GRID-PREPARE-telemetry_fresh",
+      "transition_id": "T01-GRID-PREPARE",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_quality_valid",
+        "protection_ready",
+        "grid_former_ready",
+        "reserve_sufficient"
+      ],
+      "violated_guard_ids": [
+        "telemetry_fresh"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T02-PLANNED-ISLAND-COMMIT-grid_former_ready",
+      "transition_id": "T02-PLANNED-ISLAND-COMMIT",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "protection_ready",
+        "reserve_sufficient",
+        "pcc_open_observed",
+        "island_bus_stable"
+      ],
+      "violated_guard_ids": [
+        "grid_former_ready"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T02-PLANNED-ISLAND-COMMIT-island_bus_stable",
+      "transition_id": "T02-PLANNED-ISLAND-COMMIT",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "protection_ready",
+        "grid_former_ready",
+        "reserve_sufficient",
+        "pcc_open_observed"
+      ],
+      "violated_guard_ids": [
+        "island_bus_stable"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T02-PLANNED-ISLAND-COMMIT-pcc_open_observed",
+      "transition_id": "T02-PLANNED-ISLAND-COMMIT",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "protection_ready",
+        "grid_former_ready",
+        "reserve_sufficient",
+        "island_bus_stable"
+      ],
+      "violated_guard_ids": [
+        "pcc_open_observed"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T02-PLANNED-ISLAND-COMMIT-protection_ready",
+      "transition_id": "T02-PLANNED-ISLAND-COMMIT",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "grid_former_ready",
+        "reserve_sufficient",
+        "pcc_open_observed",
+        "island_bus_stable"
+      ],
+      "violated_guard_ids": [
+        "protection_ready"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T02-PLANNED-ISLAND-COMMIT-reserve_sufficient",
+      "transition_id": "T02-PLANNED-ISLAND-COMMIT",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "protection_ready",
+        "grid_former_ready",
+        "pcc_open_observed",
+        "island_bus_stable"
+      ],
+      "violated_guard_ids": [
+        "reserve_sufficient"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T02-PLANNED-ISLAND-COMMIT-telemetry_fresh",
+      "transition_id": "T02-PLANNED-ISLAND-COMMIT",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "protection_ready",
+        "grid_former_ready",
+        "reserve_sufficient",
+        "pcc_open_observed",
+        "island_bus_stable"
+      ],
+      "violated_guard_ids": [
+        "telemetry_fresh"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T03-UNEXPECTED-GRID-LOSS-grid_former_ready",
+      "transition_id": "T03-UNEXPECTED-GRID-LOSS",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_loss_detected",
+        "pcc_open_observed",
+        "island_bus_stable"
+      ],
+      "violated_guard_ids": [
+        "grid_former_ready"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T03-UNEXPECTED-GRID-LOSS-grid_loss_detected",
+      "transition_id": "T03-UNEXPECTED-GRID-LOSS",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_former_ready",
+        "pcc_open_observed",
+        "island_bus_stable"
+      ],
+      "violated_guard_ids": [
+        "grid_loss_detected"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T03-UNEXPECTED-GRID-LOSS-island_bus_stable",
+      "transition_id": "T03-UNEXPECTED-GRID-LOSS",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_loss_detected",
+        "grid_former_ready",
+        "pcc_open_observed"
+      ],
+      "violated_guard_ids": [
+        "island_bus_stable"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T03-UNEXPECTED-GRID-LOSS-pcc_open_observed",
+      "transition_id": "T03-UNEXPECTED-GRID-LOSS",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_loss_detected",
+        "grid_former_ready",
+        "island_bus_stable"
+      ],
+      "violated_guard_ids": [
+        "pcc_open_observed"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T04-RECONNECTION-REQUEST-grid_quality_valid",
+      "transition_id": "T04-RECONNECTION-REQUEST",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "protection_ready"
+      ],
+      "violated_guard_ids": [
+        "grid_quality_valid"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T04-RECONNECTION-REQUEST-protection_ready",
+      "transition_id": "T04-RECONNECTION-REQUEST",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_quality_valid",
+        "telemetry_fresh"
+      ],
+      "violated_guard_ids": [
+        "protection_ready"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T04-RECONNECTION-REQUEST-telemetry_fresh",
+      "transition_id": "T04-RECONNECTION-REQUEST",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_quality_valid",
+        "protection_ready"
+      ],
+      "violated_guard_ids": [
+        "telemetry_fresh"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T05-RECONNECTION-COMMIT-grid_quality_valid",
+      "transition_id": "T05-RECONNECTION-COMMIT",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "protection_ready",
+        "sync_check_passed",
+        "sync_close_permissive"
+      ],
+      "violated_guard_ids": [
+        "grid_quality_valid"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T05-RECONNECTION-COMMIT-protection_ready",
+      "transition_id": "T05-RECONNECTION-COMMIT",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_quality_valid",
+        "telemetry_fresh",
+        "sync_check_passed",
+        "sync_close_permissive"
+      ],
+      "violated_guard_ids": [
+        "protection_ready"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T05-RECONNECTION-COMMIT-sync_check_passed",
+      "transition_id": "T05-RECONNECTION-COMMIT",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_quality_valid",
+        "telemetry_fresh",
+        "protection_ready",
+        "sync_close_permissive"
+      ],
+      "violated_guard_ids": [
+        "sync_check_passed"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T05-RECONNECTION-COMMIT-sync_close_permissive",
+      "transition_id": "T05-RECONNECTION-COMMIT",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_quality_valid",
+        "telemetry_fresh",
+        "protection_ready",
+        "sync_check_passed"
+      ],
+      "violated_guard_ids": [
+        "sync_close_permissive"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T05-RECONNECTION-COMMIT-telemetry_fresh",
+      "transition_id": "T05-RECONNECTION-COMMIT",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_quality_valid",
+        "protection_ready",
+        "sync_check_passed",
+        "sync_close_permissive"
+      ],
+      "violated_guard_ids": [
+        "telemetry_fresh"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T06-BLACK-START-INITIATE-protection_ready",
+      "transition_id": "T06-BLACK-START-INITIATE",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "start_permit_valid",
+        "reserve_sufficient"
+      ],
+      "violated_guard_ids": [
+        "protection_ready"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T06-BLACK-START-INITIATE-reserve_sufficient",
+      "transition_id": "T06-BLACK-START-INITIATE",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "start_permit_valid",
+        "protection_ready"
+      ],
+      "violated_guard_ids": [
+        "reserve_sufficient"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T06-BLACK-START-INITIATE-start_permit_valid",
+      "transition_id": "T06-BLACK-START-INITIATE",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "protection_ready",
+        "reserve_sufficient"
+      ],
+      "violated_guard_ids": [
+        "start_permit_valid"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T07-BLACK-START-COMPLETE-grid_former_ready",
+      "transition_id": "T07-BLACK-START-COMPLETE",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_former_stable",
+        "protection_ready",
+        "reserve_sufficient",
+        "pcc_open_observed"
+      ],
+      "violated_guard_ids": [
+        "grid_former_ready"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T07-BLACK-START-COMPLETE-grid_former_stable",
+      "transition_id": "T07-BLACK-START-COMPLETE",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_former_ready",
+        "protection_ready",
+        "reserve_sufficient",
+        "pcc_open_observed"
+      ],
+      "violated_guard_ids": [
+        "grid_former_stable"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T07-BLACK-START-COMPLETE-pcc_open_observed",
+      "transition_id": "T07-BLACK-START-COMPLETE",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_former_ready",
+        "grid_former_stable",
+        "protection_ready",
+        "reserve_sufficient"
+      ],
+      "violated_guard_ids": [
+        "pcc_open_observed"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T07-BLACK-START-COMPLETE-protection_ready",
+      "transition_id": "T07-BLACK-START-COMPLETE",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_former_ready",
+        "grid_former_stable",
+        "reserve_sufficient",
+        "pcc_open_observed"
+      ],
+      "violated_guard_ids": [
+        "protection_ready"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T07-BLACK-START-COMPLETE-reserve_sufficient",
+      "transition_id": "T07-BLACK-START-COMPLETE",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_former_ready",
+        "grid_former_stable",
+        "protection_ready",
+        "pcc_open_observed"
+      ],
+      "violated_guard_ids": [
+        "reserve_sufficient"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T08-BLACK-START-FAILED-pcc_open_observed",
+      "transition_id": "T08-BLACK-START-FAILED",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "start_failed_or_timed_out"
+      ],
+      "violated_guard_ids": [
+        "pcc_open_observed"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T08-BLACK-START-FAILED-start_failed_or_timed_out",
+      "transition_id": "T08-BLACK-START-FAILED",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "pcc_open_observed"
+      ],
+      "violated_guard_ids": [
+        "start_failed_or_timed_out"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T09-PROTECTION-TRIP-trip_detected",
+      "transition_id": "T09-PROTECTION-TRIP",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [],
+      "violated_guard_ids": [
+        "trip_detected"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T10-TRIP-INSPECTION-HOLD-inspection_complete",
+      "transition_id": "T10-TRIP-INSPECTION-HOLD",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "trip_clear_verified",
+        "state_reconciled"
+      ],
+      "violated_guard_ids": [
+        "inspection_complete"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T10-TRIP-INSPECTION-HOLD-state_reconciled",
+      "transition_id": "T10-TRIP-INSPECTION-HOLD",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "inspection_complete",
+        "trip_clear_verified"
+      ],
+      "violated_guard_ids": [
+        "state_reconciled"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T10-TRIP-INSPECTION-HOLD-trip_clear_verified",
+      "transition_id": "T10-TRIP-INSPECTION-HOLD",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "inspection_complete",
+        "state_reconciled"
+      ],
+      "violated_guard_ids": [
+        "trip_clear_verified"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T11-COMMS-LOSS-FROM-GRID-comms_stale_detected",
+      "transition_id": "T11-COMMS-LOSS-FROM-GRID",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [],
+      "violated_guard_ids": [
+        "comms_stale_detected"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T12-COMMS-LOSS-FROM-ISLAND-comms_stale_detected",
+      "transition_id": "T12-COMMS-LOSS-FROM-ISLAND",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [],
+      "violated_guard_ids": [
+        "comms_stale_detected"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T13-RECONCILE-TO-GRID-grid_quality_valid",
+      "transition_id": "T13-RECONCILE-TO-GRID",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "state_reconciled",
+        "sync_check_passed",
+        "sync_close_permissive",
+        "protection_ready"
+      ],
+      "violated_guard_ids": [
+        "grid_quality_valid"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T13-RECONCILE-TO-GRID-protection_ready",
+      "transition_id": "T13-RECONCILE-TO-GRID",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "state_reconciled",
+        "grid_quality_valid",
+        "sync_check_passed",
+        "sync_close_permissive"
+      ],
+      "violated_guard_ids": [
+        "protection_ready"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T13-RECONCILE-TO-GRID-state_reconciled",
+      "transition_id": "T13-RECONCILE-TO-GRID",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "grid_quality_valid",
+        "sync_check_passed",
+        "sync_close_permissive",
+        "protection_ready"
+      ],
+      "violated_guard_ids": [
+        "state_reconciled"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T13-RECONCILE-TO-GRID-sync_check_passed",
+      "transition_id": "T13-RECONCILE-TO-GRID",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "state_reconciled",
+        "grid_quality_valid",
+        "sync_close_permissive",
+        "protection_ready"
+      ],
+      "violated_guard_ids": [
+        "sync_check_passed"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T13-RECONCILE-TO-GRID-sync_close_permissive",
+      "transition_id": "T13-RECONCILE-TO-GRID",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "state_reconciled",
+        "grid_quality_valid",
+        "sync_check_passed",
+        "protection_ready"
+      ],
+      "violated_guard_ids": [
+        "sync_close_permissive"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T13-RECONCILE-TO-GRID-telemetry_fresh",
+      "transition_id": "T13-RECONCILE-TO-GRID",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "state_reconciled",
+        "grid_quality_valid",
+        "sync_check_passed",
+        "sync_close_permissive",
+        "protection_ready"
+      ],
+      "violated_guard_ids": [
+        "telemetry_fresh"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T14-RECONCILE-TO-ISLAND-grid_former_ready",
+      "transition_id": "T14-RECONCILE-TO-ISLAND",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "state_reconciled",
+        "grid_former_stable",
+        "pcc_open_observed",
+        "protection_ready"
+      ],
+      "violated_guard_ids": [
+        "grid_former_ready"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T14-RECONCILE-TO-ISLAND-grid_former_stable",
+      "transition_id": "T14-RECONCILE-TO-ISLAND",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "state_reconciled",
+        "grid_former_ready",
+        "pcc_open_observed",
+        "protection_ready"
+      ],
+      "violated_guard_ids": [
+        "grid_former_stable"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T14-RECONCILE-TO-ISLAND-pcc_open_observed",
+      "transition_id": "T14-RECONCILE-TO-ISLAND",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "state_reconciled",
+        "grid_former_ready",
+        "grid_former_stable",
+        "protection_ready"
+      ],
+      "violated_guard_ids": [
+        "pcc_open_observed"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T14-RECONCILE-TO-ISLAND-protection_ready",
+      "transition_id": "T14-RECONCILE-TO-ISLAND",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "state_reconciled",
+        "grid_former_ready",
+        "grid_former_stable",
+        "pcc_open_observed"
+      ],
+      "violated_guard_ids": [
+        "protection_ready"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T14-RECONCILE-TO-ISLAND-state_reconciled",
+      "transition_id": "T14-RECONCILE-TO-ISLAND",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "grid_former_ready",
+        "grid_former_stable",
+        "pcc_open_observed",
+        "protection_ready"
+      ],
+      "violated_guard_ids": [
+        "state_reconciled"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T14-RECONCILE-TO-ISLAND-telemetry_fresh",
+      "transition_id": "T14-RECONCILE-TO-ISLAND",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "state_reconciled",
+        "grid_former_ready",
+        "grid_former_stable",
+        "pcc_open_observed",
+        "protection_ready"
+      ],
+      "violated_guard_ids": [
+        "telemetry_fresh"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
       "test_case_id": "POS-T01-GRID-PREPARE",
       "transition_id": "T01-GRID-PREPARE",
       "test_kind": "positive",
@@ -692,24 +1731,6 @@
         "prepare_state_entered",
         "reserve_snapshot_bound"
       ],
-      "recovery_transition_id": null,
-      "evidence_class": "synthetic"
-    },
-    {
-      "test_case_id": "NEG-T01-GRID-PREPARE",
-      "transition_id": "T01-GRID-PREPARE",
-      "test_kind": "negative",
-      "expected_decision": "block",
-      "satisfied_guard_ids": [
-        "telemetry_fresh",
-        "protection_ready",
-        "grid_former_ready",
-        "reserve_sufficient"
-      ],
-      "violated_guard_ids": [
-        "grid_quality_valid"
-      ],
-      "observed_postcondition_ids": [],
       "recovery_transition_id": null,
       "evidence_class": "synthetic"
     },
@@ -736,25 +1757,6 @@
       "evidence_class": "synthetic"
     },
     {
-      "test_case_id": "NEG-T02-PLANNED-ISLAND-COMMIT",
-      "transition_id": "T02-PLANNED-ISLAND-COMMIT",
-      "test_kind": "negative",
-      "expected_decision": "block",
-      "satisfied_guard_ids": [
-        "protection_ready",
-        "grid_former_ready",
-        "reserve_sufficient",
-        "pcc_open_observed",
-        "island_bus_stable"
-      ],
-      "violated_guard_ids": [
-        "telemetry_fresh"
-      ],
-      "observed_postcondition_ids": [],
-      "recovery_transition_id": null,
-      "evidence_class": "synthetic"
-    },
-    {
       "test_case_id": "POS-T03-UNEXPECTED-GRID-LOSS",
       "transition_id": "T03-UNEXPECTED-GRID-LOSS",
       "test_kind": "positive",
@@ -775,23 +1777,6 @@
       "evidence_class": "synthetic"
     },
     {
-      "test_case_id": "NEG-T03-UNEXPECTED-GRID-LOSS",
-      "transition_id": "T03-UNEXPECTED-GRID-LOSS",
-      "test_kind": "negative",
-      "expected_decision": "block",
-      "satisfied_guard_ids": [
-        "grid_former_ready",
-        "pcc_open_observed",
-        "island_bus_stable"
-      ],
-      "violated_guard_ids": [
-        "grid_loss_detected"
-      ],
-      "observed_postcondition_ids": [],
-      "recovery_transition_id": null,
-      "evidence_class": "synthetic"
-    },
-    {
       "test_case_id": "POS-T04-RECONNECTION-REQUEST",
       "transition_id": "T04-RECONNECTION-REQUEST",
       "test_kind": "positive",
@@ -806,22 +1791,6 @@
         "reconnection_pending_recorded",
         "pcc_remains_open"
       ],
-      "recovery_transition_id": null,
-      "evidence_class": "synthetic"
-    },
-    {
-      "test_case_id": "NEG-T04-RECONNECTION-REQUEST",
-      "transition_id": "T04-RECONNECTION-REQUEST",
-      "test_kind": "negative",
-      "expected_decision": "block",
-      "satisfied_guard_ids": [
-        "telemetry_fresh",
-        "protection_ready"
-      ],
-      "violated_guard_ids": [
-        "grid_quality_valid"
-      ],
-      "observed_postcondition_ids": [],
       "recovery_transition_id": null,
       "evidence_class": "synthetic"
     },
@@ -847,24 +1816,6 @@
       "evidence_class": "synthetic"
     },
     {
-      "test_case_id": "NEG-T05-RECONNECTION-COMMIT",
-      "transition_id": "T05-RECONNECTION-COMMIT",
-      "test_kind": "negative",
-      "expected_decision": "block",
-      "satisfied_guard_ids": [
-        "telemetry_fresh",
-        "protection_ready",
-        "sync_check_passed",
-        "sync_close_permissive"
-      ],
-      "violated_guard_ids": [
-        "grid_quality_valid"
-      ],
-      "observed_postcondition_ids": [],
-      "recovery_transition_id": null,
-      "evidence_class": "synthetic"
-    },
-    {
       "test_case_id": "POS-T06-BLACK-START-INITIATE",
       "transition_id": "T06-BLACK-START-INITIATE",
       "test_kind": "positive",
@@ -879,22 +1830,6 @@
         "black_start_sequence_authorized",
         "dead_bus_precondition_recorded"
       ],
-      "recovery_transition_id": null,
-      "evidence_class": "synthetic"
-    },
-    {
-      "test_case_id": "NEG-T06-BLACK-START-INITIATE",
-      "transition_id": "T06-BLACK-START-INITIATE",
-      "test_kind": "negative",
-      "expected_decision": "block",
-      "satisfied_guard_ids": [
-        "protection_ready",
-        "reserve_sufficient"
-      ],
-      "violated_guard_ids": [
-        "start_permit_valid"
-      ],
-      "observed_postcondition_ids": [],
       "recovery_transition_id": null,
       "evidence_class": "synthetic"
     },
@@ -920,24 +1855,6 @@
       "evidence_class": "synthetic"
     },
     {
-      "test_case_id": "NEG-T07-BLACK-START-COMPLETE",
-      "transition_id": "T07-BLACK-START-COMPLETE",
-      "test_kind": "negative",
-      "expected_decision": "block",
-      "satisfied_guard_ids": [
-        "grid_former_stable",
-        "protection_ready",
-        "reserve_sufficient",
-        "pcc_open_observed"
-      ],
-      "violated_guard_ids": [
-        "grid_former_ready"
-      ],
-      "observed_postcondition_ids": [],
-      "recovery_transition_id": null,
-      "evidence_class": "synthetic"
-    },
-    {
       "test_case_id": "POS-T08-BLACK-START-FAILED",
       "transition_id": "T08-BLACK-START-FAILED",
       "test_kind": "positive",
@@ -956,21 +1873,6 @@
       "evidence_class": "synthetic"
     },
     {
-      "test_case_id": "NEG-T08-BLACK-START-FAILED",
-      "transition_id": "T08-BLACK-START-FAILED",
-      "test_kind": "negative",
-      "expected_decision": "block",
-      "satisfied_guard_ids": [
-        "pcc_open_observed"
-      ],
-      "violated_guard_ids": [
-        "start_failed_or_timed_out"
-      ],
-      "observed_postcondition_ids": [],
-      "recovery_transition_id": null,
-      "evidence_class": "synthetic"
-    },
-    {
       "test_case_id": "POS-T09-PROTECTION-TRIP",
       "transition_id": "T09-PROTECTION-TRIP",
       "test_kind": "positive",
@@ -983,19 +1885,6 @@
         "trip_state_observed",
         "event_and_trip_identity_retained"
       ],
-      "recovery_transition_id": null,
-      "evidence_class": "synthetic"
-    },
-    {
-      "test_case_id": "NEG-T09-PROTECTION-TRIP",
-      "transition_id": "T09-PROTECTION-TRIP",
-      "test_kind": "negative",
-      "expected_decision": "block",
-      "satisfied_guard_ids": [],
-      "violated_guard_ids": [
-        "trip_detected"
-      ],
-      "observed_postcondition_ids": [],
       "recovery_transition_id": null,
       "evidence_class": "synthetic"
     },
@@ -1018,22 +1907,6 @@
       "evidence_class": "synthetic"
     },
     {
-      "test_case_id": "NEG-T10-TRIP-INSPECTION-HOLD",
-      "transition_id": "T10-TRIP-INSPECTION-HOLD",
-      "test_kind": "negative",
-      "expected_decision": "block",
-      "satisfied_guard_ids": [
-        "trip_clear_verified",
-        "state_reconciled"
-      ],
-      "violated_guard_ids": [
-        "inspection_complete"
-      ],
-      "observed_postcondition_ids": [],
-      "recovery_transition_id": null,
-      "evidence_class": "synthetic"
-    },
-    {
       "test_case_id": "POS-T11-COMMS-LOSS-FROM-GRID",
       "transition_id": "T11-COMMS-LOSS-FROM-GRID",
       "test_kind": "positive",
@@ -1050,19 +1923,6 @@
       "evidence_class": "synthetic"
     },
     {
-      "test_case_id": "NEG-T11-COMMS-LOSS-FROM-GRID",
-      "transition_id": "T11-COMMS-LOSS-FROM-GRID",
-      "test_kind": "negative",
-      "expected_decision": "block",
-      "satisfied_guard_ids": [],
-      "violated_guard_ids": [
-        "comms_stale_detected"
-      ],
-      "observed_postcondition_ids": [],
-      "recovery_transition_id": null,
-      "evidence_class": "synthetic"
-    },
-    {
       "test_case_id": "POS-T12-COMMS-LOSS-FROM-ISLAND",
       "transition_id": "T12-COMMS-LOSS-FROM-ISLAND",
       "test_kind": "positive",
@@ -1075,19 +1935,6 @@
         "supervisory_mutations_blocked",
         "local_island_protection_retained"
       ],
-      "recovery_transition_id": null,
-      "evidence_class": "synthetic"
-    },
-    {
-      "test_case_id": "NEG-T12-COMMS-LOSS-FROM-ISLAND",
-      "transition_id": "T12-COMMS-LOSS-FROM-ISLAND",
-      "test_kind": "negative",
-      "expected_decision": "block",
-      "satisfied_guard_ids": [],
-      "violated_guard_ids": [
-        "comms_stale_detected"
-      ],
-      "observed_postcondition_ids": [],
       "recovery_transition_id": null,
       "evidence_class": "synthetic"
     },
@@ -1114,25 +1961,6 @@
       "evidence_class": "synthetic"
     },
     {
-      "test_case_id": "NEG-T13-RECONCILE-TO-GRID",
-      "transition_id": "T13-RECONCILE-TO-GRID",
-      "test_kind": "negative",
-      "expected_decision": "block",
-      "satisfied_guard_ids": [
-        "state_reconciled",
-        "grid_quality_valid",
-        "sync_check_passed",
-        "sync_close_permissive",
-        "protection_ready"
-      ],
-      "violated_guard_ids": [
-        "telemetry_fresh"
-      ],
-      "observed_postcondition_ids": [],
-      "recovery_transition_id": null,
-      "evidence_class": "synthetic"
-    },
-    {
       "test_case_id": "POS-T14-RECONCILE-TO-ISLAND",
       "transition_id": "T14-RECONCILE-TO-ISLAND",
       "test_kind": "positive",
@@ -1151,73 +1979,6 @@
         "pcc_open_independently_observed",
         "island_voltage_frequency_stable"
       ],
-      "recovery_transition_id": null,
-      "evidence_class": "synthetic"
-    },
-    {
-      "test_case_id": "NEG-T14-RECONCILE-TO-ISLAND",
-      "transition_id": "T14-RECONCILE-TO-ISLAND",
-      "test_kind": "negative",
-      "expected_decision": "block",
-      "satisfied_guard_ids": [
-        "state_reconciled",
-        "grid_former_ready",
-        "grid_former_stable",
-        "pcc_open_observed",
-        "protection_ready"
-      ],
-      "violated_guard_ids": [
-        "telemetry_fresh"
-      ],
-      "observed_postcondition_ids": [],
-      "recovery_transition_id": null,
-      "evidence_class": "synthetic"
-    },
-    {
-      "test_case_id": "NEG-F01-MEMS-DIRECT-SWITCH",
-      "transition_id": "F01-MEMS-DIRECT-SWITCH",
-      "test_kind": "negative",
-      "expected_decision": "block",
-      "satisfied_guard_ids": [
-        "protection_ready"
-      ],
-      "violated_guard_ids": [
-        "mems_has_no_switchgear_authority"
-      ],
-      "observed_postcondition_ids": [],
-      "recovery_transition_id": null,
-      "evidence_class": "synthetic"
-    },
-    {
-      "test_case_id": "NEG-F02-RECONNECT-WITHOUT-SYNC",
-      "transition_id": "F02-RECONNECT-WITHOUT-SYNC",
-      "test_kind": "negative",
-      "expected_decision": "block",
-      "satisfied_guard_ids": [
-        "grid_quality_valid",
-        "protection_ready",
-        "sync_close_permissive"
-      ],
-      "violated_guard_ids": [
-        "sync_check_passed"
-      ],
-      "observed_postcondition_ids": [],
-      "recovery_transition_id": null,
-      "evidence_class": "synthetic"
-    },
-    {
-      "test_case_id": "NEG-F03-BYPASS-PROTECTION-LOCKOUT",
-      "transition_id": "F03-BYPASS-PROTECTION-LOCKOUT",
-      "test_kind": "negative",
-      "expected_decision": "block",
-      "satisfied_guard_ids": [
-        "trip_clear_verified",
-        "inspection_complete"
-      ],
-      "violated_guard_ids": [
-        "no_protection_lockout"
-      ],
-      "observed_postcondition_ids": [],
       "recovery_transition_id": null,
       "evidence_class": "synthetic"
     },

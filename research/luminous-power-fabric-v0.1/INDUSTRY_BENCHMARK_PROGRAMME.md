@@ -255,7 +255,7 @@ Issue [#454](https://github.com/Luminous-Dynamics/luminous-platform/issues/454) 
 state/transition/test contract and typed Rust structural coverage validator. It separates the
 requesting actor from the authorization owner and requires independent postcondition evidence.
 The synthetic corpus contains eight states, 20 guard definitions, 17 transitions (14 permitted,
-three forbidden) and 33 positive/negative/recovery test cases.
+three forbidden) and 76 positive/negative/recovery test cases, including 60 single-guard negative mutations across 60 transition-guard pairs.
 
 The 38-mode multi-feeder C-HIL paper listing currently shows an April 2027 publication date, later
 than the 13 November 2026 snapshot. Treat that result as forthcoming/prepublication, not as a

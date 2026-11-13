@@ -236,6 +236,7 @@ pub fn validate_mode_transition_corpus(corpus: &ModeTransitionCorpus) -> Result<
 
     let mut positive_by_transition = BTreeMap::<String, usize>::new();
     let mut negative_by_transition = BTreeMap::<String, usize>::new();
+    let mut negative_guard_coverage = BTreeSet::<(String, String)>::new();
     let mut recovery_by_transition = BTreeMap::<String, usize>::new();
     let mut positive_count = 0;
     let mut negative_count = 0;
@@ -276,10 +277,20 @@ pub fn validate_mode_transition_corpus(corpus: &ModeTransitionCorpus) -> Result<
                 positive_count += 1;
             }
             "negative" => {
-                if test.expected_decision != "block" || test.violated_guard_ids.is_empty()
+                if test.expected_decision != "block" || test.violated_guard_ids.len() != 1
                     || test.recovery_transition_id.is_some() {
-                    return Err(AuditError(format!("negative test {:?} must block by violating a declared guard", test.test_case_id)));
+                    return Err(AuditError(format!("negative test {:?} must mutate exactly one declared guard", test.test_case_id)));
                 }
+                let violated = &test.violated_guard_ids[0];
+                let expected_satisfied: Vec<String> = applicable_guard_ids.iter()
+                    .filter(|id| *id != violated)
+                    .cloned()
+                    .collect();
+                if !contains_all(&test.satisfied_guard_ids, &expected_satisfied)
+                    || test.satisfied_guard_ids.iter().any(|id| id == violated) {
+                    return Err(AuditError(format!("negative test {:?} must satisfy every other guard", test.test_case_id)));
+                }
+                negative_guard_coverage.insert((test.transition_id.clone(), violated.clone()));
                 *negative_by_transition.entry(test.transition_id.clone()).or_default() += 1;
                 negative_count += 1;
             }
@@ -309,6 +320,11 @@ pub fn validate_mode_transition_corpus(corpus: &ModeTransitionCorpus) -> Result<
         let recovery = *recovery_by_transition.get(&transition.transition_id).unwrap_or(&0);
         if negative == 0 {
             return Err(AuditError(format!("transition {:?} lacks negative guard coverage", transition.transition_id)));
+        }
+        for guard_id in &transition.guard_ids {
+            if !negative_guard_coverage.contains(&(transition.transition_id.clone(), guard_id.clone())) {
+                return Err(AuditError(format!("transition {:?} lacks an isolated negative mutation for guard {:?}", transition.transition_id, guard_id)));
+            }
         }
         if transition.permitted && positive == 0 {
             return Err(AuditError(format!("permitted transition {:?} lacks positive coverage", transition.transition_id)));
@@ -454,6 +470,33 @@ mod tests {
         c.test_cases[1].satisfied_guard_ids.push("maint".into());
         c.test_cases[1].violated_guard_ids = vec!["fresh".into()];
         assert!(validate_mode_transition_corpus(&c).is_ok());
+    }
+
+
+    #[test]
+    fn rejects_missing_single_guard_mutation_coverage() {
+        let mut c = valid_corpus();
+        let mut second = guard();
+        second.guard_id = "second".into();
+        c.guards.push(second);
+        c.transitions[0].guard_ids.push("second".into());
+        c.test_cases[0].satisfied_guard_ids.push("second".into());
+        c.test_cases[1].satisfied_guard_ids.push("second".into());
+        assert!(validate_mode_transition_corpus(&c).is_err());
+    }
+
+    #[test]
+    fn rejects_negative_test_mutating_multiple_guards_at_once() {
+        let mut c = valid_corpus();
+        c.guards.push(ModeGuard {
+            guard_id: "second".into(), predicate: "second condition".into(),
+            enforcement_owner: "independent_protection".into(), freshness_required: true,
+            failure_behavior: "block_transition".into()
+        });
+        c.transitions[0].guard_ids.push("second".into());
+        c.test_cases[0].satisfied_guard_ids.push("second".into());
+        c.test_cases[1].violated_guard_ids.push("second".into());
+        assert!(validate_mode_transition_corpus(&c).is_err());
     }
 
 }
