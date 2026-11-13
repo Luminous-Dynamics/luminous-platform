@@ -71,6 +71,11 @@ pub struct LifecycleFrontierCandidateResult {
 #[derive(Debug, Clone, PartialEq)]
 pub struct LifecycleFrontierReport {
     pub comparator_set_id: String,
+    pub service_boundary_id: String,
+    pub site_profile_sha256: String,
+    pub mission_set_sha256: String,
+    pub scenario_manifest_sha256: String,
+    pub initial_terminal_obligation_sha256: String,
     pub currency_code: String,
     pub minor_unit_scale: u8,
     pub confidence_level: f64,
@@ -362,8 +367,14 @@ pub fn evaluate_lifecycle_frontier(input: &LifecycleFrontierInput) -> Result<Lif
         "replacement_count".to_string(),
     ];
     if storage { metric_axes.push("minimum_observed_storage_capacity_retention_fraction".to_string()); }
+    let matched_context = &input.candidates[0];
     Ok(LifecycleFrontierReport {
         comparator_set_id: input.comparator_set_id.clone(),
+        service_boundary_id: matched_context.service_boundary_id.clone(),
+        site_profile_sha256: matched_context.site_profile_sha256.clone(),
+        mission_set_sha256: matched_context.mission_set_sha256.clone(),
+        scenario_manifest_sha256: matched_context.scenario_manifest_sha256.clone(),
+        initial_terminal_obligation_sha256: matched_context.initial_terminal_obligation_sha256.clone(),
         currency_code: input.currency_code.clone(),
         minor_unit_scale: input.minor_unit_scale,
         confidence_level: input.confidence_level,

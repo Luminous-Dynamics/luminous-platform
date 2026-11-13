@@ -179,3 +179,8 @@ Issue [#461](https://github.com/Luminous-Dynamics/luminous-platform/issues/461) 
 ## 23. Paired cluster bootstrap
 
 Draft [PR #463](https://github.com/Luminous-Dynamics/luminous-platform/pull/463), linked to issue #461, adds paired percentile-bootstrap summaries over declared mission/site/event clusters. It enforces exact paired cluster/seed identity and keeps failed missions in the sample. It does not prove statistical independence, calculate metrology uncertainty, correct multiple comparisons or claim field superiority.
+
+
+## 24. Preregistered superiority decision
+
+Issue [#466](https://github.com/Luminous-Dynamics/luminous-platform/issues/466) and draft [PR #464](https://github.com/Luminous-Dynamics/luminous-platform/pull/464) prevent superiority claims from point estimates alone. The v0.1 gate requires non-compensatory feasibility, exact frozen context, one preregistered primary metric, Bonferroni-adjusted paired-bootstrap confidence and a current owner-supplied conservative paired metrology-error bound. Outcomes are established / no-preregistered-superiority / inconclusive / ineligible, never equivalence.
