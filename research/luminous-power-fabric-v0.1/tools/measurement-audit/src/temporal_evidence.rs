@@ -233,7 +233,6 @@ fn event_interval_tai(
 
 fn apply_clock_relation(
     interval: TaiTimeInterval,
-    event: &EventObservation,
     relation: &ClockDomainRelation,
     from_timebase: &TimebaseEvidence,
     to_timebase: &TimebaseEvidence,
@@ -289,7 +288,7 @@ pub fn evaluate_event_order(
     } else {
         let relation = relation_a_to_b
             .ok_or_else(|| AuditError("cross-domain or cross-epoch ordering requires a current clock relation".to_string()))?;
-        interval_a = apply_clock_relation(interval_a, event_a, relation, timebase_a, timebase_b)?;
+        interval_a = apply_clock_relation(interval_a, relation, timebase_a, timebase_b)?;
     }
 
     let order = if interval_a.upper_bound_ns < interval_b.lower_bound_ns {
