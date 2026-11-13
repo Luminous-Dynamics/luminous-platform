@@ -94,7 +94,10 @@
                 "required_critical_service_wh",
                 "delivered_critical_service_wh",
                 "unserved_critical_service_wh",
-                "system_unavailable_hours"
+                "system_unavailable_hours",
+                "evidence_status",
+                "evidence_class",
+                "evidence_reference"
               ],
               "properties": {
                 "cluster_id": {
@@ -132,6 +135,26 @@
                 "system_unavailable_hours": {
                   "type": "number",
                   "minimum": 0
+                },
+                "evidence_status": {
+                  "const": "current"
+                },
+                "evidence_class": {
+                  "enum": [
+                    "independent_physical_measurement",
+                    "invoice_or_receipt",
+                    "utility_bill",
+                    "payroll_or_work_order",
+                    "vendor_report",
+                    "supplier_quote",
+                    "analytical_model",
+                    "synthetic_fixture",
+                    "assumption"
+                  ]
+                },
+                "evidence_reference": {
+                  "type": "string",
+                  "minLength": 1
                 }
               }
             }

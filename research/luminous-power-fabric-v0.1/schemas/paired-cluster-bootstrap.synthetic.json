@@ -22,7 +22,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 2
+          "system_unavailable_hours": 2,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-001"
         },
         {
           "cluster_id": "mission-cluster-002",
@@ -33,7 +36,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 2.1
+          "system_unavailable_hours": 2.1,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-002"
         },
         {
           "cluster_id": "mission-cluster-003",
@@ -44,7 +50,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 2.2
+          "system_unavailable_hours": 2.2,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-003"
         },
         {
           "cluster_id": "mission-cluster-004",
@@ -55,7 +64,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 2.3
+          "system_unavailable_hours": 2.3,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-004"
         },
         {
           "cluster_id": "mission-cluster-005",
@@ -66,7 +78,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 2.4
+          "system_unavailable_hours": 2.4,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-005"
         },
         {
           "cluster_id": "mission-cluster-006",
@@ -77,7 +92,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 2.5
+          "system_unavailable_hours": 2.5,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-006"
         },
         {
           "cluster_id": "mission-cluster-007",
@@ -88,7 +106,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 2.6
+          "system_unavailable_hours": 2.6,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-007"
         },
         {
           "cluster_id": "mission-cluster-008",
@@ -99,7 +120,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 2.7
+          "system_unavailable_hours": 2.7,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-008"
         },
         {
           "cluster_id": "mission-cluster-009",
@@ -110,7 +134,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 2.8
+          "system_unavailable_hours": 2.8,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-009"
         },
         {
           "cluster_id": "mission-cluster-010",
@@ -121,7 +148,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 2.9
+          "system_unavailable_hours": 2.9,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-010"
         },
         {
           "cluster_id": "mission-cluster-011",
@@ -132,7 +162,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 3
+          "system_unavailable_hours": 3,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-011"
         },
         {
           "cluster_id": "mission-cluster-012",
@@ -143,7 +176,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 3.1
+          "system_unavailable_hours": 3.1,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-012"
         },
         {
           "cluster_id": "mission-cluster-013",
@@ -154,7 +190,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 3.2
+          "system_unavailable_hours": 3.2,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-013"
         },
         {
           "cluster_id": "mission-cluster-014",
@@ -165,7 +204,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 3.3
+          "system_unavailable_hours": 3.3,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-014"
         },
         {
           "cluster_id": "mission-cluster-015",
@@ -176,7 +218,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 3.4000000000000004
+          "system_unavailable_hours": 3.4000000000000004,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-015"
         },
         {
           "cluster_id": "mission-cluster-016",
@@ -187,7 +232,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 3.5
+          "system_unavailable_hours": 3.5,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-016"
         },
         {
           "cluster_id": "mission-cluster-017",
@@ -198,7 +246,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 3.6
+          "system_unavailable_hours": 3.6,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-017"
         },
         {
           "cluster_id": "mission-cluster-018",
@@ -209,7 +260,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 3.7
+          "system_unavailable_hours": 3.7,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-018"
         },
         {
           "cluster_id": "mission-cluster-019",
@@ -220,7 +274,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 3.8
+          "system_unavailable_hours": 3.8,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-019"
         },
         {
           "cluster_id": "mission-cluster-020",
@@ -231,7 +288,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 3.9000000000000004
+          "system_unavailable_hours": 3.9000000000000004,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-020"
         },
         {
           "cluster_id": "mission-cluster-021",
@@ -242,7 +302,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 4
+          "system_unavailable_hours": 4,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-021"
         },
         {
           "cluster_id": "mission-cluster-022",
@@ -253,7 +316,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 4.1
+          "system_unavailable_hours": 4.1,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-022"
         },
         {
           "cluster_id": "mission-cluster-023",
@@ -264,7 +330,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 4.2
+          "system_unavailable_hours": 4.2,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-023"
         },
         {
           "cluster_id": "mission-cluster-024",
@@ -275,7 +344,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 4.300000000000001
+          "system_unavailable_hours": 4.300000000000001,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-024"
         },
         {
           "cluster_id": "mission-cluster-025",
@@ -286,7 +358,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 4.4
+          "system_unavailable_hours": 4.4,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-025"
         },
         {
           "cluster_id": "mission-cluster-026",
@@ -297,7 +372,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 4.5
+          "system_unavailable_hours": 4.5,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-026"
         },
         {
           "cluster_id": "mission-cluster-027",
@@ -308,7 +386,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 4.6
+          "system_unavailable_hours": 4.6,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-027"
         },
         {
           "cluster_id": "mission-cluster-028",
@@ -319,7 +400,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 4.7
+          "system_unavailable_hours": 4.7,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-028"
         },
         {
           "cluster_id": "mission-cluster-029",
@@ -330,7 +414,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 4.800000000000001
+          "system_unavailable_hours": 4.800000000000001,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-029"
         },
         {
           "cluster_id": "mission-cluster-030",
@@ -341,7 +428,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 4.9
+          "system_unavailable_hours": 4.9,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://reference/cluster-030"
         }
       ]
     },
@@ -360,7 +450,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 1
+          "system_unavailable_hours": 1,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-001"
         },
         {
           "cluster_id": "mission-cluster-002",
@@ -371,7 +464,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 1.1
+          "system_unavailable_hours": 1.1,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-002"
         },
         {
           "cluster_id": "mission-cluster-003",
@@ -382,7 +478,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 1.2
+          "system_unavailable_hours": 1.2,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-003"
         },
         {
           "cluster_id": "mission-cluster-004",
@@ -393,7 +492,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 1.3
+          "system_unavailable_hours": 1.3,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-004"
         },
         {
           "cluster_id": "mission-cluster-005",
@@ -404,7 +506,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 1.4
+          "system_unavailable_hours": 1.4,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-005"
         },
         {
           "cluster_id": "mission-cluster-006",
@@ -415,7 +520,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 900,
           "unserved_critical_service_wh": 100,
-          "system_unavailable_hours": 1.5
+          "system_unavailable_hours": 1.5,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-006"
         },
         {
           "cluster_id": "mission-cluster-007",
@@ -426,7 +534,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 1.6
+          "system_unavailable_hours": 1.6,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-007"
         },
         {
           "cluster_id": "mission-cluster-008",
@@ -437,7 +548,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 1.7000000000000002
+          "system_unavailable_hours": 1.7000000000000002,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-008"
         },
         {
           "cluster_id": "mission-cluster-009",
@@ -448,7 +562,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 1.8
+          "system_unavailable_hours": 1.8,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-009"
         },
         {
           "cluster_id": "mission-cluster-010",
@@ -459,7 +576,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 1.9
+          "system_unavailable_hours": 1.9,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-010"
         },
         {
           "cluster_id": "mission-cluster-011",
@@ -470,7 +590,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 2
+          "system_unavailable_hours": 2,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-011"
         },
         {
           "cluster_id": "mission-cluster-012",
@@ -481,7 +604,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 2.1
+          "system_unavailable_hours": 2.1,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-012"
         },
         {
           "cluster_id": "mission-cluster-013",
@@ -492,7 +618,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 2.2
+          "system_unavailable_hours": 2.2,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-013"
         },
         {
           "cluster_id": "mission-cluster-014",
@@ -503,7 +632,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 2.3
+          "system_unavailable_hours": 2.3,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-014"
         },
         {
           "cluster_id": "mission-cluster-015",
@@ -514,7 +646,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 2.4000000000000004
+          "system_unavailable_hours": 2.4000000000000004,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-015"
         },
         {
           "cluster_id": "mission-cluster-016",
@@ -525,7 +660,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 2.5
+          "system_unavailable_hours": 2.5,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-016"
         },
         {
           "cluster_id": "mission-cluster-017",
@@ -536,7 +674,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 2.6
+          "system_unavailable_hours": 2.6,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-017"
         },
         {
           "cluster_id": "mission-cluster-018",
@@ -547,7 +688,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 2.7
+          "system_unavailable_hours": 2.7,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-018"
         },
         {
           "cluster_id": "mission-cluster-019",
@@ -558,7 +702,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 2.8
+          "system_unavailable_hours": 2.8,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-019"
         },
         {
           "cluster_id": "mission-cluster-020",
@@ -569,7 +716,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 2.9000000000000004
+          "system_unavailable_hours": 2.9000000000000004,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-020"
         },
         {
           "cluster_id": "mission-cluster-021",
@@ -580,7 +730,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 3
+          "system_unavailable_hours": 3,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-021"
         },
         {
           "cluster_id": "mission-cluster-022",
@@ -591,7 +744,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 3.1
+          "system_unavailable_hours": 3.1,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-022"
         },
         {
           "cluster_id": "mission-cluster-023",
@@ -602,7 +758,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 3.2
+          "system_unavailable_hours": 3.2,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-023"
         },
         {
           "cluster_id": "mission-cluster-024",
@@ -613,7 +772,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 3.3000000000000003
+          "system_unavailable_hours": 3.3000000000000003,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-024"
         },
         {
           "cluster_id": "mission-cluster-025",
@@ -624,7 +786,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 3.4000000000000004
+          "system_unavailable_hours": 3.4000000000000004,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-025"
         },
         {
           "cluster_id": "mission-cluster-026",
@@ -635,7 +800,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 3.5
+          "system_unavailable_hours": 3.5,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-026"
         },
         {
           "cluster_id": "mission-cluster-027",
@@ -646,7 +814,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 3.6
+          "system_unavailable_hours": 3.6,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-027"
         },
         {
           "cluster_id": "mission-cluster-028",
@@ -657,7 +828,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 3.7
+          "system_unavailable_hours": 3.7,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-028"
         },
         {
           "cluster_id": "mission-cluster-029",
@@ -668,7 +842,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 3.8000000000000003
+          "system_unavailable_hours": 3.8000000000000003,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-029"
         },
         {
           "cluster_id": "mission-cluster-030",
@@ -679,7 +856,10 @@
           "required_critical_service_wh": 1000,
           "delivered_critical_service_wh": 1000,
           "unserved_critical_service_wh": 0,
-          "system_unavailable_hours": 3.9000000000000004
+          "system_unavailable_hours": 3.9000000000000004,
+          "evidence_status": "current",
+          "evidence_class": "synthetic_fixture",
+          "evidence_reference": "synthetic://candidate/cluster-030"
         }
       ]
     }
