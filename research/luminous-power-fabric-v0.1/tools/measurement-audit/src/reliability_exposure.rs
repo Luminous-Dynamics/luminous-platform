@@ -11,6 +11,9 @@ const MAX_EVENTS: usize = 100_000;
 const MAX_EXPOSURE_WINDOWS: usize = 100_000;
 const MAX_TEXT: usize = 512;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExposureAssetScope { SystemAsset, ComponentAsset }
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum EventClass {
     ConfirmedFailure,
@@ -131,6 +134,7 @@ pub struct ExposureWindow {
     /// The denominator asset must represent one system or component population,
     /// not a collection of overlapping subcomponents counted as independent systems.
     pub asset_id: String,
+    pub asset_scope: ExposureAssetScope,
     pub topology_sha256: String,
     pub configuration_sha256: String,
     pub site_profile_sha256: String,
@@ -256,7 +260,8 @@ pub struct ReliabilityReport {
     pub confirmed_root_cause_incident_count: usize,
     pub probable_root_cause_incident_count: usize,
     pub unknown_root_cause_incident_count: usize,
-    pub total_energized_system_hours: f64,
+    pub asset_scope: ExposureAssetScope,
+    pub total_energized_asset_hours: f64,
     pub total_installed_mw_years: f64,
     pub total_charged_throughput_mwh: f64,
     pub total_discharged_throughput_mwh: f64,
@@ -557,6 +562,7 @@ pub fn evaluate_reliability_accounting(input: &ReliabilityAccountingInput) -> Re
             || window.topology_sha256 != cohort.topology_sha256
             || window.configuration_sha256 != cohort.configuration_sha256
             || window.site_profile_sha256 != cohort.site_profile_sha256
+            || window.asset_scope != cohort.asset_scope
         {
             return Err(AuditError("one reliability report cannot pool different populations, topologies, configurations or site profiles".to_string()));
         }
@@ -772,7 +778,7 @@ pub fn evaluate_reliability_accounting(input: &ReliabilityAccountingInput) -> Re
 
     let confirmed_count = failure_incidents.len();
     let failure_rates = vec![
-        rate("confirmed_failures_per_1000_energized_system_hours", confirmed_count, total_energized_hours, "system-hour", 1_000.0),
+        rate("confirmed_failures_per_1000_energized_asset_hours", confirmed_count, total_energized_hours, "asset-hour", 1_000.0),
         rate("confirmed_failures_per_mw_year", confirmed_count, total_mw_years, "MW-year", 1.0),
         rate("confirmed_failures_per_1000_charged_mwh", confirmed_count, total_charged_mwh, "charged-MWh", 1_000.0),
         rate("confirmed_failures_per_1000_discharged_mwh", confirmed_count, total_discharged_mwh, "discharged-MWh", 1_000.0),
@@ -825,7 +831,8 @@ pub fn evaluate_reliability_accounting(input: &ReliabilityAccountingInput) -> Re
         confirmed_root_cause_incident_count: confirmed_root_cause.len(),
         probable_root_cause_incident_count: probable_root_cause.len(),
         unknown_root_cause_incident_count: unknown_root_cause.len(),
-        total_energized_system_hours: total_energized_hours,
+        asset_scope: cohort.asset_scope,
+        total_energized_asset_hours: total_energized_hours,
         total_installed_mw_years: total_mw_years,
         total_charged_throughput_mwh: total_charged_mwh,
         total_discharged_throughput_mwh: total_discharged_mwh,
@@ -871,6 +878,7 @@ mod tests {
             exposure_window_id: "window-1".into(),
             exposure_population_id: "microgrid-fleet-a".into(),
             asset_id: "system-01".into(),
+            asset_scope: ExposureAssetScope::SystemAsset,
             topology_sha256: h('a'),
             configuration_sha256: h('b'),
             site_profile_sha256: h('c'),
@@ -1130,6 +1138,17 @@ mod tests {
             value.events[0].onset_tai.lower_bound_ns - 10_000_000_000,
             value.events[0].onset_tai.lower_bound_ns - 9_000_000_000,
         ));
+        assert!(evaluate_reliability_accounting(&value).is_err());
+    }
+
+    #[test]
+    fn rejects_mixed_system_and_component_exposure_scopes() {
+        let mut value = input();
+        let mut next = window();
+        next.exposure_window_id = "window-2".into();
+        next.asset_id = "pcs-01".into();
+        next.asset_scope = ExposureAssetScope::ComponentAsset;
+        value.exposure_windows.push(next);
         assert!(evaluate_reliability_accounting(&value).is_err());
     }
 
