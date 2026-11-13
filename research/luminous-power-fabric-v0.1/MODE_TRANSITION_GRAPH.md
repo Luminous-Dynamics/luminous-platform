@@ -59,14 +59,17 @@ Symthaea may propose scenarios, forecast and advise. It receives no operational 
 
 ## 5. Initial synthetic coverage
 
-The fixture includes eight states, 20 guard definitions and 17 transition records: 14 permitted and three explicitly forbidden. There are 76 synthetic test cases:
-- positive coverage for every permitted transition;
+The fixture includes eight states, 20 guard definitions and 17 transition records: 14 permitted and three explicitly forbidden. There are 79 synthetic test cases:
+- 14 positive controls (one for every permitted transition);
 - 60 single-guard negative mutation cases (one per transition/guard pair), with every other guard satisfied;
-- recovery-path tests for the two communications-loss transitions.
+- three forbidden-disposition controls, each satisfying every declared guard while still requiring rejection;
+- two recovery-path controls for the communications-loss transitions.
+
+The initial states are `grid_connected` and `dead_bus`; every other state must be reachable through permitted transitions. The validator enforces exact counts for positive, negative, recovery and forbidden-disposition coverage so duplicate tests cannot inflate the totals.
 
 The transition families cover planned islanding, unexpected grid loss, reconnection and synchronism, black start/failed start, protection trip/inspection hold, communications loss, reconciliation, direct supervisory switchgear requests, reconnection without sync-check and protection-lockout bypass attempts.
 
-The typed Rust validator checks unique IDs, state/digest enums and selected state invariants, transition references, authority ownership, an independent-protection guard on every protection-interlocked transition, forbidden reasons, guard references, recovery-edge continuity, evidence class, complete positive/negative/recovery test coverage, isolated failure of every declared guard (all other guards satisfied), and postcondition evidence presence. Recovery test guards and postconditions are evaluated against the recovery edge itself, not the initiating failed edge.
+The typed Rust validator checks unique IDs, initial-state reachability, state/digest enums and selected state invariants, transition references, authority ownership, rejection of supervisory self-authorization, independent-protection ownership of trips, inspection and independent trip-clear evidence before leaving a tripped state, an independent-protection guard on every protection-interlocked transition, forbidden reasons, guard references, recovery-edge continuity, evidence class, exact positive/negative/recovery/forbidden-disposition test counts, isolated failure of every declared guard (all other guards satisfied), and postcondition evidence presence. Recovery test guards and postconditions are evaluated against the recovery edge itself, not the initiating failed edge.
 
 This is a **coverage-structure validator**. It does not evaluate a real controller's guard logic, prove the transitions safe, evaluate grid dynamics or authorize actions.
 
