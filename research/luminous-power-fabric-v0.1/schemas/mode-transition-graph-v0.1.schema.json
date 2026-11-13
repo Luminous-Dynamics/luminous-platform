@@ -1,0 +1,394 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/mode-transition-graph-v0.1.schema.json",
+  "title": "Power Fabric operating mode transition graph and test coverage",
+  "description": "Offline research test corpus for microgrid state transitions, authority separation and guard coverage. Not controller logic or safety qualification.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "corpus_id",
+    "record_class",
+    "test_stage",
+    "claim_ceiling",
+    "authority_separation",
+    "states",
+    "guards",
+    "transitions",
+    "test_cases",
+    "initial_state_ids"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "corpus_id": {
+      "const": "PF-MODE-TRANSITION-GRAPH-SYNTH-0.1"
+    },
+    "record_class": {
+      "const": "synthetic_test_plan"
+    },
+    "test_stage": {
+      "const": "offline_model_only"
+    },
+    "claim_ceiling": {
+      "const": "SYNTHETIC_TRANSITION_COVERAGE_ONLY_NOT_HIL_SAFETY_OR_CONFORMITY"
+    },
+    "authority_separation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "supervisory_mems",
+        "local_controller",
+        "independent_protection",
+        "operator",
+        "maintenance_authority"
+      ],
+      "properties": {
+        "supervisory_mems": {
+          "type": "string",
+          "minLength": 1
+        },
+        "local_controller": {
+          "type": "string",
+          "minLength": 1
+        },
+        "independent_protection": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operator": {
+          "type": "string",
+          "minLength": 1
+        },
+        "maintenance_authority": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "states": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "state_id",
+          "topology_sha256",
+          "configuration_sha256",
+          "pcc_breaker_state",
+          "grid_state",
+          "synchronization_state",
+          "grid_forming_state",
+          "protection_state",
+          "communications_state",
+          "critical_service_state",
+          "reserve_state"
+        ],
+        "properties": {
+          "state_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "topology_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "configuration_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "pcc_breaker_state": {
+            "enum": [
+              "closed",
+              "open",
+              "open_or_unknown",
+              "unknown"
+            ]
+          },
+          "grid_state": {
+            "enum": [
+              "present",
+              "absent_or_isolated",
+              "unknown"
+            ]
+          },
+          "synchronization_state": {
+            "enum": [
+              "synchronised",
+              "not_applicable",
+              "sync_pending",
+              "unknown"
+            ]
+          },
+          "grid_forming_state": {
+            "enum": [
+              "available",
+              "unavailable",
+              "starting",
+              "unknown"
+            ]
+          },
+          "protection_state": {
+            "enum": [
+              "ready",
+              "tripped",
+              "ready_or_unknown",
+              "unknown"
+            ]
+          },
+          "communications_state": {
+            "enum": [
+              "fresh",
+              "stale_or_unknown",
+              "fresh_or_unknown",
+              "unknown"
+            ]
+          },
+          "critical_service_state": {
+            "enum": [
+              "service_on",
+              "service_off",
+              "staged_pickup",
+              "service_unknown"
+            ]
+          },
+          "reserve_state": {
+            "enum": [
+              "reserve_met",
+              "reserve_unknown"
+            ]
+          }
+        }
+      }
+    },
+    "guards": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "guard_id",
+          "predicate",
+          "enforcement_owner",
+          "freshness_required",
+          "failure_behavior"
+        ],
+        "properties": {
+          "guard_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "predicate": {
+            "type": "string",
+            "minLength": 1
+          },
+          "enforcement_owner": {
+            "enum": [
+              "supervisory_mems",
+              "local_controller",
+              "independent_protection",
+              "operator",
+              "maintenance_authority"
+            ]
+          },
+          "freshness_required": {
+            "type": "boolean"
+          },
+          "failure_behavior": {
+            "enum": [
+              "block_transition",
+              "protection_action",
+              "safe_hold",
+              "block_command",
+              "enter_unknown_hold"
+            ]
+          }
+        }
+      }
+    },
+    "transitions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "transition_id",
+          "from_state_ids",
+          "to_state_id",
+          "permitted",
+          "actor",
+          "authorization_owner",
+          "protection_interlock_required",
+          "guard_ids",
+          "postcondition_ids",
+          "failure_disposition",
+          "recovery_transition_id",
+          "forbidden_reason"
+        ],
+        "properties": {
+          "transition_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "from_state_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "to_state_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "permitted": {
+            "type": "boolean"
+          },
+          "actor": {
+            "enum": [
+              "supervisory_mems",
+              "local_controller",
+              "independent_protection",
+              "operator",
+              "maintenance_authority"
+            ]
+          },
+          "authorization_owner": {
+            "enum": [
+              "supervisory_mems",
+              "local_controller",
+              "independent_protection",
+              "operator",
+              "maintenance_authority"
+            ]
+          },
+          "protection_interlock_required": {
+            "type": "boolean"
+          },
+          "guard_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "postcondition_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "failure_disposition": {
+            "type": "string",
+            "minLength": 1
+          },
+          "recovery_transition_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "forbidden_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "test_cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "test_case_id",
+          "transition_id",
+          "test_kind",
+          "expected_decision",
+          "satisfied_guard_ids",
+          "violated_guard_ids",
+          "observed_postcondition_ids",
+          "recovery_transition_id",
+          "evidence_class"
+        ],
+        "properties": {
+          "test_case_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "transition_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "test_kind": {
+            "enum": [
+              "positive",
+              "negative",
+              "recovery",
+              "forbidden_disposition"
+            ]
+          },
+          "expected_decision": {
+            "enum": [
+              "allow",
+              "block"
+            ]
+          },
+          "satisfied_guard_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "violated_guard_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "observed_postcondition_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "recovery_transition_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "evidence_class": {
+            "const": "synthetic"
+          }
+        }
+      }
+    },
+    "initial_state_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}
