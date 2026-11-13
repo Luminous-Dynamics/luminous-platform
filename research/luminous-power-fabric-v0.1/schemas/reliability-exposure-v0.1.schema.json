@@ -1,0 +1,717 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/reliability-exposure-v0.1.schema.json",
+  "title": "Power Fabric reliability event and exposure accounting input",
+  "description": "Synthetic/offline reliability accounting. It does not estimate failure probability or establish safety.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "candidate_id",
+    "comparator_set_id",
+    "evaluation_time_tai",
+    "minimum_telemetry_coverage_fraction",
+    "event_history_complete",
+    "event_history_evidence_status",
+    "event_history_evidence_class",
+    "event_history_evidence_reference",
+    "exposure_windows",
+    "events"
+  ],
+  "properties": {
+    "candidate_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "comparator_set_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evaluation_time_tai": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lower_bound_ns",
+        "upper_bound_ns"
+      ],
+      "properties": {
+        "lower_bound_ns": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "upper_bound_ns": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        }
+      }
+    },
+    "minimum_telemetry_coverage_fraction": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "event_history_complete": {
+      "type": "boolean"
+    },
+    "event_history_evidence_status": {
+      "enum": [
+        "current",
+        "missing",
+        "expired",
+        "invalid",
+        "unverified"
+      ]
+    },
+    "event_history_evidence_class": {
+      "enum": [
+        "independent_physical_measurement",
+        "invoice_or_receipt",
+        "utility_bill",
+        "payroll_or_work_order",
+        "vendor_report",
+        "supplier_quote",
+        "analytical_model",
+        "synthetic_fixture",
+        "assumption"
+      ]
+    },
+    "event_history_evidence_reference": {
+      "type": "string",
+      "minLength": 1
+    },
+    "exposure_windows": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "exposure_window_id",
+          "exposure_population_id",
+          "asset_id",
+          "asset_scope",
+          "topology_sha256",
+          "configuration_sha256",
+          "site_profile_sha256",
+          "start_tai",
+          "end_tai",
+          "operating_mode",
+          "installed_power_mw",
+          "energized_hours",
+          "charged_throughput_mwh",
+          "discharged_throughput_mwh",
+          "equivalent_full_cycles",
+          "dispatch_attempts",
+          "source_transfer_attempts",
+          "telemetry_coverage_fraction",
+          "evidence_status",
+          "evidence_class",
+          "timebase_evidence_status",
+          "timebase_evidence_class",
+          "timebase_evidence_reference",
+          "evidence_reference"
+        ],
+        "properties": {
+          "exposure_window_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "exposure_population_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "asset_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "asset_scope": {
+            "enum": [
+              "system_asset",
+              "component_asset"
+            ]
+          },
+          "topology_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "configuration_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "site_profile_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "start_tai": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "lower_bound_ns",
+              "upper_bound_ns"
+            ],
+            "properties": {
+              "lower_bound_ns": {
+                "type": "string",
+                "pattern": "^-?[0-9]+$"
+              },
+              "upper_bound_ns": {
+                "type": "string",
+                "pattern": "^-?[0-9]+$"
+              }
+            }
+          },
+          "end_tai": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "lower_bound_ns",
+              "upper_bound_ns"
+            ],
+            "properties": {
+              "lower_bound_ns": {
+                "type": "string",
+                "pattern": "^-?[0-9]+$"
+              },
+              "upper_bound_ns": {
+                "type": "string",
+                "pattern": "^-?[0-9]+$"
+              }
+            }
+          },
+          "operating_mode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "installed_power_mw": {
+            "type": "number",
+            "minimum": 0
+          },
+          "energized_hours": {
+            "type": "number",
+            "minimum": 0
+          },
+          "charged_throughput_mwh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "discharged_throughput_mwh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "equivalent_full_cycles": {
+            "type": "number",
+            "minimum": 0
+          },
+          "dispatch_attempts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "source_transfer_attempts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "telemetry_coverage_fraction": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "evidence_status": {
+            "enum": [
+              "current",
+              "missing",
+              "expired",
+              "invalid",
+              "unverified"
+            ]
+          },
+          "evidence_class": {
+            "enum": [
+              "independent_physical_measurement",
+              "invoice_or_receipt",
+              "utility_bill",
+              "payroll_or_work_order",
+              "vendor_report",
+              "supplier_quote",
+              "analytical_model",
+              "synthetic_fixture",
+              "assumption"
+            ]
+          },
+          "timebase_evidence_status": {
+            "enum": [
+              "current",
+              "missing",
+              "expired",
+              "invalid",
+              "unverified"
+            ]
+          },
+          "timebase_evidence_class": {
+            "enum": [
+              "independent_physical_measurement",
+              "invoice_or_receipt",
+              "utility_bill",
+              "payroll_or_work_order",
+              "vendor_report",
+              "supplier_quote",
+              "analytical_model",
+              "synthetic_fixture",
+              "assumption"
+            ]
+          },
+          "timebase_evidence_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence_reference": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "incident_group_id",
+          "exposure_window_id",
+          "exposure_population_id",
+          "asset_id",
+          "component_id",
+          "subsystem",
+          "event_class",
+          "outage_class",
+          "failure_mode",
+          "detection_source",
+          "onset_tai",
+          "detected_tai",
+          "contained_tai",
+          "restored_tai",
+          "operating_mode",
+          "power_kw_at_onset",
+          "voltage_v_at_onset",
+          "current_a_at_onset",
+          "state_of_charge_fraction",
+          "temperature_c",
+          "unserved_critical_service_wh",
+          "critical_service_interruption_seconds",
+          "reserve_shortfall_wh",
+          "severity",
+          "root_cause_confidence",
+          "common_cause_group_id",
+          "replacement_component_id",
+          "repair_labor_hours",
+          "requalification_hours",
+          "topology_sha256",
+          "configuration_sha256",
+          "evidence_status",
+          "evidence_class",
+          "timebase_evidence_status",
+          "timebase_evidence_class",
+          "timebase_evidence_reference",
+          "root_cause_evidence_reference",
+          "evidence_reference"
+        ],
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "incident_group_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "exposure_window_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "exposure_population_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "asset_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "component_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subsystem": {
+            "enum": [
+              "battery_cell",
+              "battery_module",
+              "battery_management",
+              "power_conversion",
+              "inverter",
+              "transformer",
+              "switchgear",
+              "protection",
+              "controller",
+              "communications",
+              "thermal_management",
+              "generator",
+              "renewable_source",
+              "auxiliary_system",
+              "other"
+            ]
+          },
+          "event_class": {
+            "enum": [
+              "confirmed_failure",
+              "near_miss",
+              "precursor"
+            ]
+          },
+          "outage_class": {
+            "enum": [
+              "none",
+              "planned",
+              "unplanned"
+            ]
+          },
+          "failure_mode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "detection_source": {
+            "enum": [
+              "protection_relay",
+              "battery_management",
+              "local_controller",
+              "supervisory_controller",
+              "instrument_alarm",
+              "operator",
+              "inspection",
+              "external_report",
+              "other"
+            ]
+          },
+          "onset_tai": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "lower_bound_ns",
+              "upper_bound_ns"
+            ],
+            "properties": {
+              "lower_bound_ns": {
+                "type": "string",
+                "pattern": "^-?[0-9]+$"
+              },
+              "upper_bound_ns": {
+                "type": "string",
+                "pattern": "^-?[0-9]+$"
+              }
+            }
+          },
+          "detected_tai": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "lower_bound_ns",
+                  "upper_bound_ns"
+                ],
+                "properties": {
+                  "lower_bound_ns": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+$"
+                  },
+                  "upper_bound_ns": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+$"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contained_tai": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "lower_bound_ns",
+                  "upper_bound_ns"
+                ],
+                "properties": {
+                  "lower_bound_ns": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+$"
+                  },
+                  "upper_bound_ns": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+$"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "restored_tai": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "lower_bound_ns",
+                  "upper_bound_ns"
+                ],
+                "properties": {
+                  "lower_bound_ns": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+$"
+                  },
+                  "upper_bound_ns": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+$"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "operating_mode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "power_kw_at_onset": {
+            "type": "number",
+            "minimum": 0
+          },
+          "voltage_v_at_onset": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "current_a_at_onset": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "state_of_charge_fraction": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1
+          },
+          "temperature_c": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "unserved_critical_service_wh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "critical_service_interruption_seconds": {
+            "type": "number",
+            "minimum": 0
+          },
+          "reserve_shortfall_wh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "severity": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "personnel_safety",
+              "fire_thermal",
+              "electrical",
+              "environmental",
+              "service_interruption",
+              "equipment_damage",
+              "regulatory_reportability"
+            ],
+            "properties": {
+              "personnel_safety": {
+                "enum": [
+                  "not_assessed",
+                  "none",
+                  "minor",
+                  "moderate",
+                  "major",
+                  "critical"
+                ]
+              },
+              "fire_thermal": {
+                "enum": [
+                  "not_assessed",
+                  "none",
+                  "minor",
+                  "moderate",
+                  "major",
+                  "critical"
+                ]
+              },
+              "electrical": {
+                "enum": [
+                  "not_assessed",
+                  "none",
+                  "minor",
+                  "moderate",
+                  "major",
+                  "critical"
+                ]
+              },
+              "environmental": {
+                "enum": [
+                  "not_assessed",
+                  "none",
+                  "minor",
+                  "moderate",
+                  "major",
+                  "critical"
+                ]
+              },
+              "service_interruption": {
+                "enum": [
+                  "not_assessed",
+                  "none",
+                  "minor",
+                  "moderate",
+                  "major",
+                  "critical"
+                ]
+              },
+              "equipment_damage": {
+                "enum": [
+                  "not_assessed",
+                  "none",
+                  "minor",
+                  "moderate",
+                  "major",
+                  "critical"
+                ]
+              },
+              "regulatory_reportability": {
+                "enum": [
+                  "not_assessed",
+                  "none",
+                  "minor",
+                  "moderate",
+                  "major",
+                  "critical"
+                ]
+              }
+            }
+          },
+          "root_cause_confidence": {
+            "enum": [
+              "confirmed",
+              "probable",
+              "unknown"
+            ]
+          },
+          "common_cause_group_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "replacement_component_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "repair_labor_hours": {
+            "type": "number",
+            "minimum": 0
+          },
+          "requalification_hours": {
+            "type": "number",
+            "minimum": 0
+          },
+          "topology_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "configuration_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "evidence_status": {
+            "enum": [
+              "current",
+              "missing",
+              "expired",
+              "invalid",
+              "unverified"
+            ]
+          },
+          "evidence_class": {
+            "enum": [
+              "independent_physical_measurement",
+              "invoice_or_receipt",
+              "utility_bill",
+              "payroll_or_work_order",
+              "vendor_report",
+              "supplier_quote",
+              "analytical_model",
+              "synthetic_fixture",
+              "assumption"
+            ]
+          },
+          "timebase_evidence_status": {
+            "enum": [
+              "current",
+              "missing",
+              "expired",
+              "invalid",
+              "unverified"
+            ]
+          },
+          "timebase_evidence_class": {
+            "enum": [
+              "independent_physical_measurement",
+              "invoice_or_receipt",
+              "utility_bill",
+              "payroll_or_work_order",
+              "vendor_report",
+              "supplier_quote",
+              "analytical_model",
+              "synthetic_fixture",
+              "assumption"
+            ]
+          },
+          "timebase_evidence_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "root_cause_evidence_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence_reference": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}
