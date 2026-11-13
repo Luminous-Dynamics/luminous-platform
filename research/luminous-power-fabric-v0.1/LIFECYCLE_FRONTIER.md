@@ -53,3 +53,15 @@ All four fixture rows and intervals are synthetic, not measured or accredited.
 The current module validates declared uncertainty intervals and computes interval-robust Pareto dominance. It does not calculate confidence intervals, bootstrap replicate data, estimate statistical independence, predict battery RUL, fit degradation laws, forecast costs, or produce reliability probabilities. Evidence references and confidence intervals remain owner-supplied and must be independently reviewed.
 
 `UNCERTAINTY_QUALIFIED_LIFECYCLE_PARETO_SCREEN_ONLY_NOT_LIFETIME_FORECAST_OR_SOTA_CLAIM`
+
+
+## Validation status and claim ceiling
+
+- The synthetic corpus is a four-candidate oracle: two trade-off candidates, one robustly dominated candidate, and one low-cost candidate that fails the critical-service gate.
+- 17 Rust unit tests are authored for matching, hard-gate exclusion, central/robust dominance, uncertainty overlap, provenance, storage-scope consistency and deterministic ordering.
+- The JSON schema and fixture parse in the authoring runtime; fixture IDs, counts and required candidate fields were checked. This is not a full Draft 2020-12 schema-validator result.
+- The Rust tests are **not executed**. No `rustc` or `cargo` is available in this environment; no compile, test, format or Clippy result is claimed.
+- No actual uncertainty intervals, field measurements or independent validation are supplied. Synthetic test constructors do not qualify a physical candidate.
+- No bootstrap, cluster-independence proof, reliability probability, remaining-useful-life forecast, degradation-law fit, safety/conformity or SOTA-superiority claim is made.
+
+Claim ceiling: `UNCERTAINTY_QUALIFIED_LIFECYCLE_PARETO_SCREEN_ONLY_NOT_LIFETIME_FORECAST_OR_SOTA_CLAIM`.
