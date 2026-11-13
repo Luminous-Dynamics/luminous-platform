@@ -1,0 +1,45 @@
+{
+  "schema_version": "0.1",
+  "plan_id": "synthetic-plan-001",
+  "comparator_set_id": "set-1",
+  "reference_candidate_id": "reference",
+  "candidate_ids": [
+    "candidate-A",
+    "candidate-B"
+  ],
+  "service_boundary_id": "customer-poc",
+  "site_profile_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "mission_set_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+  "scenario_manifest_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+  "initial_terminal_obligation_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+  "primary_metric": "cost_per_delivered_critical_kwh",
+  "direction": "lower_is_better",
+  "family_wise_alpha": 0.05,
+  "minimum_meaningful_improvement": 5,
+  "bootstrap_algorithm": "PAIRED_CLUSTER_PERCENTILE_BOOTSTRAP_SPLITMIX64_V0_1",
+  "resampling_unit": "DECLARED_INDEPENDENT_MISSION_SITE_EVENT_CLUSTER",
+  "measurement_uncertainty": [
+    {
+      "candidate_id": "candidate-A",
+      "metric": "cost_per_delivered_critical_kwh",
+      "absolute_bound": 1,
+      "bound_kind": "conservative_absolute_bound",
+      "evidence_status": "current",
+      "evidence_class": "independent_physical_measurement",
+      "method_reference": "synthetic://paired-poc-method",
+      "evidence_reference": "synthetic://metrology-a"
+    },
+    {
+      "candidate_id": "candidate-B",
+      "metric": "cost_per_delivered_critical_kwh",
+      "absolute_bound": 1.5,
+      "bound_kind": "conservative_absolute_bound",
+      "evidence_status": "current",
+      "evidence_class": "analytical_model",
+      "method_reference": "synthetic://paired-poc-method",
+      "evidence_reference": "synthetic://metrology-b"
+    }
+  ],
+  "expected_adjusted_confidence_level": 0.975,
+  "claim_ceiling": "PREREGISTERED_SUPERIORITY_SCREEN_ONLY_NOT_FIELD_SUPERIORITY_OR_EQUIVALENCE"
+}

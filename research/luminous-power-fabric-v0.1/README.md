@@ -371,3 +371,8 @@ engineering review, fault/energy analysis, suitable laboratory containment and a
 ## Paired cluster bootstrap
 
 Draft [PR #463](https://github.com/Luminous-Dynamics/luminous-platform/pull/463) adds deterministic paired percentile-bootstrap summaries over pre-aggregated mission/site/event clusters. It requires exact cluster and scenario-seed pairing, retains failed missions and unserved energy, and rejects zero-delivery draws instead of censoring them. Cluster-independence evidence is caller-supplied and is not proven by this code.
+
+
+## Preregistered superiority gate
+
+Draft [PR #464](https://github.com/Luminous-Dynamics/luminous-platform/pull/464), tracked by issue #466, binds the lifecycle frontier and paired cluster bootstrap to one preregistered primary metric, candidate family, Bonferroni-adjusted confidence and conservative paired metrology-error bounds. It distinguishes established, no-preregistered-superiority, inconclusive and ineligible; it makes no equivalence or field-superiority claim.
