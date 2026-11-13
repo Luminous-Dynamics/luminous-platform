@@ -189,3 +189,8 @@ Issue [#466](https://github.com/Luminous-Dynamics/luminous-platform/issues/466) 
 ## 25. Uncertainty-bounded temporal evidence
 
 Issue [#468](https://github.com/Luminous-Dynamics/luminous-platform/issues/468) and draft [PR #468](https://github.com/Luminous-Dynamics/luminous-platform/pull/468) add a typed temporal evidence evaluator. It binds synchronization state, holdover drift, clock epoch/configuration, timestamp quantization, instrument capture delay, UTC-to-TAI conversion and cross-domain offset evidence. Causal order requires disjoint time intervals; overlapping intervals remain indeterminate. This is offline evidence evaluation, not a PTP implementation or clock-control function.
+
+
+## 26. Exposure-normalized reliability and service impact
+
+[Issue #471](https://github.com/Luminous-Dynamics/luminous-platform/issues/471) and draft [PR #472](https://github.com/Luminous-Dynamics/luminous-platform/pull/472) add synthetic/offline event-and-exposure accounting. Incident rates remain separate per asset-hour, installed MW-year (calendar-exposure lower bound), charged/discharged MWh, equivalent full cycles, dispatches and source transfers. Severity, near misses, precursors, common-cause groups, event-history completeness and outage-duration bounds remain visible; no weighted severity score or failure-probability forecast is produced.

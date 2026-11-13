@@ -381,3 +381,8 @@ Draft [PR #464](https://github.com/Luminous-Dynamics/luminous-platform/pull/464)
 ## Uncertainty-bounded temporal evidence
 
 Draft [PR #468](https://github.com/Luminous-Dynamics/luminous-platform/pull/468), tracked by issue #468, adds offline event-time intervals, holdover drift growth, UTC/TAI conversion evidence and cross-domain clock-relation qualification. Causality is reported only when uncertainty intervals are strictly disjoint; overlap means order unknown. No PTP or hardware clock is configured.
+
+
+## Exposure-normalized reliability evidence
+
+[Issue #471](https://github.com/Luminous-Dynamics/luminous-platform/issues/471) and draft [PR #472](https://github.com/Luminous-Dynamics/luminous-platform/pull/472) add an offline reliability accountant that reports confirmed failures separately per energized asset-hour, installed MW-year (calendar-exposure lower bound), charged/discharged throughput, equivalent full cycles, dispatches and source transfers. It preserves near misses, precursors, severity dimensions, common-cause groups and uncertainty-bounded outage duration. It does not infer future failure probability or certify safety.

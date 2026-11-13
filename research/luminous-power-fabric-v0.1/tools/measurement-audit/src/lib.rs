@@ -17,6 +17,7 @@ pub mod lifecycle_frontier;
 pub mod paired_cluster_bootstrap;
 pub mod preregistered_superiority;
 pub mod temporal_evidence;
+pub mod reliability_exposure;
 
 const EXPECTED_HEADER: &str =
     "time_s,port_a_voltage_v,port_a_current_a,port_b_voltage_v,port_b_current_a,case_temp_c";
