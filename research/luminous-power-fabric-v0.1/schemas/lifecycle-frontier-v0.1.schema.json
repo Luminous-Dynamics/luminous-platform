@@ -1,0 +1,321 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/lifecycle-frontier-v0.1.schema.json",
+  "title": "Uncertainty-qualified lifecycle Pareto frontier fixture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "comparator_set_id",
+    "currency_code",
+    "minor_unit_scale",
+    "confidence_level",
+    "matched_context",
+    "candidates",
+    "claim_ceiling"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "comparator_set_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "currency_code": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "minor_unit_scale": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "confidence_level": {
+      "type": "number",
+      "exclusiveMinimum": 0.5,
+      "exclusiveMaximum": 1
+    },
+    "matched_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "service_boundary_id",
+        "site_profile_sha256",
+        "mission_set_sha256",
+        "scenario_manifest_sha256",
+        "initial_terminal_obligation_sha256"
+      ],
+      "properties": {
+        "service_boundary_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "site_profile_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "mission_set_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "scenario_manifest_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "initial_terminal_obligation_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        }
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidate_id",
+          "service_feasible",
+          "evidence_eligible",
+          "cost_per_delivered_critical_kwh",
+          "unserved_critical_service_wh",
+          "unavailable_hours",
+          "replacement_count",
+          "storage_retention",
+          "expected_central_member",
+          "expected_robust_member"
+        ],
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "service_feasible": {
+            "type": "boolean"
+          },
+          "evidence_eligible": {
+            "type": "boolean"
+          },
+          "cost_per_delivered_critical_kwh": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "point",
+              "lower",
+              "upper",
+              "confidence_level",
+              "evidence_status",
+              "evidence_class",
+              "evidence_reference"
+            ],
+            "properties": {
+              "point": {
+                "type": "number",
+                "minimum": 0
+              },
+              "lower": {
+                "type": "number",
+                "minimum": 0
+              },
+              "upper": {
+                "type": "number",
+                "minimum": 0
+              },
+              "confidence_level": {
+                "type": "number",
+                "exclusiveMinimum": 0.5,
+                "exclusiveMaximum": 1
+              },
+              "evidence_status": {
+                "const": "current"
+              },
+              "evidence_class": {
+                "enum": [
+                  "independent_physical_measurement",
+                  "invoice_or_receipt",
+                  "utility_bill",
+                  "payroll_or_work_order",
+                  "vendor_report",
+                  "supplier_quote",
+                  "analytical_model"
+                ]
+              },
+              "evidence_reference": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "unserved_critical_service_wh": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "point",
+              "lower",
+              "upper",
+              "confidence_level",
+              "evidence_status",
+              "evidence_class",
+              "evidence_reference"
+            ],
+            "properties": {
+              "point": {
+                "type": "number",
+                "minimum": 0
+              },
+              "lower": {
+                "type": "number",
+                "minimum": 0
+              },
+              "upper": {
+                "type": "number",
+                "minimum": 0
+              },
+              "confidence_level": {
+                "type": "number",
+                "exclusiveMinimum": 0.5,
+                "exclusiveMaximum": 1
+              },
+              "evidence_status": {
+                "const": "current"
+              },
+              "evidence_class": {
+                "enum": [
+                  "independent_physical_measurement",
+                  "invoice_or_receipt",
+                  "utility_bill",
+                  "payroll_or_work_order",
+                  "vendor_report",
+                  "supplier_quote",
+                  "analytical_model"
+                ]
+              },
+              "evidence_reference": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "unavailable_hours": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "point",
+              "lower",
+              "upper",
+              "confidence_level",
+              "evidence_status",
+              "evidence_class",
+              "evidence_reference"
+            ],
+            "properties": {
+              "point": {
+                "type": "number",
+                "minimum": 0
+              },
+              "lower": {
+                "type": "number",
+                "minimum": 0
+              },
+              "upper": {
+                "type": "number",
+                "minimum": 0
+              },
+              "confidence_level": {
+                "type": "number",
+                "exclusiveMinimum": 0.5,
+                "exclusiveMaximum": 1
+              },
+              "evidence_status": {
+                "const": "current"
+              },
+              "evidence_class": {
+                "enum": [
+                  "independent_physical_measurement",
+                  "invoice_or_receipt",
+                  "utility_bill",
+                  "payroll_or_work_order",
+                  "vendor_report",
+                  "supplier_quote",
+                  "analytical_model"
+                ]
+              },
+              "evidence_reference": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "replacement_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "storage_retention": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "point",
+              "lower",
+              "upper",
+              "confidence_level",
+              "evidence_status",
+              "evidence_class",
+              "evidence_reference"
+            ],
+            "properties": {
+              "point": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "lower": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "upper": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "confidence_level": {
+                "type": "number",
+                "exclusiveMinimum": 0.5,
+                "exclusiveMaximum": 1
+              },
+              "evidence_status": {
+                "const": "current"
+              },
+              "evidence_class": {
+                "enum": [
+                  "independent_physical_measurement",
+                  "invoice_or_receipt",
+                  "utility_bill",
+                  "payroll_or_work_order",
+                  "vendor_report",
+                  "supplier_quote",
+                  "analytical_model"
+                ]
+              },
+              "evidence_reference": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "expected_central_member": {
+            "type": "boolean"
+          },
+          "expected_robust_member": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "claim_ceiling": {
+      "const": "UNCERTAINTY_QUALIFIED_LIFECYCLE_PARETO_SCREEN_ONLY_NOT_LIFETIME_FORECAST_OR_SOTA_CLAIM"
+    }
+  }
+}
