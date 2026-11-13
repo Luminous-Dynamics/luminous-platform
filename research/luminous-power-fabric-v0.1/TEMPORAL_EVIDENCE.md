@@ -46,3 +46,14 @@ Platform evaluates typed temporal intervals. Mycelix verifies signed timebase/ma
 - It does not adjust clocks or issue equipment commands. No physical response-time, PMU accuracy, HIL or IEC/IEEE conformity claim is made.
 
 Claim ceiling: `TEMPORAL_EVIDENCE_QUALIFICATION_ONLY_NOT_CLOCK_SYNC_OR_PHYSICAL_RESPONSE_CLAIM`.
+
+
+## Validation status
+
+- 12 Rust unit tests are authored, not executed.
+- The JSON schema and ten-case synthetic fixture parse in the authoring runtime; case IDs and required schema fields were checked.
+- No Rust compiler/Cargo, formatting, Clippy or exact-head workflow pass is claimed.
+- No PTP packets, clock configuration, grandmaster, leap-second source, PMU, HIL or physical instrument was accessed. Clock evidence values and time mappings remain declared test inputs.
+- The evaluator does not authenticate profile identity, verify clock traceability, measure path asymmetry, calibrate instrument delay or prove independent clocks.
+
+Claim ceiling: `TEMPORAL_EVIDENCE_QUALIFICATION_ONLY_NOT_CLOCK_SYNC_OR_PHYSICAL_RESPONSE_CLAIM`.
