@@ -249,6 +249,8 @@ fn apply_clock_relation(
         || (relation.to_clock_domain_id == relation.from_clock_domain_id && relation.to_clock_epoch_id == relation.from_clock_epoch_id)
         || interval.lower_bound_ns < valid_from
         || interval.upper_bound_ns > valid_until
+        || i128::from(relation.reference_timestamp_ns) < valid_from
+        || i128::from(relation.reference_timestamp_ns) > valid_until
         || relation.valid_until_timestamp_ns < relation.valid_from_timestamp_ns
         || !qualified_evidence(relation.evidence_status, relation.evidence_class)
         || !nonblank(&relation.method_reference)
@@ -447,7 +449,7 @@ mod tests {
         let mut relation=ClockDomainRelation{
             from_clock_domain_id:"clock-a".into(),from_clock_epoch_id:"epoch-1".into(),
             to_clock_domain_id:"clock-b".into(),to_clock_epoch_id:"epoch-1".into(),
-            reference_timestamp_ns:1_000_000,valid_from_timestamp_ns:0,valid_until_timestamp_ns:1_500_000,
+            reference_timestamp_ns:1_000_000,valid_from_timestamp_ns:0,valid_until_timestamp_ns:1_000_001,
             offset_ns:0,offset_error_bound_ns:1,relative_drift_bound_ppb:1,
             evidence_status:EvidenceStatus::Current,evidence_class:LifecycleEvidenceClass::IndependentPhysicalMeasurement,
             method_reference:"mapping".into(),evidence_reference:"receipt".into(),
