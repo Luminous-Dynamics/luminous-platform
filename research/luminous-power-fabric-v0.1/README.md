@@ -418,3 +418,8 @@ protection trips, communications loss, reconciliation and forbidden authority/gu
 The typed validator checks transition references, initial-state reachability, independent-protection ownership, exact positive/negative coverage, all-guards-satisfied denial controls and recovery coverage. All 79
 checked-in test cases are synthetic: 14 positive, 60 isolated single-guard negative, three forbidden-disposition and two recovery cases. Twenty-seven Rust unit tests are authored but not executed. This is not controller logic, HIL, protection testing, or
 energization authorization.
+
+
+## Cyber-physical command-intent and effect reconciliation
+
+[Issue #459](https://github.com/Luminous-Dynamics/luminous-platform/issues/459) and draft [PR #460](https://github.com/Luminous-Dynamics/luminous-platform/pull/460) add a synthetic command-intent contract for identity/scope, replay, nonce, sequence, expiry/timebase, state/configuration and leadership checks. The typed validator separates admission from physical-effect assessment. Acknowledgement and supervisory telemetry cannot promote state; missing or ambiguous effects require reconciliation. It does not verify signatures, query revocation, persist replay state, dispatch commands or operate hardware.

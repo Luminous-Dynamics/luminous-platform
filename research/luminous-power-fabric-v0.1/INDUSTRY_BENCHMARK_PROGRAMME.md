@@ -262,3 +262,8 @@ than the 13 November 2026 snapshot. Treat that result as forthcoming/prepublicat
 published 2026 SOTA baseline. Existing public comparators include NLR's 2024/2025 multi-GFM C-HIL
 work and 2025 Borrego Springs PHIL work. These provide different physical test boundaries and must
 not be ranked against this synthetic offline validator.
+
+
+## 21. Cyber-physical command-intent and effect reconciliation
+
+[Issue #459](https://github.com/Luminous-Dynamics/luminous-platform/issues/459) and draft [PR #460](https://github.com/Luminous-Dynamics/luminous-platform/pull/460) add a synthetic adversarial corpus and offline validator covering identity/key/role/asset/command scope, replay, nonce reuse, sequence rollback, expiry/timebase, configuration drift, leader conflict, split brain, protection permissive and untrusted physical-effect observations. Mycelix retains cryptographic verification, revocation and durable consume-once ownership. No cyber-assurance or physical test result is claimed.

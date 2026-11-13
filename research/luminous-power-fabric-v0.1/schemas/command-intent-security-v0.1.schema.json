@@ -1,0 +1,418 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/command-intent-security-v0.1.schema.json",
+  "title": "Power Fabric cyber-physical command-intent and effect-reconciliation corpus",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "corpus_id",
+    "record_class",
+    "claim_ceiling",
+    "baseline_intent",
+    "baseline_policy",
+    "test_cases"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "corpus_id": {
+      "const": "PF-COMMAND-INTENT-SECURITY-SYNTH-0.1"
+    },
+    "record_class": {
+      "const": "synthetic_test_plan"
+    },
+    "claim_ceiling": {
+      "const": "SYNTHETIC_COMMAND_INTENT_TEST_PLAN_ONLY_NOT_SIGNATURE_VERIFICATION_OR_CYBER_ASSURANCE"
+    },
+    "baseline_intent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command_id",
+        "issuer_id",
+        "issuer_role",
+        "key_id",
+        "identity_status",
+        "signature_status",
+        "asset_id",
+        "command_type",
+        "transition_id",
+        "nonce",
+        "sequence",
+        "issued_at_ms",
+        "expires_at_ms",
+        "timebase_status",
+        "expected_pre_state_id",
+        "expected_pre_state_epoch",
+        "pre_state_sha256",
+        "topology_sha256",
+        "controller_configuration_sha256",
+        "protection_configuration_sha256",
+        "payload_sha256",
+        "envelope_sha256",
+        "leader_epoch"
+      ],
+      "properties": {
+        "command_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "issuer_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "issuer_role": {
+          "enum": [
+            "supervisory_mems",
+            "local_controller",
+            "independent_protection",
+            "operator",
+            "qualified_operator",
+            "maintenance_authority"
+          ]
+        },
+        "key_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "identity_status": {
+          "enum": [
+            "current",
+            "unknown",
+            "revoked",
+            "expired"
+          ]
+        },
+        "signature_status": {
+          "enum": [
+            "valid",
+            "invalid",
+            "missing"
+          ]
+        },
+        "asset_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "command_type": {
+          "enum": [
+            "OPEN_PCC",
+            "CLOSE_PCC",
+            "START_GFM",
+            "STOP_GFM",
+            "SETPOINT",
+            "RESET_PROTECTION"
+          ]
+        },
+        "transition_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nonce": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "issued_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expires_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "timebase_status": {
+          "enum": [
+            "trusted",
+            "untrusted",
+            "discontinuous"
+          ]
+        },
+        "expected_pre_state_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected_pre_state_epoch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pre_state_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "topology_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "controller_configuration_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "protection_configuration_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "payload_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "envelope_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "leader_epoch": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "baseline_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "asset_id",
+        "authorized_issuer_roles",
+        "authorized_key_ids",
+        "authorized_asset_ids",
+        "authorized_command_types",
+        "authorized_transition_ids",
+        "current_state_id",
+        "current_state_epoch",
+        "current_pre_state_sha256",
+        "topology_sha256",
+        "controller_configuration_sha256",
+        "protection_configuration_sha256",
+        "current_time_ms",
+        "trusted_timebase_status",
+        "last_accepted_sequence",
+        "consumed_command_ids",
+        "consumed_nonces",
+        "leader_epoch",
+        "active_controller_count",
+        "protection_interlock_required",
+        "protection_permissive",
+        "maintenance_clearance_receipt_current",
+        "physical_cause_cleared",
+        "independent_trip_clear_verified",
+        "expected_post_state_id",
+        "expected_post_state_epoch",
+        "max_observation_age_ms"
+      ],
+      "properties": {
+        "asset_id": {
+          "type": "string"
+        },
+        "authorized_issuer_roles": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "authorized_key_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "authorized_asset_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "authorized_command_types": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "authorized_transition_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "current_state_id": {
+          "type": "string"
+        },
+        "current_state_epoch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "current_pre_state_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "topology_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "controller_configuration_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "protection_configuration_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "current_time_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "trusted_timebase_status": {
+          "enum": [
+            "trusted",
+            "untrusted",
+            "discontinuous"
+          ]
+        },
+        "last_accepted_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "consumed_command_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "consumed_nonces": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "leader_epoch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "active_controller_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "protection_interlock_required": {
+          "type": "boolean"
+        },
+        "protection_permissive": {
+          "enum": [
+            "not_required",
+            "independently_permitted",
+            "blocked",
+            "unknown"
+          ]
+        },
+        "maintenance_clearance_receipt_current": {
+          "type": "boolean"
+        },
+        "physical_cause_cleared": {
+          "type": "boolean"
+        },
+        "independent_trip_clear_verified": {
+          "type": "boolean"
+        },
+        "expected_post_state_id": {
+          "type": "string"
+        },
+        "expected_post_state_epoch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_observation_age_ms": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "test_cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "test_case_id",
+          "test_kind",
+          "mutation",
+          "observation_class",
+          "expected_outcome",
+          "expected_reason",
+          "admission_permitted",
+          "state_promotion_permitted",
+          "reconcile_before_next_mutation"
+        ],
+        "properties": {
+          "test_case_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "test_kind": {
+            "enum": [
+              "admission_positive",
+              "admission_negative",
+              "effect_pending",
+              "effect_negative",
+              "effect_positive"
+            ]
+          },
+          "mutation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "observation_class": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "acknowledgement_only",
+              "supervisory_telemetry",
+              "spoofed_feedback",
+              "stale_feedback",
+              "out_of_order_feedback",
+              "independent_fresh_feedback",
+              "command_dispatched_unknown",
+              null
+            ]
+          },
+          "expected_outcome": {
+            "enum": [
+              "admitted",
+              "rejected",
+              "pending_reconciliation",
+              "effect_confirmed"
+            ]
+          },
+          "expected_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "admission_permitted": {
+            "type": "boolean"
+          },
+          "state_promotion_permitted": {
+            "type": "boolean"
+          },
+          "reconcile_before_next_mutation": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}
