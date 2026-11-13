@@ -170,6 +170,10 @@ pub struct StorageHealthObservation {
     pub state_of_charge_fraction: f64,
     pub state_of_health_fraction: f64,
     pub temperature_c: f64,
+    /// Exact capacity/power measurement procedure revision.
+    pub measurement_protocol_sha256: String,
+    /// Declared matched condition envelope (temperature, SOC, rate, rest/hold, etc.).
+    pub condition_profile_sha256: String,
     pub evidence_status: EvidenceStatus,
     pub calibration_status: EvidenceStatus,
     pub sensor_status: EvidenceStatus,
@@ -218,6 +222,8 @@ pub struct LifecycleCostCategoryTotal {
 pub struct StorageHealthTrajectory {
     pub component_id: String,
     pub qualified_configuration_sha256: String,
+    pub measurement_protocol_sha256: String,
+    pub condition_profile_sha256: String,
     pub first_observation_epoch_s: u64,
     pub last_observation_epoch_s: u64,
     pub first_usable_capacity_lower_bound_wh: f64,
@@ -556,6 +562,8 @@ fn validate_input(input: &LifecycleScenarioInput) -> Result<(), AuditError> {
         observation_ids.push(&observation.observation_id);
         if !valid_sha256(&observation.qualified_configuration_sha256)
             || !valid_sha256(&observation.observed_configuration_sha256)
+            || !valid_sha256(&observation.measurement_protocol_sha256)
+            || !valid_sha256(&observation.condition_profile_sha256)
         {
             return Err(AuditError(format!(
                 "storage observation {:?} has an invalid configuration digest",
@@ -640,9 +648,13 @@ fn storage_health_trajectories(
         }
 
         let configuration = &first.qualified_configuration_sha256;
+        let measurement_protocol = &first.measurement_protocol_sha256;
+        let condition_profile = &first.condition_profile_sha256;
         for point in &points {
             if point.qualified_configuration_sha256 != point.observed_configuration_sha256
                 || &point.qualified_configuration_sha256 != configuration
+                || &point.measurement_protocol_sha256 != measurement_protocol
+                || &point.condition_profile_sha256 != condition_profile
                 || point.evidence_status != EvidenceStatus::Current
                 || point.calibration_status != EvidenceStatus::Current
                 || point.sensor_status != EvidenceStatus::Current
@@ -670,6 +682,8 @@ fn storage_health_trajectories(
             trajectories.push(StorageHealthTrajectory {
                 component_id: component_id.to_string(),
                 qualified_configuration_sha256: configuration.clone(),
+                measurement_protocol_sha256: measurement_protocol.clone(),
+                condition_profile_sha256: condition_profile.clone(),
                 first_observation_epoch_s: first.observed_at_epoch_s,
                 last_observation_epoch_s: last.observed_at_epoch_s,
                 first_usable_capacity_lower_bound_wh: first_capacity_lower,
@@ -1136,6 +1150,8 @@ mod tests {
             state_of_charge_fraction: 0.5,
             state_of_health_fraction: 0.9,
             temperature_c: 25.0,
+            measurement_protocol_sha256: digest('1'),
+            condition_profile_sha256: digest('2'),
             evidence_status: EvidenceStatus::Current,
             calibration_status: EvidenceStatus::Current,
             sensor_status: EvidenceStatus::Current,
@@ -1301,6 +1317,45 @@ mod tests {
         assert!(!report.physical_lifecycle_claim_eligible);
     }
 
+
+    #[test]
+    fn mismatched_measurement_protocol_does_not_produce_retention_trajectory() {
+        let mut value = input("protocol-mismatch", true);
+        let first = observation("initial", "battery-a", 1_000, 5_000.0, 2_000.0, 0.0, 0.0);
+        let mut second = observation("later", "battery-a", 4_000, 4_500.0, 1_800.0, 10_000.0, 2.0);
+        second.measurement_protocol_sha256 = digest('3');
+        value.storage_health_observations = vec![first, second];
+        let report = evaluate_lifecycle_accounting(&value).unwrap();
+        assert!(!report.storage_health_evidence_complete);
+        assert!(report.storage_health_trajectories.is_empty());
+    }
+
+    #[test]
+    fn mismatched_condition_profile_does_not_produce_retention_trajectory() {
+        let mut value = input("condition-profile-mismatch", true);
+        let first = observation("initial", "battery-a", 1_000, 5_000.0, 2_000.0, 0.0, 0.0);
+        let mut second = observation("later", "battery-a", 4_000, 4_500.0, 1_800.0, 10_000.0, 2.0);
+        second.condition_profile_sha256 = digest('4');
+        value.storage_health_observations = vec![first, second];
+        let report = evaluate_lifecycle_accounting(&value).unwrap();
+        assert!(!report.storage_health_evidence_complete);
+        assert!(report.storage_health_trajectories.is_empty());
+    }
+
+    #[test]
+    fn malformed_health_protocol_or_condition_digest_is_rejected() {
+        let mut value = input("bad-health-digest", true);
+        let mut item = observation("initial", "battery-a", 1_000, 5_000.0, 2_000.0, 0.0, 0.0);
+        item.measurement_protocol_sha256 = "not-a-digest".into();
+        value.storage_health_observations = vec![item];
+        assert!(evaluate_lifecycle_accounting(&value).is_err());
+        let mut value = input("bad-condition-digest", true);
+        let mut item = observation("initial", "battery-a", 1_000, 5_000.0, 2_000.0, 0.0, 0.0);
+        item.condition_profile_sha256 = "not-a-digest".into();
+        value.storage_health_observations = vec![item];
+        assert!(evaluate_lifecycle_accounting(&value).is_err());
+    }
+
     #[test]
     fn storage_retention_uses_lower_bounds_from_same_component() {
         let mut value = input("battery", true);
@@ -1315,6 +1370,8 @@ mod tests {
         assert!((trajectory.usable_capacity_retention_fraction - 4_490.0 / 4_990.0).abs() < 1e-12);
         assert!((trajectory.discharge_power_retention_fraction - 1_795.0 / 1_995.0).abs() < 1e-12);
         assert_eq!(trajectory.energy_throughput_delta_wh, 10_000.0);
+        assert_eq!(trajectory.measurement_protocol_sha256, digest('1'));
+        assert_eq!(trajectory.condition_profile_sha256, digest('2'));
         assert_eq!(trajectory.first_timebase_reference, "mycelix-timebase:initial");
         assert!((trajectory.last_state_of_health_fraction - 0.9).abs() < 1e-12);
         assert!(report.physical_lifecycle_claim_eligible);

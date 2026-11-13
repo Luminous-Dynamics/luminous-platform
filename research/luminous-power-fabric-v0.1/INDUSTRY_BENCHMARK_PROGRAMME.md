@@ -169,3 +169,17 @@ history remains unknown—not zero. The synthetic comparison in
 `schemas/lifecycle-service-accounting.synthetic.json` demonstrates arithmetic only and is not a
 physical or commercial claim.
 
+
+
+## 21. Matched repeated storage-health test protocol
+
+[Issue #456](https://github.com/Luminous-Dynamics/luminous-platform/issues/456) and the
+[follow-on lifecycle PR](https://github.com/Luminous-Dynamics/luminous-platform/pull/457) add exact
+measurement-protocol and condition-profile digests to every storage-health observation. A component's
+retention trajectory is withheld if any point uses a different protocol or condition profile, even
+when the component/configuration and metrology evidence otherwise match.
+
+This prevents changes in temperature, SOC, rate, rest/stabilization or test procedure from being
+silently interpreted as degradation. Digests are lineage bindings, not proof of actual condition
+compliance; run-specific condition references and independent verification remain required.
+No ageing model, RUL or lifetime forecast is added.
