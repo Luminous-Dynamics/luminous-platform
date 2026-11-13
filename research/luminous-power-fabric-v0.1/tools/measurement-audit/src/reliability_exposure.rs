@@ -1012,8 +1012,8 @@ mod tests {
         assert_eq!(report.precursor_incident_count, 1);
         assert_eq!(report.total_dispatch_attempts, 500);
         assert_eq!(report.total_source_transfer_attempts, 20);
-        assert_eq!(report.total_energized_system_hours, 720.0);
-        assert_eq!(report.total_installed_mw_years, 720.0 / HOURS_PER_YEAR);
+        assert_eq!(report.total_energized_asset_hours, 720.0);
+        assert_eq!(report.total_installed_mw_years_lower_bound, 720.0 / HOURS_PER_YEAR);
         assert_eq!(report.failure_rates.len(), 7);
     }
 
