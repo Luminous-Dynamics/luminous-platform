@@ -61,7 +61,7 @@ Symthaea may propose scenarios, forecast and advise. It receives no operational 
 
 The fixture includes eight states, 20 guard definitions and 17 transition records: 14 permitted and three explicitly forbidden. There are 76 synthetic test cases:
 - positive coverage for every permitted transition;
-- single-guard negative mutation coverage for every declared guard across all transitions;
+- 60 single-guard negative mutation cases (one per transition/guard pair), with every other guard satisfied;
 - recovery-path tests for the two communications-loss transitions.
 
 The transition families cover planned islanding, unexpected grid loss, reconnection and synchronism, black start/failed start, protection trip/inspection hold, communications loss, reconciliation, direct supervisory switchgear requests, reconnection without sync-check and protection-lockout bypass attempts.
