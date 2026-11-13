@@ -1,0 +1,320 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/metrology-uncertainty-v0.1.schema.json",
+  "title": "Power Fabric conservative metrology interval input and decision fixture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "comparison_set_id",
+    "evaluation_time_epoch_s",
+    "measurements",
+    "ratio_operation",
+    "paired_difference_operation",
+    "expected",
+    "claim_ceiling"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "comparison_set_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evaluation_time_epoch_s": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "measurements": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "measurement_id",
+          "comparison_set_id",
+          "measurand_id",
+          "boundary_id",
+          "instrument_id",
+          "channel_id",
+          "scope_sha256",
+          "configuration_sha256",
+          "value",
+          "unit",
+          "observed_at_epoch_s",
+          "evaluation_time_epoch_s",
+          "calibration_id",
+          "calibration_evidence_reference",
+          "calibration_valid_until_epoch_s",
+          "calibration_status",
+          "timebase_reference",
+          "timebase_evidence_reference",
+          "timebase_status",
+          "evidence_status",
+          "evidence_class",
+          "evidence_reference",
+          "uncertainty_components"
+        ],
+        "properties": {
+          "measurement_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "comparison_set_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "measurand_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "boundary_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "instrument_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "channel_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scope_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "configuration_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "value": {
+            "type": "number",
+            "minimum": 0
+          },
+          "unit": {
+            "enum": [
+              "watt",
+              "watt_hour",
+              "minor_currency_unit"
+            ]
+          },
+          "observed_at_epoch_s": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "evaluation_time_epoch_s": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "calibration_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "calibration_evidence_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "calibration_valid_until_epoch_s": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "calibration_status": {
+            "const": "current"
+          },
+          "timebase_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "timebase_evidence_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "timebase_status": {
+            "const": "current"
+          },
+          "evidence_status": {
+            "const": "current"
+          },
+          "evidence_class": {
+            "enum": [
+              "independent_physical_measurement",
+              "invoice_or_receipt",
+              "utility_bill",
+              "payroll_or_work_order",
+              "vendor_report",
+              "supplier_quote",
+              "analytical_model",
+              "synthetic_fixture",
+              "assumption"
+            ]
+          },
+          "evidence_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uncertainty_components": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "component_id",
+                "absolute_bound",
+                "unit",
+                "kind",
+                "evidence_status",
+                "evidence_reference"
+              ],
+              "properties": {
+                "component_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "absolute_bound": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "unit": {
+                  "enum": [
+                    "watt",
+                    "watt_hour",
+                    "minor_currency_unit"
+                  ]
+                },
+                "kind": {
+                  "enum": [
+                    "instrument_accuracy",
+                    "calibration_correction",
+                    "resolution",
+                    "repeatability",
+                    "drift",
+                    "current_transformer_ratio",
+                    "voltage_transformer_ratio",
+                    "timebase_integration",
+                    "temperature_influence",
+                    "other"
+                  ]
+                },
+                "evidence_status": {
+                  "const": "current"
+                },
+                "evidence_reference": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "ratio_operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "numerator_measurement_id",
+        "denominator_measurement_id"
+      ],
+      "properties": {
+        "numerator_measurement_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "denominator_measurement_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "paired_difference_operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_measurement_id",
+        "reference_measurement_id",
+        "preregistered_margin",
+        "direction"
+      ],
+      "properties": {
+        "candidate_measurement_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reference_measurement_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "preregistered_margin": {
+          "type": "number",
+          "minimum": 0
+        },
+        "direction": {
+          "enum": [
+            "lower_is_better",
+            "higher_is_better"
+          ]
+        }
+      }
+    },
+    "expected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_output_absolute_bound",
+        "candidate_output_lower",
+        "candidate_output_upper",
+        "ratio_lower",
+        "ratio_upper",
+        "paired_delta_point",
+        "paired_delta_lower",
+        "paired_delta_upper",
+        "numeric_margin_cleared",
+        "physical_superiority_claim_eligible"
+      ],
+      "properties": {
+        "candidate_output_absolute_bound": {
+          "type": "number",
+          "minimum": 0
+        },
+        "candidate_output_lower": {
+          "type": "number",
+          "minimum": 0
+        },
+        "candidate_output_upper": {
+          "type": "number",
+          "minimum": 0
+        },
+        "ratio_lower": {
+          "type": "number",
+          "minimum": 0
+        },
+        "ratio_upper": {
+          "type": "number",
+          "minimum": 0
+        },
+        "paired_delta_point": {
+          "type": "number"
+        },
+        "paired_delta_lower": {
+          "type": "number"
+        },
+        "paired_delta_upper": {
+          "type": "number"
+        },
+        "numeric_margin_cleared": {
+          "type": "boolean"
+        },
+        "physical_superiority_claim_eligible": {
+          "type": "boolean"
+        }
+      }
+    },
+    "claim_ceiling": {
+      "const": "CONSERVATIVE_METROLOGY_INTERVAL_SCREEN_ONLY_NOT_GUM_EVALUATION_OR_CONFORMITY_DECISION"
+    }
+  }
+}

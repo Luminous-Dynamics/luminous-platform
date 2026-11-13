@@ -1,0 +1,198 @@
+{
+  "schema_version": "0.1",
+  "comparison_set_id": "metered-set-01",
+  "evaluation_time_epoch_s": 1000,
+  "measurements": [
+    {
+      "measurement_id": "candidate-output",
+      "comparison_set_id": "metered-set-01",
+      "measurand_id": "output-energy",
+      "boundary_id": "customer-poc",
+      "instrument_id": "instrument-candidate-output",
+      "channel_id": "channel-candidate-output",
+      "scope_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "value": 95,
+      "unit": "watt_hour",
+      "observed_at_epoch_s": 900,
+      "evaluation_time_epoch_s": 1000,
+      "calibration_id": "cal-candidate-output",
+      "calibration_evidence_reference": "certificate://candidate-output",
+      "calibration_valid_until_epoch_s": 2000,
+      "calibration_status": "current",
+      "timebase_reference": "clock-01",
+      "timebase_evidence_reference": "timebase-certificate://clock-01",
+      "timebase_status": "current",
+      "evidence_status": "current",
+      "evidence_class": "synthetic_fixture",
+      "evidence_reference": "synthetic://measurement/candidate-output",
+      "uncertainty_components": [
+        {
+          "component_id": "accuracy",
+          "absolute_bound": 0.3,
+          "unit": "watt_hour",
+          "kind": "instrument_accuracy",
+          "evidence_status": "current",
+          "evidence_reference": "synthetic://uncertainty/candidate-output/accuracy"
+        },
+        {
+          "component_id": "calibration",
+          "absolute_bound": 0.1,
+          "unit": "watt_hour",
+          "kind": "calibration_correction",
+          "evidence_status": "current",
+          "evidence_reference": "synthetic://uncertainty/candidate-output/calibration"
+        }
+      ]
+    },
+    {
+      "measurement_id": "candidate-input",
+      "comparison_set_id": "metered-set-01",
+      "measurand_id": "input-energy",
+      "boundary_id": "source-poc",
+      "instrument_id": "instrument-candidate-input",
+      "channel_id": "channel-candidate-input",
+      "scope_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "value": 100,
+      "unit": "watt_hour",
+      "observed_at_epoch_s": 900,
+      "evaluation_time_epoch_s": 1000,
+      "calibration_id": "cal-candidate-input",
+      "calibration_evidence_reference": "certificate://candidate-input",
+      "calibration_valid_until_epoch_s": 2000,
+      "calibration_status": "current",
+      "timebase_reference": "clock-01",
+      "timebase_evidence_reference": "timebase-certificate://clock-01",
+      "timebase_status": "current",
+      "evidence_status": "current",
+      "evidence_class": "synthetic_fixture",
+      "evidence_reference": "synthetic://measurement/candidate-input",
+      "uncertainty_components": [
+        {
+          "component_id": "accuracy",
+          "absolute_bound": 0.3,
+          "unit": "watt_hour",
+          "kind": "instrument_accuracy",
+          "evidence_status": "current",
+          "evidence_reference": "synthetic://uncertainty/candidate-input/accuracy"
+        },
+        {
+          "component_id": "calibration",
+          "absolute_bound": 0.1,
+          "unit": "watt_hour",
+          "kind": "calibration_correction",
+          "evidence_status": "current",
+          "evidence_reference": "synthetic://uncertainty/candidate-input/calibration"
+        }
+      ]
+    },
+    {
+      "measurement_id": "candidate-cost",
+      "comparison_set_id": "metered-set-01",
+      "measurand_id": "lifecycle-cost",
+      "boundary_id": "customer-poc",
+      "instrument_id": "instrument-candidate-cost",
+      "channel_id": "channel-candidate-cost",
+      "scope_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "configuration_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "value": 95,
+      "unit": "minor_currency_unit",
+      "observed_at_epoch_s": 900,
+      "evaluation_time_epoch_s": 1000,
+      "calibration_id": "cal-candidate-cost",
+      "calibration_evidence_reference": "certificate://candidate-cost",
+      "calibration_valid_until_epoch_s": 2000,
+      "calibration_status": "current",
+      "timebase_reference": "clock-01",
+      "timebase_evidence_reference": "timebase-certificate://clock-01",
+      "timebase_status": "current",
+      "evidence_status": "current",
+      "evidence_class": "synthetic_fixture",
+      "evidence_reference": "synthetic://measurement/candidate-cost",
+      "uncertainty_components": [
+        {
+          "component_id": "accuracy",
+          "absolute_bound": 0.3,
+          "unit": "minor_currency_unit",
+          "kind": "instrument_accuracy",
+          "evidence_status": "current",
+          "evidence_reference": "synthetic://uncertainty/candidate-cost/accuracy"
+        },
+        {
+          "component_id": "calibration",
+          "absolute_bound": 0.1,
+          "unit": "minor_currency_unit",
+          "kind": "calibration_correction",
+          "evidence_status": "current",
+          "evidence_reference": "synthetic://uncertainty/candidate-cost/calibration"
+        }
+      ]
+    },
+    {
+      "measurement_id": "reference-cost",
+      "comparison_set_id": "metered-set-01",
+      "measurand_id": "lifecycle-cost",
+      "boundary_id": "customer-poc",
+      "instrument_id": "instrument-reference-cost",
+      "channel_id": "channel-reference-cost",
+      "scope_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "value": 100,
+      "unit": "minor_currency_unit",
+      "observed_at_epoch_s": 900,
+      "evaluation_time_epoch_s": 1000,
+      "calibration_id": "cal-reference-cost",
+      "calibration_evidence_reference": "certificate://reference-cost",
+      "calibration_valid_until_epoch_s": 2000,
+      "calibration_status": "current",
+      "timebase_reference": "clock-01",
+      "timebase_evidence_reference": "timebase-certificate://clock-01",
+      "timebase_status": "current",
+      "evidence_status": "current",
+      "evidence_class": "synthetic_fixture",
+      "evidence_reference": "synthetic://measurement/reference-cost",
+      "uncertainty_components": [
+        {
+          "component_id": "accuracy",
+          "absolute_bound": 0.3,
+          "unit": "minor_currency_unit",
+          "kind": "instrument_accuracy",
+          "evidence_status": "current",
+          "evidence_reference": "synthetic://uncertainty/reference-cost/accuracy"
+        },
+        {
+          "component_id": "calibration",
+          "absolute_bound": 0.1,
+          "unit": "minor_currency_unit",
+          "kind": "calibration_correction",
+          "evidence_status": "current",
+          "evidence_reference": "synthetic://uncertainty/reference-cost/calibration"
+        }
+      ]
+    }
+  ],
+  "ratio_operation": {
+    "numerator_measurement_id": "candidate-output",
+    "denominator_measurement_id": "candidate-input"
+  },
+  "paired_difference_operation": {
+    "candidate_measurement_id": "candidate-cost",
+    "reference_measurement_id": "reference-cost",
+    "preregistered_margin": 2,
+    "direction": "lower_is_better"
+  },
+  "expected": {
+    "candidate_output_absolute_bound": 0.4,
+    "candidate_output_lower": 94.6,
+    "candidate_output_upper": 95.4,
+    "ratio_lower": 0.9422310756972111,
+    "ratio_upper": 0.957831325301205,
+    "paired_delta_point": -5,
+    "paired_delta_lower": -5.8,
+    "paired_delta_upper": -4.2,
+    "numeric_margin_cleared": true,
+    "physical_superiority_claim_eligible": false
+  },
+  "claim_ceiling": "CONSERVATIVE_METROLOGY_INTERVAL_SCREEN_ONLY_NOT_GUM_EVALUATION_OR_CONFORMITY_DECISION"
+}
