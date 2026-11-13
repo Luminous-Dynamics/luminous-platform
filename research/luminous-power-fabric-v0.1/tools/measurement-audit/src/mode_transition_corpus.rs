@@ -411,7 +411,9 @@ mod tests {
         recovery.postcondition_ids = vec!["grid-restored".into()];
         c.transitions[0].recovery_transition_id = Some("T2".into());
         c.transitions.push(recovery);
-        c.test_cases.push(test("P2", "T2", "positive"));
+        let mut positive_recovery = test("P2", "T2", "positive");
+        positive_recovery.observed_postcondition_ids = vec!["grid-restored".into()];
+        c.test_cases.push(positive_recovery);
         c.test_cases.push(test("N2", "T2", "negative"));
         let mut recovery_case = test("R1", "T1", "recovery");
         recovery_case.observed_postcondition_ids = vec!["grid-restored".into()];
@@ -429,7 +431,9 @@ mod tests {
         recovery.postcondition_ids = vec!["grid-restored".into()];
         c.transitions[0].recovery_transition_id = Some("T2".into());
         c.transitions.push(recovery);
-        c.test_cases.push(test("P2", "T2", "positive"));
+        let mut positive_recovery = test("P2", "T2", "positive");
+        positive_recovery.observed_postcondition_ids = vec!["grid-restored".into()];
+        c.test_cases.push(positive_recovery);
         c.test_cases.push(test("N2", "T2", "negative"));
         let mut recovery_case = test("R1", "T1", "recovery");
         recovery_case.recovery_transition_id = Some("T2".into());
