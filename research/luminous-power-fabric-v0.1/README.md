@@ -363,7 +363,7 @@ digests/certificates or calculate significance/superiority.
 ## Vendor baseline configuration discipline
 
 The Atlas Copco ZBC 1000-1200 is now split into separate South African 50 Hz / 400 V and US 60 Hz / 480 V reference records in
-[INDUSTRY_BENCHMARK_PROGRAMME.md](./INDUSTRY_BENCHMARK_PROGRAMME.md). The US sheet's 1,105 kWh net, 800 kW continuous-mode, 35 kW maximum auxiliary and 97% peak inverter-efficiency values are not attributed to the South African 50 Hz configuration. The maximum auxiliary rating is not treated as constant measured consumption, and peak inverter efficiency is not treated as system round-trip efficiency.
+[INDUSTRY_BENCHMARK_PROGRAMME.md](./INDUSTRY_BENCHMARK_PROGRAMME.md). The South African launch headline (1 MW / 1.2 MWh), a separate 400 V / 50 Hz technical reference sheet (1,228 kWh nominal / 1,105 kWh net), and the US 60 Hz / 480 V sheet (1,232 kWh nominal / 1,105 kWh net) are now three distinct records. The US sheet's 800 kW continuous-mode, 35 kW maximum auxiliary and 97% peak inverter-efficiency values are not attributed to the 50 Hz configuration. The Malaysia-hosted 50 Hz technical sheet is not assumed to match the exact South African SKU without a serial/configuration match. The maximum auxiliary rating is not treated as constant measured consumption, and peak inverter efficiency is not treated as system round-trip efficiency.
 
 ## Matched-service industry benchmark
 
