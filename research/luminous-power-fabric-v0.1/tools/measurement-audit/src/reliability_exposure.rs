@@ -468,8 +468,18 @@ fn validate_event<'a>(
             return Err(AuditError(format!("event {:?} has an invalid or out-of-window lifecycle timestamp", event.event_id)));
         }
     }
+    if let Some(detected) = &event.detected_tai {
+        let _ = duration_bounds(&event.onset_tai, detected)?;
+    }
+    if let Some(contained) = &event.contained_tai {
+        let previous = event.detected_tai.as_ref().unwrap_or(&event.onset_tai);
+        let _ = duration_bounds(previous, contained)?;
+    }
     if let Some(restored) = &event.restored_tai {
-        let _ = duration_bounds(&event.onset_tai, restored)?;
+        let previous = event.contained_tai.as_ref()
+            .or(event.detected_tai.as_ref())
+            .unwrap_or(&event.onset_tai);
+        let _ = duration_bounds(previous, restored)?;
     }
     if event.outage_class != OutageClass::None && event.restored_tai.is_none() {
         // Open outages are allowed and reported; they contribute only through the
@@ -1111,6 +1121,16 @@ mod tests {
         let report = evaluate_reliability_accounting(&value).unwrap();
         assert!(report.unplanned_asset_unavailable_hours_upper < 4.0);
         assert!(report.unplanned_asset_unavailable_hours_lower < report.unplanned_asset_unavailable_hours_upper);
+    }
+
+    #[test]
+    fn rejects_lifecycle_timestamps_provably_out_of_order() {
+        let mut value = input();
+        value.events[0].detected_tai = Some(interval(
+            value.events[0].onset_tai.lower_bound_ns - 10_000_000_000,
+            value.events[0].onset_tai.lower_bound_ns - 9_000_000_000,
+        ));
+        assert!(evaluate_reliability_accounting(&value).is_err());
     }
 
 }
