@@ -23,6 +23,7 @@ pub struct UncertaintyInterval {
     pub confidence_level: f64,
     pub basis: UncertaintyBasis,
     pub evidence_status: EvidenceStatus,
+    pub evidence_class: crate::lifecycle_service_cost::LifecycleEvidenceClass,
     pub evidence_reference: String,
 }
 
@@ -104,6 +105,7 @@ fn validate_interval(
         || !interval.confidence_level.is_finite()
         || !near(interval.confidence_level, confidence_level)
         || interval.evidence_status != EvidenceStatus::Current
+        || matches!(interval.evidence_class, crate::lifecycle_service_cost::LifecycleEvidenceClass::SyntheticFixture | crate::lifecycle_service_cost::LifecycleEvidenceClass::Assumption)
         || !nonblank(&interval.evidence_reference)
         || max_value.is_some_and(|max| interval.upper > max + EPS)
     {
@@ -171,13 +173,11 @@ fn candidate_exclusions(c: &LifecycleFrontierCandidate) -> (bool, bool, Vec<Stri
     let service_feasible = r.mission_count > 0
         && r.completed_mission_count == r.mission_count
         && r.critical_service_pass_rate_percent >= 100.0 - EPS
-        && r.total_unserved_critical_service_wh <= EPS
         && r.configuration_eligible
         && r.lifecycle_accounting_eligible;
     if r.mission_count == 0 { reasons.push("no-mission-records".to_string()); }
     if r.completed_mission_count != r.mission_count
-        || r.critical_service_pass_rate_percent < 100.0 - EPS
-        || r.total_unserved_critical_service_wh > EPS {
+        || r.critical_service_pass_rate_percent < 100.0 - EPS {
         reasons.push("non-compensatory-critical-service-gate-failed".to_string());
     }
     if !r.configuration_eligible { reasons.push("configuration-ineligible".to_string()); }
@@ -420,7 +420,7 @@ mod tests {
 
     fn interval(point:f64,lower:f64,upper:f64)->UncertaintyInterval{
         UncertaintyInterval{point,lower,upper,confidence_level:0.95,basis:UncertaintyBasis::Combined,
-            evidence_status:EvidenceStatus::Current,evidence_reference:"uncertainty:report-1".into()}
+            evidence_status:EvidenceStatus::Current,evidence_class:crate::lifecycle_service_cost::LifecycleEvidenceClass::AnalyticalModel,evidence_reference:"uncertainty:report-1".into()}
     }
 
     fn candidate(id:&str,cost:f64,cost_l:f64,cost_u:f64,down:f64,down_l:f64,down_u:f64,repl:usize,ret:f64,ret_l:f64,ret_u:f64,unserved:f64)->LifecycleFrontierCandidate{
@@ -546,4 +546,24 @@ mod tests {
         let mut x=input();x.confidence_level=0.5;
         assert!(evaluate_lifecycle_frontier(&x).is_err());
     }
+
+    #[test] fn declared_mission_shortfall_within_owner_gate_remains_feasible_and_visible(){
+        let mut x=input();
+        x.candidates[0].accounting.total_unserved_critical_service_wh=100.0;
+        x.candidates[0].accounting.total_delivered_critical_service_wh=9900.0;
+        x.candidates[0].accounting.completed_mission_count=100;
+        x.candidates[0].accounting.critical_service_pass_rate_percent=100.0;
+        x.candidates[0].unserved_critical_service_wh=interval(100.0,90.0,110.0);
+        let r=evaluate_lifecycle_frontier(&x).unwrap();
+        let a=r.candidates.iter().find(|v|v.candidate_id=="A").unwrap();
+        assert!(a.service_feasible);
+    }
+
+    #[test] fn assumption_only_uncertainty_is_not_claim_eligible(){
+        let mut x=input();
+        x.candidates[0].cost_per_delivered_critical_kwh.evidence_class=
+            crate::lifecycle_service_cost::LifecycleEvidenceClass::Assumption;
+        assert!(evaluate_lifecycle_frontier(&x).is_err());
+    }
+
 }

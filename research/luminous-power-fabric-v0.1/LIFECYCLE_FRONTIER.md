@@ -18,13 +18,13 @@ All candidates in one frontier must share comparator set, currency/minor-unit sc
 
 ## Hard feasibility and evidence eligibility
 
-A candidate is service-feasible only when it has mission records, all missions pass, the critical-service pass rate is 100%, unserved critical energy is zero within the accountant tolerance, and configuration/lifecycle accounting eligibility pass. Cheap-but-failed candidates are excluded before Pareto ranking.
+A candidate is service-feasible only when it has mission records, all missions pass under the existing per-mission critical-service allowance, the mission pass rate is 100%, and configuration/lifecycle accounting eligibility pass. Accepted within-limit shortfall remains visible as a separate Pareto axis; the frontier does not invent a universal zero-shortfall rule. Cheap-but-failed candidates are excluded before Pareto ranking.
 
 Evidence eligibility is a separate gate requiring the underlying lifecycle report's physical-claim, current/actual cost, current/physical mission, current/actual repair and (when storage is in scope) complete observed storage-health evidence. Synthetic or incomplete candidates may be useful for fixture testing, but are not eligible for a physical lifecycle claim.
 
 ## Uncertainty intervals and Pareto dominance
 
-Each numeric axis has a point estimate, lower and upper bounds, a common declared confidence level, current evidence status, uncertainty basis and evidence reference. The point estimate must reconcile with #428's report; intervals are not generated or statistically re-estimated here. They are supplied by the responsible metrology/model/statistics owner.
+Each numeric axis has a point estimate, lower and upper bounds, a common declared confidence level, current evidence status, non-assumption evidence class and evidence reference. The point estimate must reconcile with #428's report; intervals are not generated or statistically re-estimated here. They are supplied by the responsible metrology/model/statistics owner. Synthetic and assumption-only intervals are rejected for claim-eligible frontier calculations.
 
 Central Pareto membership compares point estimates. Robust Pareto membership is more conservative: for a lower-is-better metric, candidate A is no worse than B only when A's upper bound is no greater than B's lower bound; for the higher-is-better storage-retention metric, A's lower bound must be no less than B's upper bound. Replacement count is an exact integer. A robust dominator must be no worse on every included axis and strictly better on at least one.
 
