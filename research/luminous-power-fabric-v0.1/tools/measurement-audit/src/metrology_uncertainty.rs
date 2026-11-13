@@ -392,6 +392,21 @@ mod tests {
         }
     }
 
+
+    fn cost_measurement(
+        measurand: &str,
+        boundary: &str,
+        value: f64,
+        class: LifecycleEvidenceClass,
+    ) -> MeterMeasurement {
+        let mut result = measurement(measurand, boundary, value, class);
+        result.unit = MeasurementUnit::MinorCurrencyUnit;
+        for component in &mut result.uncertainty_components {
+            component.unit = MeasurementUnit::MinorCurrencyUnit;
+        }
+        result
+    }
+
     #[test]
     fn absolute_bounds_are_summed_linearly_not_rss() {
         let result = bound_measurement(&measurement(
@@ -440,10 +455,10 @@ mod tests {
 
     #[test]
     fn paired_difference_clears_margin_only_when_entire_interval_is_beyond_it() {
-        let reference = bound_measurement(&measurement(
+        let reference = bound_measurement(&cost_measurement(
             "cost", "customer-poc", 100.0, LifecycleEvidenceClass::IndependentPhysicalMeasurement
         )).unwrap();
-        let candidate = bound_measurement(&measurement(
+        let candidate = bound_measurement(&cost_measurement(
             "cost", "customer-poc", 95.0, LifecycleEvidenceClass::IndependentPhysicalMeasurement
         )).unwrap();
         let result = bounded_paired_difference(
@@ -455,10 +470,10 @@ mod tests {
 
     #[test]
     fn overlapping_paired_interval_does_not_clear_margin() {
-        let reference = bound_measurement(&measurement(
+        let reference = bound_measurement(&cost_measurement(
             "cost", "customer-poc", 100.0, LifecycleEvidenceClass::IndependentPhysicalMeasurement
         )).unwrap();
-        let mut candidate_input = measurement(
+        let mut candidate_input = cost_measurement(
             "cost", "customer-poc", 98.0, LifecycleEvidenceClass::IndependentPhysicalMeasurement
         );
         candidate_input.uncertainty_components[0].absolute_bound = 1.5;
@@ -473,10 +488,10 @@ mod tests {
 
     #[test]
     fn synthetic_measurements_never_become_physical_superiority_evidence() {
-        let reference = bound_measurement(&measurement(
+        let reference = bound_measurement(&cost_measurement(
             "cost", "customer-poc", 100.0, LifecycleEvidenceClass::SyntheticFixture
         )).unwrap();
-        let candidate = bound_measurement(&measurement(
+        let candidate = bound_measurement(&cost_measurement(
             "cost", "customer-poc", 90.0, LifecycleEvidenceClass::SyntheticFixture
         )).unwrap();
         let result = bounded_paired_difference(
@@ -509,17 +524,17 @@ mod tests {
 
     #[test]
     fn paired_difference_rejects_boundary_or_scope_mismatch() {
-        let reference = bound_measurement(&measurement(
+        let reference = bound_measurement(&cost_measurement(
             "cost", "poc-a", 100.0, LifecycleEvidenceClass::IndependentPhysicalMeasurement
         )).unwrap();
-        let mut candidate_input = measurement(
+        let mut candidate_input = cost_measurement(
             "cost", "poc-b", 90.0, LifecycleEvidenceClass::IndependentPhysicalMeasurement
         );
         let candidate = bound_measurement(&candidate_input).unwrap();
         assert!(bounded_paired_difference(
             &candidate, &reference, 1.0, ComparisonDirection::LowerIsBetter
         ).is_err());
-        candidate_input = measurement(
+        candidate_input = cost_measurement(
             "cost", "poc-a", 90.0, LifecycleEvidenceClass::IndependentPhysicalMeasurement
         );
         candidate_input.scope_sha256 = h('c');
