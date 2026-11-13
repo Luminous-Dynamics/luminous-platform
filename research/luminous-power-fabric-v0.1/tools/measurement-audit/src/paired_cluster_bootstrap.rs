@@ -343,7 +343,7 @@ pub fn evaluate_paired_cluster_bootstrap(
     let mut comparisons = Vec::new();
 
     for (candidate_id, clusters) in &validated {
-        if *candidate_id == input.reference_candidate_id { continue; }
+        if *candidate_id == input.reference_candidate_id.as_str() { continue; }
 
         let reference_clusters: Vec<&MissionClusterOutcome> = reference_ids.iter()
             .map(|id| reference.get(id).copied().ok_or_else(|| AuditError("reference cluster lookup failed".to_string())))
@@ -436,19 +436,22 @@ mod tests {
     fn digest(ch: char) -> String { std::iter::repeat(ch).take(64).collect() }
 
     fn candidate(id: &str, delta: f64) -> PairedBootstrapCandidate {
-        let clusters = (0..30).map(|n| MissionClusterOutcome {
-            cluster_id: format!("cluster-{n:02}"),
-            scenario_seed_sha256: digest(char::from(b'a' + (n % 16) as u8)),
-            mission_count: 1,
-            completed_mission_count: 1,
-            total_cost_minor_units: (1000.0 + n as f64 + delta).max(1.0) as u128,
-            required_critical_service_wh: 1000.0,
-            delivered_critical_service_wh: 1000.0,
-            unserved_critical_service_wh: 10.0 + n as f64 + delta * 0.05,
-            system_unavailable_hours: 2.0 + n as f64 * 0.1 + delta * 0.01,
-            evidence_status: EvidenceStatus::Current,
-            evidence_class: LifecycleEvidenceClass::SyntheticFixture,
-            evidence_reference: format!("synthetic://cluster-{n:02}"),
+        let clusters = (0..30).map(|n| {
+            let unserved_wh = 10.0 + n as f64 + delta * 0.05;
+            MissionClusterOutcome {
+                cluster_id: format!("cluster-{n:02}"),
+                scenario_seed_sha256: digest(char::from(b'a' + (n % 16) as u8)),
+                mission_count: 1,
+                completed_mission_count: 1,
+                total_cost_minor_units: (1000.0 + n as f64 + delta).max(1.0) as u128,
+                required_critical_service_wh: 1000.0,
+                delivered_critical_service_wh: 1000.0 - unserved_wh,
+                unserved_critical_service_wh: unserved_wh,
+                system_unavailable_hours: 2.0 + n as f64 * 0.1 + delta * 0.01,
+                evidence_status: EvidenceStatus::Current,
+                evidence_class: LifecycleEvidenceClass::SyntheticFixture,
+                evidence_reference: format!("synthetic://cluster-{n:02}"),
+            }
         }).collect();
         PairedBootstrapCandidate {
             candidate_id: id.to_string(),
@@ -564,4 +567,12 @@ mod tests {
         value.candidates[1].cluster_level = ClusterLevel::SiteEventMission;
         assert!(evaluate_paired_cluster_bootstrap(&value).is_err());
     }
+
+    #[test]
+    fn rejects_cluster_service_arithmetic_that_does_not_reconcile() {
+        let mut value = input();
+        value.candidates[1].clusters[0].unserved_critical_service_wh = 25.0;
+        assert!(evaluate_paired_cluster_bootstrap(&value).is_err());
+    }
+
 }
