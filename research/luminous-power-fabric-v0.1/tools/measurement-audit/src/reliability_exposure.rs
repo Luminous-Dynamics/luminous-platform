@@ -262,7 +262,7 @@ pub struct ReliabilityReport {
     pub unknown_root_cause_incident_count: usize,
     pub asset_scope: ExposureAssetScope,
     pub total_energized_asset_hours: f64,
-    pub total_installed_mw_years: f64,
+    pub total_installed_mw_years_lower_bound: f64,
     pub total_charged_throughput_mwh: f64,
     pub total_discharged_throughput_mwh: f64,
     pub total_equivalent_full_cycles: f64,
@@ -575,6 +575,8 @@ pub fn evaluate_reliability_accounting(input: &ReliabilityAccountingInput) -> Re
 
     let mut event_ids = BTreeSet::new();
     let mut incident_classes: BTreeMap<&str, EventClass> = BTreeMap::new();
+    let mut incident_outage_classes: BTreeMap<&str, OutageClass> = BTreeMap::new();
+    let mut incident_root_confidence: BTreeMap<&str, RootCauseConfidence> = BTreeMap::new();
     let mut failure_incidents = BTreeSet::new();
     let mut near_miss_incidents = BTreeSet::new();
     let mut precursor_incidents = BTreeSet::new();
@@ -623,10 +625,28 @@ pub fn evaluate_reliability_accounting(input: &ReliabilityAccountingInput) -> Re
             EventClass::NearMiss => { near_miss_incidents.insert(event.incident_group_id.as_str()); }
             EventClass::Precursor => { precursor_incidents.insert(event.incident_group_id.as_str()); }
         }
+        if event.outage_class != OutageClass::None {
+            if let Some(previous) = incident_outage_classes.insert(event.incident_group_id.as_str(), event.outage_class) {
+                if previous != event.outage_class {
+                    return Err(AuditError(format!(
+                        "incident group {:?} contains contradictory outage classifications",
+                        event.incident_group_id
+                    )));
+                }
+            }
+        }
         match event.outage_class {
             OutageClass::None => {}
             OutageClass::Planned => { planned_outage_incidents.insert(event.incident_group_id.as_str()); }
             OutageClass::Unplanned => { unplanned_outage_incidents.insert(event.incident_group_id.as_str()); }
+        }
+        if let Some(previous) = incident_root_confidence.insert(event.incident_group_id.as_str(), event.root_cause_confidence) {
+            if previous != event.root_cause_confidence {
+                return Err(AuditError(format!(
+                    "incident group {:?} contains contradictory root-cause confidence",
+                    event.incident_group_id
+                )));
+            }
         }
         match event.root_cause_confidence {
             RootCauseConfidence::Confirmed => { confirmed_root_cause.insert(event.incident_group_id.as_str()); }
@@ -634,14 +654,18 @@ pub fn evaluate_reliability_accounting(input: &ReliabilityAccountingInput) -> Re
             RootCauseConfidence::Unknown => { unknown_root_cause.insert(event.incident_group_id.as_str()); }
         }
         if let Some(common_cause) = &event.common_cause_group_id {
-            if event.root_cause_confidence != RootCauseConfidence::Unknown {
-                common_cause_groups.insert(common_cause.as_str());
-            }
+            common_cause_groups.insert(common_cause.as_str());
         }
         for dimension in severity_dimensions() {
             let value = event.severity.value(dimension);
             severity_by_incident.entry((event.incident_group_id.as_str(), dimension))
-                .and_modify(|existing| *existing = (*existing).max(value))
+                .and_modify(|existing| {
+                    *existing = if *existing == Severity::NotAssessed || value == Severity::NotAssessed {
+                        Severity::NotAssessed
+                    } else {
+                        (*existing).max(value)
+                    };
+                })
                 .or_insert(value);
         }
 
@@ -727,7 +751,7 @@ pub fn evaluate_reliability_accounting(input: &ReliabilityAccountingInput) -> Re
     }
 
     let mut total_energized_hours = 0.0_f64;
-    let mut total_mw_years = 0.0_f64;
+    let mut total_mw_years_lower_bound = 0.0_f64;
     let mut total_charged_mwh = 0.0_f64;
     let mut total_discharged_mwh = 0.0_f64;
     let mut total_efc = 0.0_f64;
@@ -737,7 +761,8 @@ pub fn evaluate_reliability_accounting(input: &ReliabilityAccountingInput) -> Re
 
     for window in &input.exposure_windows {
         total_energized_hours += window.energized_hours;
-        total_mw_years += window.installed_power_mw * window.energized_hours / HOURS_PER_YEAR;
+        let minimum_exposure_hours = (window.end_tai.lower_bound_ns - window.start_tai.upper_bound_ns) as f64 / NS_PER_HOUR;
+        total_mw_years_lower_bound += window.installed_power_mw * minimum_exposure_hours / HOURS_PER_YEAR;
         total_charged_mwh += window.charged_throughput_mwh;
         total_discharged_mwh += window.discharged_throughput_mwh;
         total_efc += window.equivalent_full_cycles;
@@ -751,7 +776,7 @@ pub fn evaluate_reliability_accounting(input: &ReliabilityAccountingInput) -> Re
     }
 
     if [
-        total_energized_hours, total_mw_years, total_charged_mwh, total_discharged_mwh,
+        total_energized_hours, total_mw_years_lower_bound, total_charged_mwh, total_discharged_mwh,
         total_efc, total_unserved, total_reserve_shortfall, total_repair_labor, total_requalification,
     ].iter().any(|value| !value.is_finite() || *value < 0.0) {
         return Err(AuditError("reliability aggregate contains a non-finite or negative total".to_string()));
@@ -779,7 +804,7 @@ pub fn evaluate_reliability_accounting(input: &ReliabilityAccountingInput) -> Re
     let confirmed_count = failure_incidents.len();
     let failure_rates = vec![
         rate("confirmed_failures_per_1000_energized_asset_hours", confirmed_count, total_energized_hours, "asset-hour", 1_000.0),
-        rate("confirmed_failures_per_mw_year", confirmed_count, total_mw_years, "MW-year", 1.0),
+        rate("confirmed_failures_per_installed_mw_year_lower_bound", confirmed_count, total_mw_years_lower_bound, "installed-MW-year-lower-bound", 1.0),
         rate("confirmed_failures_per_1000_charged_mwh", confirmed_count, total_charged_mwh, "charged-MWh", 1_000.0),
         rate("confirmed_failures_per_1000_discharged_mwh", confirmed_count, total_discharged_mwh, "discharged-MWh", 1_000.0),
         rate("confirmed_failures_per_1000_equivalent_full_cycles", confirmed_count, total_efc, "equivalent-full-cycle", 1_000.0),
@@ -833,7 +858,7 @@ pub fn evaluate_reliability_accounting(input: &ReliabilityAccountingInput) -> Re
         unknown_root_cause_incident_count: unknown_root_cause.len(),
         asset_scope: cohort.asset_scope,
         total_energized_asset_hours: total_energized_hours,
-        total_installed_mw_years: total_mw_years,
+        total_installed_mw_years_lower_bound: total_mw_years_lower_bound,
         total_charged_throughput_mwh: total_charged_mwh,
         total_discharged_throughput_mwh: total_discharged_mwh,
         total_equivalent_full_cycles: total_efc,
@@ -1149,6 +1174,40 @@ mod tests {
         next.asset_id = "pcs-01".into();
         next.asset_scope = ExposureAssetScope::ComponentAsset;
         value.exposure_windows.push(next);
+        assert!(evaluate_reliability_accounting(&value).is_err());
+    }
+
+    #[test]
+    fn installed_mw_years_use_calendar_exposure_not_only_energized_hours() {
+        let mut value = input();
+        value.exposure_windows[0].energized_hours = 360.0;
+        let report = evaluate_reliability_accounting(&value).unwrap();
+        let expected = 1.0 * 720.0 / HOURS_PER_YEAR;
+        assert!((report.total_installed_mw_years_lower_bound - expected).abs() < 1.0e-12);
+        assert_eq!(report.total_energized_asset_hours, 360.0);
+    }
+
+    #[test]
+    fn unknown_severity_is_not_overwritten_by_a_later_assessed_event_in_same_incident() {
+        let mut value = input();
+        value.events[0].severity.fire_thermal = Severity::NotAssessed;
+        value.events[1].severity.fire_thermal = Severity::None;
+        let report = evaluate_reliability_accounting(&value).unwrap();
+        assert!(!report.severity_assessment_complete);
+        assert!(report.severity_counts.iter().any(|entry|
+            entry.dimension == SeverityDimension::FireThermal
+                && entry.severity == Severity::NotAssessed
+                && entry.incident_count == 1
+        ));
+    }
+
+    #[test]
+    fn contradictory_root_cause_or_outage_class_in_one_incident_is_rejected() {
+        let mut value = input();
+        value.events[1].root_cause_confidence = RootCauseConfidence::Confirmed;
+        assert!(evaluate_reliability_accounting(&value).is_err());
+        value = input();
+        value.events[1].outage_class = OutageClass::Planned;
         assert!(evaluate_reliability_accounting(&value).is_err());
     }
 
