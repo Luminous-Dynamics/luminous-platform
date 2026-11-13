@@ -184,3 +184,8 @@ Draft [PR #463](https://github.com/Luminous-Dynamics/luminous-platform/pull/463)
 ## 24. Preregistered superiority decision
 
 Issue [#466](https://github.com/Luminous-Dynamics/luminous-platform/issues/466) and draft [PR #464](https://github.com/Luminous-Dynamics/luminous-platform/pull/464) prevent superiority claims from point estimates alone. The v0.1 gate requires non-compensatory feasibility, exact frozen context, one preregistered primary metric, Bonferroni-adjusted paired-bootstrap confidence and a current owner-supplied conservative paired metrology-error bound. Outcomes are established / no-preregistered-superiority / inconclusive / ineligible, never equivalence.
+
+
+## 25. Uncertainty-bounded temporal evidence
+
+Issue [#468](https://github.com/Luminous-Dynamics/luminous-platform/issues/468) and draft [PR #468](https://github.com/Luminous-Dynamics/luminous-platform/pull/468) add a typed temporal evidence evaluator. It binds synchronization state, holdover drift, clock epoch/configuration, timestamp quantization, instrument capture delay, UTC-to-TAI conversion and cross-domain offset evidence. Causal order requires disjoint time intervals; overlapping intervals remain indeterminate. This is offline evidence evaluation, not a PTP implementation or clock-control function.
