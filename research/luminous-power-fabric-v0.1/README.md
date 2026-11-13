@@ -371,3 +371,8 @@ engineering review, fault/energy analysis, suitable laboratory containment and a
 ## Paired cluster bootstrap
 
 Draft [PR #463](https://github.com/Luminous-Dynamics/luminous-platform/pull/463) adds deterministic paired percentile-bootstrap summaries over pre-aggregated mission/site/event clusters. It requires exact cluster and scenario-seed pairing, retains failed missions and unserved energy, and rejects zero-delivery draws instead of censoring them. Cluster-independence evidence is caller-supplied and is not proven by this code.
+
+
+## Conservative metrology uncertainty bounds
+
+[Issue #464](https://github.com/Luminous-Dynamics/luminous-platform/issues/464) and draft [PR #465](https://github.com/Luminous-Dynamics/luminous-platform/pull/465) add a read-only uncertainty layer binding meter/channel, POC, calibration and timebase evidence to each measurement. The v0.1 path sums declared absolute bounds linearly, propagates positive ratios and paired differences conservatively, and only reports a numeric margin clearance when the whole interval clears the preregistered threshold. It does not claim GUM compliance, RSS or Monte Carlo propagation.

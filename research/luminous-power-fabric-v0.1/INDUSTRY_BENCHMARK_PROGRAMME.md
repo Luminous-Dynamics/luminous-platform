@@ -179,3 +179,8 @@ Issue [#461](https://github.com/Luminous-Dynamics/luminous-platform/issues/461) 
 ## 23. Paired cluster bootstrap
 
 Draft [PR #463](https://github.com/Luminous-Dynamics/luminous-platform/pull/463), linked to issue #461, adds paired percentile-bootstrap summaries over declared mission/site/event clusters. It enforces exact paired cluster/seed identity and keeps failed missions in the sample. It does not prove statistical independence, calculate metrology uncertainty, correct multiple comparisons or claim field superiority.
+
+
+## 24. Conservative metrology uncertainty propagation
+
+Issue [#464](https://github.com/Luminous-Dynamics/luminous-platform/issues/464) and draft [PR #465](https://github.com/Luminous-Dynamics/luminous-platform/pull/465) add a typed instrument-to-claim uncertainty screen. It binds POC, instrument/channel, calibration, timebase, configuration and uncertainty-component evidence; sums absolute bounds conservatively; and propagates positive ratios and paired differences. It does not assume independence or cancel common-mode errors, and it is not a GUM/Monte Carlo or conformity implementation.
