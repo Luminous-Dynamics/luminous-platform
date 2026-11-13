@@ -1,4 +1,3 @@
-use crate::AuditError;
 const CLAIM: &str = "SYNTHETIC_COMMAND_INTENT_TEST_PLAN_ONLY_NOT_SIGNATURE_VERIFICATION_OR_CYBER_ASSURANCE";
 #[derive(Debug,Clone,Copy,PartialEq,Eq)] pub enum IdentityStatus{Current,Unknown,Revoked,Expired}
 #[derive(Debug,Clone,Copy,PartialEq,Eq)] pub enum SignatureStatus{Valid,Invalid,Missing}
@@ -27,7 +26,7 @@ pub fn assess_admission(i:&CommandIntent,p:&AdmissionPolicy)->AdmissionAssessmen
  if i.issuer_role=="supervisory_mems"&&switchgear(&i.command_type){r.push(RejectionReason::SupervisorySwitchgearProhibited)}
  if has(&p.consumed_command_ids,&i.command_id){r.push(RejectionReason::CommandIdReplayed)} if has(&p.consumed_nonces,&i.nonce){r.push(RejectionReason::NonceReused)}
  if i.sequence<=p.last_accepted_sequence{r.push(RejectionReason::SequenceNotMonotonic)} if i.issued_at_ms>p.current_time_ms{r.push(RejectionReason::CommandNotYetValid)}
- if i.expires_at_ms<p.current_time_ms||i.expires_at_ms<i.issued_at_ms{r.push(RejectionReason::CommandExpired)}
+ if i.expires_at_ms<=p.current_time_ms||i.expires_at_ms<i.issued_at_ms{r.push(RejectionReason::CommandExpired)}
  if i.timebase_status!=TimebaseStatus::Trusted||p.trusted_timebase_status!=TimebaseStatus::Trusted{r.push(RejectionReason::TimebaseUntrusted)}
  if i.expected_pre_state_id!=p.current_state_id{r.push(RejectionReason::PreStateMismatch)} if i.expected_pre_state_epoch!=p.current_state_epoch{r.push(RejectionReason::PreStateEpochMismatch)}
  if i.pre_state_sha256!=p.current_pre_state_sha256||!digest(&i.pre_state_sha256){r.push(RejectionReason::PreStateDigestMismatch)}
@@ -74,4 +73,6 @@ pub fn assess_effect(i:&CommandIntent,p:&AdmissionPolicy,o:Option<&EffectObserva
  #[test]fn wrong_command_sequence_or_state_never_promotes(){let mut x=obs(PhysicalEffect::IndependentlyConfirmed,ObservationSource::IndependentPhysicalFeedback);x.command_id="wrong".into();assert!(!assess_effect(&i(),&p(),Some(&x)).promotion_permission);x=obs(PhysicalEffect::IndependentlyConfirmed,ObservationSource::IndependentPhysicalFeedback);x.observed_state_id="unknown_hold".into();assert!(!assess_effect(&i(),&p(),Some(&x)).promotion_permission);}
  #[test]fn untrusted_observer_clock_or_digest_never_promotes(){let mut x=obs(PhysicalEffect::IndependentlyConfirmed,ObservationSource::IndependentPhysicalFeedback);x.source_identity_status=IdentityStatus::Unknown;assert!(!assess_effect(&i(),&p(),Some(&x)).promotion_permission);x=obs(PhysicalEffect::IndependentlyConfirmed,ObservationSource::IndependentPhysicalFeedback);x.timebase_status=TimebaseStatus::Untrusted;assert!(!assess_effect(&i(),&p(),Some(&x)).promotion_permission);x=obs(PhysicalEffect::IndependentlyConfirmed,ObservationSource::IndependentPhysicalFeedback);x.observation_sha256="bad".into();assert!(!assess_effect(&i(),&p(),Some(&x)).promotion_permission);}
  #[test]fn claim_ceiling_excludes_real_crypto_verification(){assert!(CLAIM.contains("NOT_SIGNATURE_VERIFICATION"));assert_eq!(assess_admission(&i(),&p()).claim_ceiling,CLAIM);}
+ #[test]fn command_expiring_at_current_instant_is_rejected(){let mut x=i();x.expires_at_ms=1500;assert_eq!(assess_admission(&x,&p()).decision,AdmissionDecision::Rejected);}
+
 }
