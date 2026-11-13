@@ -335,6 +335,9 @@ fn duration_hours(value: u128) -> f64 { value as f64 / NS_PER_HOUR }
 
 fn union_span_ns(mut spans: Vec<Span>) -> Result<u128, AuditError> {
     if spans.is_empty() { return Ok(0); }
+    if spans.iter().any(|span| span.end_ns < span.start_ns) {
+        return Err(AuditError("outage span end precedes start".to_string()));
+    }
     spans.sort_by_key(|span| (span.start_ns, span.end_ns));
     let mut total = 0_u128;
     let mut current_start = spans[0].start_ns;
