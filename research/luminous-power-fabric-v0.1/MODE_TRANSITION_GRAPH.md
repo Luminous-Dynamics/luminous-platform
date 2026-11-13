@@ -31,7 +31,7 @@ Sources:
 
 ## 3. Architecture: the transition contract
 
-Each state binds topology and controller configuration digests plus the declared PCC breaker, grid, synchronism, grid-forming, protection, communications, service and reserve status.
+Each state binds topology and controller configuration digests plus the declared PCC breaker, grid, synchronism, grid-forming, protection, communications, service and reserve status. Two declared initial states (grid-connected and dead-bus) seed the allowed-transition reachability analysis; every other declared state must be reachable through permitted transitions.
 
 Each transition binds:
 - source state set and destination state;
@@ -75,12 +75,13 @@ This is a **coverage-structure validator**. It does not evaluate a real controll
 Targets below are research goals, not achieved results or standards acceptance limits:
 
 - 100% positive coverage for all permitted transition IDs.
-- 100% negative coverage for all permitted and forbidden transition IDs, with explicit violated guard IDs.
+- 100% single-guard negative coverage for every permitted and forbidden transition, with every other guard held satisfied.
+- 100% all-guards-satisfied rejection controls for forbidden transitions.
 - 100% recovery coverage for transitions that declare a recovery route.
 - Zero accepted forbidden transitions in a future independently executed deterministic corpus.
 - Zero transition completion based only on command acknowledgement; require independently observed postconditions.
 - 100% exact topology/controller/firmware/protection configuration binding.
-- Scale to 38 or more topology modes only after defining a multi-feeder topology model and a full transition relation; do not pad the corpus with redundant labels.
+- Cover the entire reachable state graph of the actual product topology. Expand into multi-feeder, networked and backfed modes only when that topology is in scope; the 38-mode paper is dated April 2027 and is a future watch item, not a current benchmark threshold.
 - Report transition false accepts/rejects, detection latency, decision latency, transition duration, time-to-stable, interruption of critical service, reserve trajectory, recovery duration and requalification separately.
 - Stratify results by controller hardware, firmware, topology, DER mix, communications profile and HIL/PHIL/field boundary.
 
@@ -93,4 +94,4 @@ Files:
 
 Claim ceiling: **SYNTHETIC_TRANSITION_COVERAGE_ONLY_NOT_HIL_SAFETY_OR_CONFORMITY**.
 
-The JSON fixtures can be structurally/semantically checked offline; the authored Rust tests require a Rust toolchain to compile/run. This validator does not operate hardware, model power flow, test protection, prove a safety case, demonstrate field performance or establish IEC/IEEE conformity. All energized testing remains with qualified owners/laboratories under approved safety procedures.
+The JSON fixture is parsed and its references/coverage were checked in the authoring environment. Twenty-seven Rust unit tests are authored but require a Rust toolchain to compile/run. This validator does not operate hardware, model power flow, test protection, prove a safety case, demonstrate field performance or establish IEC/IEEE conformity. All energized testing remains with qualified owners/laboratories under approved safety procedures.

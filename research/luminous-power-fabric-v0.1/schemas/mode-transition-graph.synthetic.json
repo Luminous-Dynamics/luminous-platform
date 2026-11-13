@@ -40,7 +40,7 @@
     },
     {
       "state_id": "islanded",
-      "topology_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "topology_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "pcc_breaker_state": "open",
       "grid_state": "absent_or_isolated",
@@ -53,7 +53,7 @@
     },
     {
       "state_id": "reconnection_pending",
-      "topology_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "topology_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "pcc_breaker_state": "open",
       "grid_state": "present",
@@ -66,7 +66,7 @@
     },
     {
       "state_id": "dead_bus",
-      "topology_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "topology_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
       "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "pcc_breaker_state": "open",
       "grid_state": "absent_or_isolated",
@@ -79,7 +79,7 @@
     },
     {
       "state_id": "black_starting",
-      "topology_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "topology_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
       "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "pcc_breaker_state": "open",
       "grid_state": "absent_or_isolated",
@@ -92,7 +92,7 @@
     },
     {
       "state_id": "protection_tripped",
-      "topology_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "topology_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
       "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "pcc_breaker_state": "open_or_unknown",
       "grid_state": "unknown",
@@ -105,7 +105,7 @@
     },
     {
       "state_id": "unknown_hold",
-      "topology_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "topology_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
       "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "pcc_breaker_state": "unknown",
       "grid_state": "unknown",
@@ -2025,6 +2025,64 @@
       ],
       "recovery_transition_id": "T14-RECONCILE-TO-ISLAND",
       "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "FORBIDDEN-DISPOSITION-F01-MEMS-DIRECT-SWITCH",
+      "transition_id": "F01-MEMS-DIRECT-SWITCH",
+      "test_kind": "forbidden_disposition",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "mems_has_no_switchgear_authority",
+        "protection_ready"
+      ],
+      "violated_guard_ids": [],
+      "observed_postcondition_ids": [
+        "command_rejected",
+        "rejection_reason_recorded"
+      ],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "FORBIDDEN-DISPOSITION-F02-RECONNECT-WITHOUT-SYNC",
+      "transition_id": "F02-RECONNECT-WITHOUT-SYNC",
+      "test_kind": "forbidden_disposition",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_quality_valid",
+        "protection_ready",
+        "sync_check_passed",
+        "sync_close_permissive"
+      ],
+      "violated_guard_ids": [],
+      "observed_postcondition_ids": [
+        "command_rejected",
+        "pcc_remains_open"
+      ],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "FORBIDDEN-DISPOSITION-F03-BYPASS-PROTECTION-LOCKOUT",
+      "transition_id": "F03-BYPASS-PROTECTION-LOCKOUT",
+      "test_kind": "forbidden_disposition",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "no_protection_lockout",
+        "trip_clear_verified",
+        "inspection_complete"
+      ],
+      "violated_guard_ids": [],
+      "observed_postcondition_ids": [
+        "command_rejected",
+        "trip_state_retained"
+      ],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
     }
+  ],
+  "initial_state_ids": [
+    "grid_connected",
+    "dead_bus"
   ]
 }

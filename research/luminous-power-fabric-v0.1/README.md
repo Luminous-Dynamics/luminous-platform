@@ -415,6 +415,6 @@ engineering review, fault/energy analysis, suitable laboratory containment and a
 [mode-transition graph increment](https://github.com/Luminous-Dynamics/luminous-platform/pull/455)
 add an offline state-transition contract for planned/unplanned islanding, reconnection, black start,
 protection trips, communications loss, reconciliation and forbidden authority/guard combinations.
-The typed validator checks transition references, independent-protection guard ownership and positive/negative/recovery coverage; recovery tests bind the recovery edge's own guards and postconditions. All 76
-checked-in test cases are synthetic, including 60 isolated single-guard negative mutations. This is not controller logic, HIL, protection testing, or
+The typed validator checks transition references, initial-state reachability, independent-protection ownership, exact positive/negative coverage, all-guards-satisfied denial controls and recovery coverage. All 79
+checked-in test cases are synthetic: 14 positive, 60 isolated single-guard negative, three forbidden-disposition and two recovery cases. Twenty-seven Rust unit tests are authored but not executed. This is not controller logic, HIL, protection testing, or
 energization authorization.

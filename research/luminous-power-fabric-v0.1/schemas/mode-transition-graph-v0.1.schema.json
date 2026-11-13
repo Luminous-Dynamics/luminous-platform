@@ -15,7 +15,8 @@
     "states",
     "guards",
     "transitions",
-    "test_cases"
+    "test_cases",
+    "initial_state_ids"
   ],
   "properties": {
     "schema_version": {
@@ -337,7 +338,8 @@
             "enum": [
               "positive",
               "negative",
-              "recovery"
+              "recovery",
+              "forbidden_disposition"
             ]
           },
           "expected_decision": {
@@ -377,6 +379,15 @@
             "const": "synthetic"
           }
         }
+      }
+    },
+    "initial_state_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
       }
     }
   }
