@@ -74,6 +74,7 @@ pub struct ClockDomainRelation {
     pub to_clock_domain_id: String,
     pub to_clock_epoch_id: String,
     /// Maps normalized from-domain TAI values into normalized to-domain TAI values.
+    /// Reference and validity timestamps are normalized TAI nanoseconds.
     pub reference_timestamp_ns: u64,
     pub valid_from_timestamp_ns: u64,
     pub valid_until_timestamp_ns: u64,
@@ -221,7 +222,7 @@ fn event_interval_tai(
         .ok_or_else(|| AuditError("UTC-to-TAI validity start is missing".to_string()))?;
     let valid_until = timebase.utc_offset_valid_until_ns
         .ok_or_else(|| AuditError("UTC-to-TAI validity end is missing".to_string()))?;
-    if valid_until < valid_from || event.timestamp_ns < valid_from || event.timestamp_ns > valid_until
+    if valid_until < valid_from || local_lower < i128::from(valid_from) || local_upper > i128::from(valid_until)
         || !qualified_evidence(timebase.utc_offset_evidence_status, timebase.utc_offset_evidence_class)
         || !nonblank(&timebase.utc_offset_evidence_reference)
     {
@@ -247,8 +248,8 @@ fn apply_clock_relation(
         || relation.to_clock_domain_id != to_timebase.clock_domain_id
         || relation.to_clock_epoch_id != to_timebase.clock_epoch_id
         || (relation.to_clock_domain_id == relation.from_clock_domain_id && relation.to_clock_epoch_id == relation.from_clock_epoch_id)
-        || event_tai_center < valid_from
-        || event_tai_center > valid_until
+        || interval.lower_bound_ns < valid_from
+        || interval.upper_bound_ns > valid_until
         || relation.valid_until_timestamp_ns < relation.valid_from_timestamp_ns
         || !qualified_evidence(relation.evidence_status, relation.evidence_class)
         || !nonblank(&relation.method_reference)
@@ -495,4 +496,36 @@ mod tests {
         a.evidence_class=LifecycleEvidenceClass::SyntheticFixture;
         assert!(evaluate_event_order(&a,&timebase("clock-a"),&b,&timebase("clock-a"),None).is_err());
     }
+    #[test]
+    fn utc_offset_validity_must_cover_the_entire_uncertainty_interval() {
+        let mut tb=timebase("clock-a");
+        tb.time_scale=TimeScale::Utc;
+        tb.utc_tai_offset_ns=Some(37_000_000_000);
+        tb.utc_offset_valid_from_ns=Some(0);
+        tb.utc_offset_valid_until_ns=Some(1_000_001);
+        tb.utc_offset_evidence_status=EvidenceStatus::Current;
+        tb.utc_offset_evidence_class=LifecycleEvidenceClass::IndependentPhysicalMeasurement;
+        tb.utc_offset_evidence_reference="utc-offset-receipt".into();
+        let a=event("a","clock-a",1_000_000,1);
+        let b=event("b","clock-a",2_000_000,2);
+        assert!(evaluate_event_order(&a,&tb,&b,&tb,None).is_err());
+    }
+
+    #[test]
+    fn cross_domain_relation_validity_must_cover_the_entire_source_interval() {
+        let a=event("a","clock-a",1_000_000,1);
+        let b=event("b","clock-b",2_000_000,1);
+        let ta=timebase("clock-a");
+        let tb=timebase("clock-b");
+        let relation=ClockDomainRelation{
+            from_clock_domain_id:"clock-a".into(),from_clock_epoch_id:"epoch-1".into(),
+            to_clock_domain_id:"clock-b".into(),to_clock_epoch_id:"epoch-1".into(),
+            reference_timestamp_ns:1_000_000,valid_from_timestamp_ns:1_000_000,valid_until_timestamp_ns:1_000_001,
+            offset_ns:0,offset_error_bound_ns:1,relative_drift_bound_ppb:1,
+            evidence_status:EvidenceStatus::Current,evidence_class:LifecycleEvidenceClass::IndependentPhysicalMeasurement,
+            method_reference:"mapping-method".into(),evidence_reference:"mapping-receipt".into(),
+        };
+        assert!(evaluate_event_order(&a,&ta,&b,&tb,Some(&relation)).is_err());
+    }
+
 }
