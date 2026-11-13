@@ -247,6 +247,7 @@ fn validate_candidate<'a>(
             || cluster.delivered_critical_service_wh > cluster.required_critical_service_wh + 1.0e-9
             || !finite_nonnegative(cluster.system_unavailable_hours)
             || cluster.evidence_status != EvidenceStatus::Current
+            || cluster.evidence_class == LifecycleEvidenceClass::Assumption
             || !nonblank(&cluster.evidence_reference)
             || (cluster.required_critical_service_wh - cluster.delivered_critical_service_wh - cluster.unserved_critical_service_wh).abs() > 1.0e-6
         {
@@ -334,6 +335,14 @@ pub fn evaluate_paired_cluster_bootstrap(
             if candidate_cluster.scenario_seed_sha256 != reference_cluster.scenario_seed_sha256 {
                 return Err(AuditError(format!(
                     "scenario seed mismatch for cluster {cluster_id:?}"
+                )));
+            }
+            if candidate_cluster.mission_count != reference_cluster.mission_count
+                || (candidate_cluster.required_critical_service_wh
+                    - reference_cluster.required_critical_service_wh).abs() > 1.0e-6
+            {
+                return Err(AuditError(format!(
+                    "paired workload mismatch for cluster {cluster_id:?}"
                 )));
             }
         }
@@ -572,6 +581,21 @@ mod tests {
     fn rejects_cluster_service_arithmetic_that_does_not_reconcile() {
         let mut value = input();
         value.candidates[1].clusters[0].unserved_critical_service_wh = 25.0;
+        assert!(evaluate_paired_cluster_bootstrap(&value).is_err());
+    }
+
+    #[test]
+    fn rejects_per_cluster_required_service_mismatch() {
+        let mut value = input();
+        value.candidates[1].clusters[0].required_critical_service_wh = 900.0;
+        value.candidates[1].clusters[0].delivered_critical_service_wh = 900.0;
+        assert!(evaluate_paired_cluster_bootstrap(&value).is_err());
+    }
+
+    #[test]
+    fn rejects_assumption_only_cluster_evidence() {
+        let mut value = input();
+        value.candidates[1].clusters[0].evidence_class = LifecycleEvidenceClass::Assumption;
         assert!(evaluate_paired_cluster_bootstrap(&value).is_err());
     }
 

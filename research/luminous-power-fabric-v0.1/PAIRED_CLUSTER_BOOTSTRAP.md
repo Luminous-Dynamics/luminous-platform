@@ -18,11 +18,11 @@ A deterministic SplitMix64 PRNG uses a declared SHA-256 seed and candidate ident
 
 v0.1 requires at least 30 predeclared clusters and 1,000 bootstrap iterations. This is an input guard, not evidence of statistical power or a universal sample-size prescription. For serious multi-site superiority work, target at least 100 independent site/mission/event clusters where feasible, with a preregistered power and precision analysis.
 
-The caller supplies a cluster-independence design reference and cluster level. Every cluster also retains current evidence status, evidence class and a provenance reference. These are lineage checks, not proof of statistical independence or physical measurement accuracy. A data owner must justify independence and account for shared site, weather, feeder, maintenance, source/fuel, firmware and operator effects. Where clusters are nested or correlated, use a hierarchical or block bootstrap in a later version; do not pretend that records from one site are independent merely because IDs or seeds differ.
+The caller supplies a cluster-independence design reference and cluster level. Every cluster also retains current evidence status, evidence class and a provenance reference. Assumption-only records are rejected; synthetic fixtures remain explicitly synthetic. These are lineage checks, not proof of statistical independence or physical measurement accuracy. A data owner must justify independence and account for shared site, weather, feeder, maintenance, source/fuel, firmware and operator effects. Where clusters are nested or correlated, use a hierarchical or block bootstrap in a later version; do not pretend that records from one site are independent merely because IDs or seeds differ.
 
 ## Bias and claim controls
 
-- Exact candidate/reference cluster and seed matching is mandatory.
+- Exact candidate/reference cluster and seed matching is mandatory. Each paired cluster must also have equal mission count and required critical-service demand, preventing a candidate from being evaluated against an easier workload.
 - Failed mission records remain in the paired sample; no survivorship filtering. The report counts failed missions in each arm.
 - All metrics use the same sampled cluster indices.
 - Zero-delivery bootstrap draws fail closed; they are not dropped to improve the estimate.
