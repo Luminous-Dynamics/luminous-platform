@@ -259,7 +259,6 @@ fn interval(
     observed_mean: f64,
     iterations: usize,
     confidence: f64,
-    seed: u64,
 ) -> Result<BootstrapInterval, AuditError> {
     if samples.len() != iterations || samples.iter().any(|value| !value.is_finite()) {
         return Err(AuditError("bootstrap samples are invalid".to_string()));
@@ -387,15 +386,15 @@ pub fn evaluate_paired_cluster_bootstrap(
             failed_mission_count_candidate: failed_candidate,
             cost_per_delivered_critical_kwh_delta: interval(
                 &cost_samples, full_cost_delta, input.bootstrap_iterations,
-                input.confidence_level, candidate_seed ^ 0x10
+                input.confidence_level
             )?,
             unserved_critical_service_wh_delta: interval(
                 &unserved_samples, full_unserved_delta, input.bootstrap_iterations,
-                input.confidence_level, candidate_seed ^ 0x20
+                input.confidence_level
             )?,
             system_unavailable_hours_delta: interval(
                 &downtime_samples, full_downtime_delta, input.bootstrap_iterations,
-                input.confidence_level, candidate_seed ^ 0x30
+                input.confidence_level
             )?,
         });
     }
