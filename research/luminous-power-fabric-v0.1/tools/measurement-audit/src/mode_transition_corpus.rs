@@ -56,6 +56,7 @@ pub struct TransitionTestCase {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ModeTransitionCorpus {
+    pub initial_state_ids: Vec<String>,
     pub states: Vec<ModeState>,
     pub guards: Vec<ModeGuard>,
     pub transitions: Vec<ModeTransition>,
@@ -72,6 +73,7 @@ pub struct TransitionCoverageReport {
     pub positive_test_count: usize,
     pub negative_test_count: usize,
     pub recovery_test_count: usize,
+    pub forbidden_disposition_test_count: usize,
     pub claim_ceiling: &'static str,
 }
 
@@ -151,15 +153,21 @@ fn validate_state(state: &ModeState) -> Result<(), AuditError> {
 }
 
 pub fn validate_mode_transition_corpus(corpus: &ModeTransitionCorpus) -> Result<TransitionCoverageReport, AuditError> {
-    if corpus.states.is_empty() || corpus.transitions.is_empty() || corpus.test_cases.is_empty() {
+    if corpus.initial_state_ids.is_empty() || corpus.states.is_empty() || corpus.transitions.is_empty() || corpus.test_cases.is_empty() {
         return Err(AuditError("states, transitions and test cases must be non-empty".to_string()));
     }
+    unique_ids(corpus.initial_state_ids.iter().map(String::as_str), "initial state ID")?;
     unique_ids(corpus.states.iter().map(|x| x.state_id.as_str()), "state ID")?;
     unique_ids(corpus.guards.iter().map(|x| x.guard_id.as_str()), "guard ID")?;
     unique_ids(corpus.transitions.iter().map(|x| x.transition_id.as_str()), "transition ID")?;
     unique_ids(corpus.test_cases.iter().map(|x| x.test_case_id.as_str()), "test-case ID")?;
 
     let state_ids: BTreeSet<&str> = corpus.states.iter().map(|x| x.state_id.as_str()).collect();
+    for initial in &corpus.initial_state_ids {
+        if !state_ids.contains(initial.as_str()) {
+            return Err(AuditError(format!("unknown initial state {initial:?}")));
+        }
+    }
     let guard_map: BTreeMap<&str, &ModeGuard> = corpus.guards.iter().map(|x| (x.guard_id.as_str(), x)).collect();
     let transition_map: BTreeMap<&str, &ModeTransition> = corpus.transitions.iter().map(|x| (x.transition_id.as_str(), x)).collect();
 
@@ -201,6 +209,22 @@ pub fn validate_mode_transition_corpus(corpus: &ModeTransitionCorpus) -> Result<
                 return Err(AuditError(format!("transition {:?} references unknown guard {:?}", transition.transition_id, guard_id)));
             }
         }
+        if transition.actor == "supervisory_mems"
+            && transition.authorization_owner == "supervisory_mems" {
+            return Err(AuditError(format!("transition {:?} lets supervisory MEMS self-authorize", transition.transition_id)));
+        }
+        if transition.to_state_id == "protection_tripped"
+            && (transition.actor != "independent_protection"
+                || transition.authorization_owner != "independent_protection"
+                || !transition.protection_interlock_required) {
+            return Err(AuditError(format!("transition {:?} must leave trip authority with independent protection", transition.transition_id)));
+        }
+        if transition.from_state_ids.iter().any(|id| id == "protection_tripped")
+            && transition.permitted
+            && (!transition.guard_ids.iter().any(|id| id == "inspection_complete")
+                || !transition.guard_ids.iter().any(|id| id == "trip_clear_verified")) {
+            return Err(AuditError(format!("transition {:?} leaves protection-tripped state without inspection and independent trip-clear guards", transition.transition_id)));
+        }
         if transition.protection_interlock_required {
             if matches!(transition.authorization_owner.as_str(), "supervisory_mems" | "operator") {
                 return Err(AuditError(format!("transition {:?} assigns protection-interlocked authorization to a supervisory/request-only owner", transition.transition_id)));
@@ -224,6 +248,30 @@ pub fn validate_mode_transition_corpus(corpus: &ModeTransitionCorpus) -> Result<
         }
     }
 
+    // Only permitted transitions contribute to the reachable operating-state graph.
+    let mut reachable = BTreeSet::<String>::new();
+    let mut frontier = Vec::<String>::new();
+    for initial in &corpus.initial_state_ids {
+        if reachable.insert(initial.clone()) {
+            frontier.push(initial.clone());
+        }
+    }
+    while let Some(current) = frontier.pop() {
+        for transition in corpus.transitions.iter().filter(|item| item.permitted) {
+            if transition.from_state_ids.iter().any(|source| source == &current)
+                && reachable.insert(transition.to_state_id.clone()) {
+                frontier.push(transition.to_state_id.clone());
+            }
+        }
+    }
+    let unreachable: Vec<&str> = corpus.states.iter()
+        .filter(|state| !reachable.contains(&state.state_id))
+        .map(|state| state.state_id.as_str())
+        .collect();
+    if !unreachable.is_empty() {
+        return Err(AuditError(format!("unreachable operating states: {}", unreachable.join(", "))));
+    }
+
     for transition in &corpus.transitions {
         if let Some(recovery_id) = &transition.recovery_transition_id {
             let recovery = transition_map.get(recovery_id.as_str())
@@ -237,10 +285,13 @@ pub fn validate_mode_transition_corpus(corpus: &ModeTransitionCorpus) -> Result<
     let mut positive_by_transition = BTreeMap::<String, usize>::new();
     let mut negative_by_transition = BTreeMap::<String, usize>::new();
     let mut negative_guard_coverage = BTreeSet::<(String, String)>::new();
+    let mut negative_guard_test_counts = BTreeMap::<(String, String), usize>::new();
     let mut recovery_by_transition = BTreeMap::<String, usize>::new();
+    let mut forbidden_disposition_by_transition = BTreeMap::<String, usize>::new();
     let mut positive_count = 0;
     let mut negative_count = 0;
     let mut recovery_count = 0;
+    let mut forbidden_disposition_count = 0;
 
     for test in &corpus.test_cases {
         let transition = transition_map.get(test.transition_id.as_str())
@@ -291,8 +342,23 @@ pub fn validate_mode_transition_corpus(corpus: &ModeTransitionCorpus) -> Result<
                     return Err(AuditError(format!("negative test {:?} must satisfy every other guard", test.test_case_id)));
                 }
                 negative_guard_coverage.insert((test.transition_id.clone(), violated.clone()));
+                *negative_guard_test_counts.entry((test.transition_id.clone(), violated.clone())).or_default() += 1;
                 *negative_by_transition.entry(test.transition_id.clone()).or_default() += 1;
                 negative_count += 1;
+            }
+            "forbidden_disposition" => {
+                if transition.permitted || test.expected_decision != "block"
+                    || !test.violated_guard_ids.is_empty()
+                    || !contains_all(&test.satisfied_guard_ids, &transition.guard_ids)
+                    || !contains_all(&test.observed_postcondition_ids, &transition.postcondition_ids)
+                    || test.recovery_transition_id.is_some() {
+                    return Err(AuditError(format!(
+                        "forbidden disposition test {:?} must satisfy every guard and observe rejection postconditions without changing state",
+                        test.test_case_id
+                    )));
+                }
+                *forbidden_disposition_by_transition.entry(test.transition_id.clone()).or_default() += 1;
+                forbidden_disposition_count += 1;
             }
             "recovery" => {
                 let expected_recovery = transition.recovery_transition_id.as_ref()
@@ -318,22 +384,36 @@ pub fn validate_mode_transition_corpus(corpus: &ModeTransitionCorpus) -> Result<
         let positive = *positive_by_transition.get(&transition.transition_id).unwrap_or(&0);
         let negative = *negative_by_transition.get(&transition.transition_id).unwrap_or(&0);
         let recovery = *recovery_by_transition.get(&transition.transition_id).unwrap_or(&0);
-        if negative == 0 {
-            return Err(AuditError(format!("transition {:?} lacks negative guard coverage", transition.transition_id)));
-        }
+        let forbidden_disposition = *forbidden_disposition_by_transition.get(&transition.transition_id).unwrap_or(&0);
+
         for guard_id in &transition.guard_ids {
-            if !negative_guard_coverage.contains(&(transition.transition_id.clone(), guard_id.clone())) {
+            let key = (transition.transition_id.clone(), guard_id.clone());
+            if !negative_guard_coverage.contains(&key) {
                 return Err(AuditError(format!("transition {:?} lacks an isolated negative mutation for guard {:?}", transition.transition_id, guard_id)));
             }
+            let count = *negative_guard_test_counts.get(&key).unwrap_or(&0);
+            if count != 1 {
+                return Err(AuditError(format!("transition {:?} requires exactly one isolated negative test for guard {:?}, found {count}", transition.transition_id, guard_id)));
+            }
         }
-        if transition.permitted && positive == 0 {
-            return Err(AuditError(format!("permitted transition {:?} lacks positive coverage", transition.transition_id)));
+        if negative != transition.guard_ids.len() {
+            return Err(AuditError(format!("transition {:?} has duplicate or missing per-guard negative controls", transition.transition_id)));
         }
-        if !transition.permitted && positive != 0 {
-            return Err(AuditError(format!("forbidden transition {:?} has positive coverage", transition.transition_id)));
+        if transition.permitted && positive != 1 {
+            return Err(AuditError(format!("permitted transition {:?} requires exactly one positive control, found {positive}", transition.transition_id)));
         }
-        if transition.recovery_transition_id.is_some() && recovery == 0 {
-            return Err(AuditError(format!("transition {:?} lacks its required recovery test", transition.transition_id)));
+        if !transition.permitted {
+            if positive != 0 {
+                return Err(AuditError(format!("forbidden transition {:?} has positive coverage", transition.transition_id)));
+            }
+            if forbidden_disposition != 1 {
+                return Err(AuditError(format!("forbidden transition {:?} requires exactly one all-guards-satisfied rejection control", transition.transition_id)));
+            }
+        } else if forbidden_disposition != 0 {
+            return Err(AuditError(format!("permitted transition {:?} has a forbidden-disposition control", transition.transition_id)));
+        }
+        if transition.recovery_transition_id.is_some() && recovery != 1 {
+            return Err(AuditError(format!("transition {:?} requires exactly one recovery test, found {recovery}", transition.transition_id)));
         }
         if transition.recovery_transition_id.is_none() && recovery != 0 {
             return Err(AuditError(format!("transition {:?} has undeclared recovery coverage", transition.transition_id)));
@@ -349,6 +429,7 @@ pub fn validate_mode_transition_corpus(corpus: &ModeTransitionCorpus) -> Result<
         positive_test_count: positive_count,
         negative_test_count: negative_count,
         recovery_test_count: recovery_count,
+        forbidden_disposition_test_count: forbidden_disposition_count,
         claim_ceiling: "SYNTHETIC_TRANSITION_COVERAGE_ONLY_NOT_HIL_SAFETY_OR_CONFORMITY",
     })
 }
@@ -390,6 +471,7 @@ mod tests {
     }
     fn valid_corpus() -> ModeTransitionCorpus {
         ModeTransitionCorpus {
+            initial_state_ids: vec!["grid_connected".into()],
             states:vec![state("grid_connected"),state("unknown_hold")],
             guards:vec![guard()],
             transitions:vec![transition("T1",None)],
@@ -496,6 +578,82 @@ mod tests {
         c.transitions[0].guard_ids.push("second".into());
         c.test_cases[0].satisfied_guard_ids.push("second".into());
         c.test_cases[1].violated_guard_ids.push("second".into());
+        assert!(validate_mode_transition_corpus(&c).is_err());
+    }
+
+
+    #[test]
+    fn rejects_supervisory_self_authorization() {
+        let mut c = valid_corpus();
+        c.transitions[0].authorization_owner = "supervisory_mems".into();
+        assert!(validate_mode_transition_corpus(&c).is_err());
+    }
+
+    #[test]
+    fn rejects_unreachable_state() {
+        let mut c = valid_corpus();
+        c.states.push(state("orphan_state"));
+        assert!(validate_mode_transition_corpus(&c).is_err());
+    }
+
+    #[test]
+    fn rejects_duplicate_positive_controls() {
+        let mut c = valid_corpus();
+        let mut duplicate = c.test_cases[0].clone();
+        duplicate.test_case_id = "P2".into();
+        c.test_cases.push(duplicate);
+        assert!(validate_mode_transition_corpus(&c).is_err());
+    }
+
+    #[test]
+    fn rejects_duplicate_single_guard_negative_controls() {
+        let mut c = valid_corpus();
+        let mut duplicate = c.test_cases[1].clone();
+        duplicate.test_case_id = "N2".into();
+        c.test_cases.push(duplicate);
+        assert!(validate_mode_transition_corpus(&c).is_err());
+    }
+
+    fn forbidden_corpus_with_disposition_test() -> ModeTransitionCorpus {
+        let mut c = valid_corpus();
+        c.transitions[0].permitted = false;
+        c.transitions[0].forbidden_reason = Some("request is not authorized".into());
+        c.transitions[0].postcondition_ids = vec!["command_rejected".into()];
+        c.test_cases.retain(|test| test.test_kind == "negative");
+        c.test_cases.push(TransitionTestCase {
+            test_case_id: "F1-DISPOSITION".into(),
+            transition_id: "T1".into(),
+            test_kind: "forbidden_disposition".into(),
+            expected_decision: "block".into(),
+            satisfied_guard_ids: vec!["fresh".into()],
+            violated_guard_ids: vec![],
+            observed_postcondition_ids: vec!["command_rejected".into()],
+            recovery_transition_id: None,
+            evidence_class: "synthetic".into(),
+        });
+        c
+    }
+
+    #[test]
+    fn accepts_forbidden_transition_rejected_even_when_all_guards_are_satisfied() {
+        let c = forbidden_corpus_with_disposition_test();
+        let report = validate_mode_transition_corpus(&c).unwrap();
+        assert_eq!(report.forbidden_disposition_test_count, 1);
+    }
+
+    #[test]
+    fn rejects_forbidden_transition_without_all_guards_satisfied_control() {
+        let mut c = forbidden_corpus_with_disposition_test();
+        c.test_cases.retain(|test| test.test_kind != "forbidden_disposition");
+        assert!(validate_mode_transition_corpus(&c).is_err());
+    }
+
+    #[test]
+    fn rejects_forbidden_disposition_control_with_a_violated_guard() {
+        let mut c = forbidden_corpus_with_disposition_test();
+        let test = c.test_cases.iter_mut().find(|test| test.test_kind == "forbidden_disposition").unwrap();
+        test.violated_guard_ids = vec!["fresh".into()];
+        test.satisfied_guard_ids.clear();
         assert!(validate_mode_transition_corpus(&c).is_err());
     }
 
