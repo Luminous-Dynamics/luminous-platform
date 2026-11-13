@@ -237,13 +237,18 @@ fn apply_clock_relation(
     from_timebase: &TimebaseEvidence,
     to_timebase: &TimebaseEvidence,
 ) -> Result<TaiTimeInterval, AuditError> {
+    let event_tai_center = interval.lower_bound_ns
+        .checked_add((interval.upper_bound_ns - interval.lower_bound_ns) / 2)
+        .ok_or_else(|| AuditError("event TAI midpoint overflowed".to_string()))?;
+    let valid_from = i128::from(relation.valid_from_timestamp_ns);
+    let valid_until = i128::from(relation.valid_until_timestamp_ns);
     if relation.from_clock_domain_id != from_timebase.clock_domain_id
         || relation.from_clock_epoch_id != from_timebase.clock_epoch_id
         || relation.to_clock_domain_id != to_timebase.clock_domain_id
         || relation.to_clock_epoch_id != to_timebase.clock_epoch_id
-        || relation.to_clock_domain_id == relation.from_clock_domain_id && relation.to_clock_epoch_id == relation.from_clock_epoch_id
-        || event.timestamp_ns < relation.valid_from_timestamp_ns
-        || event.timestamp_ns > relation.valid_until_timestamp_ns
+        || (relation.to_clock_domain_id == relation.from_clock_domain_id && relation.to_clock_epoch_id == relation.from_clock_epoch_id)
+        || event_tai_center < valid_from
+        || event_tai_center > valid_until
         || relation.valid_until_timestamp_ns < relation.valid_from_timestamp_ns
         || !qualified_evidence(relation.evidence_status, relation.evidence_class)
         || !nonblank(&relation.method_reference)
@@ -251,7 +256,9 @@ fn apply_clock_relation(
     {
         return Err(AuditError("cross-domain clock relation is mismatched, expired or unqualified".to_string()));
     }
-    let age = event.timestamp_ns.abs_diff(relation.reference_timestamp_ns);
+    let age_u128 = (event_tai_center - i128::from(relation.reference_timestamp_ns)).unsigned_abs();
+    let age = u64::try_from(age_u128)
+        .map_err(|_| AuditError("cross-domain relation age exceeds supported range".to_string()))?;
     let drift = drift_growth_ns(relation.relative_drift_bound_ppb, age)?;
     let total_error = relation.offset_error_bound_ns.checked_add(drift)
         .ok_or_else(|| AuditError("cross-domain relation uncertainty overflowed".to_string()))?;
