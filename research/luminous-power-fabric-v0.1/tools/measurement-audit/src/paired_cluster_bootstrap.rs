@@ -440,7 +440,7 @@ mod tests {
             let unserved_wh = 10.0 + n as f64 + delta * 0.05;
             MissionClusterOutcome {
                 cluster_id: format!("cluster-{n:02}"),
-                scenario_seed_sha256: digest(char::from(b'a' + (n % 16) as u8)),
+                scenario_seed_sha256: format!("{:064x}", 1000 + n),
                 mission_count: 1,
                 completed_mission_count: 1,
                 total_cost_minor_units: (1000.0 + n as f64 + delta).max(1.0) as u128,
