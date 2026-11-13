@@ -42,3 +42,14 @@ The lifecycle frontier report now retains service-boundary, site, mission-set, s
 The fixture has two candidates, family alpha 0.05 and expected two-sided confidence 97.5%, with synthetic paired metrology bounds. It is a structure fixture, not a measured comparison.
 
 `PREREGISTERED_SUPERIORITY_SCREEN_ONLY_NOT_FIELD_SUPERIORITY_OR_EQUIVALENCE`
+
+
+## Validation status and claim ceiling
+
+- 12 Rust unit tests are authored, not executed.
+- The schema and synthetic fixture parse in the authoring runtime. The fixture has two candidate comparisons and 1 - 0.05 / 2 = 0.975 expected two-sided Bonferroni confidence.
+- Authoring-time checks confirmed required fields, unique candidate IDs, one current conservative metrology bound per candidate, exact confidence arithmetic, crate module registration and the frontier context digest fields.
+- No Rust compiler/Cargo, formatting, Clippy or exact-head CI result is claimed.
+- The evaluator checks caller-supplied confidence intervals and bounded metrology uncertainty; it does not produce either. No statistical independence, physical superiority, product conformity, RUL, reliability or safety result is claimed.
+
+Claim ceiling: `PREREGISTERED_SUPERIORITY_SCREEN_ONLY_NOT_FIELD_SUPERIORITY_OR_EQUIVALENCE`.
