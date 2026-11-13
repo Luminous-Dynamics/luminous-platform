@@ -137,13 +137,18 @@ fn validate_plan(input:&SuperiorityGateInput)->Result<f64,AuditError>{
 fn find_bootstrap<'a>(
     report:&'a PairedClusterBootstrapReport,
     candidate_id:&str,
+    metric:PrimaryMetric,
 )->Result<&'a BootstrapInterval,AuditError>{
     let comparison=report.comparisons.iter().find(|x|x.candidate_id==candidate_id)
         .ok_or_else(||AuditError(format!("bootstrap comparison missing for {candidate_id:?}")))?;
     if comparison.reference_candidate_id!=report.reference_candidate_id||comparison.paired_cluster_count<30 {
         return Err(AuditError("bootstrap comparison is not adequately paired".to_string()));
     }
-    Ok(&comparison.cost_per_delivered_critical_kwh_delta)
+    Ok(match metric {
+        PrimaryMetric::CostPerDeliveredCriticalKwh => &comparison.cost_per_delivered_critical_kwh_delta,
+        PrimaryMetric::UnservedCriticalServiceWh => &comparison.unserved_critical_service_wh_delta,
+        PrimaryMetric::SystemUnavailableHours => &comparison.system_unavailable_hours_delta,
+    })
 }
 
 fn validate_bound(bound:&PairedMeasurementUncertainty,metric:PrimaryMetric)->Result<(),AuditError>{
@@ -192,7 +197,7 @@ pub fn evaluate_preregistered_superiority(input:&SuperiorityGateInput)->Result<S
                 combined_interval:None,reasons:f.exclusion_reasons.clone()});
             continue;
         }
-        let b=find_bootstrap(&input.bootstrap,candidate_id)?;
+        let b=find_bootstrap(&input.bootstrap,candidate_id,p.primary_metric)?;
         if !b.paired_mean_delta.is_finite()||!b.lower_bound.is_finite()||!b.upper_bound.is_finite()
             ||b.lower_bound>b.paired_mean_delta||b.paired_mean_delta>b.upper_bound {
             return Err(AuditError("bootstrap interval is invalid".to_string()));
