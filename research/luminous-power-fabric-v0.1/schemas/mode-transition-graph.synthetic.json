@@ -1,0 +1,1269 @@
+{
+  "schema_version": "0.1",
+  "corpus_id": "PF-MODE-TRANSITION-GRAPH-SYNTH-0.1",
+  "record_class": "synthetic_test_plan",
+  "test_stage": "offline_model_only",
+  "claim_ceiling": "SYNTHETIC_TRANSITION_COVERAGE_ONLY_NOT_HIL_SAFETY_OR_CONFORMITY",
+  "authority_separation": {
+    "supervisory_mems": "May request schedules/transitions but cannot independently authorize switchgear or protection operations.",
+    "local_controller": "Executes permitted local sequencing under fresh observations and hard interlocks.",
+    "independent_protection": "Owns protection trips and independent synchronism/close permissives.",
+    "operator": "May request or acknowledge operations; does not override interlocks or independent protection.",
+    "maintenance_authority": "May authorize maintenance/inspection workflow; does not bypass independent protection."
+  },
+  "states": [
+    {
+      "state_id": "grid_connected",
+      "topology_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "pcc_breaker_state": "closed",
+      "grid_state": "present",
+      "synchronization_state": "synchronised",
+      "grid_forming_state": "available",
+      "protection_state": "ready",
+      "communications_state": "fresh",
+      "critical_service_state": "service_on",
+      "reserve_state": "reserve_met"
+    },
+    {
+      "state_id": "island_preparation",
+      "topology_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "pcc_breaker_state": "closed",
+      "grid_state": "present",
+      "synchronization_state": "synchronised",
+      "grid_forming_state": "available",
+      "protection_state": "ready",
+      "communications_state": "fresh",
+      "critical_service_state": "service_on",
+      "reserve_state": "reserve_met"
+    },
+    {
+      "state_id": "islanded",
+      "topology_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "pcc_breaker_state": "open",
+      "grid_state": "absent_or_isolated",
+      "synchronization_state": "not_applicable",
+      "grid_forming_state": "available",
+      "protection_state": "ready",
+      "communications_state": "fresh",
+      "critical_service_state": "service_on",
+      "reserve_state": "reserve_met"
+    },
+    {
+      "state_id": "reconnection_pending",
+      "topology_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "pcc_breaker_state": "open",
+      "grid_state": "present",
+      "synchronization_state": "sync_pending",
+      "grid_forming_state": "available",
+      "protection_state": "ready",
+      "communications_state": "fresh",
+      "critical_service_state": "service_on",
+      "reserve_state": "reserve_met"
+    },
+    {
+      "state_id": "dead_bus",
+      "topology_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "pcc_breaker_state": "open",
+      "grid_state": "absent_or_isolated",
+      "synchronization_state": "not_applicable",
+      "grid_forming_state": "unavailable",
+      "protection_state": "ready",
+      "communications_state": "fresh",
+      "critical_service_state": "service_off",
+      "reserve_state": "reserve_unknown"
+    },
+    {
+      "state_id": "black_starting",
+      "topology_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "pcc_breaker_state": "open",
+      "grid_state": "absent_or_isolated",
+      "synchronization_state": "not_applicable",
+      "grid_forming_state": "starting",
+      "protection_state": "ready",
+      "communications_state": "fresh",
+      "critical_service_state": "staged_pickup",
+      "reserve_state": "reserve_met"
+    },
+    {
+      "state_id": "protection_tripped",
+      "topology_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "pcc_breaker_state": "open_or_unknown",
+      "grid_state": "unknown",
+      "synchronization_state": "unknown",
+      "grid_forming_state": "unknown",
+      "protection_state": "tripped",
+      "communications_state": "stale_or_unknown",
+      "critical_service_state": "service_unknown",
+      "reserve_state": "reserve_unknown"
+    },
+    {
+      "state_id": "unknown_hold",
+      "topology_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "pcc_breaker_state": "unknown",
+      "grid_state": "unknown",
+      "synchronization_state": "unknown",
+      "grid_forming_state": "unknown",
+      "protection_state": "ready_or_unknown",
+      "communications_state": "stale_or_unknown",
+      "critical_service_state": "service_unknown",
+      "reserve_state": "reserve_unknown"
+    }
+  ],
+  "guards": [
+    {
+      "guard_id": "grid_quality_valid",
+      "predicate": "Grid quality is inside the declared site/product envelope.",
+      "enforcement_owner": "local_controller",
+      "freshness_required": true,
+      "failure_behavior": "block_transition"
+    },
+    {
+      "guard_id": "telemetry_fresh",
+      "predicate": "Required telemetry is fresh, time-aligned and quality-qualified.",
+      "enforcement_owner": "local_controller",
+      "freshness_required": true,
+      "failure_behavior": "block_transition"
+    },
+    {
+      "guard_id": "protection_ready",
+      "predicate": "Independent protection/interlocks report ready; no bypass or trip is active.",
+      "enforcement_owner": "independent_protection",
+      "freshness_required": true,
+      "failure_behavior": "block_transition"
+    },
+    {
+      "guard_id": "grid_former_ready",
+      "predicate": "A qualified grid-forming resource is available for the intended island.",
+      "enforcement_owner": "local_controller",
+      "freshness_required": true,
+      "failure_behavior": "block_transition"
+    },
+    {
+      "guard_id": "reserve_sufficient",
+      "predicate": "Qualified source/storage capability meets the declared reserve obligation.",
+      "enforcement_owner": "local_controller",
+      "freshness_required": true,
+      "failure_behavior": "block_transition"
+    },
+    {
+      "guard_id": "pcc_open_observed",
+      "predicate": "Independent breaker feedback confirms the PCC is physically open.",
+      "enforcement_owner": "independent_protection",
+      "freshness_required": true,
+      "failure_behavior": "block_transition"
+    },
+    {
+      "guard_id": "grid_loss_detected",
+      "predicate": "Grid-loss criterion is detected from qualified local measurements.",
+      "enforcement_owner": "independent_protection",
+      "freshness_required": true,
+      "failure_behavior": "protection_action"
+    },
+    {
+      "guard_id": "sync_check_passed",
+      "predicate": "Independent synchronism check confirms voltage/frequency/phase permissives.",
+      "enforcement_owner": "independent_protection",
+      "freshness_required": true,
+      "failure_behavior": "block_transition"
+    },
+    {
+      "guard_id": "grid_former_stable",
+      "predicate": "Grid-forming source established stable bus voltage and frequency.",
+      "enforcement_owner": "local_controller",
+      "freshness_required": true,
+      "failure_behavior": "block_transition"
+    },
+    {
+      "guard_id": "start_permit_valid",
+      "predicate": "Authorized black-start permit and dead-bus preconditions are satisfied.",
+      "enforcement_owner": "maintenance_authority",
+      "freshness_required": true,
+      "failure_behavior": "block_transition"
+    },
+    {
+      "guard_id": "start_failed_or_timed_out",
+      "predicate": "Start sequence failed or reached the declared timeout.",
+      "enforcement_owner": "local_controller",
+      "freshness_required": true,
+      "failure_behavior": "safe_hold"
+    },
+    {
+      "guard_id": "trip_detected",
+      "predicate": "Independent protection reports a trip/interlock condition.",
+      "enforcement_owner": "independent_protection",
+      "freshness_required": true,
+      "failure_behavior": "protection_action"
+    },
+    {
+      "guard_id": "inspection_complete",
+      "predicate": "Authorized inspection and isolation reconciliation are complete.",
+      "enforcement_owner": "maintenance_authority",
+      "freshness_required": true,
+      "failure_behavior": "block_transition"
+    },
+    {
+      "guard_id": "trip_clear_verified",
+      "predicate": "Protection owner independently verifies the trip is cleared; no software reset is assumed.",
+      "enforcement_owner": "independent_protection",
+      "freshness_required": true,
+      "failure_behavior": "block_transition"
+    },
+    {
+      "guard_id": "state_reconciled",
+      "predicate": "Breaker, source, topology and protection states reconcile to independent observations.",
+      "enforcement_owner": "local_controller",
+      "freshness_required": true,
+      "failure_behavior": "block_transition"
+    },
+    {
+      "guard_id": "sync_close_permissive",
+      "predicate": "Close permissive is active at the independent protection/synchronism boundary.",
+      "enforcement_owner": "independent_protection",
+      "freshness_required": true,
+      "failure_behavior": "block_transition"
+    },
+    {
+      "guard_id": "comms_stale_detected",
+      "predicate": "Supervisory communication/telemetry freshness crossed its declared timeout.",
+      "enforcement_owner": "local_controller",
+      "freshness_required": true,
+      "failure_behavior": "enter_unknown_hold"
+    },
+    {
+      "guard_id": "island_bus_stable",
+      "predicate": "Island bus remains inside declared voltage/frequency and service limits.",
+      "enforcement_owner": "local_controller",
+      "freshness_required": true,
+      "failure_behavior": "block_transition"
+    },
+    {
+      "guard_id": "mems_has_no_switchgear_authority",
+      "predicate": "Supervisory MEMS is not an independent switchgear/protection authority.",
+      "enforcement_owner": "local_controller",
+      "freshness_required": false,
+      "failure_behavior": "block_command"
+    },
+    {
+      "guard_id": "no_protection_lockout",
+      "predicate": "No active protection lockout or interlock blocks the proposed operation.",
+      "enforcement_owner": "independent_protection",
+      "freshness_required": true,
+      "failure_behavior": "block_transition"
+    }
+  ],
+  "transitions": [
+    {
+      "transition_id": "T01-GRID-PREPARE",
+      "from_state_ids": [
+        "grid_connected"
+      ],
+      "to_state_id": "island_preparation",
+      "permitted": true,
+      "actor": "supervisory_mems",
+      "authorization_owner": "local_controller",
+      "protection_interlock_required": true,
+      "guard_ids": [
+        "grid_quality_valid",
+        "telemetry_fresh",
+        "protection_ready",
+        "grid_former_ready",
+        "reserve_sufficient"
+      ],
+      "postcondition_ids": [
+        "prepare_state_entered",
+        "reserve_snapshot_bound"
+      ],
+      "failure_disposition": "Remain grid-connected; reject preparation if any guard is unknown.",
+      "recovery_transition_id": null,
+      "forbidden_reason": null
+    },
+    {
+      "transition_id": "T02-PLANNED-ISLAND-COMMIT",
+      "from_state_ids": [
+        "island_preparation"
+      ],
+      "to_state_id": "islanded",
+      "permitted": true,
+      "actor": "local_controller",
+      "authorization_owner": "local_controller",
+      "protection_interlock_required": true,
+      "guard_ids": [
+        "telemetry_fresh",
+        "protection_ready",
+        "grid_former_ready",
+        "reserve_sufficient",
+        "pcc_open_observed",
+        "island_bus_stable"
+      ],
+      "postcondition_ids": [
+        "pcc_open_independently_observed",
+        "island_voltage_frequency_stable",
+        "critical_service_verified"
+      ],
+      "failure_disposition": "Hold safe mode; command acknowledgement is not proof of breaker effect.",
+      "recovery_transition_id": null,
+      "forbidden_reason": null
+    },
+    {
+      "transition_id": "T03-UNEXPECTED-GRID-LOSS",
+      "from_state_ids": [
+        "grid_connected"
+      ],
+      "to_state_id": "islanded",
+      "permitted": true,
+      "actor": "independent_protection",
+      "authorization_owner": "independent_protection",
+      "protection_interlock_required": true,
+      "guard_ids": [
+        "grid_loss_detected",
+        "grid_former_ready",
+        "pcc_open_observed",
+        "island_bus_stable"
+      ],
+      "postcondition_ids": [
+        "protection_action_recorded",
+        "pcc_open_independently_observed",
+        "island_stability_observed"
+      ],
+      "failure_disposition": "Independent protection/local control follows its approved action; supervisory policy cannot veto.",
+      "recovery_transition_id": null,
+      "forbidden_reason": null
+    },
+    {
+      "transition_id": "T04-RECONNECTION-REQUEST",
+      "from_state_ids": [
+        "islanded"
+      ],
+      "to_state_id": "reconnection_pending",
+      "permitted": true,
+      "actor": "operator",
+      "authorization_owner": "local_controller",
+      "protection_interlock_required": true,
+      "guard_ids": [
+        "grid_quality_valid",
+        "telemetry_fresh",
+        "protection_ready"
+      ],
+      "postcondition_ids": [
+        "reconnection_pending_recorded",
+        "pcc_remains_open"
+      ],
+      "failure_disposition": "Remain islanded; no close command is issued.",
+      "recovery_transition_id": null,
+      "forbidden_reason": null
+    },
+    {
+      "transition_id": "T05-RECONNECTION-COMMIT",
+      "from_state_ids": [
+        "reconnection_pending"
+      ],
+      "to_state_id": "grid_connected",
+      "permitted": true,
+      "actor": "local_controller",
+      "authorization_owner": "independent_protection",
+      "protection_interlock_required": true,
+      "guard_ids": [
+        "grid_quality_valid",
+        "telemetry_fresh",
+        "protection_ready",
+        "sync_check_passed",
+        "sync_close_permissive"
+      ],
+      "postcondition_ids": [
+        "pcc_closed_independently_observed",
+        "post_close_power_flow_verified",
+        "grid_connected_stable"
+      ],
+      "failure_disposition": "Remain open and islanded; require fresh independent synchronism permissive.",
+      "recovery_transition_id": null,
+      "forbidden_reason": null
+    },
+    {
+      "transition_id": "T06-BLACK-START-INITIATE",
+      "from_state_ids": [
+        "dead_bus"
+      ],
+      "to_state_id": "black_starting",
+      "permitted": true,
+      "actor": "operator",
+      "authorization_owner": "maintenance_authority",
+      "protection_interlock_required": true,
+      "guard_ids": [
+        "start_permit_valid",
+        "protection_ready",
+        "reserve_sufficient"
+      ],
+      "postcondition_ids": [
+        "black_start_sequence_authorized",
+        "dead_bus_precondition_recorded"
+      ],
+      "failure_disposition": "Remain de-energized; no automatic repeated start.",
+      "recovery_transition_id": null,
+      "forbidden_reason": null
+    },
+    {
+      "transition_id": "T07-BLACK-START-COMPLETE",
+      "from_state_ids": [
+        "black_starting"
+      ],
+      "to_state_id": "islanded",
+      "permitted": true,
+      "actor": "local_controller",
+      "authorization_owner": "local_controller",
+      "protection_interlock_required": true,
+      "guard_ids": [
+        "grid_former_ready",
+        "grid_former_stable",
+        "protection_ready",
+        "reserve_sufficient",
+        "pcc_open_observed"
+      ],
+      "postcondition_ids": [
+        "bus_voltage_frequency_stable",
+        "critical_load_pickup_verified",
+        "reserve_rechecked"
+      ],
+      "failure_disposition": "Abort to safe dead-bus hold if stable formation is not verified.",
+      "recovery_transition_id": null,
+      "forbidden_reason": null
+    },
+    {
+      "transition_id": "T08-BLACK-START-FAILED",
+      "from_state_ids": [
+        "black_starting"
+      ],
+      "to_state_id": "dead_bus",
+      "permitted": true,
+      "actor": "local_controller",
+      "authorization_owner": "local_controller",
+      "protection_interlock_required": true,
+      "guard_ids": [
+        "start_failed_or_timed_out",
+        "pcc_open_observed"
+      ],
+      "postcondition_ids": [
+        "start_failure_recorded",
+        "outputs_isolated",
+        "dead_bus_independently_verified"
+      ],
+      "failure_disposition": "Stay in safe hold; retry requires a new authorized procedure.",
+      "recovery_transition_id": null,
+      "forbidden_reason": null
+    },
+    {
+      "transition_id": "T09-PROTECTION-TRIP",
+      "from_state_ids": [
+        "grid_connected",
+        "island_preparation",
+        "islanded",
+        "reconnection_pending",
+        "dead_bus",
+        "black_starting",
+        "unknown_hold"
+      ],
+      "to_state_id": "protection_tripped",
+      "permitted": true,
+      "actor": "independent_protection",
+      "authorization_owner": "independent_protection",
+      "protection_interlock_required": true,
+      "guard_ids": [
+        "trip_detected"
+      ],
+      "postcondition_ids": [
+        "trip_state_observed",
+        "event_and_trip_identity_retained"
+      ],
+      "failure_disposition": "Protection operates locally; supervisory system cannot inhibit or reset it.",
+      "recovery_transition_id": null,
+      "forbidden_reason": null
+    },
+    {
+      "transition_id": "T10-TRIP-INSPECTION-HOLD",
+      "from_state_ids": [
+        "protection_tripped"
+      ],
+      "to_state_id": "unknown_hold",
+      "permitted": true,
+      "actor": "maintenance_authority",
+      "authorization_owner": "maintenance_authority",
+      "protection_interlock_required": true,
+      "guard_ids": [
+        "inspection_complete",
+        "trip_clear_verified",
+        "state_reconciled"
+      ],
+      "postcondition_ids": [
+        "inspection_receipt_bound",
+        "no_automatic_reset_performed"
+      ],
+      "failure_disposition": "Remain tripped until physical state and authorization are reconciled.",
+      "recovery_transition_id": null,
+      "forbidden_reason": null
+    },
+    {
+      "transition_id": "T11-COMMS-LOSS-FROM-GRID",
+      "from_state_ids": [
+        "grid_connected"
+      ],
+      "to_state_id": "unknown_hold",
+      "permitted": true,
+      "actor": "local_controller",
+      "authorization_owner": "local_controller",
+      "protection_interlock_required": false,
+      "guard_ids": [
+        "comms_stale_detected"
+      ],
+      "postcondition_ids": [
+        "supervisory_mutations_blocked",
+        "local_fallback_state_recorded"
+      ],
+      "failure_disposition": "Enter bounded local fallback; unresolved physical state blocks new mutation.",
+      "recovery_transition_id": "T13-RECONCILE-TO-GRID",
+      "forbidden_reason": null
+    },
+    {
+      "transition_id": "T12-COMMS-LOSS-FROM-ISLAND",
+      "from_state_ids": [
+        "islanded"
+      ],
+      "to_state_id": "unknown_hold",
+      "permitted": true,
+      "actor": "local_controller",
+      "authorization_owner": "local_controller",
+      "protection_interlock_required": false,
+      "guard_ids": [
+        "comms_stale_detected"
+      ],
+      "postcondition_ids": [
+        "supervisory_mutations_blocked",
+        "local_island_protection_retained"
+      ],
+      "failure_disposition": "Maintain local island control/protection; reconcile before supervisory mutations.",
+      "recovery_transition_id": "T14-RECONCILE-TO-ISLAND",
+      "forbidden_reason": null
+    },
+    {
+      "transition_id": "T13-RECONCILE-TO-GRID",
+      "from_state_ids": [
+        "unknown_hold"
+      ],
+      "to_state_id": "grid_connected",
+      "permitted": true,
+      "actor": "local_controller",
+      "authorization_owner": "local_controller",
+      "protection_interlock_required": true,
+      "guard_ids": [
+        "telemetry_fresh",
+        "state_reconciled",
+        "grid_quality_valid",
+        "sync_check_passed",
+        "sync_close_permissive",
+        "protection_ready"
+      ],
+      "postcondition_ids": [
+        "physical_state_reconciled",
+        "pcc_closed_independently_observed",
+        "grid_connected_stable"
+      ],
+      "failure_disposition": "Remain in unknown hold; no close or control mutation.",
+      "recovery_transition_id": null,
+      "forbidden_reason": null
+    },
+    {
+      "transition_id": "T14-RECONCILE-TO-ISLAND",
+      "from_state_ids": [
+        "unknown_hold"
+      ],
+      "to_state_id": "islanded",
+      "permitted": true,
+      "actor": "local_controller",
+      "authorization_owner": "local_controller",
+      "protection_interlock_required": true,
+      "guard_ids": [
+        "telemetry_fresh",
+        "state_reconciled",
+        "grid_former_ready",
+        "grid_former_stable",
+        "pcc_open_observed",
+        "protection_ready"
+      ],
+      "postcondition_ids": [
+        "physical_state_reconciled",
+        "pcc_open_independently_observed",
+        "island_voltage_frequency_stable"
+      ],
+      "failure_disposition": "Remain in unknown hold; no mutation until physical state reconciles.",
+      "recovery_transition_id": null,
+      "forbidden_reason": null
+    },
+    {
+      "transition_id": "F01-MEMS-DIRECT-SWITCH",
+      "from_state_ids": [
+        "grid_connected"
+      ],
+      "to_state_id": "grid_connected",
+      "permitted": false,
+      "actor": "supervisory_mems",
+      "authorization_owner": "independent_protection",
+      "protection_interlock_required": true,
+      "guard_ids": [
+        "mems_has_no_switchgear_authority",
+        "protection_ready"
+      ],
+      "postcondition_ids": [
+        "command_rejected",
+        "rejection_reason_recorded"
+      ],
+      "failure_disposition": "Reject request; no physical operation or state promotion.",
+      "recovery_transition_id": null,
+      "forbidden_reason": "Supervisory MEMS is not switchgear/protection authority."
+    },
+    {
+      "transition_id": "F02-RECONNECT-WITHOUT-SYNC",
+      "from_state_ids": [
+        "islanded"
+      ],
+      "to_state_id": "grid_connected",
+      "permitted": false,
+      "actor": "supervisory_mems",
+      "authorization_owner": "independent_protection",
+      "protection_interlock_required": true,
+      "guard_ids": [
+        "grid_quality_valid",
+        "protection_ready",
+        "sync_check_passed",
+        "sync_close_permissive"
+      ],
+      "postcondition_ids": [
+        "command_rejected",
+        "pcc_remains_open"
+      ],
+      "failure_disposition": "Reject close; remain islanded until independent sync-check passes.",
+      "recovery_transition_id": null,
+      "forbidden_reason": "No synchronism-check permissive is supplied."
+    },
+    {
+      "transition_id": "F03-BYPASS-PROTECTION-LOCKOUT",
+      "from_state_ids": [
+        "protection_tripped"
+      ],
+      "to_state_id": "grid_connected",
+      "permitted": false,
+      "actor": "operator",
+      "authorization_owner": "independent_protection",
+      "protection_interlock_required": true,
+      "guard_ids": [
+        "no_protection_lockout",
+        "trip_clear_verified",
+        "inspection_complete"
+      ],
+      "postcondition_ids": [
+        "command_rejected",
+        "trip_state_retained"
+      ],
+      "failure_disposition": "Reject reset/close request; protection remains tripped.",
+      "recovery_transition_id": null,
+      "forbidden_reason": "Protection lockout cannot be bypassed by operator or supervisory policy."
+    }
+  ],
+  "test_cases": [
+    {
+      "test_case_id": "POS-T01-GRID-PREPARE",
+      "transition_id": "T01-GRID-PREPARE",
+      "test_kind": "positive",
+      "expected_decision": "allow",
+      "satisfied_guard_ids": [
+        "grid_quality_valid",
+        "telemetry_fresh",
+        "protection_ready",
+        "grid_former_ready",
+        "reserve_sufficient"
+      ],
+      "violated_guard_ids": [],
+      "observed_postcondition_ids": [
+        "prepare_state_entered",
+        "reserve_snapshot_bound"
+      ],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T01-GRID-PREPARE",
+      "transition_id": "T01-GRID-PREPARE",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "protection_ready",
+        "grid_former_ready",
+        "reserve_sufficient"
+      ],
+      "violated_guard_ids": [
+        "grid_quality_valid"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "POS-T02-PLANNED-ISLAND-COMMIT",
+      "transition_id": "T02-PLANNED-ISLAND-COMMIT",
+      "test_kind": "positive",
+      "expected_decision": "allow",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "protection_ready",
+        "grid_former_ready",
+        "reserve_sufficient",
+        "pcc_open_observed",
+        "island_bus_stable"
+      ],
+      "violated_guard_ids": [],
+      "observed_postcondition_ids": [
+        "pcc_open_independently_observed",
+        "island_voltage_frequency_stable",
+        "critical_service_verified"
+      ],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T02-PLANNED-ISLAND-COMMIT",
+      "transition_id": "T02-PLANNED-ISLAND-COMMIT",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "protection_ready",
+        "grid_former_ready",
+        "reserve_sufficient",
+        "pcc_open_observed",
+        "island_bus_stable"
+      ],
+      "violated_guard_ids": [
+        "telemetry_fresh"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "POS-T03-UNEXPECTED-GRID-LOSS",
+      "transition_id": "T03-UNEXPECTED-GRID-LOSS",
+      "test_kind": "positive",
+      "expected_decision": "allow",
+      "satisfied_guard_ids": [
+        "grid_loss_detected",
+        "grid_former_ready",
+        "pcc_open_observed",
+        "island_bus_stable"
+      ],
+      "violated_guard_ids": [],
+      "observed_postcondition_ids": [
+        "protection_action_recorded",
+        "pcc_open_independently_observed",
+        "island_stability_observed"
+      ],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T03-UNEXPECTED-GRID-LOSS",
+      "transition_id": "T03-UNEXPECTED-GRID-LOSS",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_former_ready",
+        "pcc_open_observed",
+        "island_bus_stable"
+      ],
+      "violated_guard_ids": [
+        "grid_loss_detected"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "POS-T04-RECONNECTION-REQUEST",
+      "transition_id": "T04-RECONNECTION-REQUEST",
+      "test_kind": "positive",
+      "expected_decision": "allow",
+      "satisfied_guard_ids": [
+        "grid_quality_valid",
+        "telemetry_fresh",
+        "protection_ready"
+      ],
+      "violated_guard_ids": [],
+      "observed_postcondition_ids": [
+        "reconnection_pending_recorded",
+        "pcc_remains_open"
+      ],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T04-RECONNECTION-REQUEST",
+      "transition_id": "T04-RECONNECTION-REQUEST",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "protection_ready"
+      ],
+      "violated_guard_ids": [
+        "grid_quality_valid"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "POS-T05-RECONNECTION-COMMIT",
+      "transition_id": "T05-RECONNECTION-COMMIT",
+      "test_kind": "positive",
+      "expected_decision": "allow",
+      "satisfied_guard_ids": [
+        "grid_quality_valid",
+        "telemetry_fresh",
+        "protection_ready",
+        "sync_check_passed",
+        "sync_close_permissive"
+      ],
+      "violated_guard_ids": [],
+      "observed_postcondition_ids": [
+        "pcc_closed_independently_observed",
+        "post_close_power_flow_verified",
+        "grid_connected_stable"
+      ],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T05-RECONNECTION-COMMIT",
+      "transition_id": "T05-RECONNECTION-COMMIT",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "protection_ready",
+        "sync_check_passed",
+        "sync_close_permissive"
+      ],
+      "violated_guard_ids": [
+        "grid_quality_valid"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "POS-T06-BLACK-START-INITIATE",
+      "transition_id": "T06-BLACK-START-INITIATE",
+      "test_kind": "positive",
+      "expected_decision": "allow",
+      "satisfied_guard_ids": [
+        "start_permit_valid",
+        "protection_ready",
+        "reserve_sufficient"
+      ],
+      "violated_guard_ids": [],
+      "observed_postcondition_ids": [
+        "black_start_sequence_authorized",
+        "dead_bus_precondition_recorded"
+      ],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T06-BLACK-START-INITIATE",
+      "transition_id": "T06-BLACK-START-INITIATE",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "protection_ready",
+        "reserve_sufficient"
+      ],
+      "violated_guard_ids": [
+        "start_permit_valid"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "POS-T07-BLACK-START-COMPLETE",
+      "transition_id": "T07-BLACK-START-COMPLETE",
+      "test_kind": "positive",
+      "expected_decision": "allow",
+      "satisfied_guard_ids": [
+        "grid_former_ready",
+        "grid_former_stable",
+        "protection_ready",
+        "reserve_sufficient",
+        "pcc_open_observed"
+      ],
+      "violated_guard_ids": [],
+      "observed_postcondition_ids": [
+        "bus_voltage_frequency_stable",
+        "critical_load_pickup_verified",
+        "reserve_rechecked"
+      ],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T07-BLACK-START-COMPLETE",
+      "transition_id": "T07-BLACK-START-COMPLETE",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "grid_former_stable",
+        "protection_ready",
+        "reserve_sufficient",
+        "pcc_open_observed"
+      ],
+      "violated_guard_ids": [
+        "grid_former_ready"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "POS-T08-BLACK-START-FAILED",
+      "transition_id": "T08-BLACK-START-FAILED",
+      "test_kind": "positive",
+      "expected_decision": "allow",
+      "satisfied_guard_ids": [
+        "start_failed_or_timed_out",
+        "pcc_open_observed"
+      ],
+      "violated_guard_ids": [],
+      "observed_postcondition_ids": [
+        "start_failure_recorded",
+        "outputs_isolated",
+        "dead_bus_independently_verified"
+      ],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T08-BLACK-START-FAILED",
+      "transition_id": "T08-BLACK-START-FAILED",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "pcc_open_observed"
+      ],
+      "violated_guard_ids": [
+        "start_failed_or_timed_out"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "POS-T09-PROTECTION-TRIP",
+      "transition_id": "T09-PROTECTION-TRIP",
+      "test_kind": "positive",
+      "expected_decision": "allow",
+      "satisfied_guard_ids": [
+        "trip_detected"
+      ],
+      "violated_guard_ids": [],
+      "observed_postcondition_ids": [
+        "trip_state_observed",
+        "event_and_trip_identity_retained"
+      ],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T09-PROTECTION-TRIP",
+      "transition_id": "T09-PROTECTION-TRIP",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [],
+      "violated_guard_ids": [
+        "trip_detected"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "POS-T10-TRIP-INSPECTION-HOLD",
+      "transition_id": "T10-TRIP-INSPECTION-HOLD",
+      "test_kind": "positive",
+      "expected_decision": "allow",
+      "satisfied_guard_ids": [
+        "inspection_complete",
+        "trip_clear_verified",
+        "state_reconciled"
+      ],
+      "violated_guard_ids": [],
+      "observed_postcondition_ids": [
+        "inspection_receipt_bound",
+        "no_automatic_reset_performed"
+      ],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T10-TRIP-INSPECTION-HOLD",
+      "transition_id": "T10-TRIP-INSPECTION-HOLD",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "trip_clear_verified",
+        "state_reconciled"
+      ],
+      "violated_guard_ids": [
+        "inspection_complete"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "POS-T11-COMMS-LOSS-FROM-GRID",
+      "transition_id": "T11-COMMS-LOSS-FROM-GRID",
+      "test_kind": "positive",
+      "expected_decision": "allow",
+      "satisfied_guard_ids": [
+        "comms_stale_detected"
+      ],
+      "violated_guard_ids": [],
+      "observed_postcondition_ids": [
+        "supervisory_mutations_blocked",
+        "local_fallback_state_recorded"
+      ],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T11-COMMS-LOSS-FROM-GRID",
+      "transition_id": "T11-COMMS-LOSS-FROM-GRID",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [],
+      "violated_guard_ids": [
+        "comms_stale_detected"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "POS-T12-COMMS-LOSS-FROM-ISLAND",
+      "transition_id": "T12-COMMS-LOSS-FROM-ISLAND",
+      "test_kind": "positive",
+      "expected_decision": "allow",
+      "satisfied_guard_ids": [
+        "comms_stale_detected"
+      ],
+      "violated_guard_ids": [],
+      "observed_postcondition_ids": [
+        "supervisory_mutations_blocked",
+        "local_island_protection_retained"
+      ],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T12-COMMS-LOSS-FROM-ISLAND",
+      "transition_id": "T12-COMMS-LOSS-FROM-ISLAND",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [],
+      "violated_guard_ids": [
+        "comms_stale_detected"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "POS-T13-RECONCILE-TO-GRID",
+      "transition_id": "T13-RECONCILE-TO-GRID",
+      "test_kind": "positive",
+      "expected_decision": "allow",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "state_reconciled",
+        "grid_quality_valid",
+        "sync_check_passed",
+        "sync_close_permissive",
+        "protection_ready"
+      ],
+      "violated_guard_ids": [],
+      "observed_postcondition_ids": [
+        "physical_state_reconciled",
+        "pcc_closed_independently_observed",
+        "grid_connected_stable"
+      ],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T13-RECONCILE-TO-GRID",
+      "transition_id": "T13-RECONCILE-TO-GRID",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "state_reconciled",
+        "grid_quality_valid",
+        "sync_check_passed",
+        "sync_close_permissive",
+        "protection_ready"
+      ],
+      "violated_guard_ids": [
+        "telemetry_fresh"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "POS-T14-RECONCILE-TO-ISLAND",
+      "transition_id": "T14-RECONCILE-TO-ISLAND",
+      "test_kind": "positive",
+      "expected_decision": "allow",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "state_reconciled",
+        "grid_former_ready",
+        "grid_former_stable",
+        "pcc_open_observed",
+        "protection_ready"
+      ],
+      "violated_guard_ids": [],
+      "observed_postcondition_ids": [
+        "physical_state_reconciled",
+        "pcc_open_independently_observed",
+        "island_voltage_frequency_stable"
+      ],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-T14-RECONCILE-TO-ISLAND",
+      "transition_id": "T14-RECONCILE-TO-ISLAND",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "state_reconciled",
+        "grid_former_ready",
+        "grid_former_stable",
+        "pcc_open_observed",
+        "protection_ready"
+      ],
+      "violated_guard_ids": [
+        "telemetry_fresh"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-F01-MEMS-DIRECT-SWITCH",
+      "transition_id": "F01-MEMS-DIRECT-SWITCH",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "protection_ready"
+      ],
+      "violated_guard_ids": [
+        "mems_has_no_switchgear_authority"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-F02-RECONNECT-WITHOUT-SYNC",
+      "transition_id": "F02-RECONNECT-WITHOUT-SYNC",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "protection_ready",
+        "sync_check_passed",
+        "sync_close_permissive"
+      ],
+      "violated_guard_ids": [
+        "grid_quality_valid"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "NEG-F03-BYPASS-PROTECTION-LOCKOUT",
+      "transition_id": "F03-BYPASS-PROTECTION-LOCKOUT",
+      "test_kind": "negative",
+      "expected_decision": "block",
+      "satisfied_guard_ids": [
+        "trip_clear_verified",
+        "inspection_complete"
+      ],
+      "violated_guard_ids": [
+        "no_protection_lockout"
+      ],
+      "observed_postcondition_ids": [],
+      "recovery_transition_id": null,
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "REC-T11-COMMS-LOSS-FROM-GRID",
+      "transition_id": "T11-COMMS-LOSS-FROM-GRID",
+      "test_kind": "recovery",
+      "expected_decision": "allow",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "state_reconciled",
+        "grid_quality_valid",
+        "sync_check_passed",
+        "sync_close_permissive",
+        "protection_ready"
+      ],
+      "violated_guard_ids": [],
+      "observed_postcondition_ids": [
+        "physical_state_reconciled",
+        "pcc_closed_independently_observed",
+        "grid_connected_stable"
+      ],
+      "recovery_transition_id": "T13-RECONCILE-TO-GRID",
+      "evidence_class": "synthetic"
+    },
+    {
+      "test_case_id": "REC-T12-COMMS-LOSS-FROM-ISLAND",
+      "transition_id": "T12-COMMS-LOSS-FROM-ISLAND",
+      "test_kind": "recovery",
+      "expected_decision": "allow",
+      "satisfied_guard_ids": [
+        "telemetry_fresh",
+        "state_reconciled",
+        "grid_former_ready",
+        "grid_former_stable",
+        "pcc_open_observed",
+        "protection_ready"
+      ],
+      "violated_guard_ids": [],
+      "observed_postcondition_ids": [
+        "physical_state_reconciled",
+        "pcc_open_independently_observed",
+        "island_voltage_frequency_stable"
+      ],
+      "recovery_transition_id": "T14-RECONCILE-TO-ISLAND",
+      "evidence_class": "synthetic"
+    }
+  ]
+}

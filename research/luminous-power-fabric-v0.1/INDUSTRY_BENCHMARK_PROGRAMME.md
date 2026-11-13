@@ -246,3 +246,19 @@ The standards crosswalk now includes IEC TS 62898-3-5:2026 for HIL/commissioning
 IEC TS 62898-3-2:2024 for MEMS, IEC TS 62898-3-4:2023 for MMCS, and IEEE 2030.7/2030.8. HIL/P-HIL,
 physical laboratory, commissioning and periodic/site operation remain distinct test boundaries.
 This is a research plan only; no test has been executed and no conformity claim is made.
+
+
+## 20. Operating-mode transition graph and independent protection oracle
+
+Issue [#454](https://github.com/Luminous-Dynamics/luminous-platform/issues/454) and draft
+[PR #455](https://github.com/Luminous-Dynamics/luminous-platform/pull/455) add a versioned
+state/transition/test contract and typed Rust structural coverage validator. It separates the
+requesting actor from the authorization owner and requires independent postcondition evidence.
+The synthetic corpus contains eight states, 20 guard definitions, 17 transitions (14 permitted,
+three forbidden) and 33 positive/negative/recovery test cases.
+
+The 38-mode multi-feeder C-HIL paper listing currently shows an April 2027 publication date, later
+than the 13 November 2026 snapshot. Treat that result as forthcoming/prepublication, not as a
+published 2026 SOTA baseline. Existing public comparators include NLR's 2024/2025 multi-GFM C-HIL
+work and 2025 Borrego Springs PHIL work. These provide different physical test boundaries and must
+not be ranked against this synthetic offline validator.

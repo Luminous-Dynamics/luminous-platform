@@ -407,3 +407,14 @@ CLLC models remain bounded by their documented ideal/FHA/equation assumptions. N
 physical ZVS guarantee or permission to energize hardware. High-voltage and grid-connected product
 families remain architecture/research tracks only. Hardware energization remains gated on qualified
 engineering review, fault/energy analysis, suitable laboratory containment and a reviewed procedure.
+
+
+## Operating-mode transition graph and authority coverage
+
+[Issue #454](https://github.com/Luminous-Dynamics/luminous-platform/issues/454) and the draft
+[mode-transition graph increment](https://github.com/Luminous-Dynamics/luminous-platform/pull/455)
+add an offline state-transition contract for planned/unplanned islanding, reconnection, black start,
+protection trips, communications loss, reconciliation and forbidden authority/guard combinations.
+The typed validator checks transition references and positive/negative/recovery coverage. All 33
+checked-in test cases are synthetic. This is not controller logic, HIL, protection testing, or
+energization authorization.
