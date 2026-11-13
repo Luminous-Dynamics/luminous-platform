@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/temporal-evidence-v0.1.schema.json",
+  "title": "Power Fabric temporal-evidence test corpus",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "claim_ceiling",
+    "cases"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "claim_ceiling": {
+      "const": "TEMPORAL_EVIDENCE_QUALIFICATION_ONLY_NOT_CLOCK_SYNC_OR_PHYSICAL_RESPONSE_CLAIM"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "case_id",
+          "expected_order",
+          "description"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expected_order": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

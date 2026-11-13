@@ -1,0 +1,56 @@
+{
+  "schema_version": "0.1",
+  "claim_ceiling": "TEMPORAL_EVIDENCE_QUALIFICATION_ONLY_NOT_CLOCK_SYNC_OR_PHYSICAL_RESPONSE_CLAIM",
+  "cases": [
+    {
+      "case_id": "T00-disjoint-intervals",
+      "expected_order": "a_before_b",
+      "description": "two event-time intervals are disjoint"
+    },
+    {
+      "case_id": "T01-overlapping-intervals",
+      "expected_order": "indeterminate",
+      "description": "point timestamps sort but time uncertainty intervals overlap"
+    },
+    {
+      "case_id": "T02-holdover-drift",
+      "expected_order": "uncertainty_increases",
+      "description": "holdover drift widens the event interval"
+    },
+    {
+      "case_id": "T03-lost-clock",
+      "expected_order": "unqualified",
+      "description": "lost synchronization without valid holdover cannot qualify timestamps"
+    },
+    {
+      "case_id": "T04-cross-domain-no-map",
+      "expected_order": "unqualified",
+      "description": "different clock epochs require a current relation"
+    },
+    {
+      "case_id": "T05-expired-map",
+      "expected_order": "unqualified",
+      "description": "expired cross-domain mapping is rejected"
+    },
+    {
+      "case_id": "T06-utc-offset",
+      "expected_order": "tai-normalized",
+      "description": "UTC requires current UTC-to-TAI evidence"
+    },
+    {
+      "case_id": "T07-sequence-contradiction",
+      "expected_order": "unqualified",
+      "description": "timestamp ordering cannot contradict monotonic local sequence"
+    },
+    {
+      "case_id": "T08-overlap-duration",
+      "expected_order": "positive_duration_not_established",
+      "description": "overlapping start/end intervals produce zero minimum duration"
+    },
+    {
+      "case_id": "T09-synthetic-evidence",
+      "expected_order": "unqualified",
+      "description": "synthetic event evidence is not physical timing evidence"
+    }
+  ]
+}

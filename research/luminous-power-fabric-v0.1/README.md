@@ -376,3 +376,8 @@ Draft [PR #463](https://github.com/Luminous-Dynamics/luminous-platform/pull/463)
 ## Preregistered superiority gate
 
 Draft [PR #464](https://github.com/Luminous-Dynamics/luminous-platform/pull/464), tracked by issue #466, binds the lifecycle frontier and paired cluster bootstrap to one preregistered primary metric, candidate family, Bonferroni-adjusted confidence and conservative paired metrology-error bounds. It distinguishes established, no-preregistered-superiority, inconclusive and ineligible; it makes no equivalence or field-superiority claim.
+
+
+## Uncertainty-bounded temporal evidence
+
+Draft [PR #468](https://github.com/Luminous-Dynamics/luminous-platform/pull/468), tracked by issue #468, adds offline event-time intervals, holdover drift growth, UTC/TAI conversion evidence and cross-domain clock-relation qualification. Causality is reported only when uncertainty intervals are strictly disjoint; overlap means order unknown. No PTP or hardware clock is configured.
