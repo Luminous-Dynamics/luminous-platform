@@ -169,3 +169,8 @@ history remains unknown—not zero. The synthetic comparison in
 `schemas/lifecycle-service-accounting.synthetic.json` demonstrates arithmetic only and is not a
 physical or commercial claim.
 
+
+
+## 22. Uncertainty-qualified lifecycle Pareto frontier
+
+Issue [#461](https://github.com/Luminous-Dynamics/luminous-platform/issues/461) and draft [PR #462](https://github.com/Luminous-Dynamics/luminous-platform/pull/462) add hard feasibility/evidence gates and central plus interval-robust Pareto dominance over the #428 lifecycle accounting report. A cheap candidate with critical-service failures is excluded before ranking. Uncertainty bounds must be current, owner-supplied and reconciled to the report's point values. No aggregate weighted score, bootstrap, ageing forecast or reliability probability is produced in this v0.1 slice.

@@ -361,3 +361,8 @@ CLLC models remain bounded by their documented ideal/FHA/equation assumptions. N
 physical ZVS guarantee or permission to energize hardware. High-voltage and grid-connected product
 families remain architecture/research tracks only. Hardware energization remains gated on qualified
 engineering review, fault/energy analysis, suitable laboratory containment and a reviewed procedure.
+
+
+## Uncertainty-qualified lifecycle service frontier
+
+[Issue #461](https://github.com/Luminous-Dynamics/luminous-platform/issues/461) and draft [PR #462](https://github.com/Luminous-Dynamics/luminous-platform/pull/462) add a read-only decision layer over `LifecycleScenarioReport`. It applies non-compensatory critical-service and evidence gates, then reports central and interval-robust Pareto frontiers across lifecycle cost, unserved critical service, unavailable hours, replacements and (where comparable) observed storage retention. It does not create ageing forecasts or statistical confidence intervals.

@@ -1,0 +1,129 @@
+{
+  "schema_version": "0.1",
+  "comparator_set_id": "LIFECYCLE-FRONTIER-SYNTH-01",
+  "currency_code": "USD",
+  "minor_unit_scale": 2,
+  "confidence_level": 0.95,
+  "matched_context": {
+    "service_boundary_id": "customer-poc",
+    "site_profile_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "mission_set_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "scenario_manifest_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "initial_terminal_obligation_sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "candidates": [
+    {
+      "candidate_id": "A",
+      "service_feasible": true,
+      "evidence_eligible": true,
+      "cost_per_delivered_critical_kwh": {
+        "point": 1000,
+        "lower": 980,
+        "upper": 1020
+      },
+      "unserved_critical_service_wh": {
+        "point": 0,
+        "lower": 0,
+        "upper": 0
+      },
+      "unavailable_hours": {
+        "point": 2,
+        "lower": 1.8,
+        "upper": 2.2
+      },
+      "replacement_count": 1,
+      "storage_retention": {
+        "point": 0.9,
+        "lower": 0.88,
+        "upper": 0.92
+      },
+      "expected_central_member": true,
+      "expected_robust_member": true
+    },
+    {
+      "candidate_id": "B",
+      "service_feasible": true,
+      "evidence_eligible": true,
+      "cost_per_delivered_critical_kwh": {
+        "point": 1100,
+        "lower": 1070,
+        "upper": 1130
+      },
+      "unserved_critical_service_wh": {
+        "point": 0,
+        "lower": 0,
+        "upper": 0
+      },
+      "unavailable_hours": {
+        "point": 1,
+        "lower": 0.8,
+        "upper": 1.2
+      },
+      "replacement_count": 0,
+      "storage_retention": {
+        "point": 0.93,
+        "lower": 0.91,
+        "upper": 0.95
+      },
+      "expected_central_member": true,
+      "expected_robust_member": true
+    },
+    {
+      "candidate_id": "C",
+      "service_feasible": true,
+      "evidence_eligible": true,
+      "cost_per_delivered_critical_kwh": {
+        "point": 1300,
+        "lower": 1250,
+        "upper": 1350
+      },
+      "unserved_critical_service_wh": {
+        "point": 0,
+        "lower": 0,
+        "upper": 0
+      },
+      "unavailable_hours": {
+        "point": 3,
+        "lower": 2.8,
+        "upper": 3.2
+      },
+      "replacement_count": 2,
+      "storage_retention": {
+        "point": 0.85,
+        "lower": 0.82,
+        "upper": 0.87
+      },
+      "expected_central_member": false,
+      "expected_robust_member": false
+    },
+    {
+      "candidate_id": "CHEAP-FAIL",
+      "service_feasible": false,
+      "evidence_eligible": true,
+      "cost_per_delivered_critical_kwh": {
+        "point": 500,
+        "lower": 490,
+        "upper": 510
+      },
+      "unserved_critical_service_wh": {
+        "point": 100,
+        "lower": 80,
+        "upper": 120
+      },
+      "unavailable_hours": {
+        "point": 0.5,
+        "lower": 0.4,
+        "upper": 0.6
+      },
+      "replacement_count": 0,
+      "storage_retention": {
+        "point": 0.95,
+        "lower": 0.94,
+        "upper": 0.96
+      },
+      "expected_central_member": false,
+      "expected_robust_member": false
+    }
+  ],
+  "claim_ceiling": "UNCERTAINTY_QUALIFIED_LIFECYCLE_PARETO_SCREEN_ONLY_NOT_LIFETIME_FORECAST_OR_SOTA_CLAIM"
+}
