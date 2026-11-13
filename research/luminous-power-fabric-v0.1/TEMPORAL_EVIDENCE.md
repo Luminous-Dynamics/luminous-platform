@@ -35,3 +35,14 @@ Ten fixtures cover disjoint order, overlapping interval, holdover drift, lost cl
 Platform evaluates typed temporal intervals. Mycelix verifies signed timebase/mapping receipts, profile identity and revocation. Symtropy provides controller/plant event histories. Sol-Atlas owns instrument/device identity and network topology. Qualified metrology and lab owners establish time traceability, channel latency, mapping bounds and uncertainty. No tool here adjusts a clock or controls equipment.
 
 `TEMPORAL_EVIDENCE_QUALIFICATION_ONLY_NOT_CLOCK_SYNC_OR_PHYSICAL_RESPONSE_CLAIM`
+
+
+## Validation status and claim ceiling
+
+- 12 Rust unit tests are authored, not executed.
+- JSON schema and synthetic fixture parse in the authoring runtime; fixture case IDs and count were checked.
+- No Rust compiler/Cargo, formatting, Clippy or exact-head workflow pass is claimed.
+- This module performs declared-bound arithmetic only. It does not query PTP, verify grandmaster identity, validate hardware timestamping, retrieve leap-second bulletins, calibrate instrument latency, or prove time traceability.
+- It does not adjust clocks or issue equipment commands. No physical response-time, PMU accuracy, HIL or IEC/IEEE conformity claim is made.
+
+Claim ceiling: `TEMPORAL_EVIDENCE_QUALIFICATION_ONLY_NOT_CLOCK_SYNC_OR_PHYSICAL_RESPONSE_CLAIM`.
