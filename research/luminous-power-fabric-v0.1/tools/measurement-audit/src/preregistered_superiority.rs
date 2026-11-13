@@ -287,4 +287,21 @@ mod tests{
  #[test]fn missing_duplicate_or_wrong_metric_bound_is_rejected(){let mut x=input(-10.0,-9.0,-8.0,1.0);x.measurement_uncertainty.clear();assert!(evaluate_preregistered_superiority(&x).is_err());
  x=input(-10.0,-9.0,-8.0,1.0);x.measurement_uncertainty.push(x.measurement_uncertainty[0].clone());assert!(evaluate_preregistered_superiority(&x).is_err());
  x=input(-10.0,-9.0,-8.0,1.0);x.measurement_uncertainty[0].metric=PrimaryMetric::UnservedCriticalServiceWh;assert!(evaluate_preregistered_superiority(&x).is_err());}
+ #[test]fn selected_unserved_metric_uses_its_own_bootstrap_interval(){
+  let mut x=input(100.0,110.0,120.0,0.1);
+  x.preregistration.primary_metric=PrimaryMetric::UnservedCriticalServiceWh;
+  x.measurement_uncertainty[0].metric=PrimaryMetric::UnservedCriticalServiceWh;
+  x.bootstrap.comparisons[0].unserved_critical_service_wh_delta=BootstrapInterval{paired_mean_delta:-4.0,lower_bound:-5.0,upper_bound:-3.0};
+  x.preregistration.minimum_meaningful_improvement=1.0;
+  assert_eq!(evaluate_preregistered_superiority(&x).unwrap().decisions[0].status,SuperiorityStatus::Established);
+ }
+ #[test]fn selected_downtime_metric_uses_its_own_bootstrap_interval(){
+  let mut x=input(100.0,110.0,120.0,0.1);
+  x.preregistration.primary_metric=PrimaryMetric::SystemUnavailableHours;
+  x.measurement_uncertainty[0].metric=PrimaryMetric::SystemUnavailableHours;
+  x.bootstrap.comparisons[0].system_unavailable_hours_delta=BootstrapInterval{paired_mean_delta:-3.0,lower_bound:-4.0,upper_bound:-2.0};
+  x.preregistration.minimum_meaningful_improvement=1.0;
+  assert_eq!(evaluate_preregistered_superiority(&x).unwrap().decisions[0].status,SuperiorityStatus::Established);
+ }
+
 }
