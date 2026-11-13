@@ -72,9 +72,11 @@ pub struct MeterMeasurement {
     pub observed_at_epoch_s: u64,
     pub evaluation_time_epoch_s: u64,
     pub calibration_id: String,
+    pub calibration_evidence_reference: String,
     pub calibration_valid_until_epoch_s: u64,
     pub calibration_status: EvidenceStatus,
     pub timebase_reference: String,
+    pub timebase_evidence_reference: String,
     pub timebase_status: EvidenceStatus,
     pub evidence_status: EvidenceStatus,
     pub evidence_class: LifecycleEvidenceClass,
@@ -165,7 +167,9 @@ pub fn bound_measurement(measurement: &MeterMeasurement) -> Result<BoundedMeasur
         || !nonblank(&measurement.instrument_id)
         || !nonblank(&measurement.channel_id)
         || !nonblank(&measurement.calibration_id)
+        || !nonblank(&measurement.calibration_evidence_reference)
         || !nonblank(&measurement.timebase_reference)
+        || !nonblank(&measurement.timebase_evidence_reference)
         || !nonblank(&measurement.evidence_reference)
         || !valid_sha256(&measurement.scope_sha256)
         || !valid_sha256(&measurement.configuration_sha256)
@@ -190,7 +194,9 @@ pub fn bound_measurement(measurement: &MeterMeasurement) -> Result<BoundedMeasur
     let mut references = vec![
         measurement.evidence_reference.clone(),
         measurement.calibration_id.clone(),
+        measurement.calibration_evidence_reference.clone(),
         measurement.timebase_reference.clone(),
+        measurement.timebase_evidence_reference.clone(),
     ];
     for component in &measurement.uncertainty_components {
         if !nonblank(&component.component_id)
@@ -356,9 +362,11 @@ mod tests {
             observed_at_epoch_s: 100,
             evaluation_time_epoch_s: 200,
             calibration_id: format!("calibration-{boundary}"),
+            calibration_evidence_reference: format!("certificate:{boundary}"),
             calibration_valid_until_epoch_s: 300,
             calibration_status: EvidenceStatus::Current,
-            timebase_reference: "timebase:200".into(),
+            timebase_reference: "clock:200".into(),
+            timebase_evidence_reference: "timebase-certificate:200".into(),
             timebase_status: EvidenceStatus::Current,
             evidence_status: EvidenceStatus::Current,
             evidence_class: class,
@@ -541,4 +549,15 @@ mod tests {
         ).unwrap();
         assert_eq!(result.margin_decision, MarginDecision::ClearsPreregisteredMargin);
     }
+
+    #[test]
+    fn rejects_missing_calibration_or_timebase_provenance() {
+        let mut input = measurement("energy", "poc", 100.0, LifecycleEvidenceClass::IndependentPhysicalMeasurement);
+        input.calibration_evidence_reference.clear();
+        assert!(bound_measurement(&input).is_err());
+        input = measurement("energy", "poc", 100.0, LifecycleEvidenceClass::IndependentPhysicalMeasurement);
+        input.timebase_evidence_reference.clear();
+        assert!(bound_measurement(&input).is_err());
+    }
+
 }
