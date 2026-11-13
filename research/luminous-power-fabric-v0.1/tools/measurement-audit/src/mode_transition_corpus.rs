@@ -201,9 +201,16 @@ pub fn validate_mode_transition_corpus(corpus: &ModeTransitionCorpus) -> Result<
                 return Err(AuditError(format!("transition {:?} references unknown guard {:?}", transition.transition_id, guard_id)));
             }
         }
-        if transition.protection_interlock_required
-            && !matches!(transition.authorization_owner.as_str(), "local_controller" | "independent_protection") {
-            return Err(AuditError(format!("transition {:?} assigns protection-interlocked authorization to a non-local owner", transition.transition_id)));
+        if transition.protection_interlock_required {
+            if matches!(transition.authorization_owner.as_str(), "supervisory_mems" | "operator") {
+                return Err(AuditError(format!("transition {:?} assigns protection-interlocked authorization to a supervisory/request-only owner", transition.transition_id)));
+            }
+            let has_independent_guard = transition.guard_ids.iter().any(|id| {
+                guard_map.get(id.as_str()).is_some_and(|guard| guard.enforcement_owner == "independent_protection")
+            });
+            if !has_independent_guard {
+                return Err(AuditError(format!("transition {:?} lacks an independent-protection guard", transition.transition_id)));
+            }
         }
         if transition.permitted && transition.forbidden_reason.is_some() {
             return Err(AuditError(format!("permitted transition {:?} cannot have a forbidden reason", transition.transition_id)));
@@ -244,9 +251,17 @@ pub fn validate_mode_transition_corpus(corpus: &ModeTransitionCorpus) -> Result<
         unique_ids(test.violated_guard_ids.iter().map(String::as_str), "violated guard")?;
         unique_ids(test.observed_postcondition_ids.iter().map(String::as_str), "observed postcondition")?;
 
+        let applicable_guard_ids: &[String] = if test.test_kind == "recovery" {
+            let recovery_id = transition.recovery_transition_id.as_ref()
+                .ok_or_else(|| AuditError(format!("test {:?} is recovery coverage without a recovery route", test.test_case_id)))?;
+            &transition_map.get(recovery_id.as_str())
+                .ok_or_else(|| AuditError(format!("test {:?} references missing recovery transition", test.test_case_id)))?.guard_ids
+        } else {
+            &transition.guard_ids
+        };
         for id in test.satisfied_guard_ids.iter().chain(test.violated_guard_ids.iter()) {
-            if !transition.guard_ids.contains(id) {
-                return Err(AuditError(format!("test {:?} references guard {:?} not declared by its transition", test.test_case_id, id)));
+            if !applicable_guard_ids.contains(id) {
+                return Err(AuditError(format!("test {:?} references guard {:?} not declared by the applicable transition", test.test_case_id, id)));
             }
         }
         match test.test_kind.as_str() {
@@ -340,7 +355,7 @@ mod tests {
         }
     }
     fn guard() -> ModeGuard {
-        ModeGuard { guard_id:"fresh".into(), predicate:"input is fresh".into(), enforcement_owner:"local_controller".into(), freshness_required:true, failure_behavior:"block_transition".into() }
+        ModeGuard { guard_id:"fresh".into(), predicate:"input is fresh".into(), enforcement_owner:"independent_protection".into(), freshness_required:true, failure_behavior:"block_transition".into() }
     }
     fn transition(id: &str, recovery: Option<&str>) -> ModeTransition {
         ModeTransition { transition_id:id.into(),from_state_ids:vec!["grid_connected".into()],to_state_id:"unknown_hold".into(),
@@ -386,4 +401,55 @@ mod tests {
         c.test_cases.push(test("N2","T2","negative"));
         assert!(validate_mode_transition_corpus(&c).is_err());
     }
+
+    #[test]
+    fn accepts_recovery_test_against_the_recovery_transition_guards() {
+        let mut c = valid_corpus();
+        let mut recovery = transition("T2", None);
+        recovery.from_state_ids = vec!["unknown_hold".into()];
+        recovery.to_state_id = "grid_connected".into();
+        recovery.postcondition_ids = vec!["grid-restored".into()];
+        c.transitions[0].recovery_transition_id = Some("T2".into());
+        c.transitions.push(recovery);
+        c.test_cases.push(test("P2", "T2", "positive"));
+        c.test_cases.push(test("N2", "T2", "negative"));
+        let mut recovery_case = test("R1", "T1", "recovery");
+        recovery_case.observed_postcondition_ids = vec!["grid-restored".into()];
+        recovery_case.recovery_transition_id = Some("T2".into());
+        c.test_cases.push(recovery_case);
+        assert!(validate_mode_transition_corpus(&c).is_ok());
+    }
+
+    #[test]
+    fn rejects_recovery_test_that_omits_recovery_postconditions() {
+        let mut c = valid_corpus();
+        let mut recovery = transition("T2", None);
+        recovery.from_state_ids = vec!["unknown_hold".into()];
+        recovery.to_state_id = "grid_connected".into();
+        recovery.postcondition_ids = vec!["grid-restored".into()];
+        c.transitions[0].recovery_transition_id = Some("T2".into());
+        c.transitions.push(recovery);
+        c.test_cases.push(test("P2", "T2", "positive"));
+        c.test_cases.push(test("N2", "T2", "negative"));
+        let mut recovery_case = test("R1", "T1", "recovery");
+        recovery_case.recovery_transition_id = Some("T2".into());
+        c.test_cases.push(recovery_case);
+        assert!(validate_mode_transition_corpus(&c).is_err());
+    }
+
+    #[test]
+    fn protection_interlock_requires_independent_guard_not_protection_as_request_owner() {
+        let mut c = valid_corpus();
+        let mut maintenance_guard = guard();
+        maintenance_guard.guard_id = "maint".into();
+        maintenance_guard.enforcement_owner = "maintenance_authority".into();
+        c.guards.push(maintenance_guard);
+        c.transitions[0].authorization_owner = "maintenance_authority".into();
+        c.transitions[0].guard_ids.push("maint".into());
+        c.test_cases[0].satisfied_guard_ids.push("maint".into());
+        c.test_cases[1].satisfied_guard_ids.push("maint".into());
+        c.test_cases[1].violated_guard_ids = vec!["fresh".into()];
+        assert!(validate_mode_transition_corpus(&c).is_ok());
+    }
+
 }

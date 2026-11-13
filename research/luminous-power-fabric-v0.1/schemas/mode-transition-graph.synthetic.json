@@ -1194,12 +1194,12 @@
       "test_kind": "negative",
       "expected_decision": "block",
       "satisfied_guard_ids": [
+        "grid_quality_valid",
         "protection_ready",
-        "sync_check_passed",
         "sync_close_permissive"
       ],
       "violated_guard_ids": [
-        "grid_quality_valid"
+        "sync_check_passed"
       ],
       "observed_postcondition_ids": [],
       "recovery_transition_id": null,

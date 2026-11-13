@@ -66,7 +66,7 @@ The fixture includes eight states, 20 guard definitions and 17 transition record
 
 The transition families cover planned islanding, unexpected grid loss, reconnection and synchronism, black start/failed start, protection trip/inspection hold, communications loss, reconciliation, direct supervisory switchgear requests, reconnection without sync-check and protection-lockout bypass attempts.
 
-The typed Rust validator checks unique IDs, state/digest enums and selected state invariants, transition references, authority ownership, protection-interlock authority, forbidden reasons, guard references, recovery edge continuity, evidence class, complete positive/negative/recovery test coverage and postcondition evidence presence.
+The typed Rust validator checks unique IDs, state/digest enums and selected state invariants, transition references, authority ownership, an independent-protection guard on every protection-interlocked transition, forbidden reasons, guard references, recovery-edge continuity, evidence class, complete positive/negative/recovery test coverage and postcondition evidence presence. Recovery test guards and postconditions are evaluated against the recovery edge itself, not the initiating failed edge.
 
 This is a **coverage-structure validator**. It does not evaluate a real controller's guard logic, prove the transitions safe, evaluate grid dynamics or authorize actions.
 
