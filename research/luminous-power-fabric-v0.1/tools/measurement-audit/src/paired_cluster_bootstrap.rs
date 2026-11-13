@@ -1,3 +1,5 @@
+use crate::capability_envelope::EvidenceStatus;
+use crate::lifecycle_service_cost::LifecycleEvidenceClass;
 use crate::AuditError;
 use std::collections::BTreeMap;
 
@@ -26,6 +28,9 @@ pub struct MissionClusterOutcome {
     pub delivered_critical_service_wh: f64,
     pub unserved_critical_service_wh: f64,
     pub system_unavailable_hours: f64,
+    pub evidence_status: EvidenceStatus,
+    pub evidence_class: LifecycleEvidenceClass,
+    pub evidence_reference: String,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -204,6 +209,9 @@ fn cost_per_delivered_kwh(aggregate: Aggregate) -> Result<f64, AuditError> {
                 .to_string()
         ));
     }
+    if aggregate.cost_minor_units > (1_u128 << 53) {
+        return Err(AuditError("bootstrap cost exceeds exactly representable f64 integer range".to_string()));
+    }
     let result = aggregate.cost_minor_units as f64 * 1_000.0 / aggregate.delivered_wh;
     if !result.is_finite() {
         return Err(AuditError("bootstrap cost per delivered kWh is not finite".to_string()));
@@ -238,6 +246,9 @@ fn validate_candidate<'a>(
             || !finite_nonnegative(cluster.unserved_critical_service_wh)
             || cluster.delivered_critical_service_wh > cluster.required_critical_service_wh + 1.0e-9
             || !finite_nonnegative(cluster.system_unavailable_hours)
+            || cluster.evidence_status != EvidenceStatus::Current
+            || !nonblank(&cluster.evidence_reference)
+            || (cluster.required_critical_service_wh - cluster.delivered_critical_service_wh - cluster.unserved_critical_service_wh).abs() > 1.0e-6
         {
             return Err(AuditError(format!(
                 "candidate {:?} cluster {:?} contains invalid outcomes",
@@ -334,10 +345,12 @@ pub fn evaluate_paired_cluster_bootstrap(
     for (candidate_id, clusters) in &validated {
         if *candidate_id == input.reference_candidate_id { continue; }
 
-        let reference_clusters: Vec<&MissionClusterOutcome> =
-            reference_ids.iter().map(|id| reference[id]).collect();
-        let candidate_clusters: Vec<&MissionClusterOutcome> =
-            reference_ids.iter().map(|id| clusters[id]).collect();
+        let reference_clusters: Vec<&MissionClusterOutcome> = reference_ids.iter()
+            .map(|id| reference.get(id).copied().ok_or_else(|| AuditError("reference cluster lookup failed".to_string())))
+            .collect::<Result<_, _>>()?;
+        let candidate_clusters: Vec<&MissionClusterOutcome> = reference_ids.iter()
+            .map(|id| clusters.get(id).copied().ok_or_else(|| AuditError("candidate cluster lookup failed".to_string())))
+            .collect::<Result<_, _>>()?;
 
         let full_indices: Vec<usize> = (0..reference_ids.len()).collect();
         let reference_full = aggregate(&reference_clusters, &full_indices)?;
@@ -350,10 +363,14 @@ pub fn evaluate_paired_cluster_bootstrap(
         let full_downtime_delta =
             candidate_full.unavailable_hours_mean - reference_full.unavailable_hours_mean;
 
-        let failed_reference: usize = reference_clusters.iter()
-            .map(|cluster| cluster.mission_count - cluster.completed_mission_count).sum();
-        let failed_candidate: usize = candidate_clusters.iter()
-            .map(|cluster| cluster.mission_count - cluster.completed_mission_count).sum();
+        let failed_reference = reference_clusters.iter().try_fold(0_usize, |sum, cluster| {
+            sum.checked_add(cluster.mission_count - cluster.completed_mission_count)
+                .ok_or_else(|| AuditError("reference failed-mission count overflowed".to_string()))
+        })?;
+        let failed_candidate = candidate_clusters.iter().try_fold(0_usize, |sum, cluster| {
+            sum.checked_add(cluster.mission_count - cluster.completed_mission_count)
+                .ok_or_else(|| AuditError("candidate failed-mission count overflowed".to_string()))
+        })?;
 
         let candidate_seed = base_seed ^ stable_name_hash(candidate_id);
         let mut rng = SplitMix64::new(candidate_seed);
@@ -429,6 +446,9 @@ mod tests {
             delivered_critical_service_wh: 1000.0,
             unserved_critical_service_wh: 10.0 + n as f64 + delta * 0.05,
             system_unavailable_hours: 2.0 + n as f64 * 0.1 + delta * 0.01,
+            evidence_status: EvidenceStatus::Current,
+            evidence_class: LifecycleEvidenceClass::SyntheticFixture,
+            evidence_reference: format!("synthetic://cluster-{n:02}"),
         }).collect();
         PairedBootstrapCandidate {
             candidate_id: id.to_string(),
