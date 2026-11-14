@@ -330,3 +330,5 @@ pub mod gfm_capability_envelope;
 
 pub mod model_validity_envelope;
 
+
+pub mod gfm_claim_eligibility;

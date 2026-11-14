@@ -433,3 +433,8 @@ Issue [#479](https://github.com/Luminous-Dynamics/luminous-platform/issues/479) 
 ## Model validity envelope
 
 Issue [#479](https://github.com/Luminous-Dynamics/luminous-platform/issues/479) and draft [PR #480](https://github.com/Luminous-Dynamics/luminous-platform/pull/480) add a held-out model-validation profile with separate calibration and validation roots, exact model/firmware/configuration identity, time- and frequency-domain validation scopes, per-observable residual records and no out-of-domain claims. The validator reports plan completeness only and cannot self-mark a model physically validated.
+
+
+## Evidence-bounded GFM capability claims
+
+Issue [#481](https://github.com/Luminous-Dynamics/luminous-platform/issues/481) and draft [PR #482](https://github.com/Luminous-Dynamics/luminous-platform/pull/482) add a structural claim-support evaluator across model-only, controller-HIL, power-HIL, physical lab, commissioning and field evidence. It enforces exact configuration/cell/family/boundary and physical-component matching. Structurally supported results remain pending Mycelix receipt verification and independent review; this evaluator never releases claims.

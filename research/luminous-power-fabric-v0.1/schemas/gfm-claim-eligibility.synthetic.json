@@ -1,0 +1,599 @@
+{
+  "schema_version": "0.1",
+  "record_class": "synthetic_fixture",
+  "claim_set_id": "PF-GFM-CLAIM-ELIGIBILITY-SYNTH-01",
+  "claim_release_policy": "NEVER_RELEASE_FROM_STRUCTURAL_EVALUATOR",
+  "evidence_records": [
+    {
+      "evidence_id": "E-CHIL-CONTROLLER",
+      "gfm_profile_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "gfm_profile_id": "PF-GFM-ENVELOPE-SYNTH-0.1",
+      "gfm_test_id": "GFM-01",
+      "family": "operating_point_headroom",
+      "operating_cell_id": "CELL-BASE",
+      "electrical_boundary": "converter_terminals",
+      "execution_mode": "controller_hil",
+      "run_state": "executed",
+      "run_result": "pass",
+      "product_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hardware_configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "firmware_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "controller_configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "protection_configuration_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "topology_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "environment_passport_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "analysis_build_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "criterion_reference": "owner-supplied:criterion-rev-01",
+      "test_procedure_reference": "procedure-rev-01",
+      "run_record_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "raw_data_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+      "observed_observable_ids": [
+        "active_power_pu",
+        "reactive_power_pu"
+      ],
+      "components": [
+        {
+          "component_id": "controller",
+          "role": "microgrid_controller",
+          "realization": "physical",
+          "configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        {
+          "component_id": "pcs-model",
+          "role": "power_conversion_system",
+          "realization": "simulated",
+          "configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        },
+        {
+          "component_id": "network-model",
+          "role": "distribution_network",
+          "realization": "simulated",
+          "configuration_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+        }
+      ],
+      "calibration_receipt_reference": "mycelix:calibration-pending",
+      "timebase_reference": "timebase:trace-01",
+      "independent_witness_reference": "witness:reference-01",
+      "mycelix_receipt_reference": "mycelix:receipt-E-CHIL-CONTROLLER",
+      "mycelix_policy_revision_reference": "mycelix:trust-policy-v1",
+      "model_binding": null,
+      "site_sampling_frame": null
+    },
+    {
+      "evidence_id": "E-MODEL",
+      "gfm_profile_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "gfm_profile_id": "PF-GFM-ENVELOPE-SYNTH-0.1",
+      "gfm_test_id": "GFM-01",
+      "family": "operating_point_headroom",
+      "operating_cell_id": "CELL-BASE",
+      "electrical_boundary": "converter_terminals",
+      "execution_mode": "model_only",
+      "run_state": "executed",
+      "run_result": "pass",
+      "product_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hardware_configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "firmware_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "controller_configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "protection_configuration_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "topology_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "environment_passport_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "analysis_build_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "criterion_reference": "owner-supplied:criterion-rev-01",
+      "test_procedure_reference": "procedure-rev-01",
+      "run_record_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "raw_data_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+      "observed_observable_ids": [
+        "active_power_pu",
+        "reactive_power_pu"
+      ],
+      "components": [
+        {
+          "component_id": "controller-model",
+          "role": "microgrid_controller",
+          "realization": "simulated",
+          "configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        {
+          "component_id": "pcs-model",
+          "role": "power_conversion_system",
+          "realization": "simulated",
+          "configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      ],
+      "calibration_receipt_reference": null,
+      "timebase_reference": "timebase:trace-01",
+      "independent_witness_reference": null,
+      "mycelix_receipt_reference": "mycelix:receipt-E-MODEL",
+      "mycelix_policy_revision_reference": "mycelix:trust-policy-v1",
+      "model_binding": {
+        "model_validity_profile_sha256": "7777777777777777777777777777777777777777777777777777777777777777",
+        "model_sha256": "8888888888888888888888888888888888888888888888888888888888888888",
+        "product_hardware_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "firmware_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "controller_configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "protection_configuration_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "topology_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "validated_cell_id": "CELL-BASE",
+        "validated_scopes": [
+          "time_domain"
+        ]
+      },
+      "site_sampling_frame": null
+    },
+    {
+      "evidence_id": "E-PHIL-INTERFACE",
+      "gfm_profile_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "gfm_profile_id": "PF-GFM-ENVELOPE-SYNTH-0.1",
+      "gfm_test_id": "GFM-01",
+      "family": "operating_point_headroom",
+      "operating_cell_id": "CELL-BASE",
+      "electrical_boundary": "converter_terminals",
+      "execution_mode": "power_hil",
+      "run_state": "executed",
+      "run_result": "pass",
+      "product_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hardware_configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "firmware_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "controller_configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "protection_configuration_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "topology_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "environment_passport_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "analysis_build_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "criterion_reference": "owner-supplied:criterion-rev-01",
+      "test_procedure_reference": "procedure-rev-01",
+      "run_record_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "raw_data_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+      "observed_observable_ids": [
+        "active_power_pu",
+        "reactive_power_pu"
+      ],
+      "components": [
+        {
+          "component_id": "controller",
+          "role": "microgrid_controller",
+          "realization": "physical",
+          "configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        {
+          "component_id": "pcs",
+          "role": "power_conversion_system",
+          "realization": "physical",
+          "configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        },
+        {
+          "component_id": "power-interface",
+          "role": "power_interface",
+          "realization": "physical",
+          "configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        },
+        {
+          "component_id": "network-model",
+          "role": "distribution_network",
+          "realization": "simulated",
+          "configuration_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+        }
+      ],
+      "calibration_receipt_reference": "mycelix:calibration-pending",
+      "timebase_reference": "timebase:trace-01",
+      "independent_witness_reference": "witness:reference-01",
+      "mycelix_receipt_reference": "mycelix:receipt-E-PHIL-INTERFACE",
+      "mycelix_policy_revision_reference": "mycelix:trust-policy-v1",
+      "model_binding": null,
+      "site_sampling_frame": null
+    },
+    {
+      "evidence_id": "E-LAB",
+      "gfm_profile_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "gfm_profile_id": "PF-GFM-ENVELOPE-SYNTH-0.1",
+      "gfm_test_id": "GFM-01",
+      "family": "operating_point_headroom",
+      "operating_cell_id": "CELL-BASE",
+      "electrical_boundary": "converter_terminals",
+      "execution_mode": "physical_laboratory",
+      "run_state": "executed",
+      "run_result": "pass",
+      "product_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hardware_configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "firmware_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "controller_configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "protection_configuration_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "topology_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "environment_passport_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "analysis_build_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "criterion_reference": "owner-supplied:criterion-rev-01",
+      "test_procedure_reference": "procedure-rev-01",
+      "run_record_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "raw_data_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+      "observed_observable_ids": [
+        "active_power_pu",
+        "reactive_power_pu"
+      ],
+      "components": [
+        {
+          "component_id": "controller",
+          "role": "microgrid_controller",
+          "realization": "physical",
+          "configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        {
+          "component_id": "pcs",
+          "role": "power_conversion_system",
+          "realization": "physical",
+          "configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        },
+        {
+          "component_id": "protection",
+          "role": "protection_relay",
+          "realization": "physical",
+          "configuration_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        },
+        {
+          "component_id": "meter",
+          "role": "meter",
+          "realization": "physical",
+          "configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      ],
+      "calibration_receipt_reference": "mycelix:calibration-pending",
+      "timebase_reference": "timebase:trace-01",
+      "independent_witness_reference": "witness:reference-01",
+      "mycelix_receipt_reference": "mycelix:receipt-E-LAB",
+      "mycelix_policy_revision_reference": "mycelix:trust-policy-v1",
+      "model_binding": null,
+      "site_sampling_frame": null
+    },
+    {
+      "evidence_id": "E-COMMISSIONING",
+      "gfm_profile_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "gfm_profile_id": "PF-GFM-ENVELOPE-SYNTH-0.1",
+      "gfm_test_id": "GFM-01",
+      "family": "operating_point_headroom",
+      "operating_cell_id": "CELL-BASE",
+      "electrical_boundary": "plant_point_of_connection",
+      "execution_mode": "site_commissioning",
+      "run_state": "executed",
+      "run_result": "pass",
+      "product_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hardware_configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "firmware_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "controller_configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "protection_configuration_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "topology_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "environment_passport_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "analysis_build_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "criterion_reference": "owner-supplied:criterion-rev-01",
+      "test_procedure_reference": "procedure-rev-01",
+      "run_record_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "raw_data_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+      "observed_observable_ids": [
+        "active_power_pu",
+        "reactive_power_pu"
+      ],
+      "components": [
+        {
+          "component_id": "controller",
+          "role": "microgrid_controller",
+          "realization": "physical",
+          "configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        {
+          "component_id": "pcs",
+          "role": "power_conversion_system",
+          "realization": "physical",
+          "configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        },
+        {
+          "component_id": "protection",
+          "role": "protection_relay",
+          "realization": "physical",
+          "configuration_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        },
+        {
+          "component_id": "meter",
+          "role": "meter",
+          "realization": "physical",
+          "configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      ],
+      "calibration_receipt_reference": "mycelix:calibration-pending",
+      "timebase_reference": "timebase:trace-01",
+      "independent_witness_reference": "witness:reference-01",
+      "mycelix_receipt_reference": "mycelix:receipt-E-COMMISSIONING",
+      "mycelix_policy_revision_reference": "mycelix:trust-policy-v1",
+      "model_binding": null,
+      "site_sampling_frame": {
+        "site_profile_sha256": "6666666666666666666666666666666666666666666666666666666666666666",
+        "installed_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observation_start_epoch_s": 1794000000,
+        "observation_end_epoch_s": 1796600000,
+        "planned_mission_count": 12,
+        "observed_mission_count": 12,
+        "data_coverage_fraction": 1,
+        "observed_regime_ids": [
+          "nominal",
+          "peak",
+          "low_soc"
+        ],
+        "sampling_evidence_reference": "sampling:site-study-01"
+      }
+    },
+    {
+      "evidence_id": "E-FIELD",
+      "gfm_profile_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "gfm_profile_id": "PF-GFM-ENVELOPE-SYNTH-0.1",
+      "gfm_test_id": "GFM-01",
+      "family": "operating_point_headroom",
+      "operating_cell_id": "CELL-BASE",
+      "electrical_boundary": "microgrid_point_of_connection",
+      "execution_mode": "periodic_field_operation",
+      "run_state": "executed",
+      "run_result": "pass",
+      "product_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hardware_configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "firmware_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "controller_configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "protection_configuration_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "topology_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "environment_passport_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "analysis_build_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "criterion_reference": "owner-supplied:criterion-rev-01",
+      "test_procedure_reference": "procedure-rev-01",
+      "run_record_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "raw_data_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+      "observed_observable_ids": [
+        "active_power_pu",
+        "reactive_power_pu"
+      ],
+      "components": [
+        {
+          "component_id": "controller",
+          "role": "microgrid_controller",
+          "realization": "physical",
+          "configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        {
+          "component_id": "pcs",
+          "role": "power_conversion_system",
+          "realization": "physical",
+          "configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        },
+        {
+          "component_id": "protection",
+          "role": "protection_relay",
+          "realization": "physical",
+          "configuration_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        },
+        {
+          "component_id": "meter",
+          "role": "meter",
+          "realization": "physical",
+          "configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      ],
+      "calibration_receipt_reference": "mycelix:calibration-pending",
+      "timebase_reference": "timebase:trace-01",
+      "independent_witness_reference": "witness:reference-01",
+      "mycelix_receipt_reference": "mycelix:receipt-E-FIELD",
+      "mycelix_policy_revision_reference": "mycelix:trust-policy-v1",
+      "model_binding": null,
+      "site_sampling_frame": {
+        "site_profile_sha256": "6666666666666666666666666666666666666666666666666666666666666666",
+        "installed_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observation_start_epoch_s": 1794000000,
+        "observation_end_epoch_s": 1796600000,
+        "planned_mission_count": 12,
+        "observed_mission_count": 12,
+        "data_coverage_fraction": 1,
+        "observed_regime_ids": [
+          "nominal",
+          "peak",
+          "low_soc"
+        ],
+        "sampling_evidence_reference": "sampling:site-study-01"
+      }
+    }
+  ],
+  "claim_requests": [
+    {
+      "claim_id": "C-CTRL",
+      "description": "Synthetic controller_implementation claim bounded to CELL-BASE",
+      "evidence_id": "E-CHIL-CONTROLLER",
+      "requested_scope": "controller_implementation",
+      "family": "operating_point_headroom",
+      "operating_cell_id": "CELL-BASE",
+      "electrical_boundary": "converter_terminals",
+      "product_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hardware_configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "firmware_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "controller_configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "protection_configuration_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "topology_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "required_observable_ids": [
+        "active_power_pu",
+        "reactive_power_pu"
+      ],
+      "required_model_scopes": [],
+      "required_field_regime_ids": [],
+      "minimum_field_data_coverage_fraction": 0
+    },
+    {
+      "claim_id": "C-MODEL",
+      "description": "Synthetic model_conditioned_response claim bounded to CELL-BASE",
+      "evidence_id": "E-MODEL",
+      "requested_scope": "model_conditioned_response",
+      "family": "operating_point_headroom",
+      "operating_cell_id": "CELL-BASE",
+      "electrical_boundary": "converter_terminals",
+      "product_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hardware_configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "firmware_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "controller_configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "protection_configuration_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "topology_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "required_observable_ids": [
+        "active_power_pu",
+        "reactive_power_pu"
+      ],
+      "required_model_scopes": [
+        "time_domain"
+      ],
+      "required_field_regime_ids": [],
+      "minimum_field_data_coverage_fraction": 0
+    },
+    {
+      "claim_id": "C-PHIL",
+      "description": "Synthetic physical_power_interface claim bounded to CELL-BASE",
+      "evidence_id": "E-PHIL-INTERFACE",
+      "requested_scope": "physical_power_interface",
+      "family": "operating_point_headroom",
+      "operating_cell_id": "CELL-BASE",
+      "electrical_boundary": "converter_terminals",
+      "product_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hardware_configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "firmware_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "controller_configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "protection_configuration_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "topology_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "required_observable_ids": [
+        "active_power_pu",
+        "reactive_power_pu"
+      ],
+      "required_model_scopes": [],
+      "required_field_regime_ids": [],
+      "minimum_field_data_coverage_fraction": 0
+    },
+    {
+      "claim_id": "C-LAB",
+      "description": "Synthetic laboratory_device_performance claim bounded to CELL-BASE",
+      "evidence_id": "E-LAB",
+      "requested_scope": "laboratory_device_performance",
+      "family": "operating_point_headroom",
+      "operating_cell_id": "CELL-BASE",
+      "electrical_boundary": "converter_terminals",
+      "product_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hardware_configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "firmware_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "controller_configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "protection_configuration_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "topology_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "required_observable_ids": [
+        "active_power_pu",
+        "reactive_power_pu"
+      ],
+      "required_model_scopes": [],
+      "required_field_regime_ids": [],
+      "minimum_field_data_coverage_fraction": 0
+    },
+    {
+      "claim_id": "C-COMMISSION",
+      "description": "Synthetic installed_commissioning claim bounded to CELL-BASE",
+      "evidence_id": "E-COMMISSIONING",
+      "requested_scope": "installed_commissioning",
+      "family": "operating_point_headroom",
+      "operating_cell_id": "CELL-BASE",
+      "electrical_boundary": "plant_point_of_connection",
+      "product_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hardware_configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "firmware_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "controller_configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "protection_configuration_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "topology_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "required_observable_ids": [
+        "active_power_pu",
+        "reactive_power_pu"
+      ],
+      "required_model_scopes": [],
+      "required_field_regime_ids": [],
+      "minimum_field_data_coverage_fraction": 0
+    },
+    {
+      "claim_id": "C-FIELD",
+      "description": "Synthetic bounded_field_operation claim bounded to CELL-BASE",
+      "evidence_id": "E-FIELD",
+      "requested_scope": "bounded_field_operation",
+      "family": "operating_point_headroom",
+      "operating_cell_id": "CELL-BASE",
+      "electrical_boundary": "microgrid_point_of_connection",
+      "product_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hardware_configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "firmware_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "controller_configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "protection_configuration_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "topology_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "required_observable_ids": [
+        "active_power_pu",
+        "reactive_power_pu"
+      ],
+      "required_model_scopes": [],
+      "required_field_regime_ids": [
+        "nominal",
+        "peak"
+      ],
+      "minimum_field_data_coverage_fraction": 0.95
+    },
+    {
+      "claim_id": "C-INVALID-CHIL-TO-POWER",
+      "description": "Synthetic physical_power_interface claim bounded to CELL-BASE",
+      "evidence_id": "E-CHIL-CONTROLLER",
+      "requested_scope": "physical_power_interface",
+      "family": "operating_point_headroom",
+      "operating_cell_id": "CELL-BASE",
+      "electrical_boundary": "plant_point_of_connection",
+      "product_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hardware_configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "firmware_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "controller_configuration_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "protection_configuration_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "topology_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "required_observable_ids": [
+        "active_power_pu",
+        "reactive_power_pu"
+      ],
+      "required_model_scopes": [],
+      "required_field_regime_ids": [],
+      "minimum_field_data_coverage_fraction": 0
+    }
+  ],
+  "expected_outcomes": [
+    {
+      "claim_id": "C-CTRL",
+      "expected_disposition": "structurally_supported_pending_mycelix_verification",
+      "expected_reason_codes": []
+    },
+    {
+      "claim_id": "C-MODEL",
+      "expected_disposition": "structurally_supported_pending_mycelix_verification",
+      "expected_reason_codes": []
+    },
+    {
+      "claim_id": "C-PHIL",
+      "expected_disposition": "structurally_supported_pending_mycelix_verification",
+      "expected_reason_codes": []
+    },
+    {
+      "claim_id": "C-LAB",
+      "expected_disposition": "structurally_supported_pending_mycelix_verification",
+      "expected_reason_codes": []
+    },
+    {
+      "claim_id": "C-COMMISSION",
+      "expected_disposition": "structurally_supported_pending_mycelix_verification",
+      "expected_reason_codes": []
+    },
+    {
+      "claim_id": "C-FIELD",
+      "expected_disposition": "structurally_supported_pending_mycelix_verification",
+      "expected_reason_codes": []
+    },
+    {
+      "claim_id": "C-INVALID-CHIL-TO-POWER",
+      "expected_disposition": "not_supported",
+      "expected_reason_codes": [
+        "electrical-boundary-mismatch",
+        "execution-stage-cannot-support-requested-claim",
+        "physical-controller-pcs-or-power-interface-not-present"
+      ]
+    }
+  ],
+  "claim_ceiling": "STRUCTURAL_CLAIM_SUPPORT_ONLY_NOT_RELEASE_AUTHORIZATION_OR_CONFORMITY"
+}

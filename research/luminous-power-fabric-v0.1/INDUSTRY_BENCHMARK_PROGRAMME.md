@@ -277,3 +277,8 @@ Issue [#479](https://github.com/Luminous-Dynamics/luminous-platform/issues/479) 
 ## 25. Model validity envelope and held-out validation
 
 Issue [#479](https://github.com/Luminous-Dynamics/luminous-platform/issues/479) and draft [PR #480](https://github.com/Luminous-Dynamics/luminous-platform/pull/480) add explicit calibration/validation dataset separation, model-to-hardware/firmware identity binding, held-out physical reference cases, distinct time/frequency validation and per-observable residual/uncertainty records. This prevents a global fit score or transient-only validation from standing in for frequency-domain model validity. No model validation or physical result is claimed by the structural validator.
+
+
+## 26. Evidence-bounded capability claims
+
+Issue [#481](https://github.com/Luminous-Dynamics/luminous-platform/issues/481) and draft [PR #482](https://github.com/Luminous-Dynamics/luminous-platform/pull/482) add claim-support boundaries so model-only, controller-HIL, power-HIL, physical laboratory, commissioning and field evidence cannot be promoted beyond their physical fraction, electrical boundary or observation window. Platform consumes Mycelix receipt references but does not verify them or authorize claims.

@@ -1,0 +1,551 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/gfm-claim-eligibility-v0.1.schema.json",
+  "title": "GFM evidence-bounded capability claim eligibility corpus",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_class",
+    "claim_set_id",
+    "claim_release_policy",
+    "evidence_records",
+    "claim_requests",
+    "expected_outcomes",
+    "claim_ceiling"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "record_class": {
+      "const": "synthetic_fixture"
+    },
+    "claim_set_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "claim_release_policy": {
+      "const": "NEVER_RELEASE_FROM_STRUCTURAL_EVALUATOR"
+    },
+    "evidence_records": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "evidence_id",
+          "gfm_profile_sha256",
+          "gfm_profile_id",
+          "gfm_test_id",
+          "family",
+          "operating_cell_id",
+          "electrical_boundary",
+          "execution_mode",
+          "run_state",
+          "run_result",
+          "product_configuration_sha256",
+          "hardware_configuration_sha256",
+          "firmware_sha256",
+          "controller_configuration_sha256",
+          "protection_configuration_sha256",
+          "topology_sha256",
+          "environment_passport_sha256",
+          "analysis_build_sha256",
+          "criterion_reference",
+          "test_procedure_reference",
+          "run_record_sha256",
+          "raw_data_sha256",
+          "observed_observable_ids",
+          "components",
+          "calibration_receipt_reference",
+          "timebase_reference",
+          "independent_witness_reference",
+          "mycelix_receipt_reference",
+          "mycelix_policy_revision_reference",
+          "model_binding",
+          "site_sampling_frame"
+        ],
+        "properties": {
+          "evidence_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "gfm_profile_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "gfm_profile_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "gfm_test_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "family": {
+            "enum": [
+              "operating_point_headroom",
+              "weak_grid_scr_xr",
+              "phase_angle_jump",
+              "current_limit_fault_ride_through",
+              "negative_sequence_unbalanced_fault",
+              "frequency_domain_impedance_scan",
+              "multi_vendor_interaction"
+            ]
+          },
+          "operating_cell_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "electrical_boundary": {
+            "enum": [
+              "converter_terminals",
+              "plant_point_of_connection",
+              "microgrid_point_of_connection"
+            ]
+          },
+          "execution_mode": {
+            "enum": [
+              "model_only",
+              "controller_hil",
+              "power_hil",
+              "physical_laboratory",
+              "site_commissioning",
+              "periodic_field_operation"
+            ]
+          },
+          "run_state": {
+            "enum": [
+              "planned",
+              "executed"
+            ]
+          },
+          "run_result": {
+            "enum": [
+              "pass",
+              "fail",
+              "inconclusive",
+              "aborted"
+            ]
+          },
+          "product_configuration_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "hardware_configuration_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "firmware_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "controller_configuration_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "protection_configuration_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "topology_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "environment_passport_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "analysis_build_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "criterion_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "test_procedure_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "run_record_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "raw_data_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "observed_observable_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "components": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "component_id",
+                "role",
+                "realization",
+                "configuration_sha256"
+              ],
+              "properties": {
+                "component_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "role": {
+                  "enum": [
+                    "microgrid_controller",
+                    "power_conversion_system",
+                    "protection_relay",
+                    "meter",
+                    "power_interface",
+                    "battery_cells",
+                    "generator",
+                    "photovoltaic",
+                    "distribution_network",
+                    "load"
+                  ]
+                },
+                "realization": {
+                  "enum": [
+                    "physical",
+                    "simulated",
+                    "emulated",
+                    "not_in_test"
+                  ]
+                },
+                "configuration_sha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                }
+              }
+            }
+          },
+          "model_binding": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "model_validity_profile_sha256",
+              "model_sha256",
+              "product_hardware_sha256",
+              "firmware_sha256",
+              "controller_configuration_sha256",
+              "protection_configuration_sha256",
+              "topology_sha256",
+              "validated_cell_id",
+              "validated_scopes"
+            ],
+            "properties": {
+              "model_validity_profile_sha256": {
+                "type": "string",
+                "pattern": "^[A-Fa-f0-9]{64}$"
+              },
+              "model_sha256": {
+                "type": "string",
+                "pattern": "^[A-Fa-f0-9]{64}$"
+              },
+              "product_hardware_sha256": {
+                "type": "string",
+                "pattern": "^[A-Fa-f0-9]{64}$"
+              },
+              "firmware_sha256": {
+                "type": "string",
+                "pattern": "^[A-Fa-f0-9]{64}$"
+              },
+              "controller_configuration_sha256": {
+                "type": "string",
+                "pattern": "^[A-Fa-f0-9]{64}$"
+              },
+              "protection_configuration_sha256": {
+                "type": "string",
+                "pattern": "^[A-Fa-f0-9]{64}$"
+              },
+              "topology_sha256": {
+                "type": "string",
+                "pattern": "^[A-Fa-f0-9]{64}$"
+              },
+              "validated_cell_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "validated_scopes": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "time_domain",
+                    "frequency_domain"
+                  ]
+                }
+              }
+            }
+          },
+          "calibration_receipt_reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "timebase_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "independent_witness_reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mycelix_receipt_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mycelix_policy_revision_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "site_sampling_frame": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "site_profile_sha256",
+              "installed_configuration_sha256",
+              "observation_start_epoch_s",
+              "observation_end_epoch_s",
+              "planned_mission_count",
+              "observed_mission_count",
+              "data_coverage_fraction",
+              "observed_regime_ids",
+              "sampling_evidence_reference"
+            ],
+            "properties": {
+              "site_profile_sha256": {
+                "type": "string",
+                "pattern": "^[A-Fa-f0-9]{64}$"
+              },
+              "installed_configuration_sha256": {
+                "type": "string",
+                "pattern": "^[A-Fa-f0-9]{64}$"
+              },
+              "observation_start_epoch_s": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "observation_end_epoch_s": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "planned_mission_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "observed_mission_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "data_coverage_fraction": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "observed_regime_ids": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "sampling_evidence_reference": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "claim_requests": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "claim_id",
+          "description",
+          "evidence_id",
+          "requested_scope",
+          "family",
+          "operating_cell_id",
+          "electrical_boundary",
+          "product_configuration_sha256",
+          "hardware_configuration_sha256",
+          "firmware_sha256",
+          "controller_configuration_sha256",
+          "protection_configuration_sha256",
+          "topology_sha256",
+          "required_observable_ids",
+          "required_model_scopes",
+          "required_field_regime_ids",
+          "minimum_field_data_coverage_fraction"
+        ],
+        "properties": {
+          "claim_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "requested_scope": {
+            "enum": [
+              "model_conditioned_response",
+              "controller_implementation",
+              "physical_power_interface",
+              "laboratory_device_performance",
+              "installed_commissioning",
+              "bounded_field_operation"
+            ]
+          },
+          "family": {
+            "enum": [
+              "operating_point_headroom",
+              "weak_grid_scr_xr",
+              "phase_angle_jump",
+              "current_limit_fault_ride_through",
+              "negative_sequence_unbalanced_fault",
+              "frequency_domain_impedance_scan",
+              "multi_vendor_interaction"
+            ]
+          },
+          "operating_cell_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "electrical_boundary": {
+            "enum": [
+              "converter_terminals",
+              "plant_point_of_connection",
+              "microgrid_point_of_connection"
+            ]
+          },
+          "product_configuration_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "hardware_configuration_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "firmware_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "controller_configuration_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "protection_configuration_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "topology_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "required_observable_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required_model_scopes": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "time_domain",
+                "frequency_domain"
+              ]
+            }
+          },
+          "required_field_regime_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "minimum_field_data_coverage_fraction": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      }
+    },
+    "expected_outcomes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "claim_id",
+          "expected_disposition",
+          "expected_reason_codes"
+        ],
+        "properties": {
+          "claim_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expected_disposition": {
+            "enum": [
+              "not_supported",
+              "structurally_supported_pending_mycelix_verification"
+            ]
+          },
+          "expected_reason_codes": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "claim_ceiling": {
+      "const": "STRUCTURAL_CLAIM_SUPPORT_ONLY_NOT_RELEASE_AUTHORIZATION_OR_CONFORMITY"
+    }
+  }
+}
