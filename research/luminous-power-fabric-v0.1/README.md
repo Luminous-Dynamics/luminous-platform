@@ -376,3 +376,8 @@ Draft [PR #463](https://github.com/Luminous-Dynamics/luminous-platform/pull/463)
 ## Exposure-normalized reliability evidence
 
 [Issue #471](https://github.com/Luminous-Dynamics/luminous-platform/issues/471) proposes a common event/exposure contract that reports reliability per system-hour, MW-year, MWh throughput, cycle and transition attempt, while retaining severity and common-cause context. This is a research programme, not a field reliability claim.
+
+
+## Familywise lifecycle comparison
+
+Draft [PR #464](https://github.com/Luminous-Dynamics/luminous-platform/pull/464), stacked on [PR #463](https://github.com/Luminous-Dynamics/luminous-platform/pull/463), extends the paired cluster bootstrap with one shared resample stream across all candidates and endpoints, simultaneous max-absolute-standardized-error bounds, a preregistered protocol digest and minimum-practical-effect gates. Pointwise percentile intervals remain descriptive; endpoint superiority/harm labels use the simultaneous bounds. No single aggregate winner is produced.

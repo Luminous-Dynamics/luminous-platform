@@ -184,3 +184,8 @@ Draft [PR #463](https://github.com/Luminous-Dynamics/luminous-platform/pull/463)
 ## 24. Exposure-normalized reliability and service impact
 
 [Issue #471](https://github.com/Luminous-Dynamics/luminous-platform/issues/471) proposes event/exposure passports that bind incident taxonomy, severity, operating state, configuration, evidence and service impact to multiple compatible exposure denominators. The objective is to avoid comparing failure counts without common exposure and common-cause context.
+
+
+## 24. Familywise comparison and preregistered practical effects
+
+Draft [PR #464](https://github.com/Luminous-Dynamics/luminous-platform/pull/464) adds shared paired resampling across the complete candidate/endpoint family, simultaneous max-standardized-error bounds and preregistered minimum practical effects. It prevents pointwise intervals from being misread as independent repeated opportunities to claim superiority. Its max-standardized-error method still requires independent statistical review and simulation-based coverage testing before high-stakes claims.
