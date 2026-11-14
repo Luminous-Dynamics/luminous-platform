@@ -9,9 +9,9 @@
 
 ## 1. Why model identity and validation domain matter
 
-The model and hardware are not interchangeable artifacts. The model profile binds model binary/parameter set, product hardware, firmware, controller, protection, topology and analysis build. A model that does not match the installed configuration cannot support a claim about that installation.
+The model and hardware are not interchangeable artifacts. The profile binds model binary/parameter set, product hardware, firmware, controller, protection, topology and analysis build. A model that does not match the installed configuration cannot support a claim about that installation.
 
-The profile also separates calibration/tuning data from held-out validation data. The two datasets must have different content roots and campaign identities. Reusing tuning observations as independent validation is rejected.
+The profile separates calibration/tuning data from held-out validation data. The two datasets must have different content roots and campaign identities. Reusing tuning observations as independent validation is rejected.
 
 ## 2. Time-domain and frequency-domain validation are separate
 
@@ -20,23 +20,23 @@ The profile treats these as distinct scopes:
 - **Time domain:** voltage/current/P/Q/frequency/phase response across the declared disturbances and observation windows.
 - **Frequency domain:** impedance magnitude/phase, resonance frequency and gain/phase margins over a declared scan range.
 
-The 2025 IEEE hardware campaign on a 2 MVA PV inverter reports that time-domain transient tests could miss critical resonance modes that frequency-domain scans exposed. It is therefore not sufficient to claim a model is validated for impedance/resonance behavior because it reproduced an LVRT or phase-jump test: https://ieeexplore.ieee.org/abstract/document/11225174
+A 2025 IEEE hardware campaign on a 2 MVA PV inverter reports that time-domain transient tests could miss critical resonance modes that frequency-domain scans exposed: https://ieeexplore.ieee.org/abstract/document/11225174
 
-Frequency-domain claims in this v0.1 profile require an EMT switching-averaged or EMT switching model and a planned power-HIL or physical-laboratory reference. These are structural test-plan gates, not a declaration that the model passes.
+Frequency-domain claims in this v0.1 profile require EMT switching or EMT average fidelity and a planned power-HIL or physical-laboratory reference. This is a structural test-plan gate, not a declaration that the model passes.
 
 ## 3. Held-out physical reference contract
 
 Each validation case binds:
 - exact model and hardware configuration identity;
 - GFM operating-cell identity and source profile reference;
-- validation dataset root (must be the held-out root, not calibration root);
+- held-out validation dataset root (not the calibration root);
 - raw data digest, processing build digest and timebase reference;
 - instrument calibration receipt and independent witness references;
 - physical reference mode (power-HIL, physical lab, commissioning or field event);
 - test-specific acceptance-criteria revision;
 - required observable IDs and residual records.
 
-Residual records retain normalized RMSE, peak absolute error, measurement uncertainty and timing lag, plus model/measurement/residual summary and uncertainty references. Metric kinds are tied to observables: frequency-domain resonance shift, gain-margin difference and phase-margin difference use distinct residual types rather than being collapsed into generic RMSE. Frequency-scope cases require the frequency-domain observables. Owner criteria define the acceptable error; this validator does not invent universal tolerances or decide pass/fail.
+Residual records retain normalized RMSE, peak absolute error, measurement uncertainty and timing lag, plus model/measurement/residual summary and uncertainty references. Metric kinds are tied to observables: resonance-frequency shift, gain-margin difference and phase-margin difference use distinct residual types. Owner criteria define acceptable errors; this validator does not invent universal tolerances or decide pass/fail.
 
 ## 4. Claim-domain rule
 
@@ -48,10 +48,10 @@ A firmware, hardware, controller parameter, topology, protection, model paramete
 
 Files:
 - `schemas/model-validity-envelope-v0.1.schema.json`: strict Draft 2020-12 structure.
-- `schemas/model-validity-envelope.synthetic.json`: one synthetic model identity, one GFM operating cell, separate calibration/held-out datasets, time/frequency validation cases and residual records.
-- `tools/measurement-audit/src/model_validity_envelope.rs`: typed read-only validator with 14 authored Rust tests.
+- `schemas/model-validity-envelope.synthetic.json`: synthetic model identity, separate calibration/held-out datasets, time/frequency validation cases and residual records.
+- `tools/measurement-audit/src/model_validity_envelope.rs`: typed read-only validator with 15 authored Rust tests.
 
-The report is always `STRUCTURALLY_COMPLETE_TEST_PLAN_ONLY` and `model_validation_claim_eligible=false`. It does not authenticate evidence, prove data independence, evaluate acceptance thresholds, measure model error, or set a physically validated status.
+The report is always `STRUCTURALLY_COMPLETE_TEST_PLAN_ONLY` and `model_validation_claim_eligible=false`. It does not authenticate evidence, prove data independence, evaluate acceptance thresholds, measure model error or set a physically validated status.
 
 ## 6. Industry position and targets
 
@@ -70,4 +70,4 @@ Research targets, not results:
 
 `SYNTHETIC_MODEL_VALIDITY_PROFILE_ONLY_NOT_MODEL_VALIDATION_OR_CONFORMITY`
 
-The next step is to bind these references to the Mycelix evidence receipt/calibration interfaces and execute matched model/measurement campaigns using qualified hardware, calibrated instrumentation and independently reviewed acceptance limits.
+The next step is to bind these references to Mycelix evidence receipts/calibration interfaces and execute matched model/measurement campaigns using qualified hardware, calibrated instrumentation and independently reviewed acceptance limits.

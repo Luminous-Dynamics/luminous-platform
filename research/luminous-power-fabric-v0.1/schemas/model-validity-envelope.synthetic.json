@@ -85,7 +85,7 @@
         {
           "observable_id": "active_power_response",
           "metric_kind": "normalized_rmse",
-          "unit": "engineering_unit",
+          "unit": "pu",
           "normalized_rmse": 0.03,
           "peak_absolute_error": 0.05,
           "measurement_uncertainty": 0.01,
@@ -98,7 +98,7 @@
         {
           "observable_id": "reactive_power_response",
           "metric_kind": "normalized_rmse",
-          "unit": "engineering_unit",
+          "unit": "pu",
           "normalized_rmse": 0.03,
           "peak_absolute_error": 0.05,
           "measurement_uncertainty": 0.01,
@@ -111,7 +111,7 @@
         {
           "observable_id": "frequency_response",
           "metric_kind": "normalized_rmse",
-          "unit": "engineering_unit",
+          "unit": "pu",
           "normalized_rmse": 0.03,
           "peak_absolute_error": 0.05,
           "measurement_uncertainty": 0.01,
@@ -124,7 +124,7 @@
         {
           "observable_id": "phase_angle_response",
           "metric_kind": "normalized_rmse",
-          "unit": "engineering_unit",
+          "unit": "pu",
           "normalized_rmse": 0.03,
           "peak_absolute_error": 0.05,
           "measurement_uncertainty": 0.01,
@@ -160,7 +160,7 @@
         {
           "observable_id": "impedance_magnitude_response",
           "metric_kind": "normalized_rmse",
-          "unit": "pu",
+          "unit": "ohm_or_degree",
           "normalized_rmse": 0.03,
           "peak_absolute_error": 0.05,
           "measurement_uncertainty": 0.01,
@@ -173,7 +173,7 @@
         {
           "observable_id": "impedance_phase_response",
           "metric_kind": "normalized_rmse",
-          "unit": "pu",
+          "unit": "ohm_or_degree",
           "normalized_rmse": 0.03,
           "peak_absolute_error": 0.05,
           "measurement_uncertainty": 0.01,
@@ -186,7 +186,7 @@
         {
           "observable_id": "resonance_frequency",
           "metric_kind": "resonance_frequency_shift_hz",
-          "unit": "engineering_unit",
+          "unit": "Hz",
           "normalized_rmse": 0.03,
           "peak_absolute_error": 0.05,
           "measurement_uncertainty": 0.01,
@@ -199,7 +199,7 @@
         {
           "observable_id": "gain_margin",
           "metric_kind": "gain_margin_difference_db",
-          "unit": "engineering_unit",
+          "unit": "dB",
           "normalized_rmse": 0.03,
           "peak_absolute_error": 0.05,
           "measurement_uncertainty": 0.01,
@@ -212,7 +212,7 @@
         {
           "observable_id": "phase_margin",
           "metric_kind": "phase_margin_difference_deg",
-          "unit": "engineering_unit",
+          "unit": "deg",
           "normalized_rmse": 0.03,
           "peak_absolute_error": 0.05,
           "measurement_uncertainty": 0.01,
@@ -228,7 +228,7 @@
   "claim_requests": [
     {
       "claim_id": "CLAIM-BASE-CELL",
-      "description": "Time and frequency response within CELL-BASE only",
+      "description": "Time and frequency response for CELL-BASE only",
       "requested_cell_ids": [
         "CELL-BASE"
       ],

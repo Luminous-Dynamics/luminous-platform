@@ -272,3 +272,8 @@ Issue [#477](https://github.com/Luminous-Dynamics/luminous-platform/issues/477) 
 ## 25. Model validity envelope and held-out validation
 
 Issue [#479](https://github.com/Luminous-Dynamics/luminous-platform/issues/479) and draft [PR #480](https://github.com/Luminous-Dynamics/luminous-platform/pull/480) add explicit calibration/validation dataset separation, model-to-hardware/firmware identity binding, held-out physical reference cases, distinct time/frequency validation and per-observable residual/uncertainty records. This prevents a global fit score or transient-only validation from standing in for frequency-domain model validity. No model validation or physical result is claimed by the structural validator.
+
+
+## 25. Model validity envelope and held-out validation
+
+Issue [#479](https://github.com/Luminous-Dynamics/luminous-platform/issues/479) and draft [PR #480](https://github.com/Luminous-Dynamics/luminous-platform/pull/480) add explicit calibration/validation dataset separation, model-to-hardware/firmware identity binding, held-out physical reference cases, distinct time/frequency validation and per-observable residual/uncertainty records. This prevents a global fit score or transient-only validation from standing in for frequency-domain model validity. No model validation or physical result is claimed by the structural validator.

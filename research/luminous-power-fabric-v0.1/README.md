@@ -428,3 +428,8 @@ energization authorization.
 ## Model validity envelope
 
 Issue [#479](https://github.com/Luminous-Dynamics/luminous-platform/issues/479) and draft [PR #480](https://github.com/Luminous-Dynamics/luminous-platform/pull/480) add a held-out model-validation profile with separate calibration and validation roots, exact model/firmware/configuration identity, time- and frequency-domain test scopes, per-observable residual records and no out-of-domain claims. The validator reports plan completeness only and can never self-mark a model physically validated.
+
+
+## Model validity envelope
+
+Issue [#479](https://github.com/Luminous-Dynamics/luminous-platform/issues/479) and draft [PR #480](https://github.com/Luminous-Dynamics/luminous-platform/pull/480) add a held-out model-validation profile with separate calibration and validation roots, exact model/firmware/configuration identity, time- and frequency-domain validation scopes, per-observable residual records and no out-of-domain claims. The validator reports plan completeness only and cannot self-mark a model physically validated.
