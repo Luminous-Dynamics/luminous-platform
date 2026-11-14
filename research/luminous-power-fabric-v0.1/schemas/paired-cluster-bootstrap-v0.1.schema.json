@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/paired-cluster-bootstrap-v0.1.schema.json",
+  "title": "Paired cluster bootstrap input corpus",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "reference_candidate_id",
+    "scenario_manifest_sha256",
+    "bootstrap_seed_sha256",
+    "confidence_level",
+    "bootstrap_iterations",
+    "minimum_cluster_count",
+    "candidates",
+    "expected_observations",
+    "claim_ceiling"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "reference_candidate_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scenario_manifest_sha256": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "bootstrap_seed_sha256": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "confidence_level": {
+      "type": "number",
+      "exclusiveMinimum": 0.5,
+      "exclusiveMaximum": 1
+    },
+    "bootstrap_iterations": {
+      "type": "integer",
+      "minimum": 1000,
+      "maximum": 100000
+    },
+    "minimum_cluster_count": {
+      "const": 30
+    },
+    "candidates": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidate_id",
+          "currency_code",
+          "minor_unit_scale",
+          "service_boundary_id",
+          "site_profile_sha256",
+          "cost_accounting_basis_sha256",
+          "initial_terminal_obligation_sha256",
+          "cluster_level",
+          "cluster_independence_evidence_reference",
+          "scenario_manifest_sha256",
+          "clusters"
+        ],
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "cluster_level": {
+            "enum": [
+              "mission",
+              "site_mission",
+              "event_mission",
+              "site_event_mission"
+            ]
+          },
+          "cluster_independence_evidence_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scenario_manifest_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "clusters": {
+            "type": "array",
+            "minItems": 30,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "cluster_id",
+                "scenario_seed_sha256",
+                "mission_count",
+                "completed_mission_count",
+                "total_cost_minor_units",
+                "required_critical_service_wh",
+                "delivered_critical_service_wh",
+                "unserved_critical_service_wh",
+                "system_unavailable_hours",
+                "evidence_status",
+                "evidence_class",
+                "evidence_reference"
+              ],
+              "properties": {
+                "cluster_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "scenario_seed_sha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                },
+                "mission_count": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "completed_mission_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "total_cost_minor_units": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "required_critical_service_wh": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "delivered_critical_service_wh": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "unserved_critical_service_wh": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "system_unavailable_hours": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "evidence_status": {
+                  "const": "current"
+                },
+                "evidence_class": {
+                  "enum": [
+                    "independent_physical_measurement",
+                    "invoice_or_receipt",
+                    "utility_bill",
+                    "payroll_or_work_order",
+                    "vendor_report",
+                    "supplier_quote",
+                    "analytical_model",
+                    "synthetic_fixture",
+                    "assumption"
+                  ]
+                },
+                "evidence_reference": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "currency_code": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "minor_unit_scale": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          },
+          "service_boundary_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "site_profile_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "cost_accounting_basis_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "initial_terminal_obligation_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "expected_observations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "paired_cluster_count",
+        "reference_failed_missions",
+        "candidate_failed_missions",
+        "failed_candidate_cluster_retained"
+      ],
+      "properties": {
+        "paired_cluster_count": {
+          "const": 30
+        },
+        "reference_failed_missions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "candidate_failed_missions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed_candidate_cluster_retained": {
+          "const": true
+        }
+      }
+    },
+    "claim_ceiling": {
+      "const": "PAIRED_CLUSTER_BOOTSTRAP_SUMMARY_ONLY_NOT_INDEPENDENCE_PROOF_OR_FIELD_SUPERIORITY"
+    }
+  }
+}

@@ -366,3 +366,13 @@ engineering review, fault/energy analysis, suitable laboratory containment and a
 ## Uncertainty-qualified lifecycle service frontier
 
 [Issue #461](https://github.com/Luminous-Dynamics/luminous-platform/issues/461) and draft [PR #462](https://github.com/Luminous-Dynamics/luminous-platform/pull/462) add a read-only decision layer over `LifecycleScenarioReport`. It applies non-compensatory critical-service and evidence gates, then reports central and interval-robust Pareto frontiers across lifecycle cost, unserved critical service, unavailable hours, replacements and (where comparable) observed storage retention. It does not create ageing forecasts or statistical confidence intervals.
+
+
+## Paired cluster bootstrap
+
+Draft [PR #463](https://github.com/Luminous-Dynamics/luminous-platform/pull/463) adds deterministic paired percentile-bootstrap summaries over pre-aggregated mission/site/event clusters. It requires exact cluster/seed pairing plus matching currency, minor-unit scale, customer service boundary, site profile, cost-accounting basis and terminal obligations; it retains failed missions and unserved energy and rejects zero-delivery draws instead of censoring them. Cluster-independence evidence is caller-supplied and is not proven by this code.
+
+
+## Exposure-normalized reliability evidence
+
+[Issue #471](https://github.com/Luminous-Dynamics/luminous-platform/issues/471) proposes a common event/exposure contract that reports reliability per system-hour, MW-year, MWh throughput, cycle and transition attempt, while retaining severity and common-cause context. This is a research programme, not a field reliability claim.

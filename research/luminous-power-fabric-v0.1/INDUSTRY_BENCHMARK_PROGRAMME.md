@@ -174,3 +174,13 @@ physical or commercial claim.
 ## 22. Uncertainty-qualified lifecycle Pareto frontier
 
 Issue [#461](https://github.com/Luminous-Dynamics/luminous-platform/issues/461) and draft [PR #462](https://github.com/Luminous-Dynamics/luminous-platform/pull/462) add hard feasibility/evidence gates and central plus interval-robust Pareto dominance over the #428 lifecycle accounting report. A cheap candidate with critical-service failures is excluded before ranking. Uncertainty bounds must be current, owner-supplied and reconciled to the report's point values. No aggregate weighted score, bootstrap, ageing forecast or reliability probability is produced in this v0.1 slice.
+
+
+## 23. Paired cluster bootstrap
+
+Draft [PR #463](https://github.com/Luminous-Dynamics/luminous-platform/pull/463), linked to issue #461, adds paired percentile-bootstrap summaries over declared mission/site/event clusters. It enforces exact paired cluster/seed identity and matches currency, service boundary, site profile, cost-accounting basis and initial/terminal obligations; it keeps failed missions in the sample. It does not prove statistical independence, calculate metrology uncertainty, correct multiple comparisons or claim field superiority.
+
+
+## 24. Exposure-normalized reliability and service impact
+
+[Issue #471](https://github.com/Luminous-Dynamics/luminous-platform/issues/471) proposes event/exposure passports that bind incident taxonomy, severity, operating state, configuration, evidence and service impact to multiple compatible exposure denominators. The objective is to avoid comparing failure counts without common exposure and common-cause context.
