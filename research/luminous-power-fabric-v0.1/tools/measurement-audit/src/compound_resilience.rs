@@ -42,7 +42,7 @@ pub struct FactorialRun{
  pub physical_disturbance:Option<PhysicalDisturbance>,pub cyber_manipulation:Option<CyberManipulation>,
  pub gfm_profile_id:String,pub gfm_cell_id:String,pub gfm_test_id:String,
  pub model_profile_id:String,pub model_validation_case_id:String,
- pub product_configuration_sha256:String,pub firmware_sha256:String,
+ pub product_configuration_sha256:String,pub product_hardware_sha256:String,pub firmware_sha256:String,
  pub controller_configuration_sha256:String,pub protection_configuration_sha256:String,
  pub topology_sha256:String,pub model_sha256:String,pub analysis_build_sha256:String,
  pub site_profile_sha256:String,pub scenario_seed_sha256:String,
@@ -83,8 +83,8 @@ pub struct InteractionContrast{
 }
 #[derive(Debug,Clone,PartialEq)]
 pub struct CompoundResilienceReport{
- pub block_id:String,pub structural_complete:bool,pub model_validation_eligible:bool,
- pub all_four_arms_passed:bool,pub compound_resilience_eligible:bool,pub physical_evidence_eligible:bool,
+ pub block_id:String,pub structural_complete:bool,pub model_validation_binding_complete:bool,
+ pub all_four_arms_passed:bool,pub compound_scenario_passed:bool,pub physical_evidence_eligible:bool,
  pub interaction_contrasts:Vec<InteractionContrast>,pub failed_run_ids:Vec<String>,
  pub exclusion_reasons:Vec<String>,pub claim_ceiling:&'static str,
 }
@@ -153,7 +153,7 @@ fn planned_mode(run:&FactorialRun)->GfmExecutionMode{match run.execution_mode{
 fn context_matches(a:&FactorialRun,b:&FactorialRun)->bool{
  a.gfm_profile_id==b.gfm_profile_id&&a.gfm_cell_id==b.gfm_cell_id&&a.gfm_test_id==b.gfm_test_id
  &&a.model_profile_id==b.model_profile_id&&a.model_validation_case_id==b.model_validation_case_id
- &&a.product_configuration_sha256==b.product_configuration_sha256&&a.firmware_sha256==b.firmware_sha256
+ &&a.product_configuration_sha256==b.product_configuration_sha256&&a.product_hardware_sha256==b.product_hardware_sha256&&a.firmware_sha256==b.firmware_sha256
  &&a.controller_configuration_sha256==b.controller_configuration_sha256&&a.protection_configuration_sha256==b.protection_configuration_sha256
  &&a.topology_sha256==b.topology_sha256&&a.model_sha256==b.model_sha256&&a.analysis_build_sha256==b.analysis_build_sha256
  &&a.site_profile_sha256==b.site_profile_sha256&&a.scenario_seed_sha256==b.scenario_seed_sha256
@@ -192,8 +192,17 @@ fn validate_bindings(b:&CompoundResilienceBlock,g:&GfmCapabilityProfile,m:&Model
  if !family_matches||test.disturbance_profile_reference!=b.physical_profile_reference{
   return Err(AuditError("physical disturbance profile is not bound to the GFM test family/reference".into()));
  }
+ let family_matches=match b.expected_physical_disturbance{
+  PhysicalDisturbance::WeakGrid=>test.family==GfmTestFamily::WeakGridScrXr,
+  PhysicalDisturbance::SymmetricalFault=>test.family==GfmTestFamily::CurrentLimitFaultRideThrough,
+  PhysicalDisturbance::NegativeSequenceFault=>test.family==GfmTestFamily::NegativeSequenceUnbalancedFault,
+  PhysicalDisturbance::PhaseAngleJump=>test.family==GfmTestFamily::PhaseAngleJump,
+  PhysicalDisturbance::LoadStepOrMotorStart|PhysicalDisturbance::SourceTrip|PhysicalDisturbance::IslandingOrPccTransition|PhysicalDisturbance::BlackStart=>test.family==GfmTestFamily::OperatingPointHeadroom,
+ };
+ if !family_matches||test.disturbance_profile_reference!=b.physical_profile_reference{return Err(AuditError("GFM test family does not match physical disturbance profile".into()));}
  let scope=if test.family==GfmTestFamily::FrequencyDomainImpedanceScan{ValidationScope::FrequencyDomain}else{ValidationScope::TimeDomain};
  if model_cell.source_gfm_profile_id!=g.profile_id||model_cell.source_gfm_cell_id!=cell.cell_id
+ ||m.identity.product_hardware_sha256!=first.product_hardware_sha256
  ||m.identity.controller_configuration_sha256!=first.controller_configuration_sha256
  ||m.identity.protection_configuration_sha256!=first.protection_configuration_sha256
  ||m.identity.topology_sha256!=first.topology_sha256||m.identity.firmware_sha256!=first.firmware_sha256
@@ -209,6 +218,8 @@ fn validate_bindings(b:&CompoundResilienceBlock,g:&GfmCapabilityProfile,m:&Model
  ||!digest(&model_case.raw_data_sha256)||!digest(&model_case.processing_build_sha256)
  ||!nonblank(&model_case.calibration_receipt_reference)||!nonblank(&model_case.timebase_reference)
  ||!nonblank(&model_case.independent_witness_reference)||!nonblank(&model_case.acceptance_criteria_reference)
+ ||model_case.acceptance_criteria_reference!=test.acceptance_criteria_reference
+ ||!test.required_observable_ids.iter().all(|id|model_case.required_observable_ids.contains(id))
  ||!matches!((first.execution_mode,model_case.reference_mode),
   (ResilienceExecutionMode::PowerHil,PhysicalReferenceMode::PowerHil)
   |(ResilienceExecutionMode::PhysicalLaboratory,PhysicalReferenceMode::PhysicalLaboratory)
@@ -223,7 +234,7 @@ fn validate_bindings(b:&CompoundResilienceBlock,g:&GfmCapabilityProfile,m:&Model
   let mut path_state=r.initial_state_id.as_str();
   for id in &r.transition_ids{
    let edge=t.transitions.iter().find(|x|x.transition_id==*id).ok_or_else(||AuditError(format!("unknown transition {id:?}")))?;
-   if !edge.from_state_ids.iter().any(|state|state==path_state){return Err(AuditError(format!("transition path is discontinuous in run {:?}",r.run_id)));}
+   if !edge.permitted||!edge.from_state_ids.iter().any(|state|state==path_state){return Err(AuditError(format!("transition path is forbidden or discontinuous in run {:?}",r.run_id)));}
    path_state=edge.to_state_id.as_str();
   }
   if path_state!=r.outcome.post_state_id{return Err(AuditError(format!("transition path does not reach observed post-state in run {:?}",r.run_id)));}
@@ -290,8 +301,8 @@ pub fn evaluate_compound_resilience(b:&CompoundResilienceBlock,g:&GfmCapabilityP
  if !arms_pass{reasons.push("one-or-more-arms-failed-a-hard-gate".into());}
  if !interaction_pass{reasons.push("compound-interaction-exceeded-preregistered-harm-limit".into());}
  if !physical_ok{reasons.push("evidence-does-not-support-independent-physical-claim".into());}
- Ok(CompoundResilienceReport{block_id:b.block_id.clone(),structural_complete:true,model_validation_eligible:true,
-  all_four_arms_passed:arms_pass,compound_resilience_eligible:eligible,physical_evidence_eligible:physical_ok,
+ Ok(CompoundResilienceReport{block_id:b.block_id.clone(),structural_complete:true,model_validation_binding_complete:true,
+  all_four_arms_passed:arms_pass,compound_scenario_passed:eligible,physical_evidence_eligible:physical_ok,
   interaction_contrasts:contrasts,failed_run_ids:failed,exclusion_reasons:reasons,claim_ceiling:CLAIM})
 }
 
@@ -330,7 +341,7 @@ mod tests{
     reference_mode:PhysicalReferenceMode::PowerHil,held_out_validation_data:true,dataset_sha256:h('5'),raw_data_sha256:h('7'),
     processing_build_sha256:h('3'),calibration_receipt_reference:"cal:receipt".into(),timebase_reference:"timebase:locked".into(),
     independent_witness_reference:"witness:lab".into(),acceptance_criteria_reference:"criteria:gfm".into(),
-    required_observable_ids:vec!["voltage".into()],residuals:vec![]}],claim_requests:vec![]}
+    required_observable_ids:vec!["voltage".into(),"frequency".into()],residuals:vec![]}],claim_requests:vec![]}
  }
  fn graph()->ModeTransitionCorpus{
   ModeTransitionCorpus{initial_state_ids:vec!["grid".into()],states:vec![
@@ -388,18 +399,18 @@ mod tests{
    run("PC",FactorialArm::Compound,Some(PhysicalDisturbance::WeakGrid),Some(CyberManipulation::PccVoltageFdi),30.0,0.25,0.12,1.20,700.0,120.0)]}}
  fn eval(b:&CompoundResilienceBlock)->Result<CompoundResilienceReport,AuditError>{evaluate_compound_resilience(b,&gfm(),&model(),&graph())}
 
- #[test]fn complete_four_arm_block_reports_interaction(){let r=eval(&block()).unwrap();assert!(r.structural_complete&&r.model_validation_eligible&&r.all_four_arms_passed&&r.compound_resilience_eligible);assert!(!r.physical_evidence_eligible);let x=r.interaction_contrasts.iter().find(|x|x.metric==InteractionMetric::UnservedCriticalWh).unwrap();assert!((x.interaction_delta-15.0).abs()<EPS);}
+ #[test]fn complete_four_arm_block_reports_interaction(){let r=eval(&block()).unwrap();assert!(r.structural_complete&&r.model_validation_binding_complete&&r.all_four_arms_passed&&r.compound_scenario_passed);assert!(!r.physical_evidence_eligible);let x=r.interaction_contrasts.iter().find(|x|x.metric==InteractionMetric::UnservedCriticalWh).unwrap();assert!((x.interaction_delta-15.0).abs()<EPS);}
  #[test]fn missing_or_duplicate_arm_rejected(){let mut b=block();b.runs.pop();assert!(eval(&b).is_err());b=block();b.runs[3].arm=FactorialArm::CyberOnly;assert!(eval(&b).is_err());}
  #[test]fn wrong_factor_assignment_rejected(){let mut b=block();b.runs[1].cyber_manipulation=Some(CyberManipulation::CommandReplay);assert!(eval(&b).is_err());}
  #[test]fn scenario_seed_or_configuration_mismatch_rejected(){let mut b=block();b.runs[2].scenario_seed_sha256=h('9');assert!(eval(&b).is_err());b=block();b.runs[3].protection_configuration_sha256=h('8');assert!(eval(&b).is_err());}
  #[test]fn unknown_gfm_test_or_cell_rejected(){let mut b=block();b.runs[0].gfm_test_id="bad".into();assert!(eval(&b).is_err());}
  #[test]fn model_must_be_held_out_and_match_firmware(){let mut m=model();m.validation_cases[0].held_out_validation_data=false;assert!(evaluate_compound_resilience(&block(),&gfm(),&m,&graph()).is_err());m=model();m.identity.firmware_sha256=h('9');assert!(evaluate_compound_resilience(&block(),&gfm(),&m,&graph()).is_err());}
  #[test]fn transition_and_poststate_references_must_exist(){let mut b=block();b.runs[0].transition_ids=vec!["unknown".into()];assert!(eval(&b).is_err());b=block();b.runs[0].outcome.post_state_id="unknown".into();assert!(eval(&b).is_err());}
- #[test]fn critical_service_and_terminal_reserve_are_hard_gates(){let mut b=block();b.runs[3].outcome.critical_service_unserved_wh=100.0;assert!(!eval(&b).unwrap().compound_resilience_eligible);b=block();b.runs[3].outcome.terminal_reserve_wh=50.0;assert!(!eval(&b).unwrap().compound_resilience_eligible);}
- #[test]fn undetected_unmitigated_or_late_attack_fails(){let mut b=block();b.runs[3].outcome.attack_detected=false;assert!(!eval(&b).unwrap().compound_resilience_eligible);b=block();b.runs[2].outcome.mitigation_succeeded=false;assert!(!eval(&b).unwrap().compound_resilience_eligible);b=block();b.runs[3].outcome.attack_detection_latency_ms=Some(101.0);assert!(!eval(&b).unwrap().compound_resilience_eligible);}
- #[test]fn false_positives_in_no_attack_arms_fail(){let mut b=block();b.runs[0].outcome.false_positive_alert_count=1;assert!(!eval(&b).unwrap().compound_resilience_eligible);}
- #[test]fn forbidden_transition_or_unknown_state_mutation_fails(){let mut b=block();b.runs[3].outcome.forbidden_transitions_observed=1;assert!(!eval(&b).unwrap().compound_resilience_eligible);b=block();b.runs[2].outcome.unknown_state_mutations=1;assert!(!eval(&b).unwrap().compound_resilience_eligible);}
- #[test]fn excess_interaction_harm_fails_even_when_each_arm_passes(){let mut b=block();b.runs[3].outcome.critical_service_unserved_wh=50.0;let r=eval(&b).unwrap();assert!(r.all_four_arms_passed);assert!(!r.compound_resilience_eligible);}
+ #[test]fn critical_service_and_terminal_reserve_are_hard_gates(){let mut b=block();b.runs[3].outcome.critical_service_unserved_wh=100.0;assert!(!eval(&b).unwrap().compound_scenario_passed);b=block();b.runs[3].outcome.terminal_reserve_wh=50.0;assert!(!eval(&b).unwrap().compound_scenario_passed);}
+ #[test]fn undetected_unmitigated_or_late_attack_fails(){let mut b=block();b.runs[3].outcome.attack_detected=false;assert!(!eval(&b).unwrap().compound_scenario_passed);b=block();b.runs[2].outcome.mitigation_succeeded=false;assert!(!eval(&b).unwrap().compound_scenario_passed);b=block();b.runs[3].outcome.attack_detection_latency_ms=Some(101.0);assert!(!eval(&b).unwrap().compound_scenario_passed);}
+ #[test]fn false_positives_in_no_attack_arms_fail(){let mut b=block();b.runs[0].outcome.false_positive_alert_count=1;assert!(!eval(&b).unwrap().compound_scenario_passed);}
+ #[test]fn forbidden_transition_or_unknown_state_mutation_fails(){let mut b=block();b.runs[3].outcome.forbidden_transitions_observed=1;assert!(!eval(&b).unwrap().compound_scenario_passed);b=block();b.runs[2].outcome.unknown_state_mutations=1;assert!(!eval(&b).unwrap().compound_scenario_passed);}
+ #[test]fn excess_interaction_harm_fails_even_when_each_arm_passes(){let mut b=block();b.runs[3].outcome.critical_service_unserved_wh=50.0;let r=eval(&b).unwrap();assert!(r.all_four_arms_passed);assert!(!r.compound_scenario_passed);}
  #[test]fn expired_evidence_rejected(){let mut b=block();b.runs[0].evidence.status=ResilienceEvidenceStatus::Expired;assert!(eval(&b).is_err());}
  #[test]fn nan_outcome_rejected(){let mut b=block();b.runs[0].outcome.maximum_abs_voltage_deviation_pu=f64::NAN;assert!(eval(&b).is_err());}
  #[test]fn physical_claim_requires_measured_power_hil_in_all_arms(){let mut b=block();for r in &mut b.runs{r.evidence.class=ResilienceEvidenceClass::Measured;r.evidence.independent_witness_reference="independent:witness".into();}assert!(eval(&b).unwrap().physical_evidence_eligible);b.runs[0].execution_mode=ResilienceExecutionMode::ControllerHil;assert!(!eval(&b).unwrap().physical_evidence_eligible);}
