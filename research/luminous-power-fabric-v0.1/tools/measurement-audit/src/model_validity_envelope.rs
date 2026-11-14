@@ -123,6 +123,20 @@ fn mandatory_observables(scope:ValidationScope)->&'static[&'static str]{
         ValidationScope::FrequencyDomain=>&["impedance_magnitude_response","impedance_phase_response","resonance_frequency","gain_margin","phase_margin"],
     }
 }
+fn expected_metric_kind(scope:ValidationScope,observable:&str)->Option<ResidualMetricKind>{
+    match (scope,observable) {
+        (ValidationScope::TimeDomain,_) => Some(ResidualMetricKind::NormalizedRmse),
+        (ValidationScope::FrequencyDomain,"impedance_magnitude_response"|"impedance_phase_response") =>
+            Some(ResidualMetricKind::NormalizedRmse),
+        (ValidationScope::FrequencyDomain,"resonance_frequency") =>
+            Some(ResidualMetricKind::ResonanceFrequencyShiftHz),
+        (ValidationScope::FrequencyDomain,"gain_margin") =>
+            Some(ResidualMetricKind::GainMarginDifferenceDb),
+        (ValidationScope::FrequencyDomain,"phase_margin") =>
+            Some(ResidualMetricKind::PhaseMarginDifferenceDeg),
+        _ => None,
+    }
+}
 fn valid_residual(r:&ResidualRecord)->bool{
     nonblank(&r.observable_id)&&nonblank(&r.unit)&&
     r.normalized_rmse.is_finite()&&r.normalized_rmse>=0.0&&
@@ -196,7 +210,9 @@ pub fn validate_model_validity_profile(p:&ModelValidityProfile)->Result<ModelVal
         }
         unique(case.residuals.iter().map(|x|x.observable_id.as_str()),"residual observable IDs")?;
         let residual_ids:BTreeSet<&str>=case.residuals.iter().map(|x|x.observable_id.as_str()).collect();
-        if !declared.is_subset(&residual_ids)||case.residuals.iter().any(|r|!valid_residual(r)){
+        if !declared.is_subset(&residual_ids)||case.residuals.iter().any(|r|
+            !valid_residual(r)||expected_metric_kind(case.scope,&r.observable_id)!=Some(r.metric_kind)
+        ){
             return Err(AuditError(format!("validation case {:?} lacks complete, well-formed residual records",case.case_id)));
         }
         residual_count+=case.residuals.len();
@@ -277,4 +293,6 @@ mod tests{
  #[test]fn rejects_claim_outside_declared_cell(){let mut x=profile();x.claim_requests[0].requested_cell_ids.push("UNKNOWN".into());assert!(validate_model_validity_profile(&x).is_err());}
  #[test]fn rejects_invalid_model_identity_digest(){let mut x=profile();x.identity.firmware_sha256="bad".into();assert!(validate_model_validity_profile(&x).is_err());}
  #[test]fn rejects_outofdomain_interpolation_policy(){let mut x=profile();x.out_of_domain_policy="INTERPOLATE".into();assert!(validate_model_validity_profile(&x).is_err());}
+ #[test]fn rejects_residual_metric_kind_mismatch(){let mut x=profile();x.validation_cases[1].residuals.iter_mut().find(|r|r.observable_id=="resonance_frequency").unwrap().metric_kind=ResidualMetricKind::NormalizedRmse;assert!(validate_model_validity_profile(&x).is_err());}
+
 }

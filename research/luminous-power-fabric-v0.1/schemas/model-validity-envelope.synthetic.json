@@ -185,7 +185,7 @@
         },
         {
           "observable_id": "resonance_frequency",
-          "metric_kind": "normalized_rmse",
+          "metric_kind": "resonance_frequency_shift_hz",
           "unit": "engineering_unit",
           "normalized_rmse": 0.03,
           "peak_absolute_error": 0.05,
@@ -198,7 +198,7 @@
         },
         {
           "observable_id": "gain_margin",
-          "metric_kind": "normalized_rmse",
+          "metric_kind": "gain_margin_difference_db",
           "unit": "engineering_unit",
           "normalized_rmse": 0.03,
           "peak_absolute_error": 0.05,
@@ -211,7 +211,7 @@
         },
         {
           "observable_id": "phase_margin",
-          "metric_kind": "normalized_rmse",
+          "metric_kind": "phase_margin_difference_deg",
           "unit": "engineering_unit",
           "normalized_rmse": 0.03,
           "peak_absolute_error": 0.05,

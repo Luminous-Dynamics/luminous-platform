@@ -36,7 +36,7 @@ Each validation case binds:
 - test-specific acceptance-criteria revision;
 - required observable IDs and residual records.
 
-Residual records retain normalized RMSE, peak absolute error, measurement uncertainty and timing lag, plus model/measurement/residual summary and uncertainty references. Frequency-scope cases require the frequency-domain observables. Owner criteria define the acceptable error; this validator does not invent universal tolerances or decide pass/fail.
+Residual records retain normalized RMSE, peak absolute error, measurement uncertainty and timing lag, plus model/measurement/residual summary and uncertainty references. Metric kinds are tied to observables: frequency-domain resonance shift, gain-margin difference and phase-margin difference use distinct residual types rather than being collapsed into generic RMSE. Frequency-scope cases require the frequency-domain observables. Owner criteria define the acceptable error; this validator does not invent universal tolerances or decide pass/fail.
 
 ## 4. Claim-domain rule
 
