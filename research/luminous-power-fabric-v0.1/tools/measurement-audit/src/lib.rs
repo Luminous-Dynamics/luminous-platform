@@ -325,3 +325,5 @@ mod tests {
         assert!(audit_csv(capture.as_bytes(), Direction::AToB).is_err());
     }
 }
+
+pub mod gfm_capability_envelope;

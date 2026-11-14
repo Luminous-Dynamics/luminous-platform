@@ -418,3 +418,8 @@ protection trips, communications loss, reconciliation and forbidden authority/gu
 The typed validator checks transition references, initial-state reachability, independent-protection ownership, exact positive/negative coverage, all-guards-satisfied denial controls and recovery coverage. All 79
 checked-in test cases are synthetic: 14 positive, 60 isolated single-guard negative, three forbidden-disposition and two recovery cases. Twenty-seven Rust unit tests are authored but not executed. This is not controller logic, HIL, protection testing, or
 energization authorization.
+
+
+## GFM tested capability envelope
+
+[Issue #477](https://github.com/Luminous-Dynamics/luminous-platform/issues/477) and draft [PR #478](https://github.com/Luminous-Dynamics/luminous-platform/pull/478) add a vendor-neutral finite-operating-cell GFM test profile with seven test families, per-family observables, explicit electrical boundaries and a no-extrapolation policy. It validates test-plan coverage only; it does not establish that any capability is present or passed.
