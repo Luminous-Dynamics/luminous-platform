@@ -123,18 +123,15 @@ fn mandatory_observables(scope:ValidationScope)->&'static[&'static str]{
         ValidationScope::FrequencyDomain=>&["impedance_magnitude_response","impedance_phase_response","resonance_frequency","gain_margin","phase_margin"],
     }
 }
-fn expected_metric_kind(scope:ValidationScope,observable:&str)->Option<ResidualMetricKind>{
+fn expected_metric_kind(scope:ValidationScope,observable:&str)->ResidualMetricKind{
     match (scope,observable) {
-        (ValidationScope::TimeDomain,_) => Some(ResidualMetricKind::NormalizedRmse),
-        (ValidationScope::FrequencyDomain,"impedance_magnitude_response"|"impedance_phase_response") =>
-            Some(ResidualMetricKind::NormalizedRmse),
         (ValidationScope::FrequencyDomain,"resonance_frequency") =>
-            Some(ResidualMetricKind::ResonanceFrequencyShiftHz),
+            ResidualMetricKind::ResonanceFrequencyShiftHz,
         (ValidationScope::FrequencyDomain,"gain_margin") =>
-            Some(ResidualMetricKind::GainMarginDifferenceDb),
+            ResidualMetricKind::GainMarginDifferenceDb,
         (ValidationScope::FrequencyDomain,"phase_margin") =>
-            Some(ResidualMetricKind::PhaseMarginDifferenceDeg),
-        _ => None,
+            ResidualMetricKind::PhaseMarginDifferenceDeg,
+        _ => ResidualMetricKind::NormalizedRmse,
     }
 }
 fn valid_residual(r:&ResidualRecord)->bool{
@@ -211,7 +208,7 @@ pub fn validate_model_validity_profile(p:&ModelValidityProfile)->Result<ModelVal
         unique(case.residuals.iter().map(|x|x.observable_id.as_str()),"residual observable IDs")?;
         let residual_ids:BTreeSet<&str>=case.residuals.iter().map(|x|x.observable_id.as_str()).collect();
         if !declared.is_subset(&residual_ids)||case.residuals.iter().any(|r|
-            !valid_residual(r)||expected_metric_kind(case.scope,&r.observable_id)!=Some(r.metric_kind)
+            !valid_residual(r)||expected_metric_kind(case.scope,&r.observable_id)!=r.metric_kind
         ){
             return Err(AuditError(format!("validation case {:?} lacks complete, well-formed residual records",case.case_id)));
         }
