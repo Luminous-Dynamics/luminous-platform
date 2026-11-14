@@ -418,3 +418,8 @@ protection trips, communications loss, reconciliation and forbidden authority/gu
 The typed validator checks transition references, initial-state reachability, independent-protection ownership, exact positive/negative coverage, all-guards-satisfied denial controls and recovery coverage. All 79
 checked-in test cases are synthetic: 14 positive, 60 isolated single-guard negative, three forbidden-disposition and two recovery cases. Twenty-seven Rust unit tests are authored but not executed. This is not controller logic, HIL, protection testing, or
 energization authorization.
+
+
+## Grid-forming capability qualification
+
+[Issue #474](https://github.com/Luminous-Dynamics/luminous-platform/issues/474) and draft [PR #475](https://github.com/Luminous-Dynamics/luminous-platform/pull/475) add a typed capability passport covering 19 equipment/plant test IDs (16 core plus three supplementary; system-disturbance study is a separate 20th profile), per-claim scope, method tier, evidence class/status, mandatory metrics, and calibration/timebase provenance. IBR interconnection coverage is not treated as GFM capability proof. Synthetic fixtures validate coverage logic only.

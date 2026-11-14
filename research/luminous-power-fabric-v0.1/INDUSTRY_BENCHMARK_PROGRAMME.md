@@ -262,3 +262,8 @@ than the 13 November 2026 snapshot. Treat that result as forthcoming/prepublicat
 published 2026 SOTA baseline. Existing public comparators include NLR's 2024/2025 multi-GFM C-HIL
 work and 2025 Borrego Springs PHIL work. These provide different physical test boundaries and must
 not be ranked against this synthetic offline validator.
+
+
+## 25. Grid-forming capability passport and test evidence
+
+Draft [PR #475](https://github.com/Luminous-Dynamics/luminous-platform/pull/475) adds claim-specific GFM test coverage over 19 equipment/plant IDs (16 core plus three supplementary) with a separate system-disturbance study profile. It distinguishes model, CHIL, PHIL, PCS laboratory, site and independent-site evidence; verifies mandatory test metrics and calibration/timebase provenance; and rejects automatic GFM capability credit from baseline IBR evidence. No standards conformity, physical GFM performance or SOTA claim is made.
