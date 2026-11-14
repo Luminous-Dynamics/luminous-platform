@@ -1,0 +1,313 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/docs/schemas/firmware-assurance-corpus-v1.schema.json",
+  "title": "Firmware Assurance Synthetic Corpus v1",
+  "description": "A synthetic, read-only adversarial case corpus. It does not qualify physical hardware or authorize firmware mutation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "physical_target",
+    "profile_id",
+    "benchmark_goal",
+    "mutation_enabled",
+    "case_count",
+    "cases"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "firmware-assurance-corpus/1.0.0"
+    },
+    "status": {
+      "const": "synthetic_only"
+    },
+    "physical_target": {
+      "const": "none"
+    },
+    "profile_id": {
+      "const": "synthetic-uefi-uki-v1"
+    },
+    "benchmark_goal": {
+      "type": "string",
+      "minLength": 20
+    },
+    "mutation_enabled": {
+      "const": false
+    },
+    "case_count": {
+      "type": "integer",
+      "minimum": 32
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 32,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "case_id",
+          "case_kind",
+          "family",
+          "profile_id",
+          "setup",
+          "mutation",
+          "expected_claims",
+          "expected_disposition",
+          "required_assertions",
+          "rationale",
+          "required_claims"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string",
+            "pattern": "^FWA-[0-9]{3}$"
+          },
+          "case_kind": {
+            "enum": [
+              "positive_control",
+              "negative_control",
+              "indeterminate_control"
+            ]
+          },
+          "family": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{1,63}$"
+          },
+          "profile_id": {
+            "const": "synthetic-uefi-uki-v1"
+          },
+          "setup": {
+            "type": "string",
+            "minLength": 10
+          },
+          "mutation": {
+            "type": "string",
+            "minLength": 3
+          },
+          "expected_claims": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": false,
+            "properties": {
+              "target_identity": {
+                "enum": [
+                  "verified",
+                  "refuted",
+                  "unknown",
+                  "not_applicable"
+                ]
+              },
+              "artifact_integrity": {
+                "enum": [
+                  "verified",
+                  "refuted",
+                  "unknown",
+                  "not_applicable"
+                ]
+              },
+              "signature_present": {
+                "enum": [
+                  "verified",
+                  "refuted",
+                  "unknown",
+                  "not_applicable"
+                ]
+              },
+              "signature_validity": {
+                "enum": [
+                  "verified",
+                  "refuted",
+                  "unknown",
+                  "not_applicable"
+                ]
+              },
+              "signer_authorization": {
+                "enum": [
+                  "verified",
+                  "refuted",
+                  "unknown",
+                  "not_applicable"
+                ]
+              },
+              "revocation_status": {
+                "enum": [
+                  "verified",
+                  "refuted",
+                  "unknown",
+                  "not_applicable"
+                ]
+              },
+              "compatibility": {
+                "enum": [
+                  "verified",
+                  "refuted",
+                  "unknown",
+                  "not_applicable"
+                ]
+              },
+              "freshness": {
+                "enum": [
+                  "verified",
+                  "refuted",
+                  "unknown",
+                  "not_applicable"
+                ]
+              },
+              "provenance_completeness": {
+                "enum": [
+                  "verified",
+                  "refuted",
+                  "unknown",
+                  "not_applicable"
+                ]
+              },
+              "authorization": {
+                "enum": [
+                  "verified",
+                  "refuted",
+                  "unknown",
+                  "not_applicable"
+                ]
+              },
+              "lineage_integrity": {
+                "enum": [
+                  "verified",
+                  "refuted",
+                  "unknown",
+                  "not_applicable"
+                ]
+              },
+              "evidence_privacy": {
+                "enum": [
+                  "verified",
+                  "refuted",
+                  "unknown",
+                  "not_applicable"
+                ]
+              },
+              "boot_target_match": {
+                "enum": [
+                  "verified",
+                  "refuted",
+                  "unknown",
+                  "not_applicable"
+                ]
+              },
+              "boot_success": {
+                "enum": [
+                  "verified",
+                  "refuted",
+                  "unknown",
+                  "not_applicable"
+                ]
+              },
+              "recovery_readiness": {
+                "enum": [
+                  "verified",
+                  "refuted",
+                  "unknown",
+                  "not_applicable"
+                ]
+              },
+              "effect_outcome_known": {
+                "enum": [
+                  "verified",
+                  "refuted",
+                  "unknown",
+                  "not_applicable"
+                ]
+              },
+              "verifier_availability": {
+                "enum": [
+                  "verified",
+                  "refuted",
+                  "unknown",
+                  "not_applicable"
+                ]
+              },
+              "schema_support": {
+                "enum": [
+                  "verified",
+                  "refuted",
+                  "unknown",
+                  "not_applicable"
+                ]
+              },
+              "observation_consistency": {
+                "enum": [
+                  "verified",
+                  "refuted",
+                  "unknown",
+                  "not_applicable"
+                ]
+              },
+              "management_scope": {
+                "enum": [
+                  "verified",
+                  "refuted",
+                  "unknown",
+                  "not_applicable"
+                ]
+              }
+            }
+          },
+          "expected_disposition": {
+            "enum": [
+              "eligible_for_lab_staging",
+              "blocked",
+              "indeterminate"
+            ]
+          },
+          "required_assertions": {
+            "type": "array",
+            "minItems": 3,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "no_firmware_write",
+                "no_key_enrollment",
+                "no_boot_configuration_change",
+                "no_secret_in_emitted_evidence"
+              ]
+            }
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 15
+          },
+          "required_claims": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "artifact_integrity",
+                "authorization",
+                "boot_success",
+                "boot_target_match",
+                "compatibility",
+                "effect_outcome_known",
+                "evidence_privacy",
+                "freshness",
+                "lineage_integrity",
+                "management_scope",
+                "observation_consistency",
+                "provenance_completeness",
+                "recovery_readiness",
+                "revocation_status",
+                "schema_support",
+                "signature_present",
+                "signature_validity",
+                "signer_authorization",
+                "target_identity",
+                "verifier_availability"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

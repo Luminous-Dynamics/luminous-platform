@@ -1,0 +1,179 @@
+name: Firmware assurance corpus contract
+
+on:
+  pull_request:
+    paths:
+      - 'docs/FIRMWARE_ASSURANCE_BENCHMARK_V1.md'
+      - 'docs/fixtures/firmware-assurance-corpus-v1.json'
+      - 'docs/schemas/firmware-assurance-corpus-v1.schema.json'
+      - 'docs/fixtures/secure-boot-lifecycle-corpus-v1.json'
+      - 'docs/schemas/secure-boot-lifecycle-corpus-v1.schema.json'
+      - 'docs/fixtures/firmware-evidence-trust-corpus-v1.json'
+      - 'docs/schemas/firmware-evidence-trust-corpus-v1.schema.json'
+      - 'tools/firmware-assurance-corpus-checker/**'
+      - '.github/workflows/firmware-assurance-corpus-checker.yml'
+  push:
+    branches:
+      - research/firmware-assurance-benchmark-v1
+    paths:
+      - 'docs/FIRMWARE_ASSURANCE_BENCHMARK_V1.md'
+      - 'docs/fixtures/firmware-assurance-corpus-v1.json'
+      - 'docs/schemas/firmware-assurance-corpus-v1.schema.json'
+      - 'docs/fixtures/secure-boot-lifecycle-corpus-v1.json'
+      - 'docs/schemas/secure-boot-lifecycle-corpus-v1.schema.json'
+      - 'docs/fixtures/firmware-evidence-trust-corpus-v1.json'
+      - 'docs/schemas/firmware-evidence-trust-corpus-v1.schema.json'
+      - 'tools/firmware-assurance-corpus-checker/**'
+      - '.github/workflows/firmware-assurance-corpus-checker.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  corpus-contract:
+    name: Rust corpus contract validation
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Check Rust formatting
+        run: cargo fmt --manifest-path tools/firmware-assurance-corpus-checker/Cargo.toml --all -- --check
+
+      - name: Run bounded Rust tests
+        run: cargo test --manifest-path tools/firmware-assurance-corpus-checker/Cargo.toml
+
+      - name: Run corpus contract checker
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/firmware-assurance-corpus-report.json"
+          cargo run --manifest-path tools/firmware-assurance-corpus-checker/Cargo.toml -- \
+            validate-corpus \
+            docs/fixtures/firmware-assurance-corpus-v1.json \
+            docs/schemas/firmware-assurance-corpus-v1.schema.json > "$report"
+          jq -e '
+            .report_version == "firmware-assurance-corpus-check/1.0.0" and
+            .status == "passed" and
+            .checks.json_schema_meta == "passed" and
+            .checks.json_schema == "passed" and
+            .checks.semantic_contract == "passed" and
+            .scope.profile_id == "synthetic-uefi-uki-v1" and
+            .scope.physical_target == "none" and
+            .scope.mutation_enabled == false and
+            .scope.claim_ceiling == "synthetic_claim_policy_only_not_firmware_verification" and
+            .case_count == 44 and
+            .case_kind_counts.positive_control == 9 and
+            .case_kind_counts.negative_control == 26 and
+            .case_kind_counts.indeterminate_control == 9 and
+            .claim_state_policy_cases_evaluated == 44 and
+            .physical_device_operations == 0 and
+            (.inputs.corpus_sha256 | test("^[0-9a-f]{64}$")) and
+            (.inputs.schema_sha256 | test("^[0-9a-f]{64}$"))
+          ' "$report" > /dev/null
+
+      - name: Prove schema-invalid corpus cannot pass
+        shell: bash
+        run: |
+          set -euo pipefail
+          bad="$RUNNER_TEMP/firmware-assurance-corpus-bad.json"
+          report="$RUNNER_TEMP/firmware-assurance-corpus-bad-report.json"
+          jq '.case_count = (.case_count + 1)' \
+            docs/fixtures/firmware-assurance-corpus-v1.json > "$bad"
+          if cargo run --manifest-path tools/firmware-assurance-corpus-checker/Cargo.toml -- \
+            validate-corpus "$bad" \
+            docs/schemas/firmware-assurance-corpus-v1.schema.json > "$report"; then
+            echo "Mutated case_count unexpectedly passed" >&2
+            exit 1
+          fi
+          jq -e '.status == "blocked" and .checks.semantic_contract == "failed"' \
+            "$report" > /dev/null
+
+      - name: Run independent standard-library policy oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/firmware-assurance-reference-oracle.json"
+          python3 tools/firmware-assurance-corpus-checker/tests/reference_oracle.py \
+            docs/fixtures/firmware-assurance-corpus-v1.json > "$report"
+          jq -e '
+            .report_version == "firmware-assurance-reference-oracle/1.0.0" and
+            .status == "passed" and
+            .oracle_implementation == "python-standard-library-independent-from-rust" and
+            .case_count == 44 and
+            .case_kind_counts.positive_control == 9 and
+            .case_kind_counts.negative_control == 26 and
+            .case_kind_counts.indeterminate_control == 9 and
+            .metamorphic_checks > 100 and
+            .mutated_input_count == 10000 and
+            .distinct_claim_assignments > 7000 and
+            .policy_oracle_disagreements == 0 and
+            .nonrequired_claim_invariance_checks == 10000 and
+            .mutation_disposition_counts.eligible_for_lab_staging == 3334 and
+            .mutation_disposition_counts.indeterminate == 3333 and
+            .mutation_disposition_counts.blocked == 3333 and
+            .physical_device_operations == 0 and
+            .claim_ceiling == "synthetic_claim_policy_only_not_firmware_verification" and
+            (.corpus_sha256 | test("^[0-9a-f]{64}$"))
+          ' "$report" > /dev/null
+
+      - name: Run independent Secure Boot lifecycle oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/secure-boot-lifecycle-oracle.json"
+          python3 tools/firmware-assurance-corpus-checker/tests/lifecycle_reference_oracle.py \
+            docs/fixtures/secure-boot-lifecycle-corpus-v1.json > "$report"
+          jq -e '
+            .report_version == "secure-boot-lifecycle-reference-oracle/1.0.0" and
+            .status == "passed" and
+            .case_count == 32 and
+            .baseline_decision_counts.blocked == 18 and
+            .baseline_decision_counts.indeterminate == 4 and
+            .baseline_decision_counts.configuration_preparation_allowed == 2 and
+            .baseline_decision_counts.manual_enrollment_review_allowed == 1 and
+            .baseline_decision_counts.secure_boot_verified == 1 and
+            .baseline_decision_counts.pending_post_reboot_verification == 5 and
+            .baseline_decision_counts.standard_boot_allowed_unsecured == 1 and
+            .mutation_trials == 10000 and
+            .distinct_mutated_assignments > 9000 and
+            .invariant_violations == 0 and
+            .physical_device_operations == 0 and
+            .firmware_mutations == 0 and
+            (.corpus_sha256 | test("^[0-9a-f]{64}$"))
+          ' "$report" > /dev/null
+
+      - name: Run independent evidence-trust oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/firmware-evidence-trust-oracle.json"
+          python3 tools/firmware-assurance-corpus-checker/tests/evidence_trust_oracle.py \
+            docs/fixtures/firmware-evidence-trust-corpus-v1.json > "$report"
+          jq -e '
+            .report_version == "firmware-evidence-trust-oracle/1.0.0" and
+            .status == "passed" and
+            .case_count == 32 and
+            .baseline_decision_counts.accepted == 1 and
+            .baseline_decision_counts.rejected == 20 and
+            .baseline_decision_counts.indeterminate == 11 and
+            .mutation_trials == 10000 and
+            .distinct_assignments > 9000 and
+            .invariant_violations == 0 and
+            .exhaustive_combinations == 59049 and
+            .exhaustive_decision_counts.accepted == 1 and
+            .exhaustive_decision_counts.rejected == 58025 and
+            .exhaustive_decision_counts.indeterminate == 1023 and
+            .exhaustive_invariant_violations == 0 and
+            .physical_device_operations == 0 and
+            .firmware_mutations == 0 and
+            .cryptographic_verification_performed == false and
+            (.corpus_sha256 | test("^[0-9a-f]{64}$"))
+          ' "$report" > /dev/null
+
+      - name: Clippy
+        run: cargo clippy --manifest-path tools/firmware-assurance-corpus-checker/Cargo.toml --all-targets -- -D warnings

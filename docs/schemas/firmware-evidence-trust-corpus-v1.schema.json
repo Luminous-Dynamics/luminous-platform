@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Synthetic firmware evidence trust envelope adversarial corpus",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "physical_target",
+    "mutation_enabled",
+    "profile_id",
+    "case_count",
+    "benchmark_goal",
+    "cases"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "firmware-evidence-trust-corpus/1.0.0"
+    },
+    "status": {
+      "const": "synthetic_only"
+    },
+    "physical_target": {
+      "const": "none"
+    },
+    "mutation_enabled": {
+      "const": false
+    },
+    "profile_id": {
+      "const": "evidence-trust-envelope-v1-synthetic"
+    },
+    "case_count": {
+      "type": "integer",
+      "const": 32
+    },
+    "benchmark_goal": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 32,
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "case_id",
+          "scenario",
+          "expected_decision",
+          "signature_status",
+          "signer_status",
+          "subject_status",
+          "artifact_status",
+          "policy_status",
+          "revocation_status",
+          "freshness_status",
+          "nonce_status",
+          "counter_status",
+          "provenance_status"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string",
+            "pattern": "^EV-[0-9]{3}$"
+          },
+          "scenario": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expected_decision": {
+            "enum": [
+              "accepted",
+              "rejected",
+              "indeterminate"
+            ]
+          },
+          "signature_status": {
+            "enum": [
+              "valid",
+              "invalid",
+              "unknown"
+            ]
+          },
+          "signer_status": {
+            "enum": [
+              "authorized",
+              "unauthorized",
+              "unknown"
+            ]
+          },
+          "subject_status": {
+            "enum": [
+              "match",
+              "mismatch",
+              "unknown"
+            ]
+          },
+          "artifact_status": {
+            "enum": [
+              "match",
+              "mismatch",
+              "unknown"
+            ]
+          },
+          "policy_status": {
+            "enum": [
+              "match",
+              "mismatch",
+              "unknown"
+            ]
+          },
+          "revocation_status": {
+            "enum": [
+              "clear",
+              "revoked",
+              "unknown"
+            ]
+          },
+          "freshness_status": {
+            "enum": [
+              "fresh",
+              "expired",
+              "unknown"
+            ]
+          },
+          "nonce_status": {
+            "enum": [
+              "current",
+              "replay",
+              "unknown"
+            ]
+          },
+          "counter_status": {
+            "enum": [
+              "monotonic",
+              "rollback",
+              "unknown"
+            ]
+          },
+          "provenance_status": {
+            "enum": [
+              "authenticated",
+              "unauthenticated",
+              "unknown"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
