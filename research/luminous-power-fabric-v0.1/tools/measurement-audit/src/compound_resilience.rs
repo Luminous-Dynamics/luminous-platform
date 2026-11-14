@@ -162,6 +162,7 @@ fn context_matches(a:&FactorialRun,b:&FactorialRun)->bool{
  &&a.observation_window_sha256==b.observation_window_sha256&&a.acceptance_criteria_sha256==b.acceptance_criteria_sha256
  &&a.physical_profile_sha256==b.physical_profile_sha256&&a.cyber_profile_sha256==b.cyber_profile_sha256
  &&a.transition_ids==b.transition_ids&&a.execution_mode==b.execution_mode
+ &&a.outcome.post_state_id==b.outcome.post_state_id
 }
 fn get_arm(b:&CompoundResilienceBlock,arm:FactorialArm)->Result<&FactorialRun,AuditError>{
  b.runs.iter().find(|r|r.arm==arm).ok_or_else(||AuditError(format!("missing {arm:?} arm")))
@@ -202,19 +203,24 @@ fn validate_bindings(b:&CompoundResilienceBlock,g:&GfmCapabilityProfile,m:&Model
  ||!digest(&model_case.raw_data_sha256)||!digest(&model_case.processing_build_sha256)
  ||!nonblank(&model_case.calibration_receipt_reference)||!nonblank(&model_case.timebase_reference)
  ||!nonblank(&model_case.independent_witness_reference)||!nonblank(&model_case.acceptance_criteria_reference)
- ||model_case.reference_mode!=match first.execution_mode{ResilienceExecutionMode::PowerHil=>PhysicalReferenceMode::PowerHil,
-  ResilienceExecutionMode::PhysicalLaboratory=>PhysicalReferenceMode::PhysicalLaboratory,
-  ResilienceExecutionMode::SiteCommissioning=>PhysicalReferenceMode::SiteCommissioning,
-  ResilienceExecutionMode::FieldOperation=>PhysicalReferenceMode::FieldEvent,
-  _=>model_case.reference_mode}{
+ ||!matches!((first.execution_mode,model_case.reference_mode),
+  (ResilienceExecutionMode::PowerHil,PhysicalReferenceMode::PowerHil)
+  |(ResilienceExecutionMode::PhysicalLaboratory,PhysicalReferenceMode::PhysicalLaboratory)
+  |(ResilienceExecutionMode::SiteCommissioning,PhysicalReferenceMode::SiteCommissioning)
+  |(ResilienceExecutionMode::FieldOperation,PhysicalReferenceMode::FieldEvent)){
   return Err(AuditError("held-out model validation does not bind to the exact GFM cell and physical reference".into()));
  }
  if !t.states.iter().any(|x|x.state_id==first.initial_state_id){return Err(AuditError("unknown initial transition-graph state".into()));}
  for r in &b.runs{
   if !test.planned_execution_modes.contains(&planned_mode(r)){return Err(AuditError(format!("run {:?} uses an unplanned execution mode",r.run_id)));}
   if r.transition_ids.is_empty(){return Err(AuditError(format!("run {:?} has no transition references",r.run_id)));}
-  for id in &r.transition_ids{if !t.transitions.iter().any(|x|x.transition_id==*id){return Err(AuditError(format!("unknown transition {id:?}")));}}
-  if !t.states.iter().any(|x|x.state_id==r.outcome.post_state_id){return Err(AuditError(format!("unknown post-state in run {:?}",r.run_id));}
+  let mut path_state=r.initial_state_id.as_str();
+  for id in &r.transition_ids{
+   let edge=t.transitions.iter().find(|x|x.transition_id==*id).ok_or_else(||AuditError(format!("unknown transition {id:?}")))?;
+   if !edge.from_state_ids.iter().any(|state|state==path_state){return Err(AuditError(format!("transition path is discontinuous in run {:?}",r.run_id)));}
+   path_state=edge.to_state_id.as_str();
+  }
+  if path_state!=r.outcome.post_state_id{return Err(AuditError(format!("transition path does not reach observed post-state in run {:?}",r.run_id)));}
  }
  Ok(())
 }
@@ -392,4 +398,15 @@ mod tests{
  #[test]fn nan_outcome_rejected(){let mut b=block();b.runs[0].outcome.maximum_abs_voltage_deviation_pu=f64::NAN;assert!(eval(&b).is_err());}
  #[test]fn physical_claim_requires_measured_power_hil_in_all_arms(){let mut b=block();for r in &mut b.runs{r.evidence.class=ResilienceEvidenceClass::Measured;r.evidence.independent_witness_reference="independent:witness".into();}assert!(eval(&b).unwrap().physical_evidence_eligible);b.runs[0].execution_mode=ResilienceExecutionMode::ControllerHil;assert!(!eval(&b).unwrap().physical_evidence_eligible);}
  #[test]fn current_claim_ceiling_never_self_certifies(){assert!(CLAIM.contains("NOT_HIL_OR_FIELD_CLAIM"));assert_eq!(eval(&block()).unwrap().claim_ceiling(),CLAIM);}
+ #[test]fn event_offsets_and_profile_digests_are_matched_across_factor_arms(){
+  let mut b=block();b.runs[3].cyber_event_offset_ms=Some(30.0);assert!(eval(&b).is_err());
+  b=block();b.runs[2].cyber_profile_sha256=h('8');assert!(eval(&b).is_err());
+ }
+ #[test]fn held_out_campaign_and_dataset_must_differ_from_calibration(){
+  let mut m=model();m.validation_campaign_id=m.calibration_campaign_id.clone();
+  assert!(evaluate_compound_resilience(&block(),&gfm(),&m,&graph()).is_err());
+  m=model();m.validation_dataset_sha256=m.calibration_dataset_sha256.clone();m.validation_cases[0].dataset_sha256=m.validation_dataset_sha256.clone();
+  assert!(evaluate_compound_resilience(&block(),&gfm(),&m,&graph()).is_err());
+ }
+
 }
