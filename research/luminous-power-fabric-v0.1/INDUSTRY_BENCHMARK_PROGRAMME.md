@@ -277,3 +277,8 @@ Issue [#479](https://github.com/Luminous-Dynamics/luminous-platform/issues/479) 
 ## 25. Model validity envelope and held-out validation
 
 Issue [#479](https://github.com/Luminous-Dynamics/luminous-platform/issues/479) and draft [PR #480](https://github.com/Luminous-Dynamics/luminous-platform/pull/480) add explicit calibration/validation dataset separation, model-to-hardware/firmware identity binding, held-out physical reference cases, distinct time/frequency validation and per-observable residual/uncertainty records. This prevents a global fit score or transient-only validation from standing in for frequency-domain model validity. No model validation or physical result is claimed by the structural validator.
+
+
+## 24. Compound cyber-physical GFM resilience
+
+Issue [#482](https://github.com/Luminous-Dynamics/luminous-platform/issues/482) and draft [PR #483](https://github.com/Luminous-Dynamics/luminous-platform/pull/483) add a matched 2×2 factorial benchmark: baseline, physical disturbance only, cyber manipulation only and compound. Interaction contrasts expose excess harm missed by isolated disturbance and cyber tests. Each block is tied to the same GFM cell, held-out model case, hardware/firmware/controller/protection, seed, state/SOC, timebase, profile roots, event offsets and acceptance criteria. This offline evaluator does not execute attacks or qualify physical performance.

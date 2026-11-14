@@ -433,3 +433,8 @@ Issue [#479](https://github.com/Luminous-Dynamics/luminous-platform/issues/479) 
 ## Model validity envelope
 
 Issue [#479](https://github.com/Luminous-Dynamics/luminous-platform/issues/479) and draft [PR #480](https://github.com/Luminous-Dynamics/luminous-platform/pull/480) add a held-out model-validation profile with separate calibration and validation roots, exact model/firmware/configuration identity, time- and frequency-domain validation scopes, per-observable residual records and no out-of-domain claims. The validator reports plan completeness only and cannot self-mark a model physically validated.
+
+
+## Compound cyber-physical GFM resilience
+
+[Issue #482](https://github.com/Luminous-Dynamics/luminous-platform/issues/482) and draft [PR #483](https://github.com/Luminous-Dynamics/luminous-platform/pull/483) add a matched baseline / physical-only / cyber-only / compound (2×2 factorial) evaluator. It binds the existing GFM operating cell, held-out model-validation case and transition graph; immutable physical/cyber profile digests and event offsets; and computes scenario-level interaction contrasts with hard per-arm service/protection/deadline gates. Synthetic fixtures cannot qualify a physical result.
