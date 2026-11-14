@@ -1,0 +1,439 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/gfm-qualification-v0.1.schema.json",
+  "title": "Grid-forming capability claim and evidence coverage fixture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "claim_ceiling",
+    "cases"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "claim_ceiling": {
+      "const": "GFM_CAPABILITY_EVIDENCE_COVERAGE_ONLY_NOT_STANDARD_CONFORMITY_OR_FIELD_SUPERIORITY"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "case_id",
+          "input",
+          "expected"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "input": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "claim_id",
+              "claim_profile_sha256",
+              "claim_level",
+              "requested_capabilities",
+              "not_applicable_tests",
+              "evidence_records"
+            ],
+            "properties": {
+              "claim_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "claim_profile_sha256": {
+                "type": "string",
+                "pattern": "^[A-Fa-f0-9]{64}$"
+              },
+              "claim_level": {
+                "enum": [
+                  "synthetic_coverage_only",
+                  "model_validated",
+                  "controller_hil",
+                  "power_hardware_tested",
+                  "site_demonstrated",
+                  "independent_site_claim"
+                ]
+              },
+              "requested_capabilities": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "basic_pcs_functionality",
+                    "active_power_control",
+                    "reactive_power_control",
+                    "primary_frequency_support",
+                    "voltage_support",
+                    "inertia_response",
+                    "power_oscillation_damping",
+                    "voltage_ride_through",
+                    "phase_angle_jump_response",
+                    "gfm_gfl_mode_switching",
+                    "equipment_black_start",
+                    "autonomous_black_start",
+                    "islanded_load_pickup",
+                    "grid_loss_resynchronization",
+                    "load_following_droop",
+                    "weak_grid_stability",
+                    "negative_sequence_fault_support",
+                    "multi_vendor_interoperability",
+                    "system_disturbance_resilience"
+                  ]
+                }
+              },
+              "not_applicable_tests": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "test_id",
+                    "rationale",
+                    "approved_by_reference"
+                  ],
+                  "properties": {
+                    "test_id": {
+                      "enum": [
+                        "voltage_frequency_adaptability",
+                        "power_quality",
+                        "active_power_control",
+                        "reactive_power_control",
+                        "primary_frequency_regulation",
+                        "voltage_reactive_power_regulation",
+                        "inertia_response",
+                        "power_oscillation_damping",
+                        "voltage_tolerance",
+                        "phase_angle_jump_tolerance",
+                        "gfm_gfl_mode_switching",
+                        "equipment_black_start",
+                        "black_start_from_zero_voltage",
+                        "islanded_load_pickup",
+                        "grid_loss_resynchronization",
+                        "load_following_droop",
+                        "weak_grid_scr_variation",
+                        "unbalanced_fault_negative_sequence",
+                        "multi_converter_multi_vendor",
+                        "system_disturbance_study"
+                      ]
+                    },
+                    "rationale": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "approved_by_reference": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              },
+              "evidence_records": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "evidence_record_id",
+                    "test_id",
+                    "method",
+                    "outcome",
+                    "evidence_class",
+                    "evidence_status",
+                    "product_configuration_sha256",
+                    "scenario_manifest_sha256",
+                    "acceptance_criteria_sha256",
+                    "evidence_bundle_sha256",
+                    "measurement_boundary",
+                    "raw_data_reference",
+                    "calibration_reference",
+                    "timebase_reference",
+                    "witness_reference",
+                    "measured_metric_ids",
+                    "test_conditions",
+                    "measurement_conditions"
+                  ],
+                  "properties": {
+                    "evidence_record_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "test_id": {
+                      "enum": [
+                        "voltage_frequency_adaptability",
+                        "power_quality",
+                        "active_power_control",
+                        "reactive_power_control",
+                        "primary_frequency_regulation",
+                        "voltage_reactive_power_regulation",
+                        "inertia_response",
+                        "power_oscillation_damping",
+                        "voltage_tolerance",
+                        "phase_angle_jump_tolerance",
+                        "gfm_gfl_mode_switching",
+                        "equipment_black_start",
+                        "black_start_from_zero_voltage",
+                        "islanded_load_pickup",
+                        "grid_loss_resynchronization",
+                        "load_following_droop",
+                        "weak_grid_scr_variation",
+                        "unbalanced_fault_negative_sequence",
+                        "multi_converter_multi_vendor",
+                        "system_disturbance_study"
+                      ]
+                    },
+                    "method": {
+                      "enum": [
+                        "rms_simulation",
+                        "emt_simulation",
+                        "hybrid_rms_emt_cosimulation",
+                        "controller_hil",
+                        "power_hil",
+                        "pcs_lab_grid_emulator",
+                        "site_commissioning",
+                        "field_operation",
+                        "large_scale_system_simulation"
+                      ]
+                    },
+                    "outcome": {
+                      "enum": [
+                        "passed",
+                        "failed",
+                        "not_run"
+                      ]
+                    },
+                    "evidence_class": {
+                      "enum": [
+                        "synthetic_fixture",
+                        "vendor_assertion",
+                        "modelled",
+                        "measured",
+                        "witnessed",
+                        "accredited"
+                      ]
+                    },
+                    "evidence_status": {
+                      "enum": [
+                        "current",
+                        "expired",
+                        "revoked"
+                      ]
+                    },
+                    "product_configuration_sha256": {
+                      "type": "string",
+                      "pattern": "^[A-Fa-f0-9]{64}$"
+                    },
+                    "scenario_manifest_sha256": {
+                      "type": "string",
+                      "pattern": "^[A-Fa-f0-9]{64}$"
+                    },
+                    "acceptance_criteria_sha256": {
+                      "type": "string",
+                      "pattern": "^[A-Fa-f0-9]{64}$"
+                    },
+                    "evidence_bundle_sha256": {
+                      "type": "string",
+                      "pattern": "^[A-Fa-f0-9]{64}$"
+                    },
+                    "measurement_boundary": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "raw_data_reference": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "calibration_reference": {
+                      "type": "string"
+                    },
+                    "timebase_reference": {
+                      "type": "string"
+                    },
+                    "witness_reference": {
+                      "type": "string"
+                    },
+                    "measured_metric_ids": {
+                      "type": "array",
+                      "uniqueItems": true,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "test_conditions": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "initial_active_power_milli_kw",
+                        "initial_reactive_power_milli_kvar",
+                        "initial_voltage_pu_micros",
+                        "initial_frequency_millihz",
+                        "initial_soc_ppm",
+                        "energy_headroom_wh",
+                        "short_circuit_ratio_milli",
+                        "x_over_r_milli",
+                        "disturbance_kind",
+                        "disturbance_magnitude_milli",
+                        "disturbance_unit",
+                        "disturbance_duration_ms",
+                        "disturbance_location"
+                      ],
+                      "properties": {
+                        "initial_active_power_milli_kw": {
+                          "type": "integer"
+                        },
+                        "initial_reactive_power_milli_kvar": {
+                          "type": "integer"
+                        },
+                        "initial_voltage_pu_micros": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "initial_frequency_millihz": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "initial_soc_ppm": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 0,
+                          "maximum": 1000000
+                        },
+                        "energy_headroom_wh": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 0
+                        },
+                        "short_circuit_ratio_milli": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 1
+                        },
+                        "x_over_r_milli": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 1
+                        },
+                        "disturbance_kind": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "disturbance_magnitude_milli": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "disturbance_unit": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "disturbance_duration_ms": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "disturbance_location": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    },
+                    "measurement_conditions": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "bandwidth_hz_milli",
+                        "sample_rate_hz_milli",
+                        "expanded_uncertainty_ppm",
+                        "uncertainty_reference"
+                      ],
+                      "properties": {
+                        "bandwidth_hz_milli": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "sample_rate_hz_milli": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "expanded_uncertainty_ppm": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "uncertainty_reference": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "expected": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "claim_eligible",
+              "physical_evidence_eligible"
+            ],
+            "properties": {
+              "claim_eligible": {
+                "type": "boolean"
+              },
+              "physical_evidence_eligible": {
+                "type": "boolean"
+              },
+              "missing_test_ids": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "voltage_frequency_adaptability",
+                    "power_quality",
+                    "active_power_control",
+                    "reactive_power_control",
+                    "primary_frequency_regulation",
+                    "voltage_reactive_power_regulation",
+                    "inertia_response",
+                    "power_oscillation_damping",
+                    "voltage_tolerance",
+                    "phase_angle_jump_tolerance",
+                    "gfm_gfl_mode_switching",
+                    "equipment_black_start",
+                    "black_start_from_zero_voltage",
+                    "islanded_load_pickup",
+                    "grid_loss_resynchronization",
+                    "load_following_droop",
+                    "weak_grid_scr_variation",
+                    "unbalanced_fault_negative_sequence",
+                    "multi_converter_multi_vendor",
+                    "system_disturbance_study"
+                  ]
+                }
+              },
+              "required_test_count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
