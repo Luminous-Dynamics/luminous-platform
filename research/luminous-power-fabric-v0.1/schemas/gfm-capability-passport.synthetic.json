@@ -1,0 +1,182 @@
+{
+  "schema_version": "0.1",
+  "passport_id": "gfm-passport-synthetic",
+  "product_id": "synthetic-unit",
+  "claims": [
+    {
+      "claim_id": "synthetic-droop",
+      "capability": "primary_frequency_regulation",
+      "boundary": "unit",
+      "qualified_configuration_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "topology_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "operating_envelope_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "acceptance_contract_id": "contract-v1",
+      "acceptance_contract_sha256": "9999999999999999999999999999999999999999999999999999999999999999",
+      "required_test_evidence": [
+        {
+          "test_id": "droop",
+          "required_stage": "synthetic",
+          "minimum_pass_count": 1,
+          "maximum_failures": 0
+        }
+      ]
+    },
+    {
+      "claim_id": "field-black-start",
+      "capability": "black_start_from_zero_voltage",
+      "boundary": "system",
+      "qualified_configuration_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "topology_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "operating_envelope_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "acceptance_contract_id": "contract-v1",
+      "acceptance_contract_sha256": "9999999999999999999999999999999999999999999999999999999999999999",
+      "required_test_evidence": [
+        {
+          "test_id": "black-start",
+          "required_stage": "operational_field",
+          "minimum_pass_count": 1,
+          "maximum_failures": 0
+        }
+      ]
+    }
+  ],
+  "protocols": [
+    {
+      "test_id": "droop",
+      "capability": "primary_frequency_regulation",
+      "boundary": "unit",
+      "protocol_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "qualified_configuration_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "topology_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "operating_envelope_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "initial_operating_point_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+      "disturbance_sha256": "6666666666666666666666666666666666666666666666666666666666666666",
+      "measurement_boundary_id": "poc",
+      "instrument_calibration_sha256": "7777777777777777777777777777777777777777777777777777777777777777",
+      "timebase_sha256": "8888888888888888888888888888888888888888888888888888888888888888",
+      "acceptance_contract_id": "contract-v1",
+      "acceptance_contract_sha256": "9999999999999999999999999999999999999999999999999999999999999999",
+      "metric_criteria": [
+        {
+          "metric_id": "droop",
+          "unit": "percent",
+          "minimum": 0,
+          "maximum": 2,
+          "measurement_boundary_id": "poc",
+          "sample_window_id": "steady"
+        },
+        {
+          "metric_id": "settling",
+          "unit": "ms",
+          "minimum": 0,
+          "maximum": 500,
+          "measurement_boundary_id": "poc",
+          "sample_window_id": "post"
+        }
+      ]
+    },
+    {
+      "test_id": "black-start",
+      "capability": "black_start_from_zero_voltage",
+      "boundary": "system",
+      "protocol_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "qualified_configuration_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "topology_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "operating_envelope_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "initial_operating_point_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+      "disturbance_sha256": "6666666666666666666666666666666666666666666666666666666666666666",
+      "measurement_boundary_id": "poc",
+      "instrument_calibration_sha256": "7777777777777777777777777777777777777777777777777777777777777777",
+      "timebase_sha256": "8888888888888888888888888888888888888888888888888888888888888888",
+      "acceptance_contract_id": "contract-v1",
+      "acceptance_contract_sha256": "9999999999999999999999999999999999999999999999999999999999999999",
+      "metric_criteria": [
+        {
+          "metric_id": "droop",
+          "unit": "percent",
+          "minimum": 0,
+          "maximum": 2,
+          "measurement_boundary_id": "poc",
+          "sample_window_id": "steady"
+        },
+        {
+          "metric_id": "settling",
+          "unit": "ms",
+          "minimum": 0,
+          "maximum": 500,
+          "measurement_boundary_id": "poc",
+          "sample_window_id": "post"
+        }
+      ]
+    }
+  ],
+  "observations": [
+    {
+      "observation_id": "obs-droop",
+      "test_id": "droop",
+      "protocol_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "evidence_stage": "synthetic",
+      "evidence_class": "synthetic",
+      "raw_bundle_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "analysis_build_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "verification_receipt_reference": "synthetic://receipt",
+      "measurements": [
+        {
+          "metric_id": "droop",
+          "value": 1,
+          "absolute_uncertainty": 0.1,
+          "unit": "percent",
+          "measurement_boundary_id": "poc",
+          "sample_window_id": "steady"
+        },
+        {
+          "metric_id": "settling",
+          "value": 420,
+          "absolute_uncertainty": 20,
+          "unit": "ms",
+          "measurement_boundary_id": "poc",
+          "sample_window_id": "post"
+        }
+      ]
+    },
+    {
+      "observation_id": "obs-black-start",
+      "test_id": "black-start",
+      "protocol_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "evidence_stage": "synthetic",
+      "evidence_class": "synthetic",
+      "raw_bundle_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "analysis_build_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "verification_receipt_reference": "synthetic://receipt",
+      "measurements": [
+        {
+          "metric_id": "droop",
+          "value": 1,
+          "absolute_uncertainty": 0.1,
+          "unit": "percent",
+          "measurement_boundary_id": "poc",
+          "sample_window_id": "steady"
+        },
+        {
+          "metric_id": "settling",
+          "value": 420,
+          "absolute_uncertainty": 20,
+          "unit": "ms",
+          "measurement_boundary_id": "poc",
+          "sample_window_id": "post"
+        }
+      ]
+    }
+  ],
+  "expected_claim_results": [
+    {
+      "claim_id": "synthetic-droop",
+      "qualified": true
+    },
+    {
+      "claim_id": "field-black-start",
+      "qualified": false
+    }
+  ],
+  "claim_ceiling": "SYNTHETIC_GFM_CAPABILITY_PASSPORT_ONLY_NOT_PHYSICAL_QUALIFICATION_OR_GRID_CODE_CONFORMITY"
+}

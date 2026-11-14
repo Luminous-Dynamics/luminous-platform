@@ -1,0 +1,409 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/gfm-capability-passport-v0.1.schema.json",
+  "title": "GFM capability claim-to-test-to-evidence passport",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "passport_id",
+    "product_id",
+    "claims",
+    "protocols",
+    "observations",
+    "claim_ceiling"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "passport_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "product_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "claims": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "claim_id",
+          "capability",
+          "boundary",
+          "qualified_configuration_sha256",
+          "topology_sha256",
+          "operating_envelope_sha256",
+          "acceptance_contract_id",
+          "acceptance_contract_sha256",
+          "required_test_evidence"
+        ],
+        "properties": {
+          "claim_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "capability": {
+            "enum": [
+              "voltage_frequency_adaptability",
+              "power_quality",
+              "active_power_control",
+              "reactive_power_control",
+              "primary_frequency_regulation",
+              "voltage_reactive_power_regulation",
+              "inertia_response",
+              "power_oscillation_damping",
+              "voltage_tolerance",
+              "phase_angle_jump_tolerance",
+              "gfm_gfl_mode_switching",
+              "black_start_capability",
+              "black_start_from_zero_voltage",
+              "islanded_load_pickup",
+              "grid_loss_resynchronisation",
+              "load_following_frequency_voltage_droop",
+              "weak_grid_scr_sweep",
+              "unbalanced_fault_negative_sequence",
+              "multi_vendor_interoperability",
+              "system_level_disturbance"
+            ]
+          },
+          "boundary": {
+            "enum": [
+              "unit",
+              "plant",
+              "system"
+            ]
+          },
+          "qualified_configuration_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "topology_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "operating_envelope_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "acceptance_contract_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "acceptance_contract_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "required_test_evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "test_id",
+                "required_stage",
+                "minimum_pass_count",
+                "maximum_failures"
+              ],
+              "properties": {
+                "test_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "required_stage": {
+                  "enum": [
+                    "vendor_declaration",
+                    "synthetic",
+                    "offline_simulation",
+                    "software_in_loop",
+                    "controller_hardware_in_loop",
+                    "power_hardware_in_loop",
+                    "laboratory",
+                    "commissioning",
+                    "operational_field"
+                  ]
+                },
+                "minimum_pass_count": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "maximum_failures": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "protocols": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "test_id",
+          "capability",
+          "boundary",
+          "protocol_sha256",
+          "qualified_configuration_sha256",
+          "topology_sha256",
+          "operating_envelope_sha256",
+          "initial_operating_point_sha256",
+          "disturbance_sha256",
+          "measurement_boundary_id",
+          "instrument_calibration_sha256",
+          "timebase_sha256",
+          "acceptance_contract_id",
+          "acceptance_contract_sha256",
+          "metric_criteria"
+        ],
+        "properties": {
+          "test_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "capability": {
+            "enum": [
+              "voltage_frequency_adaptability",
+              "power_quality",
+              "active_power_control",
+              "reactive_power_control",
+              "primary_frequency_regulation",
+              "voltage_reactive_power_regulation",
+              "inertia_response",
+              "power_oscillation_damping",
+              "voltage_tolerance",
+              "phase_angle_jump_tolerance",
+              "gfm_gfl_mode_switching",
+              "black_start_capability",
+              "black_start_from_zero_voltage",
+              "islanded_load_pickup",
+              "grid_loss_resynchronisation",
+              "load_following_frequency_voltage_droop",
+              "weak_grid_scr_sweep",
+              "unbalanced_fault_negative_sequence",
+              "multi_vendor_interoperability",
+              "system_level_disturbance"
+            ]
+          },
+          "boundary": {
+            "enum": [
+              "unit",
+              "plant",
+              "system"
+            ]
+          },
+          "protocol_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "qualified_configuration_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "topology_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "operating_envelope_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "initial_operating_point_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "disturbance_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "measurement_boundary_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "instrument_calibration_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "timebase_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "acceptance_contract_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "acceptance_contract_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "metric_criteria": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "metric_id",
+                "unit",
+                "minimum",
+                "maximum",
+                "measurement_boundary_id",
+                "sample_window_id"
+              ],
+              "properties": {
+                "metric_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minimum": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "maximum": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "measurement_boundary_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sample_window_id": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "observation_id",
+          "test_id",
+          "protocol_sha256",
+          "evidence_stage",
+          "evidence_class",
+          "raw_bundle_sha256",
+          "analysis_build_sha256",
+          "verification_receipt_reference",
+          "measurements"
+        ],
+        "properties": {
+          "observation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "test_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "protocol_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "evidence_stage": {
+            "enum": [
+              "vendor_declaration",
+              "synthetic",
+              "offline_simulation",
+              "software_in_loop",
+              "controller_hardware_in_loop",
+              "power_hardware_in_loop",
+              "laboratory",
+              "commissioning",
+              "operational_field"
+            ]
+          },
+          "evidence_class": {
+            "enum": [
+              "vendor_assertion",
+              "modelled",
+              "synthetic",
+              "measured",
+              "witnessed",
+              "accredited"
+            ]
+          },
+          "raw_bundle_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "analysis_build_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "verification_receipt_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "measurements": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "metric_id",
+                "value",
+                "absolute_uncertainty",
+                "unit",
+                "measurement_boundary_id",
+                "sample_window_id"
+              ],
+              "properties": {
+                "metric_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "value": {
+                  "type": "number"
+                },
+                "absolute_uncertainty": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "measurement_boundary_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sample_window_id": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "claim_ceiling": {
+      "const": "SYNTHETIC_GFM_CAPABILITY_PASSPORT_ONLY_NOT_PHYSICAL_QUALIFICATION_OR_GRID_CODE_CONFORMITY"
+    }
+  }
+}

@@ -418,3 +418,8 @@ protection trips, communications loss, reconciliation and forbidden authority/gu
 The typed validator checks transition references, initial-state reachability, independent-protection ownership, exact positive/negative coverage, all-guards-satisfied denial controls and recovery coverage. All 79
 checked-in test cases are synthetic: 14 positive, 60 isolated single-guard negative, three forbidden-disposition and two recovery cases. Twenty-seven Rust unit tests are authored but not executed. This is not controller logic, HIL, protection testing, or
 energization authorization.
+
+
+## Grid-forming capability passport
+
+Issue [#484](https://github.com/Luminous-Dynamics/luminous-platform/issues/484) and draft [PR #485](https://github.com/Luminous-Dynamics/luminous-platform/pull/485) add a claim-to-test-to-evidence passport for GFM capabilities. It binds configuration, topology, operating envelope, initial condition, disturbance, measurement boundary, acceptance contract, calibration/timebase references and uncertainty-bearing metrics. Vendor, simulation, synthetic, CHIL, PHIL, lab and field evidence remain distinct.
