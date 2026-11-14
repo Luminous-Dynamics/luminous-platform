@@ -48,6 +48,8 @@ pub struct FactorialRun{
  pub site_profile_sha256:String,pub scenario_seed_sha256:String,
  pub initial_state_id:String,pub initial_state_epoch:u64,pub initial_soc_fraction:f64,
  pub timebase_reference:String,pub observation_window_sha256:String,pub acceptance_criteria_sha256:String,
+ pub physical_profile_sha256:String,pub cyber_profile_sha256:String,
+ pub physical_event_offset_ms:Option<f64>,pub cyber_event_offset_ms:Option<f64>,
  pub transition_ids:Vec<String>,pub execution_mode:ResilienceExecutionMode,
  pub evidence:ResilienceEvidence,pub outcome:ResilienceOutcome,
 }
@@ -67,6 +69,9 @@ pub struct ResilienceAcceptanceCriteria{
 pub struct CompoundResilienceBlock{
  pub block_id:String,pub expected_physical_disturbance:PhysicalDisturbance,
  pub expected_cyber_manipulation:CyberManipulation,
+ pub physical_profile_reference:String,pub physical_profile_sha256:String,
+ pub cyber_profile_reference:String,pub cyber_profile_sha256:String,
+ pub physical_event_offset_ms:f64,pub cyber_event_offset_ms:f64,
  pub acceptance:ResilienceAcceptanceCriteria,pub runs:Vec<FactorialRun>,
 }
 #[derive(Debug,Clone,Copy,PartialEq,Eq)]
@@ -155,6 +160,7 @@ fn context_matches(a:&FactorialRun,b:&FactorialRun)->bool{
  &&a.initial_state_id==b.initial_state_id&&a.initial_state_epoch==b.initial_state_epoch
  &&close(a.initial_soc_fraction,b.initial_soc_fraction)&&a.timebase_reference==b.timebase_reference
  &&a.observation_window_sha256==b.observation_window_sha256&&a.acceptance_criteria_sha256==b.acceptance_criteria_sha256
+ &&a.physical_profile_sha256==b.physical_profile_sha256&&a.cyber_profile_sha256==b.cyber_profile_sha256
  &&a.transition_ids==b.transition_ids&&a.execution_mode==b.execution_mode
 }
 fn get_arm(b:&CompoundResilienceBlock,arm:FactorialArm)->Result<&FactorialRun,AuditError>{
@@ -175,6 +181,16 @@ fn validate_bindings(b:&CompoundResilienceBlock,g:&GfmCapabilityProfile,m:&Model
   .ok_or_else(||AuditError("model validation case missing".into()))?;
  let model_cell=m.operating_cells.iter().find(|x|x.cell_id==model_case.cell_id)
   .ok_or_else(||AuditError("model operating cell missing".into()))?;
+ let family_matches=match b.expected_physical_disturbance{
+  PhysicalDisturbance::WeakGrid=>test.family==GfmTestFamily::WeakGridScrXr,
+  PhysicalDisturbance::SymmetricalFault=>test.family==GfmTestFamily::CurrentLimitFaultRideThrough,
+  PhysicalDisturbance::NegativeSequenceFault=>test.family==GfmTestFamily::NegativeSequenceUnbalancedFault,
+  PhysicalDisturbance::PhaseAngleJump=>test.family==GfmTestFamily::PhaseAngleJump,
+  PhysicalDisturbance::LoadStepOrMotorStart|PhysicalDisturbance::SourceTrip|PhysicalDisturbance::IslandingOrPccTransition|PhysicalDisturbance::BlackStart=>test.family==GfmTestFamily::OperatingPointHeadroom,
+ };
+ if !family_matches||test.disturbance_profile_reference!=b.physical_profile_reference{
+  return Err(AuditError("physical disturbance profile is not bound to the GFM test family/reference".into()));
+ }
  let scope=if test.family==GfmTestFamily::FrequencyDomainImpedanceScan{ValidationScope::FrequencyDomain}else{ValidationScope::TimeDomain};
  if model_cell.source_gfm_profile_id!=g.profile_id||model_cell.source_gfm_cell_id!=cell.cell_id
  ||m.identity.controller_configuration_sha256!=first.controller_configuration_sha256
@@ -185,7 +201,12 @@ fn validate_bindings(b:&CompoundResilienceBlock,g:&GfmCapabilityProfile,m:&Model
  ||model_case.dataset_sha256!=m.validation_dataset_sha256
  ||!digest(&model_case.raw_data_sha256)||!digest(&model_case.processing_build_sha256)
  ||!nonblank(&model_case.calibration_receipt_reference)||!nonblank(&model_case.timebase_reference)
- ||!nonblank(&model_case.independent_witness_reference)||!nonblank(&model_case.acceptance_criteria_reference){
+ ||!nonblank(&model_case.independent_witness_reference)||!nonblank(&model_case.acceptance_criteria_reference)
+ ||model_case.reference_mode!=match first.execution_mode{ResilienceExecutionMode::PowerHil=>PhysicalReferenceMode::PowerHil,
+  ResilienceExecutionMode::PhysicalLaboratory=>PhysicalReferenceMode::PhysicalLaboratory,
+  ResilienceExecutionMode::SiteCommissioning=>PhysicalReferenceMode::SiteCommissioning,
+  ResilienceExecutionMode::FieldOperation=>PhysicalReferenceMode::FieldEvent,
+  _=>model_case.reference_mode}{
   return Err(AuditError("held-out model validation does not bind to the exact GFM cell and physical reference".into()));
  }
  if !t.states.iter().any(|x|x.state_id==first.initial_state_id){return Err(AuditError("unknown initial transition-graph state".into()));}
@@ -203,6 +224,11 @@ fn validate_bindings(b:&CompoundResilienceBlock,g:&GfmCapabilityProfile,m:&Model
 /// causality, authenticate evidence bytes, run attacks or command equipment.
 pub fn evaluate_compound_resilience(b:&CompoundResilienceBlock,g:&GfmCapabilityProfile,m:&ModelValidityProfile,t:&ModeTransitionCorpus)->Result<CompoundResilienceReport,AuditError>{
  if !nonblank(&b.block_id)||b.runs.len()!=4{return Err(AuditError("factorial block requires exactly four runs".into()));}
+ if !nonblank(&b.physical_profile_reference)||!digest(&b.physical_profile_sha256)
+  ||!nonblank(&b.cyber_profile_reference)||!digest(&b.cyber_profile_sha256)
+  ||!b.physical_event_offset_ms.is_finite()||!b.cyber_event_offset_ms.is_finite(){
+  return Err(AuditError("physical/cyber profile identity or event timing is invalid".into()));
+ }
  validate_criteria(&b.acceptance)?;
  let mut slots=[false;4];
  for r in &b.runs{
@@ -212,6 +238,7 @@ pub fn evaluate_compound_resilience(b:&CompoundResilienceBlock,g:&GfmCapabilityP
    &r.protection_configuration_sha256,&r.topology_sha256,&r.model_sha256,&r.analysis_build_sha256,
    &r.site_profile_sha256,&r.scenario_seed_sha256,&r.observation_window_sha256,&r.acceptance_criteria_sha256].iter().all(|x|digest(x))
    ||!nonblank(&r.timebase_reference)||!nonblank(&r.initial_state_id)||!finite(r.initial_soc_fraction)||r.initial_soc_fraction>1.0
+   ||r.physical_profile_sha256!=b.physical_profile_sha256||r.cyber_profile_sha256!=b.cyber_profile_sha256
    ||r.acceptance_criteria_sha256!=b.acceptance.criteria_sha256||!outcome_valid(&r.outcome){
     return Err(AuditError(format!("run {:?} has invalid context or outcome",r.run_id)));
   }
@@ -324,7 +351,10 @@ mod tests{
    protection_configuration_sha256:h('d'),topology_sha256:h('b'),model_sha256:h('e'),analysis_build_sha256:h('3'),
    site_profile_sha256:h('f'),scenario_seed_sha256:h('2'),initial_state_id:"grid".into(),initial_state_epoch:7,
    initial_soc_fraction:.8,timebase_reference:"timebase:locked".into(),observation_window_sha256:h('4'),
-   acceptance_criteria_sha256:h('5'),transition_ids:vec!["T-ISLAND".into()],execution_mode:ResilienceExecutionMode::PowerHil,
+   acceptance_criteria_sha256:h('5'),physical_profile_sha256:h('6'),cyber_profile_sha256:h('7'),
+   physical_event_offset_ms:match arm{FactorialArm::PhysicalOnly|FactorialArm::Compound=>Some(0.0),_=>None},
+   cyber_event_offset_ms:match arm{FactorialArm::CyberOnly|FactorialArm::Compound=>Some(25.0),_=>None},
+   transition_ids:vec!["T-ISLAND".into()],execution_mode:ResilienceExecutionMode::PowerHil,
    evidence:evidence(),outcome:outcome(u,v,f,r,rec,res,c.is_some())}
  }
  fn criteria()->ResilienceAcceptanceCriteria{ResilienceAcceptanceCriteria{criteria_reference:"criteria:factorial".into(),criteria_sha256:h('5'),
@@ -337,7 +367,9 @@ mod tests{
   maximum_positive_interaction_reserve_deficit_wh:100.0}}
  fn block()->CompoundResilienceBlock{CompoundResilienceBlock{block_id:"BLOCK-01".into(),
   expected_physical_disturbance:PhysicalDisturbance::WeakGrid,expected_cyber_manipulation:CyberManipulation::PccVoltageFdi,
-  acceptance:criteria(),runs:vec![
+  physical_profile_reference:"disturbance:weak-grid".into(),physical_profile_sha256:h('6'),
+  cyber_profile_reference:"attack:pcc-voltage-fdi".into(),cyber_profile_sha256:h('7'),
+  physical_event_offset_ms:0.0,cyber_event_offset_ms:25.0,acceptance:criteria(),runs:vec![
    run("B",FactorialArm::Baseline,None,None,0.0,.01,.001,.02,100.0,200.0),
    run("P",FactorialArm::PhysicalOnly,Some(PhysicalDisturbance::WeakGrid),None,10.0,.10,.05,.50,300.0,150.0),
    run("C",FactorialArm::CyberOnly,None,Some(CyberManipulation::PccVoltageFdi),5.0,.05,.02,.20,200.0,180.0),
