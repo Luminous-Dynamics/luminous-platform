@@ -198,6 +198,12 @@ fn validate_bindings(b:&CompoundResilienceBlock,g:&GfmCapabilityProfile,m:&Model
  ||m.identity.protection_configuration_sha256!=first.protection_configuration_sha256
  ||m.identity.topology_sha256!=first.topology_sha256||m.identity.firmware_sha256!=first.firmware_sha256
  ||m.identity.model_sha256!=first.model_sha256||m.identity.analysis_build_sha256!=first.analysis_build_sha256
+ ||g.product_configuration_sha256!=first.product_configuration_sha256
+ ||!close(model_cell.active_power_pu,cell.active_power_pu)||!close(model_cell.reactive_power_pu,cell.reactive_power_pu)
+ ||!close(model_cell.state_of_charge_fraction,cell.state_of_charge_fraction)||!close(model_cell.temperature_c,cell.temperature_c)
+ ||!close(model_cell.short_circuit_ratio,cell.short_circuit_ratio)||!close(model_cell.grid_x_over_r,cell.grid_x_over_r)
+ ||!close(first.initial_soc_fraction,cell.state_of_charge_fraction)
+ ||m.validation_campaign_id==m.calibration_campaign_id||m.validation_dataset_sha256==m.calibration_dataset_sha256
  ||!model_case.held_out_validation_data||model_case.scope!=scope
  ||model_case.dataset_sha256!=m.validation_dataset_sha256
  ||!digest(&model_case.raw_data_sha256)||!digest(&model_case.processing_build_sha256)
@@ -299,8 +305,8 @@ mod tests{
  fn gfm()->GfmCapabilityProfile{
   GfmCapabilityProfile{profile_id:"GFM-01".into(),product_configuration_sha256:h('a'),criterion_bundle_reference:"criteria:gfm".into(),
    operating_cells:vec![GfmOperatingCell{cell_id:"CELL-01".into(),product_configuration_sha256:h('a'),topology_sha256:h('b'),
-    controller_configuration_sha256:h('c'),protection_configuration_sha256:h('d'),active_power_pu:.4,reactive_power_pu:.1,
-    state_of_charge_fraction:.8,current_headroom_pu:.3,dc_energy_headroom_kwh:20.0,temperature_c:25.0,
+    controller_configuration_sha256:h('c'),protection_configuration_sha256:h('d'),active_power_pu:0.4,reactive_power_pu:0.1,
+    state_of_charge_fraction:0.8,current_headroom_pu:0.3,dc_energy_headroom_kwh:20.0,temperature_c:25.0,
     short_circuit_ratio:3.0,grid_x_over_r:10.0,pre_disturbance_voltage_pu:1.0,pre_disturbance_frequency_hz:50.0}],
    tests:vec![GfmTestCase{test_id:"GFM-TEST".into(),family:GfmTestFamily::WeakGridScrXr,
     electrical_boundary:GfmElectricalBoundary::MicrogridPointOfConnection,operating_cell_ids:vec!["CELL-01".into()],
@@ -318,8 +324,8 @@ mod tests{
    validation_dataset_sha256:h('5'),gfm_profile_reference:"GFM-01".into(),
    out_of_domain_policy:"NO_INTERPOLATION_OR_EXTRAPOLATION_OUTSIDE_EXPLICIT_OPERATING_CELLS".into(),
    operating_cells:vec![ModelOperatingCell{cell_id:"MODEL-CELL".into(),source_gfm_profile_id:"GFM-01".into(),
-    source_gfm_cell_id:"CELL-01".into(),operating_cell_sha256:h('6'),active_power_pu:.4,reactive_power_pu:.1,
-    state_of_charge_fraction:.8,temperature_c:25.0,short_circuit_ratio:3.0,grid_x_over_r:10.0}],
+    source_gfm_cell_id:"CELL-01".into(),operating_cell_sha256:h('6'),active_power_pu:0.4,reactive_power_pu:0.1,
+    state_of_charge_fraction:0.8,temperature_c:25.0,short_circuit_ratio:3.0,grid_x_over_r:10.0}],
    validation_cases:vec![ModelValidationCase{case_id:"HELDOUT".into(),cell_id:"MODEL-CELL".into(),scope:ValidationScope::TimeDomain,
     reference_mode:PhysicalReferenceMode::PowerHil,held_out_validation_data:true,dataset_sha256:h('5'),raw_data_sha256:h('7'),
     processing_build_sha256:h('3'),calibration_receipt_reference:"cal:receipt".into(),timebase_reference:"timebase:locked".into(),
@@ -356,7 +362,7 @@ mod tests{
    product_configuration_sha256:h('a'),firmware_sha256:h('1'),controller_configuration_sha256:h('c'),
    protection_configuration_sha256:h('d'),topology_sha256:h('b'),model_sha256:h('e'),analysis_build_sha256:h('3'),
    site_profile_sha256:h('f'),scenario_seed_sha256:h('2'),initial_state_id:"grid".into(),initial_state_epoch:7,
-   initial_soc_fraction:.8,timebase_reference:"timebase:locked".into(),observation_window_sha256:h('4'),
+   initial_soc_fraction:0.8,timebase_reference:"timebase:locked".into(),observation_window_sha256:h('4'),
    acceptance_criteria_sha256:h('5'),physical_profile_sha256:h('6'),cyber_profile_sha256:h('7'),
    physical_event_offset_ms:match arm{FactorialArm::PhysicalOnly|FactorialArm::Compound=>Some(0.0),_=>None},
    cyber_event_offset_ms:match arm{FactorialArm::CyberOnly|FactorialArm::Compound=>Some(25.0),_=>None},
@@ -364,11 +370,11 @@ mod tests{
    evidence:evidence(),outcome:outcome(u,v,f,r,rec,res,c.is_some())}
  }
  fn criteria()->ResilienceAcceptanceCriteria{ResilienceAcceptanceCriteria{criteria_reference:"criteria:factorial".into(),criteria_sha256:h('5'),
-  maximum_unserved_critical_wh:50.0,minimum_terminal_reserve_wh:100.0,maximum_voltage_deviation_pu:.4,
-  maximum_frequency_deviation_hz:.2,maximum_rocof_hz_per_s:2.0,maximum_recovery_duration_ms:1000.0,
+  maximum_unserved_critical_wh:50.0,minimum_terminal_reserve_wh:100.0,maximum_voltage_deviation_pu:0.4,
+  maximum_frequency_deviation_hz:0.2,maximum_rocof_hz_per_s:2.0,maximum_recovery_duration_ms:1000.0,
   maximum_control_deadline_misses:0,maximum_attack_detection_latency_ms:100.0,maximum_mitigation_latency_ms:300.0,
   maximum_false_positive_alerts_per_no_attack_run:0,maximum_positive_interaction_unserved_wh:20.0,
-  maximum_positive_interaction_voltage_pu:.2,maximum_positive_interaction_frequency_hz:.1,
+  maximum_positive_interaction_voltage_pu:0.2,maximum_positive_interaction_frequency_hz:0.1,
   maximum_positive_interaction_rocof_hz_per_s:1.0,maximum_positive_interaction_recovery_ms:500.0,
   maximum_positive_interaction_reserve_deficit_wh:100.0}}
  fn block()->CompoundResilienceBlock{CompoundResilienceBlock{block_id:"BLOCK-01".into(),
@@ -376,10 +382,10 @@ mod tests{
   physical_profile_reference:"disturbance:weak-grid".into(),physical_profile_sha256:h('6'),
   cyber_profile_reference:"attack:pcc-voltage-fdi".into(),cyber_profile_sha256:h('7'),
   physical_event_offset_ms:0.0,cyber_event_offset_ms:25.0,acceptance:criteria(),runs:vec![
-   run("B",FactorialArm::Baseline,None,None,0.0,.01,.001,.02,100.0,200.0),
-   run("P",FactorialArm::PhysicalOnly,Some(PhysicalDisturbance::WeakGrid),None,10.0,.10,.05,.50,300.0,150.0),
-   run("C",FactorialArm::CyberOnly,None,Some(CyberManipulation::PccVoltageFdi),5.0,.05,.02,.20,200.0,180.0),
-   run("PC",FactorialArm::Compound,Some(PhysicalDisturbance::WeakGrid),Some(CyberManipulation::PccVoltageFdi),30.0,.25,.12,1.20,700.0,120.0)]}}
+   run("B",FactorialArm::Baseline,None,None,0.0,0.01,0.001,0.02,100.0,200.0),
+   run("P",FactorialArm::PhysicalOnly,Some(PhysicalDisturbance::WeakGrid),None,10.0,0.10,0.05,0.50,300.0,150.0),
+   run("C",FactorialArm::CyberOnly,None,Some(CyberManipulation::PccVoltageFdi),5.0,0.05,0.02,0.20,200.0,180.0),
+   run("PC",FactorialArm::Compound,Some(PhysicalDisturbance::WeakGrid),Some(CyberManipulation::PccVoltageFdi),30.0,0.25,0.12,1.20,700.0,120.0)]}}
  fn eval(b:&CompoundResilienceBlock)->Result<CompoundResilienceReport,AuditError>{evaluate_compound_resilience(b,&gfm(),&model(),&graph())}
 
  #[test]fn complete_four_arm_block_reports_interaction(){let r=eval(&block()).unwrap();assert!(r.structural_complete&&r.model_validation_eligible&&r.all_four_arms_passed&&r.compound_resilience_eligible);assert!(!r.physical_evidence_eligible);let x=r.interaction_contrasts.iter().find(|x|x.metric==InteractionMetric::UnservedCriticalWh).unwrap();assert!((x.interaction_delta-15.0).abs()<EPS);}
