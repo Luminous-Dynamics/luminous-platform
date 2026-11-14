@@ -1,0 +1,385 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/model-validity-envelope-v0.1.schema.json",
+  "title": "Held-out model validity envelope profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_class",
+    "profile_id",
+    "model_fidelity",
+    "identity",
+    "calibration_campaign_id",
+    "calibration_dataset_sha256",
+    "validation_campaign_id",
+    "validation_dataset_sha256",
+    "gfm_profile_reference",
+    "out_of_domain_policy",
+    "operating_cells",
+    "validation_cases",
+    "claim_requests",
+    "claim_ceiling"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "record_class": {
+      "const": "synthetic_test_plan"
+    },
+    "profile_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_fidelity": {
+      "enum": [
+        "emt_switching",
+        "emt_average",
+        "detailed_rms",
+        "positive_sequence_rms"
+      ]
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model_sha256",
+        "product_hardware_sha256",
+        "firmware_sha256",
+        "controller_configuration_sha256",
+        "protection_configuration_sha256",
+        "topology_sha256",
+        "model_parameter_set_sha256",
+        "analysis_build_sha256"
+      ],
+      "properties": {
+        "model_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "product_hardware_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "firmware_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "controller_configuration_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "protection_configuration_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "topology_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "model_parameter_set_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "analysis_build_sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        }
+      }
+    },
+    "calibration_campaign_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "calibration_dataset_sha256": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "validation_campaign_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "validation_dataset_sha256": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "gfm_profile_reference": {
+      "type": "string",
+      "minLength": 1
+    },
+    "out_of_domain_policy": {
+      "const": "NO_MODEL_CLAIM_OUTSIDE_EXPLICIT_HELD_OUT_VALIDATION_CELLS"
+    },
+    "operating_cells": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "cell_id",
+          "source_gfm_profile_id",
+          "source_gfm_cell_id",
+          "operating_cell_sha256",
+          "active_power_pu",
+          "reactive_power_pu",
+          "state_of_charge_fraction",
+          "temperature_c",
+          "short_circuit_ratio",
+          "grid_x_over_r"
+        ],
+        "properties": {
+          "cell_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_gfm_profile_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_gfm_cell_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operating_cell_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "active_power_pu": {
+            "type": "number"
+          },
+          "reactive_power_pu": {
+            "type": "number"
+          },
+          "state_of_charge_fraction": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "temperature_c": {
+            "type": "number"
+          },
+          "short_circuit_ratio": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "grid_x_over_r": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        }
+      }
+    },
+    "validation_cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "case_id",
+          "cell_id",
+          "scope",
+          "reference_mode",
+          "held_out_validation_data",
+          "dataset_sha256",
+          "raw_data_sha256",
+          "processing_build_sha256",
+          "calibration_receipt_reference",
+          "timebase_reference",
+          "independent_witness_reference",
+          "acceptance_criteria_reference",
+          "required_observable_ids",
+          "residuals"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "cell_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scope": {
+            "enum": [
+              "time_domain",
+              "frequency_domain"
+            ]
+          },
+          "reference_mode": {
+            "enum": [
+              "power_hil",
+              "physical_laboratory",
+              "site_commissioning",
+              "field_event"
+            ]
+          },
+          "held_out_validation_data": {
+            "const": true
+          },
+          "dataset_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "raw_data_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "processing_build_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "calibration_receipt_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "timebase_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "independent_witness_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "acceptance_criteria_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "required_observable_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "residuals": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "observable_id",
+                "metric_kind",
+                "unit",
+                "normalized_rmse",
+                "peak_absolute_error",
+                "measurement_uncertainty",
+                "timing_lag_ms",
+                "model_summary_reference",
+                "measurement_summary_reference",
+                "residual_output_reference",
+                "uncertainty_reference"
+              ],
+              "properties": {
+                "observable_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "metric_kind": {
+                  "enum": [
+                    "normalized_rmse",
+                    "peak_absolute_error",
+                    "timing_lag_ms",
+                    "resonance_frequency_shift_hz",
+                    "gain_margin_difference_db",
+                    "phase_margin_difference_deg"
+                  ]
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "normalized_rmse": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "peak_absolute_error": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "measurement_uncertainty": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "timing_lag_ms": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "model_summary_reference": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "measurement_summary_reference": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "residual_output_reference": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uncertainty_reference": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "claim_requests": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "claim_id",
+          "description",
+          "requested_cell_ids",
+          "required_scopes"
+        ],
+        "properties": {
+          "claim_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "requested_cell_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required_scopes": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "time_domain",
+                "frequency_domain"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "claim_ceiling": {
+      "const": "SYNTHETIC_MODEL_VALIDITY_PROFILE_ONLY_NOT_MODEL_VALIDATION_OR_CONFORMITY"
+    }
+  }
+}

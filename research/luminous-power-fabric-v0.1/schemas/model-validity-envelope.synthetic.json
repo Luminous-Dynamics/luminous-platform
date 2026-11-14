@@ -1,0 +1,242 @@
+{
+  "schema_version": "0.1",
+  "record_class": "synthetic_test_plan",
+  "profile_id": "PF-MODEL-VALIDITY-SYNTH-01",
+  "model_fidelity": "emt_switching",
+  "identity": {
+    "model_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "product_hardware_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+    "firmware_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+    "controller_configuration_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+    "protection_configuration_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+    "topology_sha256": "6666666666666666666666666666666666666666666666666666666666666666",
+    "model_parameter_set_sha256": "7777777777777777777777777777777777777777777777777777777777777777",
+    "analysis_build_sha256": "8888888888888888888888888888888888888888888888888888888888888888"
+  },
+  "calibration_campaign_id": "calibration-campaign-01",
+  "calibration_dataset_sha256": "9999999999999999999999999999999999999999999999999999999999999999",
+  "validation_campaign_id": "heldout-validation-campaign-01",
+  "validation_dataset_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "gfm_profile_reference": "PF-GFM-ENVELOPE-SYNTH-0.1",
+  "out_of_domain_policy": "NO_MODEL_CLAIM_OUTSIDE_EXPLICIT_HELD_OUT_VALIDATION_CELLS",
+  "operating_cells": [
+    {
+      "cell_id": "CELL-BASE",
+      "source_gfm_profile_id": "PF-GFM-ENVELOPE-SYNTH-0.1",
+      "source_gfm_cell_id": "CELL-BASE",
+      "operating_cell_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "active_power_pu": 0.4,
+      "reactive_power_pu": 0.1,
+      "state_of_charge_fraction": 0.8,
+      "temperature_c": 25,
+      "short_circuit_ratio": 3,
+      "grid_x_over_r": 10
+    }
+  ],
+  "validation_cases": [
+    {
+      "case_id": "MV-TIME-01",
+      "cell_id": "CELL-BASE",
+      "scope": "time_domain",
+      "reference_mode": "physical_laboratory",
+      "held_out_validation_data": true,
+      "dataset_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "raw_data_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "processing_build_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "calibration_receipt_reference": "synthetic://calibration-receipt",
+      "timebase_reference": "synthetic://timebase",
+      "independent_witness_reference": "synthetic://independent-witness",
+      "acceptance_criteria_reference": "owner-supplied:UNIFI-v3-or-grid-code-criterion:revision-required",
+      "required_observable_ids": [
+        "voltage_response",
+        "current_response",
+        "active_power_response",
+        "reactive_power_response",
+        "frequency_response",
+        "phase_angle_response"
+      ],
+      "residuals": [
+        {
+          "observable_id": "voltage_response",
+          "metric_kind": "normalized_rmse",
+          "unit": "pu",
+          "normalized_rmse": 0.03,
+          "peak_absolute_error": 0.05,
+          "measurement_uncertainty": 0.01,
+          "timing_lag_ms": 0.2,
+          "model_summary_reference": "synthetic://model-summary",
+          "measurement_summary_reference": "synthetic://measurement-summary",
+          "residual_output_reference": "synthetic://residual-output",
+          "uncertainty_reference": "synthetic://uncertainty"
+        },
+        {
+          "observable_id": "current_response",
+          "metric_kind": "normalized_rmse",
+          "unit": "pu",
+          "normalized_rmse": 0.03,
+          "peak_absolute_error": 0.05,
+          "measurement_uncertainty": 0.01,
+          "timing_lag_ms": 0.2,
+          "model_summary_reference": "synthetic://model-summary",
+          "measurement_summary_reference": "synthetic://measurement-summary",
+          "residual_output_reference": "synthetic://residual-output",
+          "uncertainty_reference": "synthetic://uncertainty"
+        },
+        {
+          "observable_id": "active_power_response",
+          "metric_kind": "normalized_rmse",
+          "unit": "pu",
+          "normalized_rmse": 0.03,
+          "peak_absolute_error": 0.05,
+          "measurement_uncertainty": 0.01,
+          "timing_lag_ms": 0.2,
+          "model_summary_reference": "synthetic://model-summary",
+          "measurement_summary_reference": "synthetic://measurement-summary",
+          "residual_output_reference": "synthetic://residual-output",
+          "uncertainty_reference": "synthetic://uncertainty"
+        },
+        {
+          "observable_id": "reactive_power_response",
+          "metric_kind": "normalized_rmse",
+          "unit": "pu",
+          "normalized_rmse": 0.03,
+          "peak_absolute_error": 0.05,
+          "measurement_uncertainty": 0.01,
+          "timing_lag_ms": 0.2,
+          "model_summary_reference": "synthetic://model-summary",
+          "measurement_summary_reference": "synthetic://measurement-summary",
+          "residual_output_reference": "synthetic://residual-output",
+          "uncertainty_reference": "synthetic://uncertainty"
+        },
+        {
+          "observable_id": "frequency_response",
+          "metric_kind": "normalized_rmse",
+          "unit": "pu",
+          "normalized_rmse": 0.03,
+          "peak_absolute_error": 0.05,
+          "measurement_uncertainty": 0.01,
+          "timing_lag_ms": 0.2,
+          "model_summary_reference": "synthetic://model-summary",
+          "measurement_summary_reference": "synthetic://measurement-summary",
+          "residual_output_reference": "synthetic://residual-output",
+          "uncertainty_reference": "synthetic://uncertainty"
+        },
+        {
+          "observable_id": "phase_angle_response",
+          "metric_kind": "normalized_rmse",
+          "unit": "pu",
+          "normalized_rmse": 0.03,
+          "peak_absolute_error": 0.05,
+          "measurement_uncertainty": 0.01,
+          "timing_lag_ms": 0.2,
+          "model_summary_reference": "synthetic://model-summary",
+          "measurement_summary_reference": "synthetic://measurement-summary",
+          "residual_output_reference": "synthetic://residual-output",
+          "uncertainty_reference": "synthetic://uncertainty"
+        }
+      ]
+    },
+    {
+      "case_id": "MV-FREQ-01",
+      "cell_id": "CELL-BASE",
+      "scope": "frequency_domain",
+      "reference_mode": "power_hil",
+      "held_out_validation_data": true,
+      "dataset_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "raw_data_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "processing_build_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "calibration_receipt_reference": "synthetic://calibration-receipt",
+      "timebase_reference": "synthetic://timebase",
+      "independent_witness_reference": "synthetic://independent-witness",
+      "acceptance_criteria_reference": "owner-supplied:UNIFI-v3-or-grid-code-criterion:revision-required",
+      "required_observable_ids": [
+        "impedance_magnitude_response",
+        "impedance_phase_response",
+        "resonance_frequency",
+        "gain_margin",
+        "phase_margin"
+      ],
+      "residuals": [
+        {
+          "observable_id": "impedance_magnitude_response",
+          "metric_kind": "normalized_rmse",
+          "unit": "ohm_or_degree",
+          "normalized_rmse": 0.03,
+          "peak_absolute_error": 0.05,
+          "measurement_uncertainty": 0.01,
+          "timing_lag_ms": 0.2,
+          "model_summary_reference": "synthetic://model-summary",
+          "measurement_summary_reference": "synthetic://measurement-summary",
+          "residual_output_reference": "synthetic://residual-output",
+          "uncertainty_reference": "synthetic://uncertainty"
+        },
+        {
+          "observable_id": "impedance_phase_response",
+          "metric_kind": "normalized_rmse",
+          "unit": "ohm_or_degree",
+          "normalized_rmse": 0.03,
+          "peak_absolute_error": 0.05,
+          "measurement_uncertainty": 0.01,
+          "timing_lag_ms": 0.2,
+          "model_summary_reference": "synthetic://model-summary",
+          "measurement_summary_reference": "synthetic://measurement-summary",
+          "residual_output_reference": "synthetic://residual-output",
+          "uncertainty_reference": "synthetic://uncertainty"
+        },
+        {
+          "observable_id": "resonance_frequency",
+          "metric_kind": "resonance_frequency_shift_hz",
+          "unit": "Hz",
+          "normalized_rmse": 0.03,
+          "peak_absolute_error": 0.05,
+          "measurement_uncertainty": 0.01,
+          "timing_lag_ms": 0.2,
+          "model_summary_reference": "synthetic://model-summary",
+          "measurement_summary_reference": "synthetic://measurement-summary",
+          "residual_output_reference": "synthetic://residual-output",
+          "uncertainty_reference": "synthetic://uncertainty"
+        },
+        {
+          "observable_id": "gain_margin",
+          "metric_kind": "gain_margin_difference_db",
+          "unit": "dB",
+          "normalized_rmse": 0.03,
+          "peak_absolute_error": 0.05,
+          "measurement_uncertainty": 0.01,
+          "timing_lag_ms": 0.2,
+          "model_summary_reference": "synthetic://model-summary",
+          "measurement_summary_reference": "synthetic://measurement-summary",
+          "residual_output_reference": "synthetic://residual-output",
+          "uncertainty_reference": "synthetic://uncertainty"
+        },
+        {
+          "observable_id": "phase_margin",
+          "metric_kind": "phase_margin_difference_deg",
+          "unit": "deg",
+          "normalized_rmse": 0.03,
+          "peak_absolute_error": 0.05,
+          "measurement_uncertainty": 0.01,
+          "timing_lag_ms": 0.2,
+          "model_summary_reference": "synthetic://model-summary",
+          "measurement_summary_reference": "synthetic://measurement-summary",
+          "residual_output_reference": "synthetic://residual-output",
+          "uncertainty_reference": "synthetic://uncertainty"
+        }
+      ]
+    }
+  ],
+  "claim_requests": [
+    {
+      "claim_id": "CLAIM-BASE-CELL",
+      "description": "Time and frequency response for CELL-BASE only",
+      "requested_cell_ids": [
+        "CELL-BASE"
+      ],
+      "required_scopes": [
+        "time_domain",
+        "frequency_domain"
+      ]
+    }
+  ],
+  "claim_ceiling": "SYNTHETIC_MODEL_VALIDITY_PROFILE_ONLY_NOT_MODEL_VALIDATION_OR_CONFORMITY"
+}

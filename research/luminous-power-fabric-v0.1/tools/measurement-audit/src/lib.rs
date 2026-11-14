@@ -327,3 +327,6 @@ mod tests {
 }
 
 pub mod gfm_capability_envelope;
+
+pub mod model_validity_envelope;
+
