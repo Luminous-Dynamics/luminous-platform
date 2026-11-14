@@ -1,0 +1,333 @@
+{
+  "schema_version": "0.1",
+  "profile_id": "PF-GFM-ENVELOPE-SYNTH-0.1",
+  "record_class": "synthetic_test_plan",
+  "product_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "criterion_bundle_reference": "owner-supplied:UNIFI-v3-or-grid-code-profile:revision-required",
+  "out_of_domain_policy": "NO_INTERPOLATION_OR_EXTRAPOLATION_OUTSIDE_EXPLICIT_OPERATING_CELLS",
+  "operating_cells": [
+    {
+      "cell_id": "CELL-BASE",
+      "active_power_pu": 0.4,
+      "reactive_power_pu": 0.1,
+      "state_of_charge_fraction": 0.8,
+      "current_headroom_pu": 0.3,
+      "dc_energy_headroom_kwh": 20,
+      "temperature_c": 25,
+      "short_circuit_ratio": 3,
+      "grid_x_over_r": 10,
+      "pre_disturbance_voltage_pu": 1,
+      "pre_disturbance_frequency_hz": 50,
+      "product_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "topology_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "controller_configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "protection_configuration_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    },
+    {
+      "cell_id": "CELL-WEAK",
+      "active_power_pu": 0.3,
+      "reactive_power_pu": 0.2,
+      "state_of_charge_fraction": 0.7,
+      "current_headroom_pu": 0.25,
+      "dc_energy_headroom_kwh": 15,
+      "temperature_c": 30,
+      "short_circuit_ratio": 1.5,
+      "grid_x_over_r": 8,
+      "pre_disturbance_voltage_pu": 0.98,
+      "pre_disturbance_frequency_hz": 50,
+      "product_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "topology_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "controller_configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "protection_configuration_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    },
+    {
+      "cell_id": "CELL-LIMIT",
+      "active_power_pu": 0.9,
+      "reactive_power_pu": 0.2,
+      "state_of_charge_fraction": 0.3,
+      "current_headroom_pu": 0.05,
+      "dc_energy_headroom_kwh": 2.5,
+      "temperature_c": 40,
+      "short_circuit_ratio": 2,
+      "grid_x_over_r": 12,
+      "pre_disturbance_voltage_pu": 0.9,
+      "pre_disturbance_frequency_hz": 49.8,
+      "product_configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "topology_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "controller_configuration_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "protection_configuration_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    }
+  ],
+  "tests": [
+    {
+      "test_id": "GFM-01",
+      "family": "operating_point_headroom",
+      "electrical_boundary": "converter_terminals",
+      "operating_cell_ids": [
+        "CELL-BASE",
+        "CELL-WEAK",
+        "CELL-LIMIT"
+      ],
+      "disturbance_profile_reference": "synthetic://disturbance/GFM-01",
+      "acceptance_criteria_reference": "owner-supplied:UNIFI-v3-or-applicable-grid-code-profile:revision-required",
+      "planned_execution_modes": [
+        "emt_simulation",
+        "controller_hil"
+      ],
+      "required_observable_ids": [
+        "active_power_pu",
+        "reactive_power_pu",
+        "state_of_charge_fraction",
+        "dc_energy_headroom_kwh",
+        "current_headroom_pu",
+        "thermal_margin_c"
+      ],
+      "participant_configuration_sha256": [],
+      "controls": {
+        "positive_control": "Declared response remains within criteria supplied by the applicable owner profile.",
+        "negative_control": "A precondition or behavior is made invalid and must be detected without a false pass.",
+        "recovery_control": "Return to a declared operating cell and independently observe recovery."
+      }
+    },
+    {
+      "test_id": "GFM-02",
+      "family": "weak_grid_scr_xr",
+      "electrical_boundary": "converter_terminals",
+      "operating_cell_ids": [
+        "CELL-BASE",
+        "CELL-WEAK",
+        "CELL-LIMIT"
+      ],
+      "disturbance_profile_reference": "synthetic://disturbance/GFM-02",
+      "acceptance_criteria_reference": "owner-supplied:UNIFI-v3-or-applicable-grid-code-profile:revision-required",
+      "planned_execution_modes": [
+        "emt_simulation",
+        "controller_hil"
+      ],
+      "required_observable_ids": [
+        "scr_at_poc",
+        "x_over_r_at_poc",
+        "voltage_response_pu",
+        "frequency_response_hz",
+        "oscillation_damping_ratio",
+        "minimum_stable_scr"
+      ],
+      "participant_configuration_sha256": [],
+      "controls": {
+        "positive_control": "Declared response remains within criteria supplied by the applicable owner profile.",
+        "negative_control": "A precondition or behavior is made invalid and must be detected without a false pass.",
+        "recovery_control": "Return to a declared operating cell and independently observe recovery."
+      }
+    },
+    {
+      "test_id": "GFM-03",
+      "family": "phase_angle_jump",
+      "electrical_boundary": "converter_terminals",
+      "operating_cell_ids": [
+        "CELL-BASE",
+        "CELL-WEAK"
+      ],
+      "disturbance_profile_reference": "synthetic://disturbance/GFM-03",
+      "acceptance_criteria_reference": "owner-supplied:UNIFI-v3-or-applicable-grid-code-profile:revision-required",
+      "planned_execution_modes": [
+        "emt_simulation",
+        "controller_hil",
+        "power_hil"
+      ],
+      "required_observable_ids": [
+        "phase_angle_jump_deg",
+        "active_power_transient_pu",
+        "peak_current_pu",
+        "loss_of_synchronism",
+        "recovery_time_s"
+      ],
+      "participant_configuration_sha256": [],
+      "controls": {
+        "positive_control": "Declared response remains within criteria supplied by the applicable owner profile.",
+        "negative_control": "A precondition or behavior is made invalid and must be detected without a false pass.",
+        "recovery_control": "Return to a declared operating cell and independently observe recovery."
+      }
+    },
+    {
+      "test_id": "GFM-04",
+      "family": "current_limit_fault_ride_through",
+      "electrical_boundary": "converter_terminals",
+      "operating_cell_ids": [
+        "CELL-LIMIT"
+      ],
+      "disturbance_profile_reference": "synthetic://disturbance/GFM-04",
+      "acceptance_criteria_reference": "owner-supplied:UNIFI-v3-or-applicable-grid-code-profile:revision-required",
+      "planned_execution_modes": [
+        "power_hil",
+        "physical_laboratory"
+      ],
+      "required_observable_ids": [
+        "fault_voltage_time_profile",
+        "peak_current_pu",
+        "sustained_current_pu",
+        "active_reactive_current_priority",
+        "dc_energy_consumed_kwh",
+        "post_fault_recovery_time_s",
+        "synchronism_retained"
+      ],
+      "participant_configuration_sha256": [],
+      "controls": {
+        "positive_control": "Declared response remains within criteria supplied by the applicable owner profile.",
+        "negative_control": "A precondition or behavior is made invalid and must be detected without a false pass.",
+        "recovery_control": "Return to a declared operating cell and independently observe recovery."
+      }
+    },
+    {
+      "test_id": "GFM-05",
+      "family": "negative_sequence_unbalanced_fault",
+      "electrical_boundary": "converter_terminals",
+      "operating_cell_ids": [
+        "CELL-LIMIT"
+      ],
+      "disturbance_profile_reference": "synthetic://disturbance/GFM-05",
+      "acceptance_criteria_reference": "owner-supplied:UNIFI-v3-or-applicable-grid-code-profile:revision-required",
+      "planned_execution_modes": [
+        "power_hil",
+        "physical_laboratory"
+      ],
+      "required_observable_ids": [
+        "negative_sequence_current_pu",
+        "phase_current_unbalance_percent",
+        "dc_link_ripple_v",
+        "post_fault_recovery_status"
+      ],
+      "participant_configuration_sha256": [],
+      "controls": {
+        "positive_control": "Declared response remains within criteria supplied by the applicable owner profile.",
+        "negative_control": "A precondition or behavior is made invalid and must be detected without a false pass.",
+        "recovery_control": "Return to a declared operating cell and independently observe recovery."
+      }
+    },
+    {
+      "test_id": "GFM-06",
+      "family": "frequency_domain_impedance_scan",
+      "electrical_boundary": "converter_terminals",
+      "operating_cell_ids": [
+        "CELL-BASE",
+        "CELL-WEAK",
+        "CELL-LIMIT"
+      ],
+      "disturbance_profile_reference": "synthetic://disturbance/GFM-06",
+      "acceptance_criteria_reference": "owner-supplied:UNIFI-v3-or-applicable-grid-code-profile:revision-required",
+      "planned_execution_modes": [
+        "emt_simulation",
+        "physical_laboratory"
+      ],
+      "required_observable_ids": [
+        "impedance_scan_evidence_reference",
+        "resonance_frequency_hz",
+        "gain_margin_db",
+        "phase_margin_deg",
+        "model_measurement_deviation"
+      ],
+      "participant_configuration_sha256": [],
+      "controls": {
+        "positive_control": "Declared response remains within criteria supplied by the applicable owner profile.",
+        "negative_control": "A precondition or behavior is made invalid and must be detected without a false pass.",
+        "recovery_control": "Return to a declared operating cell and independently observe recovery."
+      }
+    },
+    {
+      "test_id": "GFM-07",
+      "family": "multi_vendor_interaction",
+      "electrical_boundary": "plant_point_of_connection",
+      "operating_cell_ids": [
+        "CELL-BASE",
+        "CELL-WEAK"
+      ],
+      "disturbance_profile_reference": "synthetic://disturbance/GFM-07",
+      "acceptance_criteria_reference": "owner-supplied:UNIFI-v3-or-applicable-grid-code-profile:revision-required",
+      "planned_execution_modes": [
+        "emt_simulation",
+        "controller_hil"
+      ],
+      "required_observable_ids": [
+        "active_power_sharing_error_percent",
+        "reactive_power_sharing_error_percent",
+        "circulating_power_pu",
+        "oscillation_frequency_hz",
+        "damping_ratio",
+        "small_signal_stability_margin",
+        "grid_strength_sweep"
+      ],
+      "participant_configuration_sha256": [
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      ],
+      "controls": {
+        "positive_control": "Declared response remains within criteria supplied by the applicable owner profile.",
+        "negative_control": "A precondition or behavior is made invalid and must be detected without a false pass.",
+        "recovery_control": "Return to a declared operating cell and independently observe recovery."
+      }
+    }
+  ],
+  "capability_requests": [
+    {
+      "capability_id": "voltage_magnitude_support",
+      "description": "Requested voltage support domain",
+      "electrical_boundary": "converter_terminals",
+      "requested_operating_cell_ids": [
+        "CELL-BASE",
+        "CELL-WEAK",
+        "CELL-LIMIT"
+      ],
+      "required_test_families": [
+        "operating_point_headroom",
+        "weak_grid_scr_xr"
+      ]
+    },
+    {
+      "capability_id": "voltage_angle_frequency_support",
+      "description": "Requested phase-angle and frequency response domain",
+      "electrical_boundary": "converter_terminals",
+      "requested_operating_cell_ids": [
+        "CELL-BASE",
+        "CELL-WEAK"
+      ],
+      "required_test_families": [
+        "phase_angle_jump",
+        "frequency_domain_impedance_scan"
+      ]
+    },
+    {
+      "capability_id": "fault_current_limit_recovery",
+      "description": "Requested current-limited fault response domain",
+      "electrical_boundary": "converter_terminals",
+      "requested_operating_cell_ids": [
+        "CELL-LIMIT"
+      ],
+      "required_test_families": [
+        "current_limit_fault_ride_through"
+      ]
+    },
+    {
+      "capability_id": "unbalanced_fault_response",
+      "description": "Requested negative-sequence response domain",
+      "electrical_boundary": "converter_terminals",
+      "requested_operating_cell_ids": [
+        "CELL-LIMIT"
+      ],
+      "required_test_families": [
+        "negative_sequence_unbalanced_fault"
+      ]
+    },
+    {
+      "capability_id": "multi_vendor_interoperability",
+      "description": "Requested parallel multi-vendor interaction domain",
+      "electrical_boundary": "plant_point_of_connection",
+      "requested_operating_cell_ids": [
+        "CELL-BASE",
+        "CELL-WEAK"
+      ],
+      "required_test_families": [
+        "multi_vendor_interaction"
+      ]
+    }
+  ],
+  "claim_ceiling": "SYNTHETIC_GFM_TEST_PLAN_AND_DOMAIN_COVERAGE_ONLY_NOT_CAPABILITY_OR_CONFORMITY"
+}

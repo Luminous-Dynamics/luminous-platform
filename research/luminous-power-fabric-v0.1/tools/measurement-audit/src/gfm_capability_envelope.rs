@@ -262,8 +262,16 @@ pub fn validate_gfm_capability_profile(
             }
             for family in &request.required_test_families {
                 requested.insert((cell.clone(), *family));
-                if !covered.contains(&(cell.clone(), *family)) {
-                    return Err(AuditError(format!("capability {:?} lacks {:?} coverage at cell {:?}", request.capability_id, family, cell)));
+                let boundary_covered = profile.tests.iter().any(|test|
+                    test.family == *family
+                        && test.electrical_boundary == request.electrical_boundary
+                        && test.operating_cell_ids.iter().any(|test_cell| test_cell == cell)
+                );
+                if !covered.contains(&(cell.clone(), *family)) || !boundary_covered {
+                    return Err(AuditError(format!(
+                        "capability {:?} lacks {:?} coverage at cell {:?} and requested boundary {:?}",
+                        request.capability_id, family, cell, request.electrical_boundary
+                    )));
                 }
             }
         }
@@ -299,7 +307,12 @@ mod tests {
             _=>vec![GfmExecutionMode::EmtSimulation,GfmExecutionMode::ControllerHil],
         };
         let participants=if f==GfmTestFamily::MultiVendorInteraction{vec![h('e'),h('f')]}else{vec![]};
-        GfmTestCase{test_id:id.into(),family:f,electrical_boundary:GfmElectricalBoundary::ConverterTerminals,
+        let boundary = if f == GfmTestFamily::MultiVendorInteraction {
+            GfmElectricalBoundary::PlantPointOfConnection
+        } else {
+            GfmElectricalBoundary::ConverterTerminals
+        };
+        GfmTestCase{test_id:id.into(),family:f,electrical_boundary:boundary,
             operating_cell_ids:cells.into_iter().map(str::to_string).collect(),disturbance_profile_reference:format!("synthetic://disturbance/{id}"),
             acceptance_criteria_reference:"owner-supplied:UNIFI-v3-or-product-profile:criterion-revision-required".into(),
             planned_execution_modes:modes,required_observable_ids:metrics(f),participant_configuration_sha256:participants,
@@ -360,3 +373,10 @@ mod tests {
     #[test] fn rejects_extrapolation_policy(){let mut x=profile();x.out_of_domain_policy="INTERPOLATE".into();assert!(validate_gfm_capability_profile(&x).is_err());}
     #[test] fn rejects_duplicate_capability_ids(){let mut x=profile();x.capability_requests[1].capability_id=x.capability_requests[0].capability_id.clone();assert!(validate_gfm_capability_profile(&x).is_err());}
 }
+    #[test]
+    fn rejects_test_boundary_mismatch_for_requested_capability() {
+        let mut value = profile();
+        value.tests[6].electrical_boundary = GfmElectricalBoundary::ConverterTerminals;
+        assert!(validate_gfm_capability_profile(&value).is_err());
+    }
+

@@ -1,0 +1,303 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/luminous-power-fabric-v0.1/schemas/gfm-capability-envelope-v0.1.schema.json",
+  "title": "Power Fabric GFM tested capability envelope profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "record_class",
+    "product_configuration_sha256",
+    "criterion_bundle_reference",
+    "out_of_domain_policy",
+    "operating_cells",
+    "tests",
+    "capability_requests",
+    "claim_ceiling"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "profile_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "record_class": {
+      "const": "synthetic_test_plan"
+    },
+    "product_configuration_sha256": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "criterion_bundle_reference": {
+      "type": "string",
+      "minLength": 1
+    },
+    "out_of_domain_policy": {
+      "const": "NO_INTERPOLATION_OR_EXTRAPOLATION_OUTSIDE_EXPLICIT_OPERATING_CELLS"
+    },
+    "operating_cells": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "cell_id",
+          "product_configuration_sha256",
+          "topology_sha256",
+          "controller_configuration_sha256",
+          "protection_configuration_sha256",
+          "active_power_pu",
+          "reactive_power_pu",
+          "state_of_charge_fraction",
+          "current_headroom_pu",
+          "dc_energy_headroom_kwh",
+          "temperature_c",
+          "short_circuit_ratio",
+          "grid_x_over_r",
+          "pre_disturbance_voltage_pu",
+          "pre_disturbance_frequency_hz"
+        ],
+        "properties": {
+          "cell_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "product_configuration_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "topology_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "controller_configuration_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "protection_configuration_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "active_power_pu": {
+            "type": "number"
+          },
+          "reactive_power_pu": {
+            "type": "number"
+          },
+          "state_of_charge_fraction": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "current_headroom_pu": {
+            "type": "number",
+            "minimum": 0
+          },
+          "dc_energy_headroom_kwh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "temperature_c": {
+            "type": "number"
+          },
+          "short_circuit_ratio": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "grid_x_over_r": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "pre_disturbance_voltage_pu": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "pre_disturbance_frequency_hz": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        }
+      }
+    },
+    "tests": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "test_id",
+          "family",
+          "electrical_boundary",
+          "operating_cell_ids",
+          "disturbance_profile_reference",
+          "acceptance_criteria_reference",
+          "planned_execution_modes",
+          "required_observable_ids",
+          "participant_configuration_sha256",
+          "controls"
+        ],
+        "properties": {
+          "test_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "family": {
+            "enum": [
+              "operating_point_headroom",
+              "weak_grid_scr_xr",
+              "phase_angle_jump",
+              "current_limit_fault_ride_through",
+              "negative_sequence_unbalanced_fault",
+              "frequency_domain_impedance_scan",
+              "multi_vendor_interaction"
+            ]
+          },
+          "electrical_boundary": {
+            "enum": [
+              "converter_terminals",
+              "plant_point_of_connection",
+              "microgrid_point_of_connection"
+            ]
+          },
+          "operating_cell_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "disturbance_profile_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "acceptance_criteria_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "planned_execution_modes": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "emt_simulation",
+                "controller_hil",
+                "power_hil",
+                "physical_laboratory",
+                "site_commissioning",
+                "field_operation"
+              ]
+            }
+          },
+          "required_observable_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "participant_configuration_sha256": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Fa-f0-9]{64}$"
+            }
+          },
+          "controls": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "positive_control",
+              "negative_control",
+              "recovery_control"
+            ],
+            "properties": {
+              "positive_control": {
+                "type": "string",
+                "minLength": 1
+              },
+              "negative_control": {
+                "type": "string",
+                "minLength": 1
+              },
+              "recovery_control": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "capability_requests": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "capability_id",
+          "description",
+          "electrical_boundary",
+          "requested_operating_cell_ids",
+          "required_test_families"
+        ],
+        "properties": {
+          "capability_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "electrical_boundary": {
+            "enum": [
+              "converter_terminals",
+              "plant_point_of_connection",
+              "microgrid_point_of_connection"
+            ]
+          },
+          "requested_operating_cell_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required_test_families": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "operating_point_headroom",
+                "weak_grid_scr_xr",
+                "phase_angle_jump",
+                "current_limit_fault_ride_through",
+                "negative_sequence_unbalanced_fault",
+                "frequency_domain_impedance_scan",
+                "multi_vendor_interaction"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "claim_ceiling": {
+      "const": "SYNTHETIC_GFM_TEST_PLAN_AND_DOMAIN_COVERAGE_ONLY_NOT_CAPABILITY_OR_CONFORMITY"
+    }
+  }
+}
