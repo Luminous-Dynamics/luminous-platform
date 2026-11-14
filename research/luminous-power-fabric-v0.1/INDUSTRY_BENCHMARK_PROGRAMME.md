@@ -267,3 +267,8 @@ not be ranked against this synthetic offline validator.
 ## 24. GFM tested capability envelope
 
 Issue [#477](https://github.com/Luminous-Dynamics/luminous-platform/issues/477) and draft [PR #478](https://github.com/Luminous-Dynamics/luminous-platform/pull/478) extend controller-level testing with seven converter-level GFM families: operating point/headroom, weak-grid SCR/X/R, phase-angle jump, current-limit/fault ride-through, negative-sequence/unbalanced fault, frequency-domain impedance scan and multi-vendor interaction. The finite operating-domain contract forbids extrapolation and maps each requested capability to explicit cells, test families and boundaries. UNIFI v3 and active IEEE P2800.1 are comparison anchors, not claimed conformity results.
+
+
+## 25. Model validity envelope and held-out validation
+
+Issue [#479](https://github.com/Luminous-Dynamics/luminous-platform/issues/479) and draft [PR #480](https://github.com/Luminous-Dynamics/luminous-platform/pull/480) add explicit calibration/validation dataset separation, model-to-hardware/firmware identity binding, held-out physical reference cases, distinct time/frequency validation and per-observable residual/uncertainty records. This prevents a global fit score or transient-only validation from standing in for frequency-domain model validity. No model validation or physical result is claimed by the structural validator.
