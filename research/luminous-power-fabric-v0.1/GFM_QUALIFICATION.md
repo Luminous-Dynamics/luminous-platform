@@ -36,7 +36,7 @@ A claim request lists the functions actually being asserted. Each capability exp
 - **SiteDemonstrated:** current measured site-commissioning or field evidence.
 - **IndependentSiteClaim:** witnessed/accredited site/field evidence.
 
-Every evidence record binds product configuration, scenario manifest, acceptance criteria, evidence bundle, measurement boundary, raw trace and mandatory metric IDs. Physical methods additionally require calibration and traceable timebase references. Witnessed/accredited evidence requires a witness reference.
+Every evidence record binds product configuration, scenario manifest, acceptance criteria, evidence bundle, measurement boundary, raw trace and mandatory metric IDs. It also binds initial active/reactive power, terminal voltage/frequency, optional storage state, available energy headroom, disturbance type/magnitude/unit/duration/location, measurement bandwidth, sample rate, expanded uncertainty and uncertainty provenance. Weak-grid tests require SCR and X/R; inertia, black-start and islanding tests require declared energy headroom. The evaluator requires a sample rate at least twice the declared measurement bandwidth. Physical methods additionally require calibration and traceable timebase references. Witnessed/accredited evidence requires a witness reference.
 
 The validator checks digest shape and declared metric identifiers; it does not authenticate raw bundle bytes or decide whether numerical acceptance thresholds are technically adequate. Mycelix remains responsible for signed receipt verification and revocation.
 

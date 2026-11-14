@@ -157,7 +157,9 @@
                     "calibration_reference",
                     "timebase_reference",
                     "witness_reference",
-                    "measured_metric_ids"
+                    "measured_metric_ids",
+                    "test_conditions",
+                    "measurement_conditions"
                   ],
                   "properties": {
                     "evidence_record_id": {
@@ -264,6 +266,118 @@
                       "items": {
                         "type": "string",
                         "minLength": 1
+                      }
+                    },
+                    "test_conditions": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "initial_active_power_milli_kw",
+                        "initial_reactive_power_milli_kvar",
+                        "initial_voltage_pu_micros",
+                        "initial_frequency_millihz",
+                        "initial_soc_ppm",
+                        "energy_headroom_wh",
+                        "short_circuit_ratio_milli",
+                        "x_over_r_milli",
+                        "disturbance_kind",
+                        "disturbance_magnitude_milli",
+                        "disturbance_unit",
+                        "disturbance_duration_ms",
+                        "disturbance_location"
+                      ],
+                      "properties": {
+                        "initial_active_power_milli_kw": {
+                          "type": "integer"
+                        },
+                        "initial_reactive_power_milli_kvar": {
+                          "type": "integer"
+                        },
+                        "initial_voltage_pu_micros": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "initial_frequency_millihz": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "initial_soc_ppm": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 0,
+                          "maximum": 1000000
+                        },
+                        "energy_headroom_wh": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 0
+                        },
+                        "short_circuit_ratio_milli": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 1
+                        },
+                        "x_over_r_milli": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 1
+                        },
+                        "disturbance_kind": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "disturbance_magnitude_milli": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "disturbance_unit": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "disturbance_duration_ms": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "disturbance_location": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    },
+                    "measurement_conditions": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "bandwidth_hz_milli",
+                        "sample_rate_hz_milli",
+                        "expanded_uncertainty_ppm",
+                        "uncertainty_reference"
+                      ],
+                      "properties": {
+                        "bandwidth_hz_milli": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "sample_rate_hz_milli": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "expanded_uncertainty_ppm": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "uncertainty_reference": {
+                          "type": "string",
+                          "minLength": 1
+                        }
                       }
                     }
                   }

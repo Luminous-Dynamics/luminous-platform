@@ -48,6 +48,31 @@ pub struct NotApplicableTest {
     pub approved_by_reference: String,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GfmTestConditions {
+    pub initial_active_power_milli_kw: i64,
+    pub initial_reactive_power_milli_kvar: i64,
+    pub initial_voltage_pu_micros: u32,
+    pub initial_frequency_millihz: u32,
+    pub initial_soc_ppm: Option<u32>,
+    pub energy_headroom_wh: Option<u64>,
+    pub short_circuit_ratio_milli: Option<u32>,
+    pub x_over_r_milli: Option<u32>,
+    pub disturbance_kind: String,
+    pub disturbance_magnitude_milli: u64,
+    pub disturbance_unit: String,
+    pub disturbance_duration_ms: u64,
+    pub disturbance_location: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GfmMeasurementConditions {
+    pub bandwidth_hz_milli: u64,
+    pub sample_rate_hz_milli: u64,
+    pub expanded_uncertainty_ppm: u32,
+    pub uncertainty_reference: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GfmTestEvidence {
     pub evidence_record_id: String,
     pub test_id: GfmTestId,
@@ -60,6 +85,8 @@ pub struct GfmTestEvidence {
     pub acceptance_criteria_sha256: String,
     pub evidence_bundle_sha256: String,
     pub measurement_boundary: String,
+    pub test_conditions: GfmTestConditions,
+    pub measurement_conditions: GfmMeasurementConditions,
     pub raw_data_reference: String,
     pub calibration_reference: String,
     pub timebase_reference: String,
@@ -198,22 +225,34 @@ fn evidence_meets_claim_level(record: &GfmTestEvidence, level: GfmClaimLevel) ->
 }
 
 fn evidence_is_complete(record: &GfmTestEvidence) -> bool {
-    if !valid_digest(&record.product_configuration_sha256)
+    let c=&record.test_conditions;
+    let m=&record.measurement_conditions;
+    let energy_required=matches!(record.test_id,
+        GfmTestId::InertiaResponse|GfmTestId::EquipmentBlackStart|GfmTestId::BlackStartFromZeroVoltage
+        |GfmTestId::IslandedLoadPickup|GfmTestId::GridLossResynchronization);
+    let weak_grid=record.test_id==GfmTestId::WeakGridScrVariation;
+    if c.initial_voltage_pu_micros==0 || c.initial_frequency_millihz==0
+        || c.initial_soc_ppm.is_some_and(|v|v>1_000_000)
+        || (energy_required&&!c.energy_headroom_wh.is_some_and(|v|v>0))
+        || (weak_grid&&(!c.short_circuit_ratio_milli.is_some_and(|v|v>0)||!c.x_over_r_milli.is_some_and(|v|v>0)))
+        || c.short_circuit_ratio_milli.is_some_and(|v|v==0)
+        || c.x_over_r_milli.is_some_and(|v|v==0)
+        || !nonblank(&c.disturbance_kind)||c.disturbance_magnitude_milli==0
+        || !nonblank(&c.disturbance_unit)||c.disturbance_duration_ms==0
+        || !nonblank(&c.disturbance_location)
+        || m.bandwidth_hz_milli==0
+        || m.sample_rate_hz_milli<m.bandwidth_hz_milli.saturating_mul(2)
+        || m.expanded_uncertainty_ppm==0||!nonblank(&m.uncertainty_reference)
+        || !valid_digest(&record.product_configuration_sha256)
         || !valid_digest(&record.scenario_manifest_sha256)
         || !valid_digest(&record.acceptance_criteria_sha256)
         || !valid_digest(&record.evidence_bundle_sha256)
-        || !nonblank(&record.measurement_boundary)
-        || !nonblank(&record.raw_data_reference)
-        || record.measured_metric_ids.iter().any(|metric| !nonblank(metric)) {
+        || !nonblank(&record.measurement_boundary)||!nonblank(&record.raw_data_reference)
+        || record.measured_metric_ids.iter().any(|x|!nonblank(x)) {
         return false;
     }
-    if is_physical(record.method) && (!nonblank(&record.calibration_reference) || !nonblank(&record.timebase_reference)) {
-        return false;
-    }
-    if matches!(record.evidence_class, EvidenceClass::Witnessed | EvidenceClass::Accredited)
-        && !nonblank(&record.witness_reference) {
-        return false;
-    }
+    if is_physical(record.method)&&(!nonblank(&record.calibration_reference)||!nonblank(&record.timebase_reference)){return false;}
+    if matches!(record.evidence_class,EvidenceClass::Witnessed|EvidenceClass::Accredited)&&!nonblank(&record.witness_reference){return false;}
     true
 }
 
@@ -311,6 +350,17 @@ mod tests {
             evidence_record_id:id.into(),test_id:test,method,outcome:TestOutcome::Passed,evidence_class:class,
             evidence_status:EvidenceStatus::Current,product_configuration_sha256:h('a'),scenario_manifest_sha256:h('b'),
             acceptance_criteria_sha256:h('c'),evidence_bundle_sha256:h('d'),measurement_boundary:"PCS-terminal-or-declared-POC".into(),
+            test_conditions:GfmTestConditions {
+                initial_active_power_milli_kw:500,initial_reactive_power_milli_kvar:100,
+                initial_voltage_pu_micros:1_000_000,initial_frequency_millihz:50_000,initial_soc_ppm:Some(800_000),
+                energy_headroom_wh:if matches!(test,GfmTestId::InertiaResponse|GfmTestId::EquipmentBlackStart|GfmTestId::BlackStartFromZeroVoltage|GfmTestId::IslandedLoadPickup|GfmTestId::GridLossResynchronization){Some(100_000)}else{None},
+                short_circuit_ratio_milli:if test==GfmTestId::WeakGridScrVariation{Some(3_000)}else{None},
+                x_over_r_milli:if test==GfmTestId::WeakGridScrVariation{Some(10_000)}else{None},
+                disturbance_kind:"load_step".into(),disturbance_magnitude_milli:100,disturbance_unit:"percent_rated_power".into(),
+                disturbance_duration_ms:500,disturbance_location:"pcc-01".into(),
+            },
+            measurement_conditions:GfmMeasurementConditions{bandwidth_hz_milli:5_000_000,sample_rate_hz_milli:20_000_000,
+                expanded_uncertainty_ppm:1_000,uncertainty_reference:"synthetic://uncertainty".into()},
             raw_data_reference:"evidence://raw".into(),
             calibration_reference:if is_physical(method){"calibration://current"}else{""}.into(),
             timebase_reference:if is_physical(method){"timebase://traceable"}else{""}.into(),
@@ -401,4 +451,35 @@ mod tests {
         x.evidence_records.retain(|e|e.test_id==GfmTestId::PrimaryFrequencyRegulation);
         let r=evaluate_gfm_qualification(&x).unwrap();assert_eq!(r.required_test_ids,vec![GfmTestId::PrimaryFrequencyRegulation]);assert!(r.claim_eligible);
     }
+
+    #[test]
+    fn weak_grid_claim_requires_scr_and_x_over_r() {
+        let mut x=input(GfmClaimLevel::SyntheticCoverageOnly);
+        let i=x.evidence_records.iter().position(|r|r.test_id==GfmTestId::WeakGridScrVariation).unwrap();
+        x.evidence_records[i].test_conditions.short_circuit_ratio_milli=None;
+        assert!(evaluate_gfm_qualification(&x).unwrap().invalid_test_ids.contains(&GfmTestId::WeakGridScrVariation));
+    }
+    #[test]
+    fn inertia_claim_requires_energy_headroom() {
+        let mut x=input(GfmClaimLevel::SyntheticCoverageOnly);
+        let i=x.evidence_records.iter().position(|r|r.test_id==GfmTestId::InertiaResponse).unwrap();
+        x.evidence_records[i].test_conditions.energy_headroom_wh=None;
+        assert!(evaluate_gfm_qualification(&x).unwrap().invalid_test_ids.contains(&GfmTestId::InertiaResponse));
+    }
+    #[test]
+    fn sample_rate_must_be_at_least_twice_measurement_bandwidth() {
+        let mut x=input(GfmClaimLevel::SyntheticCoverageOnly);
+        x.evidence_records[0].measurement_conditions.sample_rate_hz_milli=x.evidence_records[0].measurement_conditions.bandwidth_hz_milli;
+        assert!(evaluate_gfm_qualification(&x).unwrap().invalid_test_ids.contains(&x.evidence_records[0].test_id));
+    }
+    #[test]
+    fn disturbance_and_uncertainty_provenance_are_required() {
+        let mut x=input(GfmClaimLevel::SyntheticCoverageOnly);
+        x.evidence_records[0].test_conditions.disturbance_location.clear();
+        assert!(evaluate_gfm_qualification(&x).unwrap().invalid_test_ids.contains(&x.evidence_records[0].test_id));
+        x=input(GfmClaimLevel::SyntheticCoverageOnly);
+        x.evidence_records[0].measurement_conditions.uncertainty_reference.clear();
+        assert!(evaluate_gfm_qualification(&x).unwrap().invalid_test_ids.contains(&x.evidence_records[0].test_id));
+    }
+
 }
