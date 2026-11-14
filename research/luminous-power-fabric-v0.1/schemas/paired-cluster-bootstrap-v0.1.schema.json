@@ -53,6 +53,12 @@
         "additionalProperties": false,
         "required": [
           "candidate_id",
+          "currency_code",
+          "minor_unit_scale",
+          "service_boundary_id",
+          "site_profile_sha256",
+          "cost_accounting_basis_sha256",
+          "initial_terminal_obligation_sha256",
           "cluster_level",
           "cluster_independence_evidence_reference",
           "scenario_manifest_sha256",
@@ -158,6 +164,31 @@
                 }
               }
             }
+          },
+          "currency_code": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "minor_unit_scale": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          },
+          "service_boundary_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "site_profile_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "cost_accounting_basis_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "initial_terminal_obligation_sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
           }
         }
       }

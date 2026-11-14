@@ -6,7 +6,7 @@
 
 ## Method
 
-The reference and candidate must share the exact scenario-manifest digest, cluster IDs, cluster level and scenario seed digest for every pair. All candidates use the same frozen cluster set. The implementation resamples whole cluster indices with replacement and applies the same sampled indices to both arms and all metrics, preserving pairing and within-cluster metric covariance.
+The reference and candidate must share the exact scenario-manifest digest, cluster IDs, cluster level and scenario seed digest for every pair. All candidates also bind the same ISO currency code/minor-unit scale, customer service boundary, site-profile digest, cost-accounting-basis digest (included/excluded cost categories and allocation method), and initial/terminal reserve-obligation digest. All candidates use the same frozen cluster set. The implementation resamples whole cluster indices with replacement and applies the same sampled indices to both arms and all metrics, preserving pairing and within-cluster metric covariance.
 
 Each cluster retains mission count, completed-mission count, cost, required/delivered/unserved critical energy, system-unavailable time, evidence status/class and an evidence reference. The validator requires current evidence and verifies that required service reconciles to delivered plus unserved service. Failed missions are **not removed**. Their counts and unserved service remain in the cluster and in each paired resample. A draw with zero total delivered critical service is rejected rather than silently censored.
 
@@ -22,7 +22,8 @@ The caller supplies a cluster-independence design reference and cluster level. E
 
 ## Bias and claim controls
 
-- Exact candidate/reference cluster and seed matching is mandatory. Each paired cluster must also have equal mission count and required critical-service demand, preventing a candidate from being evaluated against an easier workload.
+- Exact candidate/reference cluster and seed matching is mandatory.
+- Currency, minor-unit scale, point-of-connection/service boundary, site profile, cost-accounting basis and initial/terminal obligation must match before any resampling. Each paired cluster must also have equal mission count and required critical-service demand, preventing a candidate from being evaluated against an easier workload.
 - Failed mission records remain in the paired sample; no survivorship filtering. The report counts failed missions in each arm.
 - All metrics use the same sampled cluster indices.
 - Zero-delivery bootstrap draws fail closed; they are not dropped to improve the estimate.

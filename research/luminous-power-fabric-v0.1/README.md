@@ -370,7 +370,7 @@ engineering review, fault/energy analysis, suitable laboratory containment and a
 
 ## Paired cluster bootstrap
 
-Draft [PR #463](https://github.com/Luminous-Dynamics/luminous-platform/pull/463) adds deterministic paired percentile-bootstrap summaries over pre-aggregated mission/site/event clusters. It requires exact cluster and scenario-seed pairing, retains failed missions and unserved energy, and rejects zero-delivery draws instead of censoring them. Cluster-independence evidence is caller-supplied and is not proven by this code.
+Draft [PR #463](https://github.com/Luminous-Dynamics/luminous-platform/pull/463) adds deterministic paired percentile-bootstrap summaries over pre-aggregated mission/site/event clusters. It requires exact cluster/seed pairing plus matching currency, minor-unit scale, customer service boundary, site profile, cost-accounting basis and terminal obligations; it retains failed missions and unserved energy and rejects zero-delivery draws instead of censoring them. Cluster-independence evidence is caller-supplied and is not proven by this code.
 
 
 ## Exposure-normalized reliability evidence

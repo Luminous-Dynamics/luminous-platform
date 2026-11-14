@@ -433,7 +433,13 @@
           "evidence_class": "synthetic_fixture",
           "evidence_reference": "synthetic://reference/cluster-030"
         }
-      ]
+      ],
+      "currency_code": "USD",
+      "minor_unit_scale": 2,
+      "service_boundary_id": "customer-poc",
+      "site_profile_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "cost_accounting_basis_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "initial_terminal_obligation_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
     },
     {
       "candidate_id": "candidate",
@@ -861,7 +867,13 @@
           "evidence_class": "synthetic_fixture",
           "evidence_reference": "synthetic://candidate/cluster-030"
         }
-      ]
+      ],
+      "currency_code": "USD",
+      "minor_unit_scale": 2,
+      "service_boundary_id": "customer-poc",
+      "site_profile_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "cost_accounting_basis_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "initial_terminal_obligation_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
     }
   ],
   "expected_observations": {

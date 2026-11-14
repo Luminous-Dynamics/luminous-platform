@@ -36,6 +36,13 @@ pub struct MissionClusterOutcome {
 #[derive(Debug, Clone, PartialEq)]
 pub struct PairedBootstrapCandidate {
     pub candidate_id: String,
+    /// Exact economic and physical comparison context. All candidates must match.
+    pub currency_code: String,
+    pub minor_unit_scale: u8,
+    pub service_boundary_id: String,
+    pub site_profile_sha256: String,
+    pub cost_accounting_basis_sha256: String,
+    pub initial_terminal_obligation_sha256: String,
     pub cluster_level: ClusterLevel,
     /// Data-owner protocol/design reference. This code cannot prove independence.
     pub cluster_independence_evidence_reference: String,
@@ -224,6 +231,13 @@ fn validate_candidate<'a>(
     manifest: &str,
 ) -> Result<BTreeMap<String, &'a MissionClusterOutcome>, AuditError> {
     if !nonblank(&candidate.candidate_id)
+        || candidate.currency_code.len() != 3
+        || !candidate.currency_code.bytes().all(|byte| byte.is_ascii_uppercase())
+        || candidate.minor_unit_scale > 3
+        || !nonblank(&candidate.service_boundary_id)
+        || !valid_sha256(&candidate.site_profile_sha256)
+        || !valid_sha256(&candidate.cost_accounting_basis_sha256)
+        || !valid_sha256(&candidate.initial_terminal_obligation_sha256)
         || !nonblank(&candidate.cluster_independence_evidence_reference)
         || candidate.scenario_manifest_sha256 != manifest
         || candidate.clusters.len() < MIN_CLUSTERS
@@ -312,8 +326,21 @@ pub fn evaluate_paired_cluster_bootstrap(
         if !candidate_ids.insert(candidate.candidate_id.as_str()) {
             return Err(AuditError("paired bootstrap candidate IDs must be unique".to_string()));
         }
-        if candidate.cluster_level != input.candidates[0].cluster_level {
+        let reference_context = &input.candidates[0];
+        if candidate.cluster_level != reference_context.cluster_level {
             return Err(AuditError("cluster level must match across candidates".to_string()));
+        }
+        if candidate.currency_code != reference_context.currency_code
+            || candidate.minor_unit_scale != reference_context.minor_unit_scale
+            || candidate.service_boundary_id != reference_context.service_boundary_id
+            || candidate.site_profile_sha256 != reference_context.site_profile_sha256
+            || candidate.cost_accounting_basis_sha256 != reference_context.cost_accounting_basis_sha256
+            || candidate.initial_terminal_obligation_sha256 != reference_context.initial_terminal_obligation_sha256
+        {
+            return Err(AuditError(format!(
+                "candidate {:?} is not matched on currency/minor-unit scale, service boundary, site profile, cost-accounting basis or initial/terminal obligations",
+                candidate.candidate_id
+            )));
         }
         let clusters = validate_candidate(candidate, &input.scenario_manifest_sha256)?;
         validated.insert(candidate.candidate_id.as_str(), clusters);
@@ -464,6 +491,12 @@ mod tests {
         }).collect();
         PairedBootstrapCandidate {
             candidate_id: id.to_string(),
+            currency_code: "USD".to_string(),
+            minor_unit_scale: 2,
+            service_boundary_id: "customer-poc".to_string(),
+            site_profile_sha256: digest('b'),
+            cost_accounting_basis_sha256: digest('c'),
+            initial_terminal_obligation_sha256: digest('d'),
             cluster_level: ClusterLevel::Mission,
             cluster_independence_evidence_reference: "synthetic://cluster-design".to_string(),
             scenario_manifest_sha256: digest('f'),
@@ -596,6 +629,42 @@ mod tests {
     fn rejects_assumption_only_cluster_evidence() {
         let mut value = input();
         value.candidates[1].clusters[0].evidence_class = LifecycleEvidenceClass::Assumption;
+        assert!(evaluate_paired_cluster_bootstrap(&value).is_err());
+    }
+
+
+    #[test]
+    fn rejects_currency_mismatch() {
+        let mut value = input();
+        value.candidates[1].currency_code = "EUR".to_string();
+        assert!(evaluate_paired_cluster_bootstrap(&value).is_err());
+    }
+
+    #[test]
+    fn rejects_service_boundary_mismatch() {
+        let mut value = input();
+        value.candidates[1].service_boundary_id = "battery-terminal".to_string();
+        assert!(evaluate_paired_cluster_bootstrap(&value).is_err());
+    }
+
+    #[test]
+    fn rejects_cost_accounting_basis_mismatch() {
+        let mut value = input();
+        value.candidates[1].cost_accounting_basis_sha256 = digest('e');
+        assert!(evaluate_paired_cluster_bootstrap(&value).is_err());
+    }
+
+    #[test]
+    fn rejects_initial_terminal_obligation_mismatch() {
+        let mut value = input();
+        value.candidates[1].initial_terminal_obligation_sha256 = digest('f');
+        assert!(evaluate_paired_cluster_bootstrap(&value).is_err());
+    }
+
+    #[test]
+    fn rejects_minor_unit_scale_mismatch() {
+        let mut value = input();
+        value.candidates[1].minor_unit_scale = 3;
         assert!(evaluate_paired_cluster_bootstrap(&value).is_err());
     }
 
