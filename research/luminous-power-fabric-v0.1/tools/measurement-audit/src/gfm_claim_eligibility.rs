@@ -220,6 +220,18 @@ fn assess_one(r:&GfmClaimRequest,e:Option<&ExecutedGfmTestEvidence>)->GfmClaimAs
     if component_ids.len()!=e.components.len()||e.components.iter().any(|c|!nonblank(&c.component_id)||!sha(&c.configuration_sha256)){
         reasons.push("component-boundary-map-invalid".into());
     }
+    if e.components.iter().any(|c|
+        (c.role==ComponentRole::MicrogridController && c.configuration_sha256!=r.controller_configuration_sha256) ||
+        (c.role==ComponentRole::PowerConversionSystem && c.configuration_sha256!=r.hardware_configuration_sha256) ||
+        (c.role==ComponentRole::ProtectionRelay && c.configuration_sha256!=r.protection_configuration_sha256)
+    ){
+        reasons.push("component-configuration-digest-mismatch".into());
+    }
+    if e.execution_mode!=ExecutionMode::ModelOnly &&
+        (e.calibration_receipt_reference.as_deref().is_none_or(|x|!nonblank(x)) ||
+         e.independent_witness_reference.as_deref().is_none_or(|x|!nonblank(x))){
+        reasons.push("physical-execution-calibration-or-witness-reference-missing".into());
+    }
     let observed:BTreeSet<&str>=e.observed_observable_ids.iter().map(String::as_str).collect();
     if r.required_observable_ids.iter().any(|x|!observed.contains(x.as_str())){
         reasons.push("required-observable-missing".into());
@@ -325,7 +337,13 @@ mod tests{
  use super::*;
  fn h(c:char)->String{std::iter::repeat(c).take(64).collect()}
  fn component(id:&str,role:ComponentRole,realization:Realization)->ComponentEvidence{
-  ComponentEvidence{component_id:id.into(),role,realization,configuration_sha256:h('a')}
+  let digest=match role{
+   ComponentRole::MicrogridController=>h('e'),
+   ComponentRole::PowerConversionSystem|ComponentRole::PowerInterface|ComponentRole::Meter=>h('c'),
+   ComponentRole::ProtectionRelay=>h('f'),
+   _=>h('a'),
+  };
+  ComponentEvidence{component_id:id.into(),role,realization,configuration_sha256:digest}
  }
  fn evidence(mode:ExecutionMode)->ExecutedGfmTestEvidence{
   let mut components=vec![component("controller",ComponentRole::MicrogridController,Realization::Physical)];
@@ -447,4 +465,17 @@ mod tests{
   let report=evaluate_gfm_claim_eligibility(&[request(ClaimScope::ControllerImplementation)],&[evidence(ExecutionMode::ControllerHil)]).unwrap();
   assert!(!report.claim_release_permitted);assert!(report.assessments[0].mycelix_verification_required);
  }
+ #[test]fn component_configuration_digests_must_match_claim_identity(){
+  let mut e=evidence(ExecutionMode::ControllerHil);
+  e.components.iter_mut().find(|c|c.role==ComponentRole::MicrogridController).unwrap().configuration_sha256=h('9');
+  let report=evaluate_gfm_claim_eligibility(&[request(ClaimScope::ControllerImplementation)],&[e]).unwrap();
+  assert_eq!(report.excluded_count,1);
+ }
+ #[test]fn physical_execution_requires_calibration_and_independent_witness(){
+  let mut e=evidence(ExecutionMode::PhysicalLaboratory);
+  e.independent_witness_reference=None;
+  let report=evaluate_gfm_claim_eligibility(&[request(ClaimScope::LaboratoryDevicePerformance)],&[e]).unwrap();
+  assert_eq!(report.excluded_count,1);
+ }
+
 }
