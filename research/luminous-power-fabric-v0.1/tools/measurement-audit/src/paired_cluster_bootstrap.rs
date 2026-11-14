@@ -57,6 +57,7 @@ pub enum ComparisonFinding {
     NotEstablished,
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct PairedClusterBootstrapInput {
     pub reference_candidate_id: String,
     pub scenario_manifest_sha256: String,
@@ -129,15 +130,6 @@ fn seed_from_digest(digest: &str) -> Result<u64, AuditError> {
     }
     u64::from_str_radix(&digest[..16], 16)
         .map_err(|_| AuditError("bootstrap seed prefix is invalid".to_string()))
-}
-
-fn stable_name_hash(value: &str) -> u64 {
-    let mut hash = 0xcbf29ce484222325_u64;
-    for byte in value.as_bytes() {
-        hash ^= u64::from(*byte);
-        hash = hash.wrapping_mul(0x100000001b3);
-    }
-    hash
 }
 
 #[derive(Debug, Clone, Copy)]
