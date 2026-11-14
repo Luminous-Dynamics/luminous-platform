@@ -868,7 +868,16 @@
     "paired_cluster_count": 30,
     "reference_failed_missions": 0,
     "candidate_failed_missions": 1,
-    "failed_candidate_cluster_retained": true
+    "failed_candidate_cluster_retained": true,
+    "hypothesis_family_size": 3,
+    "simultaneous_interval_method": "MAX_ABS_STANDARDIZED_BOOTSTRAP_ERROR_V0_1",
+    "all_comparisons_share_resample_indices": true
   },
-  "claim_ceiling": "PAIRED_CLUSTER_BOOTSTRAP_SUMMARY_ONLY_NOT_INDEPENDENCE_PROOF_OR_FIELD_SUPERIORITY"
+  "claim_ceiling": "PAIRED_CLUSTER_BOOTSTRAP_SUMMARY_ONLY_NOT_INDEPENDENCE_PROOF_OR_FIELD_SUPERIORITY",
+  "preregistered_protocol_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "minimum_practical_benefit": {
+    "cost_per_delivered_critical_kwh_minor_units": 1,
+    "unserved_critical_service_wh": 1,
+    "system_unavailable_hours": 0.01
+  }
 }

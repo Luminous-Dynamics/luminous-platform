@@ -12,7 +12,13 @@ Each cluster retains mission count, completed-mission count, cost, required/deli
 
 The tool reports candidate-minus-reference deltas for lifecycle cost per delivered critical-service kWh, unserved critical-service Wh and system-unavailable hours. Cost is calculated from aggregate costs divided by aggregate delivered energy for each sampled draw; the other two axes are cluster means.
 
-A deterministic SplitMix64 PRNG uses a declared SHA-256 seed and candidate identity. The percentile interval and full-sample paired mean are output at the declared confidence level.
+A deterministic SplitMix64 PRNG uses a declared SHA-256 seed and candidate identity. The pointwise percentile interval and full-sample paired mean are output at the declared confidence level. A second interval is calculated from a single shared resample stream across all candidates and endpoints: for each bootstrap replicate, the maximum absolute standardized error across the entire comparison family is retained, and its declared confidence quantile sets simultaneous bounds. The pointwise interval is descriptive; the simultaneous interval is used for preregistered practical-effect findings.
+
+## Familywise comparison and practical-effect decisions
+
+A multi-candidate benchmark creates a family of hypotheses: each candidate is compared with the reference on cost, unserved critical service and downtime. Treating every 95% interval independently increases false-positive risk as the family grows. v0.2 uses one shared resampling stream across every candidate and endpoint and computes the maximum absolute standardized bootstrap error on each replicate. The confidence quantile of that maximum defines simultaneous bounds over the full family. The method label is `MAX_ABS_STANDARDIZED_BOOTSTRAP_ERROR_V0_1`; this is not per-replicate studentized max-t and should receive independent statistical review and coverage simulation before high-stakes use.
+
+The preregistered protocol digest and three positive minimum-practical-benefit thresholds are required inputs. For each endpoint independently: practical superiority is supported only when the simultaneous upper bound is below the negative benefit threshold; practical harm is supported only when the simultaneous lower bound exceeds the positive threshold; otherwise the result is `NotEstablished`. No aggregate winner is manufactured across unlike metrics.
 
 ## Sampling and independence
 
@@ -26,7 +32,7 @@ The caller supplies a cluster-independence design reference and cluster level. E
 - Failed mission records remain in the paired sample; no survivorship filtering. The report counts failed missions in each arm.
 - All metrics use the same sampled cluster indices.
 - Zero-delivery bootstrap draws fail closed; they are not dropped to improve the estimate.
-- The output is a percentile interval, not a BCa/studentized interval and not a multiple-comparison-adjusted interval.
+- The output includes a pointwise percentile interval and a simultaneous max-absolute-standardized-bootstrap-error interval across every candidate/endpoint hypothesis. The latter is intended to address familywise multiplicity; it is not a BCa interval, does not use per-replicate studentization, and needs simulation/independent statistical review before high-stakes claims.
 - This module does not prove independence, power, causal attribution or measurement uncertainty.
 - Report metrology uncertainty from PR #462 alongside bootstrap sampling uncertainty; these are distinct uncertainty sources.
 
@@ -35,8 +41,13 @@ The caller supplies a cluster-independence design reference and cluster level. E
 - 100% paired cluster/seed identity.
 - Zero excluded failed missions or silently censored bootstrap draws.
 - Reproducible report for identical inputs, algorithm version and seed.
-- Report paired mean deltas and confidence bounds for cost, unserved service and downtime separately.
+- Use one shared resample stream across all candidates and endpoints; report familywise simultaneous bounds over the complete preregistered hypothesis family.
+- Declare minimum practically meaningful effects for cost, unserved service and downtime before results are examined.
+- Only label practical superiority when the simultaneous upper bound is below the negative minimum-benefit threshold; label harm only when the lower bound exceeds the positive threshold; otherwise report not established.
+- Keep endpoint findings separate: do not turn three endpoints into a scalar overall winner.
 - Pre-register minimum meaningful difference, confidence level, stopping rule and comparison family before observing results.
 - Use independent cluster design and a power/precision calculation before a real superiority claim.
+
+The protocol digest binds the preregistered endpoints, confidence level and minimum-practical-benefit thresholds. The evaluator validates digest shape but does not reconstruct protocol bytes. It does not prove cluster independence, power, causal attribution or measurement uncertainty.
 
 Claim ceiling: `PAIRED_CLUSTER_BOOTSTRAP_SUMMARY_ONLY_NOT_INDEPENDENCE_PROOF_OR_FIELD_SUPERIORITY`.
