@@ -262,3 +262,8 @@ than the 13 November 2026 snapshot. Treat that result as forthcoming/prepublicat
 published 2026 SOTA baseline. Existing public comparators include NLR's 2024/2025 multi-GFM C-HIL
 work and 2025 Borrego Springs PHIL work. These provide different physical test boundaries and must
 not be ranked against this synthetic offline validator.
+
+
+## 24. Grid-forming capability passport
+
+Issue [#484](https://github.com/Luminous-Dynamics/luminous-platform/issues/484) and draft [PR #485](https://github.com/Luminous-Dynamics/luminous-platform/pull/485) add a typed GFM claim-to-test-to-evidence validator. The taxonomy follows the 16 test families in the October 2026 review and adds weak-grid, unbalanced-fault, multi-vendor and system-level tests. Acceptance ranges are project/jurisdiction-owned; a metric passes only when its full uncertainty interval lies inside the range. No physical GFM or grid-code result is claimed.
