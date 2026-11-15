@@ -1,0 +1,423 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/benchmarks/external-agent-benchmark-registry-v0.1/registry.schema.json",
+  "title": "Luminous External Agent Benchmark Registry v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "snapshot_date",
+    "snapshot_status",
+    "comparison_policy",
+    "records"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous-external-agent-benchmark-registry-v0.1"
+    },
+    "version": {
+      "const": 1
+    },
+    "snapshot_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "snapshot_status": {
+      "enum": [
+        "metadata_snapshot_partial",
+        "source_bytes_hashed_complete"
+      ]
+    },
+    "comparison_policy": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "records": {
+      "type": "array",
+      "minItems": 8,
+      "items": {
+        "$ref": "#/$defs/record"
+      }
+    }
+  },
+  "$defs": {
+    "maybeInt": {
+      "oneOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metric_id",
+        "label",
+        "value",
+        "unit",
+        "value_semantics",
+        "definition",
+        "scope",
+        "limitations",
+        "numerator",
+        "denominator"
+      ],
+      "properties": {
+        "metric_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]+$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {
+          "type": [
+            "number",
+            "string",
+            "null"
+          ]
+        },
+        "unit": {
+          "enum": [
+            "percent",
+            "fraction",
+            "count",
+            "points_0_100",
+            "seconds",
+            "milliseconds",
+            "tokens",
+            "usd",
+            "relative_cost_multiple",
+            "boolean",
+            "qualitative"
+          ]
+        },
+        "numerator": {
+          "$ref": "#/$defs/maybeInt"
+        },
+        "denominator": {
+          "$ref": "#/$defs/maybeInt"
+        },
+        "value_semantics": {
+          "enum": [
+            "reported_point_estimate",
+            "derived_from_reported_counts",
+            "owner_claim",
+            "relative_comparison",
+            "qualitative_report",
+            "native_scorer_output"
+          ]
+        },
+        "definition": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "benchmark_family",
+        "construct",
+        "unit_of_analysis",
+        "owner",
+        "evidence_status",
+        "publication",
+        "source",
+        "protocol",
+        "metrics",
+        "comparability",
+        "claim_ceiling"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "benchmark_family": {
+          "enum": [
+            "sre_diagnosis_mitigation",
+            "sre_diagnosis_only",
+            "sre_operational_governance",
+            "agent_governance",
+            "agent_harness_reliability",
+            "agent_harness_evolution",
+            "enterprise_workflow",
+            "agent_evidence_grounding"
+          ]
+        },
+        "construct": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unit_of_analysis": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_status": {
+          "enum": [
+            "peer_reviewed",
+            "preprint",
+            "benchmark_maintainer_report",
+            "vendor_benchmark_report",
+            "product_owner_report",
+            "independent_implementation"
+          ]
+        },
+        "publication": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "published_at",
+            "observed_at",
+            "version"
+          ],
+          "properties": {
+            "published_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            },
+            "observed_at": {
+              "type": "string",
+              "format": "date"
+            },
+            "version": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "primary_url",
+            "source_kind",
+            "reference_id",
+            "capture",
+            "repository_commit_sha"
+          ],
+          "properties": {
+            "primary_url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "additional_urls": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "source_kind": {
+              "enum": [
+                "paper",
+                "proceedings",
+                "maintainer_leaderboard",
+                "vendor_blog",
+                "benchmark_site",
+                "repository",
+                "technical_report"
+              ]
+            },
+            "reference_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "raw_git_blob_sha": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^([a-f0-9]{40})?$"
+            },
+            "capture": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "status",
+                "captured_at",
+                "content_sha256",
+                "note"
+              ],
+              "properties": {
+                "status": {
+                  "enum": [
+                    "metadata_only_no_content_hash",
+                    "content_sha256_verified",
+                    "raw_git_blob_sha_only"
+                  ]
+                },
+                "captured_at": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "content_sha256": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "pattern": "^(sha256:)?[a-f0-9]{64}$"
+                },
+                "note": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "repository_commit_sha": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{40}$"
+            }
+          }
+        },
+        "protocol": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "task_count",
+            "run_count",
+            "repeat_policy",
+            "environment",
+            "tool_surface",
+            "model_configurations",
+            "evaluator",
+            "judge",
+            "noise_or_controls",
+            "limitations"
+          ],
+          "properties": {
+            "task_count": {
+              "$ref": "#/$defs/maybeInt"
+            },
+            "run_count": {
+              "$ref": "#/$defs/maybeInt"
+            },
+            "repeat_policy": {
+              "type": "string",
+              "minLength": 1
+            },
+            "environment": {
+              "type": "string",
+              "minLength": 1
+            },
+            "tool_surface": {
+              "type": "string",
+              "minLength": 1
+            },
+            "model_configurations": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "evaluator": {
+              "type": "string",
+              "minLength": 1
+            },
+            "judge": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "noise_or_controls": {
+              "type": "string",
+              "minLength": 1
+            },
+            "limitations": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/metric"
+          }
+        },
+        "comparability": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "comparison_group",
+            "comparable_only_with",
+            "not_comparable_with",
+            "notes"
+          ],
+          "properties": {
+            "comparison_group": {
+              "type": "string",
+              "minLength": 1
+            },
+            "comparable_only_with": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "not_comparable_with": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "notes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "claim_ceiling": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}
