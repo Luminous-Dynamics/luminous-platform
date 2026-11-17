@@ -283,7 +283,42 @@ Use the existing OMSI profile admission vocabulary per capability:
 
 These are internal evidence stages. They are not external certification, class approval or legal authorization.
 
-## 8. Initial execution sequence
+## 8. Industry baseline and build-versus-integrate policy
+
+The current commercial ecosystem is not empty or primitive. Established vendors already provide deep shipbuilding-specific CAD, PLM, production engineering, naval-architecture calculations and fleet data platforms. Luminous must not claim to replace those products on their home ground.
+
+| Industry capability | Established examples and documented capabilities | Luminous strategy |
+|---|---|---|
+| Shipbuilding CAD and production engineering | [SSI ShipConstructor](https://www.ssi-corporate.com/products/shipconstructor/) covers hull/structure, outfitting, weld management, nesting, NC output, production drawings and build strategy. [CADMATIC Hull](https://www.cadmatic.com/en/products/cadmatic-hull/) covers hull modelling and production information; its [2026 H1 release](https://cadmatic.com/en/releasehighlights/release-highlights-2026h1/) adds traceable document publication and production-information revision checks. | Integrate with native project records and neutral product-data exchange. Do not build another hull CAD, nesting, weld or NC tool. Test adapter fidelity and the exact downstream effect of each revision. |
+| Shipbuilding PLM / configuration | [SSI ShipbuildingPLM](https://www.ssi-corporate.com/products/shipbuildingplm/) describes an established workflow for vessel/program data, change control, hull effectivity, approvals and continuity from engineering to planning, procurement, production and sustainment. | Mycelix remains the owner of the Luminous configuration/provenance contracts. The profile maps to incumbent PLM identities and change events; it does not require yards to replace their PLM or duplicate its canonical configuration store. |
+| Naval architecture / analysis | [NAPA Engineer](https://www.napa.fi/software-and-services/ship-design/software/napa-engineer/) combines naval-architecture calculation capabilities with an integrated engineering workflow; NAPA's [2026.1 release](https://www.napa.fi/napa-release-2026-1/) describes a more connected platform and early AI prototypes. | Symthaea orchestrates requirements, candidate comparison and uncertainty; qualified specialist solvers and independent physical references remain responsible for the actual engineering observables. Do not claim a substitute for NAPA stability, strength or class calculations. |
+| Vessel data / fleet operations | [Kongsberg Vessel Insight](https://www.kongsbergmaritime.com/products/digital/vessel-insight/) provides vessel-to-cloud data infrastructure and fleet insights; Kongsberg's [2026 Digital Solutions portfolio](https://www.kongsbergmaritime.com/news-and-events/news-archive/2026/harmonised-digital-solutions-portfolio-and-km-performance-launched/) consolidates connected offerings. | Integrate owner-authorized, read-only operational data and preserve measurement quality, configuration, source/time semantics and dependency context. Do not replace edge gateways, OEM machinery systems or fleet operation centres. |
+| Maritime data ecosystem / assurance services | [DNV Veracity](https://www.dnv.com/veracity/) is an established industry data platform and marketplace for datasets, APIs, applications and digital services. Classification societies provide domain-specific assurance and approval. | Differentiate through interoperable evidence lineage, independent cross-system verification, configuration-change impact, authority/effect separation and transparent claim ceilings—not by claiming a larger data marketplace or acting as a class society. |
+
+These are capabilities described by the vendors and service providers themselves. They establish the industry feature baseline, not independently measured performance. Product marketing claims (including productivity or fleet-coverage numbers) must not be copied into our results as benchmark evidence.
+
+### Where Luminous can be meaningfully different
+
+The opportunity is a **vendor-neutral assurance and decision layer across existing systems**:
+
+1. **Cross-vendor semantic continuity:** carry the exact design/configuration, supplier, inspection, operational and repair identities without pretending every system has one universal data model.
+2. **Independent evidence checking:** compare source claims against separately implemented geometry, schedule, physical and measurement references; preserve contradictions and unsupported fields.
+3. **Change-to-consequence traceability:** show which installed parts, work packages, inspections, operational profiles and requalification decisions are affected by a revision.
+4. **Uncertainty and applicability:** show exactly what a solver, sensor, simulation and source can support—and where it cannot.
+5. **Authority and recovery:** distinguish recommendation, human approval, attempted effect, measured outcome and independently accepted postcondition.
+6. **Lifecycle and human/ecological outcomes:** make maintainability, safe return-to-service, crew task performance, underwater noise, biosecurity and lifecycle impacts first-class, separately reported constraints.
+
+The first commercial integration test should be read-only and source-faithful: ingest a licensed sample of an incumbent CAD/PLM export, preserve part/configuration identity and revisions, compare a change against its source BOM/work package and inspection lineage, and produce a discrepancy report. Only a yard and data owner can authorize real integration or operational use.
+
+### Industry comparison gates
+
+- Do not compare Luminous with a CAD/PLM product on native modelling depth or production drawing maturity until that capability exists and has been independently tested.
+- Compare data interoperability using exact fixture exports, source digests, required-field retention, round-trip geometry/metadata tolerances and revision/effectivity preservation.
+- Compare change propagation using independently authored ground truth, with safety-relevant false negatives reported as hard failures.
+- Compare operational data platforms only on matching sensor coverage, source quality, time resolution, vessel type, edge conditions, cybersecurity profile and service outcome.
+- Compare class/flag approval only through the competent independent authority; Luminous can prepare traceable evidence but cannot self-award approval.
+
+## 9. Initial execution sequence
 
 1. Review this profile with Symthaea, Symtropy, Mycelix and Sol-Atlas owners; correct semantic ownership before implementing adapters.
 2. Freeze the design-only vectors in [maritime-operations-conformance-vectors-0.1.json](./maritime-operations-conformance-vectors-0.1.json); integrate into existing OMSI validator tooling, not a new validator.
@@ -297,7 +332,7 @@ These are internal evidence stages. They are not external certification, class a
 
 Use a civilian modular workboat / research craft as the first end-to-end demonstrator, not a large commercial MASS vessel. This class is suitable for iterating on configuration traceability, fabrication, service access, human habitability and low-risk test instrumentation, subject to competent naval-architecture and regulatory review. The vessel is a benchmark target, not an approved design.
 
-## 9. Current evidence ceiling and non-claims
+## 10. Current evidence ceiling and non-claims
 
 As of this draft:
 - the cross-stack owner map and linked maritime work items exist;
