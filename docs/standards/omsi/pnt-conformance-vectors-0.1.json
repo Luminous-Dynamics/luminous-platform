@@ -1,0 +1,317 @@
+{
+  "schema": "omsi.pnt-conformance-vector-pack",
+  "version": "0.1.0-draft",
+  "state": "FROZEN_DESIGN_NOT_EXECUTED",
+  "profile_id": "omsi.pnt-resilience",
+  "profile_version": "0.1.0-draft",
+  "owner_issue": 307,
+  "validator_dependency": "Existing OMSI validator tooling (PR #53); extend in place, do not create a new validator.",
+  "evidence_owners": {
+    "spatial_truth": "Mycelix #413",
+    "fusion": "Mycelix #417",
+    "time": "Mycelix #435",
+    "navigation_health": "Mycelix #458",
+    "source_provenance": "Mycelix #5899",
+    "common_mode": "Mycelix #5904",
+    "oracle_independence": "Symthaea #10826",
+    "emsr_benchmark": "Symthaea PR #10875",
+    "open_set_rf": "Symthaea #10893",
+    "service_recovery": "Symtropy #3909",
+    "dependency_context": "Sol-Atlas #584",
+    "decision_aware_probe": "Luminous Platform #299 / Symthaea #10109"
+  },
+  "outcome_vocabulary": [
+    "QUALIFIED_FOR_DECLARED_PROFILE",
+    "DEGRADED",
+    "INDETERMINATE",
+    "REJECT_RELIANCE",
+    "NOT_AUTHORIZED",
+    "NOT_COMPARABLE"
+  ],
+  "semantics": {
+    "qualified_for_declared_profile": "Evidence satisfies the exact profile's declared admission predicates. This is not a regulatory or field certification.",
+    "degraded": "A weaker profile-permitted service mode is evidenced; authority and confidence must be attenuated accordingly.",
+    "indeterminate": "Evidence is incomplete, contradictory, stale, or not sufficient to determine reliance.",
+    "reject_reliance": "A specific input or claim violates a required validity predicate.",
+    "not_authorized": "Evidence assessment may exist, but no protected operation permission is present.",
+    "not_comparable": "The profile, source, threshold, measurement or evaluation basis cannot be matched."
+  },
+  "constraints": [
+    "All vectors are synthetic and contain no real receiver data or facility identifiers.",
+    "No vector authorizes physical actuation or protected operational changes.",
+    "A model score is not a source signature, calibration certificate, integrity guarantee, cause attribution or operation permit.",
+    "A no-declared-common-domain relation is scoped to complete declared inventories and one immutable dependency snapshot; it does not prove physical independence.",
+    "Sector thresholds are supplied by the selected profile authority; this pack defines no universal accuracy, freshness, alert or availability threshold."
+  ],
+  "vectors": [
+    {
+      "id": "PNT-POS-001",
+      "family": "basic_source_qualification",
+      "kind": "positive_control",
+      "synthetic_input": {
+        "source_identity": "present_current",
+        "calibration": "current",
+        "time_basis": "explicit_and_compatible",
+        "observation_class": "measured",
+        "configuration": "current",
+        "dependency_inventory": "complete",
+        "service_profile": "telecom_timing_profile_v1"
+      },
+      "expected": "QUALIFIED_FOR_DECLARED_PROFILE",
+      "assertions": [
+        "Source identity, calibration, time and configuration remain separately visible.",
+        "Qualification is bound to the declared telecom profile and exact evidence snapshot.",
+        "No universal Good/Degraded threshold is created."
+      ]
+    },
+    {
+      "id": "PNT-FRESH-INVALID-001",
+      "family": "freshness_vs_integrity",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "observation_freshness": "within_profile_window",
+        "receiver_fix": "present",
+        "integrity_evidence": "explicitly_invalid"
+      },
+      "expected": "REJECT_RELIANCE",
+      "assertions": [
+        "Freshness cannot override explicit integrity invalidity.",
+        "A new fix does not automatically set navigation health to qualified."
+      ]
+    },
+    {
+      "id": "PNT-CAL-STALE-001",
+      "family": "calibration_currentness",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "source_identity": "authenticated",
+        "calibration": "expired",
+        "receiver_fix": "recent"
+      },
+      "expected": "REJECT_RELIANCE",
+      "assertions": [
+        "Authenticated identity does not imply current calibration.",
+        "Recent data cannot restore permission to rely on an expired calibration."
+      ]
+    },
+    {
+      "id": "PNT-TIME-DOMAIN-001",
+      "family": "time_semantics",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "observation_a_time_basis": "device_monotonic_boot_epoch_A",
+        "observation_b_time_basis": "gps_time",
+        "correlation_evidence": "missing"
+      },
+      "expected": "INDETERMINATE",
+      "assertions": [
+        "Incompatible numeric timestamps are not directly compared.",
+        "Missing clock correlation is not silently treated as UTC."
+      ]
+    },
+    {
+      "id": "PNT-COMMON-CLOCK-001",
+      "family": "common_mode_independence",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "sources": 6,
+        "shared_failure_domains": [
+          "clock:shared-reference"
+        ],
+        "dependency_snapshot": "snapshot-001",
+        "as_of": "2026-11-07T00:00:00Z",
+        "inventory_complete": true
+      },
+      "expected": "DEGRADED",
+      "assertions": [
+        "Six sources sharing a time reference do not count as six independent time witnesses.",
+        "The pairwise graph identifies shared clock dependencies and exact snapshot/as-of."
+      ]
+    },
+    {
+      "id": "PNT-DEPENDENCY-UNKNOWN-001",
+      "family": "common_mode_independence",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "source_a_domains": [
+          "power:a"
+        ],
+        "source_b_domains": [
+          "network:b"
+        ],
+        "inventory_a_complete": true,
+        "inventory_b_complete": false
+      },
+      "expected": "INDETERMINATE",
+      "assertions": [
+        "Missing dependency inventory yields unknown.",
+        "No declared overlap with incomplete inventories is not independence."
+      ]
+    },
+    {
+      "id": "PNT-SNAPSHOT-MISMATCH-001",
+      "family": "snapshot_consistency",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "source_a_snapshot": "snapshot-001",
+        "source_b_snapshot": "snapshot-002",
+        "as_of_a": "2026-11-07T00:00:00Z",
+        "as_of_b": "2026-11-07T00:00:00Z"
+      },
+      "expected": "INDETERMINATE",
+      "assertions": [
+        "Profiles from different immutable dependency snapshots cannot be combined into one graph."
+      ]
+    },
+    {
+      "id": "PNT-ORACLE-SHARED-001",
+      "family": "ground_truth_independence",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "detector_input_source": "receiver-A",
+        "oracle_source": "receiver-A",
+        "label_method": "receiver-derived",
+        "oracle_independence_claim": "independent"
+      },
+      "expected": "REJECT_RELIANCE",
+      "assertions": [
+        "A source used by the detector cannot be represented as an independent oracle source for the same claim.",
+        "Physical-event truth, receiver-integrity truth and service consequence remain distinct."
+      ]
+    },
+    {
+      "id": "PNT-ANOMALY-CAUSE-001",
+      "family": "epistemic_abstention",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "symptom": "navigation-residual-anomaly",
+        "candidate_hypotheses": [
+          "multipath",
+          "receiver-fault",
+          "timing-fault",
+          "interference"
+        ],
+        "discriminating_evidence": "insufficient"
+      },
+      "expected": "INDETERMINATE",
+      "assertions": [
+        "The anomaly is preserved as an observation.",
+        "Cause and actor attribution are not invented.",
+        "Symthaea may retain competing hypotheses and abstain."
+      ]
+    },
+    {
+      "id": "PNT-RF-UNKNOWN-001",
+      "family": "open_set_rf_boundary",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "rf_classification": "unknown",
+        "capture_chain": "qualified",
+        "actor_identity": "not_established",
+        "pnt_solution_integrity": "not_assessed"
+      },
+      "expected": "INDETERMINATE",
+      "assertions": [
+        "Unknown RF family does not imply maliciousness, physical emitter identity/location, or invalid PNT.",
+        "RF open-set output is not silently promoted into a PNT integrity verdict."
+      ]
+    },
+    {
+      "id": "PNT-CAPTURE-DEGRADED-001",
+      "family": "acquisition_integrity",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "capture_chain": "buffer_overrun_or_clock_unlock",
+        "signal_classifier_output": "high_confidence_known_class"
+      },
+      "expected": "REJECT_RELIANCE",
+      "assertions": [
+        "Degraded acquisition is distinct from unknown signal class.",
+        "A high classifier score cannot repair invalid capture-chain evidence."
+      ]
+    },
+    {
+      "id": "PNT-COMMS-PARTITION-001",
+      "family": "availability_vs_navigation_health",
+      "kind": "positive_control",
+      "synthetic_input": {
+        "local_navigation_facets": "within_declared_profile",
+        "communications": "partitioned",
+        "remote_services": "unavailable"
+      },
+      "expected": "DEGRADED",
+      "assertions": [
+        "Communications loss alone does not invalidate locally evidenced navigation.",
+        "Unavailable remote context remains explicit and does not grant new authority."
+      ]
+    },
+    {
+      "id": "PNT-RECOVERY-AUTO-001",
+      "family": "recovery_requalification",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "anomaly": "no_longer_observed",
+        "fresh_observations": "missing",
+        "calibration_recheck": "missing",
+        "time_requalification": "missing",
+        "profile_reentry_condition": "not_satisfied"
+      },
+      "expected": "REJECT_RELIANCE",
+      "assertions": [
+        "Anomaly disappearance does not automatically restore normal service.",
+        "The state remains recovering or degraded until requalification."
+      ]
+    },
+    {
+      "id": "PNT-RECOVERY-QUAL-001",
+      "family": "recovery_requalification",
+      "kind": "positive_control",
+      "synthetic_input": {
+        "fresh_observations": "present",
+        "calibration_recheck": "current",
+        "time_requalification": "valid",
+        "configuration": "current",
+        "dependency_snapshot": "current",
+        "profile_reentry_condition": "satisfied",
+        "authorization": "separate_operator_policy_approval"
+      },
+      "expected": "QUALIFIED_FOR_DECLARED_PROFILE",
+      "assertions": [
+        "Recovery is a new qualification event.",
+        "The profile's re-entry condition is explicit.",
+        "No cognitive component grants operational authority."
+      ]
+    },
+    {
+      "id": "PNT-AUTH-MISSING-001",
+      "family": "authority_boundary",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "service_assessment": "degraded",
+        "model_recommendation": "switch_to_backup",
+        "operation_authorization": "missing"
+      },
+      "expected": "NOT_AUTHORIZED",
+      "assertions": [
+        "A recommendation cannot authorize an operation.",
+        "Exact target/action/tenant/authority checks remain in existing Platform effect boundary."
+      ]
+    },
+    {
+      "id": "PNT-PROBE-IMPACT-UNKNOWN-001",
+      "family": "decision_aware_observation",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "proposed_probe": "catalogued_read_only",
+        "predicted_evsi": "positive",
+        "probe_impact_receipt": "missing"
+      },
+      "expected": "INDETERMINATE",
+      "assertions": [
+        "Positive predicted EVSI is not permission to execute.",
+        "Missing probe impact evidence is unknown, not zero.",
+        "Probe timeout does not prove acquisition stopped."
+      ]
+    }
+  ]
+}
