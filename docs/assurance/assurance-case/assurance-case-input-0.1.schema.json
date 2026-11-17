@@ -1,0 +1,595 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:assurance-case-input:0.1",
+  "title": "Executable assurance case input 0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "case_id",
+    "decision_scope",
+    "as_of",
+    "root_claim_id",
+    "nodes",
+    "edges"
+  ],
+  "properties": {
+    "contract": {
+      "const": "luminous.executable-assurance-case/0.1"
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decision_scope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "as_of": {
+      "type": "integer"
+    },
+    "root_claim_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/node"
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/edge"
+      }
+    }
+  },
+  "$defs": {
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision_scope",
+        "required_evidence_ids",
+        "required_subclaim_ids",
+        "required_argument_ids",
+        "dependency_requirement"
+      ],
+      "properties": {
+        "decision_scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "required_evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required_subclaim_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required_argument_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "dependency_requirement": {
+          "enum": [
+            "none",
+            "no_declared_common_domain",
+            "physical_or_statistical_independence"
+          ]
+        }
+      }
+    },
+    "argument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rationale"
+      ],
+      "properties": {
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "description",
+        "decision_scope"
+      ],
+      "properties": {
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decision_scope": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "assumption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "critical",
+        "evidence_ids"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "supported",
+            "bounded",
+            "open",
+            "refuted"
+          ]
+        },
+        "critical": {
+          "type": "boolean"
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "dependency_assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "domain",
+        "disposition",
+        "source_ids",
+        "snapshot_id",
+        "inventory_complete",
+        "evidence_frontier",
+        "claim_ceiling"
+      ],
+      "properties": {
+        "domain": {
+          "type": "string",
+          "minLength": 1
+        },
+        "disposition": {
+          "enum": [
+            "shared_dependency",
+            "unknown_dependency",
+            "no_declared_common_domain"
+          ]
+        },
+        "source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "snapshot_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "inventory_complete": {
+          "type": "boolean"
+        },
+        "evidence_frontier": {
+          "type": "integer"
+        },
+        "claim_ceiling": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_sha256",
+        "evidence_class",
+        "source_id",
+        "provenance_ref",
+        "decision_scope",
+        "status",
+        "observed_at",
+        "valid_from",
+        "valid_until",
+        "dependency_assessment"
+      ],
+      "properties": {
+        "artifact_sha256": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidence_class": {
+          "enum": [
+            "measured",
+            "reported",
+            "derived",
+            "inferred",
+            "predicted",
+            "simulated",
+            "unknown"
+          ]
+        },
+        "source_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provenance_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "decision_scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "current",
+            "missing",
+            "stale",
+            "revoked",
+            "conflicted",
+            "unavailable"
+          ]
+        },
+        "observed_at": {
+          "type": "integer"
+        },
+        "valid_from": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "valid_until": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "dependency_assessment": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/dependency_assessment"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "defeater": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "applicable",
+        "critical",
+        "description",
+        "raised_at"
+      ],
+      "properties": {
+        "applicable": {
+          "type": "boolean"
+        },
+        "critical": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "raised_at": {
+          "type": "integer"
+        }
+      }
+    },
+    "rebuttal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target_defeater_id",
+        "evidence_ids"
+      ],
+      "properties": {
+        "target_defeater_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "claim",
+            "argument",
+            "context",
+            "assumption",
+            "evidence",
+            "defeater",
+            "rebuttal"
+          ]
+        },
+        "claim": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/claim"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "argument": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/argument"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "context": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/context"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assumption": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/assumption"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidence": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/evidence"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "defeater": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/defeater"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rebuttal": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/rebuttal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "claim"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "claim"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "argument"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "argument"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "context"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "context"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "assumption"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "assumption"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "evidence"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "evidence"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "defeater"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "defeater"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "rebuttal"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "rebuttal"
+            ]
+          }
+        }
+      ]
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "from",
+        "to"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "decomposes_into",
+            "supports",
+            "contextualizes",
+            "assumes",
+            "defeats",
+            "rebuts",
+            "depends_on"
+          ]
+        },
+        "from": {
+          "type": "string",
+          "minLength": 1
+        },
+        "to": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}

@@ -1,0 +1,49 @@
+name: Executable assurance case contract
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/assurance-case-contract.yml"
+      - "docs/assurance/assurance-case/**"
+      - "tools/assurance-case-contract/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/assurance-case-contract.yml"
+      - "docs/assurance/assurance-case/**"
+      - "tools/assurance-case-contract/**"
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@1.96.0
+        with:
+          components: rustfmt, clippy
+      - name: Formatting
+        run: cargo fmt --manifest-path tools/assurance-case-contract/Cargo.toml -- --check
+      - name: Frozen assurance-case and adversarial tests
+        run: cargo test --manifest-path tools/assurance-case-contract/Cargo.toml --all-targets
+      - name: Bounded scale benchmark smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/assurance-case-scale-benchmark.json"
+          cargo run --release --manifest-path tools/assurance-case-contract/Cargo.toml --bin assurance-case-bench -- 5 > "$report"
+          jq -e '
+            .benchmark_contract == "luminous.assurance-case-scale-benchmark/0.1" and
+            .status == "measured_no_acceptance_claim" and
+            .authority == "local_process_observation_only" and
+            (.results | length) == 4 and
+            ([.results[].evidence_nodes] == [10, 100, 1000, 10000]) and
+            ([.results[].outcome] | all(. == "SUPPORTED_FOR_DECLARED_SCOPE")) and
+            ([.results[].p50_validation_ns] | all(. > 0)) and
+            ([.results[].p95_validation_ns] | all(. > 0)) and
+            ([.results[].p99_validation_ns] | all(. > 0))
+          ' "$report" > /dev/null
+      - name: Clippy
+        run: cargo clippy --manifest-path tools/assurance-case-contract/Cargo.toml --all-targets -- -D warnings
