@@ -139,7 +139,7 @@ Every integration must pin exact standard edition, status, vessel/tonnage, servi
 | [IHO S-100 standards in force](https://iho.int/en/s-100-standards-in-force-0) | Versioned marine data/product interoperability (e.g. S-101, S-102, S-104, S-111, S-124, S-129) | Preserve edition, cell/revision, coverage, datum, uncertainty, source time and license. Schema conformance or map display is not navigation approval. |
 | [ISO 19030 series](https://www.iso.org/standard/63774.html) | Same-vessel hull/propeller performance-change measurement where the method and vessel are applicable | Trend methodology is not a universal cross-vessel efficiency score. Control environmental/operational confounders. |
 | [ITTC](https://www.ittc.info/) / [SIMMAN](https://www.simman2020.kr/) references | Ship manoeuvring, model-test and benchmark method selection | Match scale, geometry, loading, environment, test conditions and evaluator. A simulation result is not proof of safe full-scale handling. |
-| [ISO 10303 / STEP AP242](https://www.iso.org/standard/84300.html) | Neutral engineering/product-model exchange and semantic preservation | A translation receipt or tessellation pass is not proof of a valid manufacturing B-rep, tolerance suitability or buildability. Pin edition and translator/backend. |
+| [ISO 10303-242:2025 Edition 4 / STEP AP242](https://www.iso.org/standard/84300.html) | Neutral engineering/product-model exchange and semantic preservation | Edition 4 is the published 2025 edition. The Edition 5 committee draft is still under development; do not treat it as normative. A translation receipt or tessellation pass is not proof of a valid manufacturing B-rep, tolerance suitability or buildability. Pin edition and translator/backend. |
 | Applicable class, flag, coastal-state, port and shipyard requirements | Resolve exact approval and work-control basis | Only the competent authority/class/yard can determine applicable acceptance requirements; the profile records the mapping and evidence, not the approval itself. |
 
 **Standards watch:** ISO work items or committee drafts for MASS scenarios, ODD/OE taxonomy, verification procedures or software safety must be labelled draft/in-development until formally published and checked in the official catalogue. Do not present a draft as a normative final International Standard.
@@ -316,7 +316,7 @@ No claim is made here of: SOTA performance; validated CFD/FEA; physical shipyard
 - IACS UR E26/E27: https://iacs.org.uk/resolutions/unified-requirements/ur-e
 - IHO S-100 Standards in Force: https://iho.int/en/s-100-standards-in-force-0
 - ISO 19030-1:2016 (general principles, current following 2022 review): https://www.iso.org/standard/63774.html; ISO 19030-2:2016 (default method): https://www.iso.org/standard/63775.html; ISO 19030-3:2016 (alternative methods): https://www.iso.org/standard/63776.html
-- ISO 10303-242:2025: https://www.iso.org/standard/84122.html
+- ISO 10303-242:2025 Edition 4: https://www.iso.org/standard/84300.html; Edition 5 committee draft (under development, not normative): https://www.iso.org/cms/live/live/en/sites/isoorg/contents/data/standard/09/32/93277.html?browse=tc
 - ITTC: https://www.ittc.info/
 - SIMMAN: https://www.simman2020.kr/
 - 2026 hull-generation comparator: https://doi.org/10.3390/jmse14181707
