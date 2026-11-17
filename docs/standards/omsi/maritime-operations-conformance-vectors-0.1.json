@@ -1,0 +1,368 @@
+{
+  "schema": "omsi.maritime-operations-conformance-vector-pack",
+  "version": "0.1.0-draft",
+  "state": "FROZEN_DESIGN_NOT_EXECUTED",
+  "profile_id": "omsi.maritime-operations",
+  "profile_version": "0.1.0-draft",
+  "owner_issue": 491,
+  "validator_dependency": "Extend the existing OMSI validator/adapter path; do not create a second generic validator.",
+  "constraints": [
+    "All inputs are synthetic profile fixtures, not real vessel, port, supplier, crew or navigation data.",
+    "No vector authorizes vessel control, navigation, propulsion, crane, electrical or other physical actuation.",
+    "Expected outcomes are design assertions and have not yet been executed by an independent validator.",
+    "A digest proves byte identity only; an issuer signature does not prove physical truth.",
+    "Standards applicability and thresholds must be supplied by the selected vessel/service/flag/class/authority profile."
+  ],
+  "outcome_vocabulary": [
+    "QUALIFIED_FOR_DECLARED_PROFILE",
+    "DEGRADED",
+    "INDETERMINATE",
+    "REJECT_RELIANCE",
+    "NOT_AUTHORIZED",
+    "NOT_COMPARABLE",
+    "REQUIRES_AUTHORITY_REVIEW",
+    "RECONCILIATION_REQUIRED"
+  ],
+  "vectors": [
+    {
+      "id": "MAR-CONFIG-001",
+      "family": "configuration_identity",
+      "kind": "positive_control",
+      "synthetic_input": {
+        "design_revision": "D4",
+        "planned_bom": "BOM4",
+        "as_built_configuration": "CFG4",
+        "serialized_parts": "complete",
+        "inspection_lineage": "complete",
+        "subject_binding": "exact"
+      },
+      "expected": "QUALIFIED_FOR_DECLARED_PROFILE",
+      "assertions": [
+        "The vessel identity resolves to the exact as-built configuration.",
+        "Planned and as-built BOMs remain distinct.",
+        "This disposition is not seaworthiness or class approval."
+      ]
+    },
+    {
+      "id": "MAR-CONFIG-002",
+      "family": "planned_vs_as_built",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "planned_bom": "BOM4",
+        "as_built_configuration": "missing",
+        "supplier_delivery": "present"
+      },
+      "expected": "INDETERMINATE",
+      "assertions": [
+        "A planned BOM or supplier delivery cannot be projected as an installed as-built configuration."
+      ]
+    },
+    {
+      "id": "MAR-SOURCE-001",
+      "family": "issuer_vs_truth",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "issuer_signature": "valid",
+        "measurement_calibration": "missing",
+        "independent_measurement": "missing"
+      },
+      "expected": "INDETERMINATE",
+      "assertions": [
+        "Authenticated issuer identity does not establish measurement accuracy or calibration."
+      ]
+    },
+    {
+      "id": "MAR-EVENT-001",
+      "family": "duplicate_and_replay",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "event_id": "evt-001",
+        "same_digest_replayed": true,
+        "operation": "inspection_record"
+      },
+      "expected": "QUALIFIED_FOR_DECLARED_PROFILE",
+      "assertions": [
+        "An identical replay is idempotent and does not create a second inspection fact or effect."
+      ]
+    },
+    {
+      "id": "MAR-EVENT-002",
+      "family": "event_time_vs_ingestion",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "event_a_observed_at": "t2",
+        "event_a_ingested_at": "t4",
+        "event_b_observed_at": "t3",
+        "event_b_ingested_at": "t3",
+        "correction_lineage": "complete"
+      },
+      "expected": "QUALIFIED_FOR_DECLARED_PROFILE",
+      "assertions": [
+        "As-of projection uses admitted event/effective-time semantics, not arrival order alone.",
+        "Both original records and correction lineage remain inspectable."
+      ]
+    },
+    {
+      "id": "MAR-EVENT-003",
+      "family": "stale_revision",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "revision_r1_effective_at": "t2",
+        "revision_r2_effective_at": "t1",
+        "ingestion_order": [
+          "r1",
+          "r2"
+        ],
+        "validity_metadata": "present"
+      },
+      "expected": "REJECT_RELIANCE",
+      "assertions": [
+        "A later arrival cannot silently supersede a revision with an earlier effective interval."
+      ]
+    },
+    {
+      "id": "MAR-EVIDENCE-001",
+      "family": "evidence_class",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "source_class": "simulated",
+        "projection_target": "measured_observation"
+      },
+      "expected": "REJECT_RELIANCE",
+      "assertions": [
+        "Simulation and forecast evidence cannot be relabelled as measured physical observations."
+      ]
+    },
+    {
+      "id": "MAR-GEOM-001",
+      "family": "geometry_claim_ceiling",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "artifact": "waterplane_capped_displacement_mesh",
+        "mesh_integrity": "pass",
+        "full_brep": "missing",
+        "manufacturing_profile": "missing"
+      },
+      "expected": "INDETERMINATE",
+      "assertions": [
+        "Mesh integrity or displacement closure does not imply a complete fabrication B-rep, plate developability or buildability."
+      ]
+    },
+    {
+      "id": "MAR-CHANGE-001",
+      "family": "substitution_change_impact",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "installed_part": "P-A",
+        "substitution": "P-B",
+        "dependent_inspections": "not_reassessed",
+        "operating_qualification": "current"
+      },
+      "expected": "REQUIRES_AUTHORITY_REVIEW",
+      "assertions": [
+        "Safety-relevant substitution triggers dependency-impact review before affected qualifications are relied upon."
+      ]
+    },
+    {
+      "id": "MAR-CHANGE-002",
+      "family": "selective_requalification",
+      "kind": "positive_control",
+      "synthetic_input": {
+        "change_scope": [
+          "pump-controller"
+        ],
+        "dependency_graph": "complete",
+        "unrelated_certificates": "outside_dependency_closure"
+      },
+      "expected": "QUALIFIED_FOR_DECLARED_PROFILE",
+      "assertions": [
+        "Only proven dependent qualifications are invalidated; unrelated qualifications remain unchanged.",
+        "Completeness of the dependency graph is part of the claim."
+      ]
+    },
+    {
+      "id": "MAR-AUTH-001",
+      "family": "recommendation_vs_authority",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "model_recommendation": "approved",
+        "authorized_operator_decision": "absent",
+        "requested_effect": "physical_operation"
+      },
+      "expected": "NOT_AUTHORIZED",
+      "assertions": [
+        "A model recommendation, score or simulation result grants no operation authority."
+      ]
+    },
+    {
+      "id": "MAR-OUTBOX-001",
+      "family": "ambiguous_effect",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "operation_attempt": "sent",
+        "acknowledgement": "lost",
+        "physical_postcondition": "unknown",
+        "retry_requested": true
+      },
+      "expected": "RECONCILIATION_REQUIRED",
+      "assertions": [
+        "Unknown outcome requires reconciliation of the existing operation identity before retry or new mutation.",
+        "Timeout is neither success nor failure."
+      ]
+    },
+    {
+      "id": "MAR-PNT-001",
+      "family": "common_mode_dependency",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "sources": 4,
+        "shared_time_reference": "clock-A",
+        "dependency_inventory": "complete"
+      },
+      "expected": "DEGRADED",
+      "assertions": [
+        "Four feeds sharing one time reference are not four independent time witnesses."
+      ]
+    },
+    {
+      "id": "MAR-GEO-001",
+      "family": "navigation_use_boundary",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "dataset": "planning_bathymetry",
+        "coverage": "present",
+        "navigation_product_qualification": "absent",
+        "display_target": "navigation_safe"
+      },
+      "expected": "REJECT_RELIANCE",
+      "assertions": [
+        "Planning bathymetry cannot be represented as official navigation coverage or a safe-water verdict."
+      ]
+    },
+    {
+      "id": "MAR-MASS-001",
+      "family": "regulatory_applicability",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "vessel_type": "small_non_solas_craft",
+        "gross_tonnage": "unknown",
+        "voyage": "unknown",
+        "flag": "unknown",
+        "requested_claim": "MASS_Code_compliant"
+      },
+      "expected": "REQUIRES_AUTHORITY_REVIEW",
+      "assertions": [
+        "MASS Code applicability is not inferred without vessel, tonnage, voyage, flag and service facts.",
+        "A non-mandatory code mapping is not a certificate."
+      ]
+    },
+    {
+      "id": "MAR-STD-001",
+      "family": "draft_standard_status",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "reference_status": "committee_draft",
+        "claimed_status": "published_normative_requirement"
+      },
+      "expected": "REJECT_RELIANCE",
+      "assertions": [
+        "A draft or work item cannot be projected as a published final International Standard."
+      ]
+    },
+    {
+      "id": "MAR-CYBER-001",
+      "family": "cyber_profile_scope",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "controls_mapped": "some",
+        "applicability_revision": "unknown",
+        "evidence": "self_attested",
+        "claimed_result": "IACS_E26_E27_compliant"
+      },
+      "expected": "NOT_COMPARABLE",
+      "assertions": [
+        "Internal control mapping is not an IACS audit or class/flag-state certification.",
+        "Revision and applicability must be pinned."
+      ]
+    },
+    {
+      "id": "MAR-ENV-001",
+      "family": "non_compensable_ecology",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "lifecycle_carbon": "improved",
+        "protected_habitat_constraint": "violated",
+        "composite_score": "positive"
+      },
+      "expected": "REJECT_RELIANCE",
+      "assertions": [
+        "A composite score cannot compensate for a protected habitat or other hard environmental constraint violation."
+      ]
+    },
+    {
+      "id": "MAR-OPS-001",
+      "family": "degraded_service",
+      "kind": "positive_control",
+      "synthetic_input": {
+        "shore_power": "unavailable",
+        "local_energy_reserve": "measured",
+        "mission_mode": "declared_degraded_mode",
+        "authority": "present",
+        "limits": "current"
+      },
+      "expected": "DEGRADED",
+      "assertions": [
+        "Degraded service must remain explicitly bounded and attributable.",
+        "An abstract or simulated reserve is not a measured reserve."
+      ]
+    },
+    {
+      "id": "MAR-RECOVERY-001",
+      "family": "recovery_postcondition",
+      "kind": "positive_control",
+      "synthetic_input": {
+        "incident": "closed_by_operator",
+        "repair_record": "present",
+        "independent_test": "pass",
+        "configuration_revision": "updated",
+        "dependent_requalification": "complete"
+      },
+      "expected": "QUALIFIED_FOR_DECLARED_PROFILE",
+      "assertions": [
+        "Return-to-service requires exact configuration, required independent postcondition evidence and dependent requalification.",
+        "Operator closure alone is not physical acceptance."
+      ]
+    },
+    {
+      "id": "MAR-UNKNOWN-001",
+      "family": "missing_data",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "source_update": "missing",
+        "last_known_state": "available",
+        "freshness_policy": "expired"
+      },
+      "expected": "INDETERMINATE",
+      "assertions": [
+        "Missing updates do not imply continued availability, clear water or safe operation."
+      ]
+    },
+    {
+      "id": "MAR-CORPUS-001",
+      "family": "benchmark_source_admission",
+      "kind": "negative_control",
+      "synthetic_input": {
+        "dataset_landing_page": "present",
+        "raw_bytes": "missing",
+        "hash": "missing",
+        "schema_reconstruction": "missing",
+        "claimed_result": "reproduced_SOTA"
+      },
+      "expected": "NOT_COMPARABLE",
+      "assertions": [
+        "A dataset landing page and metadata are not raw admitted benchmark inputs.",
+        "No numerical reproduction or superiority claim is permitted before source-byte admission."
+      ]
+    }
+  ]
+}
