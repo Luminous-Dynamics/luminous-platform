@@ -27,6 +27,11 @@ No upstream system may promote a modelled or declared capability into a measured
 
 ## 3. V0.1 workload posture
 
+The schema-only example `profiles/workloads/kitchen-local-readonly-microvm-example.json` is the first concrete configuration of this boundary. It is deliberately `example_only` / `design_only`: placeholder microvm revision and artifact digests, no host shares, no virtual NIC, no secrets, no ingress/egress, and manual start only. It is not a bootable workload.
+
+The workload-profile validator also applies kitchen-specific semantic checks and negative controls to boundary-widening mutations (host share, egress, virtual NIC, boot start, secret provider). Passing that validator establishes only that the declarative example preserves the specified policy shape.
+
+
 The first deployment candidate is an isolated, unprivileged service on a NixOS host, but the profile remains **design-only** until a separate PR provides the exact immutable image/derivation and test receipts.
 
 Required default policy:
