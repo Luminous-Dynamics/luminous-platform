@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/omsi-maritime-operations-conformance-vectors-0.1.json",
+  "title": "OMSI Maritime Operations Conformance Vectors 0.1",
+  "description": "Structural schema for the frozen design-only maritime profile vectors. Passing this schema check does not execute maritime semantics or establish engineering, operational, regulatory, or physical qualification.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "state",
+    "profile_id",
+    "profile_version",
+    "owner_issue",
+    "validator_dependency",
+    "constraints",
+    "outcome_vocabulary",
+    "vectors"
+  ],
+  "properties": {
+    "schema": {
+      "const": "omsi.maritime-operations-conformance-vector-pack"
+    },
+    "version": {
+      "const": "0.1.0-draft"
+    },
+    "state": {
+      "const": "FROZEN_DESIGN_NOT_EXECUTED"
+    },
+    "profile_id": {
+      "const": "omsi.maritime-operations"
+    },
+    "profile_version": {
+      "const": "0.1.0-draft"
+    },
+    "owner_issue": {
+      "const": 491
+    },
+    "validator_dependency": {
+      "type": "string",
+      "minLength": 20
+    },
+    "constraints": {
+      "type": "array",
+      "minItems": 5,
+      "items": {
+        "type": "string",
+        "minLength": 10
+      }
+    },
+    "outcome_vocabulary": {
+      "type": "array",
+      "minItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "QUALIFIED_FOR_DECLARED_PROFILE",
+          "DEGRADED",
+          "INDETERMINATE",
+          "REJECT_RELIANCE",
+          "NOT_AUTHORIZED",
+          "NOT_COMPARABLE",
+          "REQUIRES_AUTHORITY_REVIEW",
+          "RECONCILIATION_REQUIRED"
+        ]
+      }
+    },
+    "vectors": {
+      "type": "array",
+      "minItems": 22,
+      "items": {
+        "$ref": "#/$defs/vector"
+      }
+    }
+  },
+  "$defs": {
+    "vector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "family",
+        "kind",
+        "synthetic_input",
+        "expected",
+        "assertions"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^MAR-[A-Z]+-[0-9]{3}$"
+        },
+        "family": {
+          "enum": [
+            "configuration_identity",
+            "planned_vs_as_built",
+            "issuer_vs_truth",
+            "duplicate_and_replay",
+            "event_time_vs_ingestion",
+            "stale_revision",
+            "evidence_class",
+            "geometry_claim_ceiling",
+            "substitution_change_impact",
+            "selective_requalification",
+            "recommendation_vs_authority",
+            "ambiguous_effect",
+            "common_mode_dependency",
+            "navigation_use_boundary",
+            "regulatory_applicability",
+            "draft_standard_status",
+            "cyber_profile_scope",
+            "non_compensable_ecology",
+            "degraded_service",
+            "recovery_postcondition",
+            "missing_data",
+            "benchmark_source_admission"
+          ]
+        },
+        "kind": {
+          "enum": [
+            "positive_control",
+            "negative_control"
+          ]
+        },
+        "synthetic_input": {
+          "type": "object",
+          "minProperties": 1,
+          "description": "Synthetic fixture values. Per-family semantic validation is intentionally a separate executable-verifier responsibility."
+        },
+        "expected": {
+          "enum": [
+            "QUALIFIED_FOR_DECLARED_PROFILE",
+            "DEGRADED",
+            "INDETERMINATE",
+            "REJECT_RELIANCE",
+            "NOT_AUTHORIZED",
+            "NOT_COMPARABLE",
+            "REQUIRES_AUTHORITY_REVIEW",
+            "RECONCILIATION_REQUIRED"
+          ]
+        },
+        "assertions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 12
+          }
+        }
+      }
+    }
+  }
+}
