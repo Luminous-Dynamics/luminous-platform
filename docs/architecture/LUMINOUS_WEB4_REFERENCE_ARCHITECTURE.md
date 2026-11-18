@@ -112,7 +112,10 @@ Prefer existing standards and audited implementations over new cryptographic for
 | Attestation | IETF RATS (RFC 9334) and appropriate EAT/TEE evidence profiles | Relying-party policy decides what evidence is sufficient; a signature alone is not hardware trust. |
 | Transparency | SCITT (RFC 9943) | Register signed statements and verify receipts; do not confuse transparency with truth. |
 | Build provenance | SLSA provenance and artifact attestations | Bind artifacts to repository, workflow, source revision and build process; verify trust policy. |
-| Tool protocol | MCP or other typed protocol adapters | Tool discovery and annotations do not grant authority; each operation needs a pinned manifest and external policy. |
+| Agent-to-agent protocol | A2A v1.0 | Use A2A for interoperable task/message exchange and agent discovery. An Agent Card or authenticated connection is not permission to perform a downstream effect. |
+| Tool protocol | MCP or other typed protocol adapters | Use resource/audience-bound credentials and pinned tool contracts; tool discovery and annotations do not grant authority. |
+| Runtime control hooks | OWASP Agent Control Standard (ACS) | Provide ACS adapters for portable policy hooks and trace/inspection surfaces. The Luminous broker and participant remain the deterministic reference monitors; do not rely on a second LLM/Guardian as the sole authorization boundary. |
+| Observability and agent inventory | OpenTelemetry, OCSF, CycloneDX/SPDX | Export correlated traces/events and an Agent Bill of Materials covering model, runtime, skills, MCP/A2A peers, tools, knowledge sources, memory stores and policy versions. Self-reported traces are not independent evidence. |
 | Secure session | TLS 1.3 / QUIC plus Xenia where the use case requires its application/session semantics | Xenia is not a TLS replacement. Do not deploy its pre-alpha wire format as production infrastructure. |
 | Storage/federation | Holochain, HTTPS, content-addressed storage or other suitable participant-owned stores | No single ledger is mandatory; retain verifiable exports and local control. |
 
@@ -179,6 +182,8 @@ Assume that:
 - model capability and attack automation will improve over time.
 
 The architecture must not assume that prompt wording, model alignment, moral reasoning, consensus or reputation can enforce a security invariant.
+
+### 7.2 Four enforcement boundaries
 
 ### 7.2 Four enforcement boundaries
 
@@ -261,6 +266,20 @@ Evidence derived from one source must not be counted as multiple independent obs
 
 Host boot continuity and security authorization are different failure domains. The host must remain bootable without the Luminous control plane, while consequential actions remain fail-closed.
 
+### 7.9 Security as a moving target
+
+A fixed checklist will not keep pace with improving models, tool ecosystems and automated attackers. Security qualification MUST be versioned against the complete deployed agent system, not just the model name.
+
+- Treat each model, prompt template, skill, memory policy, tool manifest, MCP/A2A peer, runtime, sandbox image and policy revision as part of a versioned Agent Bill of Materials.
+- A model/runtime/tool change that expands capability or changes behavior triggers targeted requalification before it inherits any existing authority.
+- Preserve a permanent adversarial regression corpus; add newly observed attacks as sealed evaluator cases, with independent oracle data unavailable to the system under test.
+- Run periodic red-team campaigns against the current strongest available model families and open-weight models. Measure attack success by committed external effect and data disclosure, not by the model's verbal compliance.
+- Use capability growth to increase containment, test depth and monitoring; never to expand authority automatically.
+- Support emergency revocation of model/runtime identities, grants, tool manifests and compromised signing keys, with tested recovery and forensic retention.
+- Track residual risks and common-mode failures in the broker, participant, observer, host, identity issuer and trust roots. No amount of model evaluation compensates for a compromised enforcement root.
+
+Security can remain resilient as models improve only while the enforcement boundary is simpler, separately administered where possible, independently tested and harder to bypass than the model's available action surface. This is a design objective, not a guarantee against every future attacker.
+
 ## 8. Adversarial benchmark programme
 
 Build a reproducible Rust-first benchmark harness with deterministic synthetic participants and independent effect counters. Unsafe comparison arms run only inside isolated simulations, never with production credentials or routes.
@@ -272,8 +291,21 @@ Integrate or map scenarios from:
 - InjecAgent — indirect prompt-injection cases involving user and attacker tools.
 - Agent Security Bench — multi-application agentic security scenarios and metrics.
 - AgentHarm — harmful multi-step agent behavior.
-- OWASP Top 10 for Agentic Applications (2026) and OWASP LLM guidance.
-- MCP Security Best Practices — scoped credentials, resource audience binding, consent and tool trust.
+- AgentBench and task/interactive-environment benchmarks where cognitive capability is being measured.
+- OWASP Top 10 for Agentic Applications (2026), OWASP Agent Control Standard (ACS), and OWASP LLM guidance.
+- MCP Security Best Practices and A2A v1.0 security guidance — scoped credentials, resource audience binding, consent, peer authentication and tool trust.
+
+### 8.1.1 Reuse the existing Luminous benchmark work
+
+Do not create a second autonomy benchmark corpus, task taxonomy, synthetic runner, result schema or statistical engine. Extend and cross-reference the existing ITOPS/OpsBench work:
+- PR #167 already proposes an Autonomy Boundary corpus with 128 system-under-test variants and 64 evaluator-only paired oracles across eight families; it is still a draft and does not yet establish model performance.
+- Issue #168 defines the broker-enforced effect boundary and its negative/positive conformance cases.
+- Issue #213 specifies the deterministic synthetic runner; it remains implementation work until the runner is executed and evidenced.
+- PR #217 supplies a process-separated participant/observer smoke harness, but its own claim ceiling is synthetic and same-host; it is not an independent administrative trust domain.
+- Issue #218 defines the required sampling-independence, strata, pairing and cluster-aware statistical analysis.
+- Issue #284 specifies monotonic authority attenuation across delegated agents.
+
+The Web4 benchmark contribution should therefore be a cross-project adapter and scenario crosswalk: add A2A/MCP/ACS interoperability, Mycelix identity and delegation, Xenia session semantics, Sol-Atlas provenance lineage and Symtropy simulated-vs-observed outcome cases to the existing framework. Existing scenario IDs and schemas remain canonical unless a reviewed versioned migration is approved.
 
 Do not claim superiority by comparing different models, task distributions, prompts, tools, budgets or evaluation leakage. Pin exact model/provider, model revision where available, prompts, task set, tool manifests, environment, budgets and evaluator versions.
 
@@ -344,11 +376,28 @@ Report separate dimensions; do not combine safety-critical violations into a com
 | Cross-implementation test vectors | 100% byte/semantic agreement for frozen profile |
 | Utility retention under attack | ≥95% of matched benign baseline, subject to all hard safety gates |
 
-Run at least 10,000 held-out adversarial mutation trials across scenario families as an initial engineering target, then power the confirmatory study by independent scenario cluster and effect class. Repeated variants of one template are not independent samples. Report confidence intervals and actual denominators. Any hard-gate violation blocks a safety pass regardless of throughput or task completion.
+Use the existing ITOPS preregistered experiment plan and its dependence-aware statistical method. Do not choose a raw episode count first and then assume all rows are independent. The current 3,000-episode / zero-critical-violation proposal is conditional on the sampling design supporting its stated one-sided confidence bound; otherwise use cluster-level or stratified inference as specified in #218. Keep scenario family, model/provider, task template, seed lineage, agent session, environment and infrastructure failure domain explicit. Never present a bound on a synthetic corpus as a universal production-risk bound.
 
-The 10 ms and 1 s values are engineering hypotheses and MUST NOT be used to relax a security gate. Tune performance only after safety properties are preserved.
+The 10 ms and 1 s values are engineering hypotheses (the 10 ms local-gate hypothesis is also present in #168) and MUST NOT be used to relax a security gate. Tune performance only after safety properties are preserved.
 
-## 9. Implementation sequence
+## 9. Competitive positioning and how to beat the state of the art
+
+The industry is converging on interoperable agent communication and increasingly capable agent runtimes. Luminous should integrate with that ecosystem rather than compete with it at every layer.
+
+| Industry capability | What it already does well | Luminous strategy and differentiated test |
+|---|---|---|
+| A2A | Standardized agent discovery and task/message exchange across vendors | Speak A2A; bind every delegated task to an independently verified parent grant and test non-amplifying delegation at the participant boundary. |
+| MCP | Standard tool/resource access, OAuth authorization and resource audience binding | Speak MCP; additionally pin effect manifests, classify side effects, bind exact canonical requests and require participant-owned admission/receipts. |
+| OWASP ACS | Portable runtime hooks, Guardian-mediated decisions, inspection and trace surfaces | Provide an ACS adapter; keep critical enforcement deterministic, independently administered and participant-enforced, not dependent on an LLM Guardian alone. |
+| OpenAI Agents SDK and comparable agent frameworks | Orchestration, handoffs, tracing, tool guardrails, human approval and controlled sandbox execution | Integrate as a framework-neutral assurance plane, and compare matched task success, security violations, latency, cost and evidence completeness. |
+| Enterprise agent platforms | Identity, access management, observability, governance and managed connectors | Interoperate with their identity and logging systems; compete on cross-domain authority attenuation, outcome reconciliation and independent evidence rather than duplicating enterprise IAM. |
+| Agent security benchmarks | Prompt injection, tool misuse, harmful tasks and agent task performance | Reproduce external benchmarks, then add multi-party delegation, correlated evidence, participant commit ambiguity and physical-digital divergence cases. |
+
+The realistic differentiation is not that Symthaea must beat frontier models at every general reasoning task, or that Xenia should replace TLS, MCP or A2A. The distinctive proposition is **an assurance and coordination fabric that can sit beneath different model providers and frameworks**: a model proposes; a policy broker validates; a participant independently enforces; an observer verifies; and federation preserves local sovereignty.
+
+To claim an improvement over SOTA, publish paired results on pinned versions of the same models, tasks, tools, prompts, budgets and environments. Report task utility and safety separately. A security win that simply refuses every task is not useful; a task-success win with one unauthorized committed effect is not a safety pass. Report p50/p95/p99 latency, total cost, token/tool use, energy, false denial, authorized completion, violation rate by attack family and evidence-completeness. Use independent red-team review and private holdouts. Until those studies execute, the architecture is a hypothesis, not an SOTA result.
+
+## 10. Implementation sequence
 
 ### M0 — Architecture and claim inventory
 - Approve this as a non-normative integration proposal.
@@ -363,10 +412,11 @@ The 10 ms and 1 s values are engineering hypotheses and MUST NOT be used to rela
 - Define versioned operation manifests, canonical authority grants, task/attempt identity, typed receipts and error-state semantics.
 
 ### M2 — Isolated benchmark harness
-- Build fake participants, independent effect counters, a policy oracle and deterministic fault injection.
-- Implement positive and negative control vectors for grant mismatch, revocation, replay, delegation, retries, drift, evidence laundering and partition.
-- Compare baseline arms A–E under identical conditions.
-- Do not wire the first benchmark harness to production connectors or credentials.
+- Complete and qualify the existing deterministic runner and process-separated oracle work (#213 / PR #217); do not create a parallel harness.
+- Integrate #167 task/oracle separation, #168 effect-gate vectors, #218 statistical preregistration and #284 delegation scenarios.
+- Add Web4 crosswalk cases for A2A task delegation, MCP tool/resource authorization, ACS runtime hook enforcement, Mycelix identity and revocation, Xenia session/replay semantics, Sol-Atlas provenance and Symtropy twin divergence.
+- Compare baseline arms A–E under identical conditions, with evaluator-only expected outcomes and independent committed-effect counters.
+- Do not wire the synthetic benchmark to production connectors or credentials.
 
 ### M3 — Broker and participant enforcement
 - Integrate the exact proposal → grant check → one-use permit → participant admission flow.
@@ -387,7 +437,7 @@ The 10 ms and 1 s values are engineering hypotheses and MUST NOT be used to rela
 - Crash, replay, partition and compromise exercises.
 - Independent assurance report with exact source revisions and explicit unqualified boundaries.
 
-## 10. Maturity and claim ceiling
+## 11. Maturity and claim ceiling
 
 The architecture is a research and integration direction, not a statement that Luminous Web4 or its security model is production-ready.
 
@@ -404,7 +454,7 @@ Consequently:
 - Do not claim a collective is conscious from intelligence or coordination benchmarks.
 - Distinguish implemented, tested, structurally specified, CI-pending, externally audited and physically qualified states in every report.
 
-## 11. References
+## 12. References
 
 - IETF RFC 9943 — SCITT Architecture: https://www.rfc-editor.org/rfc/rfc9943.html
 - IETF RFC 9334 — Remote ATtestation procedureS (RATS) Architecture: https://www.rfc-editor.org/rfc/rfc9334.html
@@ -412,13 +462,15 @@ Consequently:
 - SLSA v1.2: https://slsa.dev/spec/v1.2/
 - W3C DID Core: https://www.w3.org/TR/did-core/
 - OAuth 2.0 Resource Indicators (RFC 8707): https://www.rfc-editor.org/rfc/rfc8707.html
-- OWASP Top 10 for Agentic Applications: https://owasp.org/www-project-top-10-for-large-language-model-applications/
+- OWASP Top 10 for Agentic Applications: https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/
+- OWASP Agent Control Standard: https://owaspacs.org/docs/acs/
+- A2A Protocol v1.0: https://a2a-protocol.org/v1.0.0/
 - AgentDojo: https://agentdojo.spylab.ai/
 - InjecAgent: https://arxiv.org/abs/2403.02691
 - Agent Security Bench: https://arxiv.org/abs/2410.02644
 - AgentHarm: https://arxiv.org/abs/2410.09024
 - Current Web4 Internet-Draft (individual submission, work in progress): https://datatracker.ietf.org/doc/draft-reilly-web4/
-- Luminous Platform issues: #168, #284, #310, #91 and #93.
+- Luminous Platform issues/PRs: #167, #168, #213, #218, #284, #310, #91 and #93; PR #217 is a synthetic process-separation smoke harness.
 
 ---
 
