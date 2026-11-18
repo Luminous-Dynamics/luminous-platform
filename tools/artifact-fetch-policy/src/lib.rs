@@ -812,8 +812,9 @@ mod tests {
 
     #[test]
     fn ip_literal_resolution_must_match_the_literal_exactly() {
-        let p = policy();
         let direct = origin("8.8.8.8", 443);
+        let p = FetchPolicy::new([direct.clone()], 3, 1024, timeouts())
+            .expect("direct IP literal policy should be valid");
         assert!(p.authorize_resolution(&direct, &[ip("8.8.8.8")]).is_ok());
         assert_eq!(
             p.authorize_resolution(&direct, &[ip("1.1.1.1")]),
