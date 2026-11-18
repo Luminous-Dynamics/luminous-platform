@@ -281,6 +281,98 @@ def semantic_errors(profile: dict[str, Any]) -> list[str]:
 
     return errors
 
+def kitchen_readonly_profile_errors(profile: dict[str, Any]) -> list[str]:
+    """Enforce the stricter kitchen workload posture beyond generic schema shape."""
+    errors: list[str] = []
+    deployment = profile["deployment"]
+    security = profile["security"]
+    network = security["network"]
+    secrets = security["secrets"]
+    lifecycle = profile["lifecycle"]
+    evidence = profile["evidence"]
+
+    if deployment["kind"] != "nixos_microvm":
+        errors.append("kitchen workload must remain isolated in a NixOS microVM")
+    if security["trustZone"] != "restricted_service":
+        errors.append("kitchen workload must remain in the restricted_service trust zone")
+    if security["hostDataAccess"] != "none" or security["hostControl"] != "none":
+        errors.append("kitchen workload must have no host data access or host control")
+    if network["ingress"] != "deny" or network["egress"] != "deny" or network["rules"]:
+        errors.append("kitchen workload must deny ingress and egress without exceptions")
+    if secrets["provider"] != "none" or secrets["references"]:
+        errors.append("kitchen workload must not receive secrets in the read-only design slice")
+    if deployment["shares"]:
+        errors.append("kitchen workload must not mount host shares")
+    if set(deployment["devices"]) - {"virtio_block", "virtio_console"}:
+        errors.append("kitchen workload devices must be limited to virtual root block and console")
+    if lifecycle["startPolicy"] != "manual":
+        errors.append("kitchen workload must remain manually started and not be a host boot dependency")
+    if not deployment["rootArtifact"]["readOnly"]:
+        errors.append("kitchen workload root artifact must be read-only")
+    if evidence["status"] != "design_only" or evidence["testsPassed"]:
+        errors.append("kitchen workload remains design_only with no claimed runtime test passes")
+    return errors
+
+
+def validate_kitchen_readonly_negative_controls(profile: dict[str, Any]) -> None:
+    """Prove that the kitchen-specific fail-closed policy rejects boundary widening."""
+    mutations = [
+        (
+            "host data access",
+            lambda value: value["security"].update({"hostDataAccess": "declared_mounts_only"}),
+        ),
+        (
+            "egress",
+            lambda value: value["security"]["network"].update({"egress": "allowlisted"}),
+        ),
+        (
+            "network rules",
+            lambda value: value["security"]["network"].update(
+                {"rules": [{
+                    "direction": "egress",
+                    "protocol": "tcp",
+                    "peerType": "hostname",
+                    "peer": "example.invalid",
+                    "port": 443,
+                    "justification": "negative control only"
+                }]}
+            ),
+        ),
+        (
+            "host share",
+            lambda value: value["deployment"].update(
+                {"shares": [{
+                    "sourceId": "host-data",
+                    "source": "dedicated_state",
+                    "target": "/mnt/host-data",
+                    "access": "read_only"
+                }]}
+            ),
+        ),
+        (
+            "device networking",
+            lambda value: value["deployment"]["devices"].append("virtio_net"),
+        ),
+        (
+            "host boot dependency",
+            lambda value: value["lifecycle"].update({"startPolicy": "on_host_boot"}),
+        ),
+        (
+            "secret provider",
+            lambda value: value["security"]["secrets"].update({"provider": "os_secret_store"}),
+        ),
+    ]
+    for name, mutate in mutations:
+        candidate = copy.deepcopy(profile)
+        mutate(candidate)
+        errors = kitchen_readonly_profile_errors(candidate)
+        if not errors:
+            raise AssertionError(
+                f"kitchen read-only profile accepted a boundary-widening negative control: {name}"
+            )
+        print(f"PASS kitchen negative: reject {name}")
+
+
 def main() -> int:
     schema = load_json(SCHEMA_PATH)
     Draft202012Validator.check_schema(schema)
@@ -327,6 +419,15 @@ def main() -> int:
             for error in semantic:
                 print(f"  {error}")
             return 1
+
+        if profile.get("metadata", {}).get("name") == "kitchen-local-readonly-microvm-example":
+            kitchen_errors = kitchen_readonly_profile_errors(profile)
+            if kitchen_errors:
+                print(f"FAIL kitchen read-only policy: {path.relative_to(ROOT)}")
+                for error in kitchen_errors:
+                    print(f"  {error}")
+                return 1
+            validate_kitchen_readonly_negative_controls(profile)
 
         loaded[path.name] = profile
         print(f"PASS profile: {path.relative_to(ROOT)}")

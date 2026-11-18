@@ -1,0 +1,85 @@
+{
+  "apiVersion": "luminousdynamics.org/v1alpha1",
+  "kind": "WorkloadProfile",
+  "metadata": {
+    "name": "kitchen-local-readonly-microvm-example",
+    "version": "0.1.0",
+    "qualification": "example_only",
+    "purpose": "Design-only local-first kitchen service workload. No device discovery, host data mount, host control, network interface, secret or actuator access is authorized.",
+    "owner": "Luminous Dynamics"
+  },
+  "placement": {
+    "allowedHosts": ["nixos"],
+    "architectures": ["x86_64"],
+    "placementClass": "isolation_guest",
+    "notes": "Schema fixture only. The microvm revision and artifact digests are placeholders; do not build, fetch, or boot this profile."
+  },
+  "deployment": {
+    "kind": "nixos_microvm",
+    "microvmNixRevision": "0000000000000000000000000000000000000000",
+    "guestSystem": "x86_64-linux",
+    "guestConfigurationDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+    "rootArtifact": {
+      "format": "erofs",
+      "sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "readOnly": true
+    },
+    "hypervisor": "qemu",
+    "vcpus": 2,
+    "memoryMiB": 512,
+    "shares": [],
+    "devices": ["virtio_block", "virtio_console"]
+  },
+  "security": {
+    "trustZone": "restricted_service",
+    "hostDataAccess": "none",
+    "hostControl": "none",
+    "network": {
+      "ingress": "deny",
+      "egress": "deny",
+      "rules": []
+    },
+    "secrets": {
+      "referencesOnly": true,
+      "provider": "none",
+      "references": []
+    }
+  },
+  "resources": {
+    "cpuMilli": 2000,
+    "memoryMiB": 512,
+    "diskMiB": 512,
+    "pidsMax": 1024,
+    "startupTimeoutSeconds": 60
+  },
+  "lifecycle": {
+    "startPolicy": "manual",
+    "restartPolicy": "on_failure",
+    "upgradeStrategy": "replace_by_digest",
+    "changesRequireAuthorization": true,
+    "stopTimeoutSeconds": 20,
+    "healthGraceSeconds": 30
+  },
+  "evidence": {
+    "status": "design_only",
+    "claimScope": "Schema-validated example only. It establishes no workload deployment, VM boot, isolation, adapter compatibility, offline usability, privacy, food safety, appliance safety or actuation authority.",
+    "testsRequired": [
+      "json_schema_validation",
+      "reject_host_control",
+      "reject_host_data_mount",
+      "deny_ingress_and_egress",
+      "no_passthrough_devices",
+      "verify_microvm_revision",
+      "verify_guest_configuration_digest",
+      "verify_root_artifact_digest",
+      "guest_boot_and_shutdown",
+      "guest_disabled_does_not_affect_host_boot",
+      "network_namespace_has_no_external_route",
+      "manual_local_operator_path",
+      "update_interruption_and_digest_rollback",
+      "evidence_export_and_local_deletion"
+    ],
+    "testsPassed": [],
+    "receiptReferences": []
+  }
+}
