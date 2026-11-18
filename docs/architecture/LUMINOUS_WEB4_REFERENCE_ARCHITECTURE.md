@@ -297,13 +297,18 @@ Integrate or map scenarios from:
 
 Do not create a second autonomy benchmark corpus, task taxonomy, synthetic runner, result schema or statistical engine. Extend and cross-reference the existing ITOPS/OpsBench work:
 - PR #167 already proposes an Autonomy Boundary corpus with 128 system-under-test variants and 64 evaluator-only paired oracles across eight families; it is still a draft and does not yet establish model performance.
+- Issue #41 and PR #40 define the ACS-to-Nixward bridge against the canonical Nixward transaction path. ACS disposition is not Nixward ChangeAuthorization; the pinned reference Guardian is explicitly not the conformance oracle, and signature/replay gaps must remain visible.
 - Issue #168 defines the broker-enforced effect boundary and its negative/positive conformance cases.
+- PR #167 proposes the Autonomy Boundary corpus: 128 SUT variants and 64 evaluator-only paired oracles across eight families. It remains a draft and does not establish model performance.
 - Issue #213 specifies the deterministic synthetic runner; it remains implementation work until the runner is executed and evidenced.
 - PR #217 supplies a process-separated participant/observer smoke harness, but its own claim ceiling is synthetic and same-host; it is not an independent administrative trust domain.
 - Issue #218 defines the required sampling-independence, strata, pairing and cluster-aware statistical analysis.
 - Issue #284 specifies monotonic authority attenuation across delegated agents.
+- Issue #356 covers common-cause-aware evidence corroboration; source IDs or declared domain labels alone do not establish independence.
+- Issues #175 and #268 cover matched external benchmark comparisons and source-pinned external benchmark evidence.
+- Issue #459 defines cyber-physical command authenticity, anti-replay, asset/role scope and independent physical-effect verification across Platform, Mycelix, Symtropy, Sol-Atlas and Symthaea.
 
-The Web4 benchmark contribution should therefore be a cross-project adapter and scenario crosswalk: add A2A/MCP/ACS interoperability, Mycelix identity and delegation, Xenia session semantics, Sol-Atlas provenance lineage and Symtropy simulated-vs-observed outcome cases to the existing framework. Existing scenario IDs and schemas remain canonical unless a reviewed versioned migration is approved.
+The Web4 benchmark contribution should therefore be a cross-project adapter and scenario crosswalk: add A2A/MCP/ACS interoperability, Mycelix identity and delegation, Xenia session semantics, Sol-Atlas provenance lineage and Symtropy simulated-vs-observed outcome cases to the existing framework. Existing scenario IDs, Nixward transaction semantics, OMSI/ITOPS task IDs and evidence dependency graphs remain canonical unless a reviewed versioned migration is approved.
 
 Do not claim superiority by comparing different models, task distributions, prompts, tools, budgets or evaluation leakage. Pin exact model/provider, model revision where available, prompts, task set, tool manifests, environment, budgets and evaluator versions.
 
@@ -403,9 +408,12 @@ To claim an improvement over SOTA, publish paired results on pinned versions of 
 - Reconcile terminology and failure semantics across Symthaea, Mycelix, Xenia and Platform.
 
 ### M1 — Contract convergence
+- Reuse Platform issue #41 / PR #40 for the ACS-to-Nixward hook and canonical transaction bridge.
 - Reuse Platform issue #168 for the broker-enforced tool-effect boundary.
 - Reuse Platform issue #284 for monotonic authority attenuation.
 - Reuse Platform issue #310 for boot continuity versus fail-closed actuation.
+- Reuse Platform issues #356 and #459 for common-cause evidence qualification and cyber-physical command integrity.
+- Reuse #175 and #268 for matched external benchmark comparison and source-pinned benchmark metadata.
 - Reuse the existing challenge consumption, workflow provenance and participant journal work (including #91 and #93) rather than building parallel ledgers.
 - Define versioned operation manifests, canonical authority grants, task/attempt identity, typed receipts and error-state semantics.
 
@@ -468,7 +476,7 @@ Consequently:
 - Agent Security Bench: https://arxiv.org/abs/2410.02644
 - AgentHarm: https://arxiv.org/abs/2410.09024
 - Current Web4 Internet-Draft (individual submission, work in progress): https://datatracker.ietf.org/doc/draft-reilly-web4/
-- Luminous Platform issues/PRs: #167, #168, #213, #218, #284, #310, #91 and #93; PR #217 is a synthetic process-separation smoke harness.
+- Luminous Platform issues/PRs: #40/#41 (ACS–Nixward), #167/#168 (autonomy/effect boundary), #175/#268 (benchmark comparison/provenance), #213/#217/#218 (runner/oracle/statistics), #284 (delegation), #310 (failure domains), #356 (evidence dependence), #459 (cyber-physical command security), #91 and #93 (challenge/provenance).
 
 ---
 
