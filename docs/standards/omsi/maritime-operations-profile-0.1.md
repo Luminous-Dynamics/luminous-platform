@@ -245,6 +245,44 @@ This is an internal evidence/coverage benchmark, not an IACS audit, class statem
 
 ## 7. How to compare with industry and SOTA
 
+### Current shipyard-method evidence: hybrid DES–optimization first
+
+Bordbar et al., *Digitalisation of Shipyard Production Planning: A Review of Simulation, Optimisation, AI, and Digital Twin Methods (2010–2025)*, published in the *Journal of Marine Science and Engineering* on 20 February 2026 ([DOI 10.3390/jmse14040396](https://doi.org/10.3390/jmse14040396)), gives us a useful field-level maturity baseline:
+
+- Discrete-event simulation (DES) is a behavioural core for event timing, stochastic interactions, spatial interference and resource contention.
+- Optimization and metaheuristics explore structured multi-objective trade-offs, but can simplify spatial-temporal interactions or assume stable parameters.
+- Hybrid DES–optimization (e.g. DES + CP/MILP, evolutionary search or RL) is judged the most operationally credible methodological class in bounded planning contexts because candidate schedules are checked against behavioural feasibility.
+- AI/digital-twin research often has richer data integration or synchronisation but much of the evidence remains simulation-based, workshop-bounded or short of longitudinal yard-wide KPI validation.
+
+The review explicitly does **not** establish sustained yard-wide transformation as a settled industry result. Its proposed maturity distinctions are valuable: simulation-only; historical calibration/replay; partial shop-floor or APS/MES integration; and sustained live deployment with demonstrable production KPIs. This profile adopts that evidence ladder. It does not treat "real-time", "digital twin" or "AI-driven" as evidence stages.
+
+**Implication for Symtropy:** the benchmark order should be:
+1. Source-faithful deterministic rules/dispatch heuristics.
+2. CP/MILP or another exact/bounded optimizer on small instances; expose optimality gaps and timeouts.
+3. Strong metaheuristics such as ABC/ALNS with the same hard constraints.
+4. Hybrid rolling-horizon optimizer whose candidate schedules are executed/replayed by an independent DES behavioural model.
+5. Simulation-trained RL or learned policy, with the same observation horizon, action constraints and execution oracle as the hybrid baseline.
+6. Prospective shadow execution and only then controlled yard integration.
+
+Do not give an RL policy credit for future disturbance knowledge, an oracle unavailable to other methods, or a reward that omits rework, transport, inspection, crew/shift and recovery work. The DES evaluator must not import the scheduler's feasibility helpers. Predictive ML may estimate process times or rank search candidates, but a learned forecast is not a schedule feasibility proof.
+
+### Recommended SOTA challenge metrics
+
+Use the following as separate, non-compensable report families; proposed targets remain aspirations until a source-faithful baseline is reproduced.
+
+| Dimension | Primary measure | Stretch target after baseline reproduction |
+|---|---|---|
+| Hard feasibility | Independent-oracle violations by type; false-feasible acceptance | Zero accepted hard-constraint violations within the declared model |
+| Small-instance quality | Exact objective value and proven optimality gap | Exact agreement with oracle on every supported tiny instance |
+| Large-instance quality | Makespan, weighted tardiness, cost and utilization by instance | Improve the strongest matched baseline without worsening hard feasibility |
+| Schedule robustness | Recovery time, tardiness regret, unserved work after disruption | Lower recovery regret at matched disturbance severity |
+| Plan stability | Schedule churn, moved jobs, resource reassignment and operator override burden | Improve recovery without excessive schedule nervousness |
+| Physical/model fidelity | Prediction residual and uncertainty by observable; unsupported model-path count | No silent extrapolation; calibrated intervals on held-out regimes |
+| Deployment maturity | Evidence stage, integration depth, time coverage and longitudinal KPI duration | Progress from replay to authorized prospective shadow evaluation |
+
+Always publish both the planned schedule and the executed/replayed timeline. Keep predicted completion, simulated completion, MES-reported completion and independently observed completion as separate evidence classes.
+
+
 A credible comparison is a tournament with frozen rules, not a chart of unrelated paper headline numbers.
 
 For each track:
@@ -289,11 +327,11 @@ The current commercial ecosystem is not empty or primitive. Established vendors 
 
 | Industry capability | Established examples and documented capabilities | Luminous strategy |
 |---|---|---|
-| Shipbuilding CAD and production engineering | [SSI ShipConstructor](https://www.ssi-corporate.com/products/shipconstructor/) covers hull/structure, outfitting, weld management, nesting, NC output, production drawings and build strategy. [CADMATIC Hull](https://www.cadmatic.com/en/products/cadmatic-hull/) covers hull modelling and production information; its [2026 H1 release](https://cadmatic.com/en/releasehighlights/release-highlights-2026h1/) adds traceable document publication and production-information revision checks. | Integrate with native project records and neutral product-data exchange. Do not build another hull CAD, nesting, weld or NC tool. Test adapter fidelity and the exact downstream effect of each revision. |
+| Shipbuilding CAD and production engineering | [SSI ShipConstructor](https://www.ssi-corporate.com/products/shipconstructor/) covers hull/structure, outfitting, weld management, nesting, NC output, production drawings and build strategy; SSI's [February 2026 release](https://www.ssi-corporate.com/blog-lighthouse/ssi-solution-update-february-2026/) describes ShipConstructor 2026 R4 and ShipbuildingPLM 3.3, while its [May 2026 release](https://www.ssi-corporate.com/blog-lighthouse/ssi-solution-update-may-2026/) announces ShipConstructor 2027 and ShipbuildingPLM 4.0. [CADMATIC Hull](https://www.cadmatic.com/en/products/cadmatic-hull/) covers hull modelling and production information. Its [2026 H1 release](https://cadmatic.com/en/releasehighlights/release-highlights-2026h1/) adds traceable document publication and production-information revision checks; its [2026 H2 release (13 November 2026)](https://cadmatic.com/en/news/new-software-release-2026h2/) adds DSTV profile export, approved-object locking and visible check-in/check-out operations. | Integrate with native project records and neutral product-data exchange. Do not build another hull CAD, nesting, weld or NC tool. Test adapter fidelity and the exact downstream effect of each revision. |
 | Shipbuilding PLM / configuration | [SSI ShipbuildingPLM](https://www.ssi-corporate.com/products/shipbuildingplm/) describes an established workflow for vessel/program data, change control, hull effectivity, approvals and continuity from engineering to planning, procurement, production and sustainment. | Mycelix remains the owner of the Luminous configuration/provenance contracts. The profile maps to incumbent PLM identities and change events; it does not require yards to replace their PLM or duplicate its canonical configuration store. |
-| Naval architecture / analysis | [NAPA Engineer](https://www.napa.fi/software-and-services/ship-design/software/napa-engineer/) combines naval-architecture calculation capabilities with an integrated engineering workflow; NAPA's [2026.1 release](https://www.napa.fi/napa-release-2026-1/) describes a more connected platform and early AI prototypes. | Symthaea orchestrates requirements, candidate comparison and uncertainty; qualified specialist solvers and independent physical references remain responsible for the actual engineering observables. Do not claim a substitute for NAPA stability, strength or class calculations. |
-| Vessel data / fleet operations | [Kongsberg Vessel Insight](https://www.kongsbergmaritime.com/products/digital/vessel-insight/) provides vessel-to-cloud data infrastructure and fleet insights; Kongsberg's [2026 Digital Solutions portfolio](https://www.kongsbergmaritime.com/news-and-events/news-archive/2026/harmonised-digital-solutions-portfolio-and-km-performance-launched/) consolidates connected offerings. | Integrate owner-authorized, read-only operational data and preserve measurement quality, configuration, source/time semantics and dependency context. Do not replace edge gateways, OEM machinery systems or fleet operation centres. |
-| Maritime data ecosystem / assurance services | [DNV Veracity](https://www.dnv.com/veracity/) is an established industry data platform and marketplace for datasets, APIs, applications and digital services. Classification societies provide domain-specific assurance and approval. | Differentiate through interoperable evidence lineage, independent cross-system verification, configuration-change impact, authority/effect separation and transparent claim ceilings—not by claiming a larger data marketplace or acting as a class society. |
+| Naval architecture / analysis | [NAPA Engineer](https://www.napa.fi/software-and-services/ship-design/software/napa-engineer/) is a published platform available with NAPA Release 2025.2. NAPA describes a unified 3D model across hydrostatics, hull form, layout, stability and hydrodynamics; its visual Node Network supports reusable engineering workflows and optimization scenarios but is labelled Alpha on the product page. | Symthaea orchestrates requirements, candidate comparison and uncertainty; qualified specialist solvers and independent physical references remain responsible for the actual engineering observables. Do not claim a substitute for NAPA stability, strength or class calculations. |
+| Vessel data / fleet operations | [Kongsberg Vessel Insight](https://www.kongsbergmaritime.com/products/digital/vessel-insight/) provides vessel-to-cloud infrastructure, edge/IoT connectivity, and interoperability with Modbus, NMEA and OPC UA interfaces; the vendor reports DNV and ABS certifications for its edge/IoT technology. | Integrate owner-authorized, read-only operational data and preserve measurement quality, configuration, source/time semantics and dependency context. Do not replace edge gateways, OEM machinery systems or fleet operation centres. |
+| Maritime data ecosystem / assurance services | [DNV Veracity](https://www.dnv.com/veracity/) describes an established data platform and digital marketplace for datasets, APIs, applications and digital services. DNV currently reports more than 50,000 connected vessels and 300,000 users across its partner programme. | Differentiate through interoperable evidence lineage, independent cross-system verification, configuration-change impact, authority/effect separation and transparent claim ceilings—not by claiming a larger data marketplace or acting as a class society. Treat coverage figures as vendor-reported, not independently audited benchmark results. |
 
 These are capabilities described by the vendors and service providers themselves. They establish the industry feature baseline, not independently measured performance. Product marketing claims (including productivity or fleet-coverage numbers) must not be copied into our results as benchmark evidence.
 
