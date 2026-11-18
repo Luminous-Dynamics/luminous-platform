@@ -185,8 +185,6 @@ The architecture must not assume that prompt wording, model alignment, moral rea
 
 ### 7.2 Four enforcement boundaries
 
-### 7.2 Four enforcement boundaries
-
 1. **Cognitive boundary:** The model sees typed tools and task handles, not raw credentials, arbitrary host shells or unrestricted connector clients.
 2. **Broker boundary:** The broker resolves a signed/pinned manifest, validates current authority and constraints, and issues exact one-use permits.
 3. **Participant boundary:** The destination independently authenticates, authorizes, deduplicates and records the operation. Host actions go through Nixward; physical actions go through a local safety controller.
