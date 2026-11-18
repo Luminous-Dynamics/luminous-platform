@@ -359,7 +359,7 @@ The first commercial integration test should be read-only and source-faithful: i
 ## 9. Initial execution sequence
 
 1. Review this profile with Symthaea, Symtropy, Mycelix and Sol-Atlas owners; correct semantic ownership before implementing adapters.
-2. Freeze the design-only vectors in [maritime-operations-conformance-vectors-0.1.json](./maritime-operations-conformance-vectors-0.1.json); integrate into existing OMSI validator tooling, not a new validator.
+2. Freeze the design-only vectors in [maritime-operations-conformance-vectors-0.1.json](./maritime-operations-conformance-vectors-0.1.json) against the [JSON Schema](./maritime-operations-conformance-vectors-0.1.schema.json); run structural schema validation, then integrate family-specific semantic execution into the existing OMSI validator tooling, not a new validator. Schema validity is not semantic execution.
 3. Admit one public ship-block scheduling dataset: download original bytes; verify provider terms; hash files; inspect sheets/units/objectives; create a manifest; reproduce one published baseline; independently verify schedules. Until this succeeds, no numerical SOTA result exists.
 4. Build one small, synthetic digital-thread case spanning a vessel design revision, a substituted serialized part, yard work/inspection, as-built configuration, commissioning, a maintenance event and impact/requalification review.
 5. Add one read-only spatial/metocean artifact projection from Sol-Atlas and one deterministic Symtropy run receipt. Keep unsupported physics explicitly unsupported.
