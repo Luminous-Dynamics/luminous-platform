@@ -65,16 +65,19 @@ Projects own distinct responsibilities. Integrations MUST use explicit versioned
 ### Symthaea — cognitive and agent layer
 
 - Perception, reasoning, planning, semantic representations, prediction and learning.
+- Owns the canonical INTX interaction semantics and composes them with the existing Symthaea authority/action-runtime lineage; `InteractionIntent` is a proposal, never permission.
 - Produces typed proposals, evidence requests and uncertainty statements.
 - Never holds raw connector credentials or direct authority to mutate external systems.
+- Web4 MUST reuse INTX identity, intent, attempt and reconciliation contracts rather than introducing a parallel cross-protocol interaction state machine.
 - Model identity, weights/artifact digest, runtime version, prompt/tool context and relevant policy versions are recorded for consequential decisions.
 - Moral algebra, epistemic gating and cognitive state are advisory signals; they are not a security boundary or substitute for external authorization.
 
 ### Mycelix — identity, trust, governance and coordination
 
-- Human, organization, collective and agent identity relationships.
-- Verifiable credentials, delegation, authorization policy, governance and resource exchange.
-- Trust/reputation is a risk input, not a substitute for explicit authority.
+- Human, organization, collective and agent identity relationships, verifiable credentials, delegated authority evidence and governance.
+- The AGENT programme qualifies identity/runtime binding, intent, conserved delegation, current authority, exact actions, credential-less brokerage, durable effect receipts and independent offline verification.
+- Mycelix supplies credential/identity/authority evidence and assurance profiles; it MUST NOT create a parallel InteractionIntent or external-effect state machine.
+- Trust/reputation is a risk input, not a substitute for explicit current authority.
 - Credential/key changes and high-risk governance mutations use append-only, threshold-controlled and freshness-bound procedures.
 - Cross-agent delegation MUST attenuate authority monotonically.
 
@@ -95,8 +98,9 @@ Projects own distinct responsibilities. Integrations MUST use explicit versioned
 
 ### Xenia and Luminous Platform — secure session and enforcement substrate
 
-- Xenia provides authenticated peer/session semantics, consent, capabilities, sealed messages, replay control and transport adapters.
+- Xenia provides authenticated peer/session semantics, consent-message binding, sealed messages, replay control and transport adapters. A secure Xenia session does not itself grant an application capability.
 - Luminous Platform provides the broker, lifecycle orchestration, host policy enforcement and recovery integration.
+- ACS hooks and A2A/MCP adapters must converge on the same canonical action/authority path; protocol metadata is evidence or a proposal, not a grant.
 - Nixward remains the authority for host transactions, host interlocks, host journal and host recovery.
 - No broker, cognitive process or orchestrator may bypass a participant's own final effect boundary.
 
@@ -124,6 +128,8 @@ A compatibility profile MUST define canonical serialization, algorithm identifie
 ## 6. Consequential action lifecycle
 
 The mandatory effect lifecycle is:
+
+This lifecycle is a Web4 composition view over the canonical Symthaea INTX interaction core and action-runtime lineage, Mycelix AGENT qualification chain, the Luminous Platform broker/Saga, and participant-owned transaction boundaries. It MUST NOT introduce a competing `InteractionIntent`, `AuthorityGrant`, attempt state machine or generic transaction journal.
 
 ```text
 Human / organization intent
@@ -298,6 +304,9 @@ Integrate or map scenarios from:
 Do not create a second autonomy benchmark corpus, task taxonomy, synthetic runner, result schema or statistical engine. Extend and cross-reference the existing ITOPS/OpsBench work:
 - PR #167 already proposes an Autonomy Boundary corpus with 128 system-under-test variants and 64 evaluator-only paired oracles across eight families; it is still a draft and does not yet establish model performance.
 - Issue #41 and PR #40 define the ACS-to-Nixward bridge against the canonical Nixward transaction path. ACS disposition is not Nixward ChangeAuthorization; the pinned reference Guardian is explicitly not the conformance oracle, and signature/replay gaps must remain visible.
+- Symthaea INTX-000 / #4397 defines the protocol-neutral external interaction fabric; #4399 and #4400 define the pure semantic core and its composition with bounded authority/action-runtime identities.
+- Symthaea #4407 defines A2A task/artifact/delegation boundaries; #4446 defines connector-manifest evidence, auth and reconciliation semantics; #4493 defines protocol-neutral crash, duplication, delay, partition and reordering qualification.
+- Mycelix #805 is the canonical AGENT roadmap; #829 owns the credential-less provider-secret broker boundary; #830 owns independent offline reconstruction of agent authority/effect evidence; #889 supplies a non-authoritative interop TCK for SPIFFE, OAuth, W3C VC, MCP, A2A and SCITT.
 - Issue #168 defines the broker-enforced effect boundary and its negative/positive conformance cases.
 - PR #167 proposes the Autonomy Boundary corpus: 128 SUT variants and 64 evaluator-only paired oracles across eight families. It remains a draft and does not establish model performance.
 - Issue #213 specifies the deterministic synthetic runner; it remains implementation work until the runner is executed and evidenced.
@@ -308,7 +317,7 @@ Do not create a second autonomy benchmark corpus, task taxonomy, synthetic runne
 - Issues #175 and #268 cover matched external benchmark comparisons and source-pinned external benchmark evidence.
 - Issue #459 defines cyber-physical command authenticity, anti-replay, asset/role scope and independent physical-effect verification across Platform, Mycelix, Symtropy, Sol-Atlas and Symthaea.
 
-The Web4 benchmark contribution should therefore be a cross-project adapter and scenario crosswalk: add A2A/MCP/ACS interoperability, Mycelix identity and delegation, Xenia session semantics, Sol-Atlas provenance lineage and Symtropy simulated-vs-observed outcome cases to the existing framework. Existing scenario IDs, Nixward transaction semantics, OMSI/ITOPS task IDs and evidence dependency graphs remain canonical unless a reviewed versioned migration is approved.
+The Web4 contribution is an umbrella profile and assurance crosswalk, not a second interaction fabric or agent-authority programme. Reuse INTX and AGENT as the canonical protocol-neutral semantics; reuse #41 for ACS→Nixward; reuse #889 for non-authoritative external-protocol translation; and add A2A/MCP/ACS interoperability, Xenia session semantics, Sol-Atlas provenance lineage and Symtropy simulated-vs-observed outcome cases to the existing ITOPS/OpsBench/OMSI framework. Existing scenario IDs, Nixward transaction semantics, OMSI/ITOPS task IDs and evidence dependency graphs remain canonical unless a reviewed versioned migration is approved.
 
 Do not claim superiority by comparing different models, task distributions, prompts, tools, budgets or evaluation leakage. Pin exact model/provider, model revision where available, prompts, task set, tool manifests, environment, budgets and evaluator versions.
 
@@ -403,11 +412,14 @@ To claim an improvement over SOTA, publish paired results on pinned versions of 
 ## 10. Implementation sequence
 
 ### M0 — Architecture and claim inventory
-- Approve this as a non-normative integration proposal.
-- Map every requirement to an existing implementation, issue, test or explicit gap.
-- Reconcile terminology and failure semantics across Symthaea, Mycelix, Xenia and Platform.
+- Review this non-normative integration proposal against Symthaea INTX-000 and Mycelix AGENT-000; resolve duplicate terminology before any new type is introduced.
+- Map every requirement to an existing implementation, exact issue/PR, test or explicit gap across the four project repositories.
+- Reconcile project ownership and failure semantics across Symthaea, Mycelix, Xenia, Nixward and Platform.
 
 ### M1 — Contract convergence
+- Reuse Symthaea INTX-000/#4397, INTX-001/#4399 and INTX-002/#4400 as the canonical protocol-neutral interaction core and authority/runtime composition.
+- Reuse Symthaea #4407, #4446 and #4493 for A2A, connector-manifest and fault/reconciliation semantics.
+- Reuse Mycelix #805, #829, #830 and #889 for the AGENT authority chain, credential-less secret broker, independent offline verifier and non-authoritative protocol TCK.
 - Reuse Platform issue #41 / PR #40 for the ACS-to-Nixward hook and canonical transaction bridge.
 - Reuse Platform issue #168 for the broker-enforced tool-effect boundary.
 - Reuse Platform issue #284 for monotonic authority attenuation.
@@ -476,7 +488,9 @@ Consequently:
 - Agent Security Bench: https://arxiv.org/abs/2410.02644
 - AgentHarm: https://arxiv.org/abs/2410.09024
 - Current Web4 Internet-Draft (individual submission, work in progress): https://datatracker.ietf.org/doc/draft-reilly-web4/
-- Luminous Platform issues/PRs: #40/#41 (ACS–Nixward), #167/#168 (autonomy/effect boundary), #175/#268 (benchmark comparison/provenance), #213/#217/#218 (runner/oracle/statistics), #284 (delegation), #310 (failure domains), #356 (evidence dependence), #459 (cyber-physical command security), #91 and #93 (challenge/provenance).
+- Symthaea: INTX-000/#4397, INTX-001/#4399, INTX-002/#4400, INTX-A2A-001/#4407, INTX-009/#4446 and INTX-015/#4493.
+- Mycelix: AGENT roadmap #805, credential-less broker #829, offline verifier #830 and interoperability TCK #889.
+- Luminous Platform: #40/#41 (ACS–Nixward), #167/#168 (autonomy/effect boundary), #175/#268 (benchmark comparison/provenance), #213/#217/#218 (runner/oracle/statistics), #284 (delegation), #310 (failure domains), #356 (evidence dependence), #459 (cyber-physical command security), #91 and #93 (challenge/provenance).
 
 ---
 
