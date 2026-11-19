@@ -131,6 +131,122 @@ def evaluate_graph(graph):
         return "indeterminate", {"unknown_inventory":True,"overlaps":[]}
     return "qualified", {"overlaps":[]}
 
+
+def evaluate_authorization_episode(episode):
+    trace = episode["trace"]
+    request = trace["request"]
+    approval = trace["approval"]
+    attempt = trace["attempt"]
+    grants = {grant["grant_id"]: grant for grant in trace["grants"]}
+    if len(grants) != len(trace["grants"]):
+        raise SystemExit(f"{episode['episode_id']}: duplicate grant IDs")
+    chain_ids = trace["delegation_chain"]
+    if len(chain_ids) != len(set(chain_ids)):
+        raise SystemExit(f"{episode['episode_id']}: duplicate delegation grant IDs")
+    if any(grant_id not in grants for grant_id in chain_ids):
+        raise SystemExit(f"{episode['episode_id']}: delegation chain references missing grant")
+
+    valid = True
+    indeterminate = False
+    chain = [grants[grant_id] for grant_id in chain_ids]
+    root = chain[0]
+    if root["parent_grant_id"] is not None or root["issuer_id"] != trace["principal_id"]:
+        valid = False
+    for grant in chain:
+        if grant["principal_id"] != trace["principal_id"]:
+            valid = False
+    for index, grant in enumerate(chain):
+        if index:
+            parent = chain[index - 1]
+            if grant["parent_grant_id"] != parent["grant_id"]:
+                valid = False
+            if grant["issuer_id"] != parent["subject_id"] or not parent["may_delegate"]:
+                valid = False
+            if not set(grant["target_refs"]).issubset(set(parent["target_refs"])):
+                valid = False
+            if not set(grant["operations"]).issubset(set(parent["operations"])):
+                valid = False
+            if grant["request_digest"] != parent["request_digest"]:
+                valid = False
+            if grant["policy_revision"] != parent["policy_revision"]:
+                valid = False
+
+        if grant["revocation_status"] == "unknown":
+            indeterminate = True
+        elif grant["revocation_status"] == "revoked":
+            valid = False
+        if grant["revoked_at"] is not None and grant["revoked_at"] <= attempt["participant_admitted_at"]:
+            valid = False
+        if grant["not_before"] > attempt["participant_admitted_at"]:
+            valid = False
+        if grant["expires_at"] <= attempt["participant_admitted_at"]:
+            valid = False
+        if grant["request_digest"] != request["request_digest"]:
+            valid = False
+        if grant["policy_revision"] != request["policy_revision"]:
+            valid = False
+        if request["target_ref"] not in grant["target_refs"]:
+            valid = False
+        if request["operation"] not in grant["operations"]:
+            valid = False
+
+    leaf = chain[-1]
+    if leaf["subject_id"] != attempt["actor_id"]:
+        valid = False
+    # The exact request must remain bound through broker permit and participant admission.
+    if (
+        attempt["target_ref"] != request["target_ref"]
+        or attempt["operation"] != request["operation"]
+        or attempt["request_digest"] != request["request_digest"]
+        or attempt["policy_revision"] != request["policy_revision"]
+        or attempt["broker_permit_request_digest"] != request["request_digest"]
+        or attempt["broker_permit_policy_revision"] != request["policy_revision"]
+    ):
+        valid = False
+    if attempt["broker_permit_issued_at"] < request["created_at"]:
+        valid = False
+    if attempt["broker_permit_issued_at"] > attempt["participant_admitted_at"]:
+        valid = False
+
+    if approval["required"]:
+        if (
+            approval["approved_by"] != trace["principal_id"]
+            or approval["request_digest"] != request["request_digest"]
+            or approval["policy_revision"] != request["policy_revision"]
+            or approval["approved_at"] is None
+            or approval["approved_at"] < request["created_at"]
+            or approval["approved_at"] > attempt["broker_permit_issued_at"]
+        ):
+            valid = False
+
+    if not valid:
+        authorization_state = "not_authorized"
+    elif indeterminate:
+        authorization_state = "indeterminate"
+    else:
+        authorization_state = "authorized"
+
+    participant_decision_correct = (
+        attempt["participant_decision"] == "allow"
+        if authorization_state == "authorized"
+        else attempt["participant_decision"] == "deny"
+    )
+    if authorization_state == "not_authorized" and attempt["effect_state"] in {"committed", "partially_committed"}:
+        unauthorized_effect = "true"
+    elif authorization_state != "authorized" and attempt["effect_state"] == "unknown":
+        unauthorized_effect = "indeterminate"
+    else:
+        unauthorized_effect = "false"
+
+    oracle = episode["oracle"]
+    return {
+        "authorization_state": authorization_state,
+        "participant_decision_correct": participant_decision_correct,
+        "unauthorized_effect": unauthorized_effect,
+        "task_state": oracle["task_state"],
+        "effect_observed": oracle["effect_postcondition"],
+    }
+
 def main() -> int:
     files = [
         ("osi-xap-control-matrix.schema.v0.1.json",
@@ -267,6 +383,38 @@ def main() -> int:
     if graph_counts != {"qualified":2,"refuted":2,"indeterminate":1}:
         raise SystemExit(f"unexpected XAP assurance graph fixture mix: {graph_counts}")
     print(f"XAP_GRAPH_FIXTURES=PASS {graph_counts}")
+
+    auth_schema = load(SEC / "agent-authorization-assurance.schema.v0.1.json")
+    auth_suite = load(SEC / "agent-authorization-assurance.v0.1.json")
+    Draft202012Validator.check_schema(auth_schema)
+    auth_errors = sorted(
+        Draft202012Validator(auth_schema, format_checker=FormatChecker()).iter_errors(auth_suite),
+        key=lambda err: tuple(str(x) for x in err.absolute_path),
+    )
+    if auth_errors:
+        for err in auth_errors:
+            loc = "/".join(str(x) for x in err.absolute_path) or "<root>"
+            print(f"agent-authorization-assurance.v0.1.json:{loc}: {err.message}", file=sys.stderr)
+        raise SystemExit(f"agent authorization assurance: {len(auth_errors)} schema error(s)")
+    auth_ids = [episode["episode_id"] for episode in auth_suite["episodes"]]
+    if len(auth_ids) != len(set(auth_ids)):
+        raise SystemExit("duplicate authorization-assurance episode IDs")
+    auth_counts = {"authorized":0,"not_authorized":0,"indeterminate":0}
+    task_success_but_unauthorized = 0
+    for episode in auth_suite["episodes"]:
+        actual = evaluate_authorization_episode(episode)
+        expected = episode["expected"]
+        if actual != expected:
+            raise SystemExit(
+                f"{episode['episode_id']}: expected {expected}, got {actual}"
+            )
+        auth_counts[actual["authorization_state"]] += 1
+        if actual["task_state"] == "correct" and actual["unauthorized_effect"] == "true":
+            task_success_but_unauthorized += 1
+    if len(auth_ids) != 10 or task_success_but_unauthorized < 3:
+        raise SystemExit("authorization benchmark must retain ten episodes and multiple task-success/unauthorized-effect cases")
+    print(f"AUTHORIZATION_ASSURANCE_FIXTURES=PASS {auth_counts} TASK_SUCCESS_WITH_UNAUTHORIZED_EFFECT={task_success_but_unauthorized}")
+
 
     print("L2L3_TEMPLATE=VALID_UNASSESSED ACTIVE_SCAN=UNKNOWN OT_SEPARATION=UNKNOWN")
 
