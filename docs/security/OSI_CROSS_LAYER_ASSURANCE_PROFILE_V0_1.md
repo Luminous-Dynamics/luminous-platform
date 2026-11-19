@@ -277,9 +277,9 @@ Agent actions should distinguish fully specified, parameter-open and action-open
 
 ### 6.1.5 Meta-assurance and evaluator anti-gaming
 
-The branch now includes a meta-assurance suite that mutates graph, authorization and schema inputs while preserving frozen expected semantics. It contains **58 cases: seven graph mutations, ten authorization mutations and 41 schema-weakening mutations**, guarded by **50 explicit invariants**. The tests cover alternate bypass paths, unknown dependencies, removed enforcement points, common-cause observer dependencies, actor substitution, revocation, permit binding, policy drift, evaluator mutability, incomplete-run promotion, capability participant/purpose/context/budget requirements and origin/lineage schema weakening.
+The branch now includes a meta-assurance suite that mutates graph, authorization, approval-continuity and schema inputs while preserving frozen expected semantics. It contains **58 cases: seven graph mutations, ten authorization mutations and 41 schema-weakening mutations**, guarded by **50 explicit invariants**. The tests cover alternate bypass paths, unknown dependencies, removed enforcement points, common-cause observer dependencies, actor substitution, revocation, permit binding, policy drift, evaluator mutability, incomplete-run promotion, capability participant/purpose/context/budget requirements and origin/lineage schema weakening.
 
-The committed artifacts are XAP_META_ASSURANCE_V0_1.md, xap-meta-assurance.schema.v0.1.json and xap-meta-assurance.v0.1.json. The test-only validator evaluates the mutations and checks the unmodified schemas against the guard manifest. An independent JavaScript translation matched **58/58 metamorphic outcomes** (7 graph, 10 authorization, 41 schema), with zero baseline guard violations. These are authoring-time fixture checks, not CI qualification.
+The committed artifacts are XAP_META_ASSURANCE_V0_1.md, xap-meta-assurance.schema.v0.1.json and xap-meta-assurance.v0.1.json. The test-only validator evaluates the mutations and checks the unmodified schemas against the guard manifest. An independent JavaScript translation matched **64/64 metamorphic outcomes** (7 graph, 10 authorization, 47 schema), with zero baseline guard violations. These are authoring-time fixture checks, not CI qualification.
 
 ### 6.1.6 Effect-bound capability contract
 
