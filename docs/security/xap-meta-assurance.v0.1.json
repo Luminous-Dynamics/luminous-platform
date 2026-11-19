@@ -223,6 +223,69 @@
         "minItems"
       ],
       "expected": 20
+    },
+    {
+      "id": "effect-projection-no-runtime-authority",
+      "schema_file": "effect-bound-capability-contract.schema.v0.1.json",
+      "path": [
+        "properties",
+        "authority_runtime_enabled",
+        "const"
+      ],
+      "expected": false
+    },
+    {
+      "id": "effect-projection-no-new-authority-type",
+      "schema_file": "effect-bound-capability-contract.schema.v0.1.json",
+      "path": [
+        "properties",
+        "new_authority_type_introduced",
+        "const"
+      ],
+      "expected": false
+    },
+    {
+      "id": "effect-dispatch-reference-not-authority",
+      "schema_file": "effect-bound-capability-contract.schema.v0.1.json",
+      "path": [
+        "properties",
+        "dispatch_reference_is_authority",
+        "const"
+      ],
+      "expected": false
+    },
+    {
+      "id": "effect-projection-reuses-canonical-primitives",
+      "schema_file": "effect-bound-capability-contract.schema.v0.1.json",
+      "path": [
+        "properties",
+        "canonical_primitives",
+        "const"
+      ],
+      "expected": [
+        "PrincipalId",
+        "AuthorityGrant",
+        "Intent",
+        "ActionRequest",
+        "QualifiedIntentEnvelope",
+        "QualifiedCurrentAgentAuthority",
+        "QualifiedExactAgentAction",
+        "OpaqueActionHandle",
+        "AgentActionReceipt"
+      ]
+    },
+    {
+      "id": "effect-projection-no-qualified-component-claim",
+      "schema_file": "effect-bound-capability-contract.schema.v0.1.json",
+      "path": [
+        "properties",
+        "status",
+        "enum"
+      ],
+      "expected": [
+        "template_only",
+        "synthetic_projection_fixture"
+      ]
     }
   ],
   "cases": [
@@ -1069,6 +1132,129 @@
         "rejected": true,
         "violated_guard_ids": [
           "effect-fixture-floor"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S015-ENABLE-PROJECTION-AS-RUNTIME-AUTHORITY",
+      "target_type": "schema",
+      "fixture_id": "effect-bound-capability-contract.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "properties",
+            "authority_runtime_enabled",
+            "const"
+          ],
+          "value": true
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "effect-projection-no-runtime-authority"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S016-INTRODUCE-PARALLEL-AUTHORITY-TYPE",
+      "target_type": "schema",
+      "fixture_id": "effect-bound-capability-contract.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "properties",
+            "new_authority_type_introduced",
+            "const"
+          ],
+          "value": true
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "effect-projection-no-new-authority-type"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S017-TREAT-DISPATCH-REFERENCE-AS-AUTHORITY",
+      "target_type": "schema",
+      "fixture_id": "effect-bound-capability-contract.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "properties",
+            "dispatch_reference_is_authority",
+            "const"
+          ],
+          "value": true
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "effect-dispatch-reference-not-authority"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S018-FORK-CANONICAL-AUTHORITY-PRIMITIVES",
+      "target_type": "schema",
+      "fixture_id": "effect-bound-capability-contract.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "properties",
+            "canonical_primitives",
+            "const"
+          ],
+          "value": [
+            "PrincipalId",
+            "Intent",
+            "ActionRequest",
+            "QualifiedIntentEnvelope",
+            "QualifiedCurrentAgentAuthority",
+            "QualifiedExactAgentAction",
+            "OpaqueActionHandle",
+            "AgentActionReceipt"
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "effect-projection-reuses-canonical-primitives"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S019-CLAIM-QUALIFIED-COMPONENT",
+      "target_type": "schema",
+      "fixture_id": "effect-bound-capability-contract.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "properties",
+            "status",
+            "enum"
+          ],
+          "value": [
+            "template_only",
+            "synthetic_projection_fixture",
+            "qualified_component"
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "effect-projection-no-qualified-component-claim"
         ]
       }
     }
