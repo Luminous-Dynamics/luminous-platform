@@ -1,0 +1,30 @@
+name: WAEP Draft 2020-12 conformance
+
+on:
+  pull_request:
+    paths:
+      - "docs/standards/web4/**"
+      - "scripts/validate_waep.py"
+      - "requirements-waep-test.txt"
+      - ".github/workflows/waep-schema.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-waep:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
+        with:
+          persist-credentials: false
+      - name: Set up pinned Python runtime
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: "3.13"
+      - name: Install pinned test-only validator dependencies
+        run: python -m pip install --disable-pip-version-check --requirement requirements-waep-test.txt
+      - name: Validate WAEP schema, example, semantic vectors and fixture digests
+        run: python scripts/validate_waep.py
