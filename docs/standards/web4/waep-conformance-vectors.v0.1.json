@@ -3960,6 +3960,1433 @@
           "evaluator_commit": "cccccccccccccccccccccccccccccccccccccccc"
         }
       }
+    },
+    {
+      "vector_id": "WAEP-V017-VALID-SUPPORTED-DATAFLOW",
+      "expected": "valid",
+      "reason": "Supported information-flow claim with a source-to-sink graph, preserved transformation lineage, authorized purpose-bound sink, semantic-release evidence and independent postcondition observation.",
+      "record": {
+        "profile": "luminous-web4-waep",
+        "version": "0.1",
+        "record_id": "WAEP-SYNTHETIC-SUPPORTED-DATAFLOW",
+        "claim": {
+          "claim_id": "CLM-SUPPORTED-DATAFLOW",
+          "property": "information_flow",
+          "statement": "A delegated agent must not obtain or exercise authority outside the explicitly authorized root task envelope and its exact child-task scope.",
+          "scope": {
+            "subject": "synthetic-web4-federation-v0.1",
+            "principal": "synthetic:principal-root",
+            "agent": "synthetic:agent-child",
+            "resource": "synthetic:participant-resource-01",
+            "operation": "synthetic:write-record",
+            "effect_class": "consequential",
+            "purpose": "synthetic:bounded-maintenance-task",
+            "target": "synthetic:tenant-a/resource-01",
+            "tenant_scope": "synthetic:tenant-a",
+            "validity_window": null
+          },
+          "threat_model": {
+            "adversary": "A compromised or prompt-injected intermediate agent attempts to broaden a delegated child task.",
+            "capabilities": [
+              "Change child task target",
+              "Substitute operation arguments",
+              "Replay stale delegation evidence",
+              "Use a sibling agent's local permissions"
+            ],
+            "system_boundary": "Proposed agent-to-agent delegation from root principal through broker to participant effect boundary.",
+            "excluded_threats": [
+              "Compromised ultimate principal signing key",
+              "Physical compromise of participant hardware"
+            ],
+            "trusted_computing_base": [
+              "Canonical Mycelix authority source",
+              "Participant-side effect enforcement"
+            ]
+          },
+          "obligations": [
+            {
+              "obligation_id": "OBL-ROOT-001",
+              "requirement": "Child task and plan are precommitted by a valid root principal authorization.",
+              "trigger": "Every delegated task admission.",
+              "conditional": false,
+              "owner_contract_ref": "Mycelix AGENT"
+            },
+            {
+              "obligation_id": "OBL-LEAF-001",
+              "requirement": "Final participant rechecks current authority and exact request binding.",
+              "trigger": "Immediately before participant admission and effect.",
+              "conditional": false,
+              "owner_contract_ref": "Platform ITOPS"
+            }
+          ],
+          "boundaries": [
+            {
+              "boundary_id": "BND-BROKER-001",
+              "role": "broker",
+              "owner": "Luminous Platform",
+              "implementation_state": "specified_only",
+              "implementation_revision": null,
+              "enforcement_timing": "pre_dispatch",
+              "failure_behavior": "deny",
+              "route_coverage": "unknown",
+              "alternate_routes": [
+                "Uninventoried direct participant routes"
+              ],
+              "notes": "Architecture requirement only; no WAEP qualification evidence attached."
+            },
+            {
+              "boundary_id": "BND-PARTICIPANT-001",
+              "role": "participant_effect_boundary",
+              "owner": "Participant operator",
+              "implementation_state": "unknown",
+              "implementation_revision": null,
+              "enforcement_timing": "atomic_effect_commit",
+              "failure_behavior": "indeterminate",
+              "route_coverage": "unknown",
+              "alternate_routes": [
+                "Unknown external adapter paths"
+              ],
+              "notes": "Participant-side finality and atomic effect binding are not established by this example."
+            }
+          ],
+          "observations": [
+            {
+              "observation_id": "obs-sink-001",
+              "what_is_observed": "Synthetic independent observer confirms the authorized local sink output.",
+              "observer_identity": "synthetic:independent-observer",
+              "control_domain": "synthetic:participant-domain",
+              "observation_stage": "postcondition",
+              "independent_of_agent": true,
+              "common_cause_dependencies": [],
+              "evidence_refs": [
+                "artifact-participant-receipt"
+              ]
+            }
+          ],
+          "evidence": [
+            {
+              "artifact_id": "artifact-participant-receipt",
+              "role": "synthetic-participant-effect-receipt",
+              "digest": "sha256:a2ccd3f550c46c0c8c84fb7bcc4b91f4b13d0835855a095d0608e992b1b3cfb6",
+              "media_type": "application/json",
+              "evidence_class": "participant_effect",
+              "source_identity": "synthetic:participant-oracle",
+              "captured_at": "2026-11-19T06:00:00Z",
+              "derived_from": []
+            }
+          ],
+          "assumptions": [
+            "The principal identity and grant source are authentic under a separately qualified profile."
+          ],
+          "residual_gaps": [
+            "No live participant-side effect boundary is qualified.",
+            "No production credential or external mutation is in scope.",
+            "No independent cross-implementation reproduction has occurred."
+          ],
+          "maturity": "participant_effect_observed",
+          "disposition": "supported_within_scope",
+          "claim_ceiling": "Design-only illustrative record. It demonstrates reporting shape, not implementation, execution, security or standards conformance.",
+          "source_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "verifier_profile": null,
+          "required_property_obligations": [
+            "root_task_binding",
+            "child_scope_attenuation",
+            "current_revocation",
+            "final_participant_recheck"
+          ],
+          "delegation_chain": {
+            "root_principal_ref": "synthetic:principal-root",
+            "root_task_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "nodes": [
+              {
+                "node_ref": "root",
+                "principal_ref": "synthetic:principal-root",
+                "task_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+                "plan_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+              },
+              {
+                "node_ref": "child",
+                "principal_ref": "synthetic:agent-child",
+                "task_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+                "plan_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+              }
+            ],
+            "edges": [
+              {
+                "parent_node_ref": "root",
+                "child_node_ref": "child",
+                "grant_ref": "synthetic:grant-001",
+                "scope_relation": "strict_subset",
+                "evidence_refs": []
+              }
+            ],
+            "final_participant_recheck": "passed",
+            "notes": "Synthetic shape only; no grant or participant has been exercised."
+          },
+          "data_flow": {
+            "flow_id": "synthetic:flow-001",
+            "sources": [
+              {
+                "source_ref": "source:classified-report",
+                "data_label": "classification:confidential",
+                "source_identity": "synthetic:document-store",
+                "classification": "confidential",
+                "evidence_refs": [
+                  "artifact-participant-receipt"
+                ]
+              }
+            ],
+            "transformations": [
+              {
+                "transform_ref": "transform:summary",
+                "operation": "summarize",
+                "input_refs": [
+                  "source:classified-report"
+                ],
+                "output_ref": "output:summary",
+                "lineage_preserved": true,
+                "classification_after": "confidential",
+                "implementation_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "evidence_refs": [
+                  "artifact-participant-receipt"
+                ]
+              }
+            ],
+            "sinks": [
+              {
+                "sink_ref": "sink:local-approved-summary",
+                "target": "synthetic:tenant-a/local-report",
+                "sink_type": "local_file",
+                "operation": "write_summary",
+                "authorization_disposition": "authorized",
+                "purpose_bound": true,
+                "declassification_ref": null,
+                "evidence_refs": [
+                  "artifact-participant-receipt"
+                ]
+              }
+            ],
+            "lineage_policy": "Confidential source labels survive summarization; only explicitly approved sink receives the result.",
+            "unknown_or_unmapped_edges": [],
+            "semantic_release": {
+              "protected_fact_set_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "method": "synthetic exact-known-fact release test",
+              "disposition": "authorized",
+              "false_negative_bound": 0,
+              "calibration_ref": "synthetic:calibration-panel"
+            }
+          }
+        },
+        "evaluation": {
+          "run_state": "completed",
+          "test_corpus": {
+            "corpus_id": "waep-delegation-synthetic-v0.1",
+            "version": "0.1.0",
+            "digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "case_count": 2,
+            "positive_controls": 1,
+            "negative_controls": 1,
+            "indeterminate_controls": 0,
+            "held_out": false
+          },
+          "authorization_oracle": {
+            "owner": "Future independently authored ITOPS evaluator",
+            "independently_authored": true,
+            "fields": [
+              "principal",
+              "actor",
+              "tenant",
+              "resource",
+              "operation",
+              "arguments",
+              "purpose",
+              "policy",
+              "consent",
+              "delegation",
+              "time",
+              "session_state"
+            ],
+            "oracle_artifact": null
+          },
+          "effect_oracle": {
+            "owner": "Future participant-owned synthetic effect ledger",
+            "independently_owned": true,
+            "effect_states": [
+              "proposed",
+              "authorized",
+              "dispatched",
+              "participant_accepted",
+              "committed",
+              "independently_observed",
+              "reconciled"
+            ],
+            "participant_source": "synthetic:participant-ledger"
+          },
+          "metrics": [
+            {
+              "metric_id": "unauthorized_committed_effects",
+              "definition": "Count of participant-committed effects lacking current exact authorization.",
+              "value": null,
+              "unit": "count",
+              "status": "not_measured",
+              "denominator": null,
+              "confidence_method": null
+            },
+            {
+              "metric_id": "eligible_positive_control_acceptance",
+              "definition": "Fraction of eligible positive controls accepted by policy and final participant.",
+              "value": null,
+              "unit": "fraction",
+              "status": "not_measured",
+              "denominator": null,
+              "confidence_method": null
+            }
+          ],
+          "attempt_denominator": 2,
+          "exclusions": [],
+          "dependence_groups": [
+            "No trials executed; no sample independence claim."
+          ],
+          "limitations": [
+            "Illustrative example only.",
+            "No implementation or runtime evidence has been executed.",
+            "No live external effect or production security claim."
+          ],
+          "run_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "evaluator_commit": "cccccccccccccccccccccccccccccccccccccccc"
+        }
+      }
+    },
+    {
+      "vector_id": "WAEP-V018-MISSING-DATAFLOW",
+      "expected": "invalid",
+      "reason": "Information-flow claim without a source-to-sink data-flow record.",
+      "record": {
+        "profile": "luminous-web4-waep",
+        "version": "0.1",
+        "record_id": "WAEP-SYNTHETIC-MISSING-DATAFLOW",
+        "claim": {
+          "claim_id": "CLM-MISSING-DATAFLOW",
+          "property": "information_flow",
+          "statement": "A delegated agent must not obtain or exercise authority outside the explicitly authorized root task envelope and its exact child-task scope.",
+          "scope": {
+            "subject": "synthetic-web4-federation-v0.1",
+            "principal": "synthetic:principal-root",
+            "agent": "synthetic:agent-child",
+            "resource": "synthetic:participant-resource-01",
+            "operation": "synthetic:write-record",
+            "effect_class": "consequential",
+            "purpose": "synthetic:bounded-maintenance-task",
+            "target": "synthetic:tenant-a/resource-01",
+            "tenant_scope": "synthetic:tenant-a",
+            "validity_window": null
+          },
+          "threat_model": {
+            "adversary": "A compromised or prompt-injected intermediate agent attempts to broaden a delegated child task.",
+            "capabilities": [
+              "Change child task target",
+              "Substitute operation arguments",
+              "Replay stale delegation evidence",
+              "Use a sibling agent's local permissions"
+            ],
+            "system_boundary": "Proposed agent-to-agent delegation from root principal through broker to participant effect boundary.",
+            "excluded_threats": [
+              "Compromised ultimate principal signing key",
+              "Physical compromise of participant hardware"
+            ],
+            "trusted_computing_base": [
+              "Canonical Mycelix authority source",
+              "Participant-side effect enforcement"
+            ]
+          },
+          "obligations": [
+            {
+              "obligation_id": "OBL-ROOT-001",
+              "requirement": "Child task and plan are precommitted by a valid root principal authorization.",
+              "trigger": "Every delegated task admission.",
+              "conditional": false,
+              "owner_contract_ref": "Mycelix AGENT"
+            },
+            {
+              "obligation_id": "OBL-LEAF-001",
+              "requirement": "Final participant rechecks current authority and exact request binding.",
+              "trigger": "Immediately before participant admission and effect.",
+              "conditional": false,
+              "owner_contract_ref": "Platform ITOPS"
+            }
+          ],
+          "boundaries": [
+            {
+              "boundary_id": "BND-BROKER-001",
+              "role": "broker",
+              "owner": "Luminous Platform",
+              "implementation_state": "specified_only",
+              "implementation_revision": null,
+              "enforcement_timing": "pre_dispatch",
+              "failure_behavior": "deny",
+              "route_coverage": "unknown",
+              "alternate_routes": [
+                "Uninventoried direct participant routes"
+              ],
+              "notes": "Architecture requirement only; no WAEP qualification evidence attached."
+            },
+            {
+              "boundary_id": "BND-PARTICIPANT-001",
+              "role": "participant_effect_boundary",
+              "owner": "Participant operator",
+              "implementation_state": "unknown",
+              "implementation_revision": null,
+              "enforcement_timing": "atomic_effect_commit",
+              "failure_behavior": "indeterminate",
+              "route_coverage": "unknown",
+              "alternate_routes": [
+                "Unknown external adapter paths"
+              ],
+              "notes": "Participant-side finality and atomic effect binding are not established by this example."
+            }
+          ],
+          "observations": [
+            {
+              "observation_id": "obs-commit-001",
+              "what_is_observed": "Synthetic participant oracle reports a committed effect under the test profile.",
+              "observer_identity": "synthetic:independent-observer",
+              "control_domain": "synthetic:participant-domain",
+              "observation_stage": "durable_commit",
+              "independent_of_agent": true,
+              "common_cause_dependencies": [],
+              "evidence_refs": [
+                "artifact-participant-receipt"
+              ]
+            }
+          ],
+          "evidence": [
+            {
+              "artifact_id": "artifact-participant-receipt",
+              "role": "synthetic-participant-effect-receipt",
+              "digest": "sha256:a2ccd3f550c46c0c8c84fb7bcc4b91f4b13d0835855a095d0608e992b1b3cfb6",
+              "media_type": "application/json",
+              "evidence_class": "participant_effect",
+              "source_identity": "synthetic:participant-oracle",
+              "captured_at": "2026-11-19T06:00:00Z",
+              "derived_from": []
+            }
+          ],
+          "assumptions": [
+            "The principal identity and grant source are authentic under a separately qualified profile."
+          ],
+          "residual_gaps": [
+            "No live participant-side effect boundary is qualified.",
+            "No production credential or external mutation is in scope.",
+            "No independent cross-implementation reproduction has occurred."
+          ],
+          "maturity": "participant_effect_observed",
+          "disposition": "supported_within_scope",
+          "claim_ceiling": "Design-only illustrative record. It demonstrates reporting shape, not implementation, execution, security or standards conformance.",
+          "source_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "verifier_profile": null,
+          "required_property_obligations": [
+            "root_task_binding",
+            "child_scope_attenuation",
+            "current_revocation",
+            "final_participant_recheck"
+          ],
+          "delegation_chain": {
+            "root_principal_ref": "synthetic:principal-root",
+            "root_task_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "nodes": [
+              {
+                "node_ref": "root",
+                "principal_ref": "synthetic:principal-root",
+                "task_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+                "plan_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+              },
+              {
+                "node_ref": "child",
+                "principal_ref": "synthetic:agent-child",
+                "task_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+                "plan_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+              }
+            ],
+            "edges": [
+              {
+                "parent_node_ref": "root",
+                "child_node_ref": "child",
+                "grant_ref": "synthetic:grant-001",
+                "scope_relation": "strict_subset",
+                "evidence_refs": []
+              }
+            ],
+            "final_participant_recheck": "passed",
+            "notes": "Synthetic shape only; no grant or participant has been exercised."
+          }
+        },
+        "evaluation": {
+          "run_state": "completed",
+          "test_corpus": {
+            "corpus_id": "waep-delegation-synthetic-v0.1",
+            "version": "0.1.0",
+            "digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "case_count": 2,
+            "positive_controls": 1,
+            "negative_controls": 1,
+            "indeterminate_controls": 0,
+            "held_out": false
+          },
+          "authorization_oracle": {
+            "owner": "Future independently authored ITOPS evaluator",
+            "independently_authored": true,
+            "fields": [
+              "principal",
+              "actor",
+              "tenant",
+              "resource",
+              "operation",
+              "arguments",
+              "purpose",
+              "policy",
+              "consent",
+              "delegation",
+              "time",
+              "session_state"
+            ],
+            "oracle_artifact": null
+          },
+          "effect_oracle": {
+            "owner": "Future participant-owned synthetic effect ledger",
+            "independently_owned": true,
+            "effect_states": [
+              "proposed",
+              "authorized",
+              "dispatched",
+              "participant_accepted",
+              "committed",
+              "independently_observed",
+              "reconciled"
+            ],
+            "participant_source": "synthetic:participant-ledger"
+          },
+          "metrics": [
+            {
+              "metric_id": "unauthorized_committed_effects",
+              "definition": "Count of participant-committed effects lacking current exact authorization.",
+              "value": null,
+              "unit": "count",
+              "status": "not_measured",
+              "denominator": null,
+              "confidence_method": null
+            },
+            {
+              "metric_id": "eligible_positive_control_acceptance",
+              "definition": "Fraction of eligible positive controls accepted by policy and final participant.",
+              "value": null,
+              "unit": "fraction",
+              "status": "not_measured",
+              "denominator": null,
+              "confidence_method": null
+            }
+          ],
+          "attempt_denominator": 2,
+          "exclusions": [],
+          "dependence_groups": [
+            "No trials executed; no sample independence claim."
+          ],
+          "limitations": [
+            "Illustrative example only.",
+            "No implementation or runtime evidence has been executed.",
+            "No live external effect or production security claim."
+          ],
+          "run_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "evaluator_commit": "cccccccccccccccccccccccccccccccccccccccc"
+        }
+      }
+    },
+    {
+      "vector_id": "WAEP-V019-UNKNOWN-SINK-AUTHORIZATION",
+      "expected": "invalid",
+      "reason": "Supported information-flow claim with unknown sink authorization.",
+      "record": {
+        "profile": "luminous-web4-waep",
+        "version": "0.1",
+        "record_id": "WAEP-SYNTHETIC-UNAUTHORIZED-SINK",
+        "claim": {
+          "claim_id": "CLM-UNAUTHORIZED-SINK",
+          "property": "information_flow",
+          "statement": "A delegated agent must not obtain or exercise authority outside the explicitly authorized root task envelope and its exact child-task scope.",
+          "scope": {
+            "subject": "synthetic-web4-federation-v0.1",
+            "principal": "synthetic:principal-root",
+            "agent": "synthetic:agent-child",
+            "resource": "synthetic:participant-resource-01",
+            "operation": "synthetic:write-record",
+            "effect_class": "consequential",
+            "purpose": "synthetic:bounded-maintenance-task",
+            "target": "synthetic:tenant-a/resource-01",
+            "tenant_scope": "synthetic:tenant-a",
+            "validity_window": null
+          },
+          "threat_model": {
+            "adversary": "A compromised or prompt-injected intermediate agent attempts to broaden a delegated child task.",
+            "capabilities": [
+              "Change child task target",
+              "Substitute operation arguments",
+              "Replay stale delegation evidence",
+              "Use a sibling agent's local permissions"
+            ],
+            "system_boundary": "Proposed agent-to-agent delegation from root principal through broker to participant effect boundary.",
+            "excluded_threats": [
+              "Compromised ultimate principal signing key",
+              "Physical compromise of participant hardware"
+            ],
+            "trusted_computing_base": [
+              "Canonical Mycelix authority source",
+              "Participant-side effect enforcement"
+            ]
+          },
+          "obligations": [
+            {
+              "obligation_id": "OBL-ROOT-001",
+              "requirement": "Child task and plan are precommitted by a valid root principal authorization.",
+              "trigger": "Every delegated task admission.",
+              "conditional": false,
+              "owner_contract_ref": "Mycelix AGENT"
+            },
+            {
+              "obligation_id": "OBL-LEAF-001",
+              "requirement": "Final participant rechecks current authority and exact request binding.",
+              "trigger": "Immediately before participant admission and effect.",
+              "conditional": false,
+              "owner_contract_ref": "Platform ITOPS"
+            }
+          ],
+          "boundaries": [
+            {
+              "boundary_id": "BND-BROKER-001",
+              "role": "broker",
+              "owner": "Luminous Platform",
+              "implementation_state": "specified_only",
+              "implementation_revision": null,
+              "enforcement_timing": "pre_dispatch",
+              "failure_behavior": "deny",
+              "route_coverage": "unknown",
+              "alternate_routes": [
+                "Uninventoried direct participant routes"
+              ],
+              "notes": "Architecture requirement only; no WAEP qualification evidence attached."
+            },
+            {
+              "boundary_id": "BND-PARTICIPANT-001",
+              "role": "participant_effect_boundary",
+              "owner": "Participant operator",
+              "implementation_state": "unknown",
+              "implementation_revision": null,
+              "enforcement_timing": "atomic_effect_commit",
+              "failure_behavior": "indeterminate",
+              "route_coverage": "unknown",
+              "alternate_routes": [
+                "Unknown external adapter paths"
+              ],
+              "notes": "Participant-side finality and atomic effect binding are not established by this example."
+            }
+          ],
+          "observations": [
+            {
+              "observation_id": "obs-sink-001",
+              "what_is_observed": "Synthetic independent observer confirms the authorized local sink output.",
+              "observer_identity": "synthetic:independent-observer",
+              "control_domain": "synthetic:participant-domain",
+              "observation_stage": "postcondition",
+              "independent_of_agent": true,
+              "common_cause_dependencies": [],
+              "evidence_refs": [
+                "artifact-participant-receipt"
+              ]
+            }
+          ],
+          "evidence": [
+            {
+              "artifact_id": "artifact-participant-receipt",
+              "role": "synthetic-participant-effect-receipt",
+              "digest": "sha256:a2ccd3f550c46c0c8c84fb7bcc4b91f4b13d0835855a095d0608e992b1b3cfb6",
+              "media_type": "application/json",
+              "evidence_class": "participant_effect",
+              "source_identity": "synthetic:participant-oracle",
+              "captured_at": "2026-11-19T06:00:00Z",
+              "derived_from": []
+            }
+          ],
+          "assumptions": [
+            "The principal identity and grant source are authentic under a separately qualified profile."
+          ],
+          "residual_gaps": [
+            "No live participant-side effect boundary is qualified.",
+            "No production credential or external mutation is in scope.",
+            "No independent cross-implementation reproduction has occurred."
+          ],
+          "maturity": "participant_effect_observed",
+          "disposition": "supported_within_scope",
+          "claim_ceiling": "Design-only illustrative record. It demonstrates reporting shape, not implementation, execution, security or standards conformance.",
+          "source_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "verifier_profile": null,
+          "required_property_obligations": [
+            "root_task_binding",
+            "child_scope_attenuation",
+            "current_revocation",
+            "final_participant_recheck"
+          ],
+          "delegation_chain": {
+            "root_principal_ref": "synthetic:principal-root",
+            "root_task_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "nodes": [
+              {
+                "node_ref": "root",
+                "principal_ref": "synthetic:principal-root",
+                "task_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+                "plan_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+              },
+              {
+                "node_ref": "child",
+                "principal_ref": "synthetic:agent-child",
+                "task_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+                "plan_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+              }
+            ],
+            "edges": [
+              {
+                "parent_node_ref": "root",
+                "child_node_ref": "child",
+                "grant_ref": "synthetic:grant-001",
+                "scope_relation": "strict_subset",
+                "evidence_refs": []
+              }
+            ],
+            "final_participant_recheck": "passed",
+            "notes": "Synthetic shape only; no grant or participant has been exercised."
+          },
+          "data_flow": {
+            "flow_id": "synthetic:flow-001",
+            "sources": [
+              {
+                "source_ref": "source:classified-report",
+                "data_label": "classification:confidential",
+                "source_identity": "synthetic:document-store",
+                "classification": "confidential",
+                "evidence_refs": [
+                  "artifact-participant-receipt"
+                ]
+              }
+            ],
+            "transformations": [
+              {
+                "transform_ref": "transform:summary",
+                "operation": "summarize",
+                "input_refs": [
+                  "source:classified-report"
+                ],
+                "output_ref": "output:summary",
+                "lineage_preserved": true,
+                "classification_after": "confidential",
+                "implementation_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "evidence_refs": [
+                  "artifact-participant-receipt"
+                ]
+              }
+            ],
+            "sinks": [
+              {
+                "sink_ref": "sink:local-approved-summary",
+                "target": "synthetic:tenant-a/local-report",
+                "sink_type": "local_file",
+                "operation": "write_summary",
+                "authorization_disposition": "unknown",
+                "purpose_bound": true,
+                "declassification_ref": null,
+                "evidence_refs": [
+                  "artifact-participant-receipt"
+                ]
+              }
+            ],
+            "lineage_policy": "Confidential source labels survive summarization; only explicitly approved sink receives the result.",
+            "unknown_or_unmapped_edges": [],
+            "semantic_release": {
+              "protected_fact_set_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "method": "synthetic exact-known-fact release test",
+              "disposition": "authorized",
+              "false_negative_bound": 0,
+              "calibration_ref": "synthetic:calibration-panel"
+            }
+          }
+        },
+        "evaluation": {
+          "run_state": "completed",
+          "test_corpus": {
+            "corpus_id": "waep-delegation-synthetic-v0.1",
+            "version": "0.1.0",
+            "digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "case_count": 2,
+            "positive_controls": 1,
+            "negative_controls": 1,
+            "indeterminate_controls": 0,
+            "held_out": false
+          },
+          "authorization_oracle": {
+            "owner": "Future independently authored ITOPS evaluator",
+            "independently_authored": true,
+            "fields": [
+              "principal",
+              "actor",
+              "tenant",
+              "resource",
+              "operation",
+              "arguments",
+              "purpose",
+              "policy",
+              "consent",
+              "delegation",
+              "time",
+              "session_state"
+            ],
+            "oracle_artifact": null
+          },
+          "effect_oracle": {
+            "owner": "Future participant-owned synthetic effect ledger",
+            "independently_owned": true,
+            "effect_states": [
+              "proposed",
+              "authorized",
+              "dispatched",
+              "participant_accepted",
+              "committed",
+              "independently_observed",
+              "reconciled"
+            ],
+            "participant_source": "synthetic:participant-ledger"
+          },
+          "metrics": [
+            {
+              "metric_id": "unauthorized_committed_effects",
+              "definition": "Count of participant-committed effects lacking current exact authorization.",
+              "value": null,
+              "unit": "count",
+              "status": "not_measured",
+              "denominator": null,
+              "confidence_method": null
+            },
+            {
+              "metric_id": "eligible_positive_control_acceptance",
+              "definition": "Fraction of eligible positive controls accepted by policy and final participant.",
+              "value": null,
+              "unit": "fraction",
+              "status": "not_measured",
+              "denominator": null,
+              "confidence_method": null
+            }
+          ],
+          "attempt_denominator": 2,
+          "exclusions": [],
+          "dependence_groups": [
+            "No trials executed; no sample independence claim."
+          ],
+          "limitations": [
+            "Illustrative example only.",
+            "No implementation or runtime evidence has been executed.",
+            "No live external effect or production security claim."
+          ],
+          "run_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "evaluator_commit": "cccccccccccccccccccccccccccccccccccccccc"
+        }
+      }
+    },
+    {
+      "vector_id": "WAEP-V020-TRANSFORMATION-LINEAGE-LOSS",
+      "expected": "invalid",
+      "reason": "Supported information-flow claim where a transformation drops source lineage.",
+      "record": {
+        "profile": "luminous-web4-waep",
+        "version": "0.1",
+        "record_id": "WAEP-SYNTHETIC-LINEAGE-LOSS",
+        "claim": {
+          "claim_id": "CLM-LINEAGE-LOSS",
+          "property": "information_flow",
+          "statement": "A delegated agent must not obtain or exercise authority outside the explicitly authorized root task envelope and its exact child-task scope.",
+          "scope": {
+            "subject": "synthetic-web4-federation-v0.1",
+            "principal": "synthetic:principal-root",
+            "agent": "synthetic:agent-child",
+            "resource": "synthetic:participant-resource-01",
+            "operation": "synthetic:write-record",
+            "effect_class": "consequential",
+            "purpose": "synthetic:bounded-maintenance-task",
+            "target": "synthetic:tenant-a/resource-01",
+            "tenant_scope": "synthetic:tenant-a",
+            "validity_window": null
+          },
+          "threat_model": {
+            "adversary": "A compromised or prompt-injected intermediate agent attempts to broaden a delegated child task.",
+            "capabilities": [
+              "Change child task target",
+              "Substitute operation arguments",
+              "Replay stale delegation evidence",
+              "Use a sibling agent's local permissions"
+            ],
+            "system_boundary": "Proposed agent-to-agent delegation from root principal through broker to participant effect boundary.",
+            "excluded_threats": [
+              "Compromised ultimate principal signing key",
+              "Physical compromise of participant hardware"
+            ],
+            "trusted_computing_base": [
+              "Canonical Mycelix authority source",
+              "Participant-side effect enforcement"
+            ]
+          },
+          "obligations": [
+            {
+              "obligation_id": "OBL-ROOT-001",
+              "requirement": "Child task and plan are precommitted by a valid root principal authorization.",
+              "trigger": "Every delegated task admission.",
+              "conditional": false,
+              "owner_contract_ref": "Mycelix AGENT"
+            },
+            {
+              "obligation_id": "OBL-LEAF-001",
+              "requirement": "Final participant rechecks current authority and exact request binding.",
+              "trigger": "Immediately before participant admission and effect.",
+              "conditional": false,
+              "owner_contract_ref": "Platform ITOPS"
+            }
+          ],
+          "boundaries": [
+            {
+              "boundary_id": "BND-BROKER-001",
+              "role": "broker",
+              "owner": "Luminous Platform",
+              "implementation_state": "specified_only",
+              "implementation_revision": null,
+              "enforcement_timing": "pre_dispatch",
+              "failure_behavior": "deny",
+              "route_coverage": "unknown",
+              "alternate_routes": [
+                "Uninventoried direct participant routes"
+              ],
+              "notes": "Architecture requirement only; no WAEP qualification evidence attached."
+            },
+            {
+              "boundary_id": "BND-PARTICIPANT-001",
+              "role": "participant_effect_boundary",
+              "owner": "Participant operator",
+              "implementation_state": "unknown",
+              "implementation_revision": null,
+              "enforcement_timing": "atomic_effect_commit",
+              "failure_behavior": "indeterminate",
+              "route_coverage": "unknown",
+              "alternate_routes": [
+                "Unknown external adapter paths"
+              ],
+              "notes": "Participant-side finality and atomic effect binding are not established by this example."
+            }
+          ],
+          "observations": [
+            {
+              "observation_id": "obs-sink-001",
+              "what_is_observed": "Synthetic independent observer confirms the authorized local sink output.",
+              "observer_identity": "synthetic:independent-observer",
+              "control_domain": "synthetic:participant-domain",
+              "observation_stage": "postcondition",
+              "independent_of_agent": true,
+              "common_cause_dependencies": [],
+              "evidence_refs": [
+                "artifact-participant-receipt"
+              ]
+            }
+          ],
+          "evidence": [
+            {
+              "artifact_id": "artifact-participant-receipt",
+              "role": "synthetic-participant-effect-receipt",
+              "digest": "sha256:a2ccd3f550c46c0c8c84fb7bcc4b91f4b13d0835855a095d0608e992b1b3cfb6",
+              "media_type": "application/json",
+              "evidence_class": "participant_effect",
+              "source_identity": "synthetic:participant-oracle",
+              "captured_at": "2026-11-19T06:00:00Z",
+              "derived_from": []
+            }
+          ],
+          "assumptions": [
+            "The principal identity and grant source are authentic under a separately qualified profile."
+          ],
+          "residual_gaps": [
+            "No live participant-side effect boundary is qualified.",
+            "No production credential or external mutation is in scope.",
+            "No independent cross-implementation reproduction has occurred."
+          ],
+          "maturity": "participant_effect_observed",
+          "disposition": "supported_within_scope",
+          "claim_ceiling": "Design-only illustrative record. It demonstrates reporting shape, not implementation, execution, security or standards conformance.",
+          "source_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "verifier_profile": null,
+          "required_property_obligations": [
+            "root_task_binding",
+            "child_scope_attenuation",
+            "current_revocation",
+            "final_participant_recheck"
+          ],
+          "delegation_chain": {
+            "root_principal_ref": "synthetic:principal-root",
+            "root_task_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "nodes": [
+              {
+                "node_ref": "root",
+                "principal_ref": "synthetic:principal-root",
+                "task_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+                "plan_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+              },
+              {
+                "node_ref": "child",
+                "principal_ref": "synthetic:agent-child",
+                "task_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+                "plan_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+              }
+            ],
+            "edges": [
+              {
+                "parent_node_ref": "root",
+                "child_node_ref": "child",
+                "grant_ref": "synthetic:grant-001",
+                "scope_relation": "strict_subset",
+                "evidence_refs": []
+              }
+            ],
+            "final_participant_recheck": "passed",
+            "notes": "Synthetic shape only; no grant or participant has been exercised."
+          },
+          "data_flow": {
+            "flow_id": "synthetic:flow-001",
+            "sources": [
+              {
+                "source_ref": "source:classified-report",
+                "data_label": "classification:confidential",
+                "source_identity": "synthetic:document-store",
+                "classification": "confidential",
+                "evidence_refs": [
+                  "artifact-participant-receipt"
+                ]
+              }
+            ],
+            "transformations": [
+              {
+                "transform_ref": "transform:summary",
+                "operation": "summarize",
+                "input_refs": [
+                  "source:classified-report"
+                ],
+                "output_ref": "output:summary",
+                "lineage_preserved": false,
+                "classification_after": "confidential",
+                "implementation_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "evidence_refs": [
+                  "artifact-participant-receipt"
+                ]
+              }
+            ],
+            "sinks": [
+              {
+                "sink_ref": "sink:local-approved-summary",
+                "target": "synthetic:tenant-a/local-report",
+                "sink_type": "local_file",
+                "operation": "write_summary",
+                "authorization_disposition": "authorized",
+                "purpose_bound": true,
+                "declassification_ref": null,
+                "evidence_refs": [
+                  "artifact-participant-receipt"
+                ]
+              }
+            ],
+            "lineage_policy": "Confidential source labels survive summarization; only explicitly approved sink receives the result.",
+            "unknown_or_unmapped_edges": [],
+            "semantic_release": {
+              "protected_fact_set_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "method": "synthetic exact-known-fact release test",
+              "disposition": "authorized",
+              "false_negative_bound": 0,
+              "calibration_ref": "synthetic:calibration-panel"
+            }
+          }
+        },
+        "evaluation": {
+          "run_state": "completed",
+          "test_corpus": {
+            "corpus_id": "waep-delegation-synthetic-v0.1",
+            "version": "0.1.0",
+            "digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "case_count": 2,
+            "positive_controls": 1,
+            "negative_controls": 1,
+            "indeterminate_controls": 0,
+            "held_out": false
+          },
+          "authorization_oracle": {
+            "owner": "Future independently authored ITOPS evaluator",
+            "independently_authored": true,
+            "fields": [
+              "principal",
+              "actor",
+              "tenant",
+              "resource",
+              "operation",
+              "arguments",
+              "purpose",
+              "policy",
+              "consent",
+              "delegation",
+              "time",
+              "session_state"
+            ],
+            "oracle_artifact": null
+          },
+          "effect_oracle": {
+            "owner": "Future participant-owned synthetic effect ledger",
+            "independently_owned": true,
+            "effect_states": [
+              "proposed",
+              "authorized",
+              "dispatched",
+              "participant_accepted",
+              "committed",
+              "independently_observed",
+              "reconciled"
+            ],
+            "participant_source": "synthetic:participant-ledger"
+          },
+          "metrics": [
+            {
+              "metric_id": "unauthorized_committed_effects",
+              "definition": "Count of participant-committed effects lacking current exact authorization.",
+              "value": null,
+              "unit": "count",
+              "status": "not_measured",
+              "denominator": null,
+              "confidence_method": null
+            },
+            {
+              "metric_id": "eligible_positive_control_acceptance",
+              "definition": "Fraction of eligible positive controls accepted by policy and final participant.",
+              "value": null,
+              "unit": "fraction",
+              "status": "not_measured",
+              "denominator": null,
+              "confidence_method": null
+            }
+          ],
+          "attempt_denominator": 2,
+          "exclusions": [],
+          "dependence_groups": [
+            "No trials executed; no sample independence claim."
+          ],
+          "limitations": [
+            "Illustrative example only.",
+            "No implementation or runtime evidence has been executed.",
+            "No live external effect or production security claim."
+          ],
+          "run_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "evaluator_commit": "cccccccccccccccccccccccccccccccccccccccc"
+        }
+      }
+    },
+    {
+      "vector_id": "WAEP-V021-SEMANTIC-RELEASE-INDETERMINATE",
+      "expected": "invalid",
+      "reason": "Supported information-flow claim with an indeterminate semantic-release outcome.",
+      "record": {
+        "profile": "luminous-web4-waep",
+        "version": "0.1",
+        "record_id": "WAEP-SYNTHETIC-SEMANTIC-RELEASE",
+        "claim": {
+          "claim_id": "CLM-SEMANTIC-RELEASE",
+          "property": "information_flow",
+          "statement": "A delegated agent must not obtain or exercise authority outside the explicitly authorized root task envelope and its exact child-task scope.",
+          "scope": {
+            "subject": "synthetic-web4-federation-v0.1",
+            "principal": "synthetic:principal-root",
+            "agent": "synthetic:agent-child",
+            "resource": "synthetic:participant-resource-01",
+            "operation": "synthetic:write-record",
+            "effect_class": "consequential",
+            "purpose": "synthetic:bounded-maintenance-task",
+            "target": "synthetic:tenant-a/resource-01",
+            "tenant_scope": "synthetic:tenant-a",
+            "validity_window": null
+          },
+          "threat_model": {
+            "adversary": "A compromised or prompt-injected intermediate agent attempts to broaden a delegated child task.",
+            "capabilities": [
+              "Change child task target",
+              "Substitute operation arguments",
+              "Replay stale delegation evidence",
+              "Use a sibling agent's local permissions"
+            ],
+            "system_boundary": "Proposed agent-to-agent delegation from root principal through broker to participant effect boundary.",
+            "excluded_threats": [
+              "Compromised ultimate principal signing key",
+              "Physical compromise of participant hardware"
+            ],
+            "trusted_computing_base": [
+              "Canonical Mycelix authority source",
+              "Participant-side effect enforcement"
+            ]
+          },
+          "obligations": [
+            {
+              "obligation_id": "OBL-ROOT-001",
+              "requirement": "Child task and plan are precommitted by a valid root principal authorization.",
+              "trigger": "Every delegated task admission.",
+              "conditional": false,
+              "owner_contract_ref": "Mycelix AGENT"
+            },
+            {
+              "obligation_id": "OBL-LEAF-001",
+              "requirement": "Final participant rechecks current authority and exact request binding.",
+              "trigger": "Immediately before participant admission and effect.",
+              "conditional": false,
+              "owner_contract_ref": "Platform ITOPS"
+            }
+          ],
+          "boundaries": [
+            {
+              "boundary_id": "BND-BROKER-001",
+              "role": "broker",
+              "owner": "Luminous Platform",
+              "implementation_state": "specified_only",
+              "implementation_revision": null,
+              "enforcement_timing": "pre_dispatch",
+              "failure_behavior": "deny",
+              "route_coverage": "unknown",
+              "alternate_routes": [
+                "Uninventoried direct participant routes"
+              ],
+              "notes": "Architecture requirement only; no WAEP qualification evidence attached."
+            },
+            {
+              "boundary_id": "BND-PARTICIPANT-001",
+              "role": "participant_effect_boundary",
+              "owner": "Participant operator",
+              "implementation_state": "unknown",
+              "implementation_revision": null,
+              "enforcement_timing": "atomic_effect_commit",
+              "failure_behavior": "indeterminate",
+              "route_coverage": "unknown",
+              "alternate_routes": [
+                "Unknown external adapter paths"
+              ],
+              "notes": "Participant-side finality and atomic effect binding are not established by this example."
+            }
+          ],
+          "observations": [
+            {
+              "observation_id": "obs-sink-001",
+              "what_is_observed": "Synthetic independent observer confirms the authorized local sink output.",
+              "observer_identity": "synthetic:independent-observer",
+              "control_domain": "synthetic:participant-domain",
+              "observation_stage": "postcondition",
+              "independent_of_agent": true,
+              "common_cause_dependencies": [],
+              "evidence_refs": [
+                "artifact-participant-receipt"
+              ]
+            }
+          ],
+          "evidence": [
+            {
+              "artifact_id": "artifact-participant-receipt",
+              "role": "synthetic-participant-effect-receipt",
+              "digest": "sha256:a2ccd3f550c46c0c8c84fb7bcc4b91f4b13d0835855a095d0608e992b1b3cfb6",
+              "media_type": "application/json",
+              "evidence_class": "participant_effect",
+              "source_identity": "synthetic:participant-oracle",
+              "captured_at": "2026-11-19T06:00:00Z",
+              "derived_from": []
+            }
+          ],
+          "assumptions": [
+            "The principal identity and grant source are authentic under a separately qualified profile."
+          ],
+          "residual_gaps": [
+            "No live participant-side effect boundary is qualified.",
+            "No production credential or external mutation is in scope.",
+            "No independent cross-implementation reproduction has occurred."
+          ],
+          "maturity": "participant_effect_observed",
+          "disposition": "supported_within_scope",
+          "claim_ceiling": "Design-only illustrative record. It demonstrates reporting shape, not implementation, execution, security or standards conformance.",
+          "source_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "verifier_profile": null,
+          "required_property_obligations": [
+            "root_task_binding",
+            "child_scope_attenuation",
+            "current_revocation",
+            "final_participant_recheck"
+          ],
+          "delegation_chain": {
+            "root_principal_ref": "synthetic:principal-root",
+            "root_task_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "nodes": [
+              {
+                "node_ref": "root",
+                "principal_ref": "synthetic:principal-root",
+                "task_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+                "plan_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+              },
+              {
+                "node_ref": "child",
+                "principal_ref": "synthetic:agent-child",
+                "task_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+                "plan_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+              }
+            ],
+            "edges": [
+              {
+                "parent_node_ref": "root",
+                "child_node_ref": "child",
+                "grant_ref": "synthetic:grant-001",
+                "scope_relation": "strict_subset",
+                "evidence_refs": []
+              }
+            ],
+            "final_participant_recheck": "passed",
+            "notes": "Synthetic shape only; no grant or participant has been exercised."
+          },
+          "data_flow": {
+            "flow_id": "synthetic:flow-001",
+            "sources": [
+              {
+                "source_ref": "source:classified-report",
+                "data_label": "classification:confidential",
+                "source_identity": "synthetic:document-store",
+                "classification": "confidential",
+                "evidence_refs": [
+                  "artifact-participant-receipt"
+                ]
+              }
+            ],
+            "transformations": [
+              {
+                "transform_ref": "transform:summary",
+                "operation": "summarize",
+                "input_refs": [
+                  "source:classified-report"
+                ],
+                "output_ref": "output:summary",
+                "lineage_preserved": true,
+                "classification_after": "confidential",
+                "implementation_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "evidence_refs": [
+                  "artifact-participant-receipt"
+                ]
+              }
+            ],
+            "sinks": [
+              {
+                "sink_ref": "sink:local-approved-summary",
+                "target": "synthetic:tenant-a/local-report",
+                "sink_type": "local_file",
+                "operation": "write_summary",
+                "authorization_disposition": "authorized",
+                "purpose_bound": true,
+                "declassification_ref": null,
+                "evidence_refs": [
+                  "artifact-participant-receipt"
+                ]
+              }
+            ],
+            "lineage_policy": "Confidential source labels survive summarization; only explicitly approved sink receives the result.",
+            "unknown_or_unmapped_edges": [],
+            "semantic_release": {
+              "protected_fact_set_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "method": "synthetic exact-known-fact release test",
+              "disposition": "indeterminate",
+              "false_negative_bound": 0,
+              "calibration_ref": "synthetic:calibration-panel"
+            }
+          }
+        },
+        "evaluation": {
+          "run_state": "completed",
+          "test_corpus": {
+            "corpus_id": "waep-delegation-synthetic-v0.1",
+            "version": "0.1.0",
+            "digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "case_count": 2,
+            "positive_controls": 1,
+            "negative_controls": 1,
+            "indeterminate_controls": 0,
+            "held_out": false
+          },
+          "authorization_oracle": {
+            "owner": "Future independently authored ITOPS evaluator",
+            "independently_authored": true,
+            "fields": [
+              "principal",
+              "actor",
+              "tenant",
+              "resource",
+              "operation",
+              "arguments",
+              "purpose",
+              "policy",
+              "consent",
+              "delegation",
+              "time",
+              "session_state"
+            ],
+            "oracle_artifact": null
+          },
+          "effect_oracle": {
+            "owner": "Future participant-owned synthetic effect ledger",
+            "independently_owned": true,
+            "effect_states": [
+              "proposed",
+              "authorized",
+              "dispatched",
+              "participant_accepted",
+              "committed",
+              "independently_observed",
+              "reconciled"
+            ],
+            "participant_source": "synthetic:participant-ledger"
+          },
+          "metrics": [
+            {
+              "metric_id": "unauthorized_committed_effects",
+              "definition": "Count of participant-committed effects lacking current exact authorization.",
+              "value": null,
+              "unit": "count",
+              "status": "not_measured",
+              "denominator": null,
+              "confidence_method": null
+            },
+            {
+              "metric_id": "eligible_positive_control_acceptance",
+              "definition": "Fraction of eligible positive controls accepted by policy and final participant.",
+              "value": null,
+              "unit": "fraction",
+              "status": "not_measured",
+              "denominator": null,
+              "confidence_method": null
+            }
+          ],
+          "attempt_denominator": 2,
+          "exclusions": [],
+          "dependence_groups": [
+            "No trials executed; no sample independence claim."
+          ],
+          "limitations": [
+            "Illustrative example only.",
+            "No implementation or runtime evidence has been executed.",
+            "No live external effect or production security claim."
+          ],
+          "run_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "evaluator_commit": "cccccccccccccccccccccccccccccccccccccccc"
+        }
+      }
     }
   ]
 }
