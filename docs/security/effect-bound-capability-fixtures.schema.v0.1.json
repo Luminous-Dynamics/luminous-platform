@@ -21,7 +21,7 @@
     },
     "fixtures": {
       "type": "array",
-      "minItems": 17,
+      "minItems": 20,
       "items": {
         "type": "object",
         "required": [
@@ -32,7 +32,8 @@
           "permit",
           "effect",
           "evidence_only",
-          "expected"
+          "expected",
+          "participant_decision"
         ],
         "properties": {
           "scenario_id": {
@@ -67,23 +68,49 @@
           "expected": {
             "type": "object",
             "required": [
-              "decision",
-              "reason"
+              "authorization_state",
+              "participant_decision_correct",
+              "fail_closed_violation",
+              "unauthorized_effect",
+              "effect_disposition"
             ],
             "properties": {
-              "decision": {
+              "authorization_state": {
                 "enum": [
-                  "allow",
-                  "deny",
-                  "indeterminate",
-                  "reconcile_same_attempt"
+                  "authorized",
+                  "not_authorized",
+                  "indeterminate"
                 ]
               },
-              "reason": {
-                "type": "string"
+              "participant_decision_correct": {
+                "type": "boolean"
+              },
+              "fail_closed_violation": {
+                "type": "boolean"
+              },
+              "unauthorized_effect": {
+                "enum": [
+                  "true",
+                  "false",
+                  "indeterminate"
+                ]
+              },
+              "effect_disposition": {
+                "enum": [
+                  "none",
+                  "committed",
+                  "partially_committed",
+                  "reconcile_same_attempt"
+                ]
               }
             },
             "additionalProperties": false
+          },
+          "participant_decision": {
+            "enum": [
+              "allow",
+              "deny"
+            ]
           }
         },
         "additionalProperties": false
