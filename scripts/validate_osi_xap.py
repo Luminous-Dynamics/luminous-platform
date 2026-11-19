@@ -1251,7 +1251,7 @@ def main() -> int:
             raise SystemExit(f"{case['case_id']}: unknown target_type {target}")
         meta_counts[target] += 1
 
-    if meta_counts != {"graph":7,"authorization":10,"schema":41}:
+    if meta_counts != {"graph":7,"authorization":10,"schema":47}:
         raise SystemExit(f"unexpected frozen meta-assurance distribution: {meta_counts}")
     print(f"META_ASSURANCE=PASS {meta_counts} BASE_SCHEMA_GUARDS={len(meta_suite['schema_guards'])}")
 
