@@ -7,6 +7,8 @@
 //! qualification. A future runner must place the gate, participant oracle,
 //! and service observer in separate processes/control domains.
 
+pub mod session_composition;
+
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use chrono::DateTime;
@@ -302,6 +304,9 @@ impl SafetyQualificationAccumulator {
 
 
 pub fn sha256_hex(bytes: &[u8]) -> String {
+    format!("{:x}", Sha256::digest(bytes))
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EpisodeAuditSummary {
     pub case_id: String,
@@ -1265,6 +1270,14 @@ impl ServiceObservation {
 mod tests {
     use super::*;
     use std::fs;
+
+    #[test]
+    fn sha256_hex_matches_known_sha256_vector() {
+        assert_eq!(
+            sha256_hex(b"abc"),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
+    }
 
     fn example_requirement() -> AuthorityRequirement {
         AuthorityRequirement {
