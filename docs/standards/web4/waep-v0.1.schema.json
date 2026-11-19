@@ -2496,6 +2496,9 @@
                           "not": {
                             "const": "unknown"
                           }
+                        },
+                        "evidence_refs": {
+                          "minItems": 1
                         }
                       }
                     }
@@ -2511,6 +2514,9 @@
                         },
                         "purpose_bound": {
                           "const": true
+                        },
+                        "evidence_refs": {
+                          "minItems": 1
                         }
                       }
                     }
@@ -2527,10 +2533,36 @@
                         ]
                       }
                     }
+                  },
+                  "sources": {
+                    "items": {
+                      "properties": {
+                        "classification": {
+                          "not": {
+                            "const": "unknown"
+                          }
+                        },
+                        "evidence_refs": {
+                          "minItems": 1
+                        }
+                      }
+                    }
                   }
-                }
+                },
+                "required": [
+                  "flow_id",
+                  "sources",
+                  "transformations",
+                  "sinks",
+                  "lineage_policy",
+                  "unknown_or_unmapped_edges",
+                  "semantic_release"
+                ]
               }
-            }
+            },
+            "required": [
+              "data_flow"
+            ]
           }
         }
       }
