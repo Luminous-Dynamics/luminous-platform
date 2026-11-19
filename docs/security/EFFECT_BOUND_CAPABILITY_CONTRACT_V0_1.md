@@ -12,9 +12,10 @@ A permission such as shell, write, network or admin describes a broad mechanism,
 The contract binds a capability to a specific tuple:
 
     principal, actor, participant, resource, operation,
-    argument_digest, context, policy_epoch, validity, delegation
+    argument_digest, purpose, context, policy_epoch,
+    participant budget, validity, delegation
 
-The participant checks that exact tuple at the final admission boundary. A model, broker or authenticated session cannot turn a broad tool into permission for a larger effect.
+The participant checks that exact tuple at the final admission boundary, including allowed participant, purpose, context and the current usage budget. A model, broker or authenticated session cannot turn a broad tool into permission for a larger effect.
 
 This is a projection of Mycelix AGENT authority for cross-repository qualification. It is not a second grant database or policy evaluator.
 
@@ -28,7 +29,7 @@ A child grant Gc is valid only when:
     iff every child-authorized effect tuple is contained
     in the parent-authorized effect tuples
 
-The subset test applies across every dimension: resources and participants; operations and argument constraints; purpose/context; validity interval; budget and rate constraints; delegation depth and redelegation rights; policy epoch and revocation lineage.
+The machine-readable projection now requires participant, purpose and context sets on each grant, plus maximum total effects and a cost ceiling. Child values must be subsets/no wider than the parent in every such dimension. The request and attempt permit bind the exact participant, purpose, context, requested cost and a participant-owned usage-snapshot digest. The snapshot records grant lineage, consumption and cost state, is checked for freshness, and must be verified by the participant; a caller-supplied counter is not trusted. The current static contract checks total-effect and cost ceilings. Rate limits and concurrent budget reservation still require an atomic participant-side implementation and are not claimed implemented.
 
 A child cannot expand one dimension because it narrows another. Narrower resources do not compensate for a wider operation set.
 
@@ -104,7 +105,7 @@ Machine-readable files:
 - effect-bound-capability-fixtures.schema.v0.1.json
 - effect-bound-capability-fixtures.v0.1.json
 
-The 20 cases cover exact root authority, narrow delegation, resource/operation/time widening, intersection vs union, actor substitution, argument digest mismatch, policy epoch mismatch, revoked/unknown authority, one-use permit replay, evidence-as-authority confusion, unknown-effect reconciliation, attempt substitution and permit expiry. Three additional cases separately expose a revoked grant that nevertheless commits, unknown revocation that nevertheless commits, and a valid grant that is falsely denied. Every fixture now records authorization state, participant-decision correctness, fail-closed violation, unauthorized-effect certainty and effect disposition separately.
+The 29 cases cover exact root authority, narrow delegation, resource/operation/time widening, intersection vs union, actor substitution, argument digest mismatch, policy epoch mismatch, revoked/unknown authority, one-use permit replay, evidence-as-authority confusion, unknown-effect reconciliation, attempt substitution and permit expiry. Additional cases cover revoked/unknown grants that nevertheless commit, a valid grant that is falsely denied, participant substitution, purpose/context mismatch, exhausted effect/cost budgets, child participant/budget widening, permit participant substitution, and permit purpose/context substitution. The budget snapshot is participant-verified and bound by digest to the same request and permit. Every fixture now records authorization state, participant-decision correctness, fail-closed violation, unauthorized-effect certainty and effect disposition separately. The fixture corpus contains 29 cases; all are synthetic.
 
 All values are synthetic. Passing these cases will not qualify a production Mycelix authority or participant implementation.
 
@@ -124,4 +125,4 @@ These are proposed qualification gates, not achieved results.
 
 ## 10. Claim ceiling
 
-The document and fixtures specify research semantics only. No Mycelix AGENT implementation, Rust runtime, WASI sandbox, participant adapter or production capability has been modified or qualified by this work. Canonical authority remains owned by Mycelix AGENT; downstream repositories must not fork its semantics.
+The document and fixtures specify research semantics only. No Mycelix AGENT implementation, Rust runtime, WASI sandbox, participant adapter or production capability has been modified or qualified by this work. The expanded schema is a research projection; its budget snapshot and participant-binding semantics still require canonical Mycelix AGENT review and participant implementation. Canonical authority remains owned by Mycelix AGENT; downstream repositories must not fork its semantics.
