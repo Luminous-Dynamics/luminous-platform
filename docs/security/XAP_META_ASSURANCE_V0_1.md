@@ -35,9 +35,9 @@ The suite contains:
 - **7 graph metamorphic tests:** add a bypass, add an unknown route/dependency, remove a broker enforcement role, create a shared observer dependency, add a cycle, and mark an edge merely declared.
 - **10 authorization metamorphic tests:** actor substitution, root revocation, broker digest mismatch, missing approval, expiry, future revocation relative to admission, unknown revocation, partial unauthorized commit, policy revision mismatch, and an unrelated grant that must not widen the active chain.
 - **41 schema-weakening tests:** open root objects, lower control/scenario/graph floors, remove required fail-closed output, permit evaluator mutation, allow incomplete-run promotion, permit oracle drift, and remove the L2/L3 complete-mediation gate.
-- **50 explicit schema invariants** that the unmodified baseline must satisfy.
+- **56 explicit schema invariants** that the unmodified baseline must satisfy.
 
-A separate JavaScript translation reloaded the committed artifacts and reproduced **58/58 metamorphic outcomes**: 7 graph mutations, 10 authorization mutations and 41 schema-weakening mutations, including 11 origin/intent schema guards. All 41 schema-weakening cases matched their expected guard IDs, with zero baseline guard violations. Separate authoring-time evaluators matched **29/29 effect-bound capability fixtures** and **30/30 origin/intent provenance fixtures**. These are static authoring-time checks, not a Python CI pass or an independent security audit. These are authoring-time checks, not a Python CI pass or independent security audit.
+A separate JavaScript translation reloaded the committed artifacts and reproduced **64/64 metamorphic outcomes**: 7 graph mutations, 10 authorization mutations and 41 schema-weakening mutations, including 11 origin/intent schema guards. All 41 schema-weakening cases matched their expected guard IDs, with zero baseline guard violations. Separate authoring-time evaluators matched **29/29 effect-bound capability fixtures** and **30/30 origin/intent provenance fixtures**. These are static authoring-time checks, not a Python CI pass or an independent security audit. These are authoring-time checks, not a Python CI pass or independent security audit.
 
 ## 3. Metamorphic properties
 
@@ -129,7 +129,7 @@ The schema guard suite now tests whether a change could turn intersection into u
 
 ## 8. Updated claim ceiling
 
-The combined suite has 58 metamorphic cases and 50 schema guards, plus 29 effect-bound capability fixtures and 30 origin/intent provenance fixtures. All four static authoring-time replay suites matched their frozen expected outcomes (58/58, 29/29 and 30/30 respectively, with zero baseline guard violations); CI, a second independently implemented verifier and deployment qualification remain outstanding.
+The combined suite has 64 metamorphic cases and 56 schema guards, plus 29 effect-bound capability fixtures and 30 origin/intent provenance fixtures. All four static authoring-time replay suites matched their frozen expected outcomes (64/64, 29/29 and 30/30 respectively, with zero baseline guard violations); CI, a second independently implemented verifier and deployment qualification remain outstanding.
 ## 9. Claim ceiling
 
 The suite is synthetic. 47/47 authoring-time metamorphic matches do not prove live complete mediation, real-world graph completeness, production authorization safety, or superiority over industry systems. CI must pass on the exact PR head; a second independent verifier and exact-target participant/effect tests are still required.
