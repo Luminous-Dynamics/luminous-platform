@@ -11,7 +11,8 @@
     "x805",
     "osi_layers",
     "controls",
-    "nonclaims"
+    "nonclaims",
+    "control_count"
   ],
   "properties": {
     "profile": {
@@ -138,6 +139,10 @@
         "type": "string",
         "minLength": 10
       }
+    },
+    "control_count": {
+      "type": "integer",
+      "minimum": 1
     }
   },
   "$defs": {
