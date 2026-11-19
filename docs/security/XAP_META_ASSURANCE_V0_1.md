@@ -37,7 +37,7 @@ The suite contains:
 - **14 schema-weakening tests:** open root objects, lower control/scenario/graph floors, remove required fail-closed output, permit evaluator mutation, allow incomplete-run promotion, permit oracle drift, and remove the L2/L3 complete-mediation gate.
 - **23 explicit schema invariants** that the unmodified baseline must satisfy.
 
-A separate JavaScript translation reloaded the committed artifacts and reproduced **31/31 metamorphic outcomes** across the original graph/authorization mutations and the four additional capability-schema mutations. All 14 schema-weakening cases matched their expected guard IDs, with zero baseline guard violations. The same translation independently matched all 17 capability-algebra fixture outcomes. These are authoring-time checks, not a Python CI pass or independent security audit. This is an authoring-time differential check, not a Python CI pass and not an independent security audit.
+A separate JavaScript translation reloaded the committed artifacts and reproduced **31/31 metamorphic outcomes** across the original graph/authorization mutations and the four additional capability-schema mutations. All 14 schema-weakening cases matched their expected guard IDs, with zero baseline guard violations. The same translation independently matched all 20 capability-algebra fixture outcomes, including revoked/unknown authority commits and a false-denial positive control. These are authoring-time checks, not a Python CI pass or independent security audit.
 
 ## 3. Metamorphic properties
 
@@ -123,13 +123,13 @@ WASI already uses capability-based resource handles and explicitly avoids ambien
 
 ## 7. Effect-bound authority and capability typing
 
-The adjacent AUTH-CORE-001 work adds 17 synthetic capability algebra fixtures. It verifies exact root authority, attenuating child grants, non-widening of resources/operations/time, intersection rather than union composition, actor and argument-digest binding, policy epoch, revocation, one-use permit consumption, evidence/authority separation and same-attempt reconciliation.
+The adjacent AUTH-CORE-001 work adds 20 synthetic capability algebra fixtures. It verifies exact root authority, attenuating child grants, non-widening of resources/operations/time, intersection rather than union composition, actor and argument-digest binding, policy epoch, revocation, one-use permit consumption, evidence/authority separation and same-attempt reconciliation.
 
 The schema guard suite now tests whether a change could turn intersection into union or mark evidence as authority. The capability contract remains a projection of Mycelix AGENT semantics; it does not introduce another authorization engine.
 
 ## 8. Updated claim ceiling
 
-The combined suite has 31 metamorphic cases and 23 schema guards, plus 17 capability-algebra fixtures. All 31 metamorphic cases and all 17 capability fixtures matched in separate authoring-time JavaScript checks; CI, a second independently implemented verifier and deployment qualification remain outstanding.
+The combined suite has 31 metamorphic cases and 23 schema guards, plus 20 capability-algebra fixtures. All 31 metamorphic cases and all 20 capability fixtures matched in separate authoring-time JavaScript checks; CI, a second independently implemented verifier and deployment qualification remain outstanding.
 ## 9. Claim ceiling
 
 The suite is synthetic. 31/31 authoring-time metamorphic matches do not prove live complete mediation, real-world graph completeness, production authorization safety, or superiority over industry systems. CI must pass on the exact PR head; a second independent verifier and exact-target participant/effect tests are still required.
