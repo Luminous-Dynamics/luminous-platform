@@ -2,7 +2,7 @@
   "profile": "luminous-osi-xap-scenarios",
   "version": "0.1",
   "status": "synthetic_research_fixtures",
-  "scenario_count": 25,
+  "scenario_count": 31,
   "scenarios": [
     {
       "scenario_id": "XAP-01",
@@ -555,6 +555,133 @@
         "recovery_state"
       ],
       "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-21",
+      "kind": "negative",
+      "osi_layers": [
+        "cross_layer"
+      ],
+      "expected_disposition": "deny",
+      "trigger": "OT agent receives prompt-injected instructions or a poisoned training baseline and proposes an unsafe control action",
+      "required_assertions": [
+        "Untrusted documents and learned predictions cannot change policy or authority",
+        "The model cannot directly change a PLC/controller setpoint",
+        "Local deterministic safety logic independently evaluates the final operation"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence"
+      ],
+      "claim_ceiling": "Synthetic OT AI scenario; no real controller or deployed model is exercised."
+    },
+    {
+      "scenario_id": "XAP-22",
+      "kind": "negative",
+      "osi_layers": [
+        "cross_layer"
+      ],
+      "expected_disposition": "unknown",
+      "trigger": "Digital twin state is stale, drifted or derived from manipulated sensor inputs while physical state may differ",
+      "required_assertions": [
+        "Twin state is not substituted for an independent physical observation",
+        "Stale or compromised input invalidates affected assurance claims",
+        "Safety-relevant uncertainty remains unknown until physical reconciliation"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "observer_evidence",
+        "participant_effect_oracle",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic digital-twin divergence case; no physical asset state is measured."
+    },
+    {
+      "scenario_id": "XAP-23",
+      "kind": "negative",
+      "osi_layers": [
+        "cross_layer"
+      ],
+      "expected_disposition": "deny",
+      "trigger": "Bidirectional digital-twin synchronization attempts to change physical controller state without a current exact participant grant",
+      "required_assertions": [
+        "Twin connectivity is treated as a separate attack surface",
+        "Exact participant authorization and local safety interlock remain required",
+        "Simulation output cannot serve as a physical effect receipt"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence"
+      ],
+      "claim_ceiling": "Synthetic twin-to-physical authorization case; no actuation is attempted."
+    },
+    {
+      "scenario_id": "XAP-24",
+      "kind": "negative",
+      "osi_layers": [
+        2,
+        3
+      ],
+      "expected_disposition": "deny",
+      "trigger": "Independent active network scanning is attempted against production OT devices without vendor review, prior non-production test or approved maintenance window",
+      "required_assertions": [
+        "Active discovery is blocked absent a qualified safe method",
+        "Passive/manual alternatives remain available",
+        "Discovery does not jeopardize OT availability"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic discovery-policy case; no live scan is performed."
+    },
+    {
+      "scenario_id": "XAP-25",
+      "kind": "negative",
+      "osi_layers": [
+        2,
+        3
+      ],
+      "expected_disposition": "unknown",
+      "trigger": "Passive monitoring misses an isolated switch segment or non-IP device while inventory is marked complete",
+      "required_assertions": [
+        "Sensor placement coverage is explicit",
+        "Unknown non-IP/isolated assets prevent complete inventory",
+        "Architecture diagrams and observed traffic are reconciled"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic monitoring-coverage case; no live traffic capture is performed."
+    },
+    {
+      "scenario_id": "XAP-26",
+      "kind": "negative",
+      "osi_layers": [
+        "cross_layer"
+      ],
+      "expected_disposition": "unknown",
+      "trigger": "OT management and operational traffic share infrastructure or vendor access shares credentials/entry points without a documented exception",
+      "required_assertions": [
+        "Management/operational separation is evaluated separately from X.805 plane labels",
+        "External vendor path and credentials are independently inventoried",
+        "Shared infrastructure dependencies and compensating controls are disclosed"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic OT zone architecture case; no real network topology is assessed."
     }
   ]
 }
