@@ -90,7 +90,7 @@ The matrix below is a minimum guide. A claim record should include only the obli
 | Consent / purpose | Principal, data class/fields, recipient, purpose, expiry, withdrawal and policy version | Consent authority plus resource-side enforcement; observed data access/use | Purpose substitution, expiry, withdrawal, cached copy, delegated recipient |
 | Currentness / revocation | Fresh authority/key/policy/consent state at use; declared partition/offline semantics | Every relevant PEP and final participant | Active session, cached token, disconnected participant, child agent, replayed old epoch |
 | Delegation containment | Root/parent/child task and plan digests, grant reference, hop edges, scope relation and final participant recheck | Delegation owner, broker and final participant | Scope expansion, actor substitution, sibling task, stale ancestor, provenance erasure |
-| Information flow | Data labels/purpose survive reads, transforms, summaries, memory and handoffs | Source, transformation boundary and protected sink | Summarize-then-export, tool/child laundering, omitted lineage |
+| Information flow | Source labels and purpose survive read, transform, summarize, memory and handoff; every sink has a current authorization/declassification decision; semantic-release policy is calibrated | Source-to-sink lineage, transformation records, sink monitor and independent release observer | Summarize-then-export, tool/child laundering, omitted lineage, paraphrased protected fact, unknown sink, semantic-release false negative |
 | Session composition | State-aware policy over committed, pending and unknown prior effects; atomic/linearizable admission where needed | Session admission and participant-owned state | Parallel overspend, individually valid forbidden composition, pending-effect bypass |
 | One-use effect | Exact request/target/audience/attempt binding and atomic consumption at effect boundary | Participant-owned commit boundary | Replay, duplicate delivery, two-thread race, changed arguments |
 | Reconciliation | Unknown outcomes remain unknown until participant evidence resolves the same logical action | Participant ledger and independent reconciler | Lost acknowledgement, crash after commit, blind retry, compensating action misreported as rollback |
@@ -163,6 +163,14 @@ The current field discussion identifies three gaps that an authorization-only be
 Property-specific records are required for effective least privilege (full trajectory), complete mediation (route inventory), delegation containment (root-linked chain), branch-scoped containment, purpose-bound termination, and human-impact recovery. The schema does not treat a populated record as proof that its values are true; each record still requires evidence at the correct boundary.
 
 Required additional metrics include descendant-inventory completeness, orphaned continuation count, revocation/deprovisioning propagation, affected-branch containment latency, unaffected-branch false-containment rate, user task completion after security intervention, safe-alternative availability, human recovery time, and irreversible residual impact. Keep these separate from unauthorized-effect counts.
+## 7.2 Semantic data-flow and release assurance
+
+The September 2026 CapAgent work is a significant comparator because it treats memory retrieval, tool invocation, data export and inter-agent messaging as distinct source-to-sink flows. Its synthetic 600-trace benchmark reports 0% attack success for its full monitor, 75% benign success and 25% false blocking; supplemental experiments report 0% attack success on a 520-trial tool-calling setup, 87.5% compiler exact-policy match and 88.89% semantic-release recall. The paper explicitly cautions that these are controlled local experiments, not official AgentDojo/WebArena/OSWorld results or evidence of deployment-wide safety. These numbers are paper-reported and must not be directly compared with Luminous until the tasks, models, prompts, tools, policies, observers and scoring units are matched.
+
+The distinct November 2026 ACM CCS CapAgent paper addresses capability credentials and multi-hop delegation chains, with cryptographically protected derivable credentials, API/parameter constraints, lifecycle rules and cross-hop provenance. Treat it as a separate comparator from the September semantic data-flow CapAgent. Its existence means Luminous should not claim novelty for capability attenuation, purpose-bound tokens or delegation-chain credentials; the differentiator to test is claim-to-effect evidence, participant-owned finality, lifecycle/deprovisioning closure, branch-scoped containment and recovery outcomes.
+
+WAEP's `data_flow` record binds source identity and classification, each transformation, output lineage, destination sink, operation, purpose-bound status, authorization disposition and semantic-release evidence. Supported information-flow claims require zero unknown/unmapped edges, preserved lineage on every transform, authorized or non-applicable sink decisions, and an authorized/not-applicable semantic-release disposition. This record documents a claim; it does not prove that the declared source/sink inventory is complete or that a semantic detector has adequate recall. The benchmark must measure false negatives, false positives, calibration, benign completion, source/sink coverage and leakage of protected facts separately.
+
 ## 8. Integration boundaries
 
 WAEP is a cross-project reporting profile that consumes existing owner contracts.
@@ -196,17 +204,9 @@ The Mycelix AGENT-010 gate remains in force for authoritative A2A/MCP/OAuth/AP2 
 - **A2A v1.0.1 / MCP 2026-07-28:** task/tool interoperability; discovery and protocol authentication do not create Luminous authority.
 - **OWASP ACS v0.1.4:** portable runtime hooks; profile declarations and Guardian dispositions do not prove strict policy, non-bypassability or actual effect enforcement.
 
-## 7.2 Semantic data-flow and release assurance
-
-The September 2026 CapAgent work is a significant comparator because it treats memory retrieval, tool invocation, data export and inter-agent messaging as distinct source-to-sink flows. Its synthetic 600-trace benchmark reports 0% attack success for its full monitor, 75% benign success and 25% false blocking; supplemental experiments report 0% attack success on a 520-trial tool-calling setup, 87.5% compiler exact-policy match and 88.89% semantic-release recall. The paper explicitly cautions that these are controlled local experiments, not official AgentDojo/WebArena/OSWorld results or evidence of deployment-wide safety. These numbers are paper-reported and must not be directly compared with Luminous until the tasks, models, prompts, tools, policies, observers and scoring units are matched.
-
-The distinct November 2026 ACM CCS CapAgent paper addresses capability credentials and multi-hop delegation chains, with cryptographically protected derivable credentials, API/parameter constraints, lifecycle rules and cross-hop provenance. Treat it as a separate comparator from the September semantic data-flow CapAgent. Its existence means Luminous should not claim novelty for capability attenuation, purpose-bound tokens or delegation-chain credentials; the differentiator to test is claim-to-effect evidence, participant-owned finality, lifecycle/deprovisioning closure, branch-scoped containment and recovery outcomes.
-
-WAEP's `data_flow` record binds source identity and classification, each transformation, output lineage, destination sink, operation, purpose-bound status, authorization disposition and semantic-release evidence. Supported information-flow claims require zero unknown/unmapped edges, preserved lineage on every transform, authorized or non-applicable sink decisions, and an authorized/not-applicable semantic-release disposition. This record documents a claim; it does not prove that the declared source/sink inventory is complete or that a semantic detector has adequate recall. The benchmark must measure false negatives, false positives, calibration, benign completion, source/sink coverage and leakage of protected facts separately.
-
 ## 9.2 Frozen conformance vectors
 
-The companion file `waep-conformance-vectors.v0.1.json` contains sixteen self-contained schema/semantic test records. `waep-synthetic-participant-receipt.v0.1.json` and `waep-synthetic-corpus.v0.1.json` are explicitly synthetic fixtures whose content digests are referenced by the positive-shape vector. The receipt fixture is not signed and is not a real participant observation.
+The companion file `waep-conformance-vectors.v0.1.json` contains twenty-one self-contained schema/semantic test records. `waep-synthetic-participant-receipt.v0.1.json` and `waep-synthetic-corpus.v0.1.json` are explicitly synthetic fixtures whose content digests are referenced by the positive-shape vector. The receipt fixture is not signed and is not a real participant observation.
 
 | Vector | Expected | Property exercised |
 |---|---|---|
@@ -226,8 +226,13 @@ The companion file `waep-conformance-vectors.v0.1.json` contains sixteen self-co
 | V014 | Valid | Positive control: bidirectional branch-scoped containment |
 | V015 | Valid | Positive control: trajectory-wide effective privilege |
 | V016 | Valid | Positive control: complete finite route inventory |
+| V017 | Valid | Positive control: supported source-to-sink data-flow with preserved lineage and authorized semantic release |
+| V018 | Invalid | Information-flow claim missing source-to-sink record |
+| V019 | Invalid | Information-flow claim has unknown sink authorization |
+| V020 | Invalid | Transformation drops source lineage |
+| V021 | Invalid | Semantic-release outcome is indeterminate |
 
-The sixteen vectors were evaluated by an authoring-time semantic checker and all expected outcomes matched. This is not the full JSON Schema validator, not a Rust conformance implementation, and not runtime evidence. The full standards-compliant validation gate remains open.
+The twenty-one vectors were evaluated by an authoring-time semantic checker and all expected outcomes matched. This is not the full JSON Schema validator, not a Rust conformance implementation, and not runtime evidence. The full standards-compliant validation gate remains open.
 ## 10. Validation and claim ceiling
 
 For this first draft:
