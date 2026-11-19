@@ -305,6 +305,111 @@ def schema_guard_violations(schema_documents, guards, schema_file=None):
             violations.append(guard["id"])
     return sorted(set(violations))
 
+
+def evaluate_effect_capability_fixture(fixture):
+    request = fixture["request"]
+    permit = fixture["permit"]
+    effect = fixture["effect"]
+    grants = fixture["capabilities"]
+    now = request["admission_time"]
+
+    if fixture["evidence_only"]:
+        return "deny"
+    if not grants:
+        return "deny"
+
+    principal = request["principal_id"]
+    actor = request["actor_id"]
+    if any(grant["principal_id"] != principal for grant in grants):
+        return "deny"
+
+    revoked = any(grant["revocation_state"] == "revoked" for grant in grants)
+    unknown_revocation = any(grant["revocation_state"] == "unknown" for grant in grants)
+    if revoked:
+        return "deny"
+
+    if fixture["mode"] == "composition":
+        # Independent grants are conjunctive. Resource and operation sets
+        # are intersected; they are never unioned to manufacture authority.
+        if any(grant["parent_grant_id"] is not None for grant in grants):
+            return "deny"
+        if any(grant["issuer_id"] != principal or grant["subject_id"] != actor for grant in grants):
+            return "deny"
+        common_targets = set(grants[0]["target_refs"])
+        common_operations = set(grants[0]["operations"])
+        for grant in grants[1:]:
+            common_targets.intersection_update(grant["target_refs"])
+            common_operations.intersection_update(grant["operations"])
+        digests = {grant["argument_digest"] for grant in grants}
+        epochs = {grant["policy_epoch"] for grant in grants}
+        if len(digests) != 1 or len(epochs) != 1:
+            return "deny"
+        if request["target_ref"] not in common_targets or request["operation"] not in common_operations:
+            return "deny"
+        if request["argument_digest"] not in digests or request["policy_epoch"] not in epochs:
+            return "deny"
+        if any(grant["not_before"] > now or grant["expires_at"] <= now for grant in grants):
+            return "deny"
+    else:
+        root = grants[0]
+        if root["parent_grant_id"] is not None or root["issuer_id"] != principal:
+            return "deny"
+        for index, grant in enumerate(grants):
+            if index:
+                parent = grants[index - 1]
+                if grant["parent_grant_id"] != parent["grant_id"]:
+                    return "deny"
+                if grant["issuer_id"] != parent["subject_id"] or not parent["may_delegate"]:
+                    return "deny"
+                if not set(grant["target_refs"]).issubset(set(parent["target_refs"])):
+                    return "deny"
+                if not set(grant["operations"]).issubset(set(parent["operations"])):
+                    return "deny"
+                if grant["argument_digest"] != parent["argument_digest"]:
+                    return "deny"
+                if grant["policy_epoch"] != parent["policy_epoch"]:
+                    return "deny"
+                if grant["not_before"] < parent["not_before"] or grant["expires_at"] > parent["expires_at"]:
+                    return "deny"
+                if grant["max_delegation_depth"] >= parent["max_delegation_depth"]:
+                    return "deny"
+            if grant["not_before"] > now or grant["expires_at"] <= now:
+                return "deny"
+            if grant["argument_digest"] != request["argument_digest"]:
+                return "deny"
+            if grant["policy_epoch"] != request["policy_epoch"]:
+                return "deny"
+            if request["target_ref"] not in grant["target_refs"]:
+                return "deny"
+            if request["operation"] not in grant["operations"]:
+                return "deny"
+        if grants[-1]["subject_id"] != actor:
+            return "deny"
+
+    # The permit is an attempt-bound dispatch token; participant-side
+    # admission must check the same subject, effect footprint and epoch.
+    if (
+        permit["actor_id"] != actor
+        or permit["target_ref"] != request["target_ref"]
+        or permit["operation"] != request["operation"]
+        or permit["argument_digest"] != request["argument_digest"]
+        or permit["policy_epoch"] != request["policy_epoch"]
+        or permit["attempt_id"] != request["attempt_id"]
+        or not permit["nonce_id"]
+        or permit["consume_count"] != 1
+        or permit["not_before"] > now
+        or permit["expires_at"] <= now
+    ):
+        return "deny"
+    if effect["attempt_id"] != request["attempt_id"] or effect["participant_id"] != permit["participant_id"]:
+        return "deny"
+
+    if unknown_revocation:
+        return "indeterminate"
+    if effect["state"] == "unknown":
+        return "reconcile_same_attempt"
+    return "allow"
+
 def main() -> int:
     files = [
         ("osi-xap-control-matrix.schema.v0.1.json",
@@ -593,6 +698,33 @@ def main() -> int:
     if meta_counts != {"graph":7,"authorization":10,"schema":10}:
         raise SystemExit(f"unexpected frozen meta-assurance distribution: {meta_counts}")
     print(f"META_ASSURANCE=PASS {meta_counts} BASE_SCHEMA_GUARDS={len(meta_suite['schema_guards'])}")
+
+
+    capability_schema = load(SEC / "effect-bound-capability-fixtures.schema.v0.1.json")
+    capability_suite = load(SEC / "effect-bound-capability-fixtures.v0.1.json")
+    Draft202012Validator.check_schema(capability_schema)
+    capability_errors = sorted(
+        Draft202012Validator(capability_schema, format_checker=FormatChecker()).iter_errors(capability_suite),
+        key=lambda err: tuple(str(x) for x in err.absolute_path),
+    )
+    if capability_errors:
+        for err in capability_errors:
+            loc = "/".join(str(x) for x in err.absolute_path) or "<root>"
+            print(f"effect-bound-capability-fixtures.v0.1.json:{loc}: {err.message}", file=sys.stderr)
+        raise SystemExit(f"effect-bound capability fixtures: {len(capability_errors)} schema error(s)")
+    capability_ids = [fixture["scenario_id"] for fixture in capability_suite["fixtures"]]
+    if len(capability_ids) != len(set(capability_ids)):
+        raise SystemExit("duplicate effect-bound capability fixture IDs")
+    capability_counts = {"allow":0,"deny":0,"indeterminate":0,"reconcile_same_attempt":0}
+    for fixture in capability_suite["fixtures"]:
+        actual = evaluate_effect_capability_fixture(fixture)
+        expected = fixture["expected"]["decision"]
+        if actual != expected:
+            raise SystemExit(f"{fixture['scenario_id']}: expected {expected}, got {actual}")
+        capability_counts[actual] += 1
+    if capability_counts != {"allow":3,"deny":12,"indeterminate":1,"reconcile_same_attempt":1}:
+        raise SystemExit(f"unexpected capability algebra fixture mix: {capability_counts}")
+    print(f"EFFECT_BOUND_CAPABILITY_FIXTURES=PASS {capability_counts}")
 
     print("L2L3_TEMPLATE=VALID_UNASSESSED ACTIVE_SCAN=UNKNOWN OT_SEPARATION=UNKNOWN")
 
