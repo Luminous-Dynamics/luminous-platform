@@ -1,0 +1,187 @@
+{
+  "profile": "luminous-web4-waep",
+  "version": "0.1",
+  "record_id": "WAEP-EXAMPLE-001",
+  "claim": {
+    "claim_id": "CLM-DELEGATION-001",
+    "property": "delegation_containment",
+    "statement": "A delegated agent must not obtain or exercise authority outside the explicitly authorized root task envelope and its exact child-task scope.",
+    "scope": {
+      "subject": "synthetic-web4-federation-v0.1",
+      "principal": "synthetic:principal-root",
+      "agent": "synthetic:agent-child",
+      "resource": "synthetic:participant-resource-01",
+      "operation": "synthetic:write-record",
+      "effect_class": "consequential",
+      "purpose": "synthetic:bounded-maintenance-task",
+      "target": "synthetic:tenant-a/resource-01",
+      "tenant_scope": "synthetic:tenant-a",
+      "validity_window": null
+    },
+    "threat_model": {
+      "adversary": "A compromised or prompt-injected intermediate agent attempts to broaden a delegated child task.",
+      "capabilities": [
+        "Change child task target",
+        "Substitute operation arguments",
+        "Replay stale delegation evidence",
+        "Use a sibling agent's local permissions"
+      ],
+      "system_boundary": "Proposed agent-to-agent delegation from root principal through broker to participant effect boundary.",
+      "excluded_threats": [
+        "Compromised ultimate principal signing key",
+        "Physical compromise of participant hardware"
+      ],
+      "trusted_computing_base": [
+        "Canonical Mycelix authority source",
+        "Participant-side effect enforcement"
+      ]
+    },
+    "obligations": [
+      {
+        "obligation_id": "OBL-ROOT-001",
+        "requirement": "Child task and plan are precommitted by a valid root principal authorization.",
+        "trigger": "Every delegated task admission.",
+        "conditional": false,
+        "owner_contract_ref": "Mycelix AGENT"
+      },
+      {
+        "obligation_id": "OBL-LEAF-001",
+        "requirement": "Final participant rechecks current authority and exact request binding.",
+        "trigger": "Immediately before participant admission and effect.",
+        "conditional": false,
+        "owner_contract_ref": "Platform ITOPS"
+      }
+    ],
+    "boundaries": [
+      {
+        "boundary_id": "BND-BROKER-001",
+        "role": "broker",
+        "owner": "Luminous Platform",
+        "implementation_state": "specified_only",
+        "implementation_revision": null,
+        "enforcement_timing": "pre_dispatch",
+        "failure_behavior": "deny",
+        "route_coverage": "unknown",
+        "alternate_routes": [
+          "Uninventoried direct participant routes"
+        ],
+        "notes": "Architecture requirement only; no WAEP qualification evidence attached."
+      },
+      {
+        "boundary_id": "BND-PARTICIPANT-001",
+        "role": "participant_effect_boundary",
+        "owner": "Participant operator",
+        "implementation_state": "unknown",
+        "implementation_revision": null,
+        "enforcement_timing": "atomic_effect_commit",
+        "failure_behavior": "indeterminate",
+        "route_coverage": "unknown",
+        "alternate_routes": [
+          "Unknown external adapter paths"
+        ],
+        "notes": "Participant-side finality and atomic effect binding are not established by this example."
+      }
+    ],
+    "observations": [],
+    "evidence": [],
+    "assumptions": [
+      "The principal identity and grant source are authentic under a separately qualified profile."
+    ],
+    "residual_gaps": [
+      "No live participant-side effect boundary is qualified.",
+      "No production credential or external mutation is in scope.",
+      "No independent cross-implementation reproduction has occurred."
+    ],
+    "maturity": "specified",
+    "disposition": "not_claimed",
+    "claim_ceiling": "Design-only illustrative record. It demonstrates reporting shape, not implementation, execution, security or standards conformance.",
+    "source_commit": null,
+    "verifier_profile": null,
+    "required_property_obligations": [
+      "root_task_binding",
+      "child_scope_attenuation",
+      "current_revocation",
+      "final_participant_recheck"
+    ]
+  },
+  "evaluation": {
+    "run_state": "not_executed",
+    "test_corpus": {
+      "corpus_id": "waep-delegation-synthetic-v0.1",
+      "version": "0.1.0",
+      "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "case_count": 0,
+      "positive_controls": 0,
+      "negative_controls": 0,
+      "indeterminate_controls": 0,
+      "held_out": false
+    },
+    "authorization_oracle": {
+      "owner": "Future independently authored ITOPS evaluator",
+      "independently_authored": false,
+      "fields": [
+        "principal",
+        "actor",
+        "tenant",
+        "resource",
+        "operation",
+        "arguments",
+        "purpose",
+        "policy",
+        "consent",
+        "delegation",
+        "time",
+        "session_state"
+      ],
+      "oracle_artifact": null
+    },
+    "effect_oracle": {
+      "owner": "Future participant-owned synthetic effect ledger",
+      "independently_owned": false,
+      "effect_states": [
+        "proposed",
+        "authorized",
+        "dispatched",
+        "participant_accepted",
+        "committed",
+        "rejected",
+        "outcome_unknown",
+        "independently_observed",
+        "reconciled"
+      ],
+      "participant_source": null
+    },
+    "metrics": [
+      {
+        "metric_id": "unauthorized_committed_effects",
+        "definition": "Count of participant-committed effects lacking current exact authorization.",
+        "value": null,
+        "unit": "count",
+        "status": "not_measured",
+        "denominator": null,
+        "confidence_method": null
+      },
+      {
+        "metric_id": "eligible_positive_control_acceptance",
+        "definition": "Fraction of eligible positive controls accepted by policy and final participant.",
+        "value": null,
+        "unit": "fraction",
+        "status": "not_measured",
+        "denominator": null,
+        "confidence_method": null
+      }
+    ],
+    "attempt_denominator": 0,
+    "exclusions": [],
+    "dependence_groups": [
+      "No trials executed; no sample independence claim."
+    ],
+    "limitations": [
+      "Illustrative example only.",
+      "No implementation or runtime evidence has been executed.",
+      "No live external effect or production security claim."
+    ],
+    "run_commit": null,
+    "evaluator_commit": null
+  }
+}
