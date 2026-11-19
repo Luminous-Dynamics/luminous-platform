@@ -1450,7 +1450,9 @@
               "input_refs",
               "output_ref",
               "lineage_preserved",
-              "classification_after"
+              "classification_after",
+              "classification_relation",
+              "declassification_ref"
             ],
             "properties": {
               "transform_ref": {
@@ -1494,9 +1496,63 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "classification_relation": {
+                "enum": [
+                  "same_or_more_restrictive",
+                  "approved_declassification",
+                  "unknown"
+                ]
+              },
+              "declassification_ref": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "classification_relation": {
+                      "const": "same_or_more_restrictive"
+                    }
+                  },
+                  "required": [
+                    "classification_relation"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "declassification_ref": {
+                      "const": null
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "classification_relation": {
+                      "const": "approved_declassification"
+                    }
+                  },
+                  "required": [
+                    "classification_relation"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "declassification_ref": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            ]
           }
         },
         "sinks": {
@@ -1583,7 +1639,8 @@
             "method",
             "disposition",
             "false_negative_bound",
-            "calibration_ref"
+            "calibration_ref",
+            "not_applicable_reason"
           ],
           "properties": {
             "protected_fact_set_digest": {
@@ -1614,9 +1671,65 @@
                 "string",
                 "null"
               ]
+            },
+            "not_applicable_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
             }
           },
-          "additionalProperties": false
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "disposition": {
+                    "const": "authorized"
+                  }
+                },
+                "required": [
+                  "disposition"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "false_negative_bound": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "calibration_ref": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "not_applicable_reason": {
+                    "const": null
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "disposition": {
+                    "const": "not_applicable"
+                  }
+                },
+                "required": [
+                  "disposition"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "not_applicable_reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          ]
         }
       },
       "additionalProperties": false
@@ -2499,8 +2612,56 @@
                         },
                         "evidence_refs": {
                           "minItems": 1
+                        },
+                        "classification_relation": {
+                          "enum": [
+                            "same_or_more_restrictive",
+                            "approved_declassification"
+                          ]
+                        },
+                        "declassification_ref": {}
+                      },
+                      "allOf": [
+                        {
+                          "if": {
+                            "properties": {
+                              "classification_relation": {
+                                "const": "same_or_more_restrictive"
+                              }
+                            },
+                            "required": [
+                              "classification_relation"
+                            ]
+                          },
+                          "then": {
+                            "properties": {
+                              "declassification_ref": {
+                                "const": null
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "classification_relation": {
+                                "const": "approved_declassification"
+                              }
+                            },
+                            "required": [
+                              "classification_relation"
+                            ]
+                          },
+                          "then": {
+                            "properties": {
+                              "declassification_ref": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            }
+                          }
                         }
-                      }
+                      ]
                     }
                   },
                   "sinks": {
@@ -2531,8 +2692,70 @@
                           "authorized",
                           "not_applicable"
                         ]
+                      },
+                      "false_negative_bound": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "calibration_ref": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "not_applicable_reason": {
+                        "const": null
                       }
-                    }
+                    },
+                    "allOf": [
+                      {
+                        "if": {
+                          "properties": {
+                            "disposition": {
+                              "const": "authorized"
+                            }
+                          },
+                          "required": [
+                            "disposition"
+                          ]
+                        },
+                        "then": {
+                          "properties": {
+                            "false_negative_bound": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 1
+                            },
+                            "calibration_ref": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "not_applicable_reason": {
+                              "const": null
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "if": {
+                          "properties": {
+                            "disposition": {
+                              "const": "not_applicable"
+                            }
+                          },
+                          "required": [
+                            "disposition"
+                          ]
+                        },
+                        "then": {
+                          "properties": {
+                            "not_applicable_reason": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          }
+                        }
+                      }
+                    ]
                   },
                   "sources": {
                     "items": {
