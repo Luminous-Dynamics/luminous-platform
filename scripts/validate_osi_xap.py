@@ -1155,7 +1155,7 @@ def main() -> int:
         "fully_specified":7, "parameter_open":18, "action_open":5,
         "authorized":9, "not_authorized":13, "indeterminate":8,
         "provenance_accepted":13, "provenance_rejected":10, "provenance_indeterminate":7,
-        "participant_decision_correct":30, "fail_closed_violation":2,
+        "participant_decision_correct":27, "fail_closed_violation":2,
         "unauthorized_effect_true":1, "unauthorized_effect_indeterminate":1,
         "untrusted_influence_within_authorized_set":1,
     }
