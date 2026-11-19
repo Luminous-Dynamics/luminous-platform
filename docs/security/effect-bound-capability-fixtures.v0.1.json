@@ -223,11 +223,17 @@
         "nonce_id": "nonce-001",
         "consume_count": 1
       },
-      "effect": "",
-      "evidence_only": "deny",
+      "effect": {
+        "effect_id": "effect-001",
+        "state": "committed",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "matches"
+      },
+      "evidence_only": false,
       "expected": {
-        "decision": false,
-        "reason": false
+        "decision": "deny",
+        "reason": "deny"
       }
     },
     {
@@ -301,11 +307,17 @@
         "nonce_id": "nonce-001",
         "consume_count": 1
       },
-      "effect": "",
-      "evidence_only": "deny",
+      "effect": {
+        "effect_id": "effect-001",
+        "state": "committed",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "matches"
+      },
+      "evidence_only": false,
       "expected": {
-        "decision": false,
-        "reason": false
+        "decision": "deny",
+        "reason": "deny"
       }
     },
     {
@@ -379,11 +391,17 @@
         "nonce_id": "nonce-001",
         "consume_count": 1
       },
-      "effect": "",
-      "evidence_only": "deny",
+      "effect": {
+        "effect_id": "effect-001",
+        "state": "committed",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "matches"
+      },
+      "evidence_only": false,
       "expected": {
-        "decision": false,
-        "reason": false
+        "decision": "deny",
+        "reason": "deny"
       }
     },
     {
@@ -539,11 +557,17 @@
         "nonce_id": "nonce-001",
         "consume_count": 1
       },
-      "effect": "",
-      "evidence_only": "deny",
+      "effect": {
+        "effect_id": "effect-001",
+        "state": "committed",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "matches"
+      },
+      "evidence_only": false,
       "expected": {
-        "decision": false,
-        "reason": false
+        "decision": "deny",
+        "reason": "deny"
       }
     },
     {
@@ -597,11 +621,17 @@
         "nonce_id": "nonce-001",
         "consume_count": 1
       },
-      "effect": "",
-      "evidence_only": "deny",
+      "effect": {
+        "effect_id": "effect-001",
+        "state": "committed",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "matches"
+      },
+      "evidence_only": false,
       "expected": {
-        "decision": false,
-        "reason": false
+        "decision": "deny",
+        "reason": "deny"
       }
     },
     {
@@ -655,11 +685,17 @@
         "nonce_id": "nonce-001",
         "consume_count": 1
       },
-      "effect": "",
-      "evidence_only": "deny",
+      "effect": {
+        "effect_id": "effect-001",
+        "state": "committed",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "matches"
+      },
+      "evidence_only": false,
       "expected": {
-        "decision": false,
-        "reason": false
+        "decision": "deny",
+        "reason": "deny"
       }
     },
     {
@@ -713,11 +749,17 @@
         "nonce_id": "nonce-001",
         "consume_count": 1
       },
-      "effect": "",
-      "evidence_only": "deny",
+      "effect": {
+        "effect_id": "effect-001",
+        "state": "committed",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "matches"
+      },
+      "evidence_only": false,
       "expected": {
-        "decision": false,
-        "reason": false
+        "decision": "deny",
+        "reason": "deny"
       }
     },
     {
@@ -771,11 +813,17 @@
         "nonce_id": "nonce-001",
         "consume_count": 1
       },
-      "effect": "",
-      "evidence_only": "deny",
+      "effect": {
+        "effect_id": "effect-001",
+        "state": "committed",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "matches"
+      },
+      "evidence_only": false,
       "expected": {
-        "decision": false,
-        "reason": false
+        "decision": "deny",
+        "reason": "deny"
       }
     },
     {
@@ -829,11 +877,17 @@
         "nonce_id": "nonce-001",
         "consume_count": 1
       },
-      "effect": "",
-      "evidence_only": "indeterminate",
+      "effect": {
+        "effect_id": "effect-001",
+        "state": "committed",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "matches"
+      },
+      "evidence_only": false,
       "expected": {
-        "decision": false,
-        "reason": false
+        "decision": "indeterminate",
+        "reason": "indeterminate"
       }
     },
     {
@@ -896,8 +950,8 @@
       },
       "evidence_only": false,
       "expected": {
-        "decision": "",
-        "reason": ""
+        "decision": "deny",
+        "reason": "deny"
       }
     },
     {
@@ -937,8 +991,8 @@
       },
       "evidence_only": true,
       "expected": {
-        "decision": "",
-        "reason": ""
+        "decision": "deny",
+        "reason": "deny"
       }
     },
     {
@@ -1001,8 +1055,8 @@
       },
       "evidence_only": false,
       "expected": {
-        "decision": "",
-        "reason": ""
+        "decision": "reconcile_same_attempt",
+        "reason": "reconcile_same_attempt"
       }
     },
     {
@@ -1056,11 +1110,17 @@
         "nonce_id": "nonce-001",
         "consume_count": 1
       },
-      "effect": "",
-      "evidence_only": "deny",
+      "effect": {
+        "effect_id": "effect-001",
+        "state": "committed",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "matches"
+      },
+      "evidence_only": false,
       "expected": {
-        "decision": false,
-        "reason": false
+        "decision": "deny",
+        "reason": "deny"
       }
     },
     {
@@ -1114,12 +1174,19 @@
         "nonce_id": "nonce-001",
         "consume_count": 1
       },
-      "effect": "",
-      "evidence_only": "deny",
+      "effect": {
+        "effect_id": "effect-001",
+        "state": "committed",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "matches"
+      },
+      "evidence_only": false,
       "expected": {
-        "decision": false,
-        "reason": false
+        "decision": "deny",
+        "reason": "deny"
       }
     }
-  ]
+  ],
+  "fixture_count": 17
 }
