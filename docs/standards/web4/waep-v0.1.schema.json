@@ -220,7 +220,10 @@
             "independent_observation",
             "evidence_independence",
             "lifecycle_accountability",
-            "other"
+            "other",
+            "branch_scoped_containment",
+            "purpose_bound_termination",
+            "human_impact_recovery"
           ]
         },
         "statement": {
@@ -335,7 +338,10 @@
                   "independent_observer",
                   "independent_verifier",
                   "control_plane",
-                  "data_plane"
+                  "data_plane",
+                  "branch_containment_enforcer",
+                  "lifecycle_controller",
+                  "recovery_executor"
                 ]
               },
               "owner": {
@@ -439,7 +445,11 @@
                   "physical_effect",
                   "postcondition",
                   "reconciliation",
-                  "other"
+                  "other",
+                  "containment_transition",
+                  "lifecycle_transition",
+                  "deprovisioning",
+                  "human_outcome"
                 ]
               },
               "independent_of_agent": {
@@ -672,7 +682,11 @@
                   "rejected",
                   "outcome_unknown",
                   "independently_observed",
-                  "reconciled"
+                  "reconciled",
+                  "remedy_authorized",
+                  "remedy_completed",
+                  "partially_compensated",
+                  "not_compensable"
                 ]
               }
             },
@@ -1506,6 +1520,192 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "claim"
+        ],
+        "properties": {
+          "claim": {
+            "required": [
+              "property"
+            ],
+            "properties": {
+              "property": {
+                "const": "effective_least_privilege"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "claim"
+        ],
+        "properties": {
+          "claim": {
+            "required": [
+              "authority_trajectory"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "claim"
+        ],
+        "properties": {
+          "claim": {
+            "required": [
+              "property"
+            ],
+            "properties": {
+              "property": {
+                "const": "complete_mediation"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "claim"
+        ],
+        "properties": {
+          "claim": {
+            "required": [
+              "route_inventory"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "claim"
+        ],
+        "properties": {
+          "claim": {
+            "required": [
+              "property"
+            ],
+            "properties": {
+              "property": {
+                "const": "delegation_containment"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "claim"
+        ],
+        "properties": {
+          "claim": {
+            "required": [
+              "delegation_chain"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "claim"
+        ],
+        "properties": {
+          "claim": {
+            "required": [
+              "property"
+            ],
+            "properties": {
+              "property": {
+                "const": "branch_scoped_containment"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "claim"
+        ],
+        "properties": {
+          "claim": {
+            "required": [
+              "branch_containment"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "claim"
+        ],
+        "properties": {
+          "claim": {
+            "required": [
+              "property"
+            ],
+            "properties": {
+              "property": {
+                "const": "purpose_bound_termination"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "claim"
+        ],
+        "properties": {
+          "claim": {
+            "required": [
+              "lifecycle"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "claim"
+        ],
+        "properties": {
+          "claim": {
+            "required": [
+              "property"
+            ],
+            "properties": {
+              "property": {
+                "const": "human_impact_recovery"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "claim"
+        ],
+        "properties": {
+          "claim": {
+            "required": [
+              "recovery"
+            ]
           }
         }
       }
