@@ -222,7 +222,7 @@
         "fixtures",
         "minItems"
       ],
-      "expected": 17
+      "expected": 20
     }
   ],
   "cases": [
