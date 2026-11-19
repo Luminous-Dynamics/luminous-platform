@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:security:osi-xap-scenarios:0.1",
+  "type": "object",
+  "required": [
+    "profile",
+    "version",
+    "status",
+    "scenario_count",
+    "scenarios"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-osi-xap-scenarios"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "synthetic_research_fixtures"
+    },
+    "scenario_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 25,
+      "items": {
+        "type": "object",
+        "required": [
+          "scenario_id",
+          "kind",
+          "osi_layers",
+          "expected_disposition",
+          "trigger",
+          "required_assertions",
+          "evaluator_must_be_independent",
+          "evidence_classes",
+          "claim_ceiling"
+        ],
+        "properties": {
+          "scenario_id": {
+            "type": "string",
+            "pattern": "^XAP-(?:[0-9]{2}|P[0-9]{2})$"
+          },
+          "kind": {
+            "enum": [
+              "negative",
+              "positive",
+              "ambiguous"
+            ]
+          },
+          "osi_layers": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "oneOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 7
+                },
+                {
+                  "const": "cross_layer"
+                }
+              ]
+            },
+            "uniqueItems": true
+          },
+          "expected_disposition": {
+            "enum": [
+              "allow",
+              "deny",
+              "unknown",
+              "continue_safe_local",
+              "reconcile_same_attempt",
+              "require_new_authority"
+            ]
+          },
+          "trigger": {
+            "type": "string",
+            "minLength": 10
+          },
+          "required_assertions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 5
+            }
+          },
+          "evaluator_must_be_independent": {
+            "const": true
+          },
+          "evidence_classes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "enum": [
+                "policy_decision",
+                "participant_effect_oracle",
+                "observer_evidence",
+                "recovery_state"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "claim_ceiling": {
+            "type": "string",
+            "minLength": 10
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
