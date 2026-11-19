@@ -222,8 +222,8 @@ This evaluator is a static research fixture tool. It does not inspect a live hos
 
 The accompanying machine-readable artifacts are the first testable coverage index for this profile:
 
-- `osi-xap-control-matrix.v0.1.json` and its Draft 2020-12 schema: 33 control records — three for each OSI layer L1–L6, four for L7, and ten cross-layer responsibilities. Each row identifies the OSI layer, X.805 security layer/plane/dimensions, repository owner, implementation/evidence maturity, enforcement points, residual assumptions, qualification tests and claim ceiling.
-- `osi-xap-scenarios.v0.1.json` and its schema: 37 synthetic scenarios — 26 negative and five positive. The corpus includes OT AI prompt/data poisoning, digital-twin drift and unauthorized twin-to-controller synchronization, as well as OT active-scanning safety, monitoring blind spots and shared management/operational infrastructure.
+- `osi-xap-control-matrix.v0.1.json` and its Draft 2020-12 schema: 33 control records — three for each OSI layer L1–L6, four for L7, and eleven cross-layer responsibilities. Each row identifies the OSI layer, X.805 security layer/plane/dimensions, repository owner, implementation/evidence maturity, enforcement points, residual assumptions, qualification tests and claim ceiling.
+- `osi-xap-scenarios.v0.1.json` and its schema: 37 synthetic scenarios — 29 negative and eight positive. The corpus includes OT AI prompt/data poisoning, digital-twin drift and unauthorized twin-to-controller synchronization, as well as OT active-scanning safety, monitoring blind spots and shared management/operational infrastructure.
 - `l2l3-deployment-profile.schema.v0.1.json` and `l2l3-deployment-profile.template.v0.1.json`: a typed exact-scope network inventory/evidence contract. The public template is deliberately empty, `template_only`, `not_assessed`, with unknown discovery/OT separation and no complete-mediation claim.
 - `scripts/validate_osi_xap.py` and `.github/workflows/osi-xap.yml`: test-only Draft 2020-12 schema and static fixture checks. This is build/test tooling, not a production policy engine or network scanner.
 
