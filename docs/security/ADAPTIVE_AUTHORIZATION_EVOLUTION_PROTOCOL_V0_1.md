@@ -2,7 +2,7 @@
 
 **Status:** Research protocol; no harness/stressor experiment has been executed  
 **Date:** 2026-11-19  
-**Tracking:** [OSI/XAP initiative #497](https://github.com/Luminous-Dynamics/luminous-platform/issues/497)
+**Tracking:** [OSI/XAP initiative #497](https://github.com/Luminous-Dynamics/luminous-platform/issues/497) · [Adaptive runner #500](https://github.com/Luminous-Dynamics/luminous-platform/issues/500)
 
 ## 1. New SOTA direction
 
