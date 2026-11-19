@@ -21,17 +21,20 @@
     "allowed_resolver_refs": [],
     "fallback_policy": "unknown",
     "dnssec_validation": "unknown",
-    "plaintext_fallback": true,
+    "plaintext_fallback": null,
     "search_domain_policy": "unknown",
     "unknown_resolver_paths": [],
-    "evidence_refs": []
+    "evidence_refs": [],
+    "mode": "unknown"
   },
   "plane_separation": {
     "management_zone_refs": [],
     "control_zone_refs": [],
     "end_user_zone_refs": [],
     "allowed_cross_plane_flows": [],
-    "unknown_cross_plane_paths": [],
+    "unknown_cross_plane_paths": [
+      "not inventoried"
+    ],
     "evidence_refs": []
   },
   "coverage": {
