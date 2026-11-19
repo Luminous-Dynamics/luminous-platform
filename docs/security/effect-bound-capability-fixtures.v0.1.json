@@ -27,7 +27,18 @@
           "expires_at": "2026-11-19T14:00:00Z",
           "revocation_state": "current",
           "may_delegate": true,
-          "max_delegation_depth": 2
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         }
       ],
       "request": {
@@ -38,7 +49,12 @@
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "policy_epoch": "epoch-7",
         "attempt_id": "attempt-001",
-        "admission_time": "2026-11-19T11:00:00Z"
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
       },
       "permit": {
         "permit_id": "permit-001",
@@ -52,7 +68,10 @@
         "not_before": "2026-11-19T10:59:00Z",
         "expires_at": "2026-11-19T11:05:00Z",
         "nonce_id": "nonce-001",
-        "consume_count": 1
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
       },
       "effect": {
         "effect_id": "effect-001",
@@ -95,7 +114,18 @@
           "expires_at": "2026-11-19T14:00:00Z",
           "revocation_state": "current",
           "may_delegate": true,
-          "max_delegation_depth": 2
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         },
         {
           "grant_id": "grant-child",
@@ -115,7 +145,18 @@
           "expires_at": "2026-11-19T12:00:00Z",
           "revocation_state": "current",
           "may_delegate": true,
-          "max_delegation_depth": 1
+          "max_delegation_depth": 1,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         }
       ],
       "request": {
@@ -126,7 +167,12 @@
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "policy_epoch": "epoch-7",
         "attempt_id": "attempt-001",
-        "admission_time": "2026-11-19T11:00:00Z"
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
       },
       "permit": {
         "permit_id": "permit-001",
@@ -140,7 +186,10 @@
         "not_before": "2026-11-19T10:59:00Z",
         "expires_at": "2026-11-19T11:05:00Z",
         "nonce_id": "nonce-001",
-        "consume_count": 1
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
       },
       "effect": {
         "effect_id": "effect-001",
@@ -183,7 +232,18 @@
           "expires_at": "2026-11-19T14:00:00Z",
           "revocation_state": "current",
           "may_delegate": true,
-          "max_delegation_depth": 2
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         },
         {
           "grant_id": "grant-child",
@@ -204,7 +264,18 @@
           "expires_at": "2026-11-19T12:00:00Z",
           "revocation_state": "current",
           "may_delegate": true,
-          "max_delegation_depth": 1
+          "max_delegation_depth": 1,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         }
       ],
       "request": {
@@ -215,7 +286,12 @@
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "policy_epoch": "epoch-7",
         "attempt_id": "attempt-001",
-        "admission_time": "2026-11-19T11:00:00Z"
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
       },
       "permit": {
         "permit_id": "permit-001",
@@ -229,7 +305,10 @@
         "not_before": "2026-11-19T10:59:00Z",
         "expires_at": "2026-11-19T11:05:00Z",
         "nonce_id": "nonce-001",
-        "consume_count": 1
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
       },
       "effect": {
         "effect_id": null,
@@ -271,7 +350,18 @@
           "expires_at": "2026-11-19T14:00:00Z",
           "revocation_state": "current",
           "may_delegate": true,
-          "max_delegation_depth": 2
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         },
         {
           "grant_id": "grant-child",
@@ -292,7 +382,18 @@
           "expires_at": "2026-11-19T12:00:00Z",
           "revocation_state": "current",
           "may_delegate": true,
-          "max_delegation_depth": 1
+          "max_delegation_depth": 1,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         }
       ],
       "request": {
@@ -303,7 +404,12 @@
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "policy_epoch": "epoch-7",
         "attempt_id": "attempt-001",
-        "admission_time": "2026-11-19T11:00:00Z"
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
       },
       "permit": {
         "permit_id": "permit-001",
@@ -317,7 +423,10 @@
         "not_before": "2026-11-19T10:59:00Z",
         "expires_at": "2026-11-19T11:05:00Z",
         "nonce_id": "nonce-001",
-        "consume_count": 1
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
       },
       "effect": {
         "effect_id": null,
@@ -360,7 +469,18 @@
           "expires_at": "2026-11-19T14:00:00Z",
           "revocation_state": "current",
           "may_delegate": true,
-          "max_delegation_depth": 2
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         },
         {
           "grant_id": "grant-child",
@@ -380,7 +500,18 @@
           "expires_at": "2026-11-19T15:00:00Z",
           "revocation_state": "current",
           "may_delegate": true,
-          "max_delegation_depth": 1
+          "max_delegation_depth": 1,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         }
       ],
       "request": {
@@ -391,7 +522,12 @@
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "policy_epoch": "epoch-7",
         "attempt_id": "attempt-001",
-        "admission_time": "2026-11-19T11:00:00Z"
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
       },
       "permit": {
         "permit_id": "permit-001",
@@ -405,7 +541,10 @@
         "not_before": "2026-11-19T10:59:00Z",
         "expires_at": "2026-11-19T11:05:00Z",
         "nonce_id": "nonce-001",
-        "consume_count": 1
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
       },
       "effect": {
         "effect_id": null,
@@ -448,7 +587,18 @@
           "expires_at": "2026-11-19T14:00:00Z",
           "revocation_state": "current",
           "may_delegate": true,
-          "max_delegation_depth": 2
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         },
         {
           "grant_id": "grant-b",
@@ -468,7 +618,18 @@
           "expires_at": "2026-11-19T14:00:00Z",
           "revocation_state": "current",
           "may_delegate": true,
-          "max_delegation_depth": 2
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         }
       ],
       "request": {
@@ -479,7 +640,12 @@
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "policy_epoch": "epoch-7",
         "attempt_id": "attempt-001",
-        "admission_time": "2026-11-19T11:00:00Z"
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
       },
       "permit": {
         "permit_id": "permit-001",
@@ -493,7 +659,10 @@
         "not_before": "2026-11-19T10:59:00Z",
         "expires_at": "2026-11-19T11:05:00Z",
         "nonce_id": "nonce-001",
-        "consume_count": 1
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
       },
       "effect": {
         "effect_id": "effect-001",
@@ -534,7 +703,18 @@
           "expires_at": "2026-11-19T14:00:00Z",
           "revocation_state": "current",
           "may_delegate": true,
-          "max_delegation_depth": 2
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         },
         {
           "grant_id": "grant-b",
@@ -554,7 +734,18 @@
           "expires_at": "2026-11-19T14:00:00Z",
           "revocation_state": "current",
           "may_delegate": true,
-          "max_delegation_depth": 2
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         }
       ],
       "request": {
@@ -565,7 +756,12 @@
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "policy_epoch": "epoch-7",
         "attempt_id": "attempt-001",
-        "admission_time": "2026-11-19T11:00:00Z"
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
       },
       "permit": {
         "permit_id": "permit-001",
@@ -579,7 +775,10 @@
         "not_before": "2026-11-19T10:59:00Z",
         "expires_at": "2026-11-19T11:05:00Z",
         "nonce_id": "nonce-001",
-        "consume_count": 1
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
       },
       "effect": {
         "effect_id": null,
@@ -622,7 +821,18 @@
           "expires_at": "2026-11-19T14:00:00Z",
           "revocation_state": "current",
           "may_delegate": true,
-          "max_delegation_depth": 2
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         }
       ],
       "request": {
@@ -633,7 +843,12 @@
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "policy_epoch": "epoch-7",
         "attempt_id": "attempt-001",
-        "admission_time": "2026-11-19T11:00:00Z"
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
       },
       "permit": {
         "permit_id": "permit-001",
@@ -647,7 +862,10 @@
         "not_before": "2026-11-19T10:59:00Z",
         "expires_at": "2026-11-19T11:05:00Z",
         "nonce_id": "nonce-001",
-        "consume_count": 1
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
       },
       "effect": {
         "effect_id": null,
@@ -690,7 +908,18 @@
           "expires_at": "2026-11-19T14:00:00Z",
           "revocation_state": "current",
           "may_delegate": true,
-          "max_delegation_depth": 2
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         }
       ],
       "request": {
@@ -701,7 +930,12 @@
         "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
         "policy_epoch": "epoch-7",
         "attempt_id": "attempt-001",
-        "admission_time": "2026-11-19T11:00:00Z"
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
       },
       "permit": {
         "permit_id": "permit-001",
@@ -715,7 +949,10 @@
         "not_before": "2026-11-19T10:59:00Z",
         "expires_at": "2026-11-19T11:05:00Z",
         "nonce_id": "nonce-001",
-        "consume_count": 1
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
       },
       "effect": {
         "effect_id": null,
@@ -758,7 +995,18 @@
           "expires_at": "2026-11-19T14:00:00Z",
           "revocation_state": "current",
           "may_delegate": true,
-          "max_delegation_depth": 2
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         }
       ],
       "request": {
@@ -769,7 +1017,12 @@
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "policy_epoch": "epoch-6",
         "attempt_id": "attempt-001",
-        "admission_time": "2026-11-19T11:00:00Z"
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
       },
       "permit": {
         "permit_id": "permit-001",
@@ -783,7 +1036,10 @@
         "not_before": "2026-11-19T10:59:00Z",
         "expires_at": "2026-11-19T11:05:00Z",
         "nonce_id": "nonce-001",
-        "consume_count": 1
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
       },
       "effect": {
         "effect_id": null,
@@ -826,7 +1082,18 @@
           "expires_at": "2026-11-19T14:00:00Z",
           "revocation_state": "revoked",
           "may_delegate": true,
-          "max_delegation_depth": 2
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         }
       ],
       "request": {
@@ -837,7 +1104,12 @@
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "policy_epoch": "epoch-7",
         "attempt_id": "attempt-001",
-        "admission_time": "2026-11-19T11:00:00Z"
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
       },
       "permit": {
         "permit_id": "permit-001",
@@ -851,7 +1123,10 @@
         "not_before": "2026-11-19T10:59:00Z",
         "expires_at": "2026-11-19T11:05:00Z",
         "nonce_id": "nonce-001",
-        "consume_count": 1
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
       },
       "effect": {
         "effect_id": null,
@@ -894,7 +1169,18 @@
           "expires_at": "2026-11-19T14:00:00Z",
           "revocation_state": "unknown",
           "may_delegate": true,
-          "max_delegation_depth": 2
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         }
       ],
       "request": {
@@ -905,7 +1191,12 @@
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "policy_epoch": "epoch-7",
         "attempt_id": "attempt-001",
-        "admission_time": "2026-11-19T11:00:00Z"
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
       },
       "permit": {
         "permit_id": "permit-001",
@@ -919,7 +1210,10 @@
         "not_before": "2026-11-19T10:59:00Z",
         "expires_at": "2026-11-19T11:05:00Z",
         "nonce_id": "nonce-001",
-        "consume_count": 1
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
       },
       "effect": {
         "effect_id": null,
@@ -962,7 +1256,18 @@
           "expires_at": "2026-11-19T14:00:00Z",
           "revocation_state": "current",
           "may_delegate": true,
-          "max_delegation_depth": 2
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         }
       ],
       "request": {
@@ -973,7 +1278,12 @@
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "policy_epoch": "epoch-7",
         "attempt_id": "attempt-001",
-        "admission_time": "2026-11-19T11:00:00Z"
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
       },
       "permit": {
         "permit_id": "permit-001",
@@ -987,7 +1297,10 @@
         "not_before": "2026-11-19T10:59:00Z",
         "expires_at": "2026-11-19T11:05:00Z",
         "nonce_id": "nonce-001",
-        "consume_count": 2
+        "consume_count": 2,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
       },
       "effect": {
         "effect_id": null,
@@ -1018,7 +1331,12 @@
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "policy_epoch": "epoch-7",
         "attempt_id": "attempt-001",
-        "admission_time": "2026-11-19T11:00:00Z"
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
       },
       "permit": {
         "permit_id": "permit-001",
@@ -1032,7 +1350,10 @@
         "not_before": "2026-11-19T10:59:00Z",
         "expires_at": "2026-11-19T11:05:00Z",
         "nonce_id": "nonce-001",
-        "consume_count": 1
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
       },
       "effect": {
         "effect_id": null,
@@ -1075,7 +1396,18 @@
           "expires_at": "2026-11-19T14:00:00Z",
           "revocation_state": "current",
           "may_delegate": true,
-          "max_delegation_depth": 2
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         }
       ],
       "request": {
@@ -1086,7 +1418,12 @@
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "policy_epoch": "epoch-7",
         "attempt_id": "attempt-001",
-        "admission_time": "2026-11-19T11:00:00Z"
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
       },
       "permit": {
         "permit_id": "permit-001",
@@ -1100,7 +1437,10 @@
         "not_before": "2026-11-19T10:59:00Z",
         "expires_at": "2026-11-19T11:05:00Z",
         "nonce_id": "nonce-001",
-        "consume_count": 1
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
       },
       "effect": {
         "effect_id": null,
@@ -1143,7 +1483,18 @@
           "expires_at": "2026-11-19T14:00:00Z",
           "revocation_state": "current",
           "may_delegate": true,
-          "max_delegation_depth": 2
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         }
       ],
       "request": {
@@ -1154,7 +1505,12 @@
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "policy_epoch": "epoch-7",
         "attempt_id": "attempt-001",
-        "admission_time": "2026-11-19T11:00:00Z"
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
       },
       "permit": {
         "permit_id": "permit-001",
@@ -1168,7 +1524,10 @@
         "not_before": "2026-11-19T10:59:00Z",
         "expires_at": "2026-11-19T11:05:00Z",
         "nonce_id": "nonce-001",
-        "consume_count": 1
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
       },
       "effect": {
         "effect_id": null,
@@ -1211,7 +1570,18 @@
           "expires_at": "2026-11-19T14:00:00Z",
           "revocation_state": "current",
           "may_delegate": true,
-          "max_delegation_depth": 2
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         }
       ],
       "request": {
@@ -1222,7 +1592,12 @@
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "policy_epoch": "epoch-7",
         "attempt_id": "attempt-001",
-        "admission_time": "2026-11-19T11:00:00Z"
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
       },
       "permit": {
         "permit_id": "permit-001",
@@ -1236,7 +1611,10 @@
         "not_before": "2026-11-19T10:59:00Z",
         "expires_at": "2026-11-19T10:59:00Z",
         "nonce_id": "nonce-001",
-        "consume_count": 1
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
       },
       "effect": {
         "effect_id": null,
@@ -1279,7 +1657,18 @@
           "expires_at": "2026-11-19T14:00:00Z",
           "revocation_state": "revoked",
           "may_delegate": true,
-          "max_delegation_depth": 2
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         }
       ],
       "request": {
@@ -1290,7 +1679,12 @@
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "policy_epoch": "epoch-7",
         "attempt_id": "attempt-001",
-        "admission_time": "2026-11-19T11:00:00Z"
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
       },
       "permit": {
         "permit_id": "permit-001",
@@ -1304,7 +1698,10 @@
         "not_before": "2026-11-19T10:59:00Z",
         "expires_at": "2026-11-19T11:05:00Z",
         "nonce_id": "nonce-001",
-        "consume_count": 1
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
       },
       "effect": {
         "effect_id": "effect-cap-018-revoked-grant-committed",
@@ -1347,7 +1744,18 @@
           "expires_at": "2026-11-19T14:00:00Z",
           "revocation_state": "unknown",
           "may_delegate": true,
-          "max_delegation_depth": 2
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         }
       ],
       "request": {
@@ -1358,7 +1766,12 @@
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "policy_epoch": "epoch-7",
         "attempt_id": "attempt-001",
-        "admission_time": "2026-11-19T11:00:00Z"
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
       },
       "permit": {
         "permit_id": "permit-001",
@@ -1372,7 +1785,10 @@
         "not_before": "2026-11-19T10:59:00Z",
         "expires_at": "2026-11-19T11:05:00Z",
         "nonce_id": "nonce-001",
-        "consume_count": 1
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
       },
       "effect": {
         "effect_id": "effect-cap-019-unknown-grant-committed",
@@ -1415,7 +1831,18 @@
           "expires_at": "2026-11-19T14:00:00Z",
           "revocation_state": "current",
           "may_delegate": true,
-          "max_delegation_depth": 2
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
         }
       ],
       "request": {
@@ -1426,7 +1853,12 @@
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "policy_epoch": "epoch-7",
         "attempt_id": "attempt-001",
-        "admission_time": "2026-11-19T11:00:00Z"
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
       },
       "permit": {
         "permit_id": "permit-001",
@@ -1440,7 +1872,10 @@
         "not_before": "2026-11-19T10:59:00Z",
         "expires_at": "2026-11-19T11:05:00Z",
         "nonce_id": "nonce-001",
-        "consume_count": 1
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
       },
       "effect": {
         "effect_id": null,
@@ -1458,7 +1893,857 @@
         "effect_disposition": "none"
       },
       "participant_decision": "deny"
+    },
+    {
+      "scenario_id": "CAP-021-PARTICIPANT-OUTSIDE-GRANT",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:other-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:other-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:other-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed"
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny"
+    },
+    {
+      "scenario_id": "CAP-022-PURPOSE-MISMATCH",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:emergency",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:emergency",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed"
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny"
+    },
+    {
+      "scenario_id": "CAP-023-CONTEXT-MISMATCH",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:production",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:production",
+        "requested_cost_microusd": 1000
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed"
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny"
+    },
+    {
+      "scenario_id": "CAP-024-EFFECT-BUDGET-EXHAUSTED",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 10
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed"
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny"
+    },
+    {
+      "scenario_id": "CAP-025-COST-BUDGET-EXCEEDED",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1001,
+        "effect_count_before": 0
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1001
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed"
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny"
+    },
+    {
+      "scenario_id": "CAP-026-CHILD-PARTICIPANT-WIDEN",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        },
+        {
+          "grant_id": "grant-child",
+          "principal_id": "principal:owner",
+          "issuer_id": "workload:agent-1",
+          "subject_id": "workload:child-2",
+          "parent_grant_id": "grant-root",
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 1,
+          "participant_refs": [
+            "participant:router-api",
+            "participant:other-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:child-2",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:other-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:child-2",
+        "participant_id": "participant:other-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:other-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed"
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny"
+    },
+    {
+      "scenario_id": "CAP-027-CHILD-EFFECT-BUDGET-WIDEN",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 5,
+          "max_cost_microusd": 1000000
+        },
+        {
+          "grant_id": "grant-child",
+          "principal_id": "principal:owner",
+          "issuer_id": "workload:agent-1",
+          "subject_id": "workload:child-2",
+          "parent_grant_id": "grant-root",
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 1,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 6,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:child-2",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:child-2",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed"
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny"
+    },
+    {
+      "scenario_id": "CAP-028-PERMIT-PARTICIPANT-SUBSTITUTION",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:other-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:other-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed"
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny"
+    },
+    {
+      "scenario_id": "CAP-029-PERMIT-PURPOSE-CONTEXT-MISMATCH",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "effect_count_before": 0
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:emergency",
+        "context_ref": "context:production",
+        "requested_cost_microusd": 1000
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed"
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny"
     }
   ],
-  "fixture_count": 20
+  "fixture_count": 29
 }
