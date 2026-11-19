@@ -454,6 +454,36 @@ def main() -> int:
         raise SystemExit("empty adaptive evolution template must not claim experiment results")
     print("ADAPTIVE_EVOLUTION_TEMPLATE=VALID_ONLY_HARNESS_AND_STRESSOR_MUTABLE")
 
+
+    adaptive_schema = load(SEC / "adaptive-authorization-evolution.schema.v0.1.json")
+    adaptive_record = load(SEC / "adaptive-authorization-evolution.template.v0.1.json")
+    Draft202012Validator.check_schema(adaptive_schema)
+    adaptive_errors = sorted(
+        Draft202012Validator(adaptive_schema, format_checker=FormatChecker()).iter_errors(adaptive_record),
+        key=lambda err: tuple(str(x) for x in err.absolute_path),
+    )
+    if adaptive_errors:
+        for err in adaptive_errors:
+            loc = "/".join(str(x) for x in err.absolute_path) or "<root>"
+            print(f"adaptive-authorization-evolution.template.v0.1.json:{loc}: {err.message}", file=sys.stderr)
+        raise SystemExit(f"adaptive authorization template: {len(adaptive_errors)} schema error(s)")
+    if adaptive_record["status"] != "template_only":
+        raise SystemExit("adaptive evolution record must remain template_only")
+    boundary = adaptive_record["mutation_boundary"]
+    if not boundary["harness_mutable"] or not boundary["stressor_mutable"]:
+        raise SystemExit("only harness and stressor may be mutable")
+    frozen_flags = [key for key in boundary if key not in {"harness_mutable", "stressor_mutable"}]
+    if any(boundary[key] is not False for key in frozen_flags):
+        raise SystemExit("an evaluator or trust-anchor input is mutable")
+    if any(value is not None for value in adaptive_record["frozen_inputs"].values()):
+        raise SystemExit("empty adaptive template unexpectedly binds frozen experiment inputs")
+    promotion = adaptive_record["promotion_rule"]
+    if promotion["incomplete_execution_promotable"] or not promotion["oracle_change_invalidates_run"]:
+        raise SystemExit("unsafe adaptive stressor promotion rule")
+    if adaptive_record["evaluation"]["confidence_method"] != "not_set" or adaptive_record["evaluation"]["runs"]:
+        raise SystemExit("adaptive template must not claim experiment results")
+    print("ADAPTIVE_EVOLUTION_TEMPLATE=VALID_ONLY_HARNESS_AND_STRESSOR_MUTABLE")
+
     print("L2L3_TEMPLATE=VALID_UNASSESSED ACTIVE_SCAN=UNKNOWN OT_SEPARATION=UNKNOWN")
 
     print(f"OSI_XAP_SCHEMA=Draft2020-12_CHECKED CONTROLS={total_controls} SCENARIOS={total_scenarios}")
