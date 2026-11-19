@@ -525,6 +525,247 @@ def evaluate_effect_capability_fixture(fixture):
         "effect_disposition": effect_disposition,
     }
 
+def evaluate_origin_intent_fixture(fixture, capability_results):
+    """Evaluate user intent, source provenance and effect authority separately."""
+    intent = fixture["intent"]
+    request = fixture["request"]
+    manifest = fixture["manifest"]
+    effect = fixture["effect"]
+    authority_ref = fixture["authority_fixture_ref"]
+    if authority_ref not in capability_results:
+        raise SystemExit(f"{fixture['case_id']}: missing effect authority fixture {authority_ref}")
+    authority_state = capability_results[authority_ref]["authorization_state"]
+
+    def same_action(left, right):
+        fields = ("operation", "target_ref", "participant_id", "purpose_ref", "context_ref")
+        return all(left.get(field) == right.get(field) for field in fields)
+
+    intent_state = "compliant"
+    provenance_state = "accepted"
+    untrusted_influence = False
+
+    if (
+        intent["principal_id"] != request["principal_id"]
+        or manifest["principal_id"] != intent["principal_id"]
+        or manifest["intent_id"] != intent["intent_id"]
+    ):
+        intent_state = "not_compliant"
+
+    if intent["precision"] == "action_open":
+        in_authorized_set = any(
+            same_action(action, request["selected_action"])
+            for action in intent["authorized_action_set"]
+        )
+        if not intent["authorized_action_set"]:
+            intent_state = "indeterminate"
+        elif not in_authorized_set:
+            intent_state = "not_compliant"
+
+        if (
+            manifest["action_selection_origin"] == "unknown"
+            or manifest["action_source_class"] == "unknown"
+            or not manifest["action_source_receipt_verified"]
+        ):
+            intent_state = "indeterminate"
+            if provenance_state == "accepted":
+                provenance_state = "indeterminate"
+        elif manifest["action_selection_origin"] == "untrusted_content":
+            if manifest["action_source_class"] != "attacker_writable" or not manifest["action_source_ref"]:
+                intent_state = "not_compliant"
+            elif in_authorized_set:
+                # Untrusted content may influence choice among the finite
+                # principal-authorized set, but cannot add a new action.
+                untrusted_influence = True
+        elif manifest["action_selection_origin"] == "agent_selected_from_finite_set":
+            if (
+                manifest["action_source_class"] != "agent_derived"
+                or intent["principal_id"] not in manifest["action_source_derived_from_refs"]
+            ):
+                intent_state = "not_compliant"
+        elif manifest["action_selection_origin"] == "principal_explicit":
+            if (
+                manifest["action_source_class"] != "principal_input"
+                or manifest["action_source_ref"] != intent["principal_id"]
+            ):
+                intent_state = "not_compliant"
+        else:
+            intent_state = "not_compliant"
+    else:
+        if not same_action(intent["fixed_action"], request["selected_action"]):
+            intent_state = "not_compliant"
+        if (
+            manifest["action_selection_origin"] == "unknown"
+            or manifest["action_source_class"] == "unknown"
+            or not manifest["action_source_receipt_verified"]
+        ):
+            intent_state = "indeterminate"
+            if provenance_state == "accepted":
+                provenance_state = "indeterminate"
+        elif (
+            manifest["action_selection_origin"] != "principal_explicit"
+            or manifest["action_source_class"] != "principal_input"
+            or manifest["action_source_ref"] != intent["principal_id"]
+        ):
+            intent_state = "not_compliant"
+
+    # Bind the manifest to the exact principal, intent and request.
+    if (
+        request["origin_manifest_digest"] != manifest["manifest_digest"]
+        or manifest["request_digest"] != request["request_digest"]
+        or manifest["intent_id"] != intent["intent_id"]
+        or manifest["principal_id"] != intent["principal_id"]
+    ):
+        provenance_state = "rejected"
+    if not manifest["collector_verified"] or not manifest["action_source_receipt_verified"]:
+        if provenance_state == "accepted":
+            provenance_state = "indeterminate"
+
+    request_parameters = {item["name"]: item for item in request["action_parameters"]}
+    manifest_parameters = {item["name"]: item for item in manifest["parameters"]}
+    policies = {item["name"]: item for item in intent["parameter_policies"]}
+    if (
+        len(request_parameters) != len(request["action_parameters"])
+        or len(manifest_parameters) != len(manifest["parameters"])
+        or set(request_parameters) != set(manifest_parameters)
+    ):
+        provenance_state = "rejected"
+
+    # Source receipts are indexed across the complete manifest so derived
+    # values can be resolved recursively through agent/tool handoffs.
+    source_by_ref = {}
+    conflicting_source_refs = set()
+    for parameter in manifest["parameters"]:
+        for source in parameter["sources"]:
+            source_ref = source["source_ref"]
+            if source_ref in source_by_ref:
+                if source_by_ref[source_ref] != source:
+                    conflicting_source_refs.add(source_ref)
+            else:
+                source_by_ref[source_ref] = source
+    if conflicting_source_refs and provenance_state == "accepted":
+        provenance_state = "indeterminate"
+
+    def check_source(source, policy, visiting=frozenset()):
+        source_ref = source["source_ref"]
+        source_class = source["source_class"]
+        if source_class == "attacker_writable":
+            return "rejected"
+        if source_class == "unknown" or not source["receipt_verified"]:
+            return "indeterminate"
+        if source_class not in policy["allowed_source_classes"]:
+            return "rejected"
+        if source_class == "agent_derived":
+            if not source["derived_from_refs"] or source_ref in visiting:
+                return "indeterminate"
+            next_visiting = visiting.union({source_ref})
+            result = "accepted"
+            for parent_ref in source["derived_from_refs"]:
+                if parent_ref not in policy["allowed_source_refs"]:
+                    return "rejected"
+                parent_source = source_by_ref.get(parent_ref)
+                if parent_source is None:
+                    return "indeterminate"
+                parent_result = check_source(parent_source, policy, next_visiting)
+                if parent_result == "rejected":
+                    return "rejected"
+                if parent_result == "indeterminate":
+                    result = "indeterminate"
+            return result
+        if source_ref not in policy["allowed_source_refs"]:
+            return "rejected"
+        return "accepted"
+
+    for parameter_name, requested in request_parameters.items():
+        policy = policies.get(parameter_name)
+        manifested = manifest_parameters.get(parameter_name)
+        if policy is None or manifested is None:
+            provenance_state = "rejected"
+            continue
+        if requested["value_digest"] != manifested["value_digest"]:
+            provenance_state = "rejected"
+            continue
+        numeric_value = requested["numeric_value"]
+        if policy["value_allowlist"] and str(numeric_value if numeric_value is not None else "") not in policy["value_allowlist"]:
+            provenance_state = "rejected"
+        if numeric_value is not None:
+            if policy["min_numeric_value"] is not None and numeric_value < policy["min_numeric_value"]:
+                provenance_state = "rejected"
+            if policy["max_numeric_value"] is not None and numeric_value > policy["max_numeric_value"]:
+                provenance_state = "rejected"
+        if not manifested["lineage_complete"] and provenance_state == "accepted":
+            provenance_state = "indeterminate"
+        if not manifested["sources"] and provenance_state == "accepted":
+            provenance_state = "indeterminate"
+        for source in manifested["sources"]:
+            source_state = check_source(source, policy)
+            if source_state == "rejected":
+                provenance_state = "rejected"
+            elif source_state == "indeterminate" and provenance_state == "accepted":
+                provenance_state = "indeterminate"
+
+    for policy in intent["parameter_policies"]:
+        if policy["required"] and policy["name"] not in request_parameters:
+            provenance_state = "rejected"
+
+    # A manifest can qualify provenance, but cannot grant authority.
+    if (
+        authority_state == "not_authorized"
+        or intent_state == "not_compliant"
+        or provenance_state == "rejected"
+    ):
+        authorization_state = "not_authorized"
+    elif (
+        authority_state == "indeterminate"
+        or intent_state == "indeterminate"
+        or provenance_state == "indeterminate"
+    ):
+        authorization_state = "indeterminate"
+    else:
+        authorization_state = "authorized"
+
+    participant_decision_correct = (
+        fixture["participant_decision"] == "allow"
+        if authorization_state == "authorized"
+        else fixture["participant_decision"] == "deny"
+    )
+    fail_closed_violation = (
+        authorization_state != "authorized"
+        and (
+            fixture["participant_decision"] != "deny"
+            or effect["state"] in {"committed", "partially_committed"}
+        )
+    )
+    if (
+        authorization_state == "not_authorized"
+        and effect["state"] in {"committed", "partially_committed"}
+    ):
+        unauthorized_effect = "true"
+    elif (
+        authorization_state == "indeterminate"
+        and effect["state"] in {"committed", "partially_committed", "unknown"}
+    ):
+        unauthorized_effect = "indeterminate"
+    elif authorization_state == "not_authorized" and effect["state"] == "unknown":
+        unauthorized_effect = "indeterminate"
+    else:
+        unauthorized_effect = "false"
+
+    effect_disposition = (
+        "reconcile_same_attempt" if effect["state"] == "unknown" else effect["state"]
+    )
+    return {
+        "intent_state": intent_state,
+        "provenance_state": provenance_state,
+        "authorization_state": authorization_state,
+        "untrusted_influence_within_authorized_set": untrusted_influence,
+        "participant_decision_correct": participant_decision_correct,
+        "fail_closed_violation": fail_closed_violation,
+        "unauthorized_effect": unauthorized_effect,
+        "task_state": fixture["task_oracle"]["state"],
+        "effect_disposition": effect_disposition,
+    }
+
+
 def main() -> int:
     files = [
         ("osi-xap-control-matrix.schema.v0.1.json",
@@ -865,6 +1106,61 @@ def main() -> int:
     if len(capability_ids) != 29 or capability_suite["fixture_count"] != 29 or capability_counts != expected_counts:
         raise SystemExit(f"unexpected effect-bound capability results: {capability_counts}")
     print(f"EFFECT_BOUND_CAPABILITY_FIXTURES=PASS {capability_counts}")
+
+    origin_schema = load(SEC / "origin-bound-intent-provenance.schema.v0.1.json")
+    origin_suite = load(SEC / "origin-bound-intent-provenance.fixtures.v0.1.json")
+    Draft202012Validator.check_schema(origin_schema)
+    origin_errors = sorted(
+        Draft202012Validator(origin_schema, format_checker=FormatChecker()).iter_errors(origin_suite),
+        key=lambda err: tuple(str(x) for x in err.absolute_path),
+    )
+    if origin_errors:
+        for err in origin_errors:
+            loc = "/".join(str(x) for x in err.absolute_path) or "<root>"
+            print(f"origin-bound-intent-provenance.fixtures.v0.1.json:{loc}: {err.message}", file=sys.stderr)
+        raise SystemExit(f"origin-bound intent provenance fixtures: {len(origin_errors)} schema error(s)")
+    origin_ids = [fixture["case_id"] for fixture in origin_suite["fixtures"]]
+    if len(origin_ids) != len(set(origin_ids)):
+        raise SystemExit("duplicate origin-bound intent provenance case IDs")
+    capability_results = {
+        fixture["scenario_id"]: evaluate_effect_capability_fixture(fixture)
+        for fixture in capability_suite["fixtures"]
+    }
+    origin_counts = {
+        "fully_specified":0, "parameter_open":0, "action_open":0,
+        "authorized":0, "not_authorized":0, "indeterminate":0,
+        "provenance_accepted":0, "provenance_rejected":0, "provenance_indeterminate":0,
+        "participant_decision_correct":0, "fail_closed_violation":0,
+        "unauthorized_effect_true":0, "unauthorized_effect_indeterminate":0,
+        "untrusted_influence_within_authorized_set":0,
+    }
+    for fixture in origin_suite["fixtures"]:
+        actual = evaluate_origin_intent_fixture(fixture, capability_results)
+        expected = fixture["expected"]
+        if actual != expected:
+            raise SystemExit(
+                f"{fixture['case_id']}: expected {expected}, got {actual}"
+            )
+        origin_counts[fixture["intent"]["precision"]] += 1
+        origin_counts[actual["authorization_state"]] += 1
+        origin_counts[f"provenance_{actual['provenance_state']}"] += 1
+        origin_counts["participant_decision_correct"] += int(actual["participant_decision_correct"])
+        origin_counts["fail_closed_violation"] += int(actual["fail_closed_violation"])
+        origin_counts["unauthorized_effect_true"] += int(actual["unauthorized_effect"] == "true")
+        origin_counts["unauthorized_effect_indeterminate"] += int(actual["unauthorized_effect"] == "indeterminate")
+        origin_counts["untrusted_influence_within_authorized_set"] += int(actual["untrusted_influence_within_authorized_set"])
+    expected_origin_counts = {
+        "fully_specified":7, "parameter_open":18, "action_open":5,
+        "authorized":9, "not_authorized":13, "indeterminate":8,
+        "provenance_accepted":13, "provenance_rejected":10, "provenance_indeterminate":7,
+        "participant_decision_correct":30, "fail_closed_violation":2,
+        "unauthorized_effect_true":1, "unauthorized_effect_indeterminate":1,
+        "untrusted_influence_within_authorized_set":1,
+    }
+    if len(origin_ids) != 30 or origin_counts != expected_origin_counts:
+        raise SystemExit(f"unexpected origin-bound intent/provenance results: {origin_counts}")
+    print(f"ORIGIN_BOUND_INTENT_PROVENANCE_FIXTURES=PASS {origin_counts}")
+
 
     print("L2L3_TEMPLATE=VALID_UNASSESSED ACTIVE_SCAN=UNKNOWN OT_SEPARATION=UNKNOWN")
 
