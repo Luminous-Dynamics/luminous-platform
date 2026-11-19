@@ -695,11 +695,13 @@ def main() -> int:
             raise SystemExit(f"{case['case_id']}: unknown target_type {target}")
         meta_counts[target] += 1
 
-    if meta_counts != {"graph":7,"authorization":10,"schema":10}:
+    if meta_counts != {"graph":7,"authorization":10,"schema":14}:
         raise SystemExit(f"unexpected frozen meta-assurance distribution: {meta_counts}")
     print(f"META_ASSURANCE=PASS {meta_counts} BASE_SCHEMA_GUARDS={len(meta_suite['schema_guards'])}")
 
 
+    effect_contract_schema = load(SEC / "effect-bound-capability-contract.schema.v0.1.json")
+    Draft202012Validator.check_schema(effect_contract_schema)
     capability_schema = load(SEC / "effect-bound-capability-fixtures.schema.v0.1.json")
     capability_suite = load(SEC / "effect-bound-capability-fixtures.v0.1.json")
     Draft202012Validator.check_schema(capability_schema)
