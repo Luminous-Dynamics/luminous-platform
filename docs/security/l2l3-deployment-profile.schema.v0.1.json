@@ -515,6 +515,7 @@
     "dns": {
       "type": "object",
       "required": [
+        "mode",
         "resolvers",
         "allowed_resolver_refs",
         "fallback_policy",
@@ -611,7 +612,10 @@
           ]
         },
         "plaintext_fallback": {
-          "type": "boolean"
+          "type": [
+            "boolean",
+            "null"
+          ]
         },
         "search_domain_policy": {
           "enum": [
@@ -633,9 +637,83 @@
             "type": "string",
             "format": "uri"
           }
+        },
+        "mode": {
+          "enum": [
+            "managed",
+            "static_allowlist",
+            "none",
+            "unknown"
+          ]
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "none"
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          },
+          "then": {
+            "properties": {
+              "resolvers": {
+                "maxItems": 0
+              },
+              "allowed_resolver_refs": {
+                "maxItems": 0
+              },
+              "fallback_policy": {
+                "const": "deny"
+              },
+              "unknown_resolver_paths": {
+                "maxItems": 0
+              },
+              "plaintext_fallback": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "enum": [
+                  "managed",
+                  "static_allowlist"
+                ]
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          },
+          "then": {
+            "properties": {
+              "resolvers": {
+                "minItems": 1
+              },
+              "allowed_resolver_refs": {
+                "minItems": 1
+              },
+              "fallback_policy": {
+                "not": {
+                  "const": "unknown"
+                }
+              },
+              "unknown_resolver_paths": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      ]
     },
     "plane_separation": {
       "type": "object",
@@ -883,8 +961,16 @@
         "properties": {
           "assessment": {
             "properties": {
-              "status": {
-                "const": "qualified_for_declared_scope"
+              "assessor": {
+                "type": "string",
+                "minLength": 2
+              },
+              "assessed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "evidence_refs": {
+                "minItems": 1
               }
             }
           },
@@ -939,8 +1025,138 @@
                 "maxItems": 0
               }
             }
+          },
+          "devices": {
+            "minItems": 1,
+            "items": {
+              "properties": {
+                "vendor": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "model": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "hardware_revision": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "firmware_version": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "evidence_refs": {
+                  "minItems": 1
+                }
+              }
+            }
+          },
+          "zones": {
+            "minItems": 1,
+            "items": {
+              "properties": {
+                "default_ingress": {
+                  "enum": [
+                    "deny",
+                    "allow"
+                  ]
+                },
+                "default_egress": {
+                  "enum": [
+                    "deny",
+                    "allow"
+                  ]
+                },
+                "enforcement_refs": {
+                  "minItems": 1
+                },
+                "evidence_refs": {
+                  "minItems": 1
+                }
+              }
+            }
+          },
+          "interfaces": {
+            "minItems": 1,
+            "items": {
+              "properties": {
+                "inventory_status": {
+                  "const": "verified"
+                },
+                "zone_ref": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "evidence_refs": {
+                  "minItems": 1
+                }
+              }
+            }
+          },
+          "routes": {
+            "minItems": 1,
+            "items": {
+              "properties": {
+                "status": {
+                  "const": "verified"
+                },
+                "disposition": {
+                  "enum": [
+                    "allow",
+                    "deny"
+                  ]
+                },
+                "enforcement_point": {
+                  "type": "string",
+                  "minLength": 2
+                },
+                "evidence_refs": {
+                  "minItems": 1
+                }
+              }
+            }
+          },
+          "dns": {
+            "properties": {
+              "mode": {
+                "enum": [
+                  "managed",
+                  "static_allowlist",
+                  "none"
+                ]
+              },
+              "evidence_refs": {
+                "minItems": 1
+              }
+            }
+          },
+          "plane_separation": {
+            "properties": {
+              "management_zone_refs": {
+                "minItems": 1
+              },
+              "control_zone_refs": {
+                "minItems": 1
+              },
+              "end_user_zone_refs": {
+                "minItems": 1
+              },
+              "unknown_cross_plane_paths": {
+                "maxItems": 0
+              },
+              "evidence_refs": {
+                "minItems": 1
+              }
+            }
           }
-        }
+        },
+        "required": [
+          "devices",
+          "zones",
+          "interfaces",
+          "routes"
+        ]
       }
     }
   ],
