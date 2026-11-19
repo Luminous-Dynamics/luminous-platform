@@ -394,6 +394,120 @@
         "required"
       ],
       "contains": "usage_snapshot"
+    },
+    {
+      "id": "origin-schema-root-closed",
+      "schema_file": "origin-bound-intent-provenance.schema.v0.1.json",
+      "path": [
+        "additionalProperties"
+      ],
+      "expected": false
+    },
+    {
+      "id": "origin-intent-action-open-supported",
+      "schema_file": "origin-bound-intent-provenance.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "intent",
+        "properties",
+        "precision",
+        "enum"
+      ],
+      "contains": "action_open"
+    },
+    {
+      "id": "origin-policy-named-sources-required",
+      "schema_file": "origin-bound-intent-provenance.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "parameter_policy",
+        "required"
+      ],
+      "contains": "allowed_source_refs"
+    },
+    {
+      "id": "origin-policy-source-classes-required",
+      "schema_file": "origin-bound-intent-provenance.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "parameter_policy",
+        "required"
+      ],
+      "contains": "allowed_source_classes"
+    },
+    {
+      "id": "origin-source-attacker-class-explicit",
+      "schema_file": "origin-bound-intent-provenance.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "source",
+        "properties",
+        "source_class",
+        "enum"
+      ],
+      "contains": "attacker_writable"
+    },
+    {
+      "id": "origin-source-unknown-class-explicit",
+      "schema_file": "origin-bound-intent-provenance.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "source",
+        "properties",
+        "source_class",
+        "enum"
+      ],
+      "contains": "unknown"
+    },
+    {
+      "id": "origin-lineage-completeness-required",
+      "schema_file": "origin-bound-intent-provenance.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "provenance_parameter",
+        "required"
+      ],
+      "contains": "lineage_complete"
+    },
+    {
+      "id": "origin-manifest-request-binding-required",
+      "schema_file": "origin-bound-intent-provenance.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "manifest",
+        "required"
+      ],
+      "contains": "request_digest"
+    },
+    {
+      "id": "origin-manifest-collector-verification-required",
+      "schema_file": "origin-bound-intent-provenance.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "manifest",
+        "required"
+      ],
+      "contains": "collector_verified"
+    },
+    {
+      "id": "origin-action-source-receipt-required",
+      "schema_file": "origin-bound-intent-provenance.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "manifest",
+        "required"
+      ],
+      "contains": "action_source_receipt_verified"
+    },
+    {
+      "id": "origin-action-source-lineage-required",
+      "schema_file": "origin-bound-intent-provenance.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "manifest",
+        "required"
+      ],
+      "contains": "action_source_derived_from_refs"
     }
   ],
   "cases": [
@@ -1603,6 +1717,252 @@
         "rejected": true,
         "violated_guard_ids": [
           "effect-fixture-participant-verified-snapshot"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S031-ORIGIN-SCHEMA-ROOT-CLOSED",
+      "target_type": "schema",
+      "fixture_id": "origin-bound-intent-provenance.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "additionalProperties"
+          ],
+          "value": true
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "origin-schema-root-closed"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S032-ORIGIN-INTENT-ACTION-OPEN-SUPPORTED",
+      "target_type": "schema",
+      "fixture_id": "origin-bound-intent-provenance.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "intent",
+            "properties",
+            "precision",
+            "enum",
+            2
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "origin-intent-action-open-supported"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S033-ORIGIN-POLICY-NAMED-SOURCES-REQUIRED",
+      "target_type": "schema",
+      "fixture_id": "origin-bound-intent-provenance.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "parameter_policy",
+            "required",
+            2
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "origin-policy-named-sources-required"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S034-ORIGIN-POLICY-SOURCE-CLASSES-REQUIRED",
+      "target_type": "schema",
+      "fixture_id": "origin-bound-intent-provenance.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "parameter_policy",
+            "required",
+            3
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "origin-policy-source-classes-required"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S035-ORIGIN-SOURCE-ATTACKER-CLASS-EXPLICIT",
+      "target_type": "schema",
+      "fixture_id": "origin-bound-intent-provenance.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "source",
+            "properties",
+            "source_class",
+            "enum",
+            4
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "origin-source-attacker-class-explicit"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S036-ORIGIN-SOURCE-UNKNOWN-CLASS-EXPLICIT",
+      "target_type": "schema",
+      "fixture_id": "origin-bound-intent-provenance.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "source",
+            "properties",
+            "source_class",
+            "enum",
+            5
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "origin-source-unknown-class-explicit"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S037-ORIGIN-LINEAGE-COMPLETENESS-REQUIRED",
+      "target_type": "schema",
+      "fixture_id": "origin-bound-intent-provenance.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "provenance_parameter",
+            "required",
+            3
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "origin-lineage-completeness-required"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S038-ORIGIN-MANIFEST-REQUEST-BINDING-REQUIRED",
+      "target_type": "schema",
+      "fixture_id": "origin-bound-intent-provenance.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "manifest",
+            "required",
+            4
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "origin-manifest-request-binding-required"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S039-ORIGIN-MANIFEST-COLLECTOR-VERIFICATION-REQUIRED",
+      "target_type": "schema",
+      "fixture_id": "origin-bound-intent-provenance.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "manifest",
+            "required",
+            6
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "origin-manifest-collector-verification-required"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S040-ORIGIN-ACTION-SOURCE-RECEIPT-REQUIRED",
+      "target_type": "schema",
+      "fixture_id": "origin-bound-intent-provenance.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "manifest",
+            "required",
+            12
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "origin-action-source-receipt-required"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S041-ORIGIN-ACTION-SOURCE-LINEAGE-REQUIRED",
+      "target_type": "schema",
+      "fixture_id": "origin-bound-intent-provenance.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "manifest",
+            "required",
+            13
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "origin-action-source-lineage-required"
         ]
       }
     }
