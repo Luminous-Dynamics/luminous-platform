@@ -85,16 +85,19 @@ The matrix below is a minimum guide. A claim record should include only the obli
 | Property | Required obligations | Enforcement / observation boundary | Essential negative controls |
 |---|---|---|---|
 | Identity binding | Exact principal, agent/workload and runtime-instance relationship | Identity owner and relying party; source-authenticated identity evidence | Wrong principal/runtime, stale binding, tenant substitution |
-| Complete mediation | Enumerated effect routes; every route crosses the declared enforcement boundary | Actual PEP and protected participant; route inventory and bypass evidence | Direct API, alternate adapter, legacy route, background job, fallback path |
-| Effective least privilege | Compare task-required, granted, available and exercised authority over the full trajectory | Every tool/effect entry and resource; include alternate credentials and delegated actors | Shared tool, argument widening, dynamic tool discovery, alternate credential, adjacent resource |
+| Complete mediation | Enumerated effect routes; every route crosses the declared enforcement boundary | Actual PEP and protected participant; versioned route inventory and bypass evidence | Direct API, alternate adapter, legacy route, background job, fallback path |
+| Effective least privilege | Compare task-required, granted, available and exercised authority at every step; record the effective-scope relation | Every tool/effect entry and resource; include alternate credentials and delegated actors | Shared tool, argument widening, dynamic tool discovery, alternate credential, adjacent resource |
 | Consent / purpose | Principal, data class/fields, recipient, purpose, expiry, withdrawal and policy version | Consent authority plus resource-side enforcement; observed data access/use | Purpose substitution, expiry, withdrawal, cached copy, delegated recipient |
 | Currentness / revocation | Fresh authority/key/policy/consent state at use; declared partition/offline semantics | Every relevant PEP and final participant | Active session, cached token, disconnected participant, child agent, replayed old epoch |
-| Delegation containment | Root/parent/child task and plan binding; scope attenuation; re-delegation rules | Delegation owner, broker and final participant | Scope expansion, actor substitution, sibling task, stale ancestor, provenance erasure |
+| Delegation containment | Root/parent/child task and plan digests, grant reference, hop edges, scope relation and final participant recheck | Delegation owner, broker and final participant | Scope expansion, actor substitution, sibling task, stale ancestor, provenance erasure |
 | Information flow | Data labels/purpose survive reads, transforms, summaries, memory and handoffs | Source, transformation boundary and protected sink | Summarize-then-export, tool/child laundering, omitted lineage |
 | Session composition | State-aware policy over committed, pending and unknown prior effects; atomic/linearizable admission where needed | Session admission and participant-owned state | Parallel overspend, individually valid forbidden composition, pending-effect bypass |
 | One-use effect | Exact request/target/audience/attempt binding and atomic consumption at effect boundary | Participant-owned commit boundary | Replay, duplicate delivery, two-thread race, changed arguments |
 | Reconciliation | Unknown outcomes remain unknown until participant evidence resolves the same logical action | Participant ledger and independent reconciler | Lost acknowledgement, crash after commit, blind retry, compensating action misreported as rollback |
 | Independent observation | Observer identity, control domain, freshness, method and postcondition are explicit | Independent observer; source/lineage graph | Agent self-report, mirrored source, common host/clock/collector, stale observation |
+| Branch-scoped containment | Trigger event, affected delegation branch, upstream/downstream propagation and policy for unaffected branches | Runtime containment enforcer and independently recorded branch transitions | Downstream compromise, hostile context, stale event, overbroad whole-workflow shutdown |
+| Purpose-bound termination | Named owner, documented purpose, end condition, credential state and complete descendant census | Lifecycle owner/control and independent termination/deprovisioning evidence | Orphaned child agent, stale lease, queued job, persisted continuation, undeprovisioned credential |
+| Human-impact recovery | Task outcome after intervention, safe alternative, remedy authority, human burden and irreversible residual harm | Human-facing recovery/approval boundary plus participant/effect observer | Safe halt that strands user, overbroad compensation grant, false rollback claim, irreversible externality |
 | Lifecycle accountability | Owner, purpose, deployment identity, status and deprovisioning lineage are attributable | Owner-governed lifecycle records and downstream relying parties | Orphaned agent, owner transfer, suspended agent, retired identity, stale child runtime |
 
 A row in this table is a test requirement, not a claim that the property is already implemented.
@@ -191,9 +194,9 @@ The Mycelix AGENT-010 gate remains in force for authoritative A2A/MCP/OAuth/AP2 
 
 For this first draft:
 - Schema and example were authored and locally validated against Draft 2020-12 in the authoring environment.
-- The example is synthetic and explicitly `not_executed`.
+- The example is synthetic and explicitly `not_claimed` / `not_executed`. Its empty-corpus digest is the actual SHA-256 of the empty byte string. Synthetic evidence and corpus examples have separate, explicit fixture files and content digests; they are not authentic participant receipts or measured benchmark evidence.
 - No Rust implementation, live agent, participant, broker, observer, runtime campaign, independent review, CI workflow, cross-implementation test or production deployment is claimed.
 - The schema is a reporting contract. It cannot authenticate evidence or prove that a claimed boundary is complete or independent.
 - A WAEP record can make an unsupported claim visible; it does not make the claim true.
 
-Promotion beyond a draft reporting profile requires independent review, exact-head automated checks, adversarial schema/semantic mutation tests, and at least two independently implemented producers/verifiers that agree on the declared profile.
+Promotion beyond a draft reporting profile requires a full Draft 2020-12 validator run on the exact schema head, exact-head automated checks, adversarial schema/semantic mutation tests, independent review, and at least two independently implemented producers/verifiers that agree on the declared profile.
