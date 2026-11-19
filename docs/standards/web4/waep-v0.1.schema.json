@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/docs/standards/web4/waep-v0.1.schema.json",
+  "$id": "urn:luminous:web4:waep:0.1",
   "title": "Luminous Web4 Assurance Evidence Profile v0.1",
   "type": "object",
   "required": [
@@ -1095,7 +1095,8 @@
             "known_descendants",
             "accounted_descendants",
             "unknown_descendants",
-            "inventory_complete"
+            "inventory_complete",
+            "unaccounted_descendants"
           ],
           "properties": {
             "known_descendants": {
@@ -1128,6 +1129,10 @@
                   "other"
                 ]
               }
+            },
+            "unaccounted_descendants": {
+              "type": "integer",
+              "minimum": 0
             }
           },
           "additionalProperties": false
@@ -1523,7 +1528,11 @@
                         "durable_commit",
                         "physical_effect",
                         "postcondition",
-                        "reconciliation"
+                        "reconciliation",
+                        "containment_transition",
+                        "deprovisioning",
+                        "lifecycle_transition",
+                        "human_outcome"
                       ]
                     }
                   }
@@ -1898,6 +1907,9 @@
                       },
                       "unknown_descendants": {
                         "const": 0
+                      },
+                      "unaccounted_descendants": {
+                        "const": 0
                       }
                     }
                   }
@@ -2008,6 +2020,157 @@
                       "required_and_applied",
                       "not_required"
                     ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "claim"
+        ],
+        "properties": {
+          "claim": {
+            "required": [
+              "property",
+              "disposition"
+            ],
+            "properties": {
+              "property": {
+                "const": "purpose_bound_termination"
+              },
+              "disposition": {
+                "const": "supported_within_scope"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "claim": {
+            "properties": {
+              "observations": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "independent_of_agent",
+                    "observation_stage"
+                  ],
+                  "properties": {
+                    "independent_of_agent": {
+                      "const": true
+                    },
+                    "observation_stage": {
+                      "enum": [
+                        "deprovisioning",
+                        "lifecycle_transition"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "claim"
+        ],
+        "properties": {
+          "claim": {
+            "required": [
+              "property",
+              "disposition"
+            ],
+            "properties": {
+              "property": {
+                "const": "human_impact_recovery"
+              },
+              "disposition": {
+                "const": "supported_within_scope"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "claim": {
+            "properties": {
+              "observations": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "independent_of_agent",
+                    "observation_stage"
+                  ],
+                  "properties": {
+                    "independent_of_agent": {
+                      "const": true
+                    },
+                    "observation_stage": {
+                      "enum": [
+                        "human_outcome"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "claim"
+        ],
+        "properties": {
+          "claim": {
+            "required": [
+              "property",
+              "disposition"
+            ],
+            "properties": {
+              "property": {
+                "const": "branch_scoped_containment"
+              },
+              "disposition": {
+                "const": "supported_within_scope"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "claim": {
+            "properties": {
+              "observations": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "independent_of_agent",
+                    "observation_stage"
+                  ],
+                  "properties": {
+                    "independent_of_agent": {
+                      "const": true
+                    },
+                    "observation_stage": {
+                      "enum": [
+                        "containment_transition"
+                      ]
+                    }
                   }
                 }
               }
