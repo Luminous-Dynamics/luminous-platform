@@ -118,7 +118,12 @@
         "expires_at",
         "revocation_state",
         "may_delegate",
-        "max_delegation_depth"
+        "max_delegation_depth",
+        "participant_refs",
+        "purpose_refs",
+        "context_refs",
+        "max_total_effects",
+        "max_cost_microusd"
       ],
       "properties": {
         "grant_id": {
@@ -185,6 +190,41 @@
         "max_delegation_depth": {
           "type": "integer",
           "minimum": 0
+        },
+        "participant_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 2
+          }
+        },
+        "purpose_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 2
+          }
+        },
+        "context_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 2
+          }
+        },
+        "max_total_effects": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_cost_microusd": {
+          "type": "integer",
+          "minimum": 0
         }
       },
       "additionalProperties": false
@@ -199,7 +239,12 @@
         "argument_digest",
         "policy_epoch",
         "attempt_id",
-        "admission_time"
+        "admission_time",
+        "participant_id",
+        "purpose_ref",
+        "context_ref",
+        "requested_cost_microusd",
+        "effect_count_before"
       ],
       "properties": {
         "principal_id": {
@@ -225,6 +270,26 @@
         },
         "admission_time": {
           "$ref": "#/$defs/timestamp"
+        },
+        "participant_id": {
+          "type": "string",
+          "minLength": 2
+        },
+        "purpose_ref": {
+          "type": "string",
+          "minLength": 2
+        },
+        "context_ref": {
+          "type": "string",
+          "minLength": 2
+        },
+        "requested_cost_microusd": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "effect_count_before": {
+          "type": "integer",
+          "minimum": 0
         }
       },
       "additionalProperties": false
@@ -243,7 +308,10 @@
         "not_before",
         "expires_at",
         "nonce_id",
-        "consume_count"
+        "consume_count",
+        "purpose_ref",
+        "context_ref",
+        "requested_cost_microusd"
       ],
       "properties": {
         "permit_id": {
@@ -280,6 +348,18 @@
           "type": "string"
         },
         "consume_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "purpose_ref": {
+          "type": "string",
+          "minLength": 2
+        },
+        "context_ref": {
+          "type": "string",
+          "minLength": 2
+        },
+        "requested_cost_microusd": {
           "type": "integer",
           "minimum": 0
         }
