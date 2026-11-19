@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - "docs/security/osi-xap-*"
+      - "docs/security/xap-meta-assurance.*"
+      - "docs/security/XAP_META_ASSURANCE_V0_1.md"
       - "docs/security/agent-authorization-assurance.*"
       - "docs/security/adaptive-authorization-evolution.*"
       - "docs/security/l2l3-deployment-profile.*"
