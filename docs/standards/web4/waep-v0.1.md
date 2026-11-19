@@ -144,6 +144,19 @@ Security failures are non-compensatory. Do not average an unauthorized committed
 - 100% of uncovered/unknown effect routes are disclosed; no complete-mediation claim while unexplained routes remain.
 - Performance targets are set only after the safety and correctness gates are preserved; compare with matched published baselines, not unrelated headline numbers.
 
+## 7.1 Lifecycle, containment and human-outcome assurance
+
+The current field discussion identifies three gaps that an authorization-only benchmark can miss.
+
+**Purpose-bound termination.** A useful lifecycle claim requires more than an agent ID and a revocation endpoint. Record the accountable owner, documented purpose, declared end condition, current lifecycle state, credential state and a census of descendants/continuations: child agents, delegated capabilities, scheduled jobs, queued effects, remote sessions, service credentials, persistent memory and extensions. A termination claim is not supported while the descendant inventory is incomplete or unknown. The Agent Identity Standards Map's November 2026 snapshot found that an agent lifecycle registry tying identity to owner, purpose and deprovisioning was not covered by a dedicated active standard or working-group draft in its mapped corpus. This is a standards-gap observation, not a reason to create a parallel Mycelix registry.
+
+**Bidirectional, branch-scoped containment.** A downstream child may ingest hostile context or become compromised after delegation. Upstream workflow context may then need reassessment; the affected branch should be restricted or quarantined while unrelated branches remain eligible under their own policy. Measure both propagation directions, branch blast radius, false containment of unaffected work, and containment/release latency. Agent-ZTA (13 November 2026) proposes this separation between path-bounded delegated authority and currently exercisable effective authority. WAEP treats it as a benchmark candidate, not an established SOTA result.
+
+**Human outcome and recovery.** A safely blocked operation is not necessarily a successful user outcome. Record whether the task completed, partially completed, was blocked with a safe alternative, awaits human intervention, or left the user stranded. Measure time and human effort to recover, the availability of an authorized alternative, and irreversible harm. Do not automatically attach broad compensation authority to every capability: a remedy is itself an operation and must have an explicit, narrow, current authorization or separate human approval. Compensation does not erase the original effect, and some harms cannot be reversed. A November 2026 position paper argues for token-bound recovery; WAEP measures that hypothesis against separately scoped remedy authorization and actual user impact rather than assuming one design is correct.
+
+Property-specific records are required for effective least privilege (full trajectory), complete mediation (route inventory), delegation containment (root-linked chain), branch-scoped containment, purpose-bound termination, and human-impact recovery. The schema does not treat a populated record as proof that its values are true; each record still requires evidence at the correct boundary.
+
+Required additional metrics include descendant-inventory completeness, orphaned continuation count, revocation/deprovisioning propagation, affected-branch containment latency, unaffected-branch false-containment rate, user task completion after security intervention, safe-alternative availability, human recovery time, and irreversible residual impact. Keep these separate from unauthorized-effect counts.
 ## 8. Integration boundaries
 
 WAEP is a cross-project reporting profile that consumes existing owner contracts.
@@ -167,6 +180,9 @@ The Mycelix AGENT-010 gate remains in force for authoritative A2A/MCP/OAuth/AP2 
 - **SCITT (RFC 9943):** transparency receipts support verifiable statement registration, not truth or completeness.
 - **OAuth:** use established audience/resource binding, token exchange and rich authorization requests (RFC 8707, RFC 9728, RFC 8693, RFC 9396) where applicable; draft extensions remain drafts.
 - **OpenID SSF / CAEP / RISC:** useful generic security-event and revocation signals; do not imply agent-specific event semantics that the profile does not define.
+- **Agent-ZTA (13 November 2026):** research proposal for bidirectional security-state propagation and branch-scoped containment; compare on matched traces and preserve its stated trust assumptions.
+- **KuppingerCole agent lifecycle governance (17 November 2026):** analyst guidance identifying owner, documented purpose and end condition as lifecycle controls; purpose-bound termination is not a technical standard.
+- **Human-outcome recovery research (14 November 2026):** raises the risk that security halts strand users; compare token-bound remedy proposals with separately scoped remedy authorization, and never count compensation as erasing the original effect.
 - **AuthZEN Authorization API 1.0:** a standardized authorization decision API; it is not a substitute for an effect-bound participant check.
 - **A2A v1.0.1 / MCP 2026-07-28:** task/tool interoperability; discovery and protocol authentication do not create Luminous authority.
 - **OWASP ACS v0.1.4:** portable runtime hooks; profile declarations and Guardian dispositions do not prove strict policy, non-bypassability or actual effect enforcement.
