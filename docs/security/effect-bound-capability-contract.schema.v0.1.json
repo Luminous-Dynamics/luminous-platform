@@ -244,7 +244,6 @@
         "purpose_ref",
         "context_ref",
         "requested_cost_microusd",
-        "effect_count_before",
         "budget_snapshot_digest"
       ],
       "properties": {
@@ -285,10 +284,6 @@
           "minLength": 2
         },
         "requested_cost_microusd": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "effect_count_before": {
           "type": "integer",
           "minimum": 0
         },
