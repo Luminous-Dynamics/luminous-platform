@@ -2706,7 +2706,7 @@
         "forbidden_dispatch_count": 0,
         "conditional_hold_count": 0,
         "pending_count": 0,
-        "first_divergence": "participant",
+        "first_divergence": "unknown",
         "fail_closed_violation_count": 0,
         "unwitnessed_effect_count": 1
       }
