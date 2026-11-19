@@ -167,6 +167,62 @@
         "minItems"
       ],
       "expected": 5
+    },
+    {
+      "id": "effect-capability-root-closed",
+      "schema_file": "effect-bound-capability-contract.schema.v0.1.json",
+      "path": [
+        "additionalProperties"
+      ],
+      "expected": false
+    },
+    {
+      "id": "effect-capability-is-intersection",
+      "schema_file": "effect-bound-capability-contract.schema.v0.1.json",
+      "path": [
+        "properties",
+        "composition_rule",
+        "const"
+      ],
+      "expected": "intersection"
+    },
+    {
+      "id": "effect-evidence-not-authority",
+      "schema_file": "effect-bound-capability-contract.schema.v0.1.json",
+      "path": [
+        "properties",
+        "evidence_is_authority",
+        "const"
+      ],
+      "expected": false
+    },
+    {
+      "id": "effect-capability-entry-closed",
+      "schema_file": "effect-bound-capability-contract.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "capability",
+        "additionalProperties"
+      ],
+      "expected": false
+    },
+    {
+      "id": "effect-fixture-root-closed",
+      "schema_file": "effect-bound-capability-fixtures.schema.v0.1.json",
+      "path": [
+        "additionalProperties"
+      ],
+      "expected": false
+    },
+    {
+      "id": "effect-fixture-floor",
+      "schema_file": "effect-bound-capability-fixtures.schema.v0.1.json",
+      "path": [
+        "properties",
+        "fixtures",
+        "minItems"
+      ],
+      "expected": 17
     }
   ],
   "cases": [
@@ -925,6 +981,94 @@
         "rejected": true,
         "violated_guard_ids": [
           "graph-fixture-floor"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S011-ALLOW-UNION-COMPOSITION",
+      "target_type": "schema",
+      "fixture_id": "effect-bound-capability-contract.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "properties",
+            "composition_rule",
+            "const"
+          ],
+          "value": "union"
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "effect-capability-is-intersection"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S012-EVIDENCE-BECOMES-AUTHORITY",
+      "target_type": "schema",
+      "fixture_id": "effect-bound-capability-contract.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "properties",
+            "evidence_is_authority",
+            "const"
+          ],
+          "value": true
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "effect-evidence-not-authority"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S013-OPEN-CAPABILITY-RECORD",
+      "target_type": "schema",
+      "fixture_id": "effect-bound-capability-contract.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "$defs",
+            "capability",
+            "additionalProperties"
+          ],
+          "value": true
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "effect-capability-entry-closed"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S014-SHRINK-CAPABILITY-FIXTURES",
+      "target_type": "schema",
+      "fixture_id": "effect-bound-capability-fixtures.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "properties",
+            "fixtures",
+            "minItems"
+          ],
+          "value": 0
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "effect-fixture-floor"
         ]
       }
     }
