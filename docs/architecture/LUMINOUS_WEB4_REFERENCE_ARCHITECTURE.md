@@ -470,11 +470,26 @@ The industry is converging on interoperable agent communication and increasingly
 | OWASP ACS v0.1.4 | Portable runtime hooks, Guardian-mediated decisions, inspection and trace surfaces; optional trace, inspection, provenance, crypto and audit profiles | Provide a pinned adapter, but distinguish self-declared upstream profiles from independently tested local behavior. Keep critical enforcement deterministic, independently administered and participant-enforced; a Guardian disposition is not a principal grant. |
 | OpenAI Agents SDK, Microsoft Agent Framework and LangGraph | OpenAI provides handoffs, guardrails, human review, tracing and sandbox agents; Microsoft provides graph/workflow orchestration and approval-required tools; LangGraph provides checkpointed state, persistence, recovery and human-in-the-loop workflows | Integrate as a framework-neutral assurance plane rather than competing on orchestration primitives. Compare matched task utility, unauthorized effects, false denials, evidence independence, recovery correctness, latency and cost. |
 | Enterprise agent platforms | Identity, access management, observability, governance and managed connectors | Interoperate with their identity and logging systems; compete on cross-domain authority attenuation, outcome reconciliation and independent evidence rather than duplicating enterprise IAM. |
-| Agent security benchmarks | AgentDojo, InjecAgent and ASB cover prompt-injection/tool-use attacks; MasDrift, Bounded Agents, AgentCap and EMNLP 2026 work add delegation, capability and provenance risks | Reproduce native results first; compare re-anchoring, strict attenuation, root-anchored task graphs and session composition; then add participant commit ambiguity, independently observed effects and physical-digital divergence. |
+| Agent security benchmarks | AgentDojo, InjecAgent and ASB cover prompt-injection/tool-use attacks; MasDrift and Bounded Agents cover multi-agent authorization; CapAgent (BDCC 2026) studies semantic data-flow governance; a separate CapAgent paper at ACM CCS 2026 studies capability credentials and delegation chains | Reproduce native results first; compare re-anchoring, strict attenuation, root-anchored task graphs, source-to-sink information-flow governance and session composition; then add participant commit ambiguity, independently observed effects, lifecycle termination and human-outcome recovery. |
 
 The realistic differentiation is not that Symthaea must beat frontier models at every general reasoning task, or that Xenia should replace TLS, MCP or A2A. The distinctive proposition is **an assurance and coordination fabric that can sit beneath different model providers and frameworks**: a model proposes; a policy broker validates; a participant independently enforces; an observer verifies; and federation preserves local sovereignty.
 
 To claim an improvement over SOTA, publish paired results on pinned versions of the same models, tasks, tools, prompts, budgets and environments. Report task utility and safety separately. A security win that simply refuses every task is not useful; a task-success win with one unauthorized committed effect is not a safety pass. Report p50/p95/p99 latency, total cost, token/tool use, energy, false denial, authorized completion, violation rate by attack family and evidence-completeness. Use independent red-team review and private holdouts. Until those studies execute, the architecture is a hypothesis, not an SOTA result.
+
+### 9.1 New SOTA comparators and a practical standards-aligned pilot
+
+Two 2026 papers now share the name **CapAgent** but address different layers and must be tracked separately:
+
+- **BDCC CapAgent (1 September 2026)** is a semantic data-flow governance middleware. Its paper reports a 600-trace synthetic replay benchmark with 0% measured attack success for the full monitor, 75% benign success and 25% false blocking. Supplemental results include a 520-trial tool-calling benchmark with 0% measured attack success, 87.5% intent-compiler exact-policy match and 88.89% semantic-release recall. These are the authors' controlled local experiments, not official AgentDojo/WebArena/OSWorld results, independent replication or proof of deployment security. The paper itself states that public end-to-end benchmark replication and external baseline implementations remain future work.
+- **ACM CCS CapAgent (published 14 November 2026)** is a separate capability-credential and delegation-chain framework. Its abstract describes cryptographically protected derivable credentials with API/parameter constraints, lifecycle rules and cross-hop provenance, implemented as a layered SDK with CLI and MCP integration. Luminous must not claim novelty for capability tokens, attenuation or delegation-chain credentials. Compare the exact credential, lifecycle and integration semantics under matched scenarios.
+
+**What this changes for Luminous:** source-to-sink data-flow policy and semantic release must become first-class benchmark dimensions, not be treated as incidental prompt-injection controls. We should measure protected-fact leakage after summarization/paraphrase, source label propagation through memory and child agents, destination changes, semantic-release false negatives/positives, calibration, policy-compiler over-authorization and false blocking. The WAEP v0.1 data-flow claim object is the first reporting contract for these claims; it is not itself an information-flow monitor.
+
+NIST NCCoE announced on 29 September 2026 that DevSecOps will be the first implementation use case for its Software and Agentic AI Identity and Authorization project, following more than 600 public comments. That makes a **bounded agentic DevSecOps reference slice** a strong Luminous interoperability target: repository read, patch proposal, PR creation, independent review, merge, release signing and deployment must be distinct capabilities/effects. Reuse Mycelix LISE #6216/#6226 and existing Symthaea INTX / Platform effect contracts; do not create another identity provider or workflow engine. NIST's project is evolving guidance/demonstration, not a certification of Luminous.
+
+### 9.2 The comparison rule
+
+For each external result, pin the paper version, source/artifact revision, task set, tool semantics, model/provider, prompt, policy, environment and evaluator. Preserve native scoring. A 0% ASR on a synthetic trace replay is not directly comparable to an AgentDojo score, a real browser-task score or zero unauthorized participant commits. Where the artifact is unavailable, record a claim-matrix comparison and do not label it a reproduced head-to-head result.
 
 ## 10. Implementation sequence
 
@@ -510,7 +525,7 @@ To claim an improvement over SOTA, publish paired results on pinned versions of 
 - Authenticate evidence and workflow provenance with a pinned trust policy.
 
 ### M4 — One low-risk federated vertical
-- Start with read-only Sol-Atlas infrastructure knowledge plus Symtropy simulation.
+- Start with read-only Sol-Atlas infrastructure knowledge plus Symtropy simulation. In parallel, use the existing Mycelix LISE #6216/#6226 programme to prepare a bounded DevSecOps identity/authority/effect reference slice aligned with NIST NCCoE's announced first agent identity use case.
 - Add multiple independent Symthaea agents with separate memory and permissions.
 - Allow human-approved, reversible actions only after participant and observer conformance.
 - Keep physical actuation out of scope until a separate safety case and local interlocks exist.
@@ -554,6 +569,9 @@ Consequently:
 - LangGraph persistence/checkpointing: https://docs.langchain.com/oss/python/langgraph/persistence
 - MCP 2026-07-28 specification and authorization security: https://modelcontextprotocol.io/specification/2026-07-28 and https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/docs/specification/2026-07-28/basic/authorization/security-considerations.mdx
 - A2A Protocol v1.0.1: https://a2a-protocol.org/v1.0.1/
+- BDCC CapAgent (semantic data-flow governance, 2026-09-01): https://doi.org/10.3390/bdcc10090293
+- ACM CCS 2026 CapAgent (capability credentials and delegation chain, DOI 10.1145/3830454.3846604): https://doi.org/10.1145/3830454.3846604
+- NIST NCCoE Agent Identity and Authorization DevSecOps first-use-case announcement (2026-09-29): https://www.nist.gov/news-events/news/2026/09/comments-software-and-agentic-ai-identity-concept-paper
 - AgentDojo: https://agentdojo.spylab.ai/
 - InjecAgent: https://arxiv.org/abs/2403.02691
 - Agent Security Bench: https://arxiv.org/abs/2410.02644
