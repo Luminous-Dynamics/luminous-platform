@@ -1,0 +1,329 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:security:effect-bound-capability-fixtures:0.1",
+  "title": "Effect-bound capability algebra fixtures v0.1",
+  "type": "object",
+  "required": [
+    "profile",
+    "version",
+    "status",
+    "fixtures"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-effect-bound-capability-fixtures"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "synthetic_fixture_suite"
+    },
+    "fixtures": {
+      "type": "array",
+      "minItems": 17,
+      "items": {
+        "type": "object",
+        "required": [
+          "scenario_id",
+          "mode",
+          "capabilities",
+          "request",
+          "permit",
+          "effect",
+          "evidence_only",
+          "expected"
+        ],
+        "properties": {
+          "scenario_id": {
+            "type": "string",
+            "pattern": "^CAP-[0-9]{3}-[A-Z0-9-]+$"
+          },
+          "mode": {
+            "enum": [
+              "single",
+              "delegated",
+              "composition"
+            ]
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/capability"
+            }
+          },
+          "request": {
+            "$ref": "#/$defs/request"
+          },
+          "permit": {
+            "$ref": "#/$defs/permit"
+          },
+          "effect": {
+            "$ref": "#/$defs/effect"
+          },
+          "evidence_only": {
+            "type": "boolean"
+          },
+          "expected": {
+            "type": "object",
+            "required": [
+              "decision",
+              "reason"
+            ],
+            "properties": {
+              "decision": {
+                "enum": [
+                  "allow",
+                  "deny",
+                  "indeterminate",
+                  "reconcile_same_attempt"
+                ]
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "capability": {
+      "type": "object",
+      "required": [
+        "grant_id",
+        "principal_id",
+        "issuer_id",
+        "subject_id",
+        "parent_grant_id",
+        "target_refs",
+        "operations",
+        "argument_digest",
+        "policy_epoch",
+        "not_before",
+        "expires_at",
+        "revocation_state",
+        "may_delegate",
+        "max_delegation_depth"
+      ],
+      "properties": {
+        "grant_id": {
+          "type": "string",
+          "minLength": 2
+        },
+        "principal_id": {
+          "type": "string",
+          "minLength": 2
+        },
+        "issuer_id": {
+          "type": "string",
+          "minLength": 2
+        },
+        "subject_id": {
+          "type": "string",
+          "minLength": 2
+        },
+        "parent_grant_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "target_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "operations": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "argument_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "policy_epoch": {
+          "type": "string",
+          "minLength": 2
+        },
+        "not_before": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "expires_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "revocation_state": {
+          "enum": [
+            "current",
+            "revoked",
+            "unknown"
+          ]
+        },
+        "may_delegate": {
+          "type": "boolean"
+        },
+        "max_delegation_depth": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "request": {
+      "type": "object",
+      "required": [
+        "principal_id",
+        "actor_id",
+        "target_ref",
+        "operation",
+        "argument_digest",
+        "policy_epoch",
+        "attempt_id",
+        "admission_time"
+      ],
+      "properties": {
+        "principal_id": {
+          "type": "string"
+        },
+        "actor_id": {
+          "type": "string"
+        },
+        "target_ref": {
+          "type": "string"
+        },
+        "operation": {
+          "type": "string"
+        },
+        "argument_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "policy_epoch": {
+          "type": "string"
+        },
+        "attempt_id": {
+          "type": "string"
+        },
+        "admission_time": {
+          "$ref": "#/$defs/timestamp"
+        }
+      },
+      "additionalProperties": false
+    },
+    "permit": {
+      "type": "object",
+      "required": [
+        "permit_id",
+        "actor_id",
+        "participant_id",
+        "target_ref",
+        "operation",
+        "argument_digest",
+        "policy_epoch",
+        "attempt_id",
+        "not_before",
+        "expires_at",
+        "nonce_id",
+        "consume_count"
+      ],
+      "properties": {
+        "permit_id": {
+          "type": "string"
+        },
+        "actor_id": {
+          "type": "string"
+        },
+        "participant_id": {
+          "type": "string"
+        },
+        "target_ref": {
+          "type": "string"
+        },
+        "operation": {
+          "type": "string"
+        },
+        "argument_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "policy_epoch": {
+          "type": "string"
+        },
+        "attempt_id": {
+          "type": "string"
+        },
+        "not_before": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "expires_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "nonce_id": {
+          "type": "string"
+        },
+        "consume_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "effect": {
+      "type": "object",
+      "required": [
+        "effect_id",
+        "state",
+        "participant_id",
+        "attempt_id",
+        "postcondition"
+      ],
+      "properties": {
+        "effect_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "state": {
+          "enum": [
+            "none",
+            "committed",
+            "partially_committed",
+            "unknown"
+          ]
+        },
+        "participant_id": {
+          "type": "string"
+        },
+        "attempt_id": {
+          "type": "string"
+        },
+        "postcondition": {
+          "enum": [
+            "matches",
+            "mismatch",
+            "not_observed",
+            "unknown"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
