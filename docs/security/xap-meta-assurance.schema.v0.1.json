@@ -62,7 +62,7 @@
     },
     "cases": {
       "type": "array",
-      "minItems": 47,
+      "minItems": 58,
       "items": {
         "type": "object",
         "required": [
