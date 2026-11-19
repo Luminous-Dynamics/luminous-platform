@@ -508,6 +508,74 @@
         "required"
       ],
       "contains": "action_source_derived_from_refs"
+    },
+    {
+      "id": "approval-ledger-dispatch-condition-property",
+      "schema_file": "approval-obligation-ledger.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "dispatch",
+        "properties",
+        "condition_revision"
+      ],
+      "expected": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "id": "approval-ledger-dispatch-condition-required",
+      "schema_file": "approval-obligation-ledger.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "dispatch",
+        "required"
+      ],
+      "contains": "condition_revision"
+    },
+    {
+      "id": "approval-ledger-fail-closed-required",
+      "schema_file": "approval-obligation-ledger.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "episode",
+        "properties",
+        "expected",
+        "required"
+      ],
+      "contains": "fail_closed_violation_count"
+    },
+    {
+      "id": "approval-ledger-unwitnessed-required",
+      "schema_file": "approval-obligation-ledger.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "episode",
+        "properties",
+        "expected",
+        "required"
+      ],
+      "contains": "unwitnessed_effect_count"
+    },
+    {
+      "id": "approval-ledger-corpus-floor",
+      "schema_file": "approval-obligation-ledger.schema.v0.1.json",
+      "path": [
+        "properties",
+        "episodes",
+        "minItems"
+      ],
+      "expected": 26
+    },
+    {
+      "id": "approval-ledger-episode-closed",
+      "schema_file": "approval-obligation-ledger.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "episode",
+        "additionalProperties"
+      ],
+      "expected": false
     }
   ],
   "cases": [
@@ -1963,6 +2031,141 @@
         "rejected": true,
         "violated_guard_ids": [
           "origin-action-source-lineage-required"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S024-REMOVE-DISPATCH-CONDITION-PROPERTY",
+      "target_type": "schema",
+      "fixture_id": "approval-obligation-ledger.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "dispatch",
+            "properties",
+            "condition_revision"
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "approval-ledger-dispatch-condition-property"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S025-REMOVE-DISPATCH-CONDITION-REQUIRED",
+      "target_type": "schema",
+      "fixture_id": "approval-obligation-ledger.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "dispatch",
+            "required",
+            9
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "approval-ledger-dispatch-condition-required"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S026-REMOVE-FAIL-CLOSED-OUTPUT",
+      "target_type": "schema",
+      "fixture_id": "approval-obligation-ledger.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "episode",
+            "properties",
+            "expected",
+            "required",
+            13
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "approval-ledger-fail-closed-required"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S027-REMOVE-UNWITNESSED-OUTPUT",
+      "target_type": "schema",
+      "fixture_id": "approval-obligation-ledger.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "episode",
+            "properties",
+            "expected",
+            "required",
+            14
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "approval-ledger-unwitnessed-required"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S028-SHRINK-APPROVAL-LEDGER-CORPUS",
+      "target_type": "schema",
+      "fixture_id": "approval-obligation-ledger.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "properties",
+            "episodes",
+            "minItems"
+          ],
+          "value": 14
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "approval-ledger-corpus-floor"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S029-OPEN-APPROVAL-EPISODE-OBJECT",
+      "target_type": "schema",
+      "fixture_id": "approval-obligation-ledger.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "episode",
+            "additionalProperties"
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "approval-ledger-episode-closed"
         ]
       }
     }
