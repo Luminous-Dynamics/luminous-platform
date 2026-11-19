@@ -2626,6 +2626,20 @@
                   "source:invoice-01",
                   "source:vendor-ledger-01"
                 ]
+              },
+              {
+                "source_ref": "source:invoice-01",
+                "source_class": "user_named_source",
+                "receipt_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+                "receipt_verified": true,
+                "derived_from_refs": []
+              },
+              {
+                "source_ref": "source:vendor-ledger-01",
+                "source_class": "authoritative_record",
+                "receipt_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+                "receipt_verified": true,
+                "derived_from_refs": []
               }
             ],
             "lineage_complete": true,
@@ -2677,11 +2691,12 @@
             "name": "amount",
             "required": true,
             "allowed_source_refs": [
-              "source:untrusted-webpage-01"
+              "source:invoice-01"
             ],
             "allowed_source_classes": [
               "agent_derived",
-              "attacker_writable"
+              "user_named_source",
+              "authoritative_record"
             ],
             "value_allowlist": [],
             "min_numeric_value": null,
@@ -2733,6 +2748,13 @@
                 "derived_from_refs": [
                   "source:untrusted-webpage-01"
                 ]
+              },
+              {
+                "source_ref": "source:untrusted-webpage-01",
+                "source_class": "attacker_writable",
+                "receipt_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+                "receipt_verified": true,
+                "derived_from_refs": []
               }
             ],
             "lineage_complete": true,
