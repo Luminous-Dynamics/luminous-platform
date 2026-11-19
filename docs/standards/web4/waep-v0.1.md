@@ -206,7 +206,7 @@ The Mycelix AGENT-010 gate remains in force for authoritative A2A/MCP/OAuth/AP2 
 
 ## 9.2 Frozen conformance vectors
 
-The companion file `waep-conformance-vectors.v0.1.json` contains twenty-five self-contained schema/semantic test records. `waep-synthetic-participant-receipt.v0.1.json` and `waep-synthetic-corpus.v0.1.json` are explicitly synthetic fixtures whose content digests are referenced by the positive-shape vector. The receipt fixture is not signed and is not a real participant observation.
+The companion file `waep-conformance-vectors.v0.1.json` contains twenty-six self-contained schema/semantic test records. `waep-synthetic-participant-receipt.v0.1.json` and `waep-synthetic-corpus.v0.1.json` are explicitly synthetic fixtures whose content digests are referenced by the positive-shape vector. The receipt fixture is not signed and is not a real participant observation.
 
 | Vector | Expected | Property exercised |
 |---|---|---|
@@ -235,12 +235,13 @@ The companion file `waep-conformance-vectors.v0.1.json` contains twenty-five sel
 | V023 | Valid | Positive control: approved declassification with exact authorization reference |
 | V024 | Invalid | Semantic release lacks a calibrated false-negative bound and calibration reference |
 | V025 | Invalid | Semantic release is marked not applicable without a reason |
+| V026 | Valid | Positive control: semantic release is not applicable for a stated reason, while all other source-to-sink controls pass |
 
-The earlier twenty-one vectors matched a custom authoring-time semantic checker. Four additional declassification/calibration vectors have since been added; the expanded twenty-five-vector suite awaits the new Draft 2020-12 workflow and must not be described as fully validated yet. This is not the full JSON Schema validator, not a Rust conformance implementation, and not runtime evidence. The full standards-compliant validation gate remains open.
+The earlier twenty-one vectors matched a custom authoring-time semantic checker. Five additional declassification/calibration vectors have since been added; the expanded twenty-six-vector suite awaits the new Draft 2020-12 workflow and must not be described as fully validated yet. This is not the full JSON Schema validator, not a Rust conformance implementation, and not runtime evidence. The full standards-compliant validation gate remains open.
 ## 10. Validation and claim ceiling
 
 For this first draft:
-- The original baseline schema was checked against Draft 2020-12 in the authoring environment. After adding property-specific definitions and conditional constraints, the updated schema and fixture JSON were fetched back and parsed; a custom authoring-time semantic checker matched all 10 expected vector outcomes. A full Draft 2020-12 validator run against this latest schema revision remains pending.
+- The original baseline schema was checked against Draft 2020-12 in the authoring environment. After adding property-specific definitions and conditional constraints, the updated schema and fixture JSON were fetched back and parsed; a custom authoring-time semantic checker matched the earlier 21-vector suite. The latest 26-vector suite is pending a fresh complete semantic run and the full JSON Schema validator. A full Draft 2020-12 validator run against this latest schema revision remains pending.
 - The example is synthetic and explicitly `not_claimed` / `not_executed`. Its empty-corpus digest is the actual SHA-256 of the empty byte string. Synthetic evidence and corpus examples have separate, explicit fixture files and content digests; they are not authentic participant receipts or measured benchmark evidence.
 - No Rust implementation, live agent, participant, broker, observer, runtime campaign, independent review, CI workflow, cross-implementation test or production deployment is claimed.
 - The schema is a reporting contract. It cannot authenticate evidence or prove that a claimed boundary is complete or independent.
