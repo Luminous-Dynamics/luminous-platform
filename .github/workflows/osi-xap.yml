@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "docs/security/osi-xap-*"
+      - "docs/security/agent-authorization-assurance.*"
       - "docs/security/l2l3-deployment-profile.*"
       - "scripts/validate_osi_xap.py"
       - "requirements-osi-xap-test.txt"
