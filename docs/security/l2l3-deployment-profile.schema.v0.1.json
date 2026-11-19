@@ -117,7 +117,9 @@
           "operational_criticality",
           "discovery_method",
           "discovery_safety_status",
-          "discovery_evidence_refs"
+          "discovery_evidence_refs",
+          "zta_capability",
+          "compensating_control_refs"
         ],
         "properties": {
           "device_id": {
@@ -232,6 +234,20 @@
               "type": "string",
               "format": "uri"
             }
+          },
+          "zta_capability": {
+            "enum": [
+              "native",
+              "gateway_mediated",
+              "unsupported",
+              "unknown"
+            ]
+          },
+          "compensating_control_refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "additionalProperties": false
@@ -251,7 +267,8 @@
           "default_egress",
           "enforcement_refs",
           "member_interface_refs",
-          "evidence_refs"
+          "evidence_refs",
+          "network_function"
         ],
         "properties": {
           "zone_id": {
@@ -311,6 +328,20 @@
               "type": "string",
               "format": "uri"
             }
+          },
+          "network_function": {
+            "enum": [
+              "management",
+              "operational",
+              "enterprise",
+              "ot_dmz",
+              "vendor_remote_access",
+              "security_monitoring",
+              "safety",
+              "edge",
+              "other",
+              "unknown"
+            ]
           }
         },
         "additionalProperties": false
@@ -1397,8 +1428,36 @@
                 },
                 "evidence_refs": {
                   "minItems": 1
+                },
+                "zta_capability": {
+                  "enum": [
+                    "native",
+                    "gateway_mediated",
+                    "unsupported"
+                  ]
                 }
-              }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "zta_capability": {
+                        "const": "unsupported"
+                      }
+                    },
+                    "required": [
+                      "zta_capability"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "compensating_control_refs": {
+                        "minItems": 1
+                      }
+                    }
+                  }
+                }
+              ]
             }
           },
           "zones": {
@@ -1422,6 +1481,11 @@
                 },
                 "evidence_refs": {
                   "minItems": 1
+                },
+                "network_function": {
+                  "not": {
+                    "const": "unknown"
+                  }
                 }
               }
             }
@@ -1502,9 +1566,11 @@
           "discovery": {
             "properties": {
               "active_scan_policy": {
-                "not": {
-                  "const": "unrestricted"
-                }
+                "enum": [
+                  "disabled",
+                  "nonproduction_only",
+                  "approved_planned_downtime"
+                ]
               },
               "coverage_limitations": {
                 "maxItems": 0
@@ -1514,6 +1580,14 @@
               },
               "evidence_refs": {
                 "minItems": 1
+              },
+              "methods_used": {
+                "minItems": 1,
+                "items": {
+                  "not": {
+                    "const": "unknown"
+                  }
+                }
               }
             }
           },
@@ -1562,9 +1636,11 @@
           "discovery": {
             "properties": {
               "active_scan_policy": {
-                "not": {
-                  "const": "unrestricted"
-                }
+                "enum": [
+                  "disabled",
+                  "nonproduction_only",
+                  "approved_planned_downtime"
+                ]
               },
               "methods_used": {
                 "minItems": 1
@@ -1581,6 +1657,28 @@
                   "applicable",
                   "not_applicable"
                 ]
+              }
+            }
+          },
+          "devices": {
+            "items": {
+              "properties": {
+                "zta_capability": {
+                  "not": {
+                    "const": "unknown"
+                  }
+                }
+              }
+            }
+          },
+          "zones": {
+            "items": {
+              "properties": {
+                "network_function": {
+                  "not": {
+                    "const": "unknown"
+                  }
+                }
               }
             }
           }
