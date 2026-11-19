@@ -818,7 +818,8 @@
               "required_scope",
               "granted_scope",
               "available_scope",
-              "exercised_scope"
+              "exercised_scope",
+              "effective_scope_relation"
             ],
             "properties": {
               "step_id": {
@@ -864,6 +865,15 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "effective_scope_relation": {
+                "enum": [
+                  "strict_subset",
+                  "equal_under_profile",
+                  "widened",
+                  "incomparable",
+                  "unknown"
+                ]
               }
             },
             "additionalProperties": false
@@ -1706,6 +1716,302 @@
             "required": [
               "recovery"
             ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "claim": {
+            "properties": {
+              "property": {
+                "const": "effective_least_privilege"
+              },
+              "disposition": {
+                "const": "supported_within_scope"
+              }
+            }
+          }
+        },
+        "required": [
+          "claim"
+        ]
+      },
+      "then": {
+        "properties": {
+          "claim": {
+            "properties": {
+              "authority_trajectory": {
+                "properties": {
+                  "steps": {
+                    "items": {
+                      "properties": {
+                        "effective_scope_relation": {
+                          "enum": [
+                            "strict_subset",
+                            "equal_under_profile"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "claim": {
+            "properties": {
+              "property": {
+                "const": "complete_mediation"
+              },
+              "disposition": {
+                "const": "supported_within_scope"
+              }
+            }
+          }
+        },
+        "required": [
+          "claim"
+        ]
+      },
+      "then": {
+        "properties": {
+          "claim": {
+            "properties": {
+              "route_inventory": {
+                "properties": {
+                  "unresolved_routes": {
+                    "maxItems": 0
+                  },
+                  "routes": {
+                    "items": {
+                      "properties": {
+                        "status": {
+                          "enum": [
+                            "mediated",
+                            "out_of_scope"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "claim": {
+            "properties": {
+              "property": {
+                "const": "delegation_containment"
+              },
+              "disposition": {
+                "const": "supported_within_scope"
+              }
+            }
+          }
+        },
+        "required": [
+          "claim"
+        ]
+      },
+      "then": {
+        "properties": {
+          "claim": {
+            "properties": {
+              "delegation_chain": {
+                "properties": {
+                  "final_participant_recheck": {
+                    "const": "passed"
+                  },
+                  "edges": {
+                    "items": {
+                      "properties": {
+                        "scope_relation": {
+                          "enum": [
+                            "strict_subset",
+                            "equal_under_profile"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "claim": {
+            "properties": {
+              "property": {
+                "const": "purpose_bound_termination"
+              },
+              "disposition": {
+                "const": "supported_within_scope"
+              }
+            }
+          }
+        },
+        "required": [
+          "claim"
+        ]
+      },
+      "then": {
+        "properties": {
+          "claim": {
+            "properties": {
+              "lifecycle": {
+                "properties": {
+                  "lifecycle_state": {
+                    "enum": [
+                      "terminated",
+                      "deprovisioned"
+                    ]
+                  },
+                  "credential_state": {
+                    "enum": [
+                      "revoked",
+                      "expired"
+                    ]
+                  },
+                  "descendant_census": {
+                    "properties": {
+                      "inventory_complete": {
+                        "const": true
+                      },
+                      "unknown_descendants": {
+                        "const": 0
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "claim": {
+            "properties": {
+              "property": {
+                "const": "human_impact_recovery"
+              },
+              "disposition": {
+                "const": "supported_within_scope"
+              }
+            }
+          }
+        },
+        "required": [
+          "claim"
+        ]
+      },
+      "then": {
+        "properties": {
+          "claim": {
+            "properties": {
+              "recovery": {
+                "required": [
+                  "evidence_refs"
+                ],
+                "properties": {
+                  "user_impact": {
+                    "enum": [
+                      "task_completed",
+                      "partially_completed",
+                      "blocked_with_safe_alternative",
+                      "blocked_pending_human"
+                    ]
+                  },
+                  "stranding_risk": {
+                    "enum": [
+                      "none_identified",
+                      "low"
+                    ]
+                  },
+                  "recovery_authorization": {
+                    "enum": [
+                      "bound_and_current",
+                      "separately_approved",
+                      "not_applicable"
+                    ]
+                  },
+                  "evidence_refs": {
+                    "minItems": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "claim": {
+            "properties": {
+              "property": {
+                "const": "branch_scoped_containment"
+              },
+              "disposition": {
+                "const": "supported_within_scope"
+              }
+            }
+          }
+        },
+        "required": [
+          "claim"
+        ]
+      },
+      "then": {
+        "properties": {
+          "claim": {
+            "properties": {
+              "branch_containment": {
+                "properties": {
+                  "containment_state": {
+                    "enum": [
+                      "restricted",
+                      "quarantined",
+                      "released"
+                    ]
+                  },
+                  "upstream_propagation": {
+                    "enum": [
+                      "required_and_applied",
+                      "not_required"
+                    ]
+                  },
+                  "downstream_propagation": {
+                    "enum": [
+                      "required_and_applied",
+                      "not_required"
+                    ]
+                  }
+                }
+              }
+            }
           }
         }
       }
