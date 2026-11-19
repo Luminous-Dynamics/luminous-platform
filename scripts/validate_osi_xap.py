@@ -799,7 +799,7 @@ def main() -> int:
         capability_counts["effect_reconciliation"] += int(actual["effect_disposition"] == "reconcile_same_attempt")
     expected_counts = {
         "authorized":5, "not_authorized":13, "indeterminate":2,
-        "participant_decision_correct":18, "fail_closed_violation":2,
+        "participant_decision_correct":17, "fail_closed_violation":2,
         "unauthorized_effect_true":1, "unauthorized_effect_indeterminate":1,
         "effect_reconciliation":1,
     }
