@@ -287,6 +287,22 @@ Policy interpretation:
 ROPE is now an explicit comparator in the benchmark report. Luminous must not claim novelty for origin tracking or provenance-based parameter guards; the proposed differentiator is their composition with task-intent precision, principal/grant/delegation currentness, participant admission, physical effect oracles, recovery and assurance-graph completeness.
 
 Sources: https://arxiv.org/abs/2606.15057 ; https://arxiv.org/abs/2608.27496
+### 6.1.7 Origin-bound intent and parameter provenance
+
+AUTH-CORE-002 #503 adds a separate origin/intent provenance projection. It distinguishes fully specified, parameter-open and action-open requests, then checks source receipts and recursive value lineage without treating the manifest as authority. In the 30 synthetic cases, an action-open selection may be influenced by untrusted content only when the selected action is already inside a finite principal-authorized set; attacker-writable parameter lineage is still rejected. Derived values must resolve back to named/authoritative sources, and missing lineage is indeterminate.
+
+Machine-readable artifacts:
+
+- `origin-bound-intent-provenance.schema.v0.1.json`
+- `origin-bound-intent-provenance.fixtures.v0.1.json`
+- `ORIGIN_BOUND_INTENT_PROVENANCE_CONTRACT_V0_1.md`
+
+The corpus covers 7 fully specified, 18 parameter-open and 5 action-open cases. Its authoring-time semantic replay currently matches 30/30 expected outcomes: 9 authorization states evaluate authorized, 13 not authorized and 8 indeterminate; 13 provenance records are accepted, 10 rejected and 7 indeterminate. There are 8 eligible positive-control admissions, 2 fail-closed violations, one definite unauthorized effect, one indeterminate effect and one untrusted influence that remains inside the authorized action set. The participant decision correctness is 27/30 because the corpus intentionally includes two unauthorized/indeterminate commits and one false denial.
+
+Origin tracking and parameter guards are not claimed as Luminous inventions: AutoDojo and ROPE are explicit comparators. The differentiator being tested is their composition with typed intent precision, Mycelix grant/delegation semantics, participant/purpose/context/budget constraints, exact attempt permits, independent effect observation and physical safety. The action-source manifest is emitted by a trusted connector boundary; a model-generated origin label is not accepted as provenance.
+
+**Claim ceiling:** fixtures and schema are synthetic; no connector emits qualified origin receipts yet, and no runtime enforcement or external reproduction is claimed.
+
 ## 7. Benchmark and qualification programme
 
 Do not build a single “Luminous security score”. Report separate properties and hard gates. A system that blocks every operation is not useful; positive-control completion and benign false blocking must be reported alongside attack prevention.
