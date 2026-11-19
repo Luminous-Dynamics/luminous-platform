@@ -26,7 +26,7 @@
     },
     "episodes": {
       "type": "array",
-      "minItems": 25,
+      "minItems": 26,
       "items": {
         "$ref": "#/$defs/episode"
       }
@@ -472,7 +472,9 @@
             "forbidden_dispatch_count",
             "conditional_hold_count",
             "pending_count",
-            "first_divergence"
+            "first_divergence",
+            "fail_closed_violation_count",
+            "unwitnessed_effect_count"
           ],
           "properties": {
             "refusal_safety": {
@@ -540,6 +542,14 @@
                 "participant",
                 "unknown"
               ]
+            },
+            "fail_closed_violation_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unwitnessed_effect_count": {
+              "type": "integer",
+              "minimum": 0
             }
           },
           "additionalProperties": false
