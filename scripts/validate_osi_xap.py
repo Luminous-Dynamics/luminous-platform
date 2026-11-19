@@ -426,6 +426,34 @@ def main() -> int:
     print(f"AUTHORIZATION_ASSURANCE_FIXTURES=PASS {auth_counts} TASK_SUCCESS_WITH_UNAUTHORIZED_EFFECT={task_success_but_unauthorized}")
 
 
+
+    evolution_schema = load(SEC / "adaptive-authorization-evolution.schema.v0.1.json")
+    evolution_template = load(SEC / "adaptive-authorization-evolution.template.v0.1.json")
+    Draft202012Validator.check_schema(evolution_schema)
+    evolution_errors = sorted(
+        Draft202012Validator(evolution_schema, format_checker=FormatChecker()).iter_errors(evolution_template),
+        key=lambda err: tuple(str(x) for x in err.absolute_path),
+    )
+    if evolution_errors:
+        for err in evolution_errors:
+            loc = "/".join(str(x) for x in err.absolute_path) or "<root>"
+            print(f"adaptive-authorization-evolution.template.v0.1.json:{loc}: {err.message}", file=sys.stderr)
+        raise SystemExit(f"adaptive authorization template: {len(evolution_errors)} schema error(s)")
+    boundary = evolution_template["mutation_boundary"]
+    if evolution_template["status"] != "template_only":
+        raise SystemExit("adaptive evolution record must remain template_only")
+    if not boundary["harness_mutable"] or not boundary["stressor_mutable"]:
+        raise SystemExit("only harness and stressor may be mutable in this profile")
+    immutable = [key for key in boundary if key not in {"harness_mutable","stressor_mutable"}]
+    if any(boundary[key] is not False for key in immutable):
+        raise SystemExit("an evaluator/trust-anchor input is mutable")
+    promotion = evolution_template["promotion_rule"]
+    if promotion["incomplete_execution_promotable"] or not promotion["oracle_change_invalidates_run"]:
+        raise SystemExit("unsafe adaptive stressor promotion rule")
+    if evolution_template["evaluation"]["confidence_method"] != "not_set" or evolution_template["evaluation"]["runs"]:
+        raise SystemExit("empty adaptive evolution template must not claim experiment results")
+    print("ADAPTIVE_EVOLUTION_TEMPLATE=VALID_ONLY_HARNESS_AND_STRESSOR_MUTABLE")
+
     print("L2L3_TEMPLATE=VALID_UNASSESSED ACTIVE_SCAN=UNKNOWN OT_SEPARATION=UNKNOWN")
 
     print(f"OSI_XAP_SCHEMA=Draft2020-12_CHECKED CONTROLS={total_controls} SCENARIOS={total_scenarios}")
