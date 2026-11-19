@@ -522,8 +522,26 @@
               "base_harness_digest": {
                 "type": "string",
                 "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "task_model_version": {
+                "type": "string",
+                "minLength": 1
               }
-            }
+            },
+            "required": [
+              "task_model_digest",
+              "task_model_version",
+              "tool_bundle_digest",
+              "environment_digest",
+              "benchmark_suite_digest",
+              "task_split_digest",
+              "policy_semantics_digest",
+              "authorization_oracle_digest",
+              "participant_oracle_digest",
+              "effect_observer_digest",
+              "evaluator_digest",
+              "base_harness_digest"
+            ]
           },
           "search_budget": {
             "properties": {
