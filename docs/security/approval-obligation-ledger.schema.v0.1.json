@@ -157,7 +157,8 @@
         "target_ref",
         "operation",
         "argument_digest",
-        "item_refs"
+        "item_refs",
+        "condition_revision"
       ],
       "properties": {
         "event_id": {
@@ -198,6 +199,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "condition_revision": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "additionalProperties": false
