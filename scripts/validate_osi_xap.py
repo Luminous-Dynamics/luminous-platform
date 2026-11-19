@@ -19,6 +19,118 @@ def load(path: Path):
     except (OSError, json.JSONDecodeError) as exc:
         raise SystemExit(f"cannot load {path}: {exc}") from exc
 
+
+def evaluate_graph(graph):
+    nodes = {node["id"]: node for node in graph["nodes"]}
+    if len(nodes) != len(graph["nodes"]):
+        raise SystemExit(f"{graph['graph_id']}: duplicate node IDs")
+    edge_ids = [edge["id"] for edge in graph["edges"]]
+    if len(edge_ids) != len(set(edge_ids)):
+        raise SystemExit(f"{graph['graph_id']}: duplicate edge IDs")
+
+    outgoing = {node_id: [] for node_id in nodes}
+    for edge in graph["edges"]:
+        if edge["from"] not in nodes or edge["to"] not in nodes:
+            raise SystemExit(f"{graph['graph_id']}: edge {edge['id']} has an unknown endpoint")
+        outgoing[edge["from"]].append(edge)
+
+    inventory = graph["inventory"]
+    has_unknown = (
+        not inventory["complete"]
+        or bool(inventory["unknown_nodes"])
+        or bool(inventory["unknown_edges"])
+        or any(edge["inventory_status"] == "unknown" for edge in graph["edges"])
+    )
+    claim = graph["claim"]
+
+    if claim["property"] == "complete_mediation":
+        required = set(claim["required_enforcement_roles"])
+        bypasses = []
+        unreachable = []
+        for source in claim["source_node_refs"]:
+            if source not in nodes or nodes[source]["type"] != "untrusted_ingress":
+                raise SystemExit(f"{graph['graph_id']}: invalid untrusted source reference {source}")
+            for sink in claim["sink_node_refs"]:
+                if sink not in nodes or nodes[sink]["type"] != "consequential_sink":
+                    raise SystemExit(f"{graph['graph_id']}: invalid consequential sink reference {sink}")
+                # State is (node, required enforcement roles already crossed).
+                # This explores every distinct enforcement-state path, not only
+                # one convenient shortest path.
+                start_roles = required.intersection(nodes[source]["enforcement_roles"])
+                queue = [(source, frozenset(start_roles))]
+                seen = set(queue)
+                has_any_path = False
+                has_mediated_path = False
+                has_unmediated_path = False
+                cursor = 0
+                while cursor < len(queue):
+                    current, roles = queue[cursor]
+                    cursor += 1
+                    if current == sink:
+                        has_any_path = True
+                        if required.issubset(roles):
+                            has_mediated_path = True
+                        else:
+                            has_unmediated_path = True
+                        continue
+                    for edge in outgoing[current]:
+                        next_node = edge["to"]
+                        next_roles = roles.union(required.intersection(nodes[next_node]["enforcement_roles"]))
+                        state = (next_node, frozenset(next_roles))
+                        if state not in seen:
+                            seen.add(state)
+                            queue.append(state)
+                if not has_any_path:
+                    unreachable.append(f"{source}->{sink}")
+                if has_unmediated_path:
+                    bypasses.append(f"{source}->{sink}")
+                if has_any_path and not has_mediated_path and not has_unmediated_path:
+                    unreachable.append(f"{source}->{sink}: no qualified route")
+        if bypasses:
+            return "refuted", {"bypass_paths": bypasses, "unreachable": unreachable}
+        if has_unknown or unreachable:
+            return "indeterminate", {"unknown_inventory": has_unknown, "unreachable": unreachable}
+        return "qualified", {"bypass_paths": [], "unreachable": []}
+
+    # Independence is tested against transitive shared fault domains and
+    # declared dependency nodes. Different observer names/operators alone
+    # never establish independence.
+    observers = claim["observer_node_refs"]
+    if any(ref not in nodes or nodes[ref]["type"] != "observer" for ref in observers):
+        raise SystemExit(f"{graph['graph_id']}: invalid observer node reference")
+    dependency_sets = {}
+    for observer in observers:
+        reached = {observer}
+        queue = [observer]
+        domains = set()
+        if nodes[observer]["fault_domain"]:
+            domains.add(nodes[observer]["fault_domain"])
+        cursor = 0
+        while cursor < len(queue):
+            current = queue[cursor]
+            cursor += 1
+            for edge in outgoing[current]:
+                if edge["type"] != "depends_on":
+                    continue
+                target = edge["to"]
+                if target not in reached:
+                    reached.add(target)
+                    queue.append(target)
+                if nodes[target]["fault_domain"]:
+                    domains.add(nodes[target]["fault_domain"])
+        dependency_sets[observer] = reached.union({f"fault-domain:{domain}" for domain in domains})
+    overlaps = []
+    for index, left in enumerate(observers):
+        for right in observers[index + 1:]:
+            shared = sorted(dependency_sets[left].intersection(dependency_sets[right]))
+            if shared:
+                overlaps.append({"observers":[left, right], "shared_dependencies":shared})
+    if overlaps:
+        return "refuted", {"overlaps":overlaps}
+    if has_unknown:
+        return "indeterminate", {"unknown_inventory":True,"overlaps":[]}
+    return "qualified", {"overlaps":[]}
+
 def main() -> int:
     files = [
         ("osi-xap-control-matrix.schema.v0.1.json",
@@ -128,6 +240,33 @@ def main() -> int:
     # No production network is contacted by this validator. It validates only
     # schema and static fixture semantics; live discovery must use a separately
     # approved read-only/maintenance-window procedure.
+
+
+    graph_schema = load(SEC / "osi-xap-assurance-graph.schema.v0.1.json")
+    graph_suite = load(SEC / "osi-xap-assurance-graph.v0.1.json")
+    Draft202012Validator.check_schema(graph_schema)
+    graph_errors = sorted(
+        Draft202012Validator(graph_schema, format_checker=FormatChecker()).iter_errors(graph_suite),
+        key=lambda err: tuple(str(x) for x in err.absolute_path),
+    )
+    if graph_errors:
+        for err in graph_errors:
+            loc = "/".join(str(x) for x in err.absolute_path) or "<root>"
+            print(f"osi-xap-assurance-graph.v0.1.json:{loc}: {err.message}", file=sys.stderr)
+        raise SystemExit(f"XAP assurance graph: {len(graph_errors)} schema error(s)")
+    graph_results = []
+    for fixture in graph_suite["fixtures"]:
+        actual, details = evaluate_graph(fixture["graph"])
+        expected = fixture["expected_disposition"]
+        if actual != expected:
+            raise SystemExit(
+                f"{fixture['graph']['graph_id']}: expected {expected}, got {actual}; details={details}"
+            )
+        graph_results.append(actual)
+    graph_counts = {value: graph_results.count(value) for value in ("qualified", "refuted", "indeterminate")}
+    if graph_counts != {"qualified":2,"refuted":2,"indeterminate":1}:
+        raise SystemExit(f"unexpected XAP assurance graph fixture mix: {graph_counts}")
+    print(f"XAP_GRAPH_FIXTURES=PASS {graph_counts}")
 
     print("L2L3_TEMPLATE=VALID_UNASSESSED ACTIVE_SCAN=UNKNOWN OT_SEPARATION=UNKNOWN")
 
