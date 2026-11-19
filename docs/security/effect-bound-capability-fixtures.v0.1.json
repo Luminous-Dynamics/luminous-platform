@@ -3037,8 +3037,8 @@
         "authorization_state": "not_authorized",
         "participant_decision_correct": true,
         "fail_closed_violation": false,
-        "unauthorized_effect": "false",
-        "effect_disposition": "none"
+        "unauthorized_effect": "indeterminate",
+        "effect_disposition": "reconcile_same_attempt"
       },
       "participant_decision": "deny",
       "usage_snapshot": {
