@@ -2309,7 +2309,8 @@
               "accounted_descendants": 0,
               "unknown_descendants": 0,
               "inventory_complete": true,
-              "descendant_types": []
+              "descendant_types": [],
+              "unaccounted_descendants": 0
             }
           }
         },
