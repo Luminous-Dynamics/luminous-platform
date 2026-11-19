@@ -202,7 +202,7 @@ The 17 November 2026 paper *Evolution Under Fire: Evolving Agent Safety Harnesse
 
 Luminous's adaptation is more restrictive about trust anchors: **the harness and benchmark-defined stressor may evolve; the task model, tools, environment, grant/policy semantics, authorization oracle, participant/effect oracle, independent observer and evaluator remain frozen for a search stage.** A stressor is promoted only if the legitimate task still succeeds and a frozen oracle confirms the adversarial objective. A correct final state reached through unauthorized actions is a security failure; blanket refusal is an invalid solution.
 
-The implementation protocol and empty schema/template are recorded in:
+The implementation protocol and empty schema/template are recorded in [SECURITY-EVOLVE-001 #500](https://github.com/Luminous-Dynamics/luminous-platform/issues/500):
 
 - `ADAPTIVE_AUTHORIZATION_EVOLUTION_PROTOCOL_V0_1.md`
 - `adaptive-authorization-evolution.schema.v0.1.json`
