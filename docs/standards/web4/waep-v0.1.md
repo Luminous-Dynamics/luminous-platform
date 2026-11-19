@@ -192,7 +192,7 @@ The Mycelix AGENT-010 gate remains in force for authoritative A2A/MCP/OAuth/AP2 
 
 ## 9.1 Frozen conformance vectors
 
-The companion file `waep-conformance-vectors.v0.1.json` contains ten self-contained schema/semantic test records. `waep-synthetic-participant-receipt.v0.1.json` and `waep-synthetic-corpus.v0.1.json` are explicitly synthetic fixtures whose content digests are referenced by the positive-shape vector. The receipt fixture is not signed and is not a real participant observation.
+The companion file `waep-conformance-vectors.v0.1.json` contains sixteen self-contained schema/semantic test records. `waep-synthetic-participant-receipt.v0.1.json` and `waep-synthetic-corpus.v0.1.json` are explicitly synthetic fixtures whose content digests are referenced by the positive-shape vector. The receipt fixture is not signed and is not a real participant observation.
 
 | Vector | Expected | Property exercised |
 |---|---|---|
@@ -206,8 +206,14 @@ The companion file `waep-conformance-vectors.v0.1.json` contains ten self-contai
 | V008 | Invalid | Recovery claim strands the user |
 | V009 | Invalid | Branch containment leaves upstream state unknown |
 | V010 | Valid | Structurally complete, design-only termination record |
+| V011 | Valid | Positive control: supported delegation with final participant recheck |
+| V012 | Valid | Positive control: supported termination with zero unknown/unaccounted descendants |
+| V013 | Valid | Positive control: separately authorized safe recovery and observed human outcome |
+| V014 | Valid | Positive control: bidirectional branch-scoped containment |
+| V015 | Valid | Positive control: trajectory-wide effective privilege |
+| V016 | Valid | Positive control: complete finite route inventory |
 
-The ten vectors were evaluated by an authoring-time semantic checker and all expected outcomes matched. This is not the full JSON Schema validator, not a Rust conformance implementation, and not runtime evidence. The full standards-compliant validation gate remains open.
+The sixteen vectors were evaluated by an authoring-time semantic checker and all expected outcomes matched. This is not the full JSON Schema validator, not a Rust conformance implementation, and not runtime evidence. The full standards-compliant validation gate remains open.
 ## 10. Validation and claim ceiling
 
 For this first draft:
