@@ -101,6 +101,34 @@ def main() -> int:
         raise SystemExit("empty L2/L3 template must not presume a safe active-scan policy")
     if net_template["ot_network_separation"]["applicability"] != "unknown":
         raise SystemExit("empty L2/L3 template must not presume OT network separation")
+    ot = net_template["ot_network_separation"]
+    if ot["applicability"] == "applicable":
+        zones = {zone["zone_id"]: zone for zone in net_template["zones"]}
+        management = set(ot["management_zone_refs"])
+        operational = set(ot["operational_zone_refs"])
+        monitoring = set(ot["security_monitoring_zone_refs"])
+        vendor = set(ot["external_vendor_access_zone_refs"])
+        if management & operational:
+            raise SystemExit("OT management and operational zones must be distinct")
+        if management & monitoring or operational & monitoring:
+            raise SystemExit("OT security-monitoring zone must be distinct")
+        if vendor & (management | operational):
+            raise SystemExit("external vendor access must use a separately declared zone")
+        for ref in management:
+            if zones.get(ref, {}).get("network_function") != "management":
+                raise SystemExit(f"{ref}: expected management zone function")
+        for ref in operational:
+            if zones.get(ref, {}).get("network_function") != "operational":
+                raise SystemExit(f"{ref}: expected operational zone function")
+        for ref in monitoring:
+            if zones.get(ref, {}).get("network_function") != "security_monitoring":
+                raise SystemExit(f"{ref}: expected security_monitoring zone function")
+        if ot["telemetry_ingress"] == "controlled_two_way" and not ot["shared_infrastructure_exceptions"]:
+            raise SystemExit("two-way OT monitoring path must disclose shared-infrastructure exception")
+    # No production network is contacted by this validator. It validates only
+    # schema and static fixture semantics; live discovery must use a separately
+    # approved read-only/maintenance-window procedure.
+
     print("L2L3_TEMPLATE=VALID_UNASSESSED ACTIVE_SCAN=UNKNOWN OT_SEPARATION=UNKNOWN")
 
     print(f"OSI_XAP_SCHEMA=Draft2020-12_CHECKED CONTROLS={total_controls} SCENARIOS={total_scenarios}")
