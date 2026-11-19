@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:luminous:security:effect-bound-capability-contract:0.1",
-  "title": "Luminous Effect-Bound Capability Contract v0.1",
+  "title": "Luminous Effect-Bound Authority Projection v0.1",
   "type": "object",
   "required": [
     "profile",
@@ -10,11 +10,16 @@
     "canonical_owner",
     "composition_rule",
     "evidence_is_authority",
-    "capabilities",
-    "permit",
     "request",
     "effect",
-    "claim_ceiling"
+    "claim_ceiling",
+    "artifact_kind",
+    "authority_runtime_enabled",
+    "new_authority_type_introduced",
+    "canonical_primitives",
+    "dispatch_reference_is_authority",
+    "authority_projection",
+    "dispatch_reference"
   ],
   "properties": {
     "profile": {
@@ -26,8 +31,7 @@
     "status": {
       "enum": [
         "template_only",
-        "synthetic_fixture",
-        "qualified_component"
+        "synthetic_projection_fixture"
       ]
     },
     "canonical_owner": {
@@ -38,16 +42,6 @@
     },
     "evidence_is_authority": {
       "const": false
-    },
-    "capabilities": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "$ref": "#/$defs/capability"
-      }
-    },
-    "permit": {
-      "$ref": "#/$defs/permit"
     },
     "request": {
       "$ref": "#/$defs/request"
@@ -62,6 +56,41 @@
         "type": "string",
         "minLength": 10
       }
+    },
+    "artifact_kind": {
+      "const": "non_authoritative_conformance_projection"
+    },
+    "authority_runtime_enabled": {
+      "const": false
+    },
+    "new_authority_type_introduced": {
+      "const": false
+    },
+    "canonical_primitives": {
+      "const": [
+        "PrincipalId",
+        "AuthorityGrant",
+        "Intent",
+        "ActionRequest",
+        "QualifiedIntentEnvelope",
+        "QualifiedCurrentAgentAuthority",
+        "QualifiedExactAgentAction",
+        "OpaqueActionHandle",
+        "AgentActionReceipt"
+      ]
+    },
+    "dispatch_reference_is_authority": {
+      "const": false
+    },
+    "authority_projection": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/capability"
+      }
+    },
+    "dispatch_reference": {
+      "$ref": "#/$defs/permit"
     }
   },
   "$defs": {
@@ -299,5 +328,6 @@
       "additionalProperties": false
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "Non-authoritative conformance projection over existing Mycelix AGENT primitives. This artifact creates no authority type, grant store, runtime permit or policy engine."
 }
