@@ -1,0 +1,560 @@
+{
+  "profile": "luminous-osi-xap-scenarios",
+  "version": "0.1",
+  "status": "synthetic_research_fixtures",
+  "scenario_count": 25,
+  "scenarios": [
+    {
+      "scenario_id": "XAP-01",
+      "kind": "negative",
+      "osi_layers": [
+        1
+      ],
+      "expected_disposition": "deny",
+      "trigger": "Device replaced or repaired but old hardware/firmware receipt presented",
+      "required_assertions": [
+        "Suspend affected hardware claims",
+        "Re-identify exact board and revision",
+        "Require repair-triggered requalification"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-02",
+      "kind": "negative",
+      "osi_layers": [
+        1
+      ],
+      "expected_disposition": "deny",
+      "trigger": "Signed firmware is expired, revoked, wrong-model or rollback-vulnerable",
+      "required_assertions": [
+        "Signature validity alone is insufficient",
+        "Reject wrong model and disallowed version",
+        "Record recovery state"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-03",
+      "kind": "negative",
+      "osi_layers": [
+        2
+      ],
+      "expected_disposition": "deny",
+      "trigger": "Rogue AP, unauthorized switch port, VLAN escape or untrusted local segment",
+      "required_assertions": [
+        "No implicit trust from link presence",
+        "Apply site admission policy",
+        "Preserve end-to-end authentication"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-04",
+      "kind": "negative",
+      "osi_layers": [
+        3
+      ],
+      "expected_disposition": "deny",
+      "trigger": "IPv6, alternate route, tunnel, DNS or second interface bypasses intended egress restriction",
+      "required_assertions": [
+        "Detect route bypass",
+        "Incomplete route inventory blocks complete mediation",
+        "Do not silently fall back"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-05",
+      "kind": "negative",
+      "osi_layers": [
+        4,
+        5,
+        7
+      ],
+      "expected_disposition": "deny",
+      "trigger": "Authenticated QUIC/TLS peer attempts unauthorized application operation",
+      "required_assertions": [
+        "Transport stays distinct from permission",
+        "Participant denies exact unauthorized operation"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-06",
+      "kind": "negative",
+      "osi_layers": [
+        4,
+        6
+      ],
+      "expected_disposition": "deny",
+      "trigger": "Partial, slow-drip or malformed input exhausts parser or session resources",
+      "required_assertions": [
+        "Enforce byte/CPU/memory/time bounds",
+        "Terminate affected session safely"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-07",
+      "kind": "negative",
+      "osi_layers": [
+        4,
+        5
+      ],
+      "expected_disposition": "deny",
+      "trigger": "Session context reused across changed transport profile, tenant or audience",
+      "required_assertions": [
+        "Reject profile/context mismatch",
+        "Require fresh authenticated negotiation"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-08",
+      "kind": "negative",
+      "osi_layers": [
+        6
+      ],
+      "expected_disposition": "deny",
+      "trigger": "Signed semantic object has multiple encodings or parsers disagree",
+      "required_assertions": [
+        "Reject non-canonical or ambiguous encoding",
+        "Differential tests must expose parser disagreement"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-09",
+      "kind": "negative",
+      "osi_layers": [
+        6,
+        7
+      ],
+      "expected_disposition": "deny",
+      "trigger": "Confidential source summarized/paraphrased through child agent to unauthorized sink",
+      "required_assertions": [
+        "Preserve lineage/classification",
+        "Require explicit declassification authority",
+        "Measure semantic leakage"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-10",
+      "kind": "negative",
+      "osi_layers": [
+        7
+      ],
+      "expected_disposition": "deny",
+      "trigger": "Model/tool output requests host command or broad credential use",
+      "required_assertions": [
+        "Treat retrieved content as data",
+        "Require exact typed capability and host authorization"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-11",
+      "kind": "negative",
+      "osi_layers": [
+        7
+      ],
+      "expected_disposition": "deny",
+      "trigger": "Broker compromised or policy store unavailable",
+      "required_assertions": [
+        "Participant final authorization still holds",
+        "Unavailable authority denies consequential action"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-12",
+      "kind": "negative",
+      "osi_layers": [
+        5,
+        7
+      ],
+      "expected_disposition": "deny",
+      "trigger": "Valid operator session attempts action outside role, target or current grant",
+      "required_assertions": [
+        "Deny at privileged operation boundary",
+        "UI/authentication alone is insufficient"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-13",
+      "kind": "negative",
+      "osi_layers": [
+        5,
+        7
+      ],
+      "expected_disposition": "deny",
+      "trigger": "Root authority revoked while delegated work or child agent remains alive",
+      "required_assertions": [
+        "Revoke descendants and continuations",
+        "Participant rechecks currentness"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-14",
+      "kind": "negative",
+      "osi_layers": [
+        "cross_layer"
+      ],
+      "expected_disposition": "unknown",
+      "trigger": "Observer, participant and agent share hidden common dependency",
+      "required_assertions": [
+        "Mark independence unknown",
+        "Do not count copied/re-signed evidence as independent"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-15",
+      "kind": "negative",
+      "osi_layers": [
+        3,
+        4,
+        7
+      ],
+      "expected_disposition": "reconcile_same_attempt",
+      "trigger": "Network partition occurs after external mutation dispatch but before acknowledgement",
+      "required_assertions": [
+        "Mark outcome_unknown",
+        "Reconcile same attempt",
+        "No blind retry or inferred rollback"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-16",
+      "kind": "negative",
+      "osi_layers": [
+        "cross_layer"
+      ],
+      "expected_disposition": "deny",
+      "trigger": "Management-plane credential compromise attempts end-user data access or physical effect",
+      "required_assertions": [
+        "Plane isolation denies escalation",
+        "Management authentication is not effect authority"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-17",
+      "kind": "negative",
+      "osi_layers": [
+        "cross_layer"
+      ],
+      "expected_disposition": "continue_safe_local",
+      "trigger": "Control plane or Mycelix unavailable",
+      "required_assertions": [
+        "Host boot and safe local baseline continue",
+        "High-risk remote mutation requires fresh authority"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-18",
+      "kind": "negative",
+      "osi_layers": [
+        1,
+        7
+      ],
+      "expected_disposition": "deny",
+      "trigger": "Local safety controller rejects action allowed by model or broker",
+      "required_assertions": [
+        "Local safety boundary wins",
+        "Preserve both decisions and record rejection"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-19",
+      "kind": "negative",
+      "osi_layers": [
+        1,
+        5,
+        7
+      ],
+      "expected_disposition": "deny",
+      "trigger": "Revoked/expired/unknown key, profile, tool manifest or device appraisal on otherwise valid session",
+      "required_assertions": [
+        "Currentness enforced at final boundary",
+        "No downgrade fallback"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-20",
+      "kind": "negative",
+      "osi_layers": [
+        "cross_layer"
+      ],
+      "expected_disposition": "require_new_authority",
+      "trigger": "Recovery or compensation attempted after uncertain/irreversible effect",
+      "required_assertions": [
+        "Remedy has separate narrow authority",
+        "Original effect and history are retained"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-P01",
+      "kind": "positive",
+      "osi_layers": [
+        1,
+        2,
+        3
+      ],
+      "expected_disposition": "allow",
+      "trigger": "Exact current device and link identity satisfy a read-only resource profile",
+      "required_assertions": [
+        "Only the listed target/destination is reachable",
+        "Positive control must complete and produce participant-independent evidence"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-P02",
+      "kind": "positive",
+      "osi_layers": [
+        3,
+        4,
+        5
+      ],
+      "expected_disposition": "allow",
+      "trigger": "Authenticated session requests an explicitly authorized read-only API operation",
+      "required_assertions": [
+        "Audience and operation match",
+        "No ambient credential passthrough",
+        "Result is independently reconstructable"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-P03",
+      "kind": "positive",
+      "osi_layers": [
+        5,
+        6,
+        7
+      ],
+      "expected_disposition": "allow",
+      "trigger": "Canonical signed request has current exact authority and participant commits the permitted reversible operation",
+      "required_assertions": [
+        "Participant makes final authorization",
+        "One-use attempt deduplicates",
+        "Independent postcondition matches"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-P04",
+      "kind": "positive",
+      "osi_layers": [
+        5,
+        7
+      ],
+      "expected_disposition": "allow",
+      "trigger": "Enrolled operator performs an exact role-authorized action with current approval and valid action transcript",
+      "required_assertions": [
+        "Role and target are checked at effect boundary",
+        "Receipt binds exact operation"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    },
+    {
+      "scenario_id": "XAP-P05",
+      "kind": "positive",
+      "osi_layers": [
+        "cross_layer"
+      ],
+      "expected_disposition": "continue_safe_local",
+      "trigger": "Control plane is unavailable while a prequalified local read-only task remains within its local policy",
+      "required_assertions": [
+        "Local task succeeds without central authority",
+        "Consequential remote effect remains denied"
+      ],
+      "evaluator_must_be_independent": true,
+      "evidence_classes": [
+        "policy_decision",
+        "participant_effect_oracle",
+        "observer_evidence",
+        "recovery_state"
+      ],
+      "claim_ceiling": "Synthetic fixture only; passing this case does not prove a real deployment secure."
+    }
+  ]
+}
