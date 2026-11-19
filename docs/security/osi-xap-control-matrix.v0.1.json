@@ -1,0 +1,1034 @@
+{
+  "profile": "luminous-osi-xap-control-matrix",
+  "version": "0.1",
+  "status": "research_non_normative",
+  "created_on": "2026-11-19",
+  "source_base": "2f19c661b5dfc80bd63dfbc54ddfe80a98884ecb",
+  "x805": {
+    "security_layers": [
+      "infrastructure",
+      "services",
+      "applications"
+    ],
+    "planes": [
+      "management",
+      "control",
+      "end_user"
+    ],
+    "dimensions": [
+      "access_control",
+      "authentication",
+      "non_repudiation",
+      "data_confidentiality",
+      "communication_security",
+      "data_integrity",
+      "availability",
+      "privacy"
+    ],
+    "note": "X.805 security layers, planes and dimensions are independent crosswalk axes; they are not replacements for the seven OSI protocol layers."
+  },
+  "osi_layers": [
+    {
+      "layer": 1,
+      "name": "physical",
+      "xenia_boundary": "not_owned"
+    },
+    {
+      "layer": 2,
+      "name": "data_link",
+      "xenia_boundary": "not_owned"
+    },
+    {
+      "layer": 3,
+      "name": "network",
+      "xenia_boundary": "not_owned"
+    },
+    {
+      "layer": 4,
+      "name": "transport",
+      "xenia_boundary": "adapter_partial"
+    },
+    {
+      "layer": 5,
+      "name": "session",
+      "xenia_boundary": "strong"
+    },
+    {
+      "layer": 6,
+      "name": "presentation",
+      "xenia_boundary": "strong"
+    },
+    {
+      "layer": 7,
+      "name": "application",
+      "xenia_boundary": "strong_composition"
+    }
+  ],
+  "controls": [
+    {
+      "id": "L1-BOOT-001",
+      "osi_layer": 1,
+      "x805_security_layer": "infrastructure",
+      "plane": "management",
+      "dimensions": [
+        "authentication",
+        "data_integrity",
+        "availability"
+      ],
+      "topic": "Measured boot and hardware-root appraisal",
+      "owner": {
+        "repo": "Luminous-Dynamics/nixward",
+        "component": "boot trust / system transaction"
+      },
+      "implementation_status": "specified",
+      "evidence_status": "issue_planned",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/nixward/blob/main/docs/SYSTEM_TRANSACTION_ARCHITECTURE.md",
+        "https://github.com/Luminous-Dynamics/luminous-platform/issues/349"
+      ],
+      "enforcement_points": [
+        "Exact-device firmware/boot verifier",
+        "Nixward relying-party policy"
+      ],
+      "residual_assumptions": [
+        "Exact hardware root of trust and measurement chain are target-specific",
+        "Sovereign Boot lifecycle/recovery is not measured boot evidence"
+      ],
+      "qualification_tests": [
+        "Reject stale or wrong-device measurements",
+        "Reject rollback to disallowed firmware",
+        "Verify post-boot state on exact board/revision"
+      ],
+      "claim_ceiling": "Specified architecture and planned device qualification; no universal secure-boot or attestation claim."
+    },
+    {
+      "id": "L1-FW-002",
+      "osi_layer": 1,
+      "x805_security_layer": "infrastructure",
+      "plane": "management",
+      "dimensions": [
+        "authentication",
+        "data_integrity",
+        "availability"
+      ],
+      "topic": "Firmware update provenance and rollback resistance",
+      "owner": {
+        "repo": "Luminous-Dynamics/luminous-platform",
+        "component": "vendor firmware lifecycle #23"
+      },
+      "implementation_status": "planned",
+      "evidence_status": "issue_planned",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/issues/23",
+        "https://github.com/Luminous-Dynamics/luminous-platform/issues/349"
+      ],
+      "enforcement_points": [
+        "Vendor/OEM update verifier",
+        "Device boot/update chain",
+        "Customer release policy"
+      ],
+      "residual_assumptions": [
+        "Vendor signing policy and availability",
+        "Exact model/revision compatibility"
+      ],
+      "qualification_tests": [
+        "Wrong-model image rejection",
+        "Expired/revoked publisher rejection",
+        "Rollback counter/policy enforcement",
+        "Interrupted update and physical recovery"
+      ],
+      "claim_ceiling": "Adapter and qualification plan; no device firmware has been qualified by this matrix."
+    },
+    {
+      "id": "L1-LIFECYCLE-003",
+      "osi_layer": 1,
+      "x805_security_layer": "infrastructure",
+      "plane": "management",
+      "dimensions": [
+        "authentication",
+        "availability",
+        "privacy"
+      ],
+      "topic": "Physical custody, tamper and repair-triggered requalification",
+      "owner": {
+        "repo": "Luminous-Dynamics/luminous-platform",
+        "component": "device family #349 and edge profile #300"
+      },
+      "implementation_status": "planned",
+      "evidence_status": "issue_planned",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/issues/300",
+        "https://github.com/Luminous-Dynamics/luminous-platform/issues/349"
+      ],
+      "enforcement_points": [
+        "Device owner / service custodian",
+        "Exact-device inventory and qualification verifier"
+      ],
+      "residual_assumptions": [
+        "Tamper evidence depends on hardware and site controls",
+        "Repair records may be incomplete"
+      ],
+      "qualification_tests": [
+        "Board replacement invalidates device binding",
+        "Repair invalidates affected claims until retest",
+        "Unknown custody transition yields unknown posture"
+      ],
+      "claim_ceiling": "Lifecycle design only; no physical tamper or repair qualification claimed."
+    },
+    {
+      "id": "L2-ADMISSION-004",
+      "osi_layer": 2,
+      "x805_security_layer": "infrastructure",
+      "plane": "control",
+      "dimensions": [
+        "access_control",
+        "authentication",
+        "communication_security"
+      ],
+      "topic": "Link admission and port authentication",
+      "owner": {
+        "repo": "Luminous-Dynamics/luminous-platform",
+        "component": "vendor/network deployment profile #23"
+      },
+      "implementation_status": "external_dependency",
+      "evidence_status": "external_dependency",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/issues/23",
+        "https://standards.ieee.org/ieee/802.1X/7345/"
+      ],
+      "enforcement_points": [
+        "Managed switch/AP controlled port",
+        "Customer RADIUS/EAP identity infrastructure"
+      ],
+      "residual_assumptions": [
+        "Exact switch/AP and supplicant support",
+        "Fallback/guest networks are separately scoped"
+      ],
+      "qualification_tests": [
+        "Unknown device denied controlled-port access",
+        "Revoked credential loses admission",
+        "Unmanaged link treated as hostile"
+      ],
+      "claim_ceiling": "External network control; no Luminous 802.1X deployment result documented."
+    },
+    {
+      "id": "L2-LINK-005",
+      "osi_layer": 2,
+      "x805_security_layer": "infrastructure",
+      "plane": "end_user",
+      "dimensions": [
+        "data_confidentiality",
+        "data_integrity",
+        "communication_security"
+      ],
+      "topic": "Link confidentiality and integrity",
+      "owner": {
+        "repo": "Luminous-Dynamics/luminous-platform",
+        "component": "customer AP/switch/hardware profile"
+      },
+      "implementation_status": "external_dependency",
+      "evidence_status": "not_evidenced",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/issues/300",
+        "https://github.com/Luminous-Dynamics/luminous-platform/issues/349"
+      ],
+      "enforcement_points": [
+        "Wireless AP / switch / link peers"
+      ],
+      "residual_assumptions": [
+        "Link-layer protection is not end-to-end protection",
+        "Public/unmanaged networks may provide no trustworthy link security"
+      ],
+      "qualification_tests": [
+        "Verify negotiated link security on exact hardware",
+        "Reject prohibited downgrade",
+        "Test rejoin/rekey and rogue AP behavior"
+      ],
+      "claim_ceiling": "No unified Luminous L2 link-security profile or field result is evidenced."
+    },
+    {
+      "id": "L2-SEG-006",
+      "osi_layer": 2,
+      "x805_security_layer": "infrastructure",
+      "plane": "control",
+      "dimensions": [
+        "access_control",
+        "communication_security",
+        "availability"
+      ],
+      "topic": "Switch port, VLAN and broadcast-domain isolation",
+      "owner": {
+        "repo": "Luminous-Dynamics/luminous-platform",
+        "component": "customer network / vendor adapter profile"
+      },
+      "implementation_status": "external_dependency",
+      "evidence_status": "not_evidenced",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/issues/23",
+        "https://github.com/Luminous-Dynamics/luminous-platform/issues/301"
+      ],
+      "enforcement_points": [
+        "Switch port/VLAN policy",
+        "AP client-isolation and bridge controls"
+      ],
+      "residual_assumptions": [
+        "VLAN labels alone do not prove isolation",
+        "Trunks, native VLANs and alternate uplinks may bypass intended boundaries"
+      ],
+      "qualification_tests": [
+        "Attempt cross-VLAN path",
+        "Test rogue trunk/native VLAN",
+        "Verify management and user port separation"
+      ],
+      "claim_ceiling": "Deployment-owner responsibility; no exact topology is currently qualified."
+    },
+    {
+      "id": "L3-EGRESS-007",
+      "osi_layer": 3,
+      "x805_security_layer": "infrastructure",
+      "plane": "control",
+      "dimensions": [
+        "access_control",
+        "communication_security",
+        "availability"
+      ],
+      "topic": "Identity-aware network reachability and egress policy",
+      "owner": {
+        "repo": "Luminous-Dynamics/nixward",
+        "component": "host/network enforcement integration"
+      },
+      "implementation_status": "planned",
+      "evidence_status": "issue_planned",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/nixward/blob/main/docs/SYSTEM_TRANSACTION_ARCHITECTURE.md",
+        "https://github.com/Luminous-Dynamics/xenia-peer/blob/main/docs/architecture/OSI_SECURITY_PLANE.md"
+      ],
+      "enforcement_points": [
+        "Host network namespace/firewall",
+        "Network egress gateway",
+        "Resource-side authorization"
+      ],
+      "residual_assumptions": [
+        "Xenia explicitly does not own IP routing",
+        "Process identity to packet identity binding remains a qualification dependency"
+      ],
+      "qualification_tests": [
+        "Default-deny unauthorized destination",
+        "No ambient egress from agent workload",
+        "Inventory and test all interfaces/routes/tunnels"
+      ],
+      "claim_ceiling": "Integration direction documented; no complete Luminous network policy enforcement claim."
+    },
+    {
+      "id": "L3-IPV6-008",
+      "osi_layer": 3,
+      "x805_security_layer": "infrastructure",
+      "plane": "control",
+      "dimensions": [
+        "access_control",
+        "communication_security",
+        "data_integrity"
+      ],
+      "topic": "IPv4/IPv6 policy parity and route inventory",
+      "owner": {
+        "repo": "Luminous-Dynamics/nixward",
+        "component": "host network policy / deployment profile"
+      },
+      "implementation_status": "planned",
+      "evidence_status": "not_evidenced",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/xenia-peer/blob/main/docs/architecture/OSI_SECURITY_PLANE.md"
+      ],
+      "enforcement_points": [
+        "Host firewall",
+        "Router/firewall",
+        "Tunnel and namespace policy"
+      ],
+      "residual_assumptions": [
+        "IPv6 may be enabled through interfaces outside IPv4 firewall scope",
+        "Unenumerated tunnels/routes invalidate complete mediation"
+      ],
+      "qualification_tests": [
+        "IPv6 bypass negative control",
+        "Alternate interface/tunnel bypass",
+        "Link-local and router-advertisement policy checks"
+      ],
+      "claim_ceiling": "No Luminous IPv4/IPv6 parity test result is claimed."
+    },
+    {
+      "id": "L3-DNS-009",
+      "osi_layer": 3,
+      "x805_security_layer": "services",
+      "plane": "control",
+      "dimensions": [
+        "authentication",
+        "data_integrity",
+        "privacy",
+        "availability"
+      ],
+      "topic": "DNS resolution, resolver identity and query privacy",
+      "owner": {
+        "repo": "Luminous-Dynamics/luminous-platform",
+        "component": "deployment profile / external resolver operator"
+      },
+      "implementation_status": "external_dependency",
+      "evidence_status": "not_evidenced",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/issues/301"
+      ],
+      "enforcement_points": [
+        "Host resolver policy",
+        "Trusted recursive resolver",
+        "DNS egress boundary"
+      ],
+      "residual_assumptions": [
+        "DoH/DoT does not by itself make a resolver trustworthy",
+        "Split-horizon and captive portal behavior vary by environment"
+      ],
+      "qualification_tests": [
+        "Unapproved resolver denial",
+        "DNS rebinding/poisoning test",
+        "DoH/DoT and plaintext fallback behavior",
+        "Resolver outage safe disposition"
+      ],
+      "claim_ceiling": "No Luminous DNS security service is claimed."
+    },
+    {
+      "id": "L4-TRANSPORT-010",
+      "osi_layer": 4,
+      "x805_security_layer": "services",
+      "plane": "end_user",
+      "dimensions": [
+        "communication_security",
+        "data_integrity",
+        "availability"
+      ],
+      "topic": "Authenticated transport profile and envelope framing",
+      "owner": {
+        "repo": "Luminous-Dynamics/xenia-peer",
+        "component": "TransportProfileV1 / negotiated session context"
+      },
+      "implementation_status": "implemented_component",
+      "evidence_status": "repository_documented",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/xenia-peer/blob/main/docs/architecture/OSI_SECURITY_PLANE.md"
+      ],
+      "enforcement_points": [
+        "Concrete TCP/WebSocket/QUIC transport adapter",
+        "Authenticated negotiated session context"
+      ],
+      "residual_assumptions": [
+        "Carrier/kernel behavior outside Xenia remains external",
+        "Profile documentation is not independent conformance evidence"
+      ],
+      "qualification_tests": [
+        "Altered framing/profile rejection",
+        "Transport context mismatch",
+        "Length-prefix allocation ceiling",
+        "Cross-implementation profile agreement"
+      ],
+      "claim_ceiling": "Xenia component behavior documented; no independent deployment qualification implied."
+    },
+    {
+      "id": "L4-RESOURCE-011",
+      "osi_layer": 4,
+      "x805_security_layer": "services",
+      "plane": "control",
+      "dimensions": [
+        "availability",
+        "data_integrity"
+      ],
+      "topic": "Pre-auth parser resource bounds and transport timeouts",
+      "owner": {
+        "repo": "Luminous-Dynamics/xenia-peer",
+        "component": "transport and availability profiles"
+      },
+      "implementation_status": "implemented_component",
+      "evidence_status": "repository_documented",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/xenia-peer/blob/main/docs/security/TRANSPORT_AVAILABILITY_PROFILE_V1.md"
+      ],
+      "enforcement_points": [
+        "Transport adapter before deserialization",
+        "Session deadline and teardown logic"
+      ],
+      "residual_assumptions": [
+        "Kernel buffering and connection establishment retain documented nonclaims",
+        "Resource fairness under shared-host load is external"
+      ],
+      "qualification_tests": [
+        "Oversized pre-auth message",
+        "Slow-drip envelope",
+        "Carrier-only keepalive does not reset app liveness",
+        "Send stall and close deadline"
+      ],
+      "claim_ceiling": "Profile and implementation described; no distributed availability guarantee."
+    },
+    {
+      "id": "L4-CARRIER-012",
+      "osi_layer": 4,
+      "x805_security_layer": "infrastructure",
+      "plane": "control",
+      "dimensions": [
+        "availability",
+        "communication_security"
+      ],
+      "topic": "Carrier establishment, congestion and path availability",
+      "owner": {
+        "repo": "Luminous-Dynamics/xenia-peer",
+        "component": "carrier adapter and underlying TCP/QUIC provider"
+      },
+      "implementation_status": "external_dependency",
+      "evidence_status": "not_evidenced",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/xenia-peer/blob/main/docs/security/TRANSPORT_AVAILABILITY_PROFILE_V1.md"
+      ],
+      "enforcement_points": [
+        "TCP/QUIC/WebSocket provider",
+        "Host kernel and network path"
+      ],
+      "residual_assumptions": [
+        "No carrier-independent guarantee for pre-Xenia buffering",
+        "Bandwidth fairness and distributed availability are explicit nonclaims"
+      ],
+      "qualification_tests": [
+        "Connection-establishment deadline",
+        "Congestion/backpressure under contention",
+        "Carrier path migration/failure",
+        "Kernel buffer pressure"
+      ],
+      "claim_ceiling": "No carrier-independent or distributed transport availability guarantee."
+    },
+    {
+      "id": "L5-HANDSHAKE-013",
+      "osi_layer": 5,
+      "x805_security_layer": "services",
+      "plane": "control",
+      "dimensions": [
+        "authentication",
+        "data_integrity",
+        "communication_security"
+      ],
+      "topic": "Peer authentication and transcript-bound session establishment",
+      "owner": {
+        "repo": "Luminous-Dynamics/xenia-peer",
+        "component": "Xenia handshake/session"
+      },
+      "implementation_status": "implemented_component",
+      "evidence_status": "repository_documented",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/xenia-peer/blob/main/docs/architecture/OSI_SECURITY_PLANE.md"
+      ],
+      "enforcement_points": [
+        "Handshake verifier",
+        "Negotiated session context"
+      ],
+      "residual_assumptions": [
+        "Enrolled key provenance and operator endpoint security remain trust inputs"
+      ],
+      "qualification_tests": [
+        "Wrong peer/key rejection",
+        "Transcript mutation",
+        "Hybrid key mismatch",
+        "Downgrade and profile mismatch"
+      ],
+      "claim_ceiling": "Protocol implementation documented; not independent cryptographic certification."
+    },
+    {
+      "id": "L5-REPLAY-014",
+      "osi_layer": 5,
+      "x805_security_layer": "services",
+      "plane": "control",
+      "dimensions": [
+        "authentication",
+        "data_integrity",
+        "availability"
+      ],
+      "topic": "Replay protection, rekey and revocation currentness",
+      "owner": {
+        "repo": "Luminous-Dynamics/xenia-peer",
+        "component": "session and operator security"
+      },
+      "implementation_status": "implemented_component",
+      "evidence_status": "repository_documented",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/xenia-peer/blob/main/docs/security/OPERATOR_SECURITY_MODEL.md"
+      ],
+      "enforcement_points": [
+        "Challenge store",
+        "Session replay/rekey state",
+        "Operator authorization verifier"
+      ],
+      "residual_assumptions": [
+        "Revocation propagation across disconnected descendants requires end-to-end composition"
+      ],
+      "qualification_tests": [
+        "Replay nonce consumption",
+        "Old epoch rejection",
+        "Revoked operator action denial",
+        "Rekey under partition"
+      ],
+      "claim_ceiling": "Component controls documented; federated revocation latency not established."
+    },
+    {
+      "id": "L5-KEYCUSTODY-015",
+      "osi_layer": 5,
+      "x805_security_layer": "applications",
+      "plane": "management",
+      "dimensions": [
+        "authentication",
+        "non_repudiation",
+        "privacy"
+      ],
+      "topic": "Operator and signer key custody, enrollment and recovery",
+      "owner": {
+        "repo": "Luminous-Dynamics/xenia-peer",
+        "component": "operator security model / signer delegation"
+      },
+      "implementation_status": "specified",
+      "evidence_status": "repository_documented",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/xenia-peer/blob/main/docs/security/OPERATOR_SECURITY_MODEL.md"
+      ],
+      "enforcement_points": [
+        "Out-of-band enrollment policy",
+        "Operator authenticator and daemon verifier"
+      ],
+      "residual_assumptions": [
+        "Threat model excludes compromised daemon host and live operator browser",
+        "Hardware-backed custody and recovery are deployment-specific"
+      ],
+      "qualification_tests": [
+        "Browser compromise simulation",
+        "Daemon host compromise exercise",
+        "Key replacement and recovery",
+        "Role and signer delegation audit"
+      ],
+      "claim_ceiling": "Operator threat model documented with explicit exclusions; external assessment remains necessary."
+    },
+    {
+      "id": "L6-CANONICAL-016",
+      "osi_layer": 6,
+      "x805_security_layer": "services",
+      "plane": "end_user",
+      "dimensions": [
+        "data_integrity",
+        "communication_security",
+        "availability"
+      ],
+      "topic": "Canonical serialization, schema negotiation and parser agreement",
+      "owner": {
+        "repo": "Luminous-Dynamics/xenia-wire",
+        "component": "wire framing / canonical transcript"
+      },
+      "implementation_status": "implemented_component",
+      "evidence_status": "repository_documented",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/xenia-wire",
+        "https://github.com/Luminous-Dynamics/xenia-peer/blob/main/docs/architecture/OSI_SECURITY_PLANE.md"
+      ],
+      "enforcement_points": [
+        "Serializer/deserializer boundary",
+        "Version/profile negotiation"
+      ],
+      "residual_assumptions": [
+        "Every adapter and consumer must share exact schema semantics",
+        "Parser differential coverage may not be complete"
+      ],
+      "qualification_tests": [
+        "Duplicate/non-canonical field test",
+        "Parser differential corpus",
+        "Version downgrade",
+        "Deep nesting and resource exhaustion"
+      ],
+      "claim_ceiling": "Wire component documented; full cross-implementation parser qualification not claimed."
+    },
+    {
+      "id": "L6-CRYPTO-017",
+      "osi_layer": 6,
+      "x805_security_layer": "services",
+      "plane": "end_user",
+      "dimensions": [
+        "data_confidentiality",
+        "data_integrity",
+        "non_repudiation"
+      ],
+      "topic": "Sealed payload confidentiality and authenticated message integrity",
+      "owner": {
+        "repo": "Luminous-Dynamics/xenia-wire",
+        "component": "sealed envelope and cryptographic profiles"
+      },
+      "implementation_status": "implemented_component",
+      "evidence_status": "repository_documented",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/xenia-wire",
+        "https://github.com/Luminous-Dynamics/xenia-peer"
+      ],
+      "enforcement_points": [
+        "Authenticated envelope and key schedule",
+        "Recipient-side verification"
+      ],
+      "residual_assumptions": [
+        "Algorithm selection does not protect compromised endpoints",
+        "Library and key lifecycle review remain required"
+      ],
+      "qualification_tests": [
+        "Ciphertext tampering",
+        "Wrong recipient and key",
+        "Replay across context",
+        "Algorithm/profile downgrade"
+      ],
+      "claim_ceiling": "Cryptographic primitives and protocol features documented; no whole-system security proof."
+    },
+    {
+      "id": "L6-DATAFLOW-018",
+      "osi_layer": 6,
+      "x805_security_layer": "applications",
+      "plane": "end_user",
+      "dimensions": [
+        "data_confidentiality",
+        "data_integrity",
+        "privacy",
+        "access_control"
+      ],
+      "topic": "Information-flow lineage, semantic release and explicit declassification",
+      "owner": {
+        "repo": "Luminous-Dynamics/luminous-platform",
+        "component": "WAEP reporting profile / application data-boundary owners"
+      },
+      "implementation_status": "specified",
+      "evidence_status": "repository_documented",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/496"
+      ],
+      "enforcement_points": [
+        "Source and transformation labels",
+        "Destination sink policy",
+        "Independent release evaluator"
+      ],
+      "residual_assumptions": [
+        "WAEP is a reporting profile, not an information-flow enforcement runtime",
+        "Semantic detectors have measurable false negatives and false positives"
+      ],
+      "qualification_tests": [
+        "Paraphrase leakage",
+        "Child-agent laundering",
+        "Unauthorized classification downgrade",
+        "Unknown sink and missing lineage"
+      ],
+      "claim_ceiling": "Claim/reporting schema only; no universal semantic non-disclosure guarantee."
+    },
+    {
+      "id": "L7-INTENT-019",
+      "osi_layer": 7,
+      "x805_security_layer": "applications",
+      "plane": "end_user",
+      "dimensions": [
+        "access_control",
+        "authentication",
+        "privacy"
+      ],
+      "topic": "Agent proposal, principal intent and purpose separation",
+      "owner": {
+        "repo": "Luminous-Dynamics/symthaea",
+        "component": "INTX interaction semantics"
+      },
+      "implementation_status": "specified",
+      "evidence_status": "repository_documented",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/494"
+      ],
+      "enforcement_points": [
+        "Typed intent boundary",
+        "Human/principal approval interface"
+      ],
+      "residual_assumptions": [
+        "Model output and moral/epistemic metrics are advisory only",
+        "Human approval remains vulnerable to coercion/deception"
+      ],
+      "qualification_tests": [
+        "Prompt injection cannot change authority",
+        "Model self-authorization denial",
+        "Purpose/target mismatch",
+        "Human approval context binding"
+      ],
+      "claim_ceiling": "Architecture semantics; not proof that an agent is aligned or safe."
+    },
+    {
+      "id": "L7-BROKER-020",
+      "osi_layer": 7,
+      "x805_security_layer": "applications",
+      "plane": "control",
+      "dimensions": [
+        "access_control",
+        "authentication",
+        "non_repudiation",
+        "data_integrity"
+      ],
+      "topic": "Exact action authorization and one-use broker permit",
+      "owner": {
+        "repo": "Luminous-Dynamics/luminous-platform",
+        "component": "agent broker/effect boundary #168 and Web4 architecture"
+      },
+      "implementation_status": "specified",
+      "evidence_status": "issue_planned",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/issues/168",
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/494"
+      ],
+      "enforcement_points": [
+        "Canonical request resolver",
+        "Permit verifier immediately before dispatch"
+      ],
+      "residual_assumptions": [
+        "Exact operation manifests and all connector routes must be inventoried",
+        "Broker is not the participant's final authority"
+      ],
+      "qualification_tests": [
+        "Scope attenuation",
+        "Attempt binding",
+        "Permit consume-once",
+        "Policy change after planning",
+        "Broker compromise negative control"
+      ],
+      "claim_ceiling": "Architecture and planning evidence; no unrestricted broker production qualification."
+    },
+    {
+      "id": "L7-PARTICIPANT-021",
+      "osi_layer": 7,
+      "x805_security_layer": "applications",
+      "plane": "end_user",
+      "dimensions": [
+        "access_control",
+        "data_integrity",
+        "non_repudiation",
+        "availability"
+      ],
+      "topic": "Participant-side final authorization, deduplication and effect receipt",
+      "owner": {
+        "repo": "Luminous-Dynamics/mycelix",
+        "component": "AGENT authority/effect chain and participant owner"
+      },
+      "implementation_status": "specified",
+      "evidence_status": "issue_planned",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/mycelix/issues/805",
+        "https://github.com/Luminous-Dynamics/luminous-platform/issues/358"
+      ],
+      "enforcement_points": [
+        "Destination participant policy",
+        "Participant idempotency/effect journal"
+      ],
+      "residual_assumptions": [
+        "AGENT-003/AGENT-010 and external participant qualification remain gates",
+        "Participant compromise is a residual risk"
+      ],
+      "qualification_tests": [
+        "Compromised broker with participant deny",
+        "Duplicate attempt deduplication",
+        "Ambiguous acknowledgement reconciliation",
+        "Independent offline receipt verifier"
+      ],
+      "claim_ceiling": "Qualification chain remains incomplete; no unrestricted autonomous external effect claim."
+    },
+    {
+      "id": "L7-OBSERVE-022",
+      "osi_layer": 7,
+      "x805_security_layer": "applications",
+      "plane": "end_user",
+      "dimensions": [
+        "non_repudiation",
+        "data_integrity",
+        "availability",
+        "privacy"
+      ],
+      "topic": "Independent observation, postcondition and bounded recovery",
+      "owner": {
+        "repo": "Luminous-Dynamics/luminous-platform",
+        "component": "ITOPS/OMSI/WAEP with Sol-Atlas and Symtropy observers"
+      },
+      "implementation_status": "specified",
+      "evidence_status": "issue_planned",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/issues/325",
+        "https://github.com/Luminous-Dynamics/luminous-platform/issues/358",
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/496"
+      ],
+      "enforcement_points": [
+        "Participant-owned effect source",
+        "Independent observer domain",
+        "Recovery/incident owner"
+      ],
+      "residual_assumptions": [
+        "Observer independence and physical truth need separate qualification",
+        "Recovery may not reverse irreversible effects"
+      ],
+      "qualification_tests": [
+        "Common-cause dependency attack",
+        "Missing observer yields unknown",
+        "Outcome-unknown same-attempt reconciliation",
+        "Human recovery outcome evidence"
+      ],
+      "claim_ceiling": "Evidence/benchmark architecture; no general independent-observation guarantee."
+    },
+    {
+      "id": "XAP-COMMON-023",
+      "osi_layer": "cross_layer",
+      "x805_security_layer": "cross_layer",
+      "plane": "cross_plane",
+      "dimensions": [
+        "authentication",
+        "data_integrity",
+        "availability",
+        "privacy"
+      ],
+      "topic": "Common-cause dependencies across signer, firmware, host, KMS, DNS, clock, CI and observer",
+      "owner": {
+        "repo": "Luminous-Dynamics/mycelix",
+        "component": "dependency hypergraph / evidence independence"
+      },
+      "implementation_status": "specified",
+      "evidence_status": "repository_documented",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/issues/325",
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/496"
+      ],
+      "enforcement_points": [
+        "Evidence dependency graph",
+        "Independent verifier"
+      ],
+      "residual_assumptions": [
+        "Inventory completeness must be demonstrated",
+        "Different operators may share upstream vendors or infrastructure"
+      ],
+      "qualification_tests": [
+        "Shared signer across two apparent observers",
+        "Clock/KMS/collector common cause",
+        "Unknown edge forces indeterminate",
+        "Compromise blast-radius recalculation"
+      ],
+      "claim_ceiling": "Graph profile and design only; independence is not inferred from labels or operator names."
+    },
+    {
+      "id": "XAP-FAILURE-024",
+      "osi_layer": "cross_layer",
+      "x805_security_layer": "cross_layer",
+      "plane": "cross_plane",
+      "dimensions": [
+        "access_control",
+        "availability",
+        "non_repudiation"
+      ],
+      "topic": "Failure semantics and boot-continuity versus fail-closed actuation",
+      "owner": {
+        "repo": "Luminous-Dynamics/luminous-platform",
+        "component": "Platform issue #310 / Nixward / Sovereign Boot"
+      },
+      "implementation_status": "specified",
+      "evidence_status": "issue_planned",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/issues/310",
+        "https://github.com/Luminous-Dynamics/nixward/blob/main/docs/SYSTEM_TRANSACTION_ARCHITECTURE.md"
+      ],
+      "enforcement_points": [
+        "Host boot/recovery path",
+        "Nixward authorization boundary",
+        "Participant final effect gate"
+      ],
+      "residual_assumptions": [
+        "Host boot and safe baseline are target-specific",
+        "No claim of fail-closed actuation without exact participant tests"
+      ],
+      "qualification_tests": [
+        "Control plane absent but host boots",
+        "Authority unavailable denies consequential change",
+        "Unknown effect reconciles same attempt",
+        "Recovery does not widen authority"
+      ],
+      "claim_ceiling": "Terminology correction authored; exact-target failure qualification remains open."
+    },
+    {
+      "id": "XAP-PLANE-025",
+      "osi_layer": "cross_layer",
+      "x805_security_layer": "cross_layer",
+      "plane": "cross_plane",
+      "dimensions": [
+        "access_control",
+        "authentication",
+        "privacy",
+        "availability"
+      ],
+      "topic": "Management/control/end-user plane compromise containment",
+      "owner": {
+        "repo": "Luminous-Dynamics/luminous-platform",
+        "component": "XAP composition / existing component owners"
+      },
+      "implementation_status": "specified",
+      "evidence_status": "not_evidenced",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/498"
+      ],
+      "enforcement_points": [
+        "Management credential boundary",
+        "Control-plane policy distribution",
+        "End-user resource/participant enforcement"
+      ],
+      "residual_assumptions": [
+        "Plane separation is a deployment property, not only a diagram",
+        "Shared credentials and management APIs may collapse planes"
+      ],
+      "qualification_tests": [
+        "Management token attempts end-user data access",
+        "Control-plane compromise cannot mint participant authority",
+        "Separate admin and workload identities",
+        "Recovery under management-plane outage"
+      ],
+      "claim_ceiling": "Cross-plane requirement specified; no end-to-end plane-isolation evidence yet."
+    },
+    {
+      "id": "XAP-HUMAN-026",
+      "osi_layer": "cross_layer",
+      "x805_security_layer": "cross_layer",
+      "plane": "management",
+      "dimensions": [
+        "authentication",
+        "non_repudiation",
+        "privacy",
+        "access_control"
+      ],
+      "topic": "Human approval context, coercion and social-engineering boundary",
+      "owner": {
+        "repo": "Luminous-Dynamics/mycelix",
+        "component": "governance/consent plus Xenia operator ceremony"
+      },
+      "implementation_status": "specified",
+      "evidence_status": "not_evidenced",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/xenia-peer/blob/main/docs/security/OPERATOR_SECURITY_MODEL.md"
+      ],
+      "enforcement_points": [
+        "Human approval UX",
+        "Exact-action transcript",
+        "Independent dual control where required"
+      ],
+      "residual_assumptions": [
+        "Cryptography cannot establish that an approver understood or freely chose an action",
+        "Insider coercion and social engineering remain residual risks"
+      ],
+      "qualification_tests": [
+        "Approval shown with exact target/effect",
+        "Material plan change invalidates approval",
+        "Coerced/deceptive approval tabletop",
+        "Dual-control separation test"
+      ],
+      "claim_ceiling": "Human approval is an authority input; no guarantee against coercion or manipulation."
+    }
+  ],
+  "nonclaims": [
+    "A repository README or design document does not prove a deployed control is active.",
+    "Component implementation does not establish independent qualification or end-to-end security.",
+    "External deployment controls require exact owner, configuration, target identity and evidence.",
+    "A missing or unknown route, dependency, owner or enforcement point blocks a complete-mediation claim.",
+    "This matrix is not an audit, certification, compliance attestation or scalar security score."
+  ]
+}
