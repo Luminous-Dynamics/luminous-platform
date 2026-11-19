@@ -53,8 +53,10 @@ def main() -> int:
             if len(ids) != len(set(ids)):
                 raise SystemExit("duplicate control IDs")
             for control in data["controls"]:
-                if control["osi_layer"] == "cross_layer" and control["plane"] != "cross_plane":
-                    raise SystemExit(f"{control['id']}: cross-layer control must use cross_plane")
+                if control["osi_layer"] == "cross_layer" and control["x805_security_layer"] != "cross_layer":
+                    raise SystemExit(f"{control['id']}: cross-layer control must span the X.805 security layers")
+                if control["plane"] == "cross_plane" and control["osi_layer"] != "cross_layer":
+                    raise SystemExit(f"{control['id']}: cross_plane control must span OSI layers")
             total_controls = len(ids)
         else:
             ids = [x["scenario_id"] for x in data["scenarios"]]
