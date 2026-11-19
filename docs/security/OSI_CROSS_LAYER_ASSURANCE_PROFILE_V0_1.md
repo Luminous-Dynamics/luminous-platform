@@ -146,6 +146,30 @@ This is the minimum first cross-layer corpus. Each case needs positive, negative
 | XAP-19 | Revoked/expired/unknown key, profile, tool manifest or device attestation arrives on an otherwise valid session | Currentness failure is enforced at the final relevant boundary; no downgrade fallback. |
 | XAP-20 | Recovery/compensation is attempted after uncertain or irreversible external effect | Remedy requires its own narrow current authority and postcondition; it never erases original effect/history. |
 
+### 6.1 Machine-readable matrix and assurance fixtures
+
+The accompanying machine-readable artifacts are the first testable coverage index for this profile:
+
+- `osi-xap-control-matrix.v0.1.json` and its Draft 2020-12 schema: 30 control records — three for each OSI layer L1–L6, four for L7, and eight cross-layer responsibilities. Each row identifies the OSI layer, X.805 security layer/plane/dimensions, repository owner, implementation/evidence maturity, enforcement points, residual assumptions, qualification tests and claim ceiling.
+- `osi-xap-scenarios.v0.1.json` and its schema: 31 synthetic scenarios — 26 negative and five positive. The corpus includes OT AI prompt/data poisoning, digital-twin drift and unauthorized twin-to-controller synchronization, as well as OT active-scanning safety, monitoring blind spots and shared management/operational infrastructure.
+- `l2l3-deployment-profile.schema.v0.1.json` and `l2l3-deployment-profile.template.v0.1.json`: a typed exact-scope network inventory/evidence contract. The public template is deliberately empty, `template_only`, `not_assessed`, with unknown discovery/OT separation and no complete-mediation claim.
+- `scripts/validate_osi_xap.py` and `.github/workflows/osi-xap.yml`: test-only Draft 2020-12 schema and static fixture checks. This is build/test tooling, not a production policy engine or network scanner.
+
+The L2/L3 profile separately represents X.805 planes and OT network functions. For example, an OT management network, operational network, vendor remote-access zone and security-monitoring zone are not interchangeable with X.805's abstract Management/Control/End-User plane labels. A deployment must show how both views map to actual interfaces, routes and enforcement points.
+
+### 6.2 OT-specific review: NIST SP 800-82 Rev. 4 IPD
+
+Reviewed the September 2026 NIST SP 800-82 Rev. 4 Initial Public Draft. The current public comment period ends **30 November 2026**. This is a draft, not a final standard. Official sources: https://csrc.nist.gov/pubs/sp/800/82/r4/ipd and https://doi.org/10.6028/NIST.SP.800-82r4.ipd.
+
+Several points materially strengthen the Luminous profile:
+
+- **Discovery must be safe and method-qualified.** Asset inventory may combine vendor tools, passive monitoring, OT-aware scanning, independent active scanning and manual inspection. Active scans can affect constrained devices; sensor placement can miss traffic behind isolated switches; non-IP and isolated assets may require manual inventory. L2/L3 profiles therefore record discovery method, approvals, non-production evidence, passive sensor placement, blind spots and unresolved assets. A missing asset or connection blocks a completeness claim.
+- **Management and operational networks are different security functions.** OT management traffic (configuration, patching, access control) has different availability and traffic characteristics from process-control traffic. The profile separates these network functions, external vendor access and security monitoring. Monitoring infrastructure is modelled as an isolated zone; one-way telemetry is a preferred pattern, while bidirectional exceptions must be explicit and risk-reviewed.
+- **Zero trust must be capability-aware.** Many PLCs, controllers and embedded devices cannot support modern identity agents or continuous ZTA protocols. The profile records whether a device supports native identity-aware enforcement, gateway-mediated enforcement or neither. Unsupported endpoints need documented compensating controls; no requirement is imposed to install agents on unsafe or unsupported controllers.
+- **AI/ML and digital twins create new attack surfaces.** NIST's IPD discusses prompt injection, compromised training data, probabilistic/non-deterministic model behavior, data collection/retention implications, digital-twin drift and bidirectional connectivity. The Luminous scenarios now test poisoned inputs, stale/misleading twin state, unauthorized twin-to-controller paths and independent physical observation. Model/twin outputs remain advisory; physical actuation remains subject to current participant authority and local safety controls.
+- **Cryptography must be measured against OT timing and recovery.** Protecting data in transit over untrusted segments is important, but added latency, jitter, failure and key lifecycle effects must be measured for the actual process. An encrypted tunnel is not a substitute for endpoint authorization or an independently verified physical outcome.
+
+These are profile design implications, not a claim that Luminous has implemented or qualified the relevant controls. An internal comment draft is recorded separately and has **not** been submitted to NIST.
 ## 7. Benchmark and qualification programme
 
 Do not build a single “Luminous security score”. Report separate properties and hard gates. A system that blocks every operation is not useful; positive-control completion and benign false blocking must be reported alongside attack prevention.
@@ -213,7 +237,7 @@ The Web4 reference architecture in PR #494 remains the higher-level composition 
 
 1. **Correct platform headline terminology:** distinguish boot-independent host availability from fail-closed consequential actuation. Existing issue #310 remains the owner of broader fixtures and acceptance.
 2. **Freeze the ownership matrix:** every layer and every deployment-specific external owner must be named; “not owned by Xenia” cannot mean “no security requirement”.
-3. **Start with L2/L3:** capture one exact NixOS host + managed switch/AP topology; document IPv4 and IPv6, DNS, firewall, egress, VLAN/port, Wi-Fi admission and segmentation. Use read-only capture first. No network mutation until exact target, pre-state, authorization and recovery are bound.
+3. **Start with L2/L3:** use NET-OSI-001 #499's empty profile to capture one exact NixOS host + managed switch/AP topology; document IPv4 and IPv6, DNS, firewall, egress, VLAN/port, Wi-Fi admission, routes and management/operational zones. Use passive/manual/vendor-approved read-only discovery first. No active OT scan without a non-production test or approved planned downtime; no network mutation until exact target, pre-state, authorization and recovery are bound.
 4. **Start one exact-device L1 profile:** use an owned/lab board and exact revision; record firmware source/digest, boot chain, update/rollback, hardware identity, radio/region and physical recovery. Do not infer support from the chipset family.
 5. **Requalify Xenia L4–L7 interfaces:** use current Xenia profiles as the starting contract; add missing producer-queue, clipboard/file-command, signer-custody, parser-differential and application-sink tests.
 6. **Compose Mycelix final authority/effect chain:** keep AGENT-003/AGENT-010 and independent observer/participant boundaries as explicit gates.
