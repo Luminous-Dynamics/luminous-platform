@@ -91,8 +91,21 @@ def main() -> int:
     failures = 0
     expected_valid = 0
     expected_invalid = 0
+    seen_vector_ids: set[str] = set()
+    seen_record_ids: set[str] = set()
     for vector in vectors:
         vector_id = vector.get("vector_id", "<missing-vector-id>")
+        record_id = vector.get("record", {}).get("record_id")
+        if vector_id in seen_vector_ids:
+            print(f"{vector_id}: duplicate vector ID", file=sys.stderr)
+            failures += 1
+            continue
+        seen_vector_ids.add(vector_id)
+        if not record_id or record_id in seen_record_ids:
+            print(f"{vector_id}: missing or duplicate record ID", file=sys.stderr)
+            failures += 1
+            continue
+        seen_record_ids.add(record_id)
         expected = vector.get("expected")
         if expected not in {"valid", "invalid"}:
             print(f"{vector_id}: invalid expected disposition", file=sys.stderr)
@@ -135,6 +148,9 @@ def main() -> int:
             failures += 1
         else:
             print(f"{vector_id}: {actual} as expected")
+
+    if not expected_valid or not expected_invalid:
+        raise SystemExit("WAEP vector suite must contain both positive and negative controls")
 
     if failures:
         raise SystemExit(f"WAEP conformance failed: {failures} mismatch(es) across {len(vectors)} vectors")
