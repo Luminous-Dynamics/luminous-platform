@@ -146,6 +146,20 @@ This is the minimum first cross-layer corpus. Each case needs positive, negative
 | XAP-19 | Revoked/expired/unknown key, profile, tool manifest or device attestation arrives on an otherwise valid session | Currentness failure is enforced at the final relevant boundary; no downgrade fallback. |
 | XAP-20 | Recovery/compensation is attempted after uncertain or irreversible external effect | Remedy requires its own narrow current authority and postcondition; it never erases original effect/history. |
 
+### 6.1.2 Authorization benchmark and external SOTA crosswalk
+
+The 10 November 2026 structured review of authorization assurance and the 12 November 2026 Google Agent Anomaly Detection study sharpen the benchmark design. The review distinguishes call interception from effect-level complete mediation, notes the corpus-bounded gaps in revocation/delegation claims, and explains why a correct final state may still be reached through an unauthorized sequence. Google's report is a post-execution anomaly-detection result, not a pre-effect authorization result. These are different metrics.
+
+The branch now contains `AGENT_AUTHORIZATION_ASSURANCE_BENCHMARK_V0_1.md` and a machine-readable 13-episode synthetic corpus with a test-only evaluator. It explicitly separates task state, authorization validity, participant decision correctness, unauthorized effect and independent effect observation. Five cases intentionally reach a correct task state through an unauthorized effect; valid task completion must not mask an authorization failure.
+
+External comparisons to preserve:
+
+- **AgentDojo / InjecAgent / ASB / AgentDyn / AgentHarm:** use their native attack suites and task semantics. AgentDyn adds dynamic open-ended tasks (60 tasks, 560 injection cases); Google reports use of five public suites in its 1,774-session evaluation.
+- **Google Agent Anomaly Detection:** its reported 87% is the fraction of harmful instructions actually carried out that were flagged for post-execution review, with 2–16% benign false alarms depending on tools; it caught 4/18 poisoned-memory actions. Do not compare this directly with preventive denial or zero unauthorized effects.
+- **ToolEmu / τ-bench / ToolSandbox / WASP:** use for stateful trajectories, repeated-run reliability, milestones/minefields and rule-verified attacker goals, but add explicit identity, consent, delegation, policy-version and participant-finality oracles.
+- **MAAP (10 Nov 2026 review):** preserve its minimum claim-disclosure semantics. WAEP is a broader Luminous claim-to-effect reporting profile; this benchmark is the synthetic scenario layer, not a replacement MAAP score or certification.
+
+Full comparison and qualification rules are in `AGENT_AUTHORIZATION_ASSURANCE_BENCHMARK_V0_1.md`. The 13 cases have an authoring-time semantic check only; CI and external reproduction remain open.
 ### 6.1.1 Executable assurance-graph fixtures
 
 The assurance-graph concept also has a machine-readable fixture suite and a bounded test-only evaluator:
@@ -160,7 +174,7 @@ This evaluator is a static research fixture tool. It does not inspect a live hos
 
 The accompanying machine-readable artifacts are the first testable coverage index for this profile:
 
-- `osi-xap-control-matrix.v0.1.json` and its Draft 2020-12 schema: 31 control records — three for each OSI layer L1–L6, four for L7, and eight cross-layer responsibilities. Each row identifies the OSI layer, X.805 security layer/plane/dimensions, repository owner, implementation/evidence maturity, enforcement points, residual assumptions, qualification tests and claim ceiling.
+- `osi-xap-control-matrix.v0.1.json` and its Draft 2020-12 schema: 32 control records — three for each OSI layer L1–L6, four for L7, and eight cross-layer responsibilities. Each row identifies the OSI layer, X.805 security layer/plane/dimensions, repository owner, implementation/evidence maturity, enforcement points, residual assumptions, qualification tests and claim ceiling.
 - `osi-xap-scenarios.v0.1.json` and its schema: 31 synthetic scenarios — 26 negative and five positive. The corpus includes OT AI prompt/data poisoning, digital-twin drift and unauthorized twin-to-controller synchronization, as well as OT active-scanning safety, monitoring blind spots and shared management/operational infrastructure.
 - `l2l3-deployment-profile.schema.v0.1.json` and `l2l3-deployment-profile.template.v0.1.json`: a typed exact-scope network inventory/evidence contract. The public template is deliberately empty, `template_only`, `not_assessed`, with unknown discovery/OT separation and no complete-mediation claim.
 - `scripts/validate_osi_xap.py` and `.github/workflows/osi-xap.yml`: test-only Draft 2020-12 schema and static fixture checks. This is build/test tooling, not a production policy engine or network scanner.
