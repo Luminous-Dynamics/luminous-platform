@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:security:xap-meta-assurance-suite:0.1",
+  "title": "Luminous XAP Meta-Assurance and Anti-Gaming Suite v0.1",
+  "type": "object",
+  "required": [
+    "profile",
+    "version",
+    "status",
+    "schema_guards",
+    "cases",
+    "claim_ceiling"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-xap-meta-assurance-suite"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "synthetic_metamorphic_test_suite"
+    },
+    "schema_guards": {
+      "type": "array",
+      "minItems": 15,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "schema_file",
+          "path"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schema_file": {
+            "type": "string"
+          },
+          "path": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": [
+                "string",
+                "integer"
+              ]
+            }
+          },
+          "expected": {},
+          "contains": {
+            "type": "string"
+          },
+          "minLength": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 25,
+      "items": {
+        "type": "object",
+        "required": [
+          "case_id",
+          "target_type",
+          "fixture_id",
+          "mutations",
+          "expected"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string",
+            "pattern": "^META-[AGS][0-9]{3}-[A-Z0-9-]+$"
+          },
+          "target_type": {
+            "enum": [
+              "graph",
+              "authorization",
+              "schema"
+            ]
+          },
+          "fixture_id": {
+            "type": "string"
+          },
+          "mutations": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "op",
+                "path"
+              ],
+              "properties": {
+                "op": {
+                  "enum": [
+                    "set",
+                    "append",
+                    "remove"
+                  ]
+                },
+                "path": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": [
+                      "string",
+                      "integer"
+                    ]
+                  }
+                },
+                "value": {}
+              },
+              "additionalProperties": false
+            }
+          },
+          "expected": {
+            "type": "object",
+            "properties": {
+              "graph_disposition": {
+                "enum": [
+                  "qualified",
+                  "refuted",
+                  "indeterminate"
+                ]
+              },
+              "authorization_output": {
+                "type": "object"
+              },
+              "rejected": {
+                "type": "boolean"
+              },
+              "violated_guard_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "claim_ceiling": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 10
+      }
+    }
+  },
+  "additionalProperties": false
+}
