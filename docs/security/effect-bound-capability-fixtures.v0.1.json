@@ -54,7 +54,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -71,7 +72,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": "effect-001",
@@ -88,7 +90,20 @@
         "unauthorized_effect": "false",
         "effect_disposition": "committed"
       },
-      "participant_decision": "allow"
+      "participant_decision": "allow",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-001-exact-root",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-002-NARROW-CHILD",
@@ -172,7 +187,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -189,7 +205,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": "effect-001",
@@ -206,7 +223,21 @@
         "unauthorized_effect": "false",
         "effect_disposition": "committed"
       },
-      "participant_decision": "allow"
+      "participant_decision": "allow",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-002-narrow-child",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root",
+          "grant-child"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-003-CHILD-RESOURCE-WIDEN",
@@ -291,7 +322,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -308,7 +340,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -325,7 +358,21 @@
         "unauthorized_effect": "false",
         "effect_disposition": "none"
       },
-      "participant_decision": "deny"
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-003-child-resource-widen",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root",
+          "grant-child"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-004-CHILD-OPERATION-WIDEN",
@@ -409,7 +456,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -426,7 +474,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -443,7 +492,21 @@
         "unauthorized_effect": "false",
         "effect_disposition": "none"
       },
-      "participant_decision": "deny"
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-004-child-operation-widen",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root",
+          "grant-child"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-005-CHILD-TIME-WIDEN",
@@ -527,7 +590,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -544,7 +608,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -561,7 +626,21 @@
         "unauthorized_effect": "false",
         "effect_disposition": "none"
       },
-      "participant_decision": "deny"
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-005-child-time-widen",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root",
+          "grant-child"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-006-COMPOSITION-INTERSECTION",
@@ -645,7 +724,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -662,7 +742,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": "effect-001",
@@ -679,7 +760,21 @@
         "unauthorized_effect": "false",
         "effect_disposition": "committed"
       },
-      "participant_decision": "allow"
+      "participant_decision": "allow",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-006-composition-intersection",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-a",
+          "grant-b"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-007-COMPOSITION-NEVER-UNION",
@@ -761,7 +856,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -778,7 +874,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -795,7 +892,21 @@
         "unauthorized_effect": "false",
         "effect_disposition": "none"
       },
-      "participant_decision": "deny"
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-007-composition-never-union",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-a",
+          "grant-b"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-008-ACTOR-SUBSTITUTION",
@@ -848,7 +959,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -865,7 +977,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -882,7 +995,20 @@
         "unauthorized_effect": "false",
         "effect_disposition": "none"
       },
-      "participant_decision": "deny"
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-008-actor-substitution",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-009-ARGUMENT-DIGEST-MISMATCH",
@@ -935,7 +1061,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -952,7 +1079,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -969,7 +1097,20 @@
         "unauthorized_effect": "false",
         "effect_disposition": "none"
       },
-      "participant_decision": "deny"
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-009-argument-digest-mismatch",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-010-POLICY-EPOCH-MISMATCH",
@@ -1022,7 +1163,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -1039,7 +1181,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -1056,7 +1199,20 @@
         "unauthorized_effect": "false",
         "effect_disposition": "none"
       },
-      "participant_decision": "deny"
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-010-policy-epoch-mismatch",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-011-REVOKED-GRANT",
@@ -1109,7 +1265,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -1126,7 +1283,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -1143,7 +1301,20 @@
         "unauthorized_effect": "false",
         "effect_disposition": "none"
       },
-      "participant_decision": "deny"
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-011-revoked-grant",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-012-UNKNOWN-REVOCATION",
@@ -1196,7 +1367,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -1213,7 +1385,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -1230,7 +1403,20 @@
         "unauthorized_effect": "false",
         "effect_disposition": "none"
       },
-      "participant_decision": "deny"
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-012-unknown-revocation",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-013-PERMIT-REPLAY",
@@ -1283,7 +1469,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -1300,7 +1487,8 @@
         "consume_count": 2,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -1317,7 +1505,20 @@
         "unauthorized_effect": "false",
         "effect_disposition": "none"
       },
-      "participant_decision": "deny"
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-013-permit-replay",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-014-EVIDENCE-IS-NOT-AUTHORITY",
@@ -1336,7 +1537,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -1353,7 +1555,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -1370,7 +1573,18 @@
         "unauthorized_effect": "false",
         "effect_disposition": "none"
       },
-      "participant_decision": "deny"
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-014-evidence-is-not-authority",
+        "participant_id": "participant:router-api",
+        "grant_ids": [],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-015-UNKNOWN-EFFECT-RECONCILE",
@@ -1423,7 +1637,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -1440,7 +1655,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -1457,7 +1673,20 @@
         "unauthorized_effect": "false",
         "effect_disposition": "reconcile_same_attempt"
       },
-      "participant_decision": "allow"
+      "participant_decision": "allow",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-015-unknown-effect-reconcile",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-016-PERMIT-ATTEMPT-SUBSTITUTION",
@@ -1510,7 +1739,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -1527,7 +1757,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -1544,7 +1775,20 @@
         "unauthorized_effect": "false",
         "effect_disposition": "none"
       },
-      "participant_decision": "deny"
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-016-permit-attempt-substitution",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-017-PERMIT-EXPIRED",
@@ -1597,7 +1841,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -1614,7 +1859,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -1631,7 +1877,20 @@
         "unauthorized_effect": "false",
         "effect_disposition": "none"
       },
-      "participant_decision": "deny"
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-017-permit-expired",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-018-REVOKED-GRANT-COMMITTED",
@@ -1684,7 +1943,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -1701,7 +1961,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": "effect-cap-018-revoked-grant-committed",
@@ -1718,7 +1979,20 @@
         "unauthorized_effect": "true",
         "effect_disposition": "committed"
       },
-      "participant_decision": "allow"
+      "participant_decision": "allow",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-018-revoked-grant-committed",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-019-UNKNOWN-GRANT-COMMITTED",
@@ -1771,7 +2045,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -1788,7 +2063,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": "effect-cap-019-unknown-grant-committed",
@@ -1805,7 +2081,20 @@
         "unauthorized_effect": "indeterminate",
         "effect_disposition": "committed"
       },
-      "participant_decision": "allow"
+      "participant_decision": "allow",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-019-unknown-grant-committed",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-020-VALID-GRANT-FALSE-DENIED",
@@ -1858,7 +2147,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -1875,7 +2165,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -1892,7 +2183,20 @@
         "unauthorized_effect": "false",
         "effect_disposition": "none"
       },
-      "participant_decision": "deny"
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-020-valid-grant-false-denied",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-021-PARTICIPANT-OUTSIDE-GRANT",
@@ -1945,7 +2249,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -1962,7 +2267,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -1979,7 +2285,20 @@
         "unauthorized_effect": "false",
         "effect_disposition": "none"
       },
-      "participant_decision": "deny"
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-021-participant-outside-grant",
+        "participant_id": "participant:other-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-022-PURPOSE-MISMATCH",
@@ -2032,7 +2351,8 @@
         "purpose_ref": "purpose:emergency",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -2049,7 +2369,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:emergency",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -2066,7 +2387,20 @@
         "unauthorized_effect": "false",
         "effect_disposition": "none"
       },
-      "participant_decision": "deny"
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-022-purpose-mismatch",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-023-CONTEXT-MISMATCH",
@@ -2119,7 +2453,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:production",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -2136,7 +2471,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:production",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -2153,7 +2489,20 @@
         "unauthorized_effect": "false",
         "effect_disposition": "none"
       },
-      "participant_decision": "deny"
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-023-context-mismatch",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-024-EFFECT-BUDGET-EXHAUSTED",
@@ -2206,7 +2555,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 10
+        "effect_count_before": 10,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -2223,7 +2573,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -2240,7 +2591,20 @@
         "unauthorized_effect": "false",
         "effect_disposition": "none"
       },
-      "participant_decision": "deny"
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-024-effect-budget-exhausted",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 10,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-025-COST-BUDGET-EXCEEDED",
@@ -2293,7 +2657,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1001,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -2310,7 +2675,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1001
+        "requested_cost_microusd": 1001,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -2327,7 +2693,20 @@
         "unauthorized_effect": "false",
         "effect_disposition": "none"
       },
-      "participant_decision": "deny"
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-025-cost-budget-exceeded",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-026-CHILD-PARTICIPANT-WIDEN",
@@ -2414,7 +2793,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -2431,7 +2811,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -2448,7 +2829,21 @@
         "unauthorized_effect": "false",
         "effect_disposition": "none"
       },
-      "participant_decision": "deny"
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-026-child-participant-widen",
+        "participant_id": "participant:other-api",
+        "grant_ids": [
+          "grant-root",
+          "grant-child"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-027-CHILD-EFFECT-BUDGET-WIDEN",
@@ -2534,7 +2929,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -2551,7 +2947,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -2568,7 +2965,21 @@
         "unauthorized_effect": "false",
         "effect_disposition": "none"
       },
-      "participant_decision": "deny"
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-027-child-effect-budget-widen",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root",
+          "grant-child"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-028-PERMIT-PARTICIPANT-SUBSTITUTION",
@@ -2621,7 +3032,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -2638,7 +3050,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -2655,7 +3068,20 @@
         "unauthorized_effect": "false",
         "effect_disposition": "none"
       },
-      "participant_decision": "deny"
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-028-permit-participant-substitution",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     },
     {
       "scenario_id": "CAP-029-PERMIT-PURPOSE-CONTEXT-MISMATCH",
@@ -2708,7 +3134,8 @@
         "purpose_ref": "purpose:maintenance",
         "context_ref": "context:lab",
         "requested_cost_microusd": 1000,
-        "effect_count_before": 0
+        "effect_count_before": 0,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "permit": {
         "permit_id": "permit-001",
@@ -2725,7 +3152,8 @@
         "consume_count": 1,
         "purpose_ref": "purpose:emergency",
         "context_ref": "context:production",
-        "requested_cost_microusd": 1000
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "effect": {
         "effect_id": null,
@@ -2742,7 +3170,20 @@
         "unauthorized_effect": "false",
         "effect_disposition": "none"
       },
-      "participant_decision": "deny"
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-029-permit-purpose-context-mismatch",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
     }
   ],
   "fixture_count": 29
