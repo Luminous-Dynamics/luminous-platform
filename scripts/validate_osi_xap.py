@@ -1384,8 +1384,8 @@ def main() -> int:
             raise SystemExit(f"{episode['episode_id']}: expected {episode['expected']}, got {actual}")
         approval_counts[actual["refusal_safety"]] += 1
         completeness_counts[actual["authorization_completeness"]] += 1
-    if len(approval_ids) != 25:
-        raise SystemExit("approval-obligation ledger must retain 25 frozen episodes")
+    if len(approval_ids) != 26:
+        raise SystemExit("approval-obligation ledger must retain 26 frozen episodes")
     print(f"APPROVAL_OBLIGATION_LEDGER=PASS REFUSAL={approval_counts} COMPLETENESS={completeness_counts}")
 
 
