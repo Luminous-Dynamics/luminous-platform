@@ -90,7 +90,7 @@ The matrix below is a minimum guide. A claim record should include only the obli
 | Consent / purpose | Principal, data class/fields, recipient, purpose, expiry, withdrawal and policy version | Consent authority plus resource-side enforcement; observed data access/use | Purpose substitution, expiry, withdrawal, cached copy, delegated recipient |
 | Currentness / revocation | Fresh authority/key/policy/consent state at use; declared partition/offline semantics | Every relevant PEP and final participant | Active session, cached token, disconnected participant, child agent, replayed old epoch |
 | Delegation containment | Root/parent/child task and plan digests, grant reference, hop edges, scope relation and final participant recheck | Delegation owner, broker and final participant | Scope expansion, actor substitution, sibling task, stale ancestor, provenance erasure |
-| Information flow | Source labels and purpose survive read, transform, summarize, memory and handoff; every sink has a current authorization/declassification decision; semantic-release policy is calibrated | Source-to-sink lineage, transformation records, sink monitor and independent release observer | Summarize-then-export, tool/child laundering, omitted lineage, paraphrased protected fact, unknown sink, semantic-release false negative |
+| Information flow | Source labels and purpose survive read, transform, summarize, memory and handoff; every sink has a current authorization decision; any label downgrade has a separate declassification authorization; semantic-release policy is calibrated | Source-to-sink lineage, transformation records, sink monitor and independent release observer | Summarize-then-export, tool/child laundering, omitted lineage, unauthorized declassification, paraphrased protected fact, unknown sink, semantic-release false negative |
 | Session composition | State-aware policy over committed, pending and unknown prior effects; atomic/linearizable admission where needed | Session admission and participant-owned state | Parallel overspend, individually valid forbidden composition, pending-effect bypass |
 | One-use effect | Exact request/target/audience/attempt binding and atomic consumption at effect boundary | Participant-owned commit boundary | Replay, duplicate delivery, two-thread race, changed arguments |
 | Reconciliation | Unknown outcomes remain unknown until participant evidence resolves the same logical action | Participant ledger and independent reconciler | Lost acknowledgement, crash after commit, blind retry, compensating action misreported as rollback |
@@ -169,7 +169,7 @@ The September 2026 CapAgent work is a significant comparator because it treats m
 
 The distinct November 2026 ACM CCS CapAgent paper addresses capability credentials and multi-hop delegation chains, with cryptographically protected derivable credentials, API/parameter constraints, lifecycle rules and cross-hop provenance. Treat it as a separate comparator from the September semantic data-flow CapAgent. Its existence means Luminous should not claim novelty for capability attenuation, purpose-bound tokens or delegation-chain credentials; the differentiator to test is claim-to-effect evidence, participant-owned finality, lifecycle/deprovisioning closure, branch-scoped containment and recovery outcomes.
 
-WAEP's `data_flow` record binds source identity and classification, each transformation, output lineage, destination sink, operation, purpose-bound status, authorization disposition and semantic-release evidence. Supported information-flow claims require zero unknown/unmapped edges, preserved lineage on every transform, authorized or non-applicable sink decisions, and an authorized/not-applicable semantic-release disposition. This record documents a claim; it does not prove that the declared source/sink inventory is complete or that a semantic detector has adequate recall. The benchmark must measure false negatives, false positives, calibration, benign completion, source/sink coverage and leakage of protected facts separately.
+WAEP's `data_flow` record binds source identity and classification, each transformation, output lineage, destination sink, operation, purpose-bound status, authorization disposition and semantic-release evidence. Every transform must explicitly state whether classification is unchanged/more restrictive or has been downgraded through an approved declassification. A downgrade without an exact authorization reference is invalid. An `authorized` semantic-release disposition requires a calibrated false-negative bound and calibration reference; `not_applicable` requires an explicit rationale. Supported information-flow claims require zero unknown/unmapped edges, preserved lineage on every transform, authorized or not-applicable sink decisions, and an authorized/not-applicable semantic-release disposition. This record documents a claim; it does not prove that the declared source/sink inventory is complete or that a semantic detector has adequate recall. The benchmark must measure false negatives, false positives, calibration, benign completion, source/sink coverage and leakage of protected facts separately.
 
 ## 8. Integration boundaries
 
@@ -206,7 +206,7 @@ The Mycelix AGENT-010 gate remains in force for authoritative A2A/MCP/OAuth/AP2 
 
 ## 9.2 Frozen conformance vectors
 
-The companion file `waep-conformance-vectors.v0.1.json` contains twenty-one self-contained schema/semantic test records. `waep-synthetic-participant-receipt.v0.1.json` and `waep-synthetic-corpus.v0.1.json` are explicitly synthetic fixtures whose content digests are referenced by the positive-shape vector. The receipt fixture is not signed and is not a real participant observation.
+The companion file `waep-conformance-vectors.v0.1.json` contains twenty-five self-contained schema/semantic test records. `waep-synthetic-participant-receipt.v0.1.json` and `waep-synthetic-corpus.v0.1.json` are explicitly synthetic fixtures whose content digests are referenced by the positive-shape vector. The receipt fixture is not signed and is not a real participant observation.
 
 | Vector | Expected | Property exercised |
 |---|---|---|
@@ -231,8 +231,12 @@ The companion file `waep-conformance-vectors.v0.1.json` contains twenty-one self
 | V019 | Invalid | Information-flow claim has unknown sink authorization |
 | V020 | Invalid | Transformation drops source lineage |
 | V021 | Invalid | Semantic-release outcome is indeterminate |
+| V022 | Invalid | Confidential-to-public transform without an authorization reference |
+| V023 | Valid | Positive control: approved declassification with exact authorization reference |
+| V024 | Invalid | Semantic release lacks a calibrated false-negative bound and calibration reference |
+| V025 | Invalid | Semantic release is marked not applicable without a reason |
 
-The twenty-one vectors were evaluated by an authoring-time semantic checker and all expected outcomes matched. This is not the full JSON Schema validator, not a Rust conformance implementation, and not runtime evidence. The full standards-compliant validation gate remains open.
+The earlier twenty-one vectors matched a custom authoring-time semantic checker. Four additional declassification/calibration vectors have since been added; the expanded twenty-five-vector suite awaits the new Draft 2020-12 workflow and must not be described as fully validated yet. This is not the full JSON Schema validator, not a Rust conformance implementation, and not runtime evidence. The full standards-compliant validation gate remains open.
 ## 10. Validation and claim ceiling
 
 For this first draft:
