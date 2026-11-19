@@ -411,7 +411,7 @@ def main() -> int:
         auth_counts[actual["authorization_state"]] += 1
         if actual["task_state"] == "correct" and actual["unauthorized_effect"] == "true":
             task_success_but_unauthorized += 1
-    if len(auth_ids) != 10 or task_success_but_unauthorized < 3:
+    if len(auth_ids) != 13 or task_success_but_unauthorized < 5:
         raise SystemExit("authorization benchmark must retain ten episodes and multiple task-success/unauthorized-effect cases")
     print(f"AUTHORIZATION_ASSURANCE_FIXTURES=PASS {auth_counts} TASK_SUCCESS_WITH_UNAUTHORIZED_EFFECT={task_success_but_unauthorized}")
 
