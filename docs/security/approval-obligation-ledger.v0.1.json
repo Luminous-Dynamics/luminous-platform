@@ -69,7 +69,8 @@
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "item_refs": [
                 "item-A"
-              ]
+              ],
+              "condition_revision": "c1"
             }
           ],
           "effect_events": [
@@ -125,7 +126,8 @@
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "item_refs": [
                 "item-B"
-              ]
+              ],
+              "condition_revision": "c1"
             }
           ],
           "effect_events": [],
@@ -137,20 +139,20 @@
         }
       ],
       "expected": {
-        "refusal_safety": "violation",
-        "authorization_completeness": "incomplete",
+        "refusal_safety": "pass",
+        "authorization_completeness": "complete",
         "approved_eligible_count": 1,
-        "approved_completed_count": 0,
-        "forbidden_effect_count": 1,
+        "approved_completed_count": 1,
+        "forbidden_effect_count": 0,
         "indeterminate_effect_count": 0,
         "stale_decision_effect_count": 0,
         "identity_mismatch_count": 0,
         "duplicate_effect_count": 0,
-        "forbidden_dispatch_count": 2,
+        "forbidden_dispatch_count": 0,
         "conditional_hold_count": 0,
         "pending_count": 0,
-        "first_divergence": "workflow",
-        "fail_closed_violation_count": 1,
+        "first_divergence": "none",
+        "fail_closed_violation_count": 0,
         "unwitnessed_effect_count": 0
       }
     },
@@ -219,7 +221,8 @@
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "item_refs": [
                 "item-A"
-              ]
+              ],
+              "condition_revision": "c1"
             }
           ],
           "effect_events": [
@@ -275,7 +278,8 @@
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "item_refs": [
                 "item-B"
-              ]
+              ],
+              "condition_revision": "c1"
             }
           ],
           "effect_events": [
@@ -309,19 +313,19 @@
       ],
       "expected": {
         "refusal_safety": "violation",
-        "authorization_completeness": "incomplete",
+        "authorization_completeness": "complete",
         "approved_eligible_count": 1,
-        "approved_completed_count": 0,
-        "forbidden_effect_count": 2,
+        "approved_completed_count": 1,
+        "forbidden_effect_count": 1,
         "indeterminate_effect_count": 0,
         "stale_decision_effect_count": 0,
         "identity_mismatch_count": 1,
         "duplicate_effect_count": 0,
-        "forbidden_dispatch_count": 2,
+        "forbidden_dispatch_count": 0,
         "conditional_hold_count": 0,
         "pending_count": 0,
         "first_divergence": "workflow",
-        "fail_closed_violation_count": 2,
+        "fail_closed_violation_count": 1,
         "unwitnessed_effect_count": 0
       }
     },
@@ -457,7 +461,8 @@
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "item_refs": [
                 "item-A"
-              ]
+              ],
+              "condition_revision": "c1"
             }
           ],
           "effect_events": [
@@ -511,20 +516,20 @@
         }
       ],
       "expected": {
-        "refusal_safety": "violation",
+        "refusal_safety": "pass",
         "authorization_completeness": "incomplete",
         "approved_eligible_count": 2,
-        "approved_completed_count": 0,
-        "forbidden_effect_count": 1,
+        "approved_completed_count": 1,
+        "forbidden_effect_count": 0,
         "indeterminate_effect_count": 0,
         "stale_decision_effect_count": 0,
         "identity_mismatch_count": 0,
         "duplicate_effect_count": 0,
-        "forbidden_dispatch_count": 1,
+        "forbidden_dispatch_count": 0,
         "conditional_hold_count": 0,
         "pending_count": 0,
-        "first_divergence": "workflow",
-        "fail_closed_violation_count": 1,
+        "first_divergence": "harness",
+        "fail_closed_violation_count": 0,
         "unwitnessed_effect_count": 0
       }
     },
@@ -592,7 +597,8 @@
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "item_refs": [
                 "item-A"
-              ]
+              ],
+              "condition_revision": "c1"
             }
           ],
           "effect_events": [
@@ -648,7 +654,8 @@
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "item_refs": [
                 "item-B"
-              ]
+              ],
+              "condition_revision": "c1"
             }
           ],
           "effect_events": [
@@ -681,20 +688,20 @@
         }
       ],
       "expected": {
-        "refusal_safety": "violation",
-        "authorization_completeness": "incomplete",
+        "refusal_safety": "pass",
+        "authorization_completeness": "complete",
         "approved_eligible_count": 2,
-        "approved_completed_count": 0,
-        "forbidden_effect_count": 2,
+        "approved_completed_count": 2,
+        "forbidden_effect_count": 0,
         "indeterminate_effect_count": 0,
         "stale_decision_effect_count": 0,
         "identity_mismatch_count": 0,
         "duplicate_effect_count": 0,
-        "forbidden_dispatch_count": 2,
+        "forbidden_dispatch_count": 0,
         "conditional_hold_count": 0,
         "pending_count": 0,
-        "first_divergence": "workflow",
-        "fail_closed_violation_count": 2,
+        "first_divergence": "none",
+        "fail_closed_violation_count": 0,
         "unwitnessed_effect_count": 0
       }
     },
@@ -751,7 +758,8 @@
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "item_refs": [
                 "item-A"
-              ]
+              ],
+              "condition_revision": "c1"
             }
           ],
           "effect_events": [],
@@ -772,10 +780,10 @@
         "stale_decision_effect_count": 0,
         "identity_mismatch_count": 0,
         "duplicate_effect_count": 0,
-        "forbidden_dispatch_count": 1,
+        "forbidden_dispatch_count": 0,
         "conditional_hold_count": 0,
         "pending_count": 0,
-        "first_divergence": "workflow",
+        "first_divergence": "harness",
         "fail_closed_violation_count": 0,
         "unwitnessed_effect_count": 0
       }
@@ -833,7 +841,8 @@
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "item_refs": [
                 "item-A"
-              ]
+              ],
+              "condition_revision": "c1"
             }
           ],
           "effect_events": [
@@ -866,20 +875,20 @@
         }
       ],
       "expected": {
-        "refusal_safety": "violation",
-        "authorization_completeness": "incomplete",
+        "refusal_safety": "pass",
+        "authorization_completeness": "complete",
         "approved_eligible_count": 1,
-        "approved_completed_count": 0,
-        "forbidden_effect_count": 1,
+        "approved_completed_count": 1,
+        "forbidden_effect_count": 0,
         "indeterminate_effect_count": 0,
         "stale_decision_effect_count": 0,
         "identity_mismatch_count": 0,
         "duplicate_effect_count": 0,
-        "forbidden_dispatch_count": 1,
+        "forbidden_dispatch_count": 0,
         "conditional_hold_count": 0,
         "pending_count": 0,
-        "first_divergence": "workflow",
-        "fail_closed_violation_count": 1,
+        "first_divergence": "none",
+        "fail_closed_violation_count": 0,
         "unwitnessed_effect_count": 0
       }
     },
@@ -957,7 +966,8 @@
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "item_refs": [
                 "item-A"
-              ]
+              ],
+              "condition_revision": "c1"
             }
           ],
           "effect_events": [
@@ -1081,7 +1091,8 @@
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "item_refs": [
                 "item-A"
-              ]
+              ],
+              "condition_revision": "c1"
             }
           ],
           "effect_events": [],
@@ -1102,10 +1113,10 @@
         "stale_decision_effect_count": 0,
         "identity_mismatch_count": 0,
         "duplicate_effect_count": 0,
-        "forbidden_dispatch_count": 1,
+        "forbidden_dispatch_count": 0,
         "conditional_hold_count": 0,
         "pending_count": 0,
-        "first_divergence": "workflow",
+        "first_divergence": "none",
         "fail_closed_violation_count": 0,
         "unwitnessed_effect_count": 0
       }
@@ -1252,7 +1263,8 @@
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "item_refs": [
                 "item-A"
-              ]
+              ],
+              "condition_revision": "c2"
             }
           ],
           "effect_events": [
@@ -1285,20 +1297,20 @@
         }
       ],
       "expected": {
-        "refusal_safety": "violation",
-        "authorization_completeness": "incomplete",
+        "refusal_safety": "pass",
+        "authorization_completeness": "complete",
         "approved_eligible_count": 1,
-        "approved_completed_count": 0,
-        "forbidden_effect_count": 1,
+        "approved_completed_count": 1,
+        "forbidden_effect_count": 0,
         "indeterminate_effect_count": 0,
         "stale_decision_effect_count": 0,
         "identity_mismatch_count": 0,
         "duplicate_effect_count": 0,
-        "forbidden_dispatch_count": 1,
+        "forbidden_dispatch_count": 0,
         "conditional_hold_count": 0,
         "pending_count": 0,
-        "first_divergence": "workflow",
-        "fail_closed_violation_count": 1,
+        "first_divergence": "none",
+        "fail_closed_violation_count": 0,
         "unwitnessed_effect_count": 0
       }
     },
@@ -1355,7 +1367,8 @@
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "item_refs": [
                 "item-A"
-              ]
+              ],
+              "condition_revision": "c1"
             }
           ],
           "effect_events": [
@@ -1388,20 +1401,20 @@
         }
       ],
       "expected": {
-        "refusal_safety": "violation",
-        "authorization_completeness": "incomplete",
+        "refusal_safety": "pass",
+        "authorization_completeness": "complete",
         "approved_eligible_count": 1,
-        "approved_completed_count": 0,
-        "forbidden_effect_count": 1,
+        "approved_completed_count": 1,
+        "forbidden_effect_count": 0,
         "indeterminate_effect_count": 0,
         "stale_decision_effect_count": 0,
         "identity_mismatch_count": 0,
         "duplicate_effect_count": 0,
-        "forbidden_dispatch_count": 1,
+        "forbidden_dispatch_count": 0,
         "conditional_hold_count": 0,
         "pending_count": 0,
-        "first_divergence": "workflow",
-        "fail_closed_violation_count": 1,
+        "first_divergence": "none",
+        "fail_closed_violation_count": 0,
         "unwitnessed_effect_count": 0
       }
     },
@@ -1526,7 +1539,8 @@
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "item_refs": [
                 "item-A"
-              ]
+              ],
+              "condition_revision": "c1"
             }
           ],
           "effect_events": [
@@ -1569,10 +1583,10 @@
         "stale_decision_effect_count": 0,
         "identity_mismatch_count": 1,
         "duplicate_effect_count": 0,
-        "forbidden_dispatch_count": 1,
+        "forbidden_dispatch_count": 0,
         "conditional_hold_count": 0,
         "pending_count": 0,
-        "first_divergence": "workflow",
+        "first_divergence": "participant",
         "fail_closed_violation_count": 1,
         "unwitnessed_effect_count": 0
       }
@@ -1630,7 +1644,8 @@
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "item_refs": [
                 "item-A"
-              ]
+              ],
+              "condition_revision": "c1"
             }
           ],
           "effect_events": [
@@ -1733,7 +1748,8 @@
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "item_refs": [
                 "item-A"
-              ]
+              ],
+              "condition_revision": "c1"
             }
           ],
           "effect_events": [
@@ -1766,20 +1782,20 @@
         }
       ],
       "expected": {
-        "refusal_safety": "violation",
-        "authorization_completeness": "incomplete",
+        "refusal_safety": "pass",
+        "authorization_completeness": "complete",
         "approved_eligible_count": 1,
-        "approved_completed_count": 0,
-        "forbidden_effect_count": 1,
+        "approved_completed_count": 1,
+        "forbidden_effect_count": 0,
         "indeterminate_effect_count": 0,
         "stale_decision_effect_count": 0,
         "identity_mismatch_count": 0,
         "duplicate_effect_count": 0,
-        "forbidden_dispatch_count": 1,
+        "forbidden_dispatch_count": 0,
         "conditional_hold_count": 0,
         "pending_count": 0,
-        "first_divergence": "workflow",
-        "fail_closed_violation_count": 1,
+        "first_divergence": "none",
+        "fail_closed_violation_count": 0,
         "unwitnessed_effect_count": 0
       }
     },
@@ -1904,7 +1920,8 @@
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "item_refs": [
                 "item-A"
-              ]
+              ],
+              "condition_revision": "c1"
             }
           ],
           "effect_events": [
@@ -1961,16 +1978,16 @@
         "authorization_completeness": "incomplete",
         "approved_eligible_count": 1,
         "approved_completed_count": 0,
-        "forbidden_effect_count": 3,
+        "forbidden_effect_count": 1,
         "indeterminate_effect_count": 0,
         "stale_decision_effect_count": 0,
         "identity_mismatch_count": 0,
         "duplicate_effect_count": 1,
-        "forbidden_dispatch_count": 1,
+        "forbidden_dispatch_count": 0,
         "conditional_hold_count": 0,
         "pending_count": 0,
-        "first_divergence": "workflow",
-        "fail_closed_violation_count": 3,
+        "first_divergence": "harness",
+        "fail_closed_violation_count": 1,
         "unwitnessed_effect_count": 0
       }
     },
@@ -2031,7 +2048,8 @@
               "item_refs": [
                 "item-1",
                 "item-2"
-              ]
+              ],
+              "condition_revision": "c1"
             }
           ],
           "effect_events": [
@@ -2065,20 +2083,20 @@
         }
       ],
       "expected": {
-        "refusal_safety": "violation",
-        "authorization_completeness": "incomplete",
+        "refusal_safety": "pass",
+        "authorization_completeness": "complete",
         "approved_eligible_count": 1,
-        "approved_completed_count": 0,
-        "forbidden_effect_count": 1,
+        "approved_completed_count": 1,
+        "forbidden_effect_count": 0,
         "indeterminate_effect_count": 0,
         "stale_decision_effect_count": 0,
         "identity_mismatch_count": 0,
         "duplicate_effect_count": 0,
-        "forbidden_dispatch_count": 1,
+        "forbidden_dispatch_count": 0,
         "conditional_hold_count": 0,
         "pending_count": 0,
-        "first_divergence": "workflow",
-        "fail_closed_violation_count": 1,
+        "first_divergence": "none",
+        "fail_closed_violation_count": 0,
         "unwitnessed_effect_count": 0
       }
     },
@@ -2139,7 +2157,8 @@
               "item_refs": [
                 "item-1",
                 "item-2"
-              ]
+              ],
+              "condition_revision": "c1"
             }
           ],
           "effect_events": [
@@ -2183,10 +2202,10 @@
         "stale_decision_effect_count": 0,
         "identity_mismatch_count": 1,
         "duplicate_effect_count": 0,
-        "forbidden_dispatch_count": 1,
+        "forbidden_dispatch_count": 0,
         "conditional_hold_count": 0,
         "pending_count": 0,
-        "first_divergence": "workflow",
+        "first_divergence": "participant",
         "fail_closed_violation_count": 1,
         "unwitnessed_effect_count": 0
       }
@@ -2244,7 +2263,8 @@
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "item_refs": [
                 "item-A"
-              ]
+              ],
+              "condition_revision": "c1"
             }
           ],
           "effect_events": [
@@ -2286,10 +2306,10 @@
         "stale_decision_effect_count": 0,
         "identity_mismatch_count": 1,
         "duplicate_effect_count": 0,
-        "forbidden_dispatch_count": 1,
+        "forbidden_dispatch_count": 0,
         "conditional_hold_count": 0,
         "pending_count": 0,
-        "first_divergence": "workflow",
+        "first_divergence": "participant",
         "fail_closed_violation_count": 1,
         "unwitnessed_effect_count": 0
       }
@@ -2347,7 +2367,8 @@
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "item_refs": [
                 "item-A"
-              ]
+              ],
+              "condition_revision": "c1"
             }
           ],
           "effect_events": [],
@@ -2368,10 +2389,10 @@
         "stale_decision_effect_count": 0,
         "identity_mismatch_count": 0,
         "duplicate_effect_count": 0,
-        "forbidden_dispatch_count": 1,
+        "forbidden_dispatch_count": 0,
         "conditional_hold_count": 0,
         "pending_count": 1,
-        "first_divergence": "workflow",
+        "first_divergence": "none",
         "fail_closed_violation_count": 0,
         "unwitnessed_effect_count": 0
       }
@@ -2639,7 +2660,8 @@
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "item_refs": [
                 "item-A"
-              ]
+              ],
+              "condition_revision": "c1"
             }
           ],
           "effect_events": [
@@ -2672,20 +2694,20 @@
         }
       ],
       "expected": {
-        "refusal_safety": "violation",
+        "refusal_safety": "indeterminate",
         "authorization_completeness": "incomplete",
         "approved_eligible_count": 1,
         "approved_completed_count": 0,
-        "forbidden_effect_count": 1,
+        "forbidden_effect_count": 0,
         "indeterminate_effect_count": 1,
         "stale_decision_effect_count": 0,
         "identity_mismatch_count": 0,
         "duplicate_effect_count": 0,
-        "forbidden_dispatch_count": 1,
+        "forbidden_dispatch_count": 0,
         "conditional_hold_count": 0,
         "pending_count": 0,
-        "first_divergence": "workflow",
-        "fail_closed_violation_count": 1,
+        "first_divergence": "participant",
+        "fail_closed_violation_count": 0,
         "unwitnessed_effect_count": 1
       }
     },
