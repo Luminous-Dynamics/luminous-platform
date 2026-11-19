@@ -157,7 +157,10 @@ impl SessionCompositionPolicy {
             || self.policy_version == 0
             || self.allowed_operations.is_empty()
             || self.allowed_operations.iter().any(|value| !nonempty(value))
-            || self.allowed_recipient_refs.iter().any(|value| !nonempty(value))
+            || self
+                .allowed_recipient_refs
+                .iter()
+                .any(|value| !nonempty(value))
             || self
                 .forbidden_data_recipient_pairs
                 .iter()
@@ -259,8 +262,9 @@ impl SessionCompositionState {
             previous_admission_version = effect.admitted_at_state_version;
 
             match (&effect.recipient_ref, effect.recipient_class) {
-                (None, None) if effect.reserved_transfer_units == 0
-                    && effect.committed_transfer_units == 0 => {}
+                (None, None)
+                    if effect.reserved_transfer_units == 0
+                        && effect.committed_transfer_units == 0 => {}
                 (Some(recipient), Some(class))
                     if nonempty(recipient) && class != RecipientClass::UnapprovedExternal => {}
                 _ => return Err(SessionCompositionViolation::InvalidSnapshot),
@@ -278,9 +282,7 @@ impl SessionCompositionState {
                     }
                 }
                 SessionEffectState::ReconciledNoEffect => {
-                    if effect.reserved_transfer_units != 0
-                        || effect.committed_transfer_units != 0
-                    {
+                    if effect.reserved_transfer_units != 0 || effect.committed_transfer_units != 0 {
                         return Err(SessionCompositionViolation::InvalidSnapshot);
                     }
                 }
@@ -318,7 +320,9 @@ impl SessionCompositionState {
         if self.session_id != policy.session_id || proposal.session_id != self.session_id {
             return Err(SessionCompositionViolation::SessionMismatch);
         }
-        if self.policy_digest != policy.policy_digest || proposal.policy_digest != policy.policy_digest {
+        if self.policy_digest != policy.policy_digest
+            || proposal.policy_digest != policy.policy_digest
+        {
             return Err(SessionCompositionViolation::PolicyDigestMismatch);
         }
         if self.policy_version != policy.policy_version {
@@ -358,16 +362,32 @@ impl SessionCompositionState {
             _ => return Err(SessionCompositionViolation::RecipientBindingIncomplete),
         }
 
-        if self.effects.iter().any(|effect| effect.action_id == proposal.action_id) {
+        if self
+            .effects
+            .iter()
+            .any(|effect| effect.action_id == proposal.action_id)
+        {
             return Err(SessionCompositionViolation::DuplicateActionId);
         }
-        if self.effects.iter().any(|effect| effect.effect_ref == proposal.effect_ref) {
+        if self
+            .effects
+            .iter()
+            .any(|effect| effect.effect_ref == proposal.effect_ref)
+        {
             return Err(SessionCompositionViolation::DuplicateEffectRef);
         }
-        if self.effects.iter().any(|effect| effect.attempt_id == proposal.attempt_id) {
+        if self
+            .effects
+            .iter()
+            .any(|effect| effect.attempt_id == proposal.attempt_id)
+        {
             return Err(SessionCompositionViolation::DuplicateAttemptId);
         }
-        if self.effects.iter().any(|effect| effect.idempotency_key == proposal.idempotency_key) {
+        if self
+            .effects
+            .iter()
+            .any(|effect| effect.idempotency_key == proposal.idempotency_key)
+        {
             return Err(SessionCompositionViolation::DuplicateIdempotencyKey);
         }
 
@@ -402,7 +422,9 @@ impl SessionCompositionState {
         if let Some(recipient_class) = proposal.recipient_class {
             if policy.forbidden_data_recipient_pairs.iter().any(|rule| {
                 rule.recipient_class == recipient_class
-                    && proposal.declared_output_data_labels.contains(&rule.data_label)
+                    && proposal
+                        .declared_output_data_labels
+                        .contains(&rule.data_label)
             }) {
                 return Err(SessionCompositionViolation::ForbiddenDataRecipientComposition);
             }
@@ -503,10 +525,7 @@ impl SessionCompositionState {
         Ok(record)
     }
 
-    pub fn mark_unknown(
-        &mut self,
-        attempt_id: &str,
-    ) -> Result<(), SessionCompositionViolation> {
+    pub fn mark_unknown(&mut self, attempt_id: &str) -> Result<(), SessionCompositionViolation> {
         self.transition(attempt_id, SessionEffectState::OutcomeUnknown)
     }
 
@@ -631,9 +650,10 @@ mod tests {
                     recipient_class: RecipientClass::ApprovedExternal,
                 },
             ]),
-            forbidden_operation_pairs: BTreeSet::from([
-                ("read_document".into(), "delete_record".into()),
-            ]),
+            forbidden_operation_pairs: BTreeSet::from([(
+                "read_document".into(),
+                "delete_record".into(),
+            )]),
             max_aggregate_transfer_units: 10,
             max_distinct_recipients: 2,
         }
@@ -643,11 +663,7 @@ mod tests {
         SessionCompositionState::new(&policy()).unwrap()
     }
 
-    fn action(
-        sequence: u64,
-        operation: &str,
-        expected_version: u64,
-    ) -> SessionActionProposal {
+    fn action(sequence: u64, operation: &str, expected_version: u64) -> SessionActionProposal {
         SessionActionProposal {
             session_id: "session-001".into(),
             action_id: format!("action-{sequence}"),
@@ -690,7 +706,6 @@ mod tests {
         send
     }
 
-
     #[test]
     fn session_snapshot_roundtrip_preserves_unknown_budget_reservation() {
         let mut state = state();
@@ -706,7 +721,10 @@ mod tests {
             .expect("unknown reservation must survive session restart");
         assert_eq!(recovered.version, state.version);
         assert_eq!(recovered.effects, state.effects);
-        assert_eq!(recovered.effects[0].state, SessionEffectState::OutcomeUnknown);
+        assert_eq!(
+            recovered.effects[0].state,
+            SessionEffectState::OutcomeUnknown
+        );
 
         let mut second = action(2, "internal_transfer", recovered.version);
         second.recipient_ref = Some("recipient:internal-finance".into());
@@ -767,7 +785,9 @@ mod tests {
     #[test]
     fn session_snapshot_rejects_duplicate_idempotency_and_effect_identity() {
         let mut state = state();
-        state.admit(&policy(), action(1, "read_document", 0)).unwrap();
+        state
+            .admit(&policy(), action(1, "read_document", 0))
+            .unwrap();
         let mut second = action(2, "read_document", state.version);
         second.idempotency_key = "idempotency-1".into();
         state.admit(&policy(), second).unwrap();
@@ -782,7 +802,9 @@ mod tests {
     #[test]
     fn session_snapshot_rejects_regressed_state_and_admission_versions() {
         let mut state = state();
-        state.admit(&policy(), action(1, "read_document", 0)).unwrap();
+        state
+            .admit(&policy(), action(1, "read_document", 0))
+            .unwrap();
         let checkpoint = state.export_snapshot().unwrap();
         let mut value: serde_json::Value = serde_json::from_slice(&checkpoint).unwrap();
 
@@ -903,15 +925,21 @@ mod tests {
 
         let send = external_send(&state, 2, &read.effect_ref);
         assert!(policy().allowed_operations.contains(&send.operation));
-        assert!(policy()
-            .allowed_recipient_refs
-            .contains(send.recipient_ref.as_ref().unwrap()));
+        assert!(
+            policy()
+                .allowed_recipient_refs
+                .contains(send.recipient_ref.as_ref().unwrap())
+        );
 
         assert_eq!(
             state.evaluate(&policy(), &send),
             Err(SessionCompositionViolation::ForbiddenDataRecipientComposition)
         );
-        assert_eq!(state.effects.len(), 1, "a denied composition must not mutate state");
+        assert_eq!(
+            state.effects.len(),
+            1,
+            "a denied composition must not mutate state"
+        );
     }
 
     #[test]
@@ -1086,12 +1114,17 @@ mod tests {
         }
 
         barrier.wait();
-        let results: Vec<_> = handles.into_iter().map(|handle| handle.join().unwrap()).collect();
+        let results: Vec<_> = handles
+            .into_iter()
+            .map(|handle| handle.join().unwrap())
+            .collect();
         assert_eq!(results.iter().filter(|result| result.is_ok()).count(), 1);
         assert_eq!(
             results
                 .iter()
-                .filter(|result| **result == Err(SessionCompositionViolation::StaleSessionStateVersion))
+                .filter(
+                    |result| **result == Err(SessionCompositionViolation::StaleSessionStateVersion)
+                )
                 .count(),
             1
         );
@@ -1161,7 +1194,6 @@ mod tests {
         assert!(state.evaluate(&policy(), &fourth).is_ok());
     }
 
-
     #[test]
     fn explicitly_unapproved_external_recipient_class_is_denied() {
         let state = state();
@@ -1190,9 +1222,11 @@ mod tests {
         second.recipient_ref = Some("recipient:approved-partner".into());
         second.recipient_class = Some(RecipientClass::ApprovedExternal);
         second.transfer_units = 1;
-        assert!(restricted.allowed_recipient_refs.contains(
-            second.recipient_ref.as_ref().unwrap()
-        ));
+        assert!(
+            restricted
+                .allowed_recipient_refs
+                .contains(second.recipient_ref.as_ref().unwrap())
+        );
         assert_eq!(
             state.evaluate(&restricted, &second),
             Err(SessionCompositionViolation::DistinctRecipientLimitExceeded)
