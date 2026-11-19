@@ -79,7 +79,7 @@ Machine-readable files:
 - `agent-authorization-assurance.schema.v0.1.json`
 - `agent-authorization-assurance.v0.1.json`
 
-The 13 synthetic episodes cover:
+The 14 synthetic episodes cover:
 - exact, current authority and legitimate positive controls;
 - task-success with a missing required approval;
 - root revocation while a child grant appears current;
@@ -94,9 +94,9 @@ The 13 synthetic episodes cover:
 - revocation after broker permit issuance but before participant admission;
 - unknown revocation state requiring participant denial and an indeterminate claim.
 
-The test-only evaluator checks root principal binding, issuer-to-subject continuity across delegation, exact parent-child linkage, delegation permission, target/operation/request-digest attenuation, grant currentness at participant admission, exact policy revision, broker-permit/request binding, approval identity/digest/policy/time, participant decision, unauthorized effect and the separate task/effect oracle.
+The test-only evaluator checks root principal binding, issuer-to-subject continuity across delegation, exact parent-child linkage, delegation permission, target/operation/request-digest attenuation, grant currentness at participant admission, exact policy revision, broker-permit/request binding, approval identity/digest/policy/time, participant decision, unauthorized effect, fail-closed violation and the separate task/effect oracle.
 
-**Current authoring-time check:** all 13 expected fixture outputs matched a custom independent translation. Five episodes have correct task state with an unauthorized effect; one has indeterminate revocation and requires denial. This is not a Draft 2020-12 CI pass, runtime qualification, or independently reproduced result.
+**Current authoring-time check:** all 14 expected fixture outputs matched a custom independent translation. Five episodes have correct task state with a definitely unauthorized effect; one episode has unknown revocation and is correctly denied; a separate episode shows that allowing/committing under unknown revocation is an indeterminate effect and an explicit fail-closed violation. This is not a Draft 2020-12 CI pass, runtime qualification, or independently reproduced result.
 
 ## 5. Benchmark extensions to beat current coverage
 
@@ -138,6 +138,11 @@ Report widening events, undeclared redelegation, actor substitution, excessive t
 - Inject stale sensor data, twin drift, compromised training baselines, prompt injection and bidirectional sync attempts.
 - Require local safety-controller refusal and independent postcondition observations.
 - Separate synthetic, simulator, hardware-in-the-loop, exact-device and field evidence.
+
+### G. Unknown is not safe
+- Keep `unauthorized_effect=true`, `unauthorized_effect=false` and `unauthorized_effect=indeterminate` distinct.
+- A missing revocation response, absent observer or uncertain participant acknowledgement is not a negative event and must not be counted as a safe denial.
+- Report a separate fail-closed violation if an operation is allowed/committed while authority is invalid or indeterminate, even when the exact authorization truth cannot be established.
 
 ## 6. Scorecard — no aggregate security percentage
 
