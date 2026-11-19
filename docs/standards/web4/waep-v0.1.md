@@ -196,7 +196,7 @@ The Mycelix AGENT-010 gate remains in force for authoritative A2A/MCP/OAuth/AP2 
 - **A2A v1.0.1 / MCP 2026-07-28:** task/tool interoperability; discovery and protocol authentication do not create Luminous authority.
 - **OWASP ACS v0.1.4:** portable runtime hooks; profile declarations and Guardian dispositions do not prove strict policy, non-bypassability or actual effect enforcement.
 
-## 8.1 Semantic data-flow and release assurance
+## 7.2 Semantic data-flow and release assurance
 
 The September 2026 CapAgent work is a significant comparator because it treats memory retrieval, tool invocation, data export and inter-agent messaging as distinct source-to-sink flows. Its synthetic 600-trace benchmark reports 0% attack success for its full monitor, 75% benign success and 25% false blocking; supplemental experiments report 0% attack success on a 520-trial tool-calling setup, 87.5% compiler exact-policy match and 88.89% semantic-release recall. The paper explicitly cautions that these are controlled local experiments, not official AgentDojo/WebArena/OSWorld results or evidence of deployment-wide safety. These numbers are paper-reported and must not be directly compared with Luminous until the tasks, models, prompts, tools, policies, observers and scoring units are matched.
 
@@ -204,7 +204,7 @@ The distinct November 2026 ACM CCS CapAgent paper addresses capability credentia
 
 WAEP's `data_flow` record binds source identity and classification, each transformation, output lineage, destination sink, operation, purpose-bound status, authorization disposition and semantic-release evidence. Supported information-flow claims require zero unknown/unmapped edges, preserved lineage on every transform, authorized or non-applicable sink decisions, and an authorized/not-applicable semantic-release disposition. This record documents a claim; it does not prove that the declared source/sink inventory is complete or that a semantic detector has adequate recall. The benchmark must measure false negatives, false positives, calibration, benign completion, source/sink coverage and leakage of protected facts separately.
 
-## 9.1 Frozen conformance vectors
+## 9.2 Frozen conformance vectors
 
 The companion file `waep-conformance-vectors.v0.1.json` contains sixteen self-contained schema/semantic test records. `waep-synthetic-participant-receipt.v0.1.json` and `waep-synthetic-corpus.v0.1.json` are explicitly synthetic fixtures whose content digests are referenced by the positive-shape vector. The receipt fixture is not signed and is not a real participant observation.
 
