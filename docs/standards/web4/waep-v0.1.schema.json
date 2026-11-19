@@ -2692,18 +2692,6 @@
                           "authorized",
                           "not_applicable"
                         ]
-                      },
-                      "false_negative_bound": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 1
-                      },
-                      "calibration_ref": {
-                        "type": "string",
-                        "minLength": 1
-                      },
-                      "not_applicable_reason": {
-                        "const": null
                       }
                     },
                     "allOf": [
