@@ -196,6 +196,21 @@ Several points materially strengthen the Luminous profile:
 - **Cryptography must be measured against OT timing and recovery.** Protecting data in transit over untrusted segments is important, but added latency, jitter, failure and key lifecycle effects must be measured for the actual process. An encrypted tunnel is not a substitute for endpoint authorization or an independently verified physical outcome.
 
 These are profile design implications, not a claim that Luminous has implemented or qualified the relevant controls. An internal comment draft is recorded separately and has **not** been submitted to NIST.
+### 6.1.3 Adaptive harness and stressor evolution
+
+The 17 November 2026 paper *Evolution Under Fire: Evolving Agent Safety Harnesses with Adaptive Injection Stressors* provides a new agent-security research direction: evolve executable safety harnesses under utility constraints, then evolve utility-preserving adversarial stressors against harness–case pairs that were previously secure; feed verified stressors back into subsequent harness search. On AgentDyn, the paper reports a selected GPT-4o-mini harness reducing ASR from 50.4% to 3.0% while increasing clean utility (27/60 to 28/60) and attacked utility (202/560 to 219/560). A frozen transfer to Qwen3.5-35B-A3B reduces ASR from 32.1% to 0.9%. These are paper-specific results, not Luminous measurements, and ASR is not the same as unauthorized participant-effect prevention.
+
+Luminous's adaptation is more restrictive about trust anchors: **the harness and benchmark-defined stressor may evolve; the task model, tools, environment, grant/policy semantics, authorization oracle, participant/effect oracle, independent observer and evaluator remain frozen for a search stage.** A stressor is promoted only if the legitimate task still succeeds and a frozen oracle confirms the adversarial objective. A correct final state reached through unauthorized actions is a security failure; blanket refusal is an invalid solution.
+
+The implementation protocol and empty schema/template are recorded in:
+
+- `ADAPTIVE_AUTHORIZATION_EVOLUTION_PROTOCOL_V0_1.md`
+- `adaptive-authorization-evolution.schema.v0.1.json`
+- `adaptive-authorization-evolution.template.v0.1.json`
+
+The test-only validator checks that the empty template cannot mutate task model, tools, environment, benchmark semantics, grants/policy semantics, authorization/participant/effect oracles or evaluator. It is not an executed harness search. Luminous has not reproduced Evolution Under Fire or demonstrated better-than-SOTA performance.
+
+Source: https://arxiv.org/abs/2611.22583
 ## 7. Benchmark and qualification programme
 
 Do not build a single “Luminous security score”. Report separate properties and hard gates. A system that blocks every operation is not useful; positive-control completion and benign false blocking must be reported alongside attack prevention.
