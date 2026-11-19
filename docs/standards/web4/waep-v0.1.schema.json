@@ -552,6 +552,9 @@
         },
         "recovery": {
           "$ref": "#/$defs/recovery"
+        },
+        "data_flow": {
+          "$ref": "#/$defs/data_flow"
         }
       },
       "additionalProperties": false
@@ -1375,6 +1378,248 @@
         }
       },
       "additionalProperties": false
+    },
+    "data_flow": {
+      "type": "object",
+      "required": [
+        "flow_id",
+        "sources",
+        "transformations",
+        "sinks",
+        "lineage_policy",
+        "unknown_or_unmapped_edges"
+      ],
+      "properties": {
+        "flow_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "source_ref",
+              "data_label",
+              "source_identity",
+              "classification",
+              "evidence_refs"
+            ],
+            "properties": {
+              "source_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "data_label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "source_identity": {
+                "type": "string",
+                "minLength": 1
+              },
+              "classification": {
+                "enum": [
+                  "public",
+                  "internal",
+                  "confidential",
+                  "restricted",
+                  "personal",
+                  "safety_critical",
+                  "unknown"
+                ]
+              },
+              "evidence_refs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "transformations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "transform_ref",
+              "operation",
+              "input_refs",
+              "output_ref",
+              "lineage_preserved",
+              "classification_after"
+            ],
+            "properties": {
+              "transform_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "operation": {
+                "type": "string",
+                "minLength": 1
+              },
+              "input_refs": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string"
+                }
+              },
+              "output_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "lineage_preserved": {
+                "type": "boolean"
+              },
+              "classification_after": {
+                "enum": [
+                  "public",
+                  "internal",
+                  "confidential",
+                  "restricted",
+                  "personal",
+                  "safety_critical",
+                  "unknown"
+                ]
+              },
+              "implementation_digest": {
+                "$ref": "#/$defs/digest"
+              },
+              "evidence_refs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "sinks": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "sink_ref",
+              "target",
+              "sink_type",
+              "operation",
+              "authorization_disposition",
+              "purpose_bound",
+              "evidence_refs"
+            ],
+            "properties": {
+              "sink_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "target": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sink_type": {
+                "enum": [
+                  "local_memory",
+                  "local_file",
+                  "external_api",
+                  "email",
+                  "browser",
+                  "inter_agent",
+                  "publication",
+                  "physical_controller",
+                  "other"
+                ]
+              },
+              "operation": {
+                "type": "string",
+                "minLength": 1
+              },
+              "authorization_disposition": {
+                "enum": [
+                  "authorized",
+                  "denied",
+                  "unknown",
+                  "not_applicable"
+                ]
+              },
+              "purpose_bound": {
+                "type": "boolean"
+              },
+              "declassification_ref": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "evidence_refs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "lineage_policy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unknown_or_unmapped_edges": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "semantic_release": {
+          "type": "object",
+          "required": [
+            "protected_fact_set_digest",
+            "method",
+            "disposition",
+            "false_negative_bound",
+            "calibration_ref"
+          ],
+          "properties": {
+            "protected_fact_set_digest": {
+              "$ref": "#/$defs/digest"
+            },
+            "method": {
+              "type": "string",
+              "minLength": 1
+            },
+            "disposition": {
+              "enum": [
+                "authorized",
+                "denied",
+                "indeterminate",
+                "not_applicable"
+              ]
+            },
+            "false_negative_bound": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1
+            },
+            "calibration_ref": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
     }
   },
   "allOf": [
@@ -2170,6 +2415,117 @@
                       "enum": [
                         "containment_transition"
                       ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "claim"
+        ],
+        "properties": {
+          "claim": {
+            "required": [
+              "property"
+            ],
+            "properties": {
+              "property": {
+                "const": "information_flow"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "claim"
+        ],
+        "properties": {
+          "claim": {
+            "required": [
+              "data_flow"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "claim"
+        ],
+        "properties": {
+          "claim": {
+            "required": [
+              "property",
+              "disposition"
+            ],
+            "properties": {
+              "property": {
+                "const": "information_flow"
+              },
+              "disposition": {
+                "const": "supported_within_scope"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "claim": {
+            "properties": {
+              "data_flow": {
+                "properties": {
+                  "unknown_or_unmapped_edges": {
+                    "maxItems": 0
+                  },
+                  "transformations": {
+                    "items": {
+                      "properties": {
+                        "lineage_preserved": {
+                          "const": true
+                        },
+                        "classification_after": {
+                          "not": {
+                            "const": "unknown"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "sinks": {
+                    "items": {
+                      "properties": {
+                        "authorization_disposition": {
+                          "enum": [
+                            "authorized",
+                            "not_applicable"
+                          ]
+                        },
+                        "purpose_bound": {
+                          "const": true
+                        }
+                      }
+                    }
+                  },
+                  "semantic_release": {
+                    "required": [
+                      "disposition"
+                    ],
+                    "properties": {
+                      "disposition": {
+                        "enum": [
+                          "authorized",
+                          "not_applicable"
+                        ]
+                      }
                     }
                   }
                 }
