@@ -92,7 +92,7 @@ High-value adversarial scenarios include **control-plane compromise without mana
 
 ## 5. Luminous Cross-Layer Assurance Plane (XAP)
 
-XAP is the proposed Luminous contribution above the ordinary networking stack. It composes existing authorities; it does not create a new one.
+XAP is the proposed Luminous cross-layer assurance overlay. It spans the OSI layers and the three X.805 planes; it is **not a fourth X.805 plane**, an eighth OSI layer or another protocol stack. It composes existing authorities; it does not create a new one.
 
 | XAP responsibility | Question answered | Existing owner(s) | Evidence expected |
 |---|---|---|---|
