@@ -102,7 +102,36 @@
       "child_scope_attenuation",
       "current_revocation",
       "final_participant_recheck"
-    ]
+    ],
+    "delegation_chain": {
+      "root_principal_ref": "synthetic:principal-root",
+      "root_task_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "nodes": [
+        {
+          "node_ref": "root",
+          "principal_ref": "synthetic:principal-root",
+          "task_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "plan_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+        },
+        {
+          "node_ref": "child",
+          "principal_ref": "synthetic:agent-child",
+          "task_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+          "plan_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+        }
+      ],
+      "edges": [
+        {
+          "parent_node_ref": "root",
+          "child_node_ref": "child",
+          "grant_ref": "synthetic:grant-001",
+          "scope_relation": "strict_subset",
+          "evidence_refs": []
+        }
+      ],
+      "final_participant_recheck": "unknown",
+      "notes": "Synthetic shape only; no grant or participant has been exercised."
+    }
   },
   "evaluation": {
     "run_state": "not_executed",
