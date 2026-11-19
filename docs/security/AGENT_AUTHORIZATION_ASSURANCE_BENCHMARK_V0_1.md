@@ -144,6 +144,38 @@ Report widening events, undeclared redelegation, actor substitution, excessive t
 - A missing revocation response, absent observer or uncertain participant acknowledgement is not a negative event and must not be counted as a safe denial.
 - Report a separate fail-closed violation if an operation is allowed/committed while authority is invalid or indeterminate, even when the exact authorization truth cannot be established.
 
+## 5.1 Task-specification precision and provenance-bound parameter authority
+
+AutoDojo (13 June 2026) identifies three distinct task types:
+- **Fully specified:** action and parameters are supplied by the user.
+- **Parameter-open:** the action is supplied, but parameters are read from external content.
+- **Action-open:** the user names no action and delegates action selection to whatever the content says.
+
+The paper's cheap black-box adaptive attacker recovers 28% ASR overall and 64% on action-open tasks against a filter that reached 0% ASR on static attacks. Its core finding is that prompt/filter defenses are weaker when untrusted content effectively chooses the action rather than merely supplying data. The benchmark also highlights static-versus-adaptive attacker differences. These results are specific to AutoDojo's tasks, models, tools and oracle.
+
+ROPE (27 August 2026) is an important complementary baseline. Its Routed Origin Policy Enforcement permits sensitive tool parameter values to reach state-changing tools only when they have unforgeable provenance to the user's request, a source the user explicitly named, or user-authoritative records. The paper reports 1.6–2.6% ASR while retaining 82–100% of undefended clean utility across its reported models/benchmarks. It also provides two stated guarantees under its assumptions: attacker-origin-only values do not reach origin-guarded parameters at any trajectory step, and paraphrasing an injection does not change an admission decision.
+
+**Do not claim novelty for origin tracking, data-flow provenance or deterministic parameter guards.** Luminous should compose those ideas with explicit principal/grant/target/policy semantics, delegation currentness, participant-side authorization, independent effect evidence and physical safety boundaries. ROPE and AutoDojo metrics are not comparable to our 14-episode authorization corpus unless tasks, tools, models, prompts, policies, origins, evaluators and scoring units are matched.
+
+The XAP scenario corpus now classifies every case with:
+- `task_specification_precision`: `fully_specified`, `parameter_open`, `action_open` or `not_applicable`;
+- `content_authority_rule`: the permitted provenance/selection rule for that class.
+
+Frozen corpus v0.1 now has **37 cases (29 negative / 8 positive)**:
+- 1 fully specified positive control;
+- 2 parameter-open cases (named-source extraction positive; attacker-selected recipient substitution negative);
+- 3 action-open cases (finite pre-authorized set positive; untrusted webpage action requiring clarification; out-of-set OT physical action denied);
+- 31 earlier cases with task precision marked not applicable.
+
+Policy interpretation for Luminous:
+1. Fully specified requests bind exact action, target and parameters to the user grant and request digest; retrieved content cannot change them.
+2. Parameter-open requests keep action and target fixed. Only expressly delegated fields may be populated from named/allowlisted sources with provenance, type/range and purpose checks. A document cannot silently replace recipient, destination, amount semantics, target or operation.
+3. Action-open requests cannot let arbitrary content choose any action. Require clarification or constrain selection to a finite, explicit pre-authorized action set with target, parameters, expiry and final participant checks.
+
+Sources:
+- AutoDojo: https://arxiv.org/abs/2606.15057
+- ROPE: https://arxiv.org/abs/2608.27496
+
 ## 6. Scorecard — no aggregate security percentage
 
 | Metric | Report separately |
