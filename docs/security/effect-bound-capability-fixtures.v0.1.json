@@ -63,9 +63,13 @@
       },
       "evidence_only": false,
       "expected": {
-        "decision": "allow",
-        "reason": "allow"
-      }
+        "authorization_state": "authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "committed"
+      },
+      "participant_decision": "allow"
     },
     {
       "scenario_id": "CAP-002-NARROW-CHILD",
@@ -147,9 +151,13 @@
       },
       "evidence_only": false,
       "expected": {
-        "decision": "allow",
-        "reason": "allow"
-      }
+        "authorization_state": "authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "committed"
+      },
+      "participant_decision": "allow"
     },
     {
       "scenario_id": "CAP-003-CHILD-RESOURCE-WIDEN",
@@ -224,17 +232,21 @@
         "consume_count": 1
       },
       "effect": {
-        "effect_id": "effect-001",
-        "state": "committed",
+        "effect_id": null,
+        "state": "none",
         "participant_id": "participant:router-api",
         "attempt_id": "attempt-001",
-        "postcondition": "matches"
+        "postcondition": "not_observed"
       },
       "evidence_only": false,
       "expected": {
-        "decision": "deny",
-        "reason": "deny"
-      }
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny"
     },
     {
       "scenario_id": "CAP-004-CHILD-OPERATION-WIDEN",
@@ -308,17 +320,21 @@
         "consume_count": 1
       },
       "effect": {
-        "effect_id": "effect-001",
-        "state": "committed",
+        "effect_id": null,
+        "state": "none",
         "participant_id": "participant:router-api",
         "attempt_id": "attempt-001",
-        "postcondition": "matches"
+        "postcondition": "not_observed"
       },
       "evidence_only": false,
       "expected": {
-        "decision": "deny",
-        "reason": "deny"
-      }
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny"
     },
     {
       "scenario_id": "CAP-005-CHILD-TIME-WIDEN",
@@ -392,17 +408,21 @@
         "consume_count": 1
       },
       "effect": {
-        "effect_id": "effect-001",
-        "state": "committed",
+        "effect_id": null,
+        "state": "none",
         "participant_id": "participant:router-api",
         "attempt_id": "attempt-001",
-        "postcondition": "matches"
+        "postcondition": "not_observed"
       },
       "evidence_only": false,
       "expected": {
-        "decision": "deny",
-        "reason": "deny"
-      }
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny"
     },
     {
       "scenario_id": "CAP-006-COMPOSITION-INTERSECTION",
@@ -484,9 +504,13 @@
       },
       "evidence_only": false,
       "expected": {
-        "decision": "allow",
-        "reason": "allow"
-      }
+        "authorization_state": "authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "committed"
+      },
+      "participant_decision": "allow"
     },
     {
       "scenario_id": "CAP-007-COMPOSITION-NEVER-UNION",
@@ -558,17 +582,21 @@
         "consume_count": 1
       },
       "effect": {
-        "effect_id": "effect-001",
-        "state": "committed",
+        "effect_id": null,
+        "state": "none",
         "participant_id": "participant:router-api",
         "attempt_id": "attempt-001",
-        "postcondition": "matches"
+        "postcondition": "not_observed"
       },
       "evidence_only": false,
       "expected": {
-        "decision": "deny",
-        "reason": "deny"
-      }
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny"
     },
     {
       "scenario_id": "CAP-008-ACTOR-SUBSTITUTION",
@@ -622,17 +650,21 @@
         "consume_count": 1
       },
       "effect": {
-        "effect_id": "effect-001",
-        "state": "committed",
+        "effect_id": null,
+        "state": "none",
         "participant_id": "participant:router-api",
         "attempt_id": "attempt-001",
-        "postcondition": "matches"
+        "postcondition": "not_observed"
       },
       "evidence_only": false,
       "expected": {
-        "decision": "deny",
-        "reason": "deny"
-      }
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny"
     },
     {
       "scenario_id": "CAP-009-ARGUMENT-DIGEST-MISMATCH",
@@ -686,17 +718,21 @@
         "consume_count": 1
       },
       "effect": {
-        "effect_id": "effect-001",
-        "state": "committed",
+        "effect_id": null,
+        "state": "none",
         "participant_id": "participant:router-api",
         "attempt_id": "attempt-001",
-        "postcondition": "matches"
+        "postcondition": "not_observed"
       },
       "evidence_only": false,
       "expected": {
-        "decision": "deny",
-        "reason": "deny"
-      }
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny"
     },
     {
       "scenario_id": "CAP-010-POLICY-EPOCH-MISMATCH",
@@ -750,17 +786,21 @@
         "consume_count": 1
       },
       "effect": {
-        "effect_id": "effect-001",
-        "state": "committed",
+        "effect_id": null,
+        "state": "none",
         "participant_id": "participant:router-api",
         "attempt_id": "attempt-001",
-        "postcondition": "matches"
+        "postcondition": "not_observed"
       },
       "evidence_only": false,
       "expected": {
-        "decision": "deny",
-        "reason": "deny"
-      }
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny"
     },
     {
       "scenario_id": "CAP-011-REVOKED-GRANT",
@@ -814,17 +854,21 @@
         "consume_count": 1
       },
       "effect": {
-        "effect_id": "effect-001",
-        "state": "committed",
+        "effect_id": null,
+        "state": "none",
         "participant_id": "participant:router-api",
         "attempt_id": "attempt-001",
-        "postcondition": "matches"
+        "postcondition": "not_observed"
       },
       "evidence_only": false,
       "expected": {
-        "decision": "deny",
-        "reason": "deny"
-      }
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny"
     },
     {
       "scenario_id": "CAP-012-UNKNOWN-REVOCATION",
@@ -878,17 +922,21 @@
         "consume_count": 1
       },
       "effect": {
-        "effect_id": "effect-001",
-        "state": "committed",
+        "effect_id": null,
+        "state": "none",
         "participant_id": "participant:router-api",
         "attempt_id": "attempt-001",
-        "postcondition": "matches"
+        "postcondition": "not_observed"
       },
       "evidence_only": false,
       "expected": {
-        "decision": "indeterminate",
-        "reason": "indeterminate"
-      }
+        "authorization_state": "indeterminate",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny"
     },
     {
       "scenario_id": "CAP-013-PERMIT-REPLAY",
@@ -942,17 +990,21 @@
         "consume_count": 2
       },
       "effect": {
-        "effect_id": "effect-001",
-        "state": "committed",
+        "effect_id": null,
+        "state": "none",
         "participant_id": "participant:router-api",
         "attempt_id": "attempt-001",
-        "postcondition": "matches"
+        "postcondition": "not_observed"
       },
       "evidence_only": false,
       "expected": {
-        "decision": "deny",
-        "reason": "deny"
-      }
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny"
     },
     {
       "scenario_id": "CAP-014-EVIDENCE-IS-NOT-AUTHORITY",
@@ -983,17 +1035,21 @@
         "consume_count": 1
       },
       "effect": {
-        "effect_id": "effect-001",
-        "state": "committed",
+        "effect_id": null,
+        "state": "none",
         "participant_id": "participant:router-api",
         "attempt_id": "attempt-001",
-        "postcondition": "matches"
+        "postcondition": "not_observed"
       },
       "evidence_only": true,
       "expected": {
-        "decision": "deny",
-        "reason": "deny"
-      }
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny"
     },
     {
       "scenario_id": "CAP-015-UNKNOWN-EFFECT-RECONCILE",
@@ -1047,7 +1103,7 @@
         "consume_count": 1
       },
       "effect": {
-        "effect_id": "effect-001",
+        "effect_id": null,
         "state": "unknown",
         "participant_id": "participant:router-api",
         "attempt_id": "attempt-001",
@@ -1055,9 +1111,13 @@
       },
       "evidence_only": false,
       "expected": {
-        "decision": "reconcile_same_attempt",
-        "reason": "reconcile_same_attempt"
-      }
+        "authorization_state": "authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "reconcile_same_attempt"
+      },
+      "participant_decision": "allow"
     },
     {
       "scenario_id": "CAP-016-PERMIT-ATTEMPT-SUBSTITUTION",
@@ -1111,17 +1171,21 @@
         "consume_count": 1
       },
       "effect": {
-        "effect_id": "effect-001",
-        "state": "committed",
+        "effect_id": null,
+        "state": "none",
         "participant_id": "participant:router-api",
         "attempt_id": "attempt-001",
-        "postcondition": "matches"
+        "postcondition": "not_observed"
       },
       "evidence_only": false,
       "expected": {
-        "decision": "deny",
-        "reason": "deny"
-      }
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny"
     },
     {
       "scenario_id": "CAP-017-PERMIT-EXPIRED",
@@ -1175,7 +1239,75 @@
         "consume_count": 1
       },
       "effect": {
-        "effect_id": "effect-001",
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed"
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny"
+    },
+    {
+      "scenario_id": "CAP-018-REVOKED-GRANT-COMMITTED",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "revoked",
+          "may_delegate": true,
+          "max_delegation_depth": 2
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1
+      },
+      "effect": {
+        "effect_id": "effect-cap-018-revoked-grant-committed",
         "state": "committed",
         "participant_id": "participant:router-api",
         "attempt_id": "attempt-001",
@@ -1183,10 +1315,150 @@
       },
       "evidence_only": false,
       "expected": {
-        "decision": "deny",
-        "reason": "deny"
-      }
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": false,
+        "fail_closed_violation": true,
+        "unauthorized_effect": "true",
+        "effect_disposition": "committed"
+      },
+      "participant_decision": "allow"
+    },
+    {
+      "scenario_id": "CAP-019-UNKNOWN-GRANT-COMMITTED",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "unknown",
+          "may_delegate": true,
+          "max_delegation_depth": 2
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1
+      },
+      "effect": {
+        "effect_id": "effect-cap-019-unknown-grant-committed",
+        "state": "committed",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "matches"
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "indeterminate",
+        "participant_decision_correct": false,
+        "fail_closed_violation": true,
+        "unauthorized_effect": "indeterminate",
+        "effect_disposition": "committed"
+      },
+      "participant_decision": "allow"
+    },
+    {
+      "scenario_id": "CAP-020-VALID-GRANT-FALSE-DENIED",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed"
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "authorized",
+        "participant_decision_correct": false,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny"
     }
   ],
-  "fixture_count": 17
+  "fixture_count": 20
 }
