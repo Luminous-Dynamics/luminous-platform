@@ -192,6 +192,20 @@ This is the minimum first cross-layer corpus. Each case needs positive, negative
 | XAP-19 | Revoked/expired/unknown key, profile, tool manifest or device attestation arrives on an otherwise valid session | Currentness failure is enforced at the final relevant boundary; no downgrade fallback. |
 | XAP-20 | Recovery/compensation is attempted after uncertain or irreversible external effect | Remedy requires its own narrow current authority and postcondition; it never erases original effect/history. |
 
+### 6.1.3 Approval-obligation ledger
+
+The 14-case point-in-time authorization suite does not establish that a decision survives the complete model → harness → workflow → participant path. The separate `APPROVAL_OBLIGATION_LEDGER_BENCHMARK_V0_1.md` and its Draft 2020-12 fixtures add **26 synthetic episodes** for this purpose.
+
+The two independent obligations are:
+
+- **Refusal safety:** a rejected action must not reach the protected effect, and a later reversal does not erase a refusal violation.
+- **Bounded authorization completeness:** every still-authorized, feasible action with valid conditions must complete within its declared horizon; otherwise it must remain explicitly pending, conditional, incomplete or indeterminate.
+
+The ledger covers model call omission, parallel branch aggregation, checkpoint restoration, decision withdrawal, changed conditions and re-approval, delegated work, workflow branch polarity, duplicate commits, exact item subsets, object substitution, unknown state, partial commit and an effect that bypasses all matching workflow dispatch.
+
+Every effect now requires a prior dispatch that matches the current decision revision, action/actor/target/operation/argument/item subset and condition revision. The schema carries the condition revision on dispatch itself. The evaluator reports fail-closed violations and unwitnessed effects separately; an unknown/missing witness is counted once per event rather than double-counted alongside unknown decision state.
+
+**Authoring-time results for the frozen 26-case suite:** refusal safety: 14 pass / 9 violation / 3 indeterminate; authorization completeness: 11 complete / 11 incomplete / 1 pending / 1 conditional hold / 2 indeterminate; 9 fail-closed violations and 1 unwitnessed effect. These are expected synthetic fixture outcomes, not CI or deployment results.
 ### 6.1.2 Authorization benchmark and external SOTA crosswalk
 
 The frozen corpus now contains 14 episodes. It separately records authorization state, participant-decision correctness, fail-closed violation, unauthorized-effect certainty, task state and observed postcondition. Unknown authority/effect outcomes remain indeterminate rather than being counted as safe. The authoring-time semantic check currently matches all 14 expected fixture outputs; the full Draft 2020-12 workflow is still pending.
@@ -222,7 +236,7 @@ This evaluator is a static research fixture tool. It does not inspect a live hos
 
 The accompanying machine-readable artifacts are the first testable coverage index for this profile:
 
-- `osi-xap-control-matrix.v0.1.json` and its Draft 2020-12 schema: 33 control records — three for each OSI layer L1–L6, four for L7, and eleven cross-layer responsibilities. Each row identifies the OSI layer, X.805 security layer/plane/dimensions, repository owner, implementation/evidence maturity, enforcement points, residual assumptions, qualification tests and claim ceiling.
+- `osi-xap-control-matrix.v0.1.json` and its Draft 2020-12 schema: 34 control records — three for each OSI layer L1–L6, four for L7, and twelve cross-layer responsibilities. Each row identifies the OSI layer, X.805 security layer/plane/dimensions, repository owner, implementation/evidence maturity, enforcement points, residual assumptions, qualification tests and claim ceiling.
 - `osi-xap-scenarios.v0.1.json` and its schema: 37 synthetic scenarios — 29 negative and eight positive. The corpus includes OT AI prompt/data poisoning, digital-twin drift and unauthorized twin-to-controller synchronization, as well as OT active-scanning safety, monitoring blind spots and shared management/operational infrastructure.
 - `l2l3-deployment-profile.schema.v0.1.json` and `l2l3-deployment-profile.template.v0.1.json`: a typed exact-scope network inventory/evidence contract. The public template is deliberately empty, `template_only`, `not_assessed`, with unknown discovery/OT separation and no complete-mediation claim.
 - `scripts/validate_osi_xap.py` and `.github/workflows/osi-xap.yml`: test-only Draft 2020-12 schema and static fixture checks. This is build/test tooling, not a production policy engine or network scanner.
