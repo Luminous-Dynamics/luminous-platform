@@ -304,12 +304,21 @@ def main() -> int:
                 raise SystemExit("duplicate scenario IDs")
             counts = {kind: sum(1 for x in data["scenarios"] if x["kind"] == kind)
                       for kind in ("positive", "negative", "ambiguous")}
-            if counts != {"positive": 5, "negative": 26, "ambiguous": 0}:
+            if counts != {"positive": 8, "negative": 29, "ambiguous": 0}:
                 raise SystemExit(f"unexpected frozen scenario mix: {counts}")
+            precision_counts = {
+                precision: sum(1 for x in data["scenarios"] if x["task_specification_precision"] == precision)
+                for precision in ("fully_specified", "parameter_open", "action_open", "not_applicable")
+            }
+            if precision_counts != {
+                "fully_specified": 1, "parameter_open": 2,
+                "action_open": 3, "not_applicable": 31
+            }:
+                raise SystemExit(f"unexpected task-specification precision mix: {precision_counts}")
             if data["scenario_count"] != len(ids):
                 raise SystemExit("scenario_count does not match scenarios array")
             total_scenarios = len(ids)
-            print(f"SCENARIO_CONTROLS={counts}")
+            print(f"SCENARIO_CONTROLS={counts} TASK_SPECIFICATION_PRECISION={precision_counts}")
 
     # The template is deliberately unqualified. It must not silently become
     # a network inventory or a complete-mediation assertion.
