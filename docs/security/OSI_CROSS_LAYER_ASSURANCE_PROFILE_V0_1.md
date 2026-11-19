@@ -78,7 +78,35 @@ The table maps communication functions to Luminous owners. It does not imply tha
 
 **L7 — The application effect is the decisive boundary.** A model proposes; a broker evaluates; a participant independently authenticates, authorizes, deduplicates and records the operation; an observer verifies a postcondition. A secure session, A2A Agent Card, MCP tool listing, OAuth token, ACS hook or model-generated ALLOW is not, by itself, permission for a participant effect.
 
-### 4.1 X.805 security layers\n\nX.805 also defines three *security layers*. They are separate from both the seven OSI layers and the three X.805 planes:\n\n| X.805 security layer | Scope | Luminous interpretation |\n|---|---|---|\n| **Infrastructure** | Underlying network infrastructure and facilities | Hardware, firmware, boot, link, routing, transport infrastructure and the infrastructure dependencies that carry Luminous services |\n| **Services** | Network and platform services that support communication and access | Identity/session services, name resolution, transport/security services, brokers, service discovery, policy distribution and shared control services |\n| **Applications** | Applications and end-user information | Symthaea workloads, Mycelix applications, Xenia operator/application behavior, business workflows, data use and physical-operation requests |\n\nThese mappings are interpretive, not one-to-one. One Luminous component may cross multiple X.805 security layers, and one OSI protocol layer may support more than one X.805 layer.\n\n### 4.2 X.805 security dimensions\n\nXAP should map claims to all eight X.805 dimensions. The earlier focus on authorization and evidence is necessary but not sufficient:\n\n| X.805 dimension | Luminous questions |\n|---|---|\n| Access control | Is every principal/device/workload permitted to access this exact resource and operation? |\n| Authentication | Is the claimed human, organization, device, peer or service identity properly bound and current? |\n| Non-repudiation | Are intent, approval, execution and participant evidence bound to identifiable signers and exact artifacts, with key-custody caveats? |\n| Data confidentiality | Can unauthorized parties read payloads, secrets, metadata or derived information? |\n| Communication security | Can information be diverted, intercepted, replayed or delivered to an unauthorized endpoint? |\n| Data integrity | Are messages, configurations, artifacts, state transitions and evidence protected against undetected modification or ambiguity? |\n| Availability | Can the system preserve safe local operation while containing resource-exhaustion and denial-of-service conditions? |\n| Privacy | Are collection, inference, retention, sharing, linkage and declassification purpose-bound and rights-aware? |\n\nNon-repudiation is not a claim that a human cannot dispute an event: it is a claim about evidence under stated key custody, identity, context and verification assumptions. Availability is not permission to bypass authorization. Privacy is broader than payload encryption.\n## 4. The X.805 planes: an orthogonal view
+### 4.1 X.805 security layers
+
+X.805 also defines three *security layers*. They are separate from both the seven OSI layers and the three X.805 planes:
+
+| X.805 security layer | Scope | Luminous interpretation |
+|---|---|---|
+| **Infrastructure** | Underlying network infrastructure and facilities | Hardware, firmware, boot, link, routing, transport infrastructure and the infrastructure dependencies that carry Luminous services |
+| **Services** | Network and platform services that support communication and access | Identity/session services, name resolution, transport/security services, brokers, service discovery, policy distribution and shared control services |
+| **Applications** | Applications and end-user information | Symthaea workloads, Mycelix applications, Xenia operator/application behavior, business workflows, data use and physical-operation requests |
+
+These mappings are interpretive, not one-to-one. One Luminous component may cross multiple X.805 security layers, and one OSI protocol layer may support more than one X.805 layer.
+
+### 4.2 X.805 security dimensions
+
+XAP should map claims to all eight X.805 dimensions. The earlier focus on authorization and evidence is necessary but not sufficient:
+
+| X.805 dimension | Luminous questions |
+|---|---|
+| Access control | Is every principal/device/workload permitted to access this exact resource and operation? |
+| Authentication | Is the claimed human, organization, device, peer or service identity properly bound and current? |
+| Non-repudiation | Are intent, approval, execution and participant evidence bound to identifiable signers and exact artifacts, with key-custody caveats? |
+| Data confidentiality | Can unauthorized parties read payloads, secrets, metadata or derived information? |
+| Communication security | Can information be diverted, intercepted, replayed or delivered to an unauthorized endpoint? |
+| Data integrity | Are messages, configurations, artifacts, state transitions and evidence protected against undetected modification or ambiguity? |
+| Availability | Can the system preserve safe local operation while containing resource-exhaustion and denial-of-service conditions? |
+| Privacy | Are collection, inference, retention, sharing, linkage and declassification purpose-bound and rights-aware? |
+
+Non-repudiation is not a claim that a human cannot dispute an event: it is a claim about evidence under stated key custody, identity, context and verification assumptions. Availability is not permission to bypass authorization. Privacy is broader than payload encryption.
+## 4. The X.805 planes: an orthogonal view
 
 X.805's three planes should be mapped across all seven OSI layers and its three security layers. They are not three more OSI layers.
 
@@ -119,7 +147,25 @@ XAP is the proposed Luminous cross-layer assurance overlay. It spans the OSI lay
 11. **No layer substitution:** a control in one layer cannot compensate for a missing control in another unless the threat model and evidence explicitly justify it.
 12. **No false independence:** two receipts or sources sharing a firmware signer, host, KMS, clock, collector, build pipeline or network dependency are not automatically independent.
 
-### 5.2 Assurance graph, not a checklist\n\nA layer checklist is useful for ownership but insufficient for compositional security. The same unauthorized effect may traverse several valid-looking components, and independent-looking evidence may share one hidden dependency. XAP therefore uses an **assurance graph** as its primary analysis model while retaining the layer/plane/dimension matrix as the coverage index.\n\nGraph node types include principal, workload, device, firmware artifact, policy, authority grant, enforcement point, network path, data object, transformation, sink, participant effect, observer, evidence artifact, recovery action and shared dependency. Edge types include authenticates, delegates, constrains, routes, enforces, reads, transforms, discloses, commits, observes, attests, depends_on, revokes and recovers.\n\nThe graph must be able to answer:\n\n- Is there any path from an untrusted ingress or compromised workload to a consequential sink that bypasses an enforcement point?\n- Does every delegated path preserve attenuation back to a root grant and its currentness/revocation state?\n- Does each information-flow path preserve data classification and carry an explicit declassification edge when labels are lowered?\n- Are the purportedly independent participant, observer, signer, clock, build and evidence paths independent under the declared threat model?\n- Can an ambiguous effect be reconciled to the same participant attempt without replaying a second mutation?\n- Which nodes, edges, claims and deployments become unqualified after a shared signer, firmware, host, KMS, DNS, time source, CI pipeline or collector is compromised?\n\nUse the existing Mycelix dependency-hypergraph and Platform/ITOPS evidence work for graph representation and common-cause semantics. XAP must not create a second dependency graph engine or a new global transaction ledger. The graph is a versioned view over existing owners' evidence.\n\nGraph completeness is a claim with a finite scope. Unknown nodes/edges, unenumerated routes or stale inventories must yield UNKNOWN/INCOMPLETE, never an inferred complete path or a false assurance result.\n## 6. Initial threat/interface matrix
+### 5.2 Assurance graph, not a checklist
+
+A layer checklist is useful for ownership but insufficient for compositional security. The same unauthorized effect may traverse several valid-looking components, and independent-looking evidence may share one hidden dependency. XAP therefore uses an **assurance graph** as its primary analysis model while retaining the layer/plane/dimension matrix as the coverage index.
+
+Graph node types include principal, workload, device, firmware artifact, policy, authority grant, enforcement point, network path, data object, transformation, sink, participant effect, observer, evidence artifact, recovery action and shared dependency. Edge types include authenticates, delegates, constrains, routes, enforces, reads, transforms, discloses, commits, observes, attests, depends_on, revokes and recovers.
+
+The graph must be able to answer:
+
+- Is there any path from an untrusted ingress or compromised workload to a consequential sink that bypasses an enforcement point?
+- Does every delegated path preserve attenuation back to a root grant and its currentness/revocation state?
+- Does each information-flow path preserve data classification and carry an explicit declassification edge when labels are lowered?
+- Are the purportedly independent participant, observer, signer, clock, build and evidence paths independent under the declared threat model?
+- Can an ambiguous effect be reconciled to the same participant attempt without replaying a second mutation?
+- Which nodes, edges, claims and deployments become unqualified after a shared signer, firmware, host, KMS, DNS, time source, CI pipeline or collector is compromised?
+
+Use the existing Mycelix dependency-hypergraph and Platform/ITOPS evidence work for graph representation and common-cause semantics. XAP must not create a second dependency graph engine or a new global transaction ledger. The graph is a versioned view over existing owners' evidence.
+
+Graph completeness is a claim with a finite scope. Unknown nodes/edges, unenumerated routes or stale inventories must yield UNKNOWN/INCOMPLETE, never an inferred complete path or a false assurance result.
+## 6. Initial threat/interface matrix
 
 This is the minimum first cross-layer corpus. Each case needs positive, negative and ambiguous controls. The evaluator, not the agent, owns hidden expected outcomes.
 
@@ -212,6 +258,19 @@ The test-only validator checks that the empty template cannot mutate task model,
 
 Source: https://arxiv.org/abs/2611.22583
 ### 6.1.4 User-intent precision and provenance-bound authority
+
+### 6.1.5 Meta-assurance and evaluator anti-gaming
+
+The branch now includes a meta-assurance suite that mutates graph, authorization and schema inputs while preserving frozen expected semantics. It contains 31 cases: seven graph mutations, ten authorization mutations and fourteen schema-weakening mutations, guarded by 23 explicit schema invariants. The tests cover alternate bypass paths, unknown dependencies, removed enforcement points, common-cause observer dependencies, actor substitution, revocation, permit binding, policy drift, evaluator mutability, incomplete-run promotion and schema weakening.
+
+The committed artifacts are XAP_META_ASSURANCE_V0_1.md, xap-meta-assurance.schema.v0.1.json and xap-meta-assurance.v0.1.json. The test-only validator evaluates the mutations and checks the unmodified schemas against the guard manifest. An independent JavaScript translation matched the original 27 cases and the 14 schema cases now match their expected guard violations. These are authoring-time fixture checks, not CI qualification.
+
+### 6.1.6 Effect-bound capability contract
+
+AUTH-CORE-001 #501 introduces the effect-bound capability contract as a projection over Mycelix AGENT authority, not a second policy engine. Delegation must be monotone attenuation; composition defaults to set intersection rather than union; and one-use permits bind principal, actor, participant, resource, operation, argument digest, policy epoch, nonce and attempt identity. Evidence receipts support an authorization decision but are not authority. The initial corpus contains 17 synthetic cases for valid narrow authority, scope widening, composition, actor/digest/epoch substitution, revocation, permit replay, evidence/authority confusion and unknown-effect reconciliation.
+
+Ownership remains with Mycelix AGENT for canonical grant semantics, Platform for broker request binding, Nixward for host enforcement, Xenia for secure session transport, and the destination participant for final admission and effect idempotency. WASI capability handles are a compositional sandbox baseline; Luminous does not propose a replacement sandbox.
+
 
 AutoDojo identifies three task-specification precision classes: fully specified (action and parameters given), parameter-open (action given, parameters read from content), and action-open (the user delegates action selection to content). Its adaptive attacks recover 28% ASR overall and 64% on action-open tasks against a filter that reached 0% on static attacks. This identifies a structural risk: action selection can be smuggled into ordinary-looking content when the user has not specified the action.
 
