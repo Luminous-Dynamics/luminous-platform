@@ -1220,6 +1220,50 @@
         "Independent observer domains positive control"
       ],
       "claim_ceiling": "Synthetic static graph evaluator and fixtures only; no production route or independence proof."
+    },
+    {
+      "id": "XAP-AUTH-032",
+      "osi_layer": "cross_layer",
+      "x805_security_layer": "cross_layer",
+      "plane": "cross_plane",
+      "dimensions": [
+        "access_control",
+        "authentication",
+        "non_repudiation",
+        "data_integrity",
+        "availability",
+        "privacy"
+      ],
+      "topic": "Paired task outcome and authorization/effect assurance benchmark",
+      "owner": {
+        "repo": "Luminous-Dynamics/luminous-platform",
+        "component": "agent-authorization-assurance benchmark / WAEP evaluator"
+      },
+      "implementation_status": "specified",
+      "evidence_status": "issue_planned",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/498",
+        "https://doi.org/10.1007/s10207-026-01343-w"
+      ],
+      "enforcement_points": [
+        "Grant/delegation verifier",
+        "Exact-action policy/approval verifier",
+        "Participant final admission",
+        "Independent task/effect oracle"
+      ],
+      "residual_assumptions": [
+        "Synthetic fixtures do not represent production model/runtime distributions",
+        "The evaluator's authority and effect oracle must be independently controlled"
+      ],
+      "qualification_tests": [
+        "Task-success with unauthorized effect",
+        "Root and cascading descendant revocation",
+        "Revocation between broker permit and participant admission",
+        "Actor substitution and delegation widening",
+        "False denial of legitimate operation",
+        "Unknown revocation and effect outcomes"
+      ],
+      "claim_ceiling": "Thirteen synthetic authorization episodes and test-only evaluator; no runtime benchmark or external SOTA reproduction claimed."
     }
   ],
   "nonclaims": [
@@ -1229,5 +1273,5 @@
     "A missing or unknown route, dependency, owner or enforcement point blocks a complete-mediation claim.",
     "This matrix is not an audit, certification, compliance attestation or scalar security score."
   ],
-  "control_count": 31
+  "control_count": 32
 }
