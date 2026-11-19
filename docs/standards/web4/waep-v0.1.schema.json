@@ -1,0 +1,768 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/docs/standards/web4/waep-v0.1.schema.json",
+  "title": "Luminous Web4 Assurance Evidence Profile v0.1",
+  "type": "object",
+  "required": [
+    "profile",
+    "version",
+    "record_id",
+    "claim",
+    "evaluation"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-web4-waep"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "record_id": {
+      "type": "string",
+      "pattern": "^WAEP-[A-Z0-9-]{4,64}$"
+    },
+    "claim": {
+      "$ref": "#/$defs/claim"
+    },
+    "evaluation": {
+      "$ref": "#/$defs/evaluation"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "artifact": {
+      "type": "object",
+      "required": [
+        "artifact_id",
+        "role",
+        "digest",
+        "evidence_class",
+        "source_identity"
+      ],
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "uri": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "media_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "evidence_class": {
+          "enum": [
+            "design",
+            "structural_check",
+            "source_test",
+            "executed_test",
+            "runtime_observation",
+            "participant_effect",
+            "independent_review",
+            "external_replication"
+          ]
+        },
+        "source_identity": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "captured_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "derived_from": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "scope": {
+      "type": "object",
+      "required": [
+        "subject",
+        "principal",
+        "agent",
+        "resource",
+        "operation",
+        "effect_class",
+        "purpose",
+        "target",
+        "tenant_scope"
+      ],
+      "properties": {
+        "subject": {
+          "type": "string",
+          "minLength": 1
+        },
+        "principal": {
+          "type": "string",
+          "minLength": 1
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resource": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effect_class": {
+          "enum": [
+            "read_only",
+            "reversible",
+            "consequential",
+            "safety_critical",
+            "persistent_internal",
+            "unknown"
+          ]
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant_scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "validity_window": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "not_before",
+            "expires_at"
+          ],
+          "properties": {
+            "not_before": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "expires_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "claim": {
+      "type": "object",
+      "required": [
+        "claim_id",
+        "property",
+        "statement",
+        "scope",
+        "threat_model",
+        "obligations",
+        "boundaries",
+        "assumptions",
+        "residual_gaps",
+        "maturity",
+        "disposition",
+        "claim_ceiling"
+      ],
+      "properties": {
+        "claim_id": {
+          "type": "string",
+          "pattern": "^CLM-[A-Z0-9-]{3,48}$"
+        },
+        "property": {
+          "enum": [
+            "identity_binding",
+            "complete_mediation",
+            "effective_least_privilege",
+            "consent",
+            "currentness_revocation",
+            "delegation_containment",
+            "information_flow",
+            "session_composition",
+            "one_use_effect",
+            "reconciliation",
+            "independent_observation",
+            "evidence_independence",
+            "lifecycle_accountability",
+            "other"
+          ]
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "scope": {
+          "$ref": "#/$defs/scope"
+        },
+        "threat_model": {
+          "type": "object",
+          "required": [
+            "adversary",
+            "capabilities",
+            "system_boundary",
+            "excluded_threats"
+          ],
+          "properties": {
+            "adversary": {
+              "type": "string",
+              "minLength": 1
+            },
+            "capabilities": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "system_boundary": {
+              "type": "string",
+              "minLength": 1
+            },
+            "excluded_threats": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "trusted_computing_base": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "obligations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "obligation_id",
+              "requirement",
+              "trigger"
+            ],
+            "properties": {
+              "obligation_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "requirement": {
+                "type": "string",
+                "minLength": 1
+              },
+              "trigger": {
+                "type": "string",
+                "minLength": 1
+              },
+              "conditional": {
+                "type": "boolean"
+              },
+              "owner_contract_ref": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "boundaries": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "boundary_id",
+              "role",
+              "owner",
+              "implementation_state",
+              "enforcement_timing",
+              "failure_behavior",
+              "route_coverage"
+            ],
+            "properties": {
+              "boundary_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "role": {
+                "enum": [
+                  "policy_decision_point",
+                  "policy_enforcement_point",
+                  "broker",
+                  "participant_effect_boundary",
+                  "independent_observer",
+                  "independent_verifier",
+                  "control_plane",
+                  "data_plane"
+                ]
+              },
+              "owner": {
+                "type": "string",
+                "minLength": 1
+              },
+              "implementation_state": {
+                "enum": [
+                  "not_implemented",
+                  "specified_only",
+                  "implemented_unqualified",
+                  "qualified_for_declared_profile",
+                  "unknown"
+                ]
+              },
+              "implementation_revision": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "enforcement_timing": {
+                "enum": [
+                  "pre_dispatch",
+                  "participant_ingress",
+                  "atomic_effect_commit",
+                  "post_effect_observation",
+                  "continuous",
+                  "not_applicable",
+                  "unknown"
+                ]
+              },
+              "failure_behavior": {
+                "enum": [
+                  "deny",
+                  "defer",
+                  "indeterminate",
+                  "continue_safe_baseline",
+                  "fail_open",
+                  "unknown"
+                ]
+              },
+              "route_coverage": {
+                "enum": [
+                  "complete_for_declared_inventory",
+                  "partial",
+                  "not_a_route_boundary",
+                  "unknown"
+                ]
+              },
+              "alternate_routes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "notes": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "observations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "observation_id",
+              "what_is_observed",
+              "observer_identity",
+              "control_domain",
+              "observation_stage",
+              "independent_of_agent",
+              "evidence_refs"
+            ],
+            "properties": {
+              "observation_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "what_is_observed": {
+                "type": "string",
+                "minLength": 1
+              },
+              "observer_identity": {
+                "type": "string",
+                "minLength": 1
+              },
+              "control_domain": {
+                "type": "string",
+                "minLength": 1
+              },
+              "observation_stage": {
+                "enum": [
+                  "proposal",
+                  "decision",
+                  "dispatch",
+                  "participant_acceptance",
+                  "durable_commit",
+                  "physical_effect",
+                  "postcondition",
+                  "reconciliation",
+                  "other"
+                ]
+              },
+              "independent_of_agent": {
+                "type": "boolean"
+              },
+              "common_cause_dependencies": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "evidence_refs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/artifact"
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "residual_gaps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "maturity": {
+          "enum": [
+            "specified",
+            "structurally_checked",
+            "source_test_authored",
+            "exact_head_test_executed",
+            "runtime_boundary_exercised",
+            "participant_effect_observed",
+            "independently_reviewed",
+            "externally_reproduced"
+          ]
+        },
+        "disposition": {
+          "enum": [
+            "supported_within_scope",
+            "refuted",
+            "contradicted",
+            "indeterminate",
+            "unsupported",
+            "not_claimed"
+          ]
+        },
+        "claim_ceiling": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_commit": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{40})$"
+        },
+        "verifier_profile": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "required_property_obligations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "evaluation": {
+      "type": "object",
+      "required": [
+        "run_state",
+        "test_corpus",
+        "authorization_oracle",
+        "effect_oracle",
+        "metrics",
+        "attempt_denominator",
+        "exclusions",
+        "limitations"
+      ],
+      "properties": {
+        "run_state": {
+          "enum": [
+            "not_executed",
+            "in_progress",
+            "completed",
+            "indeterminate",
+            "superseded"
+          ]
+        },
+        "test_corpus": {
+          "type": "object",
+          "required": [
+            "corpus_id",
+            "version",
+            "digest",
+            "case_count",
+            "positive_controls",
+            "negative_controls",
+            "indeterminate_controls"
+          ],
+          "properties": {
+            "corpus_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "digest": {
+              "$ref": "#/$defs/digest"
+            },
+            "case_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "positive_controls": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "negative_controls": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "indeterminate_controls": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "held_out": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "authorization_oracle": {
+          "type": "object",
+          "required": [
+            "owner",
+            "independently_authored",
+            "fields"
+          ],
+          "properties": {
+            "owner": {
+              "type": "string",
+              "minLength": 1
+            },
+            "independently_authored": {
+              "type": "boolean"
+            },
+            "fields": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              }
+            },
+            "oracle_artifact": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "effect_oracle": {
+          "type": "object",
+          "required": [
+            "owner",
+            "independently_owned",
+            "effect_states"
+          ],
+          "properties": {
+            "owner": {
+              "type": "string",
+              "minLength": 1
+            },
+            "independently_owned": {
+              "type": "boolean"
+            },
+            "effect_states": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "enum": [
+                  "proposed",
+                  "authorized",
+                  "dispatched",
+                  "participant_accepted",
+                  "committed",
+                  "rejected",
+                  "outcome_unknown",
+                  "independently_observed",
+                  "reconciled"
+                ]
+              }
+            },
+            "participant_source": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "metric_id",
+              "definition",
+              "value",
+              "unit",
+              "status"
+            ],
+            "properties": {
+              "metric_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "definition": {
+                "type": "string",
+                "minLength": 1
+              },
+              "value": {
+                "type": [
+                  "number",
+                  "integer",
+                  "null"
+                ]
+              },
+              "unit": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "enum": [
+                  "measured",
+                  "not_measured",
+                  "not_applicable",
+                  "indeterminate"
+                ]
+              },
+              "denominator": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "confidence_method": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "attempt_denominator": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "exclusions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "dependence_groups": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "run_commit": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{40})$"
+        },
+        "evaluator_commit": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{40})$"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
