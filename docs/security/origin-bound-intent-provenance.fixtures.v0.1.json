@@ -2407,7 +2407,7 @@
       },
       "expected": {
         "intent_state": "indeterminate",
-        "provenance_state": "accepted",
+        "provenance_state": "indeterminate",
         "authorization_state": "indeterminate",
         "untrusted_influence_within_authorized_set": false,
         "participant_decision_correct": true,
