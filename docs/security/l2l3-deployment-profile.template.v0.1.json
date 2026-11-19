@@ -1,0 +1,81 @@
+{
+  "profile_id": "luminous-l2l3-deployment-profile",
+  "version": "0.1",
+  "status": "template_only",
+  "scope": {
+    "deployment_id": "UNASSIGNED",
+    "environment": "template_only",
+    "operator": "UNASSIGNED",
+    "classification": "internal",
+    "jurisdiction": null,
+    "observed_at": null,
+    "source_revision": null,
+    "scope_note": "Empty template; do not populate with private network topology in the public repository."
+  },
+  "devices": [],
+  "zones": [],
+  "interfaces": [],
+  "routes": [],
+  "dns": {
+    "resolvers": [],
+    "allowed_resolver_refs": [],
+    "fallback_policy": "unknown",
+    "dnssec_validation": "unknown",
+    "plaintext_fallback": true,
+    "search_domain_policy": "unknown",
+    "unknown_resolver_paths": [],
+    "evidence_refs": []
+  },
+  "plane_separation": {
+    "management_zone_refs": [],
+    "control_zone_refs": [],
+    "end_user_zone_refs": [],
+    "allowed_cross_plane_flows": [],
+    "unknown_cross_plane_paths": [],
+    "evidence_refs": []
+  },
+  "coverage": {
+    "physical_device_inventory_complete": false,
+    "interface_inventory_complete": false,
+    "ipv4_route_inventory_complete": false,
+    "ipv6_route_inventory_complete": false,
+    "tunnel_inventory_complete": false,
+    "bridge_inventory_complete": false,
+    "namespace_inventory_complete": false,
+    "dns_inventory_complete": false,
+    "egress_policy_complete": false,
+    "plane_separation_verified": false,
+    "unknown_devices": [
+      "not inventoried"
+    ],
+    "unknown_interfaces": [
+      "not inventoried"
+    ],
+    "unknown_routes": [
+      "not inventoried"
+    ],
+    "unknown_tunnels": [
+      "not inventoried"
+    ],
+    "unknown_resolvers": [
+      "not inventoried"
+    ],
+    "unknown_enforcement_points": [
+      "not inventoried"
+    ]
+  },
+  "assessment": {
+    "status": "not_assessed",
+    "complete_mediation_claim": false,
+    "claim_scope": "none",
+    "assessor": null,
+    "assessed_at": null,
+    "evidence_refs": []
+  },
+  "nonclaims": [
+    "This is an empty schema template, not a deployment inventory.",
+    "No network scan, packet capture or firewall change was performed.",
+    "No IPv4/IPv6 completeness, segmentation, DNS integrity or zero-trust conformance is claimed.",
+    "Do not publish credentials, shared secrets, private customer topology or sensitive network identifiers."
+  ]
+}
