@@ -76,7 +76,7 @@ Do not imply that these form a single universal assurance ladder. A claim may re
 | `unsupported` | The implementation/profile does not provide the claimed property |
 | `not_claimed` | No assurance assertion is being made |
 
-A positive disposition must bind exact immutable source, policy, verifier, test, observer and evidence identities. Queued, skipped, missing, stale, unexecuted or superseded work is never positive evidence.
+A positive disposition must bind exact immutable source, policy, verifier, test, observer and evidence identities. Queued, skipped, missing, stale, unexecuted or superseded work is never positive evidence. The schema makes this more than a prose rule: a supported claim requires executed-run/evaluator commits, a nonzero denominator, a claim source commit, evidence artifacts and observations. For consequential, safety-critical or persistent effects, it additionally requires an independently owned participant oracle and an independent observation at participant acceptance, durable commit, physical effect, postcondition or reconciliation.
 
 ## 5. Property-to-obligation-to-evidence matrix
 
