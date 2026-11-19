@@ -1264,6 +1264,50 @@
         "Unknown revocation and effect outcomes"
       ],
       "claim_ceiling": "Thirteen synthetic authorization episodes and test-only evaluator; no runtime benchmark or external SOTA reproduction claimed."
+    },
+    {
+      "id": "XAP-INTENT-033",
+      "osi_layer": "cross_layer",
+      "x805_security_layer": "cross_layer",
+      "plane": "cross_plane",
+      "dimensions": [
+        "access_control",
+        "authentication",
+        "data_confidentiality",
+        "data_integrity",
+        "privacy"
+      ],
+      "topic": "User-intent precision and provenance-bound content-derived parameters",
+      "owner": {
+        "repo": "Luminous-Dynamics/symthaea",
+        "component": "INTX intent semantics composed with Platform broker and WAEP information-flow claims"
+      },
+      "implementation_status": "specified",
+      "evidence_status": "repository_documented",
+      "evidence_refs": [
+        "https://arxiv.org/abs/2606.15057",
+        "https://arxiv.org/abs/2608.27496",
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/498"
+      ],
+      "enforcement_points": [
+        "Typed user-intent contract",
+        "Content-origin/parameter provenance tracker",
+        "Exact-action broker and participant authorization"
+      ],
+      "residual_assumptions": [
+        "Intent class must be derived from authenticated user intent, not untrusted retrieved content",
+        "Source provenance does not itself establish permission to change targets or actions",
+        "Open-ended tasks require finite grants, constraints or human clarification"
+      ],
+      "qualification_tests": [
+        "Fully specified request positive control",
+        "Named-source parameter-open positive control",
+        "Attacker-selected recipient substitution",
+        "Action-open content-selected tool/sink denial",
+        "Paraphrase-invariant admission decision",
+        "Finite pre-authorized action-set positive control"
+      ],
+      "claim_ceiling": "Intent precision and provenance policy specified in synthetic scenarios; no production origin-tracking runtime or external ROPE reproduction is claimed."
     }
   ],
   "nonclaims": [
@@ -1273,5 +1317,5 @@
     "A missing or unknown route, dependency, owner or enforcement point blocks a complete-mediation claim.",
     "This matrix is not an audit, certification, compliance attestation or scalar security score."
   ],
-  "control_count": 32
+  "control_count": 33
 }
