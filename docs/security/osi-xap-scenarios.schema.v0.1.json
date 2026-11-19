@@ -25,7 +25,7 @@
     },
     "scenarios": {
       "type": "array",
-      "minItems": 31,
+      "minItems": 37,
       "items": {
         "type": "object",
         "required": [
@@ -37,7 +37,9 @@
           "required_assertions",
           "evaluator_must_be_independent",
           "evidence_classes",
-          "claim_ceiling"
+          "claim_ceiling",
+          "task_specification_precision",
+          "content_authority_rule"
         ],
         "properties": {
           "scenario_id": {
@@ -109,9 +111,114 @@
           "claim_ceiling": {
             "type": "string",
             "minLength": 10
+          },
+          "task_specification_precision": {
+            "enum": [
+              "fully_specified",
+              "parameter_open",
+              "action_open",
+              "not_applicable"
+            ]
+          },
+          "content_authority_rule": {
+            "enum": [
+              "not_applicable",
+              "parameters_from_named_sources_only",
+              "parameters_from_allowlisted_provenance_only",
+              "untrusted_requires_review",
+              "finite_pre_authorized_action_set",
+              "content_untrusted_requires_clarification",
+              "content_cannot_select_new_action"
+            ]
           }
         },
-        "additionalProperties": false
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "task_specification_precision": {
+                  "const": "not_applicable"
+                }
+              },
+              "required": [
+                "task_specification_precision"
+              ]
+            },
+            "then": {
+              "properties": {
+                "content_authority_rule": {
+                  "const": "not_applicable"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "task_specification_precision": {
+                  "const": "fully_specified"
+                }
+              },
+              "required": [
+                "task_specification_precision"
+              ]
+            },
+            "then": {
+              "properties": {
+                "content_authority_rule": {
+                  "const": "not_applicable"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "task_specification_precision": {
+                  "const": "parameter_open"
+                }
+              },
+              "required": [
+                "task_specification_precision"
+              ]
+            },
+            "then": {
+              "properties": {
+                "content_authority_rule": {
+                  "enum": [
+                    "parameters_from_named_sources_only",
+                    "parameters_from_allowlisted_provenance_only",
+                    "untrusted_requires_review"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "task_specification_precision": {
+                  "const": "action_open"
+                }
+              },
+              "required": [
+                "task_specification_precision"
+              ]
+            },
+            "then": {
+              "properties": {
+                "content_authority_rule": {
+                  "enum": [
+                    "finite_pre_authorized_action_set",
+                    "content_untrusted_requires_clarification",
+                    "content_cannot_select_new_action"
+                  ]
+                }
+              }
+            }
+          }
+        ]
       }
     }
   },
