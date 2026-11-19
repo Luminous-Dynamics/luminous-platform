@@ -52,6 +52,8 @@ def main() -> int:
             ids = [c["id"] for c in data["controls"]]
             if len(ids) != len(set(ids)):
                 raise SystemExit("duplicate control IDs")
+            if data.get("control_count") != len(ids):
+                raise SystemExit("control_count does not match controls array")
             for control in data["controls"]:
                 if control["osi_layer"] == "cross_layer" and control["x805_security_layer"] != "cross_layer":
                     raise SystemExit(f"{control['id']}: cross-layer control must span the X.805 security layers")
@@ -64,12 +66,43 @@ def main() -> int:
                 raise SystemExit("duplicate scenario IDs")
             counts = {kind: sum(1 for x in data["scenarios"] if x["kind"] == kind)
                       for kind in ("positive", "negative", "ambiguous")}
-            if not counts["positive"] or not counts["negative"]:
-                raise SystemExit("scenario corpus must include positive and negative controls")
+            if counts != {"positive": 5, "negative": 26, "ambiguous": 0}:
+                raise SystemExit(f"unexpected frozen scenario mix: {counts}")
             if data["scenario_count"] != len(ids):
                 raise SystemExit("scenario_count does not match scenarios array")
             total_scenarios = len(ids)
             print(f"SCENARIO_CONTROLS={counts}")
+
+    # The template is deliberately unqualified. It must not silently become
+    # a network inventory or a complete-mediation assertion.
+    net_schema = load(SEC / "l2l3-deployment-profile.schema.v0.1.json")
+    net_template = load(SEC / "l2l3-deployment-profile.template.v0.1.json")
+    Draft202012Validator.check_schema(net_schema)
+    net_errors = sorted(
+        Draft202012Validator(net_schema, format_checker=FormatChecker()).iter_errors(net_template),
+        key=lambda err: tuple(str(x) for x in err.absolute_path),
+    )
+    if net_errors:
+        for err in net_errors:
+            loc = "/".join(str(x) for x in err.absolute_path) or "<root>"
+            print(f"l2l3-deployment-profile.template.v0.1.json:{loc}: {err.message}", file=sys.stderr)
+        raise SystemExit(f"L2/L3 template: {len(net_errors)} schema error(s)")
+    if net_template["status"] != "template_only":
+        raise SystemExit("L2/L3 template must remain template_only")
+    if net_template["assessment"]["complete_mediation_claim"]:
+        raise SystemExit("empty L2/L3 template must not claim complete mediation")
+    if net_template["assessment"]["status"] != "not_assessed":
+        raise SystemExit("empty L2/L3 template must remain not_assessed")
+    if net_template["devices"] or net_template["interfaces"] or net_template["routes"]:
+        raise SystemExit("public L2/L3 template must not contain deployment-specific topology")
+    if net_template["coverage"]["interface_inventory_complete"] or net_template["coverage"]["ipv4_route_inventory_complete"] or net_template["coverage"]["ipv6_route_inventory_complete"]:
+        raise SystemExit("empty L2/L3 template cannot claim inventory completeness")
+    if net_template["discovery"]["active_scan_policy"] != "unknown":
+        raise SystemExit("empty L2/L3 template must not presume a safe active-scan policy")
+    if net_template["ot_network_separation"]["applicability"] != "unknown":
+        raise SystemExit("empty L2/L3 template must not presume OT network separation")
+    print("L2L3_TEMPLATE=VALID_UNASSESSED ACTIVE_SCAN=UNKNOWN OT_SEPARATION=UNKNOWN")
+
     print(f"OSI_XAP_SCHEMA=Draft2020-12_CHECKED CONTROLS={total_controls} SCENARIOS={total_scenarios}")
     print("CLAIM_CEILING=STATIC_FIXTURE_VALIDATION_ONLY")
     return 0
