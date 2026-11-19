@@ -23,7 +23,7 @@
     },
     "schema_guards": {
       "type": "array",
-      "minItems": 15,
+      "minItems": 56,
       "items": {
         "type": "object",
         "required": [
@@ -62,7 +62,7 @@
     },
     "cases": {
       "type": "array",
-      "minItems": 58,
+      "minItems": 64,
       "items": {
         "type": "object",
         "required": [
