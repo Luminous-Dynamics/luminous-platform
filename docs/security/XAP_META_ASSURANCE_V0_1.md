@@ -35,7 +35,7 @@ The suite contains:
 - **7 graph metamorphic tests:** add a bypass, add an unknown route/dependency, remove a broker enforcement role, create a shared observer dependency, add a cycle, and mark an edge merely declared.
 - **10 authorization metamorphic tests:** actor substitution, root revocation, broker digest mismatch, missing approval, expiry, future revocation relative to admission, unknown revocation, partial unauthorized commit, policy revision mismatch, and an unrelated grant that must not widen the active chain.
 - **14 schema-weakening tests:** open root objects, lower control/scenario/graph floors, remove required fail-closed output, permit evaluator mutation, allow incomplete-run promotion, permit oracle drift, and remove the L2/L3 complete-mediation gate.
-- **23 explicit schema invariants** that the unmodified baseline must satisfy.
+- **39 explicit schema invariants** that the unmodified baseline must satisfy.
 
 A separate JavaScript translation reloaded the committed artifacts and reproduced **31/31 metamorphic outcomes** across the original graph/authorization mutations and the four additional capability-schema mutations. All 14 schema-weakening cases matched their expected guard IDs, with zero baseline guard violations. The same translation independently matched all 20 capability-algebra fixture outcomes, including revoked/unknown authority commits and a false-denial positive control. These are authoring-time checks, not a Python CI pass or independent security audit.
 
