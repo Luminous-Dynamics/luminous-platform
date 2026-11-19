@@ -222,7 +222,7 @@
         "fixtures",
         "minItems"
       ],
-      "expected": 20
+      "expected": 29
     },
     {
       "id": "effect-projection-no-runtime-authority",
@@ -286,6 +286,114 @@
         "template_only",
         "synthetic_projection_fixture"
       ]
+    },
+    {
+      "id": "effect-capability-participant-bound",
+      "schema_file": "effect-bound-capability-contract.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "capability",
+        "required"
+      ],
+      "contains": "participant_refs"
+    },
+    {
+      "id": "effect-capability-purpose-bound",
+      "schema_file": "effect-bound-capability-contract.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "capability",
+        "required"
+      ],
+      "contains": "purpose_refs"
+    },
+    {
+      "id": "effect-capability-context-bound",
+      "schema_file": "effect-bound-capability-contract.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "capability",
+        "required"
+      ],
+      "contains": "context_refs"
+    },
+    {
+      "id": "effect-capability-total-effect-budget",
+      "schema_file": "effect-bound-capability-contract.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "capability",
+        "required"
+      ],
+      "contains": "max_total_effects"
+    },
+    {
+      "id": "effect-capability-cost-budget",
+      "schema_file": "effect-bound-capability-contract.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "capability",
+        "required"
+      ],
+      "contains": "max_cost_microusd"
+    },
+    {
+      "id": "effect-request-participant-bound",
+      "schema_file": "effect-bound-capability-contract.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "request",
+        "required"
+      ],
+      "contains": "participant_id"
+    },
+    {
+      "id": "effect-request-purpose-bound",
+      "schema_file": "effect-bound-capability-contract.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "request",
+        "required"
+      ],
+      "contains": "purpose_ref"
+    },
+    {
+      "id": "effect-request-context-bound",
+      "schema_file": "effect-bound-capability-contract.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "request",
+        "required"
+      ],
+      "contains": "context_ref"
+    },
+    {
+      "id": "effect-request-budget-snapshot",
+      "schema_file": "effect-bound-capability-contract.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "request",
+        "required"
+      ],
+      "contains": "budget_snapshot_digest"
+    },
+    {
+      "id": "effect-permit-budget-snapshot",
+      "schema_file": "effect-bound-capability-contract.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "permit",
+        "required"
+      ],
+      "contains": "budget_snapshot_digest"
+    },
+    {
+      "id": "effect-fixture-participant-verified-snapshot",
+      "schema_file": "effect-bound-capability-fixtures.schema.v0.1.json",
+      "path": [
+        "required"
+      ],
+      "contains": "usage_snapshot"
     }
   ],
   "cases": [
@@ -1255,6 +1363,246 @@
         "rejected": true,
         "violated_guard_ids": [
           "effect-projection-no-qualified-component-claim"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S020-EFFECT-CAPABILITY-PARTICIPANT-BOUND",
+      "target_type": "schema",
+      "fixture_id": "effect-bound-capability-contract.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "capability",
+            "required",
+            14
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "effect-capability-participant-bound"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S021-EFFECT-CAPABILITY-PURPOSE-BOUND",
+      "target_type": "schema",
+      "fixture_id": "effect-bound-capability-contract.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "capability",
+            "required",
+            15
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "effect-capability-purpose-bound"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S022-EFFECT-CAPABILITY-CONTEXT-BOUND",
+      "target_type": "schema",
+      "fixture_id": "effect-bound-capability-contract.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "capability",
+            "required",
+            16
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "effect-capability-context-bound"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S023-EFFECT-CAPABILITY-TOTAL-EFFECT-BUDGET",
+      "target_type": "schema",
+      "fixture_id": "effect-bound-capability-contract.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "capability",
+            "required",
+            17
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "effect-capability-total-effect-budget"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S024-EFFECT-CAPABILITY-COST-BUDGET",
+      "target_type": "schema",
+      "fixture_id": "effect-bound-capability-contract.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "capability",
+            "required",
+            18
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "effect-capability-cost-budget"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S025-EFFECT-REQUEST-PARTICIPANT-BOUND",
+      "target_type": "schema",
+      "fixture_id": "effect-bound-capability-contract.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "request",
+            "required",
+            8
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "effect-request-participant-bound"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S026-EFFECT-REQUEST-PURPOSE-BOUND",
+      "target_type": "schema",
+      "fixture_id": "effect-bound-capability-contract.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "request",
+            "required",
+            9
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "effect-request-purpose-bound"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S027-EFFECT-REQUEST-CONTEXT-BOUND",
+      "target_type": "schema",
+      "fixture_id": "effect-bound-capability-contract.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "request",
+            "required",
+            10
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "effect-request-context-bound"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S028-EFFECT-REQUEST-BUDGET-SNAPSHOT",
+      "target_type": "schema",
+      "fixture_id": "effect-bound-capability-contract.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "request",
+            "required",
+            13
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "effect-request-budget-snapshot"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S029-EFFECT-PERMIT-BUDGET-SNAPSHOT",
+      "target_type": "schema",
+      "fixture_id": "effect-bound-capability-contract.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "$defs",
+            "permit",
+            "required",
+            15
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "effect-permit-budget-snapshot"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S030-EFFECT-FIXTURE-PARTICIPANT-VERIFIED-SNAPSHOT",
+      "target_type": "schema",
+      "fixture_id": "effect-bound-capability-fixtures.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "required",
+            4
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "effect-fixture-participant-verified-snapshot"
         ]
       }
     }
