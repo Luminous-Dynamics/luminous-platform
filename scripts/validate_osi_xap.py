@@ -315,6 +315,15 @@ def main() -> int:
                 "action_open": 3, "not_applicable": 31
             }:
                 raise SystemExit(f"unexpected task-specification precision mix: {precision_counts}")
+            for scenario in data["scenarios"]:
+                if scenario["task_specification_precision"] == "parameter_open" and scenario["content_authority_rule"] not in {
+                    "parameters_from_named_sources_only", "parameters_from_allowlisted_provenance_only", "untrusted_requires_review"
+                }:
+                    raise SystemExit(f"{scenario['scenario_id']}: unsafe parameter-open content rule")
+                if scenario["task_specification_precision"] == "action_open" and scenario["content_authority_rule"] not in {
+                    "finite_pre_authorized_action_set", "content_untrusted_requires_clarification", "content_cannot_select_new_action"
+                }:
+                    raise SystemExit(f"{scenario['scenario_id']}: unsafe action-open content rule")
             if data["scenario_count"] != len(ids):
                 raise SystemExit("scenario_count does not match scenarios array")
             total_scenarios = len(ids)
