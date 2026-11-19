@@ -1384,8 +1384,15 @@ def main() -> int:
             raise SystemExit(f"{episode['episode_id']}: expected {episode['expected']}, got {actual}")
         approval_counts[actual["refusal_safety"]] += 1
         completeness_counts[actual["authorization_completeness"]] += 1
-    if len(approval_ids) != 26:
-        raise SystemExit("approval-obligation ledger must retain 26 frozen episodes")
+    if len(approval_ids) != 26 or approval_counts != {"pass":14,"violation":9,"indeterminate":3}:
+        raise SystemExit(f"unexpected frozen approval-obligation refusal results: {approval_counts}")
+    expected_completeness = {"complete":11,"incomplete":11,"pending":1,"conditional_hold":1,"indeterminate":2}
+    if completeness_counts != expected_completeness:
+        raise SystemExit(f"unexpected frozen approval-completeness results: {completeness_counts}")
+    if sum(episode["expected"]["fail_closed_violation_count"] for episode in approval_suite["episodes"]) != 9:
+        raise SystemExit("unexpected fail-closed violation fixture count")
+    if sum(episode["expected"]["unwitnessed_effect_count"] for episode in approval_suite["episodes"]) != 1:
+        raise SystemExit("unexpected unwitnessed-effect fixture count")
     print(f"APPROVAL_OBLIGATION_LEDGER=PASS REFUSAL={approval_counts} COMPLETENESS={completeness_counts}")
 
 
