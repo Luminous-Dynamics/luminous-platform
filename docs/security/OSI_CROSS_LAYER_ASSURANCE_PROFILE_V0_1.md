@@ -148,9 +148,11 @@ This is the minimum first cross-layer corpus. Each case needs positive, negative
 
 ### 6.1.2 Authorization benchmark and external SOTA crosswalk
 
+The frozen corpus now contains 14 episodes. It separately records authorization state, participant-decision correctness, fail-closed violation, unauthorized-effect certainty, task state and observed postcondition. Unknown authority/effect outcomes remain indeterminate rather than being counted as safe. The authoring-time semantic check currently matches all 14 expected fixture outputs; the full Draft 2020-12 workflow is still pending.
+
 The 10 November 2026 structured review of authorization assurance and the 12 November 2026 Google Agent Anomaly Detection study sharpen the benchmark design. The review distinguishes call interception from effect-level complete mediation, notes the corpus-bounded gaps in revocation/delegation claims, and explains why a correct final state may still be reached through an unauthorized sequence. Google's report is a post-execution anomaly-detection result, not a pre-effect authorization result. These are different metrics.
 
-The branch now contains `AGENT_AUTHORIZATION_ASSURANCE_BENCHMARK_V0_1.md` and a machine-readable 13-episode synthetic corpus with a test-only evaluator. It explicitly separates task state, authorization validity, participant decision correctness, unauthorized effect and independent effect observation. Five cases intentionally reach a correct task state through an unauthorized effect; valid task completion must not mask an authorization failure.
+The branch now contains `AGENT_AUTHORIZATION_ASSURANCE_BENCHMARK_V0_1.md` and a machine-readable 14-episode synthetic corpus with a test-only evaluator. It explicitly separates task state, authorization validity, participant decision correctness, unauthorized effect and independent effect observation. Five cases intentionally reach a correct task state through an unauthorized effect; valid task completion must not mask an authorization failure.
 
 External comparisons to preserve:
 
@@ -159,7 +161,7 @@ External comparisons to preserve:
 - **ToolEmu / τ-bench / ToolSandbox / WASP:** use for stateful trajectories, repeated-run reliability, milestones/minefields and rule-verified attacker goals, but add explicit identity, consent, delegation, policy-version and participant-finality oracles.
 - **MAAP (10 Nov 2026 review):** preserve its minimum claim-disclosure semantics. WAEP is a broader Luminous claim-to-effect reporting profile; this benchmark is the synthetic scenario layer, not a replacement MAAP score or certification.
 
-Full comparison and qualification rules are in `AGENT_AUTHORIZATION_ASSURANCE_BENCHMARK_V0_1.md`. The 13 cases have an authoring-time semantic check only; CI and external reproduction remain open.
+Full comparison and qualification rules are in `AGENT_AUTHORIZATION_ASSURANCE_BENCHMARK_V0_1.md`. The 14 cases have an authoring-time semantic check only; CI and external reproduction remain open.
 ### 6.1.1 Executable assurance-graph fixtures
 
 The assurance-graph concept also has a machine-readable fixture suite and a bounded test-only evaluator:
