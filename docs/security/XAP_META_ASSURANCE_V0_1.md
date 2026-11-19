@@ -34,10 +34,10 @@ Machine-readable files:
 The suite contains:
 - **7 graph metamorphic tests:** add a bypass, add an unknown route/dependency, remove a broker enforcement role, create a shared observer dependency, add a cycle, and mark an edge merely declared.
 - **10 authorization metamorphic tests:** actor substitution, root revocation, broker digest mismatch, missing approval, expiry, future revocation relative to admission, unknown revocation, partial unauthorized commit, policy revision mismatch, and an unrelated grant that must not widen the active chain.
-- **10 schema-weakening tests:** open root objects, lower control/scenario/graph floors, remove required fail-closed output, permit evaluator mutation, allow incomplete-run promotion, permit oracle drift, and remove the L2/L3 complete-mediation gate.
+- **14 schema-weakening tests:** open root objects, lower control/scenario/graph floors, remove required fail-closed output, permit evaluator mutation, allow incomplete-run promotion, permit oracle drift, and remove the L2/L3 complete-mediation gate.
 - **17 explicit schema invariants** that the unmodified baseline must satisfy.
 
-A separate JavaScript translation reloaded the committed artifacts and reproduced **27/27 expected metamorphic outcomes**, with no baseline schema-guard violations. This is an authoring-time differential check, not a Python CI pass and not an independent security audit.
+A separate JavaScript translation reloaded the committed artifacts and reproduced the original **27/27 graph, authorization and schema-mutation outcomes**. After extending the guard manifest to the capability contracts, the **14/14 schema-mutation cases** also match the expected guard IDs, with no baseline guard violations. The same translation independently matched all 17 capability-algebra fixture outcomes. These are authoring-time checks, not a Python CI pass or independent security audit. This is an authoring-time differential check, not a Python CI pass and not an independent security audit.
 
 ## 3. Metamorphic properties
 
@@ -78,7 +78,7 @@ The schema guards preserve:
 - L2/L3 complete-mediation claim preconditions;
 - explicit synthetic graph fixture coverage.
 
-The schema mutation tests demonstrate that selected weakening operations are caught by these guards. They do not prove that every possible schema or code mutation is caught. The guard manifest itself is a trusted input and requires independent review.
+The schema mutation tests demonstrate that selected weakening operations are caught by these guards. They do not prove that every possible schema or code mutation is caught. The guard manifest itself is a trusted input and requires independent review. Six additional guards now cover the effect-bound capability schema: closed records, intersection-only composition, evidence-not-authority, and the minimum capability fixture corpus.
 
 ## 4. Anti-gaming rules
 
@@ -121,6 +121,15 @@ A likely systems direction is to bind operations to narrow capability/effect typ
 
 WASI already uses capability-based resource handles and explicitly avoids ambient authority. Luminous should build on those established principles where appropriate rather than inventing a replacement sandbox or resource namespace.
 
-## 7. Claim ceiling
+## 7. Effect-bound authority and capability typing
+
+The adjacent AUTH-CORE-001 work adds 17 synthetic capability algebra fixtures. It verifies exact root authority, attenuating child grants, non-widening of resources/operations/time, intersection rather than union composition, actor and argument-digest binding, policy epoch, revocation, one-use permit consumption, evidence/authority separation and same-attempt reconciliation.
+
+The schema guard suite now tests whether a change could turn intersection into union or mark evidence as authority. The capability contract remains a projection of Mycelix AGENT semantics; it does not introduce another authorization engine.
+
+## 8. Updated claim ceiling
+
+The combined suite has 31 metamorphic cases and 23 schema guards, plus 17 capability-algebra fixtures. The 31 cases have been matched by separate authoring-time JavaScript checks; CI, a second independently implemented verifier and deployment qualification remain outstanding.
+## 9. Claim ceiling
 
 The suite is synthetic. 27/27 authoring-time matches do not prove live complete mediation, real-world graph completeness, production authorization safety, or superiority over industry systems. CI must pass on the exact PR head; a second independent verifier and exact-target participant/effect tests are still required.
