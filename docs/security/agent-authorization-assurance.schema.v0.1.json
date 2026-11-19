@@ -25,7 +25,7 @@
     },
     "episodes": {
       "type": "array",
-      "minItems": 13,
+      "minItems": 14,
       "items": {
         "$ref": "#/$defs/episode"
       }
@@ -276,7 +276,8 @@
         "participant_decision_correct",
         "unauthorized_effect",
         "task_state",
-        "effect_observed"
+        "effect_observed",
+        "fail_closed_violation"
       ],
       "properties": {
         "authorization_state": {
@@ -310,6 +311,9 @@
             "not_observed",
             "unknown"
           ]
+        },
+        "fail_closed_violation": {
+          "type": "boolean"
         }
       },
       "additionalProperties": false
