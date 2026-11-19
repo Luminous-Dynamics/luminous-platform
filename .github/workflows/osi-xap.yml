@@ -5,7 +5,9 @@ on:
     paths:
       - "docs/security/osi-xap-*"
       - "docs/security/agent-authorization-assurance.*"
+      - "docs/security/adaptive-authorization-evolution.*"
       - "docs/security/l2l3-deployment-profile.*"
+      - "docs/security/ADAPTIVE_AUTHORIZATION_EVOLUTION_PROTOCOL_V0_1.md"
       - "scripts/validate_osi_xap.py"
       - "requirements-osi-xap-test.txt"
       - ".github/workflows/osi-xap.yml"
