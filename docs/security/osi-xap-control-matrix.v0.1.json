@@ -25,7 +25,7 @@
       "availability",
       "privacy"
     ],
-    "note": "X.805 security layers, planes and dimensions are independent crosswalk axes; they are not replacements for the seven OSI protocol layers."
+    "note": "X.805 security layers, planes and dimensions are independent crosswalk axes; they are not replacements for the seven OSI protocol layers. The local value 'cross_layer' means a control spans all three X.805 security layers; it is a matrix sentinel, not a fourth X.805 security layer."
   },
   "osi_layers": [
     {
