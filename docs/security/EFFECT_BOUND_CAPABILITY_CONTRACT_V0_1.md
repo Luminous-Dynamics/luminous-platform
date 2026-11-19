@@ -104,7 +104,7 @@ Machine-readable files:
 - effect-bound-capability-fixtures.schema.v0.1.json
 - effect-bound-capability-fixtures.v0.1.json
 
-The 17 cases cover exact root authority, narrow delegation, resource/operation/time widening, intersection vs union, actor substitution, argument digest mismatch, policy epoch mismatch, revoked/unknown authority, one-use permit replay, evidence-as-authority confusion, unknown-effect reconciliation, attempt substitution and permit expiry.
+The 20 cases cover exact root authority, narrow delegation, resource/operation/time widening, intersection vs union, actor substitution, argument digest mismatch, policy epoch mismatch, revoked/unknown authority, one-use permit replay, evidence-as-authority confusion, unknown-effect reconciliation, attempt substitution and permit expiry. Three additional cases separately expose a revoked grant that nevertheless commits, unknown revocation that nevertheless commits, and a valid grant that is falsely denied. Every fixture now records authorization state, participant-decision correctness, fail-closed violation, unauthorized-effect certainty and effect disposition separately.
 
 All values are synthetic. Passing these cases will not qualify a production Mycelix authority or participant implementation.
 
@@ -113,7 +113,7 @@ All values are synthetic. Passing these cases will not qualify a production Myce
 - 100% exact deterministic fixture outcomes.
 - Zero child scope expansion.
 - Zero cross-principal authority fabrication.
-- Zero unauthorized participant effects.
+- Zero unauthorized participant effects and zero fail-closed violations on negative controls.
 - Zero permit replay causing a second protected effect.
 - 100% rejection of stale/expired/revoked/unknown authority.
 - 100% positive-control admission for valid narrow operations.
