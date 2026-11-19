@@ -818,6 +818,11 @@ def main() -> int:
     effect_contract_schema = load(SEC / "effect-bound-capability-contract.schema.v0.1.json")
     Draft202012Validator.check_schema(effect_contract_schema)
     capability_schema = load(SEC / "effect-bound-capability-fixtures.schema.v0.1.json")
+    # The fixture schema must preserve the canonical contract definitions,
+    # not silently drift into a weaker or different projection.
+    for definition in ("digest", "timestamp", "capability", "request", "permit", "effect"):
+        if effect_contract_schema["$defs"][definition] != capability_schema["$defs"][definition]:
+            raise SystemExit(f"effect-bound fixture schema drift in canonical definition: {definition}")
     capability_suite = load(SEC / "effect-bound-capability-fixtures.v0.1.json")
     Draft202012Validator.check_schema(capability_schema)
     capability_errors = sorted(
@@ -852,12 +857,12 @@ def main() -> int:
         capability_counts["unauthorized_effect_indeterminate"] += int(actual["unauthorized_effect"] == "indeterminate")
         capability_counts["effect_reconciliation"] += int(actual["effect_disposition"] == "reconcile_same_attempt")
     expected_counts = {
-        "authorized":5, "not_authorized":13, "indeterminate":2,
-        "participant_decision_correct":17, "fail_closed_violation":2,
+        "authorized":5, "not_authorized":22, "indeterminate":2,
+        "participant_decision_correct":26, "fail_closed_violation":2,
         "unauthorized_effect_true":1, "unauthorized_effect_indeterminate":1,
         "effect_reconciliation":1,
     }
-    if len(capability_ids) != 20 or capability_counts != expected_counts:
+    if len(capability_ids) != 29 or capability_suite["fixture_count"] != 29 or capability_counts != expected_counts:
         raise SystemExit(f"unexpected effect-bound capability results: {capability_counts}")
     print(f"EFFECT_BOUND_CAPABILITY_FIXTURES=PASS {capability_counts}")
 
