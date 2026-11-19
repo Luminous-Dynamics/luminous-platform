@@ -80,5 +80,33 @@
     "No network scan, packet capture or firewall change was performed.",
     "No IPv4/IPv6 completeness, segmentation, DNS integrity or zero-trust conformance is claimed.",
     "Do not publish credentials, shared secrets, private customer topology or sensitive network identifiers."
-  ]
+  ],
+  "discovery": {
+    "methods_used": [
+      "unknown"
+    ],
+    "active_scan_policy": "unknown",
+    "active_scan_scope": [],
+    "active_scan_approval_refs": [],
+    "nonproduction_test_refs": [],
+    "passive_sensor_coverage_points": [],
+    "coverage_limitations": [
+      "No discovery performed; no sensor placement or visibility assessment."
+    ],
+    "unknown_non_ip_or_isolated_assets": [
+      "not inventoried"
+    ],
+    "manual_inspection_refs": [],
+    "evidence_refs": []
+  },
+  "ot_network_separation": {
+    "applicability": "unknown",
+    "management_zone_refs": [],
+    "operational_zone_refs": [],
+    "external_vendor_access_zone_refs": [],
+    "security_monitoring_zone_refs": [],
+    "telemetry_ingress": "unknown",
+    "shared_infrastructure_exceptions": [],
+    "evidence_refs": []
+  }
 }
