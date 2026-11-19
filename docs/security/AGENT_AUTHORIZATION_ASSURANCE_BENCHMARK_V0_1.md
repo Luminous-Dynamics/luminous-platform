@@ -176,6 +176,16 @@ Sources:
 - AutoDojo: https://arxiv.org/abs/2606.15057
 - ROPE: https://arxiv.org/abs/2608.27496
 
+### 5.2 Origin/intent provenance benchmark
+
+The repository now has a separate 30-case origin-bound intent/provenance corpus and schema. It is not merged into the 14-episode authorization suite because it answers a different question: whether the selected action and each sensitive argument remain within the principal's delegated source and action-selection authority.
+
+The fixtures cover 7 fully specified, 18 parameter-open and 5 action-open requests; named-source extraction; unauthorized recipient substitution; action-open finite-set selection; out-of-set action selection; paraphrase/summarization and multi-hop lineage; mixed and agent-derived sources; unverified collector/source receipts; manifest/request digest mismatch; interaction with revoked/unknown capabilities; false denial; and unauthorized/indeterminate commits. Recursive source resolution is required for agent-derived values: a transform cannot upgrade attacker-writable or unknown ancestors.
+
+Current authoring-time replay: **30/30 expected outcomes match**. The current distribution is 9 authorized, 13 not authorized and 8 indeterminate; provenance is 13 accepted, 10 rejected and 7 indeterminate. Eight eligible positive controls are admitted, one legitimate case is falsely denied, two cases violate fail-closed behavior, one effect is definitely unauthorized and one is indeterminate. These are synthetic fixtures, not runtime or CI results.
+
+Do not compare AutoDojo's action-open ASR or ROPE's origin-guard ASR directly with Luminous's unauthorized-effect or participant-decision metrics. Matched reproduction must pin models, tools, user intent, source labels, task splits, effect oracles and evaluator.
+
 ## 6. Scorecard — no aggregate security percentage
 
 | Metric | Report separately |
