@@ -89,6 +89,8 @@ def main() -> int:
         raise SystemExit("invalid WAEP conformance-vector envelope")
 
     failures = 0
+    expected_valid = 0
+    expected_invalid = 0
     for vector in vectors:
         vector_id = vector.get("vector_id", "<missing-vector-id>")
         expected = vector.get("expected")
@@ -96,6 +98,11 @@ def main() -> int:
             print(f"{vector_id}: invalid expected disposition", file=sys.stderr)
             failures += 1
             continue
+
+        if expected == "valid":
+            expected_valid += 1
+        else:
+            expected_invalid += 1
 
         record = vector.get("record", {})
         evaluation = record.get("evaluation", {})
@@ -105,12 +112,15 @@ def main() -> int:
                 failures += 1
                 continue
 
+        artifact_binding_failed = False
         for artifact in record.get("claim", {}).get("evidence", []):
             if artifact.get("artifact_id") == "artifact-participant-receipt":
                 if artifact.get("digest") != receipt_digest:
                     print(f"{vector_id}: synthetic participant-receipt digest mismatch", file=sys.stderr)
                     failures += 1
-                    continue
+                    artifact_binding_failed = True
+        if artifact_binding_failed:
+            continue
 
         errors = sorted(
             validator.iter_errors(record),
@@ -132,6 +142,7 @@ def main() -> int:
     print(
         "WAEP_SCHEMA=Draft2020-12_CHECKED "
         f"EXAMPLE=VALID VECTORS={len(vectors)} MATCHED "
+        f"POSITIVE_CONTROLS={expected_valid} NEGATIVE_CONTROLS={expected_invalid} "
         "SYNTHETIC_DIGESTS=BOUND CLAIM_CEILING=UNCHANGED"
     )
     return 0
