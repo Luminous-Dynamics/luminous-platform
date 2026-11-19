@@ -190,10 +190,28 @@ The Mycelix AGENT-010 gate remains in force for authoritative A2A/MCP/OAuth/AP2 
 - **A2A v1.0.1 / MCP 2026-07-28:** task/tool interoperability; discovery and protocol authentication do not create Luminous authority.
 - **OWASP ACS v0.1.4:** portable runtime hooks; profile declarations and Guardian dispositions do not prove strict policy, non-bypassability or actual effect enforcement.
 
+## 9.1 Frozen conformance vectors
+
+The companion file `waep-conformance-vectors.v0.1.json` contains ten self-contained schema/semantic test records. `waep-synthetic-participant-receipt.v0.1.json` and `waep-synthetic-corpus.v0.1.json` are explicitly synthetic fixtures whose content digests are referenced by the positive-shape vector. The receipt fixture is not signed and is not a real participant observation.
+
+| Vector | Expected | Property exercised |
+|---|---|---|
+| V001 | Valid | Design-only, not-claimed record |
+| V002 | Invalid | Supported claim without completed execution |
+| V003 | Invalid | Consequential effect without independent participant oracle/observation |
+| V004 | Invalid | Effective least-privilege claim missing trajectory |
+| V005 | Invalid | Complete-mediation claim missing route inventory |
+| V006 | Invalid | Delegation edge widens scope |
+| V007 | Invalid | Termination with unknown descendants |
+| V008 | Invalid | Recovery claim strands the user |
+| V009 | Invalid | Branch containment leaves upstream state unknown |
+| V010 | Valid | Structurally complete, design-only termination record |
+
+The ten vectors were evaluated by an authoring-time semantic checker and all expected outcomes matched. This is not the full JSON Schema validator, not a Rust conformance implementation, and not runtime evidence. The full standards-compliant validation gate remains open.
 ## 10. Validation and claim ceiling
 
 For this first draft:
-- Schema and example were authored and locally validated against Draft 2020-12 in the authoring environment.
+- The original baseline schema was checked against Draft 2020-12 in the authoring environment. After adding property-specific definitions and conditional constraints, the updated schema and fixture JSON were fetched back and parsed; a custom authoring-time semantic checker matched all 10 expected vector outcomes. A full Draft 2020-12 validator run against this latest schema revision remains pending.
 - The example is synthetic and explicitly `not_claimed` / `not_executed`. Its empty-corpus digest is the actual SHA-256 of the empty byte string. Synthetic evidence and corpus examples have separate, explicit fixture files and content digests; they are not authentic participant receipts or measured benchmark evidence.
 - No Rust implementation, live agent, participant, broker, observer, runtime campaign, independent review, CI workflow, cross-implementation test or production deployment is claimed.
 - The schema is a reporting contract. It cannot authenticate evidence or prove that a claimed boundary is complete or independent.
