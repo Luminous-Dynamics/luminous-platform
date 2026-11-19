@@ -307,29 +307,67 @@ def schema_guard_violations(schema_documents, guards, schema_file=None):
 
 
 def evaluate_effect_capability_fixture(fixture):
-    """Evaluate authorization separately from participant and effect outcomes."""
+    """Evaluate exact effect authority with participant-owned budget state."""
     request = fixture["request"]
     permit = fixture["permit"]
     effect = fixture["effect"]
     grants = fixture["capabilities"]
+    snapshot = fixture["usage_snapshot"]
     now = request["admission_time"]
 
     valid = True
     unknown_revocation = False
+    unknown_snapshot = False
     principal = request["principal_id"]
     actor = request["actor_id"]
+    participant = request["participant_id"]
 
+    grant_ids = [grant["grant_id"] for grant in grants]
+    if len(grant_ids) != len(set(grant_ids)):
+        raise SystemExit(f"{fixture['scenario_id']}: duplicate capability IDs")
     if fixture["evidence_only"] or not grants:
         valid = False
-    if any(grant["principal_id"] != principal for grant in grants):
+
+    # The usage snapshot is an independently supplied participant observation,
+    # not a counter the requesting agent may choose.
+    if (
+        snapshot["participant_id"] != participant
+        or set(snapshot["grant_ids"]) != set(grant_ids)
+        or snapshot["snapshot_digest"] != request["budget_snapshot_digest"]
+        or request["budget_snapshot_digest"] != permit["budget_snapshot_digest"]
+    ):
         valid = False
-    if any(grant["revocation_state"] == "revoked" for grant in grants):
-        valid = False
-    if any(grant["revocation_state"] == "unknown" for grant in grants):
-        unknown_revocation = True
+    if snapshot["participant_verified"] is not True:
+        unknown_snapshot = True
+    if snapshot["observed_at"] > now or snapshot["valid_until"] <= now:
+        unknown_snapshot = True
+
+    for grant in grants:
+        if grant["principal_id"] != principal:
+            valid = False
+        if grant["revocation_state"] == "revoked":
+            valid = False
+        elif grant["revocation_state"] == "unknown":
+            unknown_revocation = True
+        if participant not in grant["participant_refs"]:
+            valid = False
+        if request["purpose_ref"] not in grant["purpose_refs"]:
+            valid = False
+        if request["context_ref"] not in grant["context_refs"]:
+            valid = False
+
+    if snapshot["participant_verified"] is True and not unknown_snapshot:
+        for grant in grants:
+            if snapshot["effect_count_before"] + 1 > grant["max_total_effects"]:
+                valid = False
+            if (
+                snapshot["cumulative_cost_microusd"] + request["requested_cost_microusd"]
+                > grant["max_cost_microusd"]
+            ):
+                valid = False
 
     if fixture["mode"] == "composition":
-        # Conjunctive grants are intersected across each authority dimension.
+        # Conjunctive grants intersect over every effect-authority dimension.
         if any(grant["parent_grant_id"] is not None for grant in grants):
             valid = False
         if any(grant["issuer_id"] != principal or grant["subject_id"] != actor for grant in grants):
@@ -337,14 +375,23 @@ def evaluate_effect_capability_fixture(fixture):
         if grants:
             common_targets = set(grants[0]["target_refs"])
             common_operations = set(grants[0]["operations"])
+            common_participants = set(grants[0]["participant_refs"])
+            common_purposes = set(grants[0]["purpose_refs"])
+            common_contexts = set(grants[0]["context_refs"])
             for grant in grants[1:]:
                 common_targets.intersection_update(grant["target_refs"])
                 common_operations.intersection_update(grant["operations"])
+                common_participants.intersection_update(grant["participant_refs"])
+                common_purposes.intersection_update(grant["purpose_refs"])
+                common_contexts.intersection_update(grant["context_refs"])
             digests = {grant["argument_digest"] for grant in grants}
             epochs = {grant["policy_epoch"] for grant in grants}
             if (
                 request["target_ref"] not in common_targets
                 or request["operation"] not in common_operations
+                or participant not in common_participants
+                or request["purpose_ref"] not in common_purposes
+                or request["context_ref"] not in common_contexts
                 or len(digests) != 1
                 or len(epochs) != 1
                 or request["argument_digest"] not in digests
@@ -355,7 +402,6 @@ def evaluate_effect_capability_fixture(fixture):
                 if grant["not_before"] > now or grant["expires_at"] <= now:
                     valid = False
                 if request["target_ref"] not in grant["target_refs"]:
-                    # All conjuncts must authorize the same effect tuple.
                     valid = False
                 if request["operation"] not in grant["operations"]:
                     valid = False
@@ -364,56 +410,68 @@ def evaluate_effect_capability_fixture(fixture):
                 if grant["policy_epoch"] != request["policy_epoch"]:
                     valid = False
     elif fixture["mode"] in {"single", "delegated"}:
-        if not grants:
+        root = grants[0]
+        if root["parent_grant_id"] is not None or root["issuer_id"] != principal:
             valid = False
-        else:
-            root = grants[0]
-            if root["parent_grant_id"] is not None or root["issuer_id"] != principal:
+        for index, grant in enumerate(grants):
+            if index:
+                parent = grants[index - 1]
+                if grant["parent_grant_id"] != parent["grant_id"]:
+                    valid = False
+                if grant["issuer_id"] != parent["subject_id"] or not parent["may_delegate"]:
+                    valid = False
+                if not set(grant["target_refs"]).issubset(set(parent["target_refs"])):
+                    valid = False
+                if not set(grant["operations"]).issubset(set(parent["operations"])):
+                    valid = False
+                if not set(grant["participant_refs"]).issubset(set(parent["participant_refs"])):
+                    valid = False
+                if not set(grant["purpose_refs"]).issubset(set(parent["purpose_refs"])):
+                    valid = False
+                if not set(grant["context_refs"]).issubset(set(parent["context_refs"])):
+                    valid = False
+                if grant["max_total_effects"] > parent["max_total_effects"]:
+                    valid = False
+                if grant["max_cost_microusd"] > parent["max_cost_microusd"]:
+                    valid = False
+                if grant["argument_digest"] != parent["argument_digest"]:
+                    valid = False
+                if grant["policy_epoch"] != parent["policy_epoch"]:
+                    valid = False
+                if grant["not_before"] < parent["not_before"]:
+                    valid = False
+                if grant["expires_at"] > parent["expires_at"]:
+                    valid = False
+                if grant["max_delegation_depth"] >= parent["max_delegation_depth"]:
+                    valid = False
+            if grant["not_before"] > now or grant["expires_at"] <= now:
                 valid = False
-            for index, grant in enumerate(grants):
-                if index:
-                    parent = grants[index - 1]
-                    if grant["parent_grant_id"] != parent["grant_id"]:
-                        valid = False
-                    if grant["issuer_id"] != parent["subject_id"] or not parent["may_delegate"]:
-                        valid = False
-                    if not set(grant["target_refs"]).issubset(set(parent["target_refs"])):
-                        valid = False
-                    if not set(grant["operations"]).issubset(set(parent["operations"])):
-                        valid = False
-                    if grant["argument_digest"] != parent["argument_digest"]:
-                        valid = False
-                    if grant["policy_epoch"] != parent["policy_epoch"]:
-                        valid = False
-                    if grant["not_before"] < parent["not_before"]:
-                        valid = False
-                    if grant["expires_at"] > parent["expires_at"]:
-                        valid = False
-                    if grant["max_delegation_depth"] >= parent["max_delegation_depth"]:
-                        valid = False
-                if grant["not_before"] > now or grant["expires_at"] <= now:
-                    valid = False
-                if grant["argument_digest"] != request["argument_digest"]:
-                    valid = False
-                if grant["policy_epoch"] != request["policy_epoch"]:
-                    valid = False
-                if request["target_ref"] not in grant["target_refs"]:
-                    valid = False
-                if request["operation"] not in grant["operations"]:
-                    valid = False
-            if grants[-1]["subject_id"] != actor:
+            if grant["argument_digest"] != request["argument_digest"]:
                 valid = False
+            if grant["policy_epoch"] != request["policy_epoch"]:
+                valid = False
+            if request["target_ref"] not in grant["target_refs"]:
+                valid = False
+            if request["operation"] not in grant["operations"]:
+                valid = False
+        if grants[-1]["subject_id"] != actor:
+            valid = False
     else:
         valid = False
 
-    # The exact request must stay bound through the attempt-scoped permit.
+    # Exact request, usage snapshot and permit must remain bound together.
     if (
         permit["actor_id"] != actor
+        or permit["participant_id"] != participant
         or permit["target_ref"] != request["target_ref"]
         or permit["operation"] != request["operation"]
         or permit["argument_digest"] != request["argument_digest"]
         or permit["policy_epoch"] != request["policy_epoch"]
         or permit["attempt_id"] != request["attempt_id"]
+        or permit["purpose_ref"] != request["purpose_ref"]
+        or permit["context_ref"] != request["context_ref"]
+        or permit["requested_cost_microusd"] != request["requested_cost_microusd"]
+        or permit["budget_snapshot_digest"] != request["budget_snapshot_digest"]
         or not permit["nonce_id"]
         or permit["consume_count"] != 1
         or permit["not_before"] > now
@@ -423,17 +481,16 @@ def evaluate_effect_capability_fixture(fixture):
 
     if (
         effect["attempt_id"] != request["attempt_id"]
+        or effect["participant_id"] != participant
         or effect["participant_id"] != permit["participant_id"]
     ):
-        # An effect receipt that cannot be bound to this participant attempt
-        # cannot be treated as proof of a completed operation.
         effect_state = "unknown"
     else:
         effect_state = effect["state"]
 
     if not valid:
         authorization_state = "not_authorized"
-    elif unknown_revocation:
+    elif unknown_revocation or unknown_snapshot:
         authorization_state = "indeterminate"
     else:
         authorization_state = "authorized"
@@ -450,7 +507,6 @@ def evaluate_effect_capability_fixture(fixture):
             or effect_state in {"committed", "partially_committed"}
         )
     )
-
     if authorization_state == "not_authorized" and effect_state in {"committed", "partially_committed"}:
         unauthorized_effect = "true"
     elif authorization_state == "indeterminate" and effect_state in {"committed", "partially_committed", "unknown"}:
@@ -460,9 +516,7 @@ def evaluate_effect_capability_fixture(fixture):
     else:
         unauthorized_effect = "false"
 
-    effect_disposition = (
-        "reconcile_same_attempt" if effect_state == "unknown" else effect_state
-    )
+    effect_disposition = "reconcile_same_attempt" if effect_state == "unknown" else effect_state
     return {
         "authorization_state": authorization_state,
         "participant_decision_correct": participant_decision_correct,
