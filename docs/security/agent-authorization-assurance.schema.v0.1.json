@@ -25,7 +25,7 @@
     },
     "episodes": {
       "type": "array",
-      "minItems": 10,
+      "minItems": 13,
       "items": {
         "$ref": "#/$defs/episode"
       }
