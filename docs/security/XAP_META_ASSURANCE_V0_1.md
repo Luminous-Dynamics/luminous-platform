@@ -37,7 +37,7 @@ The suite contains:
 - **41 schema-weakening tests:** open root objects, lower control/scenario/graph floors, remove required fail-closed output, permit evaluator mutation, allow incomplete-run promotion, permit oracle drift, and remove the L2/L3 complete-mediation gate.
 - **50 explicit schema invariants** that the unmodified baseline must satisfy.
 
-A separate JavaScript translation reloaded the committed artifacts and reproduced **58/58 metamorphic outcomes** across the original graph/authorization mutations and the four additional capability-schema mutations. All 41 schema-weakening cases matched their expected guard IDs, with zero baseline guard violations. The same translation independently matched all 29 capability-algebra fixture outcomes, including revoked/unknown authority commits and a false-denial positive control. These are authoring-time checks, not a Python CI pass or independent security audit.
+A separate JavaScript translation reloaded the committed artifacts and reproduced **58/58 metamorphic outcomes**: 7 graph mutations, 10 authorization mutations and 41 schema-weakening mutations, including 11 origin/intent schema guards. All 41 schema-weakening cases matched their expected guard IDs, with zero baseline guard violations. Separate authoring-time evaluators matched **29/29 effect-bound capability fixtures** and **30/30 origin/intent provenance fixtures**. These are static authoring-time checks, not a Python CI pass or an independent security audit. These are authoring-time checks, not a Python CI pass or independent security audit.
 
 ## 3. Metamorphic properties
 
@@ -78,7 +78,7 @@ The schema guards preserve:
 - L2/L3 complete-mediation claim preconditions;
 - explicit synthetic graph fixture coverage.
 
-The schema mutation tests demonstrate that selected weakening operations are caught by these guards. They do not prove that every possible schema or code mutation is caught. The guard manifest itself is a trusted input and requires independent review. Six additional guards now cover the effect-bound capability schema: closed records, intersection-only composition, evidence-not-authority, and the minimum capability fixture corpus.
+The schema mutation tests demonstrate that selected weakening operations are caught by these guards. They do not prove that every possible schema or code mutation is caught. The guard manifest itself is a trusted input and requires independent review. The effect-bound schemas have 22 guards covering closed records, intersection-only composition, evidence-not-authority, canonical primitive ownership, participant/purpose/context/budget attenuation, participant-verified usage snapshots and fixture floors. The origin/intent schema has 11 guards covering finite action sets, named-source constraints, explicit attacker/unknown classes, complete lineage, request/collector binding and action-source receipts.
 
 ## 4. Anti-gaming rules
 
@@ -129,7 +129,7 @@ The schema guard suite now tests whether a change could turn intersection into u
 
 ## 8. Updated claim ceiling
 
-The combined suite has 58 metamorphic cases and 50 schema guards, plus 29 capability-algebra fixtures. All 58 metamorphic cases and all 29 capability fixtures matched in separate authoring-time JavaScript checks; CI, a second independently implemented verifier and deployment qualification remain outstanding.
+The combined suite has 58 metamorphic cases and 50 schema guards, plus 29 effect-bound capability fixtures and 30 origin/intent provenance fixtures. All four static authoring-time replay suites matched their frozen expected outcomes (58/58, 29/29 and 30/30 respectively, with zero baseline guard violations); CI, a second independently implemented verifier and deployment qualification remain outstanding.
 ## 9. Claim ceiling
 
 The suite is synthetic. 47/47 authoring-time metamorphic matches do not prove live complete mediation, real-world graph completeness, production authorization safety, or superiority over industry systems. CI must pass on the exact PR head; a second independent verifier and exact-target participant/effect tests are still required.
