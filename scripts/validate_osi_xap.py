@@ -5,6 +5,7 @@ This does not inspect a live host/network and is not a firewall or policy engine
 """
 from __future__ import annotations
 
+import copy
 import json
 import sys
 from pathlib import Path
@@ -257,6 +258,53 @@ def evaluate_authorization_episode(episode):
         "effect_observed": oracle["effect_postcondition"],
     }
 
+
+def apply_mutations(document, mutations):
+    result = copy.deepcopy(document)
+    for mutation in mutations:
+        path = mutation["path"]
+        if not path:
+            raise SystemExit("meta-assurance mutation path cannot be empty")
+        parent = result
+        for part in path[:-1]:
+            parent = parent[part]
+        key = path[-1]
+        operation = mutation["op"]
+        if operation == "set":
+            parent[key] = copy.deepcopy(mutation["value"])
+        elif operation == "append":
+            parent[key].append(copy.deepcopy(mutation["value"]))
+        elif operation == "remove":
+            if isinstance(parent, list):
+                parent.pop(key)
+            else:
+                parent.pop(key)
+        else:
+            raise SystemExit(f"unsupported meta-assurance mutation: {operation}")
+    return result
+
+
+def schema_guard_violations(schema_documents, guards, schema_file=None):
+    violations = []
+    for guard in guards:
+        if schema_file is not None and guard["schema_file"] != schema_file:
+            continue
+        document = schema_documents[guard["schema_file"]]
+        value = document
+        try:
+            for part in guard["path"]:
+                value = value[part]
+        except (KeyError, IndexError, TypeError):
+            violations.append(guard["id"])
+            continue
+        if "expected" in guard and value != guard["expected"]:
+            violations.append(guard["id"])
+        if "contains" in guard and guard["contains"] not in value:
+            violations.append(guard["id"])
+        if "minLength" in guard and len(value) < guard["minLength"]:
+            violations.append(guard["id"])
+    return sorted(set(violations))
+
 def main() -> int:
     files = [
         ("osi-xap-control-matrix.schema.v0.1.json",
@@ -440,37 +488,9 @@ def main() -> int:
         if actual["task_state"] == "correct" and actual["unauthorized_effect"] == "true":
             task_success_but_unauthorized += 1
     if len(auth_ids) != 14 or task_success_but_unauthorized < 5:
-        raise SystemExit("authorization benchmark must retain ten episodes and multiple task-success/unauthorized-effect cases")
+        raise SystemExit("authorization benchmark must retain fourteen episodes and at least five task-success/unauthorized-effect cases")
     print(f"AUTHORIZATION_ASSURANCE_FIXTURES=PASS {auth_counts} TASK_SUCCESS_WITH_UNAUTHORIZED_EFFECT={task_success_but_unauthorized}")
 
-
-
-    evolution_schema = load(SEC / "adaptive-authorization-evolution.schema.v0.1.json")
-    evolution_template = load(SEC / "adaptive-authorization-evolution.template.v0.1.json")
-    Draft202012Validator.check_schema(evolution_schema)
-    evolution_errors = sorted(
-        Draft202012Validator(evolution_schema, format_checker=FormatChecker()).iter_errors(evolution_template),
-        key=lambda err: tuple(str(x) for x in err.absolute_path),
-    )
-    if evolution_errors:
-        for err in evolution_errors:
-            loc = "/".join(str(x) for x in err.absolute_path) or "<root>"
-            print(f"adaptive-authorization-evolution.template.v0.1.json:{loc}: {err.message}", file=sys.stderr)
-        raise SystemExit(f"adaptive authorization template: {len(evolution_errors)} schema error(s)")
-    boundary = evolution_template["mutation_boundary"]
-    if evolution_template["status"] != "template_only":
-        raise SystemExit("adaptive evolution record must remain template_only")
-    if not boundary["harness_mutable"] or not boundary["stressor_mutable"]:
-        raise SystemExit("only harness and stressor may be mutable in this profile")
-    immutable = [key for key in boundary if key not in {"harness_mutable","stressor_mutable"}]
-    if any(boundary[key] is not False for key in immutable):
-        raise SystemExit("an evaluator/trust-anchor input is mutable")
-    promotion = evolution_template["promotion_rule"]
-    if promotion["incomplete_execution_promotable"] or not promotion["oracle_change_invalidates_run"]:
-        raise SystemExit("unsafe adaptive stressor promotion rule")
-    if evolution_template["evaluation"]["confidence_method"] != "not_set" or evolution_template["evaluation"]["runs"]:
-        raise SystemExit("empty adaptive evolution template must not claim experiment results")
-    print("ADAPTIVE_EVOLUTION_TEMPLATE=VALID_ONLY_HARNESS_AND_STRESSOR_MUTABLE")
 
 
     adaptive_schema = load(SEC / "adaptive-authorization-evolution.schema.v0.1.json")
@@ -501,6 +521,78 @@ def main() -> int:
     if adaptive_record["evaluation"]["confidence_method"] != "not_set" or adaptive_record["evaluation"]["runs"]:
         raise SystemExit("adaptive template must not claim experiment results")
     print("ADAPTIVE_EVOLUTION_TEMPLATE=VALID_ONLY_HARNESS_AND_STRESSOR_MUTABLE")
+
+
+    meta_schema = load(SEC / "xap-meta-assurance.schema.v0.1.json")
+    meta_suite = load(SEC / "xap-meta-assurance.v0.1.json")
+    Draft202012Validator.check_schema(meta_schema)
+    meta_errors = sorted(
+        Draft202012Validator(meta_schema, format_checker=FormatChecker()).iter_errors(meta_suite),
+        key=lambda err: tuple(str(x) for x in err.absolute_path),
+    )
+    if meta_errors:
+        for err in meta_errors:
+            loc = "/".join(str(x) for x in err.absolute_path) or "<root>"
+            print(f"xap-meta-assurance.v0.1.json:{loc}: {err.message}", file=sys.stderr)
+        raise SystemExit(f"meta-assurance suite: {len(meta_errors)} schema error(s)")
+
+    schema_names = sorted({guard["schema_file"] for guard in meta_suite["schema_guards"]})
+    schema_documents = {name: load(SEC / name) for name in schema_names}
+    base_guard_violations = schema_guard_violations(schema_documents, meta_suite["schema_guards"])
+    if base_guard_violations:
+        raise SystemExit(f"base schemas violate meta-assurance guards: {base_guard_violations}")
+
+    meta_graphs = load(SEC / "osi-xap-assurance-graph.v0.1.json")
+    meta_auth = load(SEC / "agent-authorization-assurance.v0.1.json")
+    meta_counts = {"graph":0,"authorization":0,"schema":0}
+    for case in meta_suite["cases"]:
+        target = case["target_type"]
+        fixture_id = case["fixture_id"]
+        if target == "graph":
+            fixture = next((item for item in meta_graphs["fixtures"]
+                            if item["graph"]["graph_id"] == fixture_id), None)
+            if fixture is None:
+                raise SystemExit(f"{case['case_id']}: graph fixture not found: {fixture_id}")
+            mutated = apply_mutations(fixture["graph"], case["mutations"])
+            actual_disposition, _details = evaluate_graph(mutated)
+            if actual_disposition != case["expected"]["graph_disposition"]:
+                raise SystemExit(
+                    f"{case['case_id']}: expected {case['expected']['graph_disposition']}, got {actual_disposition}"
+                )
+        elif target == "authorization":
+            episode = next((item for item in meta_auth["episodes"]
+                            if item["episode_id"] == fixture_id), None)
+            if episode is None:
+                raise SystemExit(f"{case['case_id']}: authorization fixture not found: {fixture_id}")
+            mutated = apply_mutations(episode, case["mutations"])
+            actual_output = evaluate_authorization_episode(mutated)
+            if actual_output != case["expected"]["authorization_output"]:
+                raise SystemExit(
+                    f"{case['case_id']}: authorization metamorphic mismatch; "
+                    f"expected {case['expected']['authorization_output']}, got {actual_output}"
+                )
+        elif target == "schema":
+            if fixture_id not in schema_documents:
+                raise SystemExit(f"{case['case_id']}: schema fixture not loaded: {fixture_id}")
+            mutated_schema = apply_mutations(schema_documents[fixture_id], case["mutations"])
+            candidate_documents = dict(schema_documents)
+            candidate_documents[fixture_id] = mutated_schema
+            violations = schema_guard_violations(
+                candidate_documents, meta_suite["schema_guards"], schema_file=fixture_id
+            )
+            expected_violations = sorted(case["expected"]["violated_guard_ids"])
+            if not case["expected"]["rejected"] or violations != expected_violations:
+                raise SystemExit(
+                    f"{case['case_id']}: schema weakening was not rejected as expected; "
+                    f"expected {expected_violations}, got {violations}"
+                )
+        else:
+            raise SystemExit(f"{case['case_id']}: unknown target_type {target}")
+        meta_counts[target] += 1
+
+    if meta_counts != {"graph":7,"authorization":10,"schema":10}:
+        raise SystemExit(f"unexpected frozen meta-assurance distribution: {meta_counts}")
+    print(f"META_ASSURANCE=PASS {meta_counts} BASE_SCHEMA_GUARDS={len(meta_suite['schema_guards'])}")
 
     print("L2L3_TEMPLATE=VALID_UNASSESSED ACTIVE_SCAN=UNKNOWN OT_SEPARATION=UNKNOWN")
 
