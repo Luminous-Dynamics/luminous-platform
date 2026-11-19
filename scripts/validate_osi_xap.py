@@ -409,7 +409,7 @@ def evaluate_effect_capability_fixture(fixture):
                     valid = False
                 if grant["policy_epoch"] != request["policy_epoch"]:
                     valid = False
-    elif fixture["mode"] in {"single", "delegated"}:
+    elif fixture["mode"] in {"single", "delegated"} and grants:
         root = grants[0]
         if root["parent_grant_id"] is not None or root["issuer_id"] != principal:
             valid = False
@@ -456,6 +456,8 @@ def evaluate_effect_capability_fixture(fixture):
                 valid = False
         if grants[-1]["subject_id"] != actor:
             valid = False
+    elif fixture["mode"] in {"single", "delegated"}:
+        valid = False
     else:
         valid = False
 
