@@ -146,11 +146,21 @@ This is the minimum first cross-layer corpus. Each case needs positive, negative
 | XAP-19 | Revoked/expired/unknown key, profile, tool manifest or device attestation arrives on an otherwise valid session | Currentness failure is enforced at the final relevant boundary; no downgrade fallback. |
 | XAP-20 | Recovery/compensation is attempted after uncertain or irreversible external effect | Remedy requires its own narrow current authority and postcondition; it never erases original effect/history. |
 
+### 6.1.1 Executable assurance-graph fixtures
+
+The assurance-graph concept also has a machine-readable fixture suite and a bounded test-only evaluator:
+
+- `osi-xap-assurance-graph.schema.v0.1.json` defines the graph/node/edge/claim envelope.
+- `osi-xap-assurance-graph.v0.1.json` contains five synthetic fixtures: a fully mediated path, a known IPv6 bypass, an incomplete tunnel inventory, shared observer dependencies and independent observer domains.
+- `validate_osi_xap.py` evaluates all distinct enforcement-state paths from untrusted ingress to consequential sinks. A known bypass refutes complete mediation even if another path is valid. An unreachable path or incomplete graph is indeterminate. Evidence-independence checks compare transitive dependencies and fault domains; a shared dependency refutes independence.
+- An edge marked `declared` is not treated as verified for a qualified graph claim. Missing or unverified edge inventory prevents a qualified result.
+
+This evaluator is a static research fixture tool. It does not inspect a live host, discover routes, enforce packets or prove graph completeness in a real deployment. It is intended to test the claim logic and prevent a benchmark from rewarding one convenient path while ignoring an alternate path.
 ### 6.1 Machine-readable matrix and assurance fixtures
 
 The accompanying machine-readable artifacts are the first testable coverage index for this profile:
 
-- `osi-xap-control-matrix.v0.1.json` and its Draft 2020-12 schema: 30 control records — three for each OSI layer L1–L6, four for L7, and eight cross-layer responsibilities. Each row identifies the OSI layer, X.805 security layer/plane/dimensions, repository owner, implementation/evidence maturity, enforcement points, residual assumptions, qualification tests and claim ceiling.
+- `osi-xap-control-matrix.v0.1.json` and its Draft 2020-12 schema: 31 control records — three for each OSI layer L1–L6, four for L7, and eight cross-layer responsibilities. Each row identifies the OSI layer, X.805 security layer/plane/dimensions, repository owner, implementation/evidence maturity, enforcement points, residual assumptions, qualification tests and claim ceiling.
 - `osi-xap-scenarios.v0.1.json` and its schema: 31 synthetic scenarios — 26 negative and five positive. The corpus includes OT AI prompt/data poisoning, digital-twin drift and unauthorized twin-to-controller synchronization, as well as OT active-scanning safety, monitoring blind spots and shared management/operational infrastructure.
 - `l2l3-deployment-profile.schema.v0.1.json` and `l2l3-deployment-profile.template.v0.1.json`: a typed exact-scope network inventory/evidence contract. The public template is deliberately empty, `template_only`, `not_assessed`, with unknown discovery/OT separation and no complete-mediation claim.
 - `scripts/validate_osi_xap.py` and `.github/workflows/osi-xap.yml`: test-only Draft 2020-12 schema and static fixture checks. This is build/test tooling, not a production policy engine or network scanner.
