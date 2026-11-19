@@ -39,7 +39,7 @@ def evaluate_graph(graph):
         not inventory["complete"]
         or bool(inventory["unknown_nodes"])
         or bool(inventory["unknown_edges"])
-        or any(edge["inventory_status"] == "unknown" for edge in graph["edges"])
+        or any(edge["inventory_status"] != "verified" for edge in graph["edges"])
     )
     claim = graph["claim"]
 
