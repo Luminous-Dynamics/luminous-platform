@@ -1308,6 +1308,54 @@
         "Finite pre-authorized action-set positive control"
       ],
       "claim_ceiling": "Intent precision and provenance policy specified in synthetic scenarios; no production origin-tracking runtime or external ROPE reproduction is claimed."
+    },
+    {
+      "id": "XAP-APPROVAL-034",
+      "osi_layer": "cross_layer",
+      "x805_security_layer": "cross_layer",
+      "plane": "cross_plane",
+      "dimensions": [
+        "access_control",
+        "authentication",
+        "data_integrity",
+        "availability",
+        "non_repudiation",
+        "privacy"
+      ],
+      "topic": "Human approval obligation continuity from model selection through participant effect",
+      "owner": {
+        "repo": "Luminous-Dynamics/luminous-platform",
+        "component": "Approval Obligation Ledger / XAP validator composed with Mycelix and workflow owners"
+      },
+      "implementation_status": "specified",
+      "evidence_status": "issue_planned",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/498",
+        "https://arxiv.org/abs/2611.19237"
+      ],
+      "enforcement_points": [
+        "Model action-selection boundary",
+        "Harness pending-work/checkpoint/aggregation layer",
+        "Workflow branch router",
+        "Participant exact-effect admission",
+        "Independent effect witness"
+      ],
+      "residual_assumptions": [
+        "Synthetic episodes do not reproduce production orchestration distributions",
+        "Decision logs and effect witnesses need independent source qualification",
+        "The benchmark requires workflow dispatch as an explicit scoped boundary"
+      ],
+      "qualification_tests": [
+        "Paired approve/reject actions",
+        "Parallel branch preservation",
+        "Checkpoint and restoration continuity",
+        "Decision revision withdrawal",
+        "Condition revision re-approval",
+        "Delegated work preservation and scope attenuation",
+        "Direct effect with no approval-bound dispatch",
+        "Independent witness missing/unknown"
+      ],
+      "claim_ceiling": "Twenty-six synthetic approval/workflow episodes and test-only evaluator; no real framework reproduction or production workflow qualification."
     }
   ],
   "nonclaims": [
@@ -1317,5 +1365,5 @@
     "A missing or unknown route, dependency, owner or enforcement point blocks a complete-mediation claim.",
     "This matrix is not an audit, certification, compliance attestation or scalar security score."
   ],
-  "control_count": 33
+  "control_count": 34
 }
