@@ -1178,6 +1178,48 @@
         "Two-way telemetry is explicitly documented and risk-reviewed"
       ],
       "claim_ceiling": "Architecture and schema requirement only; no OT network topology is qualified."
+    },
+    {
+      "id": "XAP-GRAPH-031",
+      "osi_layer": "cross_layer",
+      "x805_security_layer": "cross_layer",
+      "plane": "cross_plane",
+      "dimensions": [
+        "access_control",
+        "authentication",
+        "data_integrity",
+        "availability",
+        "non_repudiation"
+      ],
+      "topic": "Assurance-graph reachability, enforcement-path and common-cause qualification",
+      "owner": {
+        "repo": "Luminous-Dynamics/luminous-platform",
+        "component": "XAP graph fixtures/evaluator composed with Mycelix dependency hypergraph"
+      },
+      "implementation_status": "specified",
+      "evidence_status": "issue_planned",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/498",
+        "https://github.com/Luminous-Dynamics/mycelix/issues/5923"
+      ],
+      "enforcement_points": [
+        "Independent graph inventory/evaluator",
+        "Owner-verified route and dependency evidence",
+        "Participant final authorization"
+      ],
+      "residual_assumptions": [
+        "Graph completeness is finite and scope-bound",
+        "Declared edges are not verified edges",
+        "A static graph evaluator does not inspect a live deployment"
+      ],
+      "qualification_tests": [
+        "Mediated path positive control",
+        "IPv6 or alternate route bypass",
+        "Unenumerated tunnel produces indeterminate",
+        "Shared observer dependency refutes independence",
+        "Independent observer domains positive control"
+      ],
+      "claim_ceiling": "Synthetic static graph evaluator and fixtures only; no production route or independence proof."
     }
   ],
   "nonclaims": [
@@ -1187,5 +1229,5 @@
     "A missing or unknown route, dependency, owner or enforcement point blocks a complete-mediation claim.",
     "This matrix is not an audit, certification, compliance attestation or scalar security score."
   ],
-  "control_count": 30
+  "control_count": 31
 }
