@@ -176,7 +176,7 @@ This evaluator is a static research fixture tool. It does not inspect a live hos
 
 The accompanying machine-readable artifacts are the first testable coverage index for this profile:
 
-- `osi-xap-control-matrix.v0.1.json` and its Draft 2020-12 schema: 32 control records — three for each OSI layer L1–L6, four for L7, and ten cross-layer responsibilities. Each row identifies the OSI layer, X.805 security layer/plane/dimensions, repository owner, implementation/evidence maturity, enforcement points, residual assumptions, qualification tests and claim ceiling.
+- `osi-xap-control-matrix.v0.1.json` and its Draft 2020-12 schema: 33 control records — three for each OSI layer L1–L6, four for L7, and ten cross-layer responsibilities. Each row identifies the OSI layer, X.805 security layer/plane/dimensions, repository owner, implementation/evidence maturity, enforcement points, residual assumptions, qualification tests and claim ceiling.
 - `osi-xap-scenarios.v0.1.json` and its schema: 31 synthetic scenarios — 26 negative and five positive. The corpus includes OT AI prompt/data poisoning, digital-twin drift and unauthorized twin-to-controller synchronization, as well as OT active-scanning safety, monitoring blind spots and shared management/operational infrastructure.
 - `l2l3-deployment-profile.schema.v0.1.json` and `l2l3-deployment-profile.template.v0.1.json`: a typed exact-scope network inventory/evidence contract. The public template is deliberately empty, `template_only`, `not_assessed`, with unknown discovery/OT separation and no complete-mediation claim.
 - `scripts/validate_osi_xap.py` and `.github/workflows/osi-xap.yml`: test-only Draft 2020-12 schema and static fixture checks. This is build/test tooling, not a production policy engine or network scanner.
@@ -211,6 +211,23 @@ The implementation protocol and empty schema/template are recorded in [SECURITY-
 The test-only validator checks that the empty template cannot mutate task model, tools, environment, benchmark semantics, grants/policy semantics, authorization/participant/effect oracles or evaluator. It is not an executed harness search. Luminous has not reproduced Evolution Under Fire or demonstrated better-than-SOTA performance.
 
 Source: https://arxiv.org/abs/2611.22583
+### 6.1.4 User-intent precision and provenance-bound authority
+
+AutoDojo identifies three task-specification precision classes: fully specified (action and parameters given), parameter-open (action given, parameters read from content), and action-open (the user delegates action selection to content). Its adaptive attacks recover 28% ASR overall and 64% on action-open tasks against a filter that reached 0% on static attacks. This identifies a structural risk: action selection can be smuggled into ordinary-looking content when the user has not specified the action.
+
+ROPE (27 August 2026) takes a complementary structural approach: sensitive tool parameters may reach a state-changing tool only when their values carry unforgeable provenance to the user's request, a source explicitly named by the user, or user-authoritative records. Its evaluation reports 1.6–2.6% ASR while retaining 82–100% of undefended clean utility across its reported models and suites. These are ROPE's own benchmark results, not Luminous results.
+
+Luminous adds `task_specification_precision` and `content_authority_rule` to every synthetic XAP scenario. Current frozen corpus: 37 cases (29 negative / 8 positive), including one fully specified positive, two parameter-open cases (one named-source positive, one recipient-substitution negative), and three action-open cases (finite pre-authorized action-set positive, untrusted web content requiring clarification, and an out-of-set OT physical operation denied). The remaining 31 cases are marked not applicable.
+
+Policy interpretation:
+
+- **Fully specified:** bind the exact action, target and parameters to the user grant and request digest. Retrieved content cannot change any of them.
+- **Parameter-open:** action and target remain fixed; only explicitly delegated parameter fields may be filled from named/allowlisted sources with provenance, type/range and purpose checks. Content cannot replace recipient, destination, amount semantics, target or operation unless those exact choices were delegated.
+- **Action-open:** do not allow arbitrary content to choose any action. Either ask for clarification or constrain selection to a finite, explicit, pre-authorized set of actions with exact targets, parameters, expiry and participant-side checks.
+
+ROPE is now an explicit comparator in the benchmark report. Luminous must not claim novelty for origin tracking or provenance-based parameter guards; the proposed differentiator is their composition with task-intent precision, principal/grant/delegation currentness, participant admission, physical effect oracles, recovery and assurance-graph completeness.
+
+Sources: https://arxiv.org/abs/2606.15057 ; https://arxiv.org/abs/2608.27496
 ## 7. Benchmark and qualification programme
 
 Do not build a single “Luminous security score”. Report separate properties and hard gates. A system that blocks every operation is not useful; positive-control completion and benign false blocking must be reported alongside attack prevention.
