@@ -1,0 +1,938 @@
+{
+  "profile": "luminous-xap-meta-assurance-suite",
+  "version": "0.1",
+  "status": "synthetic_metamorphic_test_suite",
+  "schema_guards": [
+    {
+      "id": "matrix-root-closed",
+      "schema_file": "osi-xap-control-matrix.schema.v0.1.json",
+      "path": [
+        "additionalProperties"
+      ],
+      "expected": false
+    },
+    {
+      "id": "matrix-controls-floor",
+      "schema_file": "osi-xap-control-matrix.schema.v0.1.json",
+      "path": [
+        "properties",
+        "controls",
+        "minItems"
+      ],
+      "expected": 33
+    },
+    {
+      "id": "matrix-control-entry-closed",
+      "schema_file": "osi-xap-control-matrix.schema.v0.1.json",
+      "path": [
+        "properties",
+        "controls",
+        "items",
+        "additionalProperties"
+      ],
+      "expected": false
+    },
+    {
+      "id": "scenario-root-closed",
+      "schema_file": "osi-xap-scenarios.schema.v0.1.json",
+      "path": [
+        "additionalProperties"
+      ],
+      "expected": false
+    },
+    {
+      "id": "scenario-corpus-floor",
+      "schema_file": "osi-xap-scenarios.schema.v0.1.json",
+      "path": [
+        "properties",
+        "scenarios",
+        "minItems"
+      ],
+      "expected": 37
+    },
+    {
+      "id": "authorization-root-closed",
+      "schema_file": "agent-authorization-assurance.schema.v0.1.json",
+      "path": [
+        "additionalProperties"
+      ],
+      "expected": false
+    },
+    {
+      "id": "authorization-corpus-floor",
+      "schema_file": "agent-authorization-assurance.schema.v0.1.json",
+      "path": [
+        "properties",
+        "episodes",
+        "minItems"
+      ],
+      "expected": 14
+    },
+    {
+      "id": "authorization-fail-closed-required",
+      "schema_file": "agent-authorization-assurance.schema.v0.1.json",
+      "path": [
+        "$defs",
+        "expected",
+        "required"
+      ],
+      "contains": "fail_closed_violation"
+    },
+    {
+      "id": "adaptive-root-closed",
+      "schema_file": "adaptive-authorization-evolution.schema.v0.1.json",
+      "path": [
+        "additionalProperties"
+      ],
+      "expected": false
+    },
+    {
+      "id": "adaptive-policy-immutable",
+      "schema_file": "adaptive-authorization-evolution.schema.v0.1.json",
+      "path": [
+        "properties",
+        "mutation_boundary",
+        "properties",
+        "policy_semantics_mutable",
+        "const"
+      ],
+      "expected": false
+    },
+    {
+      "id": "adaptive-evaluator-immutable",
+      "schema_file": "adaptive-authorization-evolution.schema.v0.1.json",
+      "path": [
+        "properties",
+        "mutation_boundary",
+        "properties",
+        "evaluator_mutable",
+        "const"
+      ],
+      "expected": false
+    },
+    {
+      "id": "adaptive-incomplete-not-promotable",
+      "schema_file": "adaptive-authorization-evolution.schema.v0.1.json",
+      "path": [
+        "properties",
+        "promotion_rule",
+        "properties",
+        "incomplete_execution_promotable",
+        "const"
+      ],
+      "expected": false
+    },
+    {
+      "id": "adaptive-oracle-drift-invalidates",
+      "schema_file": "adaptive-authorization-evolution.schema.v0.1.json",
+      "path": [
+        "properties",
+        "promotion_rule",
+        "properties",
+        "oracle_change_invalidates_run",
+        "const"
+      ],
+      "expected": true
+    },
+    {
+      "id": "l2l3-root-closed",
+      "schema_file": "l2l3-deployment-profile.schema.v0.1.json",
+      "path": [
+        "additionalProperties"
+      ],
+      "expected": false
+    },
+    {
+      "id": "l2l3-complete-claim-gated",
+      "schema_file": "l2l3-deployment-profile.schema.v0.1.json",
+      "path": [
+        "allOf"
+      ],
+      "minLength": 2
+    },
+    {
+      "id": "graph-root-closed",
+      "schema_file": "osi-xap-assurance-graph.schema.v0.1.json",
+      "path": [
+        "additionalProperties"
+      ],
+      "expected": false
+    },
+    {
+      "id": "graph-fixture-floor",
+      "schema_file": "osi-xap-assurance-graph.schema.v0.1.json",
+      "path": [
+        "properties",
+        "fixtures",
+        "minItems"
+      ],
+      "expected": 5
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "META-G001-ADD-BYPASS",
+      "target_type": "graph",
+      "fixture_id": "XAP-G001-MEDIATED",
+      "mutations": [
+        {
+          "op": "append",
+          "path": [
+            "edges"
+          ],
+          "value": {
+            "id": "meta-bypass",
+            "from": "ingress",
+            "to": "effect",
+            "type": "routes",
+            "inventory_status": "verified",
+            "notes": ""
+          }
+        }
+      ],
+      "expected": {
+        "graph_disposition": "refuted"
+      }
+    },
+    {
+      "case_id": "META-G002-ADD-UNKNOWN-ROUTE",
+      "target_type": "graph",
+      "fixture_id": "XAP-G001-MEDIATED",
+      "mutations": [
+        {
+          "op": "append",
+          "path": [
+            "nodes"
+          ],
+          "value": {
+            "id": "opaque-route",
+            "type": "network_path",
+            "fault_domain": "unknown-route",
+            "enforcement_roles": []
+          }
+        },
+        {
+          "op": "append",
+          "path": [
+            "edges"
+          ],
+          "value": {
+            "id": "meta-unknown",
+            "from": "agent",
+            "to": "opaque-route",
+            "type": "routes",
+            "inventory_status": "unknown",
+            "notes": ""
+          }
+        }
+      ],
+      "expected": {
+        "graph_disposition": "indeterminate"
+      }
+    },
+    {
+      "case_id": "META-G003-REMOVE-BROKER-ENFORCEMENT",
+      "target_type": "graph",
+      "fixture_id": "XAP-G001-MEDIATED",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "nodes",
+            2,
+            "enforcement_roles"
+          ],
+          "value": []
+        }
+      ],
+      "expected": {
+        "graph_disposition": "refuted"
+      }
+    },
+    {
+      "case_id": "META-G004-ADD-SHARED-DEPENDENCY",
+      "target_type": "graph",
+      "fixture_id": "XAP-G005-DISTINCT-OBSERVER",
+      "mutations": [
+        {
+          "op": "append",
+          "path": [
+            "nodes"
+          ],
+          "value": {
+            "id": "meta-common-clock",
+            "type": "shared_dependency",
+            "fault_domain": "common-clock",
+            "enforcement_roles": []
+          }
+        },
+        {
+          "op": "append",
+          "path": [
+            "edges"
+          ],
+          "value": {
+            "id": "meta-eA",
+            "from": "observer-A",
+            "to": "meta-common-clock",
+            "type": "depends_on",
+            "inventory_status": "verified",
+            "notes": ""
+          }
+        },
+        {
+          "op": "append",
+          "path": [
+            "edges"
+          ],
+          "value": {
+            "id": "meta-eB",
+            "from": "observer-B",
+            "to": "meta-common-clock",
+            "type": "depends_on",
+            "inventory_status": "verified",
+            "notes": ""
+          }
+        }
+      ],
+      "expected": {
+        "graph_disposition": "refuted"
+      }
+    },
+    {
+      "case_id": "META-G005-UNKNOWN-OBSERVER-DEPENDENCY",
+      "target_type": "graph",
+      "fixture_id": "XAP-G005-DISTINCT-OBSERVER",
+      "mutations": [
+        {
+          "op": "append",
+          "path": [
+            "nodes"
+          ],
+          "value": {
+            "id": "meta-unknown-clock",
+            "type": "shared_dependency",
+            "fault_domain": "unknown-clock",
+            "enforcement_roles": []
+          }
+        },
+        {
+          "op": "append",
+          "path": [
+            "edges"
+          ],
+          "value": {
+            "id": "meta-unknown",
+            "from": "observer-A",
+            "to": "meta-unknown-clock",
+            "type": "depends_on",
+            "inventory_status": "unknown",
+            "notes": ""
+          }
+        }
+      ],
+      "expected": {
+        "graph_disposition": "indeterminate"
+      }
+    },
+    {
+      "case_id": "META-G006-ROUTE-CYCLE-TERMINATES",
+      "target_type": "graph",
+      "fixture_id": "XAP-G001-MEDIATED",
+      "mutations": [
+        {
+          "op": "append",
+          "path": [
+            "edges"
+          ],
+          "value": {
+            "id": "meta-cycle",
+            "from": "broker",
+            "to": "agent",
+            "type": "routes",
+            "inventory_status": "verified",
+            "notes": ""
+          }
+        }
+      ],
+      "expected": {
+        "graph_disposition": "qualified"
+      }
+    },
+    {
+      "case_id": "META-G007-DECLARED-EDGE-NOT-VERIFIED",
+      "target_type": "graph",
+      "fixture_id": "XAP-G001-MEDIATED",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "edges",
+            1,
+            "inventory_status"
+          ],
+          "value": "declared"
+        }
+      ],
+      "expected": {
+        "graph_disposition": "indeterminate"
+      }
+    },
+    {
+      "case_id": "META-A001-ACTOR-SUBSTITUTION",
+      "target_type": "authorization",
+      "fixture_id": "AUTH-001-VALID-EXACT",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "trace",
+            "attempt",
+            "actor_id"
+          ],
+          "value": "workload:impostor"
+        }
+      ],
+      "expected": {
+        "authorization_output": {
+          "authorization_state": "not_authorized",
+          "participant_decision_correct": false,
+          "fail_closed_violation": true,
+          "unauthorized_effect": "true",
+          "task_state": "correct",
+          "effect_observed": "matches"
+        }
+      }
+    },
+    {
+      "case_id": "META-A002-ROOT-REVOCATION",
+      "target_type": "authorization",
+      "fixture_id": "AUTH-001-VALID-EXACT",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "trace",
+            "grants",
+            0,
+            "revocation_status"
+          ],
+          "value": "revoked"
+        },
+        {
+          "op": "set",
+          "path": [
+            "trace",
+            "grants",
+            0,
+            "revoked_at"
+          ],
+          "value": "2026-11-19T11:56:30Z"
+        }
+      ],
+      "expected": {
+        "authorization_output": {
+          "authorization_state": "not_authorized",
+          "participant_decision_correct": false,
+          "fail_closed_violation": true,
+          "unauthorized_effect": "true",
+          "task_state": "correct",
+          "effect_observed": "matches"
+        }
+      }
+    },
+    {
+      "case_id": "META-A003-PERMIT-DIGEST-MISMATCH",
+      "target_type": "authorization",
+      "fixture_id": "AUTH-001-VALID-EXACT",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "trace",
+            "attempt",
+            "broker_permit_request_digest"
+          ],
+          "value": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      ],
+      "expected": {
+        "authorization_output": {
+          "authorization_state": "not_authorized",
+          "participant_decision_correct": false,
+          "fail_closed_violation": true,
+          "unauthorized_effect": "true",
+          "task_state": "correct",
+          "effect_observed": "matches"
+        }
+      }
+    },
+    {
+      "case_id": "META-A004-APPROVAL-OMITTED",
+      "target_type": "authorization",
+      "fixture_id": "AUTH-001-VALID-EXACT",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "trace",
+            "approval",
+            "required"
+          ],
+          "value": true
+        }
+      ],
+      "expected": {
+        "authorization_output": {
+          "authorization_state": "not_authorized",
+          "participant_decision_correct": false,
+          "fail_closed_violation": true,
+          "unauthorized_effect": "true",
+          "task_state": "correct",
+          "effect_observed": "matches"
+        }
+      }
+    },
+    {
+      "case_id": "META-A005-GRANT-EXPIRED",
+      "target_type": "authorization",
+      "fixture_id": "AUTH-001-VALID-EXACT",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "trace",
+            "grants",
+            0,
+            "expires_at"
+          ],
+          "value": "2026-11-19T11:56:00Z"
+        }
+      ],
+      "expected": {
+        "authorization_output": {
+          "authorization_state": "not_authorized",
+          "participant_decision_correct": false,
+          "fail_closed_violation": true,
+          "unauthorized_effect": "true",
+          "task_state": "correct",
+          "effect_observed": "matches"
+        }
+      }
+    },
+    {
+      "case_id": "META-A006-FUTURE-REVOCATION-PRESERVES-PAST-ADMISSION",
+      "target_type": "authorization",
+      "fixture_id": "AUTH-001-VALID-EXACT",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "trace",
+            "grants",
+            0,
+            "revocation_status"
+          ],
+          "value": "current"
+        },
+        {
+          "op": "set",
+          "path": [
+            "trace",
+            "grants",
+            0,
+            "revoked_at"
+          ],
+          "value": "2026-11-19T12:30:00Z"
+        }
+      ],
+      "expected": {
+        "authorization_output": {
+          "authorization_state": "authorized",
+          "participant_decision_correct": true,
+          "fail_closed_violation": false,
+          "unauthorized_effect": "false",
+          "task_state": "correct",
+          "effect_observed": "matches"
+        }
+      }
+    },
+    {
+      "case_id": "META-A007-UNKNOWN-REVOCATION-CANNOT-ALLOW",
+      "target_type": "authorization",
+      "fixture_id": "AUTH-013-UNKNOWN-REVOCATION",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "trace",
+            "attempt",
+            "participant_decision"
+          ],
+          "value": "allow"
+        }
+      ],
+      "expected": {
+        "authorization_output": {
+          "authorization_state": "indeterminate",
+          "participant_decision_correct": false,
+          "fail_closed_violation": true,
+          "unauthorized_effect": "false",
+          "task_state": "incorrect",
+          "effect_observed": "not_observed"
+        }
+      }
+    },
+    {
+      "case_id": "META-A008-PARTIAL-UNAUTHORIZED-COMMIT",
+      "target_type": "authorization",
+      "fixture_id": "AUTH-001-VALID-EXACT",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "trace",
+            "grants",
+            0,
+            "revocation_status"
+          ],
+          "value": "revoked"
+        },
+        {
+          "op": "set",
+          "path": [
+            "trace",
+            "grants",
+            0,
+            "revoked_at"
+          ],
+          "value": "2026-11-19T11:56:30Z"
+        },
+        {
+          "op": "set",
+          "path": [
+            "trace",
+            "attempt",
+            "effect_state"
+          ],
+          "value": "partially_committed"
+        }
+      ],
+      "expected": {
+        "authorization_output": {
+          "authorization_state": "not_authorized",
+          "participant_decision_correct": false,
+          "fail_closed_violation": true,
+          "unauthorized_effect": "true",
+          "task_state": "correct",
+          "effect_observed": "matches"
+        }
+      }
+    },
+    {
+      "case_id": "META-A009-POLICY-REVISION-MISMATCH",
+      "target_type": "authorization",
+      "fixture_id": "AUTH-001-VALID-EXACT",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "trace",
+            "attempt",
+            "broker_permit_policy_revision"
+          ],
+          "value": "policy-v0"
+        }
+      ],
+      "expected": {
+        "authorization_output": {
+          "authorization_state": "not_authorized",
+          "participant_decision_correct": false,
+          "fail_closed_violation": true,
+          "unauthorized_effect": "true",
+          "task_state": "correct",
+          "effect_observed": "matches"
+        }
+      }
+    },
+    {
+      "case_id": "META-A010-UNRELATED-GRANT-DOES-NOT-WIDEN-CHAIN",
+      "target_type": "authorization",
+      "fixture_id": "AUTH-001-VALID-EXACT",
+      "mutations": [
+        {
+          "op": "append",
+          "path": [
+            "trace",
+            "grants"
+          ],
+          "value": {
+            "grant_id": "unrelated",
+            "principal_id": "other",
+            "issuer_id": "other",
+            "subject_id": "other-agent",
+            "parent_grant_id": null,
+            "target_refs": [
+              "asset:other"
+            ],
+            "operations": [
+              "delete"
+            ],
+            "request_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "policy_revision": "other-policy",
+            "not_before": "2026-11-19T11:00:00Z",
+            "expires_at": "2026-11-19T13:00:00Z",
+            "revocation_status": "current",
+            "revoked_at": null,
+            "may_delegate": false
+          }
+        }
+      ],
+      "expected": {
+        "authorization_output": {
+          "authorization_state": "authorized",
+          "participant_decision_correct": true,
+          "fail_closed_violation": false,
+          "unauthorized_effect": "false",
+          "task_state": "correct",
+          "effect_observed": "matches"
+        }
+      }
+    },
+    {
+      "case_id": "META-S001-OPEN-MATRIX-ROOT",
+      "target_type": "schema",
+      "fixture_id": "osi-xap-control-matrix.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "additionalProperties"
+          ],
+          "value": true
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "matrix-root-closed"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S002-REMOVE-MATRIX-CONTROL-FLOOR",
+      "target_type": "schema",
+      "fixture_id": "osi-xap-control-matrix.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "properties",
+            "controls",
+            "minItems"
+          ],
+          "value": 0
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "matrix-controls-floor"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S003-OPEN-CONTROL-ENTRIES",
+      "target_type": "schema",
+      "fixture_id": "osi-xap-control-matrix.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "properties",
+            "controls",
+            "items",
+            "additionalProperties"
+          ],
+          "value": true
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "matrix-control-entry-closed"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S004-SHRINK-SCENARIO-CORPUS",
+      "target_type": "schema",
+      "fixture_id": "osi-xap-scenarios.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "properties",
+            "scenarios",
+            "minItems"
+          ],
+          "value": 0
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "scenario-corpus-floor"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S005-REMOVE-FAIL-CLOSED-OUTPUT",
+      "target_type": "schema",
+      "fixture_id": "agent-authorization-assurance.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "$defs",
+            "expected",
+            "required"
+          ],
+          "value": [
+            "authorization_state",
+            "participant_decision_correct",
+            "unauthorized_effect",
+            "task_state",
+            "effect_observed"
+          ]
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "authorization-fail-closed-required"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S006-ALLOW-EVALUATOR-MUTATION",
+      "target_type": "schema",
+      "fixture_id": "adaptive-authorization-evolution.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "properties",
+            "mutation_boundary",
+            "properties",
+            "evaluator_mutable",
+            "const"
+          ],
+          "value": true
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "adaptive-evaluator-immutable"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S007-PROMOTE-INCOMPLETE-RUN",
+      "target_type": "schema",
+      "fixture_id": "adaptive-authorization-evolution.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "properties",
+            "promotion_rule",
+            "properties",
+            "incomplete_execution_promotable",
+            "const"
+          ],
+          "value": true
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "adaptive-incomplete-not-promotable"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S008-ALLOW-ORACLE-DRIFT",
+      "target_type": "schema",
+      "fixture_id": "adaptive-authorization-evolution.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "properties",
+            "promotion_rule",
+            "properties",
+            "oracle_change_invalidates_run",
+            "const"
+          ],
+          "value": false
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "adaptive-oracle-drift-invalidates"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S009-REMOVE-L2L3-COMPLETE-MEDIATION-GATE",
+      "target_type": "schema",
+      "fixture_id": "l2l3-deployment-profile.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "allOf"
+          ],
+          "value": []
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "l2l3-complete-claim-gated"
+        ]
+      }
+    },
+    {
+      "case_id": "META-S010-SHRINK-GRAPH-CORPUS",
+      "target_type": "schema",
+      "fixture_id": "osi-xap-assurance-graph.schema.v0.1.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": [
+            "properties",
+            "fixtures",
+            "minItems"
+          ],
+          "value": 0
+        }
+      ],
+      "expected": {
+        "rejected": true,
+        "violated_guard_ids": [
+          "graph-fixture-floor"
+        ]
+      }
+    }
+  ],
+  "claim_ceiling": [
+    "These mutations exercise static fixture/evaluator invariants and schema guards; they are not a substitute for independent code review.",
+    "A passing metamorphic suite does not establish that the source graph or deployment inventory is complete.",
+    "The evaluator and its frozen oracles require a second independent implementation before an assurance claim is qualified.",
+    "No live network, production credential, external mutation or physical actuation is used."
+  ]
+}
