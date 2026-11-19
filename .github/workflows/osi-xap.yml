@@ -6,6 +6,8 @@ on:
       - "docs/security/osi-xap-*"
       - "docs/security/EFFECT_BOUND_CAPABILITY_CONTRACT_V0_1.md"
       - "docs/security/effect-bound-capability-*"
+      - "docs/security/origin-bound-intent-provenance.*"
+      - "docs/security/ORIGIN_BOUND_INTENT_PROVENANCE_CONTRACT_V0_1.md"
       - "docs/security/xap-meta-assurance.*"
       - "docs/security/XAP_META_ASSURANCE_V0_1.md"
       - "docs/security/agent-authorization-assurance.*"
