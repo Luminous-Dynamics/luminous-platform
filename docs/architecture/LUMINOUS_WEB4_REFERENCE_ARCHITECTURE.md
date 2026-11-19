@@ -125,6 +125,24 @@ Prefer existing standards and audited implementations over new cryptographic for
 
 A compatibility profile MUST define canonical serialization, algorithm identifiers, version negotiation, key rotation, revocation freshness, error semantics, replay behavior, size limits and test vectors. Unknown or mixed protocol profiles MUST be rejected rather than silently downgraded.
 
+### 5.1 Standards pins and dependency gates (reviewed 2026-11-19)
+
+| Surface | Current reference pin | What the standard supplies | What it does not supply |
+|---|---|---|---|
+| A2A | v1.0.1 (released 2026-05-26) | Agent discovery, task/message exchange and protocol bindings | An Agent Card, authenticated peer, accepted task or returned artifact is not a Luminous grant, verified effect or proof of truth. |
+| MCP | 2026-07-28 specification | Tool/resource protocol and HTTP authorization profile | Tool discovery, tool annotations and an OAuth token do not authorize a broader downstream action. Apply resource/audience binding, validate tokens at the resource server and prohibit token passthrough. |
+| OWASP ACS | Release v0.1.4; specification namespace v0.1.0 | Runtime hook envelopes, decision dispositions, session context and optional trace/inspection/provenance/crypto/audit profiles | Profile names in the handshake are self-declarations. Upstream documentation says the release has no conformance test suite, conformant-implementation registry or steward body. A local adapter test is not independent ACS certification. |
+| SCITT | RFC 9943, IETF Proposed Standard (June 2026) | Signed statements, transparency-service receipts and auditable append-only statement history | Registration demonstrates statement signing and transparency-service inclusion under a policy; it does not prove accuracy, completeness, independence or benefit. |
+| Web4 | Individual Internet-Drafts only | Competing vocabulary and proposed conformance ideas | No IETF consensus definition or approved Web4 standard. Luminous conformance remains our own versioned profile unless externally standardized. |
+
+The A2A v1.0.1 pin updates the original v1.0 reference. MCP implementations MUST pin the exact dated specification and OAuth/resource-server profile they implement; do not rely on an unversioned latest endpoint. ACS capability negotiation MUST record both the release and specification namespace and the exact optional profiles accepted. ACS-Core self-declared conformance MUST NOT be promoted into an assurance claim without independently executed tests of the actual client, Guardian and enforcement boundary. In particular, an ACS ALLOW disposition is an input to the Luminous policy path, not a substitute for the principal's grant or the participant's own final authorization.
+
+**Mycelix AGENT dependency gate.** The Mycelix AGENT roadmap (#805) places protocol adapters after the generic identity/runtime, authority, exact-action, broker, durable-effect and independent-verifier chain (AGENT-000 through AGENT-010). Its stored AGENT-002 run was queued rather than PASS; refresh the exact current head and evidence before promoting dependent work. Therefore:
+- No authoritative A2A, MCP, OAuth or commerce adapter may mint, carry or widen Mycelix authority ahead of AGENT-010.
+- Earlier protocol work may prepare protocol-neutral fixtures, schema crosswalks and isolated interoperability tests only when explicitly non-authoritative, synthetic, credential-free and incapable of production effects.
+- A protocol TCK proves translation/semantic compatibility for the tested profile; it does not qualify identity, currentness, authority, runtime evidence or participant finality.
+- Adapters translate canonical contracts; they do not become competing policy, identity or effect authorities.
+
 ## 6. Consequential action lifecycle
 
 The mandatory effect lifecycle is:
@@ -392,18 +410,67 @@ Use the existing ITOPS preregistered experiment plan and its dependence-aware st
 
 The 10 ms and 1 s values are engineering hypotheses (the 10 ms local-gate hypothesis is also present in #168) and MUST NOT be used to relax a security gate. Tune performance only after safety properties are preserved.
 
+## 8.6 Multi-agent authorization: current research and the missing experiment
+
+The relevant state of the art is moving beyond prompt-injection detection toward externalized authorization, delegated scope, session-state composition and explicit evidence lineage. Luminous must reproduce and compare this work rather than claim that monotonic attenuation or composition closure is itself novel.
+
+### External reference results (paper-reported; not independently reproduced here)
+
+- **MasDrift (2026):** 600 benign productivity tasks across eight domains. Its reported results show substantial trade-offs between centralized/decentralized coordination and authorization preservation. Re-anchoring every pending call to the original user request reduces unauthorized actions at a reported pooled completion cost of 1.6 percentage points; strict attenuated-policy propagation can block required work, forfeiting up to 36.3 points in the evaluated settings.
+- **Bounded Agents / Agentic Principal Chain (2026):** 3,154 evaluation instances across InjecAgent, AgentDojo and Agent Security Bench. The paper reports blocking 544/544 InjecAgent data-stealing cases, reducing AgentDojo exfiltration to zero in its four evaluated domains, and 0.24 ms p99 authorization latency on an idle host. It also reports utility reductions of 8.6 and 13.9 percentage points in two settings. Its composition-soundness result is conditioned on a complete restriction set and serialized admission.
+- **AgentCap (2026):** a capability-based runtime-authorization design mediated through an MCP wrapper. The paper reports zero attack success with GPT-5.4 on AgentDojo and InjecAgent, and no blocked legitimate operations in its evaluated controlled scenarios. Those claims are bounded to the paper's tested task/model/configuration set.
+- **Trust Cascade through Provenance Erasure (EMNLP 2026):** across 460 agent-pair samples, the paper reports substantial loss of format markers, authority entities and source attribution during delegation while actionable content remained. Its Trust Boundary Auditor is a relevant zero-inference diagnostic.
+- **Delegated Misalignment (EMNLP 2026):** reports that role assignment and responsibility diffusion can turn single-agent refusal behavior into full execution under delegation. This behavioral risk must be measured separately from cryptographic authority correctness.
+
+These are external paper-reported results, not Luminous results. Before claiming reproduction, pin the paper version, artifact commit, license, model, prompts, tool schema and native scoring. Do not combine different benchmark tasks or scoring systems into a single headline number.
+
+### Existing Luminous work and maturity boundary
+
+- Platform #284 defines the multi-agent authority-attenuation benchmark.
+- Platform PR #285 implements two synthetic policy arms: strict edge-by-edge attenuation and a root-anchored, precommitted task-graph policy. Its recorded exact head 7a6d5c8b8c67e5af85f212b0dd56b2c17924cc7e passed workflow 42348308916 with 104 tests and Clippy. This qualifies the synthetic predicate/evaluator tests at that exact head only; it does not qualify live Xenia authority, durable external participant state or external benchmark superiority.
+- Platform PR #287 adds machine-readable delegation evidence and a provenance auditor. Its recorded head 97f704bdba8634dc2f9891be03710bf15ac21e6c has authored tests and static checks, but its PR description does not claim an exact-head Rust/CI pass. Do not treat it as qualified until the current head has exact evidence.
+- Platform #288 requires a native MasDrift reproduction plus a separate operational extension.
+- Platform #293 / PR #294 add session-wide composition closure and race-sensitive state. This is the next layer beyond per-call authorization and delegation: individually valid operations may still form a forbidden combined effect.
+
+The current code/design frontier is promising but remains synthetic and draft. The deterministic ITOPS runner (#213 / PR #217), independent oracle and preregistered sampling plan (#218) remain the route to measured comparisons. Do not create a second runner, effect ledger, policy engine, delegation token format or generic workflow engine.
+
+### Required matched comparison
+
+Run the same frozen task/seed blocks, model/provider, prompts, tool inventory, context budget, topology and evaluation budget through these arms:
+
+1. Single-agent baseline.
+2. Centralized multi-agent baseline without the additional authorization defense (synthetic-only).
+3. Peer/decentralized multi-agent baseline (synthetic-only).
+4. Original-principal re-anchoring at every pending effect.
+5. Strict recursive parent-to-child attenuation.
+6. Root-anchored, precommitted task graph with explicit immediate-parent delegation, per-edge scope/budgets and final participant re-anchoring.
+7. Arm 6 plus session-wide composition closure, linearizable admission, pending/unknown effect reservations and provenance-lineage checks.
+
+Keep the source benchmark's native task score and analysis unit separate from Luminous supplemental measures. Add operational measures for dispatches, committed effects, false refusals, participant receipts, final-state observations, unknown-outcome retries, crash recovery, revocation lag, provenance retention, common-cause disclosure, human interventions, p50/p95/p99 latency, cost, tokens and energy. Add ablations for missing root lineage, missing ancestor revocation, stale session state, missing final participant recheck, omitted provenance, non-serialized budget use and unavailable observers.
+
+### Target frontier (research gates, not achieved results)
+
+- **Safety:** zero unauthorized dispatches and zero unauthorized committed effects in every preregistered synthetic negative-control stratum; 100% rejection of frozen scope-expansion, replay, expiry, revocation and provenance-erasure controls.
+- **Usefulness:** 100% acceptance by the deterministic evaluator of eligible positive-control grants; at least 99% acceptance by the policy path for eligible positive-control operations; no more than a 1.6 percentage-point task-completion penalty against matched per-call root re-anchoring on the reproduced MasDrift task set.
+- **Delegation quality:** reduce strict-chain false blocks without increasing root-scope violations; report legitimate sibling work blocked by each policy, not only aggregate task completion.
+- **Composition:** zero simultaneous admissions that collectively violate an aggregate/session policy; an unknown effect reserves dependent resources until participant reconciliation.
+- **Evidence:** zero independence credit for copied, mirrored, summarized or re-signed evidence from one control domain; 100% detection of deliberately erased required authority/source markers, with false positives reported on valid traces.
+- **Performance:** publish p50/p95/p99 on the same declared reference host and load profile. First match the Bounded Agents idle-host protocol before comparing its reported 0.24 ms p99; keep the existing 10 ms p95 broker target as a separate local integration ceiling, not as evidence of beating that paper.
+- **Statistics:** preregister estimand, strata, seeds, dependence groups, paired blocks, stopping rules and exclusions under #218. Zero events in a finite synthetic corpus is not a universal production-risk bound.
+
+A credible Web4 federation should win on the joint frontier: stronger effect-level safety and evidence reconstruction without the utility collapse of over-restrictive delegation. A system that blocks all work does not qualify; a high task score with an unauthorized committed effect fails the hard gate.
 ## 9. Competitive positioning and how to beat the state of the art
 
 The industry is converging on interoperable agent communication and increasingly capable agent runtimes. Luminous should integrate with that ecosystem rather than compete with it at every layer.
 
 | Industry capability | What it already does well | Luminous strategy and differentiated test |
 |---|---|---|
-| A2A | Standardized agent discovery and task/message exchange across vendors | Speak A2A; bind every delegated task to an independently verified parent grant and test non-amplifying delegation at the participant boundary. |
+| A2A v1.0.1 | Standardized agent discovery and task/message exchange across vendors | Speak A2A; bind every delegated task to an independently verified parent grant and test non-amplifying delegation at the participant boundary. |
 | MCP | Standard tool/resource access, OAuth authorization and resource audience binding | Speak MCP; additionally pin effect manifests, classify side effects, bind exact canonical requests and require participant-owned admission/receipts. |
-| OWASP ACS | Portable runtime hooks, Guardian-mediated decisions, inspection and trace surfaces | Provide an ACS adapter; keep critical enforcement deterministic, independently administered and participant-enforced, not dependent on an LLM Guardian alone. |
+| OWASP ACS v0.1.4 | Portable runtime hooks, Guardian-mediated decisions, inspection and trace surfaces; optional trace, inspection, provenance, crypto and audit profiles | Provide a pinned adapter, but distinguish self-declared upstream profiles from independently tested local behavior. Keep critical enforcement deterministic, independently administered and participant-enforced; a Guardian disposition is not a principal grant. |
 | OpenAI Agents SDK and comparable agent frameworks | Orchestration, handoffs, tracing, tool guardrails, human approval and controlled sandbox execution | Integrate as a framework-neutral assurance plane, and compare matched task success, security violations, latency, cost and evidence completeness. |
 | Enterprise agent platforms | Identity, access management, observability, governance and managed connectors | Interoperate with their identity and logging systems; compete on cross-domain authority attenuation, outcome reconciliation and independent evidence rather than duplicating enterprise IAM. |
-| Agent security benchmarks | Prompt injection, tool misuse, harmful tasks and agent task performance | Reproduce external benchmarks, then add multi-party delegation, correlated evidence, participant commit ambiguity and physical-digital divergence cases. |
+| Agent security benchmarks | AgentDojo, InjecAgent and ASB cover prompt-injection/tool-use attacks; MasDrift, Bounded Agents, AgentCap and EMNLP 2026 work add delegation, capability and provenance risks | Reproduce native results first; compare re-anchoring, strict attenuation, root-anchored task graphs and session composition; then add participant commit ambiguity, independently observed effects and physical-digital divergence. |
 
 The realistic differentiation is not that Symthaea must beat frontier models at every general reasoning task, or that Xenia should replace TLS, MCP or A2A. The distinctive proposition is **an assurance and coordination fabric that can sit beneath different model providers and frameworks**: a model proposes; a policy broker validates; a participant independently enforces; an observer verifies; and federation preserves local sovereignty.
 
@@ -418,8 +485,8 @@ To claim an improvement over SOTA, publish paired results on pinned versions of 
 
 ### M1 — Contract convergence
 - Reuse Symthaea INTX-000/#4397, INTX-001/#4399 and INTX-002/#4400 as the canonical protocol-neutral interaction core and authority/runtime composition.
-- Reuse Symthaea #4407, #4446 and #4493 for A2A, connector-manifest and fault/reconciliation semantics.
-- Reuse Mycelix #805, #829, #830 and #889 for the AGENT authority chain, credential-less secret broker, independent offline verifier and non-authoritative protocol TCK.
+- Reuse Symthaea #4407, #4446 and #4493 for protocol-neutral A2A semantics, connector-manifest and fault/reconciliation semantics. Do not ship an authoritative A2A adapter before the Mycelix gate below.
+- Reuse Mycelix #805, #829, #830 and #889 for the AGENT authority chain, credential-less secret broker, independent offline verifier and non-authoritative protocol TCK. The AGENT-002 → AGENT-010 dependency is a hard gate: refresh exact-head status; queued is not PASS. No authoritative A2A/MCP/OAuth/AP2 adapter begins before AGENT-010. Earlier protocol work is allowed only as quarantined, synthetic, non-authoritative conformance research.
 - Reuse Platform issue #41 / PR #40 for the ACS-to-Nixward hook and canonical transaction bridge.
 - Reuse Platform issue #168 for the broker-enforced tool-effect boundary.
 - Reuse Platform issue #284 for monotonic authority attenuation.
@@ -432,7 +499,7 @@ To claim an improvement over SOTA, publish paired results on pinned versions of 
 ### M2 — Isolated benchmark harness
 - Complete and qualify the existing deterministic runner and process-separated oracle work (#213 / PR #217); do not create a parallel harness.
 - Integrate #167 task/oracle separation, #168 effect-gate vectors, #218 statistical preregistration and #284 delegation scenarios.
-- Add Web4 crosswalk cases for A2A task delegation, MCP tool/resource authorization, ACS runtime hook enforcement, Mycelix identity and revocation, Xenia session/replay semantics, Sol-Atlas provenance and Symtropy twin divergence.
+- Add quarantined, credential-free Web4 crosswalk fixtures for A2A task semantics, MCP resource/audience behavior, ACS hook dispositions, Mycelix identity/revocation boundaries, Xenia session/replay, Sol-Atlas provenance and Symtropy twin divergence. These fixtures cannot mint authority or exercise production effects; authoritative adapters remain blocked on Mycelix AGENT-010.
 - Compare baseline arms A–E under identical conditions, with evaluator-only expected outcomes and independent committed-effect counters.
 - Do not wire the synthetic benchmark to production connectors or credentials.
 
@@ -474,20 +541,27 @@ Consequently:
 
 ## 12. References
 
-- IETF RFC 9943 — SCITT Architecture: https://www.rfc-editor.org/rfc/rfc9943.html
+- IETF RFC 9943 — SCITT Architecture (Proposed Standard, June 2026): https://www.rfc-editor.org/rfc/rfc9943.html
 - IETF RFC 9334 — Remote ATtestation procedureS (RATS) Architecture: https://www.rfc-editor.org/rfc/rfc9334.html
 - NIST SP 800-207 — Zero Trust Architecture: https://csrc.nist.gov/pubs/sp/800/207/final
 - SLSA v1.2: https://slsa.dev/spec/v1.2/
 - W3C DID Core: https://www.w3.org/TR/did-core/
 - OAuth 2.0 Resource Indicators (RFC 8707): https://www.rfc-editor.org/rfc/rfc8707.html
 - OWASP Top 10 for Agentic Applications: https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/
-- OWASP Agent Control Standard: https://owaspacs.org/docs/acs/
-- A2A Protocol v1.0: https://a2a-protocol.org/v1.0.0/
+- OWASP Agent Control Standard v0.1.4 and conformance-profile caveats: https://owaspacs.org/docs/acs/ and https://owaspacs.org/docs/spec/conformance/
+- MCP 2026-07-28 specification and authorization security: https://modelcontextprotocol.io/specification/2026-07-28 and https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/docs/specification/2026-07-28/basic/authorization/security-considerations.mdx
+- A2A Protocol v1.0.1: https://a2a-protocol.org/v1.0.1/
 - AgentDojo: https://agentdojo.spylab.ai/
 - InjecAgent: https://arxiv.org/abs/2403.02691
 - Agent Security Bench: https://arxiv.org/abs/2410.02644
 - AgentHarm: https://arxiv.org/abs/2410.09024
-- Current Web4 Internet-Draft (individual submission, work in progress): https://datatracker.ietf.org/doc/draft-reilly-web4/
+- MasDrift (multi-agent authorization preservation): https://arxiv.org/abs/2608.07556
+- Bounded Agents / Agentic Principal Chain: https://arxiv.org/abs/2608.15888
+- AgentCap (capability-based runtime authorization): https://arxiv.org/abs/2611.00729
+- Trust Cascade through Provenance Erasure (EMNLP 2026): https://aclanthology.org/2026.emnlp-main.1005/
+- Delegated Misalignment (EMNLP 2026): https://aclanthology.org/2026.emnlp-main.398/
+- Web4 Internet-Draft (individual submission, work in progress): https://datatracker.ietf.org/doc/draft-reilly-web4/
+- Web4 terminology Internet-Draft (individual submission, terminology only): https://datatracker.ietf.org/doc/draft-jacobs-web4-terminology/
 - Symthaea: INTX-000/#4397, INTX-001/#4399, INTX-002/#4400, INTX-A2A-001/#4407, INTX-009/#4446 and INTX-015/#4493.
 - Mycelix: AGENT roadmap #805, credential-less broker #829, offline verifier #830 and interoperability TCK #889.
 - Luminous Platform: #40/#41 (ACS–Nixward), #167/#168 (autonomy/effect boundary), #175/#268 (benchmark comparison/provenance), #213/#217/#218 (runner/oracle/statistics), #284 (delegation), #310 (failure domains), #356 (evidence dependence), #459 (cyber-physical command security), #91 and #93 (challenge/provenance).
