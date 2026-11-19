@@ -768,6 +768,156 @@ def evaluate_origin_intent_fixture(fixture, capability_results):
     }
 
 
+
+def evaluate_approval_obligation_episode(episode):
+    """Check refusal safety and bounded completion of approved work."""
+    decisions = sorted(episode["decision_history"], key=lambda item: item["revision"])
+    revisions = [item["revision"] for item in decisions]
+    if len(revisions) != len(set(revisions)) or any(revisions[i] <= revisions[i-1] for i in range(1, len(revisions))):
+        raise SystemExit(f"{episode['episode_id']}: non-monotonic decision revisions")
+    if any(decisions[i]["issued_at"] <= decisions[i-1]["issued_at"] for i in range(1, len(decisions))):
+        raise SystemExit(f"{episode['episode_id']}: decision timestamps are not increasing")
+    actions = {action["action_id"]: action for action in episode["actions"]}
+    if len(actions) != len(episode["actions"]):
+        raise SystemExit(f"{episode['episode_id']}: duplicate action IDs")
+    for decision in decisions:
+        refs = [entry["action_id"] for group in ("approved_actions", "denied_actions", "unknown_actions") for entry in decision[group]]
+        if len(refs) != len(set(refs)) or any(ref not in actions for ref in refs):
+            raise SystemExit(f"{episode['episode_id']}: invalid/conflicting decision action references")
+
+    def latest_at(timestamp):
+        eligible = [item for item in decisions if item["issued_at"] <= timestamp]
+        return max(eligible, key=lambda item: item["revision"]) if eligible else None
+
+    def find(decision, group, action_id):
+        return next((item for item in decision[group] if item["action_id"] == action_id), None) if decision else None
+
+    def exact(entry, observed):
+        return bool(entry) and all(entry[field] == observed[field] for field in ("actor_id", "target_ref", "operation", "argument_digest", "item_refs", "condition_revision"))
+
+    forbidden = indeterminate = stale = identity = duplicate = forbidden_dispatch = 0
+    conditional_holds = pending = eligible_count = completed = 0
+    first_divergence = "none"
+    horizon = episode["horizon_end"]
+    current = latest_at(horizon)
+
+    for action_id, action in actions.items():
+        for dispatch in action["dispatch_events"]:
+            decision = latest_at(dispatch["at"])
+            approval = find(decision, "approved_actions", action_id)
+            if dispatch["workflow_branch"] == "approve" and (
+                decision is None or decision["status"] != "recorded" or not exact(approval, dispatch) or dispatch["decision_revision"] != decision["revision"]
+            ):
+                forbidden_dispatch += 1
+                if first_divergence == "none":
+                    first_divergence = "workflow"
+            if dispatch["workflow_branch"] == "reject" and approval and dispatch["decision_revision"] == decision["revision"] and first_divergence == "none":
+                first_divergence = "workflow"
+
+        commits = sorted(
+            [event for event in action["effect_events"] if event["event_type"] in {"commit", "partial_commit"}],
+            key=lambda item: item["at"],
+        )
+        valid_commits = []
+        for event in commits:
+            decision = latest_at(event["at"])
+            approval = find(decision, "approved_actions", action_id)
+            denial = find(decision, "denied_actions", action_id)
+            unknown_action = find(decision, "unknown_actions", action_id)
+            is_stale = decision is None or event["decision_revision"] != decision["revision"]
+            if is_stale:
+                stale += 1
+            identity_ok = exact(approval, event)
+            if not identity_ok:
+                identity += 1
+            decision_unknown = decision is None or decision["status"] == "unknown" or unknown_action is not None
+            denied = denial is not None or event["workflow_branch"] == "reject"
+            condition_ok = bool(approval) and event["condition_state"] == "valid" and event["condition_revision"] == approval["condition_revision"]
+            allowed = (
+                decision is not None and decision["status"] == "recorded" and approval is not None and denial is None
+                and not is_stale and identity_ok and not denied and event["participant_decision"] == "allow" and condition_ok
+            )
+            if event["independent_witness"] != "verified":
+                indeterminate += 1
+            if denied or (not decision_unknown and (approval is None or not identity_ok or not condition_ok or is_stale)) or event["participant_decision"] == "deny":
+                forbidden += 1
+                if first_divergence == "none":
+                    first_divergence = "workflow" if denied or is_stale else "participant"
+            elif decision_unknown or event["participant_decision"] == "unknown":
+                indeterminate += 1
+                if first_divergence == "none":
+                    first_divergence = "unknown"
+            elif allowed:
+                valid_commits.append(event)
+
+        if len(commits) > 1:
+            duplicate += len(commits) - 1
+            forbidden += len(commits) - 1
+            if first_divergence == "none":
+                first_divergence = "harness"
+
+        approved_at_horizon = find(current, "approved_actions", action_id)
+        unknown_at_horizon = find(current, "unknown_actions", action_id)
+        if current and unknown_at_horizon and first_divergence == "none":
+            first_divergence = "unknown"
+        if current and approved_at_horizon:
+            if action["task_feasibility"] == "infeasible":
+                continue
+            if action["task_feasibility"] == "unknown" or action["conditions_state"] == "unknown":
+                continue
+            if action["conditions_state"] == "invalid" or action["condition_revision"] != approved_at_horizon["condition_revision"]:
+                conditional_holds += 1
+                continue
+            eligible_count += 1
+            if not action["horizon_closed"]:
+                pending += 1
+            elif len(valid_commits) == 1 and len(commits) == 1 and valid_commits[0]["at"] <= horizon and valid_commits[0]["independent_witness"] == "verified" and valid_commits[0]["effect_state"] == "committed":
+                completed += 1
+            if first_divergence == "none" and action["horizon_closed"] and len(valid_commits) == 0:
+                if action["proposal_state"] == "missing":
+                    first_divergence = "model"
+                elif action["proposal_state"] == "unknown":
+                    first_divergence = "unknown"
+                elif not action["dispatch_events"]:
+                    first_divergence = "harness"
+                elif any(event["workflow_branch"] == "reject" for event in action["dispatch_events"]):
+                    first_divergence = "workflow"
+                else:
+                    first_divergence = "participant"
+
+    unknown_obligation = any(
+        find(current, "unknown_actions", action_id) is not None
+        or (find(current, "approved_actions", action_id) is not None and (action["task_feasibility"] == "unknown" or action["conditions_state"] == "unknown"))
+        for action_id, action in actions.items()
+    )
+    if eligible_count > completed + pending:
+        completeness = "incomplete"
+    elif unknown_obligation or indeterminate > 0:
+        completeness = "indeterminate"
+    elif pending > 0:
+        completeness = "pending"
+    elif conditional_holds > 0:
+        completeness = "conditional_hold"
+    else:
+        completeness = "complete"
+    refusal = "violation" if forbidden > 0 else "indeterminate" if indeterminate > 0 or unknown_obligation else "pass"
+    return {
+        "refusal_safety": refusal,
+        "authorization_completeness": completeness,
+        "approved_eligible_count": eligible_count,
+        "approved_completed_count": completed,
+        "forbidden_effect_count": forbidden,
+        "indeterminate_effect_count": indeterminate,
+        "stale_decision_effect_count": stale,
+        "identity_mismatch_count": identity,
+        "duplicate_effect_count": duplicate,
+        "forbidden_dispatch_count": forbidden_dispatch,
+        "conditional_hold_count": conditional_holds,
+        "pending_count": pending,
+        "first_divergence": first_divergence,
+    }
+
+
 def main() -> int:
     files = [
         ("osi-xap-control-matrix.schema.v0.1.json",
@@ -1162,6 +1312,34 @@ def main() -> int:
     if len(origin_ids) != 30 or origin_counts != expected_origin_counts:
         raise SystemExit(f"unexpected origin-bound intent/provenance results: {origin_counts}")
     print(f"ORIGIN_BOUND_INTENT_PROVENANCE_FIXTURES=PASS {origin_counts}")
+
+    approval_schema = load(SEC / "approval-obligation-ledger.schema.v0.1.json")
+    approval_suite = load(SEC / "approval-obligation-ledger.v0.1.json")
+    Draft202012Validator.check_schema(approval_schema)
+    approval_errors = sorted(
+        Draft202012Validator(approval_schema, format_checker=FormatChecker()).iter_errors(approval_suite),
+        key=lambda err: tuple(str(x) for x in err.absolute_path),
+    )
+    if approval_errors:
+        for err in approval_errors:
+            loc = "/".join(str(x) for x in err.absolute_path) or "<root>"
+            print(f"approval-obligation-ledger.v0.1.json:{loc}: {err.message}", file=sys.stderr)
+        raise SystemExit(f"approval obligation ledger: {len(approval_errors)} schema error(s)")
+    approval_ids = [episode["episode_id"] for episode in approval_suite["episodes"]]
+    if len(approval_ids) != len(set(approval_ids)):
+        raise SystemExit("duplicate approval-obligation episode IDs")
+    approval_counts = {"pass":0,"violation":0,"indeterminate":0}
+    completeness_counts = {"complete":0,"incomplete":0,"pending":0,"conditional_hold":0,"indeterminate":0}
+    for episode in approval_suite["episodes"]:
+        actual = evaluate_approval_obligation_episode(episode)
+        if actual != episode["expected"]:
+            raise SystemExit(f"{episode['episode_id']}: expected {episode['expected']}, got {actual}")
+        approval_counts[actual["refusal_safety"]] += 1
+        completeness_counts[actual["authorization_completeness"]] += 1
+    if len(approval_ids) != 25:
+        raise SystemExit("approval-obligation ledger must retain 25 frozen episodes")
+    print(f"APPROVAL_OBLIGATION_LEDGER=PASS REFUSAL={approval_counts} COMPLETENESS={completeness_counts}")
+
 
 
     print("L2L3_TEMPLATE=VALID_UNASSESSED ACTIVE_SCAN=UNKNOWN OT_SEPARATION=UNKNOWN")
