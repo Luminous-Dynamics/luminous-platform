@@ -1102,8 +1102,8 @@ def main() -> int:
     expected_counts = {
         "authorized":5, "not_authorized":22, "indeterminate":2,
         "participant_decision_correct":26, "fail_closed_violation":2,
-        "unauthorized_effect_true":1, "unauthorized_effect_indeterminate":1,
-        "effect_reconciliation":1,
+        "unauthorized_effect_true":1, "unauthorized_effect_indeterminate":2,
+        "effect_reconciliation":2,
     }
     if len(capability_ids) != 29 or capability_suite["fixture_count"] != 29 or capability_counts != expected_counts:
         raise SystemExit(f"unexpected effect-bound capability results: {capability_counts}")
