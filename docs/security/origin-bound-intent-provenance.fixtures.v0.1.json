@@ -82,7 +82,10 @@
             "handoff_count": 0,
             "transformations": []
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "allow",
@@ -185,7 +188,10 @@
             "handoff_count": 0,
             "transformations": []
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "allow",
@@ -309,7 +315,10 @@
             "handoff_count": 0,
             "transformations": []
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "deny",
@@ -412,7 +421,10 @@
             "handoff_count": 0,
             "transformations": []
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "deny",
@@ -515,7 +527,10 @@
             "handoff_count": 0,
             "transformations": []
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "deny",
@@ -618,7 +633,10 @@
             "handoff_count": 0,
             "transformations": []
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "allow",
@@ -692,7 +710,12 @@
         "action_selection_origin": "agent_selected_from_finite_set",
         "action_source_ref": "agent:planner",
         "action_source_class": "agent_derived",
-        "parameters": []
+        "parameters": [],
+        "action_source_receipt_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": [
+          "principal:owner"
+        ]
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "allow",
@@ -766,7 +789,10 @@
         "action_selection_origin": "untrusted_content",
         "action_source_ref": "source:untrusted-webpage-01",
         "action_source_class": "attacker_writable",
-        "parameters": []
+        "parameters": [],
+        "action_source_receipt_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "deny",
@@ -840,7 +866,10 @@
         "action_selection_origin": "untrusted_content",
         "action_source_ref": "source:untrusted-webpage-01",
         "action_source_class": "attacker_writable",
-        "parameters": []
+        "parameters": [],
+        "action_source_receipt_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "allow",
@@ -907,7 +936,10 @@
         "action_selection_origin": "untrusted_content",
         "action_source_ref": "source:untrusted-webpage-01",
         "action_source_class": "attacker_writable",
-        "parameters": []
+        "parameters": [],
+        "action_source_receipt_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "deny",
@@ -1013,7 +1045,10 @@
               "paraphrase"
             ]
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "deny",
@@ -1118,7 +1153,10 @@
               "summarize"
             ]
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "deny",
@@ -1225,7 +1263,10 @@
               "agent_handoff"
             ]
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "allow",
@@ -1332,7 +1373,10 @@
               "agent_handoff"
             ]
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "deny",
@@ -1443,7 +1487,10 @@
             "handoff_count": 0,
             "transformations": []
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "deny",
@@ -1546,7 +1593,10 @@
             "handoff_count": 0,
             "transformations": []
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "deny",
@@ -1604,7 +1654,7 @@
         "principal_id": "principal:owner",
         "actor_id": "workload:agent-1",
         "request_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        "origin_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "origin_manifest_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
         "selected_action": {
           "operation": "invoice:pay",
           "target_ref": "account:vendor-01",
@@ -1648,7 +1698,10 @@
             "handoff_count": 0,
             "transformations": []
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "deny",
@@ -1661,10 +1714,10 @@
       },
       "expected": {
         "intent_state": "compliant",
-        "provenance_state": "accepted",
-        "authorization_state": "authorized",
+        "provenance_state": "rejected",
+        "authorization_state": "not_authorized",
         "untrusted_influence_within_authorized_set": false,
-        "participant_decision_correct": false,
+        "participant_decision_correct": true,
         "fail_closed_violation": false,
         "unauthorized_effect": "false",
         "task_state": "incorrect",
@@ -1750,7 +1803,10 @@
             "handoff_count": 0,
             "transformations": []
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "deny",
@@ -1853,7 +1909,10 @@
             "handoff_count": 0,
             "transformations": []
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "allow",
@@ -1955,7 +2014,10 @@
             "handoff_count": 0,
             "transformations": []
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "allow",
@@ -2057,7 +2119,10 @@
             "handoff_count": 0,
             "transformations": []
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-011-REVOKED-GRANT",
       "participant_decision": "deny",
@@ -2159,7 +2224,10 @@
             "handoff_count": 0,
             "transformations": []
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-012-UNKNOWN-REVOCATION",
       "participant_decision": "deny",
@@ -2261,7 +2329,10 @@
             "handoff_count": 0,
             "transformations": []
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "deny",
@@ -2320,7 +2391,10 @@
         "action_selection_origin": "unknown",
         "action_source_ref": "source:unknown-01",
         "action_source_class": "unknown",
-        "parameters": []
+        "parameters": [],
+        "action_source_receipt_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+        "action_source_receipt_verified": false,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "deny",
@@ -2422,7 +2496,10 @@
             "handoff_count": 0,
             "transformations": []
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "allow",
@@ -2524,7 +2601,10 @@
             "handoff_count": 0,
             "transformations": []
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "deny",
@@ -2648,7 +2728,10 @@
               "normalize"
             ]
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "allow",
@@ -2761,7 +2844,10 @@
             "handoff_count": 0,
             "transformations": []
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "deny",
@@ -2774,10 +2860,10 @@
       },
       "expected": {
         "intent_state": "compliant",
-        "provenance_state": "accepted",
-        "authorization_state": "authorized",
+        "provenance_state": "rejected",
+        "authorization_state": "not_authorized",
         "untrusted_influence_within_authorized_set": false,
-        "participant_decision_correct": false,
+        "participant_decision_correct": true,
         "fail_closed_violation": false,
         "unauthorized_effect": "false",
         "task_state": "incorrect",
@@ -2863,7 +2949,10 @@
             "handoff_count": 0,
             "transformations": []
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "deny",
@@ -2966,7 +3055,10 @@
             "handoff_count": 0,
             "transformations": []
           }
-        ]
+        ],
+        "action_source_receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "action_source_receipt_verified": true,
+        "action_source_derived_from_refs": []
       },
       "authority_fixture_ref": "CAP-001-EXACT-ROOT",
       "participant_decision": "deny",
