@@ -79,7 +79,7 @@ Machine-readable files:
 - `agent-authorization-assurance.schema.v0.1.json`
 - `agent-authorization-assurance.v0.1.json`
 
-The 14 synthetic episodes cover:
+The 14 synthetic authorization episodes cover:
 - exact, current authority and legitimate positive controls;
 - task-success with a missing required approval;
 - root revocation while a child grant appears current;
@@ -155,7 +155,7 @@ The paper's cheap black-box adaptive attacker recovers 28% ASR overall and 64% o
 
 ROPE (27 August 2026) is an important complementary baseline. Its Routed Origin Policy Enforcement permits sensitive tool parameter values to reach state-changing tools only when they have unforgeable provenance to the user's request, a source the user explicitly named, or user-authoritative records. The paper reports 1.6–2.6% ASR while retaining 82–100% of undefended clean utility across its reported models/benchmarks. It also provides two stated guarantees under its assumptions: attacker-origin-only values do not reach origin-guarded parameters at any trajectory step, and paraphrasing an injection does not change an admission decision.
 
-**Do not claim novelty for origin tracking, data-flow provenance or deterministic parameter guards.** Luminous should compose those ideas with explicit principal/grant/target/policy semantics, delegation currentness, participant-side authorization, independent effect evidence and physical safety boundaries. ROPE and AutoDojo metrics are not comparable to our 14-episode authorization corpus unless tasks, tools, models, prompts, policies, origins, evaluators and scoring units are matched.
+**Do not claim novelty for origin tracking, data-flow provenance or deterministic parameter guards.** Luminous should compose those ideas with explicit principal/grant/target/policy semantics, delegation currentness, participant-side authorization, independent effect evidence and physical safety boundaries. ROPE and AutoDojo metrics are not comparable to our 14-episode authorization corpus unless tasks, tools, models, prompts, policies, origins, evaluators and scoring units are matched. A separate 30-case origin-bound intent/provenance corpus now tests source lineage and action-selection precision.
 
 The XAP scenario corpus now classifies every case with:
 - `task_specification_precision`: `fully_specified`, `parameter_open`, `action_open` or `not_applicable`;
