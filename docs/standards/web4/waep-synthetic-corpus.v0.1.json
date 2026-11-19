@@ -1,0 +1,13 @@
+{
+  "corpus_id": "waep-synthetic-2case-v0.1",
+  "cases": [
+    {
+      "case_id": "positive-control",
+      "expected_authorization": "allow"
+    },
+    {
+      "case_id": "negative-control",
+      "expected_authorization": "deny"
+    }
+  ]
+}

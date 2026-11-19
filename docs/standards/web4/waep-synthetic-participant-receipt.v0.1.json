@@ -1,0 +1,7 @@
+{
+  "fixture_id": "synthetic-participant-effect-receipt-v0.1",
+  "synthetic": true,
+  "attempt_ref": "synthetic-attempt-001",
+  "effect_state": "committed",
+  "note": "Schema-test fixture only; not an authenticated or actual participant receipt."
+}
