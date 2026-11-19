@@ -764,5 +764,168 @@
       },
       "additionalProperties": false
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "claim"
+        ],
+        "properties": {
+          "claim": {
+            "required": [
+              "disposition"
+            ],
+            "properties": {
+              "disposition": {
+                "const": "supported_within_scope"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "claim": {
+            "required": [
+              "source_commit"
+            ],
+            "properties": {
+              "source_commit": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              "evidence": {
+                "type": "array",
+                "minItems": 1
+              },
+              "observations": {
+                "type": "array",
+                "minItems": 1
+              },
+              "maturity": {
+                "enum": [
+                  "exact_head_test_executed",
+                  "runtime_boundary_exercised",
+                  "participant_effect_observed",
+                  "independently_reviewed",
+                  "externally_reproduced"
+                ]
+              }
+            }
+          },
+          "evaluation": {
+            "required": [
+              "run_commit",
+              "evaluator_commit"
+            ],
+            "properties": {
+              "run_state": {
+                "const": "completed"
+              },
+              "attempt_denominator": {
+                "minimum": 1
+              },
+              "run_commit": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              "evaluator_commit": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              "test_corpus": {
+                "properties": {
+                  "case_count": {
+                    "minimum": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "claim"
+        ],
+        "properties": {
+          "claim": {
+            "required": [
+              "disposition",
+              "scope"
+            ],
+            "properties": {
+              "disposition": {
+                "const": "supported_within_scope"
+              },
+              "scope": {
+                "properties": {
+                  "effect_class": {
+                    "enum": [
+                      "consequential",
+                      "safety_critical",
+                      "persistent_internal"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "evaluation": {
+            "properties": {
+              "effect_oracle": {
+                "required": [
+                  "independently_owned",
+                  "participant_source"
+                ],
+                "properties": {
+                  "independently_owned": {
+                    "const": true
+                  },
+                  "participant_source": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          },
+          "claim": {
+            "properties": {
+              "observations": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "independent_of_agent",
+                    "observation_stage"
+                  ],
+                  "properties": {
+                    "independent_of_agent": {
+                      "const": true
+                    },
+                    "observation_stage": {
+                      "enum": [
+                        "participant_acceptance",
+                        "durable_commit",
+                        "physical_effect",
+                        "postcondition",
+                        "reconciliation"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }
