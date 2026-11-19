@@ -257,20 +257,24 @@ The implementation protocol and empty schema/template are recorded in [SECURITY-
 The test-only validator checks that the empty template cannot mutate task model, tools, environment, benchmark semantics, grants/policy semantics, authorization/participant/effect oracles or evaluator. It is not an executed harness search. Luminous has not reproduced Evolution Under Fire or demonstrated better-than-SOTA performance.
 
 Source: https://arxiv.org/abs/2611.22583
-### 6.1.4 User-intent precision and provenance-bound authority
+### 6.1.4 Task-specification precision
+
+Agent actions should distinguish fully specified, parameter-open and action-open tasks. The user may delegate selected parameter values or a finite action set, but untrusted content must not silently expand the action, target, participant, purpose or context. The detailed AutoDojo/ROPE crosswalk and executable provenance fixtures are in §6.1.7.
 
 ### 6.1.5 Meta-assurance and evaluator anti-gaming
 
-The branch now includes a meta-assurance suite that mutates graph, authorization and schema inputs while preserving frozen expected semantics. It contains 31 cases: seven graph mutations, ten authorization mutations and fourteen schema-weakening mutations, guarded by 23 explicit schema invariants. The tests cover alternate bypass paths, unknown dependencies, removed enforcement points, common-cause observer dependencies, actor substitution, revocation, permit binding, policy drift, evaluator mutability, incomplete-run promotion and schema weakening.
+The branch now includes a meta-assurance suite that mutates graph, authorization and schema inputs while preserving frozen expected semantics. It contains **58 cases: seven graph mutations, ten authorization mutations and 41 schema-weakening mutations**, guarded by **50 explicit invariants**. The tests cover alternate bypass paths, unknown dependencies, removed enforcement points, common-cause observer dependencies, actor substitution, revocation, permit binding, policy drift, evaluator mutability, incomplete-run promotion, capability participant/purpose/context/budget requirements and origin/lineage schema weakening.
 
-The committed artifacts are XAP_META_ASSURANCE_V0_1.md, xap-meta-assurance.schema.v0.1.json and xap-meta-assurance.v0.1.json. The test-only validator evaluates the mutations and checks the unmodified schemas against the guard manifest. An independent JavaScript translation matched all 31 metamorphic cases, including all 14 schema-weakening outcomes. These are authoring-time fixture checks, not CI qualification.
+The committed artifacts are XAP_META_ASSURANCE_V0_1.md, xap-meta-assurance.schema.v0.1.json and xap-meta-assurance.v0.1.json. The test-only validator evaluates the mutations and checks the unmodified schemas against the guard manifest. An independent JavaScript translation matched **58/58 metamorphic outcomes** (7 graph, 10 authorization, 41 schema), with zero baseline guard violations. These are authoring-time fixture checks, not CI qualification.
 
 ### 6.1.6 Effect-bound capability contract
 
-AUTH-CORE-001 #501 introduces the effect-bound capability contract as a projection over Mycelix AGENT authority, not a second policy engine. Delegation must be monotone attenuation; composition defaults to set intersection rather than union; and one-use permits bind principal, actor, participant, resource, operation, argument digest, policy epoch, nonce and attempt identity. Evidence receipts support an authorization decision but are not authority. The corpus contains 29 synthetic cases for valid narrow authority, scope widening, composition, actor/digest/epoch substitution, revocation, permit replay, evidence/authority confusion, unknown-effect reconciliation, committed effects under revoked/unknown authority, and false denial. Separate result fields prevent a correct deny decision from hiding an unauthorized commit, or an authorization failure from being counted as a harmless rejection.
+AUTH-CORE-001 #501 introduces the effect-bound capability contract as a projection over Mycelix AGENT authority, not a second policy engine. Delegation must be monotone attenuation across target, operation, participant, purpose, context, validity, delegation depth and budget; composition defaults to set intersection rather than union. One-use permits bind principal, actor, participant, resource, operation, argument digest, purpose/context, policy epoch, participant-verified budget-snapshot digest, nonce and attempt identity. The request carries no caller-supplied consumed-effect counter. Evidence receipts support an authorization decision but are not authority. The corpus contains 29 synthetic cases for valid narrow authority, scope widening, composition, actor/digest/epoch substitution, revocation, permit replay, evidence/authority confusion, unknown-effect reconciliation, committed effects under revoked/unknown authority, and false denial. Separate result fields prevent a correct deny decision from hiding an unauthorized commit, or an authorization failure from being counted as a harmless rejection.
 
 Ownership remains with Mycelix AGENT for canonical grant semantics, Platform for broker request binding, Nixward for host enforcement, Xenia for secure session transport, and the destination participant for final admission and effect idempotency. WASI capability handles are a compositional sandbox baseline; Luminous does not propose a replacement sandbox.
 
+
+### 6.1.7 Origin-bound intent and parameter provenance
 
 AutoDojo identifies three task-specification precision classes: fully specified (action and parameters given), parameter-open (action given, parameters read from content), and action-open (the user delegates action selection to content). Its adaptive attacks recover 28% ASR overall and 64% on action-open tasks against a filter that reached 0% on static attacks. This identifies a structural risk: action selection can be smuggled into ordinary-looking content when the user has not specified the action.
 
@@ -287,7 +291,8 @@ Policy interpretation:
 ROPE is now an explicit comparator in the benchmark report. Luminous must not claim novelty for origin tracking or provenance-based parameter guards; the proposed differentiator is their composition with task-intent precision, principal/grant/delegation currentness, participant admission, physical effect oracles, recovery and assurance-graph completeness.
 
 Sources: https://arxiv.org/abs/2606.15057 ; https://arxiv.org/abs/2608.27496
-### 6.1.7 Origin-bound intent and parameter provenance
+
+
 
 AUTH-CORE-002 #503 adds a separate origin/intent provenance projection. It distinguishes fully specified, parameter-open and action-open requests, then checks source receipts and recursive value lineage without treating the manifest as authority. In the 30 synthetic cases, an action-open selection may be influenced by untrusted content only when the selected action is already inside a finite principal-authorized set; attacker-writable parameter lineage is still rejected. Derived values must resolve back to named/authoritative sources, and missing lineage is indeterminate.
 
@@ -297,7 +302,7 @@ Machine-readable artifacts:
 - `origin-bound-intent-provenance.fixtures.v0.1.json`
 - `ORIGIN_BOUND_INTENT_PROVENANCE_CONTRACT_V0_1.md`
 
-The corpus covers 7 fully specified, 18 parameter-open and 5 action-open cases. Its authoring-time semantic replay currently matches 30/30 expected outcomes: 9 authorization states evaluate authorized, 13 not authorized and 8 indeterminate; 13 provenance records are accepted, 10 rejected and 7 indeterminate. There are 8 eligible positive-control admissions, 2 fail-closed violations, one definite unauthorized effect, one indeterminate effect and one untrusted influence that remains inside the authorized action set. The participant decision correctness is 27/30 because the corpus intentionally includes two unauthorized/indeterminate commits and one false denial.
+The provenance corpus covers 7 fully specified, 18 parameter-open and 5 action-open cases. Its authoring-time semantic replay matches 30/30 expected outcomes: 9 authorization states are authorized, 13 not authorized and 8 indeterminate; 13 provenance records are accepted, 10 rejected and 7 indeterminate. There are 8 eligible positive-control admissions, 2 fail-closed violations, one definite unauthorized effect, one indeterminate effect and one untrusted influence that remains inside the authorized action set. Participant decision correctness is 27/30 because the corpus intentionally includes two unauthorized/indeterminate commits and one false denial.
 
 Origin tracking and parameter guards are not claimed as Luminous inventions: AutoDojo and ROPE are explicit comparators. The differentiator being tested is their composition with typed intent precision, Mycelix grant/delegation semantics, participant/purpose/context/budget constraints, exact attempt permits, independent effect observation and physical safety. The action-source manifest is emitted by a trusted connector boundary; a model-generated origin label is not accepted as provenance.
 
