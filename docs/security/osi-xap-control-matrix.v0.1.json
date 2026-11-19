@@ -1022,6 +1022,162 @@
         "Dual-control separation test"
       ],
       "claim_ceiling": "Human approval is an authority input; no guarantee against coercion or manipulation."
+    },
+    {
+      "id": "XAP-OT-AI-027",
+      "osi_layer": "cross_layer",
+      "x805_security_layer": "cross_layer",
+      "plane": "end_user",
+      "dimensions": [
+        "access_control",
+        "data_integrity",
+        "privacy",
+        "availability"
+      ],
+      "topic": "OT AI workload, prompt and training-data integrity",
+      "owner": {
+        "repo": "Luminous-Dynamics/symthaea",
+        "component": "cognitive proposal/data lineage boundary"
+      },
+      "implementation_status": "specified",
+      "evidence_status": "not_evidenced",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/symthaea",
+        "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-82r4.ipd.pdf"
+      ],
+      "enforcement_points": [
+        "Untrusted-data and model input boundary",
+        "Typed proposal broker",
+        "Local deterministic OT controller"
+      ],
+      "residual_assumptions": [
+        "Training-data integrity and model version need independent provenance",
+        "Probabilistic output must not replace deterministic safety logic"
+      ],
+      "qualification_tests": [
+        "Prompt injection in operator documents",
+        "Poisoned historical training baseline",
+        "Model update changes output under same task",
+        "AI proposal cannot directly alter setpoint"
+      ],
+      "claim_ceiling": "Design requirement informed by OT guidance; no OT AI deployment qualification is claimed."
+    },
+    {
+      "id": "XAP-TWIN-028",
+      "osi_layer": "cross_layer",
+      "x805_security_layer": "cross_layer",
+      "plane": "end_user",
+      "dimensions": [
+        "data_integrity",
+        "communication_security",
+        "availability",
+        "privacy"
+      ],
+      "topic": "Digital-twin synchronization and physical-state divergence",
+      "owner": {
+        "repo": "Luminous-Dynamics/symtropy",
+        "component": "digital twin and physical feedback boundary"
+      },
+      "implementation_status": "specified",
+      "evidence_status": "not_evidenced",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/symtropy",
+        "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-82r4.ipd.pdf"
+      ],
+      "enforcement_points": [
+        "Twin-to-asset synchronization adapter",
+        "Independent physical sensor/oracle",
+        "Local safety controller"
+      ],
+      "residual_assumptions": [
+        "Twin state can drift from physical state",
+        "Bidirectional sync expands the attack surface",
+        "Simulated output is not measured physical truth"
+      ],
+      "qualification_tests": [
+        "Stale twin state cannot pass a physical precondition",
+        "Manipulated sensor feed detected or yields unknown",
+        "Unauthorized twin-to-controller command denied",
+        "Independent measurement disagrees with simulation"
+      ],
+      "claim_ceiling": "No physical synchronization or safety qualification is claimed from simulation or architecture documents."
+    },
+    {
+      "id": "XAP-DISCOVERY-029",
+      "osi_layer": "cross_layer",
+      "x805_security_layer": "cross_layer",
+      "plane": "management",
+      "dimensions": [
+        "access_control",
+        "availability",
+        "non_repudiation"
+      ],
+      "topic": "OT-safe asset discovery and passive-monitoring coverage",
+      "owner": {
+        "repo": "Luminous-Dynamics/luminous-platform",
+        "component": "NET-OSI-001 #499 discovery evidence profile"
+      },
+      "implementation_status": "specified",
+      "evidence_status": "issue_planned",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/issues/499",
+        "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-82r4.ipd.pdf"
+      ],
+      "enforcement_points": [
+        "Read-only inventory process",
+        "Passive sensor/TAP/SPAN placement",
+        "Vendor-approved maintenance window gate"
+      ],
+      "residual_assumptions": [
+        "Passive sensors may miss isolated switch segments",
+        "Active scanning may disrupt older or constrained OT devices"
+      ],
+      "qualification_tests": [
+        "No active scan without explicit scope and approval",
+        "Non-production test before production scan",
+        "Sensor blind spot prevents completeness claim",
+        "Manual/non-IP asset inventory control"
+      ],
+      "claim_ceiling": "Template/schema only; no network scan or live asset inventory has been performed."
+    },
+    {
+      "id": "XAP-OT-ZONES-030",
+      "osi_layer": "cross_layer",
+      "x805_security_layer": "cross_layer",
+      "plane": "control",
+      "dimensions": [
+        "access_control",
+        "communication_security",
+        "availability",
+        "data_integrity"
+      ],
+      "topic": "OT management/operational network separation and isolated security monitoring",
+      "owner": {
+        "repo": "Luminous-Dynamics/luminous-platform",
+        "component": "NET-OSI-001 #499 plus Nixward deployment composition"
+      },
+      "implementation_status": "specified",
+      "evidence_status": "issue_planned",
+      "evidence_refs": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/issues/499",
+        "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-82r4.ipd.pdf"
+      ],
+      "enforcement_points": [
+        "Separate management and operational network boundaries",
+        "Vendor remote-access boundary",
+        "Isolated security-monitoring zone"
+      ],
+      "residual_assumptions": [
+        "Shared network devices may create common-cause risk",
+        "One-way monitoring feeds may require environment-specific design"
+      ],
+      "qualification_tests": [
+        "Management network cannot directly reach operational endpoints",
+        "Vendor path has its own credentials and entry point",
+        "Monitoring zone is isolated from management paths",
+        "Two-way telemetry is explicitly documented and risk-reviewed"
+      ],
+      "claim_ceiling": "Architecture and schema requirement only; no OT network topology is qualified."
     }
   ],
   "nonclaims": [
@@ -1030,5 +1186,6 @@
     "External deployment controls require exact owner, configuration, target identity and evidence.",
     "A missing or unknown route, dependency, owner or enforcement point blocks a complete-mediation claim.",
     "This matrix is not an audit, certification, compliance attestation or scalar security score."
-  ]
+  ],
+  "control_count": 30
 }
