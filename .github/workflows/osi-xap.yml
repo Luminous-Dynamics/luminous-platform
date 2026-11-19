@@ -11,6 +11,8 @@ on:
       - "docs/security/xap-meta-assurance.*"
       - "docs/security/XAP_META_ASSURANCE_V0_1.md"
       - "docs/security/agent-authorization-assurance.*"
+      - "docs/security/approval-obligation-ledger.*"
+      - "docs/security/APPROVAL_OBLIGATION_LEDGER_BENCHMARK_V0_1.md"
       - "docs/security/adaptive-authorization-evolution.*"
       - "docs/security/l2l3-deployment-profile.*"
       - "docs/security/ADAPTIVE_AUTHORIZATION_EVOLUTION_PROTOCOL_V0_1.md"
