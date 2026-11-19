@@ -307,87 +307,106 @@ def schema_guard_violations(schema_documents, guards, schema_file=None):
 
 
 def evaluate_effect_capability_fixture(fixture):
+    """Evaluate authorization separately from participant and effect outcomes."""
     request = fixture["request"]
     permit = fixture["permit"]
     effect = fixture["effect"]
     grants = fixture["capabilities"]
     now = request["admission_time"]
 
-    if fixture["evidence_only"]:
-        return "deny"
-    if not grants:
-        return "deny"
-
+    valid = True
+    unknown_revocation = False
     principal = request["principal_id"]
     actor = request["actor_id"]
-    if any(grant["principal_id"] != principal for grant in grants):
-        return "deny"
 
-    revoked = any(grant["revocation_state"] == "revoked" for grant in grants)
-    unknown_revocation = any(grant["revocation_state"] == "unknown" for grant in grants)
-    if revoked:
-        return "deny"
+    if fixture["evidence_only"] or not grants:
+        valid = False
+    if any(grant["principal_id"] != principal for grant in grants):
+        valid = False
+    if any(grant["revocation_state"] == "revoked" for grant in grants):
+        valid = False
+    if any(grant["revocation_state"] == "unknown" for grant in grants):
+        unknown_revocation = True
 
     if fixture["mode"] == "composition":
-        # Independent grants are conjunctive. Resource and operation sets
-        # are intersected; they are never unioned to manufacture authority.
+        # Conjunctive grants are intersected across each authority dimension.
         if any(grant["parent_grant_id"] is not None for grant in grants):
-            return "deny"
+            valid = False
         if any(grant["issuer_id"] != principal or grant["subject_id"] != actor for grant in grants):
-            return "deny"
-        common_targets = set(grants[0]["target_refs"])
-        common_operations = set(grants[0]["operations"])
-        for grant in grants[1:]:
-            common_targets.intersection_update(grant["target_refs"])
-            common_operations.intersection_update(grant["operations"])
-        digests = {grant["argument_digest"] for grant in grants}
-        epochs = {grant["policy_epoch"] for grant in grants}
-        if len(digests) != 1 or len(epochs) != 1:
-            return "deny"
-        if request["target_ref"] not in common_targets or request["operation"] not in common_operations:
-            return "deny"
-        if request["argument_digest"] not in digests or request["policy_epoch"] not in epochs:
-            return "deny"
-        if any(grant["not_before"] > now or grant["expires_at"] <= now for grant in grants):
-            return "deny"
+            valid = False
+        if grants:
+            common_targets = set(grants[0]["target_refs"])
+            common_operations = set(grants[0]["operations"])
+            for grant in grants[1:]:
+                common_targets.intersection_update(grant["target_refs"])
+                common_operations.intersection_update(grant["operations"])
+            digests = {grant["argument_digest"] for grant in grants}
+            epochs = {grant["policy_epoch"] for grant in grants}
+            if (
+                request["target_ref"] not in common_targets
+                or request["operation"] not in common_operations
+                or len(digests) != 1
+                or len(epochs) != 1
+                or request["argument_digest"] not in digests
+                or request["policy_epoch"] not in epochs
+            ):
+                valid = False
+            for grant in grants:
+                if grant["not_before"] > now or grant["expires_at"] <= now:
+                    valid = False
+                if request["target_ref"] not in grant["target_refs"]:
+                    # All conjuncts must authorize the same effect tuple.
+                    valid = False
+                if request["operation"] not in grant["operations"]:
+                    valid = False
+                if grant["argument_digest"] != request["argument_digest"]:
+                    valid = False
+                if grant["policy_epoch"] != request["policy_epoch"]:
+                    valid = False
+    elif fixture["mode"] in {"single", "delegated"}:
+        if not grants:
+            valid = False
+        else:
+            root = grants[0]
+            if root["parent_grant_id"] is not None or root["issuer_id"] != principal:
+                valid = False
+            for index, grant in enumerate(grants):
+                if index:
+                    parent = grants[index - 1]
+                    if grant["parent_grant_id"] != parent["grant_id"]:
+                        valid = False
+                    if grant["issuer_id"] != parent["subject_id"] or not parent["may_delegate"]:
+                        valid = False
+                    if not set(grant["target_refs"]).issubset(set(parent["target_refs"])):
+                        valid = False
+                    if not set(grant["operations"]).issubset(set(parent["operations"])):
+                        valid = False
+                    if grant["argument_digest"] != parent["argument_digest"]:
+                        valid = False
+                    if grant["policy_epoch"] != parent["policy_epoch"]:
+                        valid = False
+                    if grant["not_before"] < parent["not_before"]:
+                        valid = False
+                    if grant["expires_at"] > parent["expires_at"]:
+                        valid = False
+                    if grant["max_delegation_depth"] >= parent["max_delegation_depth"]:
+                        valid = False
+                if grant["not_before"] > now or grant["expires_at"] <= now:
+                    valid = False
+                if grant["argument_digest"] != request["argument_digest"]:
+                    valid = False
+                if grant["policy_epoch"] != request["policy_epoch"]:
+                    valid = False
+                if request["target_ref"] not in grant["target_refs"]:
+                    valid = False
+                if request["operation"] not in grant["operations"]:
+                    valid = False
+            if grants[-1]["subject_id"] != actor:
+                valid = False
     else:
-        root = grants[0]
-        if root["parent_grant_id"] is not None or root["issuer_id"] != principal:
-            return "deny"
-        for index, grant in enumerate(grants):
-            if index:
-                parent = grants[index - 1]
-                if grant["parent_grant_id"] != parent["grant_id"]:
-                    return "deny"
-                if grant["issuer_id"] != parent["subject_id"] or not parent["may_delegate"]:
-                    return "deny"
-                if not set(grant["target_refs"]).issubset(set(parent["target_refs"])):
-                    return "deny"
-                if not set(grant["operations"]).issubset(set(parent["operations"])):
-                    return "deny"
-                if grant["argument_digest"] != parent["argument_digest"]:
-                    return "deny"
-                if grant["policy_epoch"] != parent["policy_epoch"]:
-                    return "deny"
-                if grant["not_before"] < parent["not_before"] or grant["expires_at"] > parent["expires_at"]:
-                    return "deny"
-                if grant["max_delegation_depth"] >= parent["max_delegation_depth"]:
-                    return "deny"
-            if grant["not_before"] > now or grant["expires_at"] <= now:
-                return "deny"
-            if grant["argument_digest"] != request["argument_digest"]:
-                return "deny"
-            if grant["policy_epoch"] != request["policy_epoch"]:
-                return "deny"
-            if request["target_ref"] not in grant["target_refs"]:
-                return "deny"
-            if request["operation"] not in grant["operations"]:
-                return "deny"
-        if grants[-1]["subject_id"] != actor:
-            return "deny"
+        valid = False
 
-    # The permit is an attempt-bound dispatch token; participant-side
-    # admission must check the same subject, effect footprint and epoch.
+    # The exact request must stay bound through the attempt-scoped permit.
     if (
         permit["actor_id"] != actor
         or permit["target_ref"] != request["target_ref"]
@@ -400,15 +419,57 @@ def evaluate_effect_capability_fixture(fixture):
         or permit["not_before"] > now
         or permit["expires_at"] <= now
     ):
-        return "deny"
-    if effect["attempt_id"] != request["attempt_id"] or effect["participant_id"] != permit["participant_id"]:
-        return "deny"
+        valid = False
 
-    if unknown_revocation:
-        return "indeterminate"
-    if effect["state"] == "unknown":
-        return "reconcile_same_attempt"
-    return "allow"
+    if (
+        effect["attempt_id"] != request["attempt_id"]
+        or effect["participant_id"] != permit["participant_id"]
+    ):
+        # An effect receipt that cannot be bound to this participant attempt
+        # cannot be treated as proof of a completed operation.
+        effect_state = "unknown"
+    else:
+        effect_state = effect["state"]
+
+    if not valid:
+        authorization_state = "not_authorized"
+    elif unknown_revocation:
+        authorization_state = "indeterminate"
+    else:
+        authorization_state = "authorized"
+
+    participant_decision_correct = (
+        fixture["participant_decision"] == "allow"
+        if authorization_state == "authorized"
+        else fixture["participant_decision"] == "deny"
+    )
+    fail_closed_violation = (
+        authorization_state != "authorized"
+        and (
+            fixture["participant_decision"] != "deny"
+            or effect_state in {"committed", "partially_committed"}
+        )
+    )
+
+    if authorization_state == "not_authorized" and effect_state in {"committed", "partially_committed"}:
+        unauthorized_effect = "true"
+    elif authorization_state == "indeterminate" and effect_state in {"committed", "partially_committed", "unknown"}:
+        unauthorized_effect = "indeterminate"
+    elif authorization_state == "not_authorized" and effect_state == "unknown":
+        unauthorized_effect = "indeterminate"
+    else:
+        unauthorized_effect = "false"
+
+    effect_disposition = (
+        "reconcile_same_attempt" if effect_state == "unknown" else effect_state
+    )
+    return {
+        "authorization_state": authorization_state,
+        "participant_decision_correct": participant_decision_correct,
+        "fail_closed_violation": fail_closed_violation,
+        "unauthorized_effect": unauthorized_effect,
+        "effect_disposition": effect_disposition,
+    }
 
 def main() -> int:
     files = [
@@ -717,15 +778,33 @@ def main() -> int:
     capability_ids = [fixture["scenario_id"] for fixture in capability_suite["fixtures"]]
     if len(capability_ids) != len(set(capability_ids)):
         raise SystemExit("duplicate effect-bound capability fixture IDs")
-    capability_counts = {"allow":0,"deny":0,"indeterminate":0,"reconcile_same_attempt":0}
+    capability_counts = {
+        "authorized":0, "not_authorized":0, "indeterminate":0,
+        "participant_decision_correct":0, "fail_closed_violation":0,
+        "unauthorized_effect_true":0, "unauthorized_effect_indeterminate":0,
+        "effect_reconciliation":0,
+    }
     for fixture in capability_suite["fixtures"]:
         actual = evaluate_effect_capability_fixture(fixture)
-        expected = fixture["expected"]["decision"]
+        expected = fixture["expected"]
         if actual != expected:
-            raise SystemExit(f"{fixture['scenario_id']}: expected {expected}, got {actual}")
-        capability_counts[actual] += 1
-    if capability_counts != {"allow":3,"deny":12,"indeterminate":1,"reconcile_same_attempt":1}:
-        raise SystemExit(f"unexpected capability algebra fixture mix: {capability_counts}")
+            raise SystemExit(
+                f"{fixture['scenario_id']}: expected {expected}, got {actual}"
+            )
+        capability_counts[actual["authorization_state"]] += 1
+        capability_counts["participant_decision_correct"] += int(actual["participant_decision_correct"])
+        capability_counts["fail_closed_violation"] += int(actual["fail_closed_violation"])
+        capability_counts["unauthorized_effect_true"] += int(actual["unauthorized_effect"] == "true")
+        capability_counts["unauthorized_effect_indeterminate"] += int(actual["unauthorized_effect"] == "indeterminate")
+        capability_counts["effect_reconciliation"] += int(actual["effect_disposition"] == "reconcile_same_attempt")
+    expected_counts = {
+        "authorized":5, "not_authorized":13, "indeterminate":2,
+        "participant_decision_correct":18, "fail_closed_violation":2,
+        "unauthorized_effect_true":1, "unauthorized_effect_indeterminate":1,
+        "effect_reconciliation":1,
+    }
+    if len(capability_ids) != 20 or capability_counts != expected_counts:
+        raise SystemExit(f"unexpected effect-bound capability results: {capability_counts}")
     print(f"EFFECT_BOUND_CAPABILITY_FIXTURES=PASS {capability_counts}")
 
     print("L2L3_TEMPLATE=VALID_UNASSESSED ACTIVE_SCAN=UNKNOWN OT_SEPARATION=UNKNOWN")
