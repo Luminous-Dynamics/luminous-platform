@@ -7,7 +7,8 @@
     "profile",
     "version",
     "status",
-    "fixtures"
+    "fixtures",
+    "usage_snapshot"
   ],
   "properties": {
     "profile": {
@@ -115,6 +116,9 @@
         },
         "additionalProperties": false
       }
+    },
+    "usage_snapshot": {
+      "$ref": "#/$defs/usage_snapshot"
     }
   },
   "$defs": {
@@ -268,7 +272,8 @@
         "purpose_ref",
         "context_ref",
         "requested_cost_microusd",
-        "effect_count_before"
+        "effect_count_before",
+        "budget_snapshot_digest"
       ],
       "properties": {
         "principal_id": {
@@ -314,6 +319,9 @@
         "effect_count_before": {
           "type": "integer",
           "minimum": 0
+        },
+        "budget_snapshot_digest": {
+          "$ref": "#/$defs/digest"
         }
       },
       "additionalProperties": false
@@ -335,7 +343,8 @@
         "consume_count",
         "purpose_ref",
         "context_ref",
-        "requested_cost_microusd"
+        "requested_cost_microusd",
+        "budget_snapshot_digest"
       ],
       "properties": {
         "permit_id": {
@@ -386,6 +395,9 @@
         "requested_cost_microusd": {
           "type": "integer",
           "minimum": 0
+        },
+        "budget_snapshot_digest": {
+          "$ref": "#/$defs/digest"
         }
       },
       "additionalProperties": false
@@ -427,6 +439,60 @@
             "not_observed",
             "unknown"
           ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "usage_snapshot": {
+      "type": "object",
+      "required": [
+        "snapshot_id",
+        "participant_id",
+        "grant_ids",
+        "effect_count_before",
+        "cumulative_cost_microusd",
+        "observed_at",
+        "valid_until",
+        "snapshot_digest",
+        "participant_verified"
+      ],
+      "properties": {
+        "snapshot_id": {
+          "type": "string",
+          "minLength": 3
+        },
+        "participant_id": {
+          "type": "string",
+          "minLength": 2
+        },
+        "grant_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 2
+          }
+        },
+        "effect_count_before": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cumulative_cost_microusd": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "observed_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "valid_until": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "snapshot_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "participant_verified": {
+          "type": "boolean"
         }
       },
       "additionalProperties": false
