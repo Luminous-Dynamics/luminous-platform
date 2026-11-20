@@ -107,3 +107,10 @@ CAPC is now prototyped in the same benchmark PR and workflow, tracked by issue #
 The synthetic suite contains 16 cases (5 positive, 7 negative, 4 indeterminate), plus a standard-library checker and 17 mutation tests. The checker requires exactly one owner-attested resolution per inventoried path and confirms that the route inventory credential agrees with the owner-resolved credential lineage. Missing, ambiguous, unattested or mismatched paths do not count as closed. Observed effect truth still requires complete and independent observation.
 
 Files: `benchmarks/agentic-endpoint-security-v1/authority-path-closure.{schema,fixtures}.json`, `tools/agentic-endpoint-security-v1/check_authority_path_closure.py`, and `test_authority_path_closure.py`. The schema is Draft 2020-12; the workflow checker intentionally performs dependency-free structural/semantic validation and labels it accordingly.
+
+
+## Information-flow lifecycle extension (IFL v0.1)
+
+The source-to-sink lifecycle supplement is tracked in [issue #513](https://github.com/Luminous-Dynamics/luminous-platform/issues/513) and defined in [INFORMATION_FLOW_LIFECYCLE_BENCHMARK_V0_1.md](INFORMATION_FLOW_LIFECYCLE_BENCHMARK_V0_1.md). It consumes AUTH-CORE-002 #503 rather than defining a parallel origin manifest. The 19 synthetic cases cover action-selection versus parameter origin, transformation lineage across summaries/paraphrases/embeddings/memory/handoffs, mixed-origin joins, tenant/purpose boundaries, exact declassification, unknown receipts, and independently observed sink-payload correspondence.
+
+The existing read-only workflow runs \`check_information_flow_lifecycle.py\` and \`test_information_flow_lifecycle.py\`; these are dependency-free contract checks, not a live LLM dataflow campaign.
