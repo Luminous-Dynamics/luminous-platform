@@ -30,7 +30,7 @@ The canonical Origin/Intent Provenance Manifest and task-precision semantics rem
 - A source node refers to a source record with source class, integrity, sensitivity, tenant, purpose, content digest and receipt horizon.
 - A derived node names parent node IDs and a transformation kind. Its actual origin is reconstructed as the union of all parent source IDs.
 - A derived node's declared source set must equal that reconstructed union. Its sensitivity cannot silently fall below the maximum parent sensitivity; its integrity cannot become more trusted than the least-trusted parent.
-- Unknown/expired source receipts and cyclic/missing lineage remain indeterminate. They are never silently promoted to trusted.
+- Unknown/expired source receipts and cyclic/missing lineage remain indeterminate. Explicitly revoked sources are denied at the event-time boundary; a later revocation does not retroactively rewrite a prior valid effect. They are never silently promoted to trusted.
 - A declassification receipt is valid only for the exact source set, output node, sink, audience, purpose, owner and step horizon. A valid receipt is not general authorization for other sinks or future outputs.
 - A parameter-open task authorizes only the fields and source IDs explicitly delegated. An allowlisted source that can populate an amount cannot also change a recipient or action.
 - An action-open task must constrain action selection to a finite declared action set and trusted action origin.
@@ -40,7 +40,7 @@ The integrity lattice in v0.1 is a simplified test vocabulary, not a universal i
 
 ## Frozen synthetic corpus
 
-20 cases: 5 positive controls, 13 negative controls and 2 indeterminate controls. They cover fully specified parameters, named-source parameter delegation, recipient substitution, source-driven action changes, finite action-open choices, action-origin substitution, summary/paraphrase laundering, embedding and memory lineage, child-agent handoff, mixed-origin joins, secret-to-public declassification, stale/misbound receipts, cross-tenant memory, unknown source receipts, cyclic lineage, benign named-source utility, blocked exfiltration, a deliberately unsafe allow, and independent sink-payload substitution.
+20 cases: 5 positive controls, 13 negative controls and 2 indeterminate controls. They cover fully specified parameters, named-source parameter delegation, recipient substitution, source-driven action changes, finite action-open choices, action-origin substitution, summary/paraphrase laundering, embedding and memory lineage, child-agent handoff, mixed-origin joins, secret-to-public declassification, stale/misbound receipts, cross-tenant memory, unknown source receipts, cyclic lineage, explicit memory-source revocation at and before the flow step, benign named-source utility, blocked exfiltration, a deliberately unsafe allow, and independent sink-payload substitution.
 
 Files:
 - \`benchmarks/agentic-endpoint-security-v1/information-flow-lifecycle.schema.json\`
