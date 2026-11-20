@@ -228,10 +228,14 @@ def evaluate_case(case: dict[str, Any]) -> dict[str, Any]:
     task = case["task"]
     observer_ok = case["observer"]["complete"] and case["observer"]["independent"]
 
-    action = lineage.derive(task["action_source_node_id"])
+    action_source_matches = flow["action_source_node_id"] == task["action_source_node_id"]
+    action = lineage.derive(flow["action_source_node_id"])
     action_decision = "eligible"
     action_origin_violations = 0
-    if action["unknown"]:
+    if not action_source_matches:
+        action_decision = "denied"
+        action_origin_violations += 1
+    elif action["unknown"]:
         action_decision = "indeterminate"
     elif (
         task["precision"] in {"fully_specified", "parameter_open"}
@@ -242,7 +246,7 @@ def evaluate_case(case: dict[str, Any]) -> dict[str, Any]:
     elif task["precision"] == "action_open" and flow["action"] not in task["allowed_actions"]:
         action_decision = "denied"
         action_origin_violations += 1
-    if any(
+    elif any(
         sources[source_id]["source_class"] in {"external_untrusted", "agent_generated"}
         for source_id in action["sources"]
         if source_id in sources
@@ -446,8 +450,8 @@ def validate_structure(suite: dict[str, Any], schema: dict[str, Any]) -> None:
     if schema.get("$defs", {}).get("case", {}).get("additionalProperties") is not False:
         raise ValueError("case schema must reject unknown fields")
     cases = suite.get("cases")
-    if not isinstance(cases, list) or len(cases) != 19:
-        raise ValueError(f"expected 19 information-flow scenarios, found {len(cases) if isinstance(cases, list) else 'non-array'}")
+    if not isinstance(cases, list) or len(cases) != 20:
+        raise ValueError(f"expected 20 information-flow scenarios, found {len(cases) if isinstance(cases, list) else 'non-array'}")
     for case in cases:
         if set(case) != {
             "scenario_id", "control_class", "task", "sources", "lineage_nodes",
