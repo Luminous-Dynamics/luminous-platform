@@ -280,8 +280,8 @@ def main() -> int:
         raise SystemExit("APAC digests are synthetic placeholders, not canonical cryptographic commitments")
 
     cases = suite["scenarios"]
-    if len(cases) != 27:
-        raise SystemExit(f"expected 27 APAC scenarios, found {len(cases)}")
+    if len(cases) != 33:
+        raise SystemExit(f"expected 33 APAC scenarios, found {len(cases)}")
     ids: set[str] = set()
     class_counts: dict[str, int] = {}
     for case in cases:
