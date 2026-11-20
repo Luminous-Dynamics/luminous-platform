@@ -1,0 +1,9 @@
+[package]
+name = "assurance-prerequisite-admission-model"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Dependency-free typed reference evaluator for Web4 APAC v0.1"
+
+[lib]
+path = "src/lib.rs"
