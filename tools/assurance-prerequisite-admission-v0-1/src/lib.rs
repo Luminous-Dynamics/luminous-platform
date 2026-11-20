@@ -349,7 +349,7 @@ mod tests {
     }
     #[test] fn omitted_duplicate_and_scope_shifted_claims_deny() {
         let claims = vec![claim()];
-        assert_eq!(evaluate_assurance(&changed(&claims, &passed_receipt(vec![])), Decision::Denied);
+        assert_eq!(evaluate_assurance(&changed(&claims, &passed_receipt(vec![]))), Decision::Denied);
         let mut duplicate = claims.clone(); duplicate.push(claim());
         assert_eq!(evaluate_assurance(&changed(&claims, &passed_receipt(duplicate))), Decision::Denied);
         let mut shifted = claim(); shifted.subject_digest = "sha256:other-subject".into();
