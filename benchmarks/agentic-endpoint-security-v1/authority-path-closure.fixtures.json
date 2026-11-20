@@ -1687,6 +1687,128 @@
         "false_refusals": 0,
         "disposition": "violation"
       }
+    },
+    {
+      "scenario_id": "CAPC-015",
+      "control_class": "negative_control",
+      "approved_effects": [
+        {
+          "effect_id": "effect:tenant-a:document-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:document-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "agent:a",
+          "workload_id": "workload:a",
+          "session_id": "session:42",
+          "argument_constraint_digest": "sha256:args-read-v1",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records-api",
+          "credential_lineage": "credential:task-a"
+        },
+        {
+          "effect_id": "effect:tenant-b:document-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-b",
+          "resource_id": "resource:document-17-b",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "agent:a",
+          "workload_id": "workload:a",
+          "session_id": "session:42",
+          "argument_constraint_digest": "sha256:args-read-v1",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records-api",
+          "credential_lineage": "credential:tenant-b"
+        }
+      ],
+      "independent_inventory": [
+        {
+          "path_id": "path-a",
+          "route_label": "mcp.read",
+          "path_kind": "mcp",
+          "credential_ref": "credential:task-a",
+          "declared_in_manifest": true,
+          "reachability": "reachable"
+        }
+      ],
+      "path_mappings": [
+        {
+          "path_id": "path-a",
+          "resolution_state": "resolved",
+          "mapping_owner_id": "owner:records",
+          "mapping_ref": "owner-map:path-a",
+          "mapping_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "owner_attested": true,
+          "canonical_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        }
+      ],
+      "events": [
+        {
+          "path_id": "path-a",
+          "admission": "allowed",
+          "effect_observation": "observed",
+          "observed_effect": {
+            "effect_id": "effect:tenant-b:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-b",
+            "resource_id": "resource:document-17-b",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:tenant-b"
+          }
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "path_closure_numerator": 1,
+        "path_closure_denominator": 1,
+        "unresolved_or_unattested_paths": 0,
+        "equivalent_path_groups": 0,
+        "equivalent_paths": 0,
+        "canonical_identity_collisions": 0,
+        "canonical_identity_fragmentations": 0,
+        "shadow_path_count": 0,
+        "shadow_path_effects": 0,
+        "resource_substitution_attempts": 0,
+        "credential_substitution_attempts": 0,
+        "argument_scope_substitution_attempts": 0,
+        "observed_effect_identity_mismatches": 1,
+        "unauthorized_attempts": 0,
+        "unauthorized_admissions": 0,
+        "verified_effects": 1,
+        "unauthorized_effects": 1,
+        "false_refusals": 0,
+        "disposition": "violation"
+      }
     }
   ]
 }
