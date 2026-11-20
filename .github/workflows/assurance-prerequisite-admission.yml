@@ -1,0 +1,31 @@
+name: Assurance-prerequisite admission conformance
+
+on:
+  pull_request:
+    paths:
+      - "docs/security/WEB4_ASSURANCE_PREREQUISITE_ADMISSION_V0_1.md"
+      - "docs/security/assurance-prerequisite-admission.*.v0.1.json"
+      - "scripts/validate_assurance_prerequisite_admission.py"
+      - "requirements-apac-test.txt"
+      - ".github/workflows/assurance-prerequisite-admission.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-apac:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
+        with:
+          persist-credentials: false
+      - name: Set up pinned test-only Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f735447658e8df7c9ca0e0
+        with:
+          python-version: "3.13"
+      - name: Install pinned test-only schema dependencies
+        run: python -m pip install --disable-pip-version-check --requirement requirements-apac-test.txt
+      - name: Validate APAC schema and commit-boundary fixtures
+        run: python scripts/validate_assurance_prerequisite_admission.py
