@@ -54,9 +54,9 @@ A zero unauthorized-effect count is not meaningful without denominators, complet
 
 ## v0.1 fixture coverage
 
-18 synthetic cases: 5 positive controls, 11 negative controls and 2 indeterminate controls. They cover excess grants, tool aliases, parent revocation, blocked stale child attempts, scope/expiry widening, actor substitution, observer gaps, correct final state with unauthorized intermediate effect, targeted revocation that preserves unrelated work, pre-revocation effect ordering, unauthorized redelegation, cyclic lineage, session substitution, alternate-credential exposure and false refusal.
+19 synthetic cases: 5 positive controls, 11 negative controls and 3 indeterminate controls. They cover excess grants, tool aliases, parent revocation, blocked stale child attempts, scope/expiry widening, actor substitution, incomplete and same-trust-domain observer gaps, correct final state with unauthorized intermediate effect, targeted revocation that preserves unrelated work, pre-revocation effect ordering, unauthorized redelegation, cyclic lineage, session substitution, alternate-credential exposure and false refusal.
 
-The expected rows are frozen in \`trajectory-privilege.fixtures.json\`; the schema is \`trajectory-privilege.schema.json\`. The Python checker is test tooling only.
+The suite has separate indeterminate controls for incomplete observation and complete-but-same-trust-domain observation. The expected rows are frozen in \`trajectory-privilege.fixtures.json\`; the schema is \`trajectory-privilege.schema.json\`. The Python checker is test tooling only.
 
 ## Comparison protocol and proposed targets
 
