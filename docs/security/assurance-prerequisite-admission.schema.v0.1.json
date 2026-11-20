@@ -350,7 +350,10 @@
             "authority_state",
             "policy_digest",
             "prerequisite_set_digest",
-            "assurance_snapshot_digest"
+            "assurance_snapshot_digest",
+            "request_digest",
+            "authority_grant_ref",
+            "authority_snapshot_digest"
           ],
           "properties": {
             "authority_state": {
@@ -370,6 +373,16 @@
             },
             "assurance_snapshot_digest": {
               "$ref": "#/$defs/digest"
+            },
+            "request_digest": {
+              "$ref": "#/$defs/digest"
+            },
+            "authority_grant_ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "authority_snapshot_digest": {
+              "$ref": "#/$defs/digest"
             }
           },
           "additionalProperties": false
@@ -383,7 +396,12 @@
             "assurance_snapshot_digest_at_linearization",
             "assurance_snapshot_matches_preflight",
             "revalidation_state",
-            "linearization_order"
+            "linearization_order",
+            "request_digest_at_linearization",
+            "authority_grant_ref_at_linearization",
+            "authority_snapshot_digest_at_linearization",
+            "authority_snapshot_matches_preflight",
+            "authority_revalidation_state"
           ],
           "properties": {
             "authority_state_at_linearization": {
@@ -421,6 +439,27 @@
                 "claim_event_before_commit",
                 "commit_before_claim_event",
                 "unresolved_race"
+              ]
+            },
+            "request_digest_at_linearization": {
+              "$ref": "#/$defs/digest"
+            },
+            "authority_grant_ref_at_linearization": {
+              "type": "string",
+              "minLength": 1
+            },
+            "authority_snapshot_digest_at_linearization": {
+              "$ref": "#/$defs/digest"
+            },
+            "authority_snapshot_matches_preflight": {
+              "type": "boolean"
+            },
+            "authority_revalidation_state": {
+              "enum": [
+                "not_attempted",
+                "passed",
+                "failed",
+                "indeterminate"
               ]
             }
           },
