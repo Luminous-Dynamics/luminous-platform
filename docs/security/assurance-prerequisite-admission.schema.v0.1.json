@@ -182,6 +182,22 @@
             "indeterminate",
             "forked"
           ]
+        },
+        "predecessor_qualification_result_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "predecessor_qualification_result_digest": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false
@@ -405,7 +421,9 @@
             "authority_grant_ref_at_linearization",
             "authority_snapshot_digest_at_linearization",
             "authority_snapshot_matches_preflight",
-            "authority_revalidation_state"
+            "authority_revalidation_state",
+            "assurance_revalidation",
+            "authority_revalidation"
           ],
           "properties": {
             "authority_state_at_linearization": {
@@ -464,6 +482,314 @@
                 "passed",
                 "failed",
                 "indeterminate"
+              ]
+            },
+            "assurance_revalidation": {
+              "type": "object",
+              "required": [
+                "state",
+                "result_ref",
+                "result_digest",
+                "request_digest",
+                "prerequisite_set_digest",
+                "snapshot_digest",
+                "validated_claims"
+              ],
+              "properties": {
+                "state": {
+                  "enum": [
+                    "not_attempted",
+                    "passed",
+                    "failed",
+                    "indeterminate"
+                  ]
+                },
+                "result_ref": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "result_digest": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/digest"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "request_digest": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/digest"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "prerequisite_set_digest": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/digest"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "snapshot_digest": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/digest"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "validated_claims": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/claim"
+                  }
+                }
+              },
+              "additionalProperties": false,
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "state": {
+                        "const": "not_attempted"
+                      }
+                    },
+                    "required": [
+                      "state"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "result_ref": {
+                        "type": "null"
+                      },
+                      "result_digest": {
+                        "type": "null"
+                      },
+                      "request_digest": {
+                        "type": "null"
+                      },
+                      "prerequisite_set_digest": {
+                        "type": "null"
+                      },
+                      "snapshot_digest": {
+                        "type": "null"
+                      },
+                      "validated_claims": {
+                        "maxItems": 0
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "state": {
+                        "enum": [
+                          "passed",
+                          "failed",
+                          "indeterminate"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "state"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "result_ref": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "result_digest": {
+                        "$ref": "#/$defs/digest"
+                      },
+                      "request_digest": {
+                        "$ref": "#/$defs/digest"
+                      },
+                      "prerequisite_set_digest": {
+                        "$ref": "#/$defs/digest"
+                      },
+                      "snapshot_digest": {
+                        "$ref": "#/$defs/digest"
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            "authority_revalidation": {
+              "type": "object",
+              "required": [
+                "state",
+                "result_ref",
+                "result_digest",
+                "request_digest",
+                "grant_ref",
+                "snapshot_digest",
+                "authority_state"
+              ],
+              "properties": {
+                "state": {
+                  "enum": [
+                    "not_attempted",
+                    "passed",
+                    "failed",
+                    "indeterminate"
+                  ]
+                },
+                "result_ref": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "result_digest": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/digest"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "request_digest": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/digest"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "grant_ref": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "snapshot_digest": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/digest"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "authority_state": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "current",
+                    "revoked",
+                    "expired",
+                    "denied",
+                    "unknown",
+                    null
+                  ]
+                }
+              },
+              "additionalProperties": false,
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "state": {
+                        "const": "not_attempted"
+                      }
+                    },
+                    "required": [
+                      "state"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "result_ref": {
+                        "type": "null"
+                      },
+                      "result_digest": {
+                        "type": "null"
+                      },
+                      "request_digest": {
+                        "type": "null"
+                      },
+                      "grant_ref": {
+                        "type": "null"
+                      },
+                      "snapshot_digest": {
+                        "type": "null"
+                      },
+                      "authority_state": {
+                        "type": "null"
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "state": {
+                        "enum": [
+                          "passed",
+                          "failed",
+                          "indeterminate"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "state"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "result_ref": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "result_digest": {
+                        "$ref": "#/$defs/digest"
+                      },
+                      "request_digest": {
+                        "$ref": "#/$defs/digest"
+                      },
+                      "grant_ref": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "snapshot_digest": {
+                        "$ref": "#/$defs/digest"
+                      },
+                      "authority_state": {
+                        "enum": [
+                          "current",
+                          "revoked",
+                          "expired",
+                          "denied",
+                          "unknown"
+                        ]
+                      }
+                    }
+                  }
+                }
               ]
             }
           },
