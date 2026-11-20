@@ -75,7 +75,9 @@
         "transform_depth",
         "delegation_hops",
         "expected",
-        "required_oracles"
+        "required_oracles",
+        "expected_duplicate_effects",
+        "new_attempts_before_reconciliation"
       ],
       "properties": {
         "scenario_id": {
@@ -265,6 +267,14 @@
               "credential_inventory"
             ]
           }
+        },
+        "expected_duplicate_effects": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "new_attempts_before_reconciliation": {
+          "type": "integer",
+          "minimum": 0
         }
       },
       "additionalProperties": false
