@@ -376,7 +376,9 @@
         "state",
         "participant_id",
         "attempt_id",
-        "postcondition"
+        "postcondition",
+        "committed_at",
+        "authority_check"
       ],
       "properties": {
         "effect_id": {
@@ -406,9 +408,148 @@
             "not_observed",
             "unknown"
           ]
+        },
+        "committed_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "authority_check": {
+          "type": "object",
+          "required": [
+            "checked_at",
+            "participant_verified",
+            "grant_states",
+            "policy_epoch",
+            "permit_nonce_consumed",
+            "usage_reservation_id",
+            "usage_reservation_state"
+          ],
+          "properties": {
+            "checked_at": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/timestamp"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "participant_verified": {
+              "type": "boolean"
+            },
+            "grant_states": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "grant_id",
+                  "state"
+                ],
+                "properties": {
+                  "grant_id": {
+                    "type": "string",
+                    "minLength": 2
+                  },
+                  "state": {
+                    "enum": [
+                      "current",
+                      "revoked",
+                      "unknown"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "policy_epoch": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "permit_nonce_consumed": {
+              "enum": [
+                true,
+                false,
+                "unknown"
+              ]
+            },
+            "usage_reservation_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "usage_reservation_state": {
+              "enum": [
+                "consumed",
+                "not_consumed",
+                "unknown",
+                "not_applicable"
+              ]
+            }
+          },
+          "additionalProperties": false
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "enum": [
+                  "committed",
+                  "partially_committed"
+                ]
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "committed_at": {
+                "$ref": "#/$defs/timestamp"
+              },
+              "authority_check": {
+                "properties": {
+                  "checked_at": {
+                    "$ref": "#/$defs/timestamp"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "none"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "committed_at": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
     },
     "usage_snapshot": {
       "type": "object",
