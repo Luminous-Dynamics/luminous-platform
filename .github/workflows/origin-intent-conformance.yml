@@ -1,0 +1,30 @@
+name: Origin-intent provenance conformance
+
+on:
+  pull_request:
+    paths:
+      - "research/auth-core-002-v0.1/**"
+      - "scripts/validate_origin_intent.py"
+      - "requirements-origin-intent-test.txt"
+      - ".github/workflows/origin-intent-conformance.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-origin-intent:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
+        with:
+          persist-credentials: false
+      - name: Set up pinned Python runtime
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: "3.13"
+      - name: Install pinned test-only schema dependencies
+        run: python -m pip install --disable-pip-version-check --requirement requirements-origin-intent-test.txt
+      - name: Validate schema, example and semantic conformance vectors
+        run: python scripts/validate_origin_intent.py
