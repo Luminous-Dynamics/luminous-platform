@@ -9,7 +9,8 @@
     "status",
     "no_aggregate_score",
     "scenarios",
-    "claim_ceiling"
+    "claim_ceiling",
+    "digest_semantics"
   ],
   "properties": {
     "profile": {
@@ -33,6 +34,9 @@
     },
     "claim_ceiling": {
       "const": "synthetic_commit_boundary_conformance_only"
+    },
+    "digest_semantics": {
+      "const": "synthetic_fixed_shape_only_no_canonical_hash_recomputation"
     }
   },
   "additionalProperties": false,
