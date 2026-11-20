@@ -14,6 +14,10 @@ on:
 permissions:
   contents: read
 
+# Temporary canonical-format export for the Rust 1.96.0 benchmark/APAC models.
+# Remove this helper after formatted sources are committed to the benchmark branch.
+
+
 jobs:
   rustfmt-export:
     runs-on: ubuntu-24.04
