@@ -2452,6 +2452,95 @@
         "consumer_handling": "eligible_for_policy_evaluation",
         "reason_code": "material_change_bridge_qualified_for_property"
       }
+    },
+    {
+      "record_id": "WALP-029",
+      "result_ref": "assure-result:029",
+      "result_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-029",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-c",
+        "subject_manifest_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "campaign_semantics_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "evidence_root_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:029",
+        "assure000_result_ref": "assure0-result:029",
+        "assure001_subject_ref": "assure1-subject:029",
+        "assure002_campaign_ref": "assure2-campaign:029",
+        "assure003_resolver_result_ref": "assure3-result:029",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "structurally_checked"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:029",
+        "status": "exact_subject",
+        "impact_snapshot_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": []
+      },
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:029",
+        "dependency_graph_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
+      },
+      "dependencies": [
+        {
+          "dependency_id": "admin-ui",
+          "role": "non_claim_runtime",
+          "baseline_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+          "observed_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+          "change_state": "material_change",
+          "change_evidence_ref": "event:admin-ui-revision",
+          "affected_claim_properties": [
+            "ui_rendering",
+            "accessibility"
+          ]
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:029",
+        "assure004_result_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "state": "current",
+        "lineage_state": "complete",
+        "transition_kind": "none",
+        "predecessor_result_ref": null,
+        "predecessor_result_digest": null,
+        "successor_result_ref": null,
+        "successor_result_digest": null,
+        "competing_successor_refs": [],
+        "transition_evidence_ref": null,
+        "transition_evidence_digest": null,
+        "registration_view_ref": "registration-view:029",
+        "currentness_class": "CurrentThroughVerifiedCheckpoint",
+        "checkpoint_ref": "checkpoint:029"
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "block"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "current",
+        "consumer_handling": "eligible_for_policy_evaluation",
+        "reason_code": "material_nonimpact_dependency_change"
+      }
     }
   ],
   "claim_ceiling": "synthetic_projection_conformance_only"
