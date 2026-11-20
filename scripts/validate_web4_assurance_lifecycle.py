@@ -47,8 +47,8 @@ def main() -> int:
         raise SystemExit("WALP must not introduce an aggregate assurance score")
 
     records = suite["records"]
-    if len(records) != 28:
-        raise SystemExit(f"expected 28 WALP fixtures, found {len(records)}")
+    if len(records) != 29:
+        raise SystemExit(f"expected 29 WALP fixtures, found {len(records)}")
 
     seen: set[str] = set()
     lifecycle_counts: dict[str, int] = {}
