@@ -289,7 +289,8 @@
         "verified_effects",
         "unauthorized_effects",
         "false_refusals",
-        "disposition"
+        "disposition",
+        "path_credential_binding_mismatches"
       ],
       "properties": {
         "path_closure_numerator": {
@@ -370,6 +371,10 @@
             "violation",
             "indeterminate"
           ]
+        },
+        "path_credential_binding_mismatches": {
+          "type": "integer",
+          "minimum": 0
         }
       },
       "additionalProperties": false
