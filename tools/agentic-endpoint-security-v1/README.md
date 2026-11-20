@@ -31,4 +31,4 @@ The existing read-only benchmark job also runs the standard-library source-to-si
 
 ## Typed information-flow reference model
 
-\`src/information_flow.rs\` adds a dependency-free typed evaluator for source/derived data lineage, sensitivity and integrity propagation, exact declassification receipts, source-to-sink parameter rules, action-origin scope, and independent sink-observation matching. Its 9 authored unit tests cover the core semantics. It does not parse the JSON corpus or prove runtime flow control; the Python fixture checker and Rust typed tests are independent partial implementations, not yet a full differential replay.
+\`src/information_flow.rs\` adds a dependency-free typed evaluator for source/derived data lineage, sensitivity and integrity propagation, source-revocation currentness, exact declassification receipts, source-to-sink parameter rules, action-origin scope, and independent sink-observation matching. Its 14 authored unit tests cover the core semantics. It does not parse the JSON corpus or prove runtime flow control; the Python fixture checker and Rust typed tests are independent partial implementations, not yet a full differential replay.
