@@ -5,7 +5,6 @@ import json
 import sys
 from pathlib import Path
 from typing import Any
-from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parents[2]
 BASE = ROOT / "benchmarks" / "agentic-endpoint-security-v1"
@@ -15,6 +14,51 @@ def load(path: Path) -> Any:
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise SystemExit(f"cannot load {path}: {exc}") from exc
+
+def validate_structure(suite: dict[str, Any], schema: dict[str, Any]) -> None:
+    if schema.get("$schema") != "https://json-schema.org/draft/2020-12/schema":
+        raise ValueError("TWEP schema must declare JSON Schema Draft 2020-12")
+    if schema.get("$id") != "urn:luminous:agentic-trajectory-effective-privilege:0.1":
+        raise ValueError("unexpected TWEP schema identity")
+    if schema.get("$defs", {}).get("case", {}).get("additionalProperties") is not False:
+        raise ValueError("TWEP case schema must reject unknown fields")
+    required_top = {"profile", "version", "status", "no_aggregate_score", "task_required_authority_source", "cases"}
+    if set(suite) != required_top:
+        raise ValueError("TWEP top-level fields differ from the frozen contract")
+    if not isinstance(suite["cases"], list):
+        raise ValueError("TWEP cases must be an array")
+    for case in suite["cases"]:
+        required_case = {"scenario_id", "control_class", "task_required", "available", "grants", "events", "observer", "task_success", "expected"}
+        if set(case) != required_case:
+            raise ValueError(f'{case.get("scenario_id", "<unknown>")}: case fields differ from contract')
+        if not isinstance(case["task_success"], bool):
+            raise ValueError(f'{case["scenario_id"]}: task_success must be boolean')
+        if set(case["observer"]) != {"complete", "independent"} or not all(
+            isinstance(value, bool) for value in case["observer"].values()
+        ):
+            raise ValueError(f'{case["scenario_id"]}: observer flags must be explicit booleans')
+        for item in case["task_required"]:
+            if set(item) != {"actor", "capability"} or not item["actor"] or not item["capability"]:
+                raise ValueError(f'{case["scenario_id"]}: malformed task-required authority atom')
+        for item in case["available"]:
+            if set(item) != {"actor", "capability", "from_step", "through_step", "path"}:
+                raise ValueError(f'{case["scenario_id"]}: malformed availability window')
+            if item["from_step"] < 0 or item["through_step"] < item["from_step"]:
+                raise ValueError(f'{case["scenario_id"]}: invalid availability interval')
+        for grant in case["grants"]:
+            required_grant = {"id", "actor", "root_session", "capabilities", "starts_at", "expires_at", "revoked_at", "budget", "parent_grant_id", "delegates_to", "delegation_allowed"}
+            if set(grant) != required_grant:
+                raise ValueError(f'{case["scenario_id"]}: malformed grant record')
+            if grant["starts_at"] < 0 or grant["expires_at"] <= grant["starts_at"] or grant["budget"] < 0:
+                raise ValueError(f'{case["scenario_id"]}: invalid grant interval or budget')
+            if grant["revoked_at"] is not None and grant["revoked_at"] < 0:
+                raise ValueError(f'{case["scenario_id"]}: invalid revocation step')
+        for event in case["events"]:
+            required_event = {"step", "actor", "root_session", "capability", "grant_id", "decision", "effect"}
+            if set(event) != required_event or event["decision"] not in {"allowed", "denied", "unknown"} or event["effect"] not in {"observed", "none", "unknown"}:
+                raise ValueError(f'{case["scenario_id"]}: malformed trace event')
+            if event["step"] < 0:
+                raise ValueError(f'{case["scenario_id"]}: negative event step')
 
 def delegation_well_formed(grant_id: str, by_id: dict[str, dict[str, Any]], seen: set[str] | None = None) -> bool:
     seen = set() if seen is None else set(seen)
@@ -191,13 +235,7 @@ def validate_suite(suite: dict[str, Any]) -> dict[str, int]:
 def main() -> int:
     suite = load(BASE / "trajectory-privilege.fixtures.json")
     schema = load(BASE / "trajectory-privilege.schema.json")
-    Draft202012Validator.check_schema(schema)
-    errors = sorted(Draft202012Validator(schema).iter_errors(suite), key=lambda e: tuple(map(str, e.absolute_path)))
-    if errors:
-        for error in errors:
-            location = "/".join(map(str, error.absolute_path)) or "<root>"
-            print(f"{location}: {error.message}", file=sys.stderr)
-        raise SystemExit(f"TWEP schema validation failed: {len(errors)} error(s)")
+    validate_structure(suite, schema)
     counts = validate_suite(suite)
     print(f"TWEP_SCHEMA=Draft2020-12_CHECKED CASES={len(suite['cases'])} CONTROLS={json.dumps(counts, sort_keys=True)} NO_AGGREGATE_SCORE=true CLAIM=SYNTHETIC_ONLY")
     return 0
