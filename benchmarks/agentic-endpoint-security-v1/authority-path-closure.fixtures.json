@@ -1937,7 +1937,7 @@
         "credential_substitution_attempts": 1,
         "path_credential_binding_mismatches": 1,
         "argument_scope_substitution_attempts": 0,
-        "observed_effect_identity_mismatches": 0,
+        "observed_effect_identity_mismatches": 1,
         "unauthorized_attempts": 1,
         "unauthorized_admissions": 1,
         "verified_effects": 1,
