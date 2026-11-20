@@ -12,6 +12,7 @@
 
 mod trace;
 pub mod trajectory;
+pub mod information_flow;
 
 pub use trace::{
     evaluate_trace, TraceDisposition, TraceEvaluation, TraceEvidence, TraceEvent, TraceRecord,
