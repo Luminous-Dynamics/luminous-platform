@@ -180,3 +180,15 @@ The companion [Endpoint Assurance Benchmark Targets v1](ENDPOINT_ASSURANCE_BENCH
 
 Industry comparisons must include NVIDIA OpenShell as a genuine out-of-process sandbox/supervision baseline and CrowdStrike Falcon Guardian when an authorized tenant with the exact features is available. MITRE ATT&CK Evaluations Enterprise 2026 provides a useful protection/detection-quality and source-of-action reporting reference; use its published results only when available, and do not present announced features as measured capability. The current research target is not a broad EDR replacement claim but a falsifiable result about independently observed forbidden effects, evidence-gap detection, replay/revocation races, utility, latency and reproducibility.
 
+
+
+## Trajectory-wide effective privilege extension (TWEP v0.1)
+
+The adaptive prompt-injection extension measures attacker technique coverage; TWEP adds a distinct security dimension over the entire task trajectory. It keeps task-required, granted, available, exercised and effected authority separate and tests delegation attenuation, parent-to-child revocation, cached/stale credentials, alias paths, session substitution, and the difference between final task success and authorization-correct intermediate effects.
+
+- Contract: [Trajectory-Wide Effective Privilege Benchmark v0.1](TRAJECTORY_EFFECTIVE_PRIVILEGE_BENCHMARK_V0_1.md)
+- Frozen synthetic suite: \`benchmarks/agentic-endpoint-security-v1/trajectory-privilege.fixtures.json\`
+- Schema: \`benchmarks/agentic-endpoint-security-v1/trajectory-privilege.schema.json\`
+- Checker and mutation tests: \`tools/agentic-endpoint-security-v1/check_trajectory_privilege.py\` and \`test_trajectory_privilege.py\`
+
+The 17-case suite is not an executed attack campaign. It produces no aggregate score and does not claim live revocation, complete path discovery, cryptographic verification or resource-side enforcement.
