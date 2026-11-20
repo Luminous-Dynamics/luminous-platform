@@ -72,6 +72,12 @@ jobs:
       - name: Run canonical authority path closure mutation tests
         run: python3 tools/agentic-endpoint-security-v1/test_authority_path_closure.py
 
+      - name: Validate information-flow lifecycle contract
+        run: python3 tools/agentic-endpoint-security-v1/check_information_flow_lifecycle.py
+
+      - name: Run information-flow lifecycle mutation tests
+        run: python3 tools/agentic-endpoint-security-v1/test_information_flow_lifecycle.py
+
       - name: Check Rust formatting
         run: cargo fmt --manifest-path tools/agentic-endpoint-security-v1/Cargo.toml -- --check
 
