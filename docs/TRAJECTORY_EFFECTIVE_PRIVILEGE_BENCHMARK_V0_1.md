@@ -91,3 +91,10 @@ Eleven authored Rust tests cover positive authorization, available-scope excess,
 - **NIST NCCoE (27 October 2026 design tenets; 29 September 2026 project update)** emphasizes agent identity, persistent trust anchors with ephemeral/task-scoped credentials, contextual authorization at the moment of action, auditable evidence beyond action logs, delegation/accountability, and deterministic authorization. Its first announced implementation use case is DevSecOps. TWEP aligns with those requirements but is not a NIST profile or conformance claim.
 
 The comparison question is therefore not whether Luminous also issues short-lived capabilities. It is whether we can independently measure what authority remains reachable across the complete agent trajectory, what still works after revocation, and what safe utility is lost. Every comparison must hold model, task, tool set, resource state, credential distribution, attack budget, observer and latency method constant.
+
+
+## Follow-on: canonical authority path closure
+
+TWEP v0.1 deliberately uses exact actor/capability atoms and records a human-readable path label; it does not prove that alternate MCP, REST, SDK, shared-service or credential routes resolve to the same owner-defined resource and effect. It also must not merge distinct tenants, resources, values or read/write operations merely because their route names resemble one another.
+
+The follow-on contract is tracked in [WEB4-AUTHORITY-PATH-CLOSURE-001, issue #512](https://github.com/Luminous-Dynamics/luminous-platform/issues/512). CAPC will bind route/credential provenance to owner-issued resource identity, tenant, semantic operation/effect class, argument/value constraints, resource version and policy epoch. It will separately measure path equivalence, independent path closure, shadow-path exposure, resource/tenant substitution, credential substitution and unresolved route coverage. Owner-side canonical identity remains authoritative; this is a measurement/interoperability contract, not a new resource registry, policy engine, dependency graph or observer service.
