@@ -52,7 +52,7 @@ def test_named_source_cannot_change_action_selection() -> None:
 def test_flow_cannot_substitute_action_origin_node() -> None:
     result = checker.evaluate_case(fixture("IFL-020"))
     assert result["action_decision"] == "denied"
-    assert result["action_origin_violations"] == 1
+    assert result["action_origin_violations"] == 2
     assert result["unsafe_admissions"] == 1
     assert result["unauthorized_disclosures"] == 1
 
